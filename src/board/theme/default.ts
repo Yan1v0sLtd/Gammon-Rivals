@@ -1,0 +1,32 @@
+import type { Theme } from './types';
+
+export const defaultTheme: Theme = {
+  name: 'default',
+  colors: {
+    frameLight: 0x8a5a2c,
+    frameDark: 0x3d2412,
+    frameBevel: 0xb87a3f,
+    frameInnerEdge: 0x1a0e05,
+    felt: 0xd6c389,
+    feltVignette: 0x8a6f3a,
+    pointLightBase: 0xf5ebc6,
+    pointLightTip: 0xc4a875,
+    pointDarkBase: 0x5a3618,
+    pointDarkTip: 0x150a02,
+    pointOutline: 0x2a1a08,
+    bar: 0x4a2f15,
+    barHighlight: 0x6b4220,
+    rail: 0x3d2412,
+    brass: 0xd4a747,
+    brassDark: 0x8a6420,
+    whiteCheckerRim: 0x4a3a18,
+    whiteCheckerLight: 0xfffcf0,
+    whiteCheckerDark: 0xc9b282,
+    whiteCheckerHighlight: 0xfffefa,
+    blackCheckerRim: 0x4a3a18,
+    blackCheckerLight: 0x5e3f1f,
+    blackCheckerDark: 0x0e0805,
+    blackCheckerHighlight: 0x8a6420,
+    trayBg: 0x1c1206,
+  },
+};
