@@ -5,6 +5,7 @@ import Profile from './pages/Profile';
 import Replay from './pages/Replay';
 import PlayOnline from './pages/PlayOnline';
 import JoinMatch from './pages/JoinMatch';
+import Lobby from './pages/Lobby';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/replay/:gameId" element={<Replay />} />
         <Route path="/play/:matchId" element={<PlayOnline />} />
         <Route path="/join/:code" element={<JoinMatch />} />
+        <Route path="/lobby" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

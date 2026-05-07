@@ -52,6 +52,7 @@ export type Database = {
           cube_value: number;
           cube_owner: string | null;
           cube_offer: string | null;
+          is_public: boolean;
           mode: string;
           target: number;
           white_score: number;
@@ -74,6 +75,7 @@ export type Database = {
           cube_value?: number;
           cube_owner?: string | null;
           cube_offer?: string | null;
+          is_public?: boolean;
           mode: string;
           target: number;
           white_score?: number;
@@ -96,6 +98,7 @@ export type Database = {
           cube_value?: number;
           cube_owner?: string | null;
           cube_offer?: string | null;
+          is_public?: boolean;
           mode?: string;
           target?: number;
           white_score?: number;
@@ -187,6 +190,7 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       join_match_by_invite: { Args: { invite: string }; Returns: string };
+      join_public_match: { Args: { target_match_id: string }; Returns: string };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

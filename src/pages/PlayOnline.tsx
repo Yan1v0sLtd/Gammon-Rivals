@@ -158,16 +158,19 @@ export default function PlayOnline() {
   // ---------- Game UI ----------
   const whitePip = pipCount(game.board, 'white');
   const blackPip = pipCount(game.board, 'black');
+  const isSpectator = role === 'spectator';
 
   const turnLabel = game.matchFinished
     ? 'match over'
-    : game.gameWinner
-      ? `${game.gameWinner} wins game`
-      : !game.isLocalTurn
-        ? `${game.turn}'s turn (waiting)`
-        : game.roll === null
-          ? 'your turn — roll'
-          : 'your turn — move';
+    : isSpectator
+      ? `${game.turn} to ${game.roll === null ? 'roll' : 'move'}`
+      : game.gameWinner
+        ? `${game.gameWinner} wins game`
+        : !game.isLocalTurn
+          ? `${game.turn}'s turn (waiting)`
+          : game.roll === null
+            ? 'your turn — roll'
+            : 'your turn — move';
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
@@ -183,7 +186,14 @@ export default function PlayOnline() {
           <span className="text-board-felt/40 ml-2">w {whitePip}</span>
           <span className="text-board-felt/40">b {blackPip}</span>
         </div>
-        <div className="text-xs text-board-felt/60 capitalize whitespace-nowrap">{turnLabel}</div>
+        <div className="flex items-center gap-2 text-xs text-board-felt/60 capitalize whitespace-nowrap">
+          {isSpectator && (
+            <span className="px-1.5 py-0.5 rounded bg-board-felt/10 border border-board-felt/30 font-display text-[10px] tracking-wider uppercase text-board-accent">
+              Spectator
+            </span>
+          )}
+          {turnLabel}
+        </div>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-2 sm:p-4">

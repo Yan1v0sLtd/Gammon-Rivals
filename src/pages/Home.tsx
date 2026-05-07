@@ -115,13 +115,21 @@ export default function Home() {
           <div className="flex-1 h-px bg-board-felt/15" />
         </div>
 
-        <button
-          onClick={startOnline}
-          disabled={creatingOnline || !user}
-          className="py-2.5 rounded-md bg-board-felt/5 border border-board-felt/20 text-board-felt hover:border-board-accent hover:text-board-accent active:scale-[0.98] transition disabled:opacity-50"
-        >
-          {creatingOnline ? 'Creating…' : 'Play online (invite a friend)'}
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={startOnline}
+            disabled={creatingOnline || !user}
+            className="py-2.5 rounded-md bg-board-felt/5 border border-board-felt/20 text-board-felt hover:border-board-accent hover:text-board-accent active:scale-[0.98] transition disabled:opacity-50 text-sm"
+          >
+            {creatingOnline ? 'Creating…' : 'Invite a friend'}
+          </button>
+          <button
+            onClick={() => navigate('/lobby')}
+            className="py-2.5 rounded-md bg-board-felt/5 border border-board-felt/20 text-board-felt hover:border-board-accent hover:text-board-accent active:scale-[0.98] transition text-sm"
+          >
+            Public lobby
+          </button>
+        </div>
         {onlineErr && (
           <div className="text-xs text-rose-400 text-center">{onlineErr}</div>
         )}
