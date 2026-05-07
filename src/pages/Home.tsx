@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AI_LEVEL_LABEL, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
+import { createOnlineMatch } from '../lib/persistence';
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -16,15 +17,31 @@ const TARGETS: readonly number[] = [1, 3, 5, 7, 11];
 
 export default function Home() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [opponent, setOpponent] = useState<OpponentChoice>('medium');
   const [target, setTarget] = useState<number>(7);
+  const [creatingOnline, setCreatingOnline] = useState(false);
+  const [onlineErr, setOnlineErr] = useState<string | null>(null);
 
   const start = () => {
     const params = new URLSearchParams();
     params.set('opp', opponent);
     params.set('target', String(target));
     navigate(`/hotseat?${params.toString()}`);
+  };
+
+  const startOnline = async () => {
+    if (!user || creatingOnline) return;
+    setCreatingOnline(true);
+    setOnlineErr(null);
+    try {
+      const { matchId } = await createOnlineMatch({ ownerId: user.id, target });
+      navigate(`/play/${matchId}`);
+    } catch (err) {
+      setOnlineErr(err instanceof Error ? err.message : String(err));
+    } finally {
+      setCreatingOnline(false);
+    }
   };
 
   return (
@@ -91,6 +108,23 @@ export default function Home() {
         >
           Start
         </button>
+
+        <div className="flex items-center gap-3 my-1">
+          <div className="flex-1 h-px bg-board-felt/15" />
+          <div className="text-[10px] uppercase tracking-wider text-board-felt/40">or</div>
+          <div className="flex-1 h-px bg-board-felt/15" />
+        </div>
+
+        <button
+          onClick={startOnline}
+          disabled={creatingOnline || !user}
+          className="py-2.5 rounded-md bg-board-felt/5 border border-board-felt/20 text-board-felt hover:border-board-accent hover:text-board-accent active:scale-[0.98] transition disabled:opacity-50"
+        >
+          {creatingOnline ? 'Creating…' : 'Play online (invite a friend)'}
+        </button>
+        {onlineErr && (
+          <div className="text-xs text-rose-400 text-center">{onlineErr}</div>
+        )}
       </div>
     </main>
   );

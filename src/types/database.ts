@@ -43,6 +43,10 @@ export type Database = {
         Row: {
           id: string;
           owner_id: string;
+          opponent_id: string | null;
+          owner_color: string;
+          invite_code: string | null;
+          invite_expires_at: string | null;
           mode: string;
           target: number;
           white_score: number;
@@ -56,6 +60,10 @@ export type Database = {
         Insert: {
           id?: string;
           owner_id: string;
+          opponent_id?: string | null;
+          owner_color?: string;
+          invite_code?: string | null;
+          invite_expires_at?: string | null;
           mode: string;
           target: number;
           white_score?: number;
@@ -69,6 +77,10 @@ export type Database = {
         Update: {
           id?: string;
           owner_id?: string;
+          opponent_id?: string | null;
+          owner_color?: string;
+          invite_code?: string | null;
+          invite_expires_at?: string | null;
           mode?: string;
           target?: number;
           white_score?: number;
@@ -158,7 +170,9 @@ export type Database = {
       };
     };
     Views: { [_ in never]: never };
-    Functions: { [_ in never]: never };
+    Functions: {
+      join_match_by_invite: { Args: { invite: string }; Returns: string };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

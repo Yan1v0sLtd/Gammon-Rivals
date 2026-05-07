@@ -5,10 +5,78 @@ import type { Database } from '../types/database';
 
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 
-export type MatchMode = 'hotseat' | `ai-${AILevel}`;
+export type MatchMode = 'hotseat' | `ai-${AILevel}` | 'online';
 
 export function modeFromAi(ai: { level: AILevel } | null): MatchMode {
   return ai ? (`ai-${ai.level}` as const) : 'hotseat';
+}
+
+const INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1
+function generateInviteCode(len = 8): string {
+  const arr = new Uint32Array(len);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (n) => INVITE_ALPHABET[n % INVITE_ALPHABET.length]).join('');
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+export interface CreateOnlineMatchArgs {
+  ownerId: string;
+  target: number;
+  ownerColor?: 'white' | 'black';
+}
+
+export interface CreatedOnlineMatch {
+  matchId: string;
+  inviteCode: string;
+}
+
+export async function createOnlineMatch(args: CreateOnlineMatchArgs): Promise<CreatedOnlineMatch> {
+  const expiresAt = new Date(Date.now() + ONE_DAY_MS).toISOString();
+  // Retry on collision (extremely unlikely with 32^8 alphabet)
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateInviteCode();
+    const { data, error } = await supabase
+      .from('matches')
+      .insert({
+        owner_id: args.ownerId,
+        mode: 'online',
+        target: args.target,
+        owner_color: args.ownerColor ?? 'white',
+        invite_code: code,
+        invite_expires_at: expiresAt,
+      })
+      .select('id')
+      .single();
+    if (!error) return { matchId: data.id, inviteCode: code };
+    if (error.code !== '23505') throw error; // not a uniqueness collision — surface
+  }
+  throw new Error('Could not generate a unique invite code');
+}
+
+export async function joinMatchByInvite(code: string): Promise<string> {
+  const { data, error } = await supabase.rpc('join_match_by_invite', { invite: code });
+  if (error) throw error;
+  if (!data) throw new Error('Invalid or expired invite');
+  return data as string;
+}
+
+export async function getMatchById(id: string): Promise<MatchRow | null> {
+  const { data, error } = await supabase
+    .from('matches')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export async function cancelMatch(matchId: string): Promise<void> {
+  const { error } = await supabase
+    .from('matches')
+    .update({ finished_at: new Date().toISOString(), winner: null })
+    .eq('id', matchId);
+  if (error) throw error;
 }
 
 export interface CreateMatchArgs {
