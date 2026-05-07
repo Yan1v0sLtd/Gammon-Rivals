@@ -2,11 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
+import DoublingCube from '../components/DoublingCube';
+import CubeOfferDecision from '../components/CubeOfferDecision';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { useOnlineGame } from '../game/useOnlineGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
+import type { CubeValue } from '../engine';
 import { woodTheme } from '../board/theme';
 import type { Database } from '../types/database';
 
@@ -196,7 +199,15 @@ export default function PlayOnline() {
             onPointClick={handlePointClick}
           />
 
-          {role !== 'spectator' && !game.gameWinner && !game.matchFinished && (
+          <DoublingCube
+            value={game.cubeValue as CubeValue}
+            owner={game.cubeOwner}
+            canOffer={game.canOfferDouble}
+            pendingOffer={game.cubeOffer}
+            onOffer={game.offerDouble}
+          />
+
+          {role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null && (
             <DiceTray
               turn={game.turn}
               roll={game.roll}
@@ -208,13 +219,51 @@ export default function PlayOnline() {
             />
           )}
 
-          {game.gameWinner && !game.matchFinished && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
-              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
-                <div className="font-display text-2xl uppercase tracking-wider mb-3 capitalize">
-                  {game.gameWinner} wins this game
+          {/* Cube offer pending: opponent decides */}
+          {game.cubeOffer !== null && game.localColor !== null && game.cubeOffer !== game.localColor && !game.matchFinished && (
+            <CubeOfferDecision
+              offeredBy={game.cubeOffer}
+              currentValue={game.cubeValue as CubeValue}
+              onAccept={game.acceptDouble}
+              onDrop={game.dropDouble}
+            />
+          )}
+          {/* Cube offer pending and we are the offerer: just wait */}
+          {game.cubeOffer !== null && game.cubeOffer === game.localColor && !game.matchFinished && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-30 pointer-events-none">
+              <div className="bg-amber-100/95 text-amber-950 px-6 py-4 rounded-xl border-2 border-amber-700 text-sm">
+                Waiting for opponent to accept or drop…
+              </div>
+            </div>
+          )}
+
+          {game.betweenGames && !game.matchFinished && game.currentGame && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/65 z-30">
+              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm">
+                <div className="font-display text-2xl uppercase tracking-wider mb-1 capitalize">
+                  {game.currentGame.winner} wins
+                  {game.currentGame.dropped_double
+                    ? ' by drop'
+                    : game.currentGame.win_type
+                      ? ` ${game.currentGame.win_type}`
+                      : ''}
                 </div>
-                <div className="text-xs text-amber-900/70">Next-game flow lands in 5d.</div>
+                <div className="text-sm mb-3">
+                  +{game.currentGame.points_awarded} · match {match.white_score}–{match.black_score} (to {match.target})
+                </div>
+                <div className="text-xs text-amber-900/70">
+                  {game.localColor === game.turn
+                    ? 'Roll to start the next game.'
+                    : `Waiting for ${game.turn} to roll the next game…`}
+                </div>
+                {game.localColor === game.turn && (
+                  <button
+                    onClick={() => void game.rollDice()}
+                    className="mt-4 px-5 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+                  >
+                    Roll · next game
+                  </button>
+                )}
               </div>
             </div>
           )}

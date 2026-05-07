@@ -49,6 +49,9 @@ export type Database = {
           invite_expires_at: string | null;
           current_turn: Json | null;
           current_game_id: string | null;
+          cube_value: number;
+          cube_owner: string | null;
+          cube_offer: string | null;
           mode: string;
           target: number;
           white_score: number;
@@ -68,6 +71,9 @@ export type Database = {
           invite_expires_at?: string | null;
           current_turn?: Json | null;
           current_game_id?: string | null;
+          cube_value?: number;
+          cube_owner?: string | null;
+          cube_offer?: string | null;
           mode: string;
           target: number;
           white_score?: number;
@@ -87,6 +93,9 @@ export type Database = {
           invite_expires_at?: string | null;
           current_turn?: Json | null;
           current_game_id?: string | null;
+          cube_value?: number;
+          cube_owner?: string | null;
+          cube_offer?: string | null;
           mode?: string;
           target?: number;
           white_score?: number;

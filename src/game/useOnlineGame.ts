@@ -23,6 +23,9 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 type MoveRow = Database['public']['Tables']['moves']['Row'];
+type GameRow = Database['public']['Tables']['games']['Row'];
+
+export type CubeValue = 1 | 2 | 4 | 8 | 16 | 32 | 64;
 
 interface SubMoveJSON {
   readonly from: number | 'bar';
@@ -99,6 +102,7 @@ export interface OnlineGameState {
   readonly loading: boolean;
   readonly error: string | null;
   readonly match: MatchRow | null;
+  readonly currentGame: GameRow | null;
   readonly board: BoardState;
   readonly turn: Player;
   readonly localColor: Player | null;
@@ -112,6 +116,11 @@ export interface OnlineGameState {
   readonly canEndTurn: boolean;
   readonly gameWinner: Player | null;
   readonly matchFinished: boolean;
+  readonly cubeValue: CubeValue;
+  readonly cubeOwner: Player | null;
+  readonly cubeOffer: Player | null;
+  readonly canOfferDouble: boolean;
+  readonly betweenGames: boolean;
 }
 
 export interface OnlineGameActions {
@@ -120,18 +129,21 @@ export interface OnlineGameActions {
   cancelSelection(): void;
   selectTo(pos: Position): Promise<void>;
   endTurn(): Promise<void>;
+  offerDouble(): Promise<void>;
+  acceptDouble(): Promise<void>;
+  dropDouble(): Promise<void>;
 }
 
 export function useOnlineGame(matchId: string | undefined): OnlineGameState & OnlineGameActions {
   const { user } = useAuth();
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [moves, setMoves] = useState<MoveRow[]>([]);
+  const [currentGame, setCurrentGame] = useState<GameRow | null>(null);
   const [selectedFrom, setSelectedFrom] = useState<Position | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const fetchInFlight = useRef(false);
 
-  // ---- polling ----
   const refresh = useCallback(async () => {
     if (!matchId) return;
     if (fetchInFlight.current) return;
@@ -145,15 +157,25 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
       if (mErr) throw mErr;
       setMatch(m);
       if (m?.current_game_id) {
-        const { data: mv, error: mvErr } = await supabase
-          .from('moves')
-          .select('*')
-          .eq('game_id', m.current_game_id)
-          .order('ply', { ascending: true });
-        if (mvErr) throw mvErr;
-        setMoves(mv ?? []);
+        const [movesRes, gameRes] = await Promise.all([
+          supabase
+            .from('moves')
+            .select('*')
+            .eq('game_id', m.current_game_id)
+            .order('ply', { ascending: true }),
+          supabase
+            .from('games')
+            .select('*')
+            .eq('id', m.current_game_id)
+            .maybeSingle(),
+        ]);
+        if (movesRes.error) throw movesRes.error;
+        if (gameRes.error) throw gameRes.error;
+        setMoves(movesRes.data ?? []);
+        setCurrentGame(gameRes.data);
       } else {
         setMoves([]);
+        setCurrentGame(null);
       }
       setError(null);
     } catch (err) {
@@ -219,9 +241,23 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     return null;
   }, [match, user]);
 
-  const isLocalTurn = localColor !== null && derived.whoseTurn === localColor;
   const matchFinished = !!match?.finished_at;
-  const gameWinner = useMemo(() => engineWinner(derived.board), [derived.board]);
+  const gameFinishedInDb = !!currentGame?.finished_at;
+  // Between-games = the current game is finished but the match isn't.
+  // The board derives empty during this window because the next game hasn't started.
+  const betweenGames = gameFinishedInDb && !matchFinished;
+  // Between games, white always starts the next game (matches edge function expectation).
+  const effectiveTurn: Player = betweenGames ? 'white' : derived.whoseTurn;
+  const isLocalTurn = localColor !== null && effectiveTurn === localColor;
+  const gameWinner = useMemo(
+    () => (betweenGames ? (currentGame?.winner as Player | null) : engineWinner(derived.board)),
+    [betweenGames, currentGame?.winner, derived.board]
+  );
+
+  // Cube state from match
+  const cubeValue = (match?.cube_value ?? 1) as CubeValue;
+  const cubeOwner = (match?.cube_owner ?? null) as Player | null;
+  const cubeOffer = (match?.cube_offer ?? null) as Player | null;
 
   // Dice exposed to UI
   const roll: DiceRoll | null = currentTurn
@@ -248,18 +284,30 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
 
   const canRoll =
     !matchFinished &&
-    !gameWinner &&
     !!match &&
     !!match.opponent_id &&
     currentTurn === null &&
+    cubeOffer === null &&
     isLocalTurn;
 
   const canEndTurn =
     !matchFinished &&
-    !gameWinner &&
+    !betweenGames &&
+    !engineWinner(derived.board) &&
     isLocalTurn &&
     currentTurn !== null &&
     (currentTurn.remaining.length === 0 || legal.length === 0);
+
+  const canOfferDouble =
+    !matchFinished &&
+    !betweenGames &&
+    !!match &&
+    !!match.opponent_id &&
+    currentTurn === null &&
+    cubeOffer === null &&
+    isLocalTurn &&
+    cubeValue < 64 &&
+    (cubeOwner === null || cubeOwner === localColor);
 
   // ---- actions ----
   const rollDice = useCallback(async () => {
@@ -363,7 +411,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
           score: { white: match.white_score, black: match.black_score },
           gameNumber: 1,
           crawfordGameNumber: null,
-          cube: { value: 1, owner: null },
+          cube: { value: cubeValue, owner: cubeOwner },
           cubeOffer: null,
           winner: null,
         },
@@ -377,21 +425,24 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
         .update({
           winner: result.winner,
           win_type: result.winType,
+          cube_value: cubeValue,
+          cube_owner: cubeOwner,
           points_awarded: result.points,
           finished_at: new Date().toISOString(),
         })
         .eq('id', match.current_game_id);
 
-      // Update match score; finish if target reached
       const newWhite =
         match.white_score + (result.winner === 'white' ? result.points : 0);
       const newBlack =
         match.black_score + (result.winner === 'black' ? result.points : 0);
       const matchOver = newWhite >= match.target || newBlack >= match.target;
 
+      // Keep current_game_id pointing at the just-finished game so both
+      // clients can show a "game over" banner. The edge function on the
+      // next roll detects this and lazy-creates the next game.
       matchUpdate = {
         current_turn: null,
-        current_game_id: matchOver ? match.current_game_id : null,
         white_score: newWhite,
         black_score: newBlack,
         winner: matchOver ? result.winner : null,
@@ -407,14 +458,85 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
       setError(upErr.message);
     }
     void refresh();
-  }, [matchId, match, currentTurn, isLocalTurn, canEndTurn, moves.length, derived.board, refresh]);
+  }, [matchId, match, currentTurn, isLocalTurn, canEndTurn, moves.length, derived.board, cubeValue, cubeOwner, refresh]);
+
+  // ---- cube actions ----
+  const offerDouble = useCallback(async () => {
+    if (!matchId || !canOfferDouble || !localColor) return;
+    setError(null);
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update({ cube_offer: localColor })
+      .eq('id', matchId);
+    if (upErr) setError(upErr.message);
+    void refresh();
+  }, [matchId, canOfferDouble, localColor, refresh]);
+
+  const acceptDouble = useCallback(async () => {
+    if (!matchId || !match || cubeOffer === null) return;
+    if (localColor === null || cubeOffer === localColor) return; // only opponent of offerer
+    setError(null);
+    const newValue = Math.min(cubeValue * 2, 64);
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update({
+        cube_value: newValue,
+        cube_owner: localColor,
+        cube_offer: null,
+      })
+      .eq('id', matchId);
+    if (upErr) setError(upErr.message);
+    void refresh();
+  }, [matchId, match, cubeOffer, localColor, cubeValue, refresh]);
+
+  const dropDouble = useCallback(async () => {
+    if (!matchId || !match || cubeOffer === null) return;
+    if (localColor === null || cubeOffer === localColor) return;
+    if (!match.current_game_id) return;
+    setError(null);
+
+    // Offerer wins pre-double cube value (single).
+    const winnerOfDrop: Player = cubeOffer;
+    const points = cubeValue;
+
+    await supabase
+      .from('games')
+      .update({
+        winner: winnerOfDrop,
+        win_type: 'single',
+        cube_value: cubeValue,
+        cube_owner: cubeOwner,
+        dropped_double: true,
+        points_awarded: points,
+        finished_at: new Date().toISOString(),
+      })
+      .eq('id', match.current_game_id);
+
+    const newWhite = match.white_score + (winnerOfDrop === 'white' ? points : 0);
+    const newBlack = match.black_score + (winnerOfDrop === 'black' ? points : 0);
+    const matchOver = newWhite >= match.target || newBlack >= match.target;
+
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update({
+        cube_offer: null,
+        white_score: newWhite,
+        black_score: newBlack,
+        winner: matchOver ? winnerOfDrop : null,
+        finished_at: matchOver ? new Date().toISOString() : null,
+      })
+      .eq('id', matchId);
+    if (upErr) setError(upErr.message);
+    void refresh();
+  }, [matchId, match, cubeOffer, localColor, cubeValue, cubeOwner, refresh]);
 
   return {
     loading,
     error,
     match,
+    currentGame,
     board: derived.board,
-    turn: derived.whoseTurn,
+    turn: effectiveTurn,
     localColor,
     isLocalTurn,
     roll,
@@ -426,10 +548,18 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     canEndTurn,
     gameWinner,
     matchFinished,
+    cubeValue,
+    cubeOwner,
+    cubeOffer,
+    canOfferDouble,
+    betweenGames,
     rollDice,
     selectFrom,
     cancelSelection,
     selectTo,
     endTurn,
+    offerDouble,
+    acceptDouble,
+    dropDouble,
   };
 }
