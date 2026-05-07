@@ -19,6 +19,7 @@ import { BAR, OFF } from '../engine/types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import type { Database } from '../types/database';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 type MoveRow = Database['public']['Tables']['moves']['Row'];
@@ -37,7 +38,8 @@ interface CurrentTurnJSON {
   readonly subMoves: readonly SubMoveJSON[];
 }
 
-const POLL_MS = 1500;
+// Polling fallback when Realtime fails (rare). Refresh interval in ms.
+const FALLBACK_POLL_MS = 8000;
 
 function decodeMove(s: SubMoveJSON): Move {
   const from: Position = s.from === 'bar' ? BAR : s.from;
@@ -163,12 +165,42 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
   }, [matchId]);
 
   useEffect(() => {
+    if (!matchId) return;
     void refresh();
+
+    let channel: RealtimeChannel | null = supabase
+      .channel(`match-${matchId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
+        () => {
+          void refresh();
+        }
+      )
+      .on(
+        'postgres_changes',
+        // moves filter requires game_id which we may not have at subscribe time;
+        // RLS already restricts inserts to user's own games, so listen broadly
+        { event: 'INSERT', schema: 'public', table: 'moves' },
+        () => {
+          void refresh();
+        }
+      )
+      .subscribe();
+
+    // Low-frequency fallback poll in case the WebSocket drops silently
     const id = window.setInterval(() => {
       void refresh();
-    }, POLL_MS);
-    return () => window.clearInterval(id);
-  }, [refresh]);
+    }, FALLBACK_POLL_MS);
+
+    return () => {
+      window.clearInterval(id);
+      if (channel) {
+        void supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+  }, [matchId, refresh]);
 
   // ---- derive ----
   const currentTurn: CurrentTurnJSON | null = useMemo(() => {
