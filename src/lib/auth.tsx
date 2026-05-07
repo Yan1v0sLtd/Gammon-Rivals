@@ -24,6 +24,7 @@ export interface AuthContextValue {
   sendMagicLink(email: string): Promise<void>;
   signOut(): Promise<void>;
   setDisplayName(name: string): Promise<void>;
+  refreshProfile(): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setProfile(data);
   }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (!session?.user) return;
+    profileFetchRef.current = null;
+    await fetchProfile(session.user.id);
+  }, [session, fetchProfile]);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,8 +143,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sendMagicLink,
       signOut,
       setDisplayName,
+      refreshProfile,
     }),
-    [session, profile, isLoading, signInAnonymously, sendMagicLink, signOut, setDisplayName]
+    [
+      session,
+      profile,
+      isLoading,
+      signInAnonymously,
+      sendMagicLink,
+      signOut,
+      setDisplayName,
+      refreshProfile,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

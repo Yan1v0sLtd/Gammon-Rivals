@@ -24,6 +24,12 @@ export default function MatchHeader({
         <Link to="/" className="text-board-accent text-sm whitespace-nowrap">
           ← Home
         </Link>
+        <Link
+          to="/profile"
+          className="text-xs text-board-felt/50 hover:text-board-accent transition"
+        >
+          Profile
+        </Link>
         {onNewMatch && (
           <button
             onClick={onNewMatch}

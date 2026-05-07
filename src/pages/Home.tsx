@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AI_LEVEL_LABEL, type AILevel } from '../ai';
+import { useAuth } from '../lib/auth';
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -15,6 +16,7 @@ const TARGETS: readonly number[] = [1, 3, 5, 7, 11];
 
 export default function Home() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [opponent, setOpponent] = useState<OpponentChoice>('medium');
   const [target, setTarget] = useState<number>(7);
 
@@ -27,6 +29,15 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-10 p-6 bg-gradient-to-b from-[#1a1410] to-[#0d0907]">
+      <Link
+        to="/profile"
+        className="absolute top-3 right-4 text-xs text-board-felt/60 hover:text-board-accent transition flex items-center gap-2"
+      >
+        <span className="hidden sm:inline">{profile?.display_name ?? 'Profile'}</span>
+        <span className="w-7 h-7 rounded-full bg-amber-700/40 border border-amber-700 flex items-center justify-center font-display text-board-accent">
+          {(profile?.display_name?.[0] ?? '·').toUpperCase()}
+        </span>
+      </Link>
       <div className="text-center">
         <h1 className="font-display text-5xl text-board-accent mb-2">Backgammon</h1>
         <p className="text-board-felt/60 text-sm">Pick your opponent and match length.</p>
