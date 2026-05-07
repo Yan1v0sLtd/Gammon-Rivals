@@ -1,0 +1,138 @@
+// Server-authoritative dice roll for online matches.
+// Auth: caller must be one of the two players. Validates that no turn is
+// already in progress and that it's the caller's turn (based on the last
+// move in the current game). Lazy-creates the games row on the very first
+// roll of a new game. Generates dice via crypto.getRandomValues, writes the
+// turn state to matches.current_turn, returns the roll to the caller.
+
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+// deno-lint-ignore no-explicit-any
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+  if (req.method !== 'POST') {
+    return json({ error: 'method not allowed' }, 405);
+  }
+
+  try {
+    const auth = req.headers.get('Authorization');
+    if (!auth) return json({ error: 'unauthorized' }, 401);
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      return json({ error: 'server misconfigured' }, 500);
+    }
+
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: auth } },
+    });
+
+    const { data: userData, error: userErr } = await sb.auth.getUser();
+    if (userErr || !userData?.user) return json({ error: 'unauthorized' }, 401);
+    const user = userData.user;
+
+    const body = await req.json().catch(() => null);
+    const matchId = body && typeof body.matchId === 'string' ? body.matchId : null;
+    if (!matchId) return json({ error: 'matchId required' }, 400);
+
+    const { data: match, error: mErr } = await sb
+      .from('matches')
+      .select('*')
+      .eq('id', matchId)
+      .single();
+    if (mErr || !match) return json({ error: 'match not found' }, 404);
+
+    if (match.mode !== 'online') return json({ error: 'not an online match' }, 400);
+    if (match.finished_at) return json({ error: 'match finished' }, 400);
+    if (match.current_turn) return json({ error: 'turn already in progress' }, 400);
+    if (!match.opponent_id) return json({ error: 'waiting for opponent' }, 400);
+
+    let callerColor: 'white' | 'black';
+    if (user.id === match.owner_id) {
+      callerColor = (match.owner_color === 'black' ? 'black' : 'white');
+    } else if (user.id === match.opponent_id) {
+      callerColor = match.owner_color === 'white' ? 'black' : 'white';
+    } else {
+      return json({ error: 'not a player' }, 403);
+    }
+
+    // Determine expected next player. Defaults to white for the first turn of a game.
+    let expectedPlayer: 'white' | 'black' = 'white';
+    let gameId: string | null = match.current_game_id;
+
+    if (gameId) {
+      const { data: lastMove } = await sb
+        .from('moves')
+        .select('player')
+        .eq('game_id', gameId)
+        .order('ply', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastMove?.player === 'white' || lastMove?.player === 'black') {
+        expectedPlayer = lastMove.player === 'white' ? 'black' : 'white';
+      }
+    }
+
+    if (callerColor !== expectedPlayer) {
+      return json({ error: `not your turn (expected ${expectedPlayer})` }, 403);
+    }
+
+    // Lazy-create games row if this is the first roll of a new game.
+    if (!gameId) {
+      const { count } = await sb
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .eq('match_id', matchId);
+      const gameNumber = (count ?? 0) + 1;
+      const { data: newGame, error: gErr } = await sb
+        .from('games')
+        .insert({ match_id: matchId, game_number: gameNumber })
+        .select('id')
+        .single();
+      if (gErr || !newGame) {
+        return json({ error: 'could not create game: ' + (gErr?.message ?? 'unknown') }, 500);
+      }
+      gameId = newGame.id;
+    }
+
+    // Roll
+    const buf = new Uint8Array(2);
+    crypto.getRandomValues(buf);
+    const d1 = ((buf[0] % 6) + 1);
+    const d2 = ((buf[1] % 6) + 1);
+    const remaining = d1 === d2 ? [d1, d1, d1, d1] : [d1, d2];
+
+    const turnState = {
+      player: callerColor,
+      dice: [d1, d2],
+      remaining,
+      subMoves: [],
+    };
+
+    const { error: upErr } = await sb
+      .from('matches')
+      .update({ current_turn: turnState, current_game_id: gameId })
+      .eq('id', matchId);
+    if (upErr) return json({ error: 'update failed: ' + upErr.message }, 500);
+
+    return json({ dice: [d1, d2], remaining, player: callerColor, gameId });
+  } catch (err) {
+    return json({ error: err instanceof Error ? err.message : String(err) }, 500);
+  }
+});

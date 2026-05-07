@@ -47,6 +47,8 @@ export type Database = {
           owner_color: string;
           invite_code: string | null;
           invite_expires_at: string | null;
+          current_turn: Json | null;
+          current_game_id: string | null;
           mode: string;
           target: number;
           white_score: number;
@@ -64,6 +66,8 @@ export type Database = {
           owner_color?: string;
           invite_code?: string | null;
           invite_expires_at?: string | null;
+          current_turn?: Json | null;
+          current_game_id?: string | null;
           mode: string;
           target: number;
           white_score?: number;
@@ -81,6 +85,8 @@ export type Database = {
           owner_color?: string;
           invite_code?: string | null;
           invite_expires_at?: string | null;
+          current_turn?: Json | null;
+          current_game_id?: string | null;
           mode?: string;
           target?: number;
           white_score?: number;

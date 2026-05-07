@@ -1,87 +1,62 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import BoardCanvas from '../board/BoardCanvas';
+import DiceTray from '../components/DiceTray';
 import { useAuth } from '../lib/auth';
-import { getMatchById } from '../lib/persistence';
 import { supabase } from '../lib/supabase';
+import { useOnlineGame } from '../game/useOnlineGame';
+import { pipCount } from '../engine';
+import type { Position } from '../engine/types';
+import { woodTheme } from '../board/theme';
 import type { Database } from '../types/database';
 
-type MatchRow = Database['public']['Tables']['matches']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 export default function PlayOnline() {
   const { matchId } = useParams<{ matchId: string }>();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [match, setMatch] = useState<MatchRow | null>(null);
-  const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);
+  const game = useOnlineGame(matchId);
+
   const [ownerProfile, setOwnerProfile] = useState<ProfileRow | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);
   const [copied, setCopied] = useState(false);
-  const pollIdRef = useRef<number | null>(null);
 
-  const refresh = useMemo(
-    () => async () => {
-      if (!matchId) return;
-      try {
-        const m = await getMatchById(matchId);
-        if (!m) {
-          setError('match not found');
-          return;
-        }
-        setMatch(m);
-        const ids = [m.owner_id, m.opponent_id].filter(Boolean) as string[];
-        if (ids.length > 0) {
-          const { data: profs, error: profErr } = await supabase
-            .from('profiles')
-            .select('*')
-            .in('id', ids);
-          if (profErr) throw profErr;
-          setOwnerProfile(profs?.find((p) => p.id === m.owner_id) ?? null);
-          setOpponentProfile(profs?.find((p) => p.id === m.opponent_id) ?? null);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      }
-    },
-    [matchId]
-  );
-
+  // Fetch profiles when match loads
   useEffect(() => {
-    if (authLoading || !user) return;
-    void refresh();
-    // Poll every 2s while waiting for opponent (5c will replace this with Realtime)
-    pollIdRef.current = window.setInterval(() => {
-      void refresh();
-    }, 2000);
-    return () => {
-      if (pollIdRef.current !== null) window.clearInterval(pollIdRef.current);
-    };
-  }, [authLoading, user, refresh]);
+    if (!game.match) return;
+    const ids = [game.match.owner_id, game.match.opponent_id].filter(Boolean) as string[];
+    if (ids.length === 0) return;
+    void (async () => {
+      const { data } = await supabase.from('profiles').select('*').in('id', ids);
+      setOwnerProfile(data?.find((p) => p.id === game.match!.owner_id) ?? null);
+      setOpponentProfile(data?.find((p) => p.id === game.match!.opponent_id) ?? null);
+    })();
+  }, [game.match?.owner_id, game.match?.opponent_id]);
 
-  if (error) {
-    return (
-      <main className="min-h-screen flex flex-col items-center justify-center text-board-felt/70 gap-4">
-        <div>Couldn't load match: {error}</div>
-        <Link to="/" className="text-board-accent">← Home</Link>
-      </main>
-    );
-  }
-  if (authLoading || !match || !user) {
-    return (
-      <main className="min-h-screen flex items-center justify-center text-board-felt/60">
-        Loading…
-      </main>
-    );
-  }
+  const handlePointClick = (pos: Position) => {
+    if (game.gameWinner || game.matchFinished) return;
+    if (!game.isLocalTurn) return;
+    if (game.selectedFrom === null) {
+      game.selectFrom(pos);
+      return;
+    }
+    if (game.validDestinations.includes(pos)) {
+      void game.selectTo(pos);
+    } else if (game.legalOrigins.includes(pos)) {
+      game.selectFrom(pos);
+    } else {
+      game.cancelSelection();
+    }
+  };
 
-  const isOwner = user.id === match.owner_id;
-  const isOpponent = user.id === match.opponent_id;
-  const role = isOwner ? 'owner' : isOpponent ? 'opponent' : 'spectator';
-  const waiting = match.opponent_id === null;
-
-  const inviteUrl = match.invite_code
-    ? `${window.location.origin}/join/${match.invite_code}`
-    : null;
+  const inviteUrl = useMemo(
+    () =>
+      game.match?.invite_code
+        ? `${window.location.origin}/join/${game.match.invite_code}`
+        : null,
+    [game.match?.invite_code]
+  );
 
   const copyLink = async () => {
     if (!inviteUrl) return;
@@ -90,123 +65,178 @@ export default function PlayOnline() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch {
-      // fallback: select + copy via input is omitted for brevity
+      /* ignore */
     }
   };
 
-  return (
-    <main className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-      <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
+  if (authLoading || game.loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center text-board-felt/60">
+        Loading…
+      </main>
+    );
+  }
+
+  if (game.error) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center text-rose-400 gap-3 p-6">
+        <div>Error: {game.error}</div>
         <Link to="/" className="text-board-accent text-sm">← Home</Link>
-        <div className="text-xs text-board-felt/50">Online match · to {match.target}</div>
-        <Link to="/profile" className="text-xs text-board-felt/60 hover:text-board-accent">
-          Profile
-        </Link>
+      </main>
+    );
+  }
+
+  const match = game.match;
+  if (!match || !user) return null;
+
+  const isOwner = user.id === match.owner_id;
+  const role: 'owner' | 'opponent' | 'spectator' =
+    isOwner ? 'owner' : user.id === match.opponent_id ? 'opponent' : 'spectator';
+  const waiting = match.opponent_id === null;
+
+  // ---------- Lobby UI when waiting ----------
+  if (waiting) {
+    return (
+      <main className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
+        <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
+          <Link to="/" className="text-board-accent text-sm">← Home</Link>
+          <div className="text-xs text-board-felt/50">Online · to {match.target}</div>
+          <Link to="/profile" className="text-xs text-board-felt/60 hover:text-board-accent">Profile</Link>
+        </header>
+        <div className="flex-1 flex flex-col items-center justify-center gap-6 max-w-md w-full p-6">
+          <div className="font-display text-3xl text-board-accent text-center">
+            Waiting for opponent…
+          </div>
+          {isOwner && inviteUrl && (
+            <div className="w-full bg-board-felt/5 border border-board-felt/10 rounded-lg p-4 flex flex-col gap-3">
+              <div className="text-xs uppercase tracking-wider text-board-felt/50">
+                Send this link to your opponent
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={inviteUrl}
+                  readOnly
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="flex-1 bg-board-felt/10 border border-board-felt/20 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:border-board-accent"
+                />
+                <button
+                  onClick={copyLink}
+                  className="px-3 py-1 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110 active:scale-95 transition"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <div className="text-[11px] text-board-felt/50">
+                Code: <span className="font-mono text-board-accent">{match.invite_code}</span>{' '}
+                · expires in 24h
+              </div>
+            </div>
+          )}
+          {isOwner && (
+            <button
+              onClick={async () => {
+                if (!confirm('Cancel this online match?')) return;
+                await supabase
+                  .from('matches')
+                  .update({ finished_at: new Date().toISOString() })
+                  .eq('id', match.id);
+                navigate('/');
+              }}
+              className="text-xs text-board-felt/50 hover:text-rose-400 transition"
+            >
+              Cancel match
+            </button>
+          )}
+        </div>
+      </main>
+    );
+  }
+
+  // ---------- Game UI ----------
+  const whitePip = pipCount(game.board, 'white');
+  const blackPip = pipCount(game.board, 'black');
+
+  const turnLabel = game.matchFinished
+    ? 'match over'
+    : game.gameWinner
+      ? `${game.gameWinner} wins game`
+      : !game.isLocalTurn
+        ? `${game.turn}'s turn (waiting)`
+        : game.roll === null
+          ? 'your turn — roll'
+          : 'your turn — move';
+
+  return (
+    <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
+      <header className="flex items-center justify-between px-4 py-2 text-board-felt/80 gap-3">
+        <Link to="/" className="text-board-accent text-sm whitespace-nowrap">← Home</Link>
+        <div className="flex items-center gap-3 text-xs font-mono">
+          <span className="text-chip-cream">
+            {ownerProfile?.display_name ?? '…'} {match.white_score}–{match.black_score}{' '}
+            {opponentProfile?.display_name ?? '…'}
+          </span>
+          <span className="text-board-felt/40">·</span>
+          <span className="text-board-felt/60">to {match.target}</span>
+          <span className="text-board-felt/40 ml-2">w {whitePip}</span>
+          <span className="text-board-felt/40">b {blackPip}</span>
+        </div>
+        <div className="text-xs text-board-felt/60 capitalize whitespace-nowrap">{turnLabel}</div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 max-w-md w-full p-6">
-        <div className="font-display text-3xl text-board-accent text-center">
-          {waiting ? 'Waiting for opponent…' : 'Both players ready'}
-        </div>
-
-        <div className="w-full bg-board-felt/5 border border-board-felt/10 rounded-lg p-4 flex flex-col gap-3">
-          <Player
-            label="White"
-            name={
-              match.owner_color === 'white'
-                ? ownerProfile?.display_name ?? '—'
-                : opponentProfile?.display_name ?? (waiting ? 'waiting…' : '—')
-            }
-            isYou={
-              (match.owner_color === 'white' && isOwner) ||
-              (match.owner_color === 'black' && isOpponent)
-            }
-          />
-          <div className="text-center text-board-felt/40 text-xs">vs</div>
-          <Player
-            label="Black"
-            name={
-              match.owner_color === 'black'
-                ? ownerProfile?.display_name ?? '—'
-                : opponentProfile?.display_name ?? (waiting ? 'waiting…' : '—')
-            }
-            isYou={
-              (match.owner_color === 'black' && isOwner) ||
-              (match.owner_color === 'white' && isOpponent)
-            }
-          />
-        </div>
-
-        {waiting && isOwner && inviteUrl && (
-          <div className="w-full bg-board-felt/5 border border-board-felt/10 rounded-lg p-4 flex flex-col gap-3">
-            <div className="text-xs uppercase tracking-wider text-board-felt/50">
-              Send this link to your opponent
-            </div>
-            <div className="flex gap-2">
-              <input
-                value={inviteUrl}
-                readOnly
-                onClick={(e) => (e.target as HTMLInputElement).select()}
-                className="flex-1 bg-board-felt/10 border border-board-felt/20 rounded px-2 py-1 text-sm font-mono text-board-felt focus:outline-none focus:border-board-accent"
-              />
-              <button
-                onClick={copyLink}
-                className="px-3 py-1 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110 active:scale-95 transition"
-              >
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-            <div className="text-[11px] text-board-felt/50">
-              Code: <span className="font-mono text-board-accent">{match.invite_code}</span>{' '}
-              · expires in 24h
-            </div>
-          </div>
-        )}
-
-        {!waiting && (
-          <div className="text-center text-board-felt/60 text-sm max-w-sm">
-            Gameplay loop coming next sub-phase. For now, both players are connected to the same
-            match record — that's Phase 5a.
-          </div>
-        )}
-
-        {isOwner && waiting && (
-          <button
-            onClick={async () => {
-              if (!confirm('Cancel this online match?')) return;
-              await supabase
-                .from('matches')
-                .update({ finished_at: new Date().toISOString() })
-                .eq('id', match.id);
-              navigate('/');
+      <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
+        <div className="relative w-full max-w-[1100px] aspect-[3/2] rounded-lg overflow-hidden shadow-2xl">
+          <BoardCanvas
+            state={game.board}
+            theme={woodTheme}
+            selection={{
+              selectedFrom: game.selectedFrom,
+              validDestinations: game.validDestinations,
+              legalOrigins: game.legalOrigins,
             }}
-            className="text-xs text-board-felt/50 hover:text-rose-400 transition"
-          >
-            Cancel match
-          </button>
-        )}
-        {role === 'spectator' && (
-          <div className="text-xs text-board-felt/40">
-            You're not part of this match.
-          </div>
-        )}
+            onPointClick={handlePointClick}
+          />
+
+          {role !== 'spectator' && !game.gameWinner && !game.matchFinished && (
+            <DiceTray
+              turn={game.turn}
+              roll={game.roll}
+              remaining={game.remaining}
+              canRoll={game.canRoll}
+              canEndTurn={game.canEndTurn}
+              onRoll={game.rollDice}
+              onEndTurn={game.endTurn}
+            />
+          )}
+
+          {game.gameWinner && !game.matchFinished && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
+              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
+                <div className="font-display text-2xl uppercase tracking-wider mb-3 capitalize">
+                  {game.gameWinner} wins this game
+                </div>
+                <div className="text-xs text-amber-900/70">Next-game flow lands in 5d.</div>
+              </div>
+            </div>
+          )}
+
+          {game.matchFinished && match.winner && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/65 z-30">
+              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
+                <div className="font-display text-3xl uppercase tracking-wider mb-1">Match over</div>
+                <div className="capitalize text-xl mb-3 font-display">
+                  {match.winner} wins {match.white_score}–{match.black_score}
+                </div>
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+                >
+                  Home
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
-  );
-}
-
-function Player({ label, name, isYou }: { label: string; name: string; isYou: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <div className="text-xs uppercase tracking-wider text-board-felt/50">{label}</div>
-      <div className="font-display text-board-felt flex items-center gap-2">
-        {name}
-        {isYou && (
-          <span className="text-[10px] uppercase tracking-wider text-board-accent border border-board-accent/40 rounded px-1.5 py-0.5">
-            you
-          </span>
-        )}
-      </div>
-    </div>
   );
 }

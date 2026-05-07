@@ -1,0 +1,403 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  applyMove,
+  endTurn as engineEndTurn,
+  initialBoard,
+  legalMoves,
+  winner as engineWinner,
+  computeBearOffResult,
+} from '../engine';
+import type {
+  BoardState,
+  Die,
+  DiceRoll,
+  Move,
+  Player,
+  Position,
+} from '../engine';
+import { BAR, OFF } from '../engine/types';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
+import type { Database } from '../types/database';
+
+type MatchRow = Database['public']['Tables']['matches']['Row'];
+type MoveRow = Database['public']['Tables']['moves']['Row'];
+
+interface SubMoveJSON {
+  readonly from: number | 'bar';
+  readonly to: number | 'off';
+  readonly die: number;
+  readonly hit: boolean;
+}
+
+interface CurrentTurnJSON {
+  readonly player: Player;
+  readonly dice: readonly [number, number];
+  readonly remaining: readonly number[];
+  readonly subMoves: readonly SubMoveJSON[];
+}
+
+const POLL_MS = 1500;
+
+function decodeMove(s: SubMoveJSON): Move {
+  const from: Position = s.from === 'bar' ? BAR : s.from;
+  const to: Position = s.to === 'off' ? OFF : s.to;
+  return { from, to, die: s.die as Die, hit: s.hit };
+}
+
+function encodeFrom(p: Position): number | 'bar' {
+  if (p === OFF) throw new Error('cannot move from off');
+  if (p === BAR) return 'bar';
+  return p;
+}
+
+function encodeTo(p: Position): number | 'off' {
+  if (p === BAR) throw new Error('cannot move to bar');
+  if (p === OFF) return 'off';
+  return p;
+}
+
+function encodeMove(m: Move): SubMoveJSON {
+  return { from: encodeFrom(m.from), to: encodeTo(m.to), die: m.die, hit: m.hit };
+}
+
+interface DerivedState {
+  board: BoardState;
+  currentTurn: CurrentTurnJSON | null;
+  whoseTurn: Player; // logical turn (whose turn it is to play, not necessarily local)
+}
+
+function deriveState(moves: readonly MoveRow[], currentTurn: CurrentTurnJSON | null): DerivedState {
+  let board = initialBoard();
+  // Apply all completed turns
+  for (const moveRow of moves) {
+    const subs = (moveRow.sub_moves as unknown as readonly SubMoveJSON[]) ?? [];
+    for (const sub of subs) {
+      board = applyMove(board, decodeMove(sub));
+    }
+    board = engineEndTurn(board);
+  }
+  // Apply in-progress turn's submoves on top, but don't flip turn yet
+  if (currentTurn && currentTurn.subMoves.length > 0) {
+    for (const sub of currentTurn.subMoves) {
+      board = applyMove(board, decodeMove(sub));
+    }
+  }
+  const whoseTurn: Player = currentTurn
+    ? currentTurn.player
+    : moves.length === 0
+      ? 'white'
+      : moves[moves.length - 1]!.player === 'white'
+        ? 'black'
+        : 'white';
+  return { board, currentTurn, whoseTurn };
+}
+
+export interface OnlineGameState {
+  readonly loading: boolean;
+  readonly error: string | null;
+  readonly match: MatchRow | null;
+  readonly board: BoardState;
+  readonly turn: Player;
+  readonly localColor: Player | null;
+  readonly isLocalTurn: boolean;
+  readonly roll: DiceRoll | null;
+  readonly remaining: readonly Die[];
+  readonly selectedFrom: Position | null;
+  readonly legalOrigins: readonly Position[];
+  readonly validDestinations: readonly Position[];
+  readonly canRoll: boolean;
+  readonly canEndTurn: boolean;
+  readonly gameWinner: Player | null;
+  readonly matchFinished: boolean;
+}
+
+export interface OnlineGameActions {
+  rollDice(): Promise<void>;
+  selectFrom(pos: Position): void;
+  cancelSelection(): void;
+  selectTo(pos: Position): Promise<void>;
+  endTurn(): Promise<void>;
+}
+
+export function useOnlineGame(matchId: string | undefined): OnlineGameState & OnlineGameActions {
+  const { user } = useAuth();
+  const [match, setMatch] = useState<MatchRow | null>(null);
+  const [moves, setMoves] = useState<MoveRow[]>([]);
+  const [selectedFrom, setSelectedFrom] = useState<Position | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const fetchInFlight = useRef(false);
+
+  // ---- polling ----
+  const refresh = useCallback(async () => {
+    if (!matchId) return;
+    if (fetchInFlight.current) return;
+    fetchInFlight.current = true;
+    try {
+      const { data: m, error: mErr } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .maybeSingle();
+      if (mErr) throw mErr;
+      setMatch(m);
+      if (m?.current_game_id) {
+        const { data: mv, error: mvErr } = await supabase
+          .from('moves')
+          .select('*')
+          .eq('game_id', m.current_game_id)
+          .order('ply', { ascending: true });
+        if (mvErr) throw mvErr;
+        setMoves(mv ?? []);
+      } else {
+        setMoves([]);
+      }
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      fetchInFlight.current = false;
+      setLoading(false);
+    }
+  }, [matchId]);
+
+  useEffect(() => {
+    void refresh();
+    const id = window.setInterval(() => {
+      void refresh();
+    }, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [refresh]);
+
+  // ---- derive ----
+  const currentTurn: CurrentTurnJSON | null = useMemo(() => {
+    const ct = match?.current_turn as unknown;
+    if (!ct || typeof ct !== 'object') return null;
+    return ct as CurrentTurnJSON;
+  }, [match?.current_turn]);
+
+  const derived = useMemo(() => deriveState(moves, currentTurn), [moves, currentTurn]);
+
+  const localColor: Player | null = useMemo(() => {
+    if (!match || !user) return null;
+    if (user.id === match.owner_id) return match.owner_color === 'black' ? 'black' : 'white';
+    if (user.id === match.opponent_id)
+      return match.owner_color === 'white' ? 'black' : 'white';
+    return null;
+  }, [match, user]);
+
+  const isLocalTurn = localColor !== null && derived.whoseTurn === localColor;
+  const matchFinished = !!match?.finished_at;
+  const gameWinner = useMemo(() => engineWinner(derived.board), [derived.board]);
+
+  // Dice exposed to UI
+  const roll: DiceRoll | null = currentTurn
+    ? ([currentTurn.dice[0], currentTurn.dice[1]] as DiceRoll)
+    : null;
+  const remaining = (currentTurn?.remaining ?? []) as readonly Die[];
+
+  const legal = useMemo(() => {
+    if (!currentTurn || !isLocalTurn || gameWinner) return [] as readonly Move[];
+    if (currentTurn.remaining.length === 0) return [];
+    return legalMoves(derived.board, currentTurn.remaining as readonly Die[]);
+  }, [currentTurn, isLocalTurn, derived.board, gameWinner]);
+
+  const legalOrigins = useMemo(() => {
+    const set = new Set<Position>();
+    for (const m of legal) set.add(m.from);
+    return Array.from(set);
+  }, [legal]);
+
+  const validDestinations = useMemo(() => {
+    if (selectedFrom === null) return [] as Position[];
+    return legal.filter((m) => m.from === selectedFrom).map((m) => m.to);
+  }, [legal, selectedFrom]);
+
+  const canRoll =
+    !matchFinished &&
+    !gameWinner &&
+    !!match &&
+    !!match.opponent_id &&
+    currentTurn === null &&
+    isLocalTurn;
+
+  const canEndTurn =
+    !matchFinished &&
+    !gameWinner &&
+    isLocalTurn &&
+    currentTurn !== null &&
+    (currentTurn.remaining.length === 0 || legal.length === 0);
+
+  // ---- actions ----
+  const rollDice = useCallback(async () => {
+    if (!matchId) return;
+    if (!canRoll) return;
+    setError(null);
+    const { data, error: invErr } = await supabase.functions.invoke('roll_dice', {
+      body: { matchId },
+    });
+    if (invErr) {
+      setError(invErr.message ?? 'roll failed');
+      return;
+    }
+    if (data && typeof data === 'object' && 'error' in data) {
+      setError(String((data as { error: unknown }).error));
+      return;
+    }
+    void refresh();
+  }, [matchId, canRoll, refresh]);
+
+  const selectFrom = useCallback(
+    (pos: Position) => {
+      if (!isLocalTurn || !currentTurn) return;
+      if (!legalOrigins.includes(pos)) {
+        setSelectedFrom(null);
+        return;
+      }
+      setSelectedFrom(pos);
+    },
+    [isLocalTurn, currentTurn, legalOrigins]
+  );
+
+  const cancelSelection = useCallback(() => setSelectedFrom(null), []);
+
+  const selectTo = useCallback(
+    async (pos: Position) => {
+      if (!matchId || !match || !currentTurn || selectedFrom === null) return;
+      if (!isLocalTurn) return;
+      const move = legal.find((m) => m.from === selectedFrom && m.to === pos);
+      if (!move) return;
+
+      // Compute new turn state
+      const newSubMoves = [...currentTurn.subMoves, encodeMove(move)];
+      const idx = currentTurn.remaining.indexOf(move.die);
+      const newRemaining =
+        idx >= 0
+          ? [...currentTurn.remaining.slice(0, idx), ...currentTurn.remaining.slice(idx + 1)]
+          : [...currentTurn.remaining];
+
+      const updated: CurrentTurnJSON = {
+        ...currentTurn,
+        subMoves: newSubMoves,
+        remaining: newRemaining,
+      };
+
+      // Optimistic local update
+      setMatch({ ...match, current_turn: updated as unknown as MatchRow['current_turn'] });
+      setSelectedFrom(null);
+
+      const { error: upErr } = await supabase
+        .from('matches')
+        .update({ current_turn: updated as unknown as Database['public']['Tables']['matches']['Update']['current_turn'] })
+        .eq('id', matchId);
+      if (upErr) {
+        setError(upErr.message);
+        void refresh();
+      }
+    },
+    [matchId, match, currentTurn, selectedFrom, isLocalTurn, legal, refresh]
+  );
+
+  const endTurn = useCallback(async () => {
+    if (!matchId || !match || !currentTurn || !match.current_game_id) return;
+    if (!isLocalTurn) return;
+    if (!canEndTurn) return;
+
+    // Determine ply (count of existing moves)
+    const ply = moves.length;
+
+    // Insert moves row
+    const { error: insErr } = await supabase.from('moves').insert({
+      game_id: match.current_game_id,
+      ply,
+      player: currentTurn.player,
+      dice: [currentTurn.dice[0], currentTurn.dice[1]],
+      sub_moves: currentTurn.subMoves as unknown as Database['public']['Tables']['moves']['Insert']['sub_moves'],
+    });
+    if (insErr) {
+      setError(insErr.message);
+      return;
+    }
+
+    // Check for game end
+    const winnerNow = engineWinner(derived.board);
+    let matchUpdate: Database['public']['Tables']['matches']['Update'] = { current_turn: null };
+
+    if (winnerNow) {
+      const result = computeBearOffResult(
+        {
+          target: match.target,
+          score: { white: match.white_score, black: match.black_score },
+          gameNumber: 1,
+          crawfordGameNumber: null,
+          cube: { value: 1, owner: null },
+          cubeOffer: null,
+          winner: null,
+        },
+        derived.board,
+        winnerNow
+      );
+
+      // Mark game finished
+      await supabase
+        .from('games')
+        .update({
+          winner: result.winner,
+          win_type: result.winType,
+          points_awarded: result.points,
+          finished_at: new Date().toISOString(),
+        })
+        .eq('id', match.current_game_id);
+
+      // Update match score; finish if target reached
+      const newWhite =
+        match.white_score + (result.winner === 'white' ? result.points : 0);
+      const newBlack =
+        match.black_score + (result.winner === 'black' ? result.points : 0);
+      const matchOver = newWhite >= match.target || newBlack >= match.target;
+
+      matchUpdate = {
+        current_turn: null,
+        current_game_id: matchOver ? match.current_game_id : null,
+        white_score: newWhite,
+        black_score: newBlack,
+        winner: matchOver ? result.winner : null,
+        finished_at: matchOver ? new Date().toISOString() : null,
+      };
+    }
+
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update(matchUpdate)
+      .eq('id', matchId);
+    if (upErr) {
+      setError(upErr.message);
+    }
+    void refresh();
+  }, [matchId, match, currentTurn, isLocalTurn, canEndTurn, moves.length, derived.board, refresh]);
+
+  return {
+    loading,
+    error,
+    match,
+    board: derived.board,
+    turn: derived.whoseTurn,
+    localColor,
+    isLocalTurn,
+    roll,
+    remaining,
+    selectedFrom,
+    legalOrigins,
+    validDestinations,
+    canRoll,
+    canEndTurn,
+    gameWinner,
+    matchFinished,
+    rollDice,
+    selectFrom,
+    cancelSelection,
+    selectTo,
+    endTurn,
+  };
+}
