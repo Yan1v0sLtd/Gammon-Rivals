@@ -69,6 +69,17 @@ export async function joinPublicMatch(matchId: string): Promise<string> {
   return data as string;
 }
 
+export async function matchmake(target: number): Promise<string | null> {
+  const { data, error } = await supabase.rpc('matchmake', { p_target: target });
+  if (error) throw error;
+  return (data as string | null) ?? null;
+}
+
+export async function cancelMatchmaking(): Promise<void> {
+  const { error } = await supabase.rpc('cancel_matchmaking', {});
+  if (error) throw error;
+}
+
 export interface PublicMatchSummary {
   id: string;
   owner_id: string;

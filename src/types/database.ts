@@ -191,6 +191,8 @@ export type Database = {
     Functions: {
       join_match_by_invite: { Args: { invite: string }; Returns: string };
       join_public_match: { Args: { target_match_id: string }; Returns: string };
+      matchmake: { Args: { p_target: number }; Returns: string | null };
+      cancel_matchmaking: { Args: Record<string, never>; Returns: void };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

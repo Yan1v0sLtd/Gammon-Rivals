@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import {
+  cancelMatchmaking,
   createOnlineMatch,
   joinPublicMatch,
   listPublicMatches,
+  matchmake,
   type PublicMatchSummary,
 } from '../lib/persistence';
 import { supabase } from '../lib/supabase';
@@ -28,7 +30,10 @@ export default function Lobby() {
   const [creating, setCreating] = useState(false);
   const [target, setTarget] = useState<number>(7);
   const [joining, setJoining] = useState<string | null>(null);
+  const [queued, setQueued] = useState(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const queueChannelRef = useRef<RealtimeChannel | null>(null);
 
   const refresh = useMemo(
     () => async () => {
@@ -100,6 +105,61 @@ export default function Lobby() {
 
   const watch = (matchId: string) => navigate(`/play/${matchId}`);
 
+  // Subscribe to my queue row so we know when we get matched.
+  useEffect(() => {
+    if (!queued || !user) return;
+    const channel = supabase
+      .channel(`queue-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'matchmaking_queue',
+          filter: `profile_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const row = payload.new as { matched_match_id: string | null } | null;
+          if (row?.matched_match_id) {
+            setQueued(false);
+            navigate(`/play/${row.matched_match_id}`);
+          }
+        }
+      )
+      .subscribe();
+    queueChannelRef.current = channel;
+    return () => {
+      if (queueChannelRef.current) {
+        void supabase.removeChannel(queueChannelRef.current);
+        queueChannelRef.current = null;
+      }
+    };
+  }, [queued, user, navigate]);
+
+  const findMatch = async () => {
+    if (!user || queued) return;
+    setQueueError(null);
+    try {
+      const matchId = await matchmake(target);
+      if (matchId) {
+        navigate(`/play/${matchId}`);
+      } else {
+        setQueued(true);
+      }
+    } catch (err) {
+      setQueueError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const cancelFind = async () => {
+    try {
+      await cancelMatchmaking();
+    } catch {
+      // ignore — the row might already be matched/deleted
+    }
+    setQueued(false);
+  };
+
   const open = matches?.filter((m) => !m.is_active) ?? [];
   const active = matches?.filter((m) => m.is_active) ?? [];
 
@@ -121,20 +181,23 @@ export default function Lobby() {
         )}
 
         <section className="rounded-lg border border-board-felt/10 bg-board-felt/5 p-4 flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-display text-lg text-board-accent">Open a public match</div>
-              <div className="text-xs text-board-felt/50">
-                Anyone in the lobby can join.
-              </div>
+          <div>
+            <div className="font-display text-lg text-board-accent">
+              {queued ? 'Searching for an opponent…' : 'Find a match'}
+            </div>
+            <div className="text-xs text-board-felt/50">
+              {queued
+                ? 'Auto-pairing by rating. Cancel any time.'
+                : 'We pair you with the closest-rated waiting player.'}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {TARGETS.map((t) => (
               <button
                 key={t}
+                disabled={queued}
                 onClick={() => setTarget(t)}
-                className={`min-w-[3.5rem] py-1.5 px-3 rounded-md border transition font-display ${
+                className={`min-w-[3.5rem] py-1.5 px-3 rounded-md border transition font-display disabled:opacity-50 ${
                   target === t
                     ? 'bg-amber-700/30 border-amber-500 text-board-accent'
                     : 'bg-board-felt/5 border-board-felt/20 text-board-felt/80 hover:border-board-felt/40'
@@ -144,13 +207,37 @@ export default function Lobby() {
               </button>
             ))}
           </div>
-          <button
-            onClick={createPublic}
-            disabled={creating || !user}
-            className="py-2 rounded-md bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 font-display shadow border border-amber-700 hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
-          >
-            {creating ? 'Creating…' : 'Create public match'}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {!queued ? (
+              <>
+                <button
+                  onClick={findMatch}
+                  disabled={!user}
+                  className="py-2 rounded-md bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 font-display shadow border border-amber-700 hover:brightness-110 active:scale-[0.98] transition disabled:opacity-50"
+                >
+                  Find match
+                </button>
+                <button
+                  onClick={createPublic}
+                  disabled={creating || !user}
+                  className="py-2 rounded-md bg-board-felt/5 border border-board-felt/20 text-board-felt hover:border-board-accent active:scale-[0.98] transition disabled:opacity-50"
+                >
+                  {creating ? 'Creating…' : 'Create public match'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={cancelFind}
+                className="col-span-2 py-2 rounded-md bg-board-felt/5 border border-board-felt/30 text-board-felt hover:border-rose-400 hover:text-rose-400 transition flex items-center justify-center gap-2"
+              >
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                Cancel search
+              </button>
+            )}
+          </div>
+          {queueError && (
+            <div className="text-xs text-rose-400">{queueError}</div>
+          )}
         </section>
 
         <section>
