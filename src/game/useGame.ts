@@ -27,6 +27,7 @@ import type {
 } from '../engine';
 import { pickMoveAsync } from '../ai/client';
 import type { AILevel } from '../ai';
+import { DICE_ANIMATION_MS } from '../components/DiceTray';
 
 const DEFAULT_TARGET = 7;
 
@@ -34,6 +35,9 @@ const AI_ROLL_DELAY = 500;
 const AI_PER_MOVE_DELAY = 600;
 const AI_END_TURN_DELAY = 400;
 const AI_CUBE_DECISION_DELAY = 800;
+// Wait at least this long after rolling before applying any move so the
+// dice physics + center tween can finish.
+const AI_DICE_SETTLE_MS = DICE_ANIMATION_MS;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -337,12 +341,17 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
       return;
     }
 
-    // Plan + play (only when no moves played yet this turn)
+    // Plan + play (only when no moves played yet this turn).
+    // pickMoveAsync runs in parallel with the dice-settle wait so the AI's
+    // thinking time doesn't add on top of the dice animation.
     if (history.length === 0 && remaining.length > 0) {
       aiActiveRef.current = true;
       setIsAIThinking(true);
       (async () => {
-        const plan = await pickMoveAsync(board, remaining, ai.level);
+        const [plan] = await Promise.all([
+          pickMoveAsync(board, remaining, ai.level),
+          sleep(AI_DICE_SETTLE_MS),
+        ]);
         setIsAIThinking(false);
         if (plan.length === 0) {
           await sleep(AI_END_TURN_DELAY);

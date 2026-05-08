@@ -58,8 +58,16 @@ const ANG_DAMP = 0.55;
 const SLEEP_LIN = 18; // |v| threshold below which we count a die as "near rest"
 const SLEEP_ANG = 60; // deg/s
 const SLEEP_HOLD_FRAMES = 6; // require N consecutive low-energy frames to sleep
-const POST_SETTLE_PAUSE_MS = 320; // hold the random landing before centering
+// Pause phase: tween rotation to the rolled face (so dice show the right value
+// BEFORE the centering phase moves them) and then hold for a short moment so
+// the random landing reads visually before the center tween starts.
+const PAUSE_ROT_TWEEN_MS = 240;
+const PAUSE_HOLD_MS = 140;
+const POST_SETTLE_PAUSE_MS = PAUSE_ROT_TWEEN_MS + PAUSE_HOLD_MS;
 const CENTER_TWEEN_MS = 460;
+// Total throw + pause + center, exposed so callers (e.g. AI orchestrator)
+// can wait for the full visual to play out before the next action.
+export const DICE_ANIMATION_MS = 1500 + POST_SETTLE_PAUSE_MS + CENTER_TWEEN_MS;
 
 function rand(min: number, max: number): number {
   return min + Math.random() * (max - min);
@@ -238,23 +246,43 @@ export default function DiceTray({
           phaseStart = nowTs;
         }
       } else if (phase === 'pause') {
-        if (nowTs - phaseStart >= POST_SETTLE_PAUSE_MS) {
-          phase = 'center';
-          phaseStart = nowTs;
-        }
-      } else if (phase === 'center') {
-        const t = Math.min((nowTs - phaseStart) / CENTER_TWEEN_MS, 1);
-        const e = easeOutCubic(t);
+        const tElapsed = nowTs - phaseStart;
+        // Rotate to the rolled face during the first part of the pause so
+        // the cube shows the correct value BEFORE the centering tween.
+        const rotT = Math.min(tElapsed / PAUSE_ROT_TWEEN_MS, 1);
+        const rotE = easeOutCubic(rotT);
         for (const b of bodies) {
           const tgt = FACE_TARGET_ROTATION[b.value];
           const tgtRX = nearestEquivalentAngle(b.tweenStartRX, tgt.x);
           const tgtRY = nearestEquivalentAngle(b.tweenStartRY, tgt.y);
           const tgtRZ = nearestEquivalentAngle(b.tweenStartRZ, 0);
+          b.rx = b.tweenStartRX + (tgtRX - b.tweenStartRX) * rotE;
+          b.ry = b.tweenStartRY + (tgtRY - b.tweenStartRY) * rotE;
+          b.rz = b.tweenStartRZ + (tgtRZ - b.tweenStartRZ) * rotE;
+          // Position stays at landing during pause.
+        }
+        if (tElapsed >= POST_SETTLE_PAUSE_MS) {
+          phase = 'center';
+          phaseStart = nowTs;
+          // Capture for the position-only centering tween.
+          for (const b of bodies) {
+            b.tweenStartX = b.x;
+            b.tweenStartY = b.y;
+            // Rotation already at target; lock in tweenStartR* so any further
+            // small drift doesn't accumulate.
+            const tgt = FACE_TARGET_ROTATION[b.value];
+            b.rx = nearestEquivalentAngle(b.rx, tgt.x);
+            b.ry = nearestEquivalentAngle(b.ry, tgt.y);
+            b.rz = nearestEquivalentAngle(b.rz, 0);
+          }
+        }
+      } else if (phase === 'center') {
+        const t = Math.min((nowTs - phaseStart) / CENTER_TWEEN_MS, 1);
+        const e = easeOutCubic(t);
+        for (const b of bodies) {
+          // Position-only tween. Rotation already matches the rolled face.
           b.x = b.tweenStartX * (1 - e);
           b.y = b.tweenStartY * (1 - e);
-          b.rx = b.tweenStartRX + (tgtRX - b.tweenStartRX) * e;
-          b.ry = b.tweenStartRY + (tgtRY - b.tweenStartRY) * e;
-          b.rz = b.tweenStartRZ + (tgtRZ - b.tweenStartRZ) * e;
         }
         if (t >= 1) {
           phase = 'done';
