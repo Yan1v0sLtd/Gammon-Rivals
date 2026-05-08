@@ -1,6 +1,104 @@
 import { useEffect, useMemo, useRef } from 'react';
+import * as CANNON from 'cannon-es';
 import type { Die, DiceRoll, Player } from '../engine/types';
-import Die3D, { FACE_TARGET_ROTATION } from './Die3D';
+import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
+
+// ─── Physics conventions ────────────────────────────────────────────────
+// We use Cannon-es with units = CSS pixels and y pointing DOWN (so +y is
+// "fall" direction, matching CSS). The cube's body-local axes are also
+// y-down, which lines up directly with Die3D's face transforms — no
+// coordinate flip is needed when we hand quaternions to CSS matrix3d.
+const GRAVITY_Y = 950;
+const FLOOR_Y = 90; // dice come to rest at y ≈ +FLOOR_Y (below center)
+const SPAWN_Y = -260; // start above the tray
+const WALL_HALF_X = 230;
+const WALL_HALF_Z = 90;
+const CUBE_HALF = DIE_SIZE / 2;
+const RESTITUTION = 0.28;
+const FRICTION = 0.35;
+const SLEEP_SPEED_LIMIT = 8;
+const SLEEP_TIME_LIMIT = 0.05;
+const LINEAR_DAMPING = 0.05;
+// Significant angular damping so a fast-spinning die actually slows
+// against the felt — without this, friction alone takes too long to bleed
+// the spin and the cube keeps rolling for whole seconds.
+const ANGULAR_DAMPING = 0.25;
+
+const PHYSICS_DT = 1 / 60;
+const MAX_SIM_STEPS = 480; // ~8 s safety cap; real settles ~80–180 steps
+const ATTEMPTS_PER_DIE = 60;
+const PLAYBACK_FPS = 60;
+
+const POST_SETTLE_PAUSE_MS = 220;
+const CENTER_TWEEN_MS = 460;
+
+// Maximum animation length the AI orchestrator should wait for. Real
+// playback ends as soon as both bodies sleep, but we expose an upper bound.
+export const DICE_ANIMATION_MS =
+  (MAX_SIM_STEPS / 60) * 1000 + POST_SETTLE_PAUSE_MS + CENTER_TWEEN_MS;
+
+// ─── Die3D face → cube-local outward normal (CSS y-down coords) ─────────
+// Face 1 sits at +z, 2 at -z, 3 at -x, 4 at +x, 5 at +y, 6 at -y.
+// (5/6 swap from the standard die, which is the existing project convention.)
+const FACE_LOCAL_NORMALS: Record<Die, [number, number, number]> = {
+  1: [0, 0, 1],
+  2: [0, 0, -1],
+  3: [-1, 0, 0],
+  4: [1, 0, 0],
+  5: [0, 1, 0],
+  6: [0, -1, 0],
+};
+
+/** Returns the die value whose face points "up" (smallest CSS-y component
+ *  in world space) after the cube has settled. Returns null if the cube
+ *  came to rest tilted on an edge, in which case caller should re-throw. */
+function dieValueFacingUp(quat: CANNON.Quaternion): Die | null {
+  let best: Die | null = null;
+  let bestY = Infinity;
+  const v = new CANNON.Vec3();
+  for (const die of [1, 2, 3, 4, 5, 6] as Die[]) {
+    const n = FACE_LOCAL_NORMALS[die];
+    v.set(n[0], n[1], n[2]);
+    quat.vmult(v, v);
+    if (v.y < bestY) {
+      bestY = v.y;
+      best = die;
+    }
+  }
+  // Settled flat enough only if dot(face, -y) > ~0.95 (tilt < ~18°).
+  if (bestY > -0.95) return null;
+  return best;
+}
+
+/** Convert quaternion + position to a CSS matrix3d() string. */
+function quatToCSSMatrix(qx: number, qy: number, qz: number, qw: number, x: number, y: number, z: number): string {
+  const m00 = 1 - 2 * (qy * qy + qz * qz);
+  const m01 = 2 * (qx * qy - qz * qw);
+  const m02 = 2 * (qx * qz + qy * qw);
+  const m10 = 2 * (qx * qy + qz * qw);
+  const m11 = 1 - 2 * (qx * qx + qz * qz);
+  const m12 = 2 * (qy * qz - qx * qw);
+  const m20 = 2 * (qx * qz - qy * qw);
+  const m21 = 2 * (qy * qz + qx * qw);
+  const m22 = 1 - 2 * (qx * qx + qy * qy);
+  // matrix3d() is column-major.
+  return (
+    `matrix3d(${m00.toFixed(4)},${m10.toFixed(4)},${m20.toFixed(4)},0,` +
+    `${m01.toFixed(4)},${m11.toFixed(4)},${m21.toFixed(4)},0,` +
+    `${m02.toFixed(4)},${m12.toFixed(4)},${m22.toFixed(4)},0,` +
+    `${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)},1)`
+  );
+}
+
+interface Frame {
+  px: number;
+  py: number;
+  pz: number;
+  qx: number;
+  qy: number;
+  qz: number;
+  qw: number;
+}
 
 function diceToShow(
   roll: DiceRoll,
@@ -25,174 +123,117 @@ function diceToShow(
   });
 }
 
-interface DieBody {
-  value: Die;
-  // Position physics — kinematic, real bouncing.
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  // Rotation is a deterministic tween that finishes BEFORE first floor
-  // contact (and snaps to the target on first contact regardless), so
-  // every die lands face-up on its rolled value.
-  rx: number;
-  ry: number;
-  rz: number;
-  rotStartRX: number;
-  rotStartRY: number;
-  rotStartRZ: number;
-  rotEndRX: number;
-  rotEndRY: number;
-  rotEndRZ: number;
-  rotComplete: boolean;
-  firstFloorContact: boolean;
-  sleeping: boolean;
-  tweenStartX: number;
-  tweenStartY: number;
+/** Builds a fresh Cannon world with floor + four walls + one die body. */
+function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
+  const world = new CANNON.World({
+    gravity: new CANNON.Vec3(0, GRAVITY_Y, 0),
+    allowSleep: true,
+  });
+  world.defaultContactMaterial.restitution = RESTITUTION;
+  world.defaultContactMaterial.friction = FRICTION;
+
+  // Floor: default plane normal is +z; rotate so normal becomes -y.
+  const floor = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  floor.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+  floor.position.set(0, FLOOR_Y, 0);
+  world.addBody(floor);
+
+  // Left wall at x=-WALL_HALF_X: normal +x (points into playing area).
+  // R_y(+π/2) takes default +z → +x.
+  const left = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  left.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
+  left.position.set(-WALL_HALF_X, 0, 0);
+  world.addBody(left);
+
+  // Right wall at x=+WALL_HALF_X: normal -x.
+  // R_y(-π/2) takes +z → -x.
+  const right = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  right.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
+  right.position.set(WALL_HALF_X, 0, 0);
+  world.addBody(right);
+
+  // Back wall (normal +z = toward viewer) — default plane orientation.
+  const back = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  back.position.set(0, 0, -WALL_HALF_Z);
+  world.addBody(back);
+
+  // Front wall (normal -z = away from viewer).
+  const front = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  front.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI);
+  front.position.set(0, 0, WALL_HALF_Z);
+  world.addBody(front);
+
+  const body = new CANNON.Body({
+    mass: 1,
+    shape: new CANNON.Box(new CANNON.Vec3(CUBE_HALF, CUBE_HALF, CUBE_HALF)),
+    sleepTimeLimit: SLEEP_TIME_LIMIT,
+    sleepSpeedLimit: SLEEP_SPEED_LIMIT,
+    linearDamping: LINEAR_DAMPING,
+    angularDamping: ANGULAR_DAMPING,
+    allowSleep: true,
+  });
+  world.addBody(body);
+
+  return { world, body };
 }
 
-const GRAVITY = 2400; // px/s²
-const FLOOR_Y = 30; // resting height — slightly below natural flex baseline
-const WALL_HALF = 220; // ±220 px from center
-const RESTITUTION = 0.45; // floor bounce energy retention
-const WALL_RESTITUTION = 0.6;
-const FLOOR_FRICTION = 0.8;
-const SLEEP_LIN = 18; // |v| threshold below which a die is "near rest"
-const SLEEP_HOLD_FRAMES = 5; // consecutive low-energy frames to settle
-
-// Rotation tween: short enough to be ~100% complete by the time the die
-// first contacts the floor (~300 ms with the gravity below). easeOutQuart
-// front-loads the tumble so the cube spins fast initially and decelerates
-// hard onto the rolled face.
-const ROT_TWEEN_MS = 380;
-
-const POST_SETTLE_PAUSE_MS = 220; // brief hold AFTER everything has settled
-const CENTER_TWEEN_MS = 460;
-const THROW_HARD_TIMEOUT_MS = 2200;
-
-// Total throw (capped) + pause + center — exposed so callers (e.g. the AI
-// orchestrator) can wait for the full visual to play out.
-export const DICE_ANIMATION_MS = 1700 + POST_SETTLE_PAUSE_MS + CENTER_TWEEN_MS;
-
-function rand(min: number, max: number): number {
-  return min + Math.random() * (max - min);
+/** Reset body to a fresh random throw above the tray. */
+function throwBody(body: CANNON.Body, slotX: number): void {
+  const dir = Math.random() < 0.5 ? -1 : 1;
+  body.position.set(
+    slotX + (Math.random() - 0.5) * 80,
+    SPAWN_Y - Math.random() * 60,
+    (Math.random() - 0.5) * 60
+  );
+  body.velocity.set(
+    dir * (200 + Math.random() * 180),
+    260 + Math.random() * 200,
+    (Math.random() - 0.5) * 120
+  );
+  body.angularVelocity.set(
+    (Math.random() - 0.5) * 14,
+    (Math.random() - 0.5) * 14,
+    (Math.random() - 0.5) * 14
+  );
+  body.quaternion.setFromEuler(
+    Math.random() * 2 * Math.PI,
+    Math.random() * 2 * Math.PI,
+    Math.random() * 2 * Math.PI
+  );
+  body.wakeUp();
+  body.allowSleep = true;
+  body.sleepState = CANNON.Body.AWAKE;
 }
 
-function nearestEquivalentAngle(current: number, target: number): number {
-  const diff = (((target - current) % 360) + 540) % 360 - 180;
-  return current + diff;
-}
-
-function transformOf(b: DieBody): string {
-  return `translate3d(${b.x.toFixed(1)}px, ${b.y.toFixed(1)}px, 0) rotateX(${b.rx.toFixed(1)}deg) rotateY(${b.ry.toFixed(1)}deg) rotateZ(${b.rz.toFixed(1)}deg)`;
-}
-
-function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
-}
-
-function easeOutQuart(t: number): number {
-  return 1 - Math.pow(1 - t, 4);
-}
-
-function makeInitialBody(value: Die, index: number, count: number): DieBody {
-  // Spread initial X across a wide arc above the board.
-  const slotOffset = (index - (count - 1) / 2) * 80;
-  const startX = slotOffset + rand(-160, 160);
-  const startY = -rand(180, 240);
-
-  // Pre-compute the full rotation. Random direction per axis + 2 full
-  // revolutions, ending exactly on the rolled-face target.
-  const dirX = Math.random() < 0.5 ? -1 : 1;
-  const dirY = Math.random() < 0.5 ? -1 : 1;
-  const dirZ = Math.random() < 0.5 ? -1 : 1;
-  const spins = 2;
-  const rotStartRX = rand(-30, 30);
-  const rotStartRY = rand(-30, 30);
-  const rotStartRZ = rand(-15, 15);
-  const tgt = FACE_TARGET_ROTATION[value];
-  const rotEndRX = nearestEquivalentAngle(rotStartRX + dirX * spins * 360, tgt.x);
-  const rotEndRY = nearestEquivalentAngle(rotStartRY + dirY * spins * 360, tgt.y);
-  const rotEndRZ = nearestEquivalentAngle(rotStartRZ + dirZ * spins * 360, 0);
-
-  return {
-    value,
-    x: startX,
-    y: startY,
-    vx: rand(80, 220) * (Math.random() < 0.5 ? -1 : 1),
-    // Initial vy kept small so the rotation tween finishes before first land.
-    vy: rand(20, 80),
-    rx: rotStartRX,
-    ry: rotStartRY,
-    rz: rotStartRZ,
-    rotStartRX,
-    rotStartRY,
-    rotStartRZ,
-    rotEndRX,
-    rotEndRY,
-    rotEndRZ,
-    rotComplete: false,
-    firstFloorContact: false,
-    sleeping: false,
-    tweenStartX: 0,
-    tweenStartY: 0,
-  };
-}
-
-/** Position physics only — gravity, bounces, friction. Marks firstFloorContact
- *  on the first frame the die touches the floor so the rotation tween can
- *  snap to target. */
-function stepPositionPhysics(body: DieBody, dt: number): void {
-  if (body.sleeping) return;
-
-  body.vy += GRAVITY * dt;
-  body.x += body.vx * dt;
-  body.y += body.vy * dt;
-
-  if (body.y >= FLOOR_Y) {
-    body.y = FLOOR_Y;
-    if (!body.firstFloorContact) {
-      body.firstFloorContact = true;
-    }
-    if (body.vy > 0) {
-      body.vy = -body.vy * RESTITUTION;
-      body.vx *= FLOOR_FRICTION;
-    }
+function simulateThrow(world: CANNON.World, body: CANNON.Body): {
+  frames: Frame[];
+  finalUpFace: Die | null;
+} {
+  const frames: Frame[] = [];
+  for (let i = 0; i < MAX_SIM_STEPS; i++) {
+    world.step(PHYSICS_DT);
+    const p = body.position;
+    const q = body.quaternion;
+    frames.push({ px: p.x, py: p.y, pz: p.z, qx: q.x, qy: q.y, qz: q.z, qw: q.w });
+    if (body.sleepState === CANNON.Body.SLEEPING) break;
   }
-
-  if (body.x < -WALL_HALF) {
-    body.x = -WALL_HALF;
-    body.vx = -body.vx * WALL_RESTITUTION;
-  } else if (body.x > WALL_HALF) {
-    body.x = WALL_HALF;
-    body.vx = -body.vx * WALL_RESTITUTION;
-  }
+  return { frames, finalUpFace: dieValueFacingUp(body.quaternion) };
 }
 
-/** Rotation tween — runs in parallel with position physics. easeOutQuart
- *  front-loads so by t≈0.5 the cube is ~94% rotated. We force the rotation
- *  to its exact target on the first floor contact (typical at ~300ms when
- *  the tween is already past 99%), so every die lands face-up on its
- *  rolled value. */
-function updateRotationTween(body: DieBody, throwElapsedMs: number): void {
-  if (body.rotComplete || body.sleeping) return;
-
-  if (body.firstFloorContact) {
-    body.rx = body.rotEndRX;
-    body.ry = body.rotEndRY;
-    body.rz = body.rotEndRZ;
-    body.rotComplete = true;
-    return;
+/** Brute-force re-throw until the cube settles with `desiredValue` up.
+ *  Captures every physics frame so the renderer can play it back. */
+function rollDie(desiredValue: Die, slotX: number): Frame[] {
+  const { world, body } = buildWorld();
+  let lastFrames: Frame[] = [];
+  for (let attempt = 0; attempt < ATTEMPTS_PER_DIE; attempt++) {
+    throwBody(body, slotX);
+    const { frames, finalUpFace } = simulateThrow(world, body);
+    lastFrames = frames;
+    if (finalUpFace === desiredValue) return frames;
   }
-
-  const t = Math.min(throwElapsedMs / ROT_TWEEN_MS, 1);
-  const e = easeOutQuart(t);
-  body.rx = body.rotStartRX + (body.rotEndRX - body.rotStartRX) * e;
-  body.ry = body.rotStartRY + (body.rotEndRY - body.rotStartRY) * e;
-  body.rz = body.rotStartRZ + (body.rotEndRZ - body.rotStartRZ) * e;
-  if (t >= 1) {
-    body.rotComplete = true;
-  }
+  // Fall through with last result — visually the cube will settle on the
+  // wrong face, but in practice we hit the desired value within ~10 attempts.
+  return lastFrames;
 }
 
 interface Props {
@@ -216,110 +257,106 @@ export default function DiceTray({
 }: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
 
-  const dieRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const bodiesRef = useRef<DieBody[]>([]);
+  // Trajectories are deterministic given (roll, dice.length). We compute
+  // them synchronously when the roll changes so the very first paint can
+  // already show the cubes mid-flight (no flash from a default position).
+  const trajectoriesRef = useRef<Frame[][]>([]);
   const lastRollRef = useRef<DiceRoll | null>(null);
-  const animRef = useRef<number | null>(null);
-  const animatingRef = useRef(false);
+  if (roll && lastRollRef.current !== roll) {
+    trajectoriesRef.current = dice.map((d, i) => {
+      const slotX = (i - (dice.length - 1) / 2) * 70;
+      return rollDie(d.value, slotX);
+    });
+    lastRollRef.current = roll;
+  } else if (!roll) {
+    lastRollRef.current = null;
+    trajectoriesRef.current = [];
+  }
+  const trajectories = trajectoriesRef.current;
 
-  // Reset refs when dice count changes
+  const dieRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const animRef = useRef<number | null>(null);
+
   if (dieRefs.current.length !== dice.length) {
     dieRefs.current = Array(dice.length).fill(null);
   }
 
-  // Kick off a fresh throw whenever the underlying roll changes.
   useEffect(() => {
-    if (!roll) {
-      lastRollRef.current = null;
-      return;
+    if (!roll || trajectories.length === 0) return;
+
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+
+    let phase: 'play' | 'pause' | 'center' | 'done' = 'play';
+    const playStart = performance.now();
+    let phaseStart = playStart;
+    const finalPos: Array<{ x: number; y: number; z: number }> = trajectories.map((t) => {
+      const last = t[t.length - 1];
+      return last ? { x: last.px, y: last.py, z: last.pz } : { x: 0, y: 0, z: 0 };
+    });
+    const finalQuat: Array<{ x: number; y: number; z: number; w: number }> = trajectories.map(
+      (t) => {
+        const last = t[t.length - 1];
+        return last ? { x: last.qx, y: last.qy, z: last.qz, w: last.qw } : { x: 0, y: 0, z: 0, w: 1 };
+      }
+    );
+
+    const writeFrame = (idx: number, f: Frame) => {
+      const el = dieRefs.current[idx];
+      if (!el) return;
+      el.style.transform = quatToCSSMatrix(f.qx, f.qy, f.qz, f.qw, f.px, f.py, f.pz);
+    };
+
+    // Paint frame 0 immediately so first paint shows the throw start.
+    for (let i = 0; i < trajectories.length; i++) {
+      const f = trajectories[i][0];
+      if (f) writeFrame(i, f);
     }
-    if (lastRollRef.current === roll) return; // already animated this roll
-    lastRollRef.current = roll;
-
-    // Initialize physics bodies
-    bodiesRef.current = dice.map((d, i) => makeInitialBody(d.value, i, dice.length));
-    // Apply slot offsets so each die's "rest position" aligns to its flex slot
-    // — the parent flex container handles natural spacing, so we just need
-    // the cube's local translate to be (0,0) at rest. Slot offset only affects
-    // the start position via makeInitialBody.
-
-    if (animatingRef.current && animRef.current) cancelAnimationFrame(animRef.current);
-    animatingRef.current = true;
-
-    let phase: 'throw' | 'pause' | 'center' | 'done' = 'throw';
-    let throwStart = performance.now();
-    let phaseStart = throwStart;
-    let lowEnergyFrames = 0;
-    let last = throwStart;
 
     const step = (nowTs: number) => {
-      const dtRaw = (nowTs - last) / 1000;
-      last = nowTs;
-      const dt = Math.min(dtRaw, 1 / 30);
-
-      const bodies = bodiesRef.current;
-
-      if (phase === 'throw') {
-        const throwElapsed = nowTs - throwStart;
-        for (const b of bodies) {
-          stepPositionPhysics(b, dt);
-          updateRotationTween(b, throwElapsed);
+      if (phase === 'play') {
+        const elapsed = nowTs - playStart;
+        const targetIdx = Math.floor((elapsed / 1000) * PLAYBACK_FPS);
+        let allDone = true;
+        for (let i = 0; i < trajectories.length; i++) {
+          const traj = trajectories[i];
+          const idx = Math.min(targetIdx, traj.length - 1);
+          const f = traj[idx];
+          if (idx < traj.length - 1) allDone = false;
+          if (f) writeFrame(i, f);
         }
-
-        const rotDone = throwElapsed >= ROT_TWEEN_MS;
-        const allPosResting = bodies.every(
-          (b) =>
-            b.y >= FLOOR_Y - 1 &&
-            Math.abs(b.vx) < SLEEP_LIN &&
-            Math.abs(b.vy) < SLEEP_LIN
-        );
-        if (rotDone && allPosResting) lowEnergyFrames++;
-        else lowEnergyFrames = 0;
-
-        if (lowEnergyFrames >= SLEEP_HOLD_FRAMES || throwElapsed > THROW_HARD_TIMEOUT_MS) {
-          for (const b of bodies) {
-            // Snap exactly to the target rotation in case of float drift.
-            b.rx = b.rotEndRX;
-            b.ry = b.rotEndRY;
-            b.rz = b.rotEndRZ;
-            b.vx = 0;
-            b.vy = 0;
-            b.sleeping = true;
-            b.tweenStartX = b.x;
-            b.tweenStartY = b.y;
-          }
+        if (allDone) {
           phase = 'pause';
           phaseStart = nowTs;
         }
       } else if (phase === 'pause') {
-        // Rotation already at target; just hold so the random landing reads.
         if (nowTs - phaseStart >= POST_SETTLE_PAUSE_MS) {
           phase = 'center';
           phaseStart = nowTs;
         }
       } else if (phase === 'center') {
         const t = Math.min((nowTs - phaseStart) / CENTER_TWEEN_MS, 1);
-        const e = easeOutCubic(t);
-        for (const b of bodies) {
-          // Position-only tween. Rotation stays exactly at target.
-          b.x = b.tweenStartX * (1 - e);
-          b.y = b.tweenStartY * (1 - e);
+        const e = 1 - Math.pow(1 - t, 3);
+        for (let i = 0; i < trajectories.length; i++) {
+          const fp = finalPos[i];
+          const fq = finalQuat[i];
+          // Position-only tween toward (slotOffset, 0, 0). The rest pose
+          // for each die is its flex-slot center, which in our shared
+          // perspective parent is just (0,0,0) — slot offsets are rendered
+          // via slot translation in the JSX, not here.
+          const px = fp.x * (1 - e);
+          const py = fp.y * (1 - e);
+          const pz = fp.z * (1 - e);
+          const el = dieRefs.current[i];
+          if (el) {
+            el.style.transform = quatToCSSMatrix(fq.x, fq.y, fq.z, fq.w, px, py, pz);
+          }
         }
-        if (t >= 1) {
-          phase = 'done';
-        }
-      }
-
-      // Write transforms to DOM
-      for (let i = 0; i < bodies.length; i++) {
-        const el = dieRefs.current[i];
-        if (el) el.style.transform = transformOf(bodies[i]!);
+        if (t >= 1) phase = 'done';
       }
 
       if (phase !== 'done') {
         animRef.current = requestAnimationFrame(step);
       } else {
-        animatingRef.current = false;
         animRef.current = null;
       }
     };
@@ -327,9 +364,8 @@ export default function DiceTray({
     animRef.current = requestAnimationFrame(step);
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
-      animatingRef.current = false;
     };
-  }, [roll, dice]);
+  }, [roll, trajectories]);
 
   return (
     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -344,17 +380,68 @@ export default function DiceTray({
           </button>
         ) : (
           <>
-            <div className="flex gap-3 pointer-events-none">
-              {dice.map((d, i) => (
-                <Die3D
-                  key={i}
-                  ref={(el) => {
-                    dieRefs.current[i] = el;
-                  }}
-                  value={d.value}
-                  used={d.used}
-                />
-              ))}
+            <div
+              style={{
+                position: 'relative',
+                width: 600,
+                height: 240,
+                perspective: 1400,
+                transformStyle: 'preserve-3d',
+                pointerEvents: 'none',
+              }}
+            >
+              {/* Slight downward tilt so the top face reads cleanly while
+                  side faces remain visible during the tumble. */}
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  transformStyle: 'preserve-3d',
+                  transform: 'rotateX(28deg)',
+                }}
+              >
+                {dice.map((d, i) => {
+                  const slotX = (i - (dice.length - 1) / 2) * 70;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        position: 'absolute',
+                        left: '50%',
+                        top: '50%',
+                        width: DIE_SIZE,
+                        height: DIE_SIZE,
+                        marginLeft: -DIE_SIZE / 2 + slotX,
+                        marginTop: -DIE_SIZE / 2,
+                        transformStyle: 'preserve-3d',
+                        transition: 'opacity 200ms ease',
+                        opacity: d.used ? 0.45 : 1,
+                      }}
+                    >
+                      <div
+                        ref={(el) => {
+                          dieRefs.current[i] = el;
+                        }}
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          transformStyle: 'preserve-3d',
+                          willChange: 'transform',
+                        }}
+                      >
+                        {([1, 2, 3, 4, 5, 6] as Die[]).map((face) => (
+                          <Face
+                            key={face}
+                            face={face}
+                            transform={FACE_TRANSFORMS[face]}
+                            used={d.used}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {canEndTurn && (
               <button

@@ -75,7 +75,7 @@ const Die3D = forwardRef<HTMLDivElement, Props>(function Die3D({ value, used }, 
   );
 });
 
-function Face({ face, transform, used }: { face: Die; transform: string; used: boolean }) {
+export function Face({ face, transform, used }: { face: Die; transform: string; used: boolean }) {
   const positions = PIPS[face];
   return (
     <div
