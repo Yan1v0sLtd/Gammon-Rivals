@@ -1,58 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Die, DiceRoll, Player } from '../engine/types';
-
-const PIPS: Record<Die, readonly number[]> = {
-  1: [4],
-  2: [0, 8],
-  3: [0, 4, 8],
-  4: [0, 2, 6, 8],
-  5: [0, 2, 4, 6, 8],
-  6: [0, 2, 3, 5, 6, 8],
-};
-
-interface DieFaceProps {
-  value: Die;
-  used: boolean;
-  rolling: boolean;
-}
-
-function DieFace({ value, used, rolling }: DieFaceProps) {
-  const [shown, setShown] = useState<Die>(value);
-
-  useEffect(() => {
-    if (rolling) {
-      const id = setInterval(() => {
-        setShown((Math.floor(Math.random() * 6) + 1) as Die);
-      }, 70);
-      return () => clearInterval(id);
-    }
-    setShown(value);
-  }, [rolling, value]);
-
-  const positions = PIPS[shown];
-  return (
-    <div
-      className={`relative grid grid-cols-3 grid-rows-3 gap-[3px] p-[5px] w-12 h-12 rounded-lg shadow-md ${
-        used
-          ? 'bg-board-felt/30 border border-board-felt/20'
-          : 'bg-gradient-to-br from-white to-board-felt/80 border border-amber-900/40'
-      } ${rolling ? 'animate-[spin_0.5s_linear]' : ''}`}
-    >
-      {Array.from({ length: 9 }).map((_, i) => (
-        <span
-          key={i}
-          className={`rounded-full ${
-            positions.includes(i)
-              ? used
-                ? 'bg-board-felt/40'
-                : 'bg-amber-950'
-              : ''
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
+import Die3D from './Die3D';
 
 function diceToShow(
   roll: DiceRoll,
@@ -121,9 +69,9 @@ export default function DiceTray({
           </button>
         ) : (
           <>
-            <div className="flex gap-2 pointer-events-none">
+            <div className="flex gap-3 pointer-events-none">
               {dice.map((d, i) => (
-                <DieFace key={i} value={d.value} used={d.used} rolling={rolling} />
+                <Die3D key={i} value={d.value} used={d.used} rolling={rolling} index={i} />
               ))}
             </div>
             {canEndTurn && !rolling && (

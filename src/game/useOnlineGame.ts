@@ -43,6 +43,10 @@ interface CurrentTurnJSON {
 
 // Polling fallback when Realtime fails (rare). Refresh interval in ms.
 const FALLBACK_POLL_MS = 8000;
+// Tick the inactivity clock once per second so the UI re-renders.
+const ACTIVITY_TICK_MS = 1000;
+// Threshold past which the waiting player can claim victory by inactivity.
+const INACTIVITY_FORFEIT_MS = 5 * 60 * 1000;
 
 function decodeMove(s: SubMoveJSON): Move {
   const from: Position = s.from === 'bar' ? BAR : s.from;
@@ -122,6 +126,8 @@ export interface OnlineGameState {
   readonly canOfferDouble: boolean;
   readonly betweenGames: boolean;
   readonly inCrawfordGame: boolean;
+  readonly secondsSinceActivity: number;
+  readonly canClaimByInactivity: boolean;
 }
 
 export interface OnlineGameActions {
@@ -134,6 +140,7 @@ export interface OnlineGameActions {
   acceptDouble(): Promise<void>;
   dropDouble(): Promise<void>;
   resign(): Promise<void>;
+  claimByInactivity(): Promise<void>;
 }
 
 export function useOnlineGame(matchId: string | undefined): OnlineGameState & OnlineGameActions {
@@ -559,6 +566,66 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     void refresh();
   }, [matchId, match, cubeOffer, localColor, cubeValue, cubeOwner, currentGame, refresh]);
 
+  // ---- inactivity timer ----
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), ACTIVITY_TICK_MS);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const lastActivityMs = useMemo(() => {
+    if (!match?.updated_at) return now;
+    return new Date(match.updated_at).getTime();
+  }, [match?.updated_at, now]);
+
+  const secondsSinceActivity = Math.max(0, Math.floor((now - lastActivityMs) / 1000));
+  const canClaimByInactivity =
+    !matchFinished &&
+    !!match &&
+    !!match.opponent_id &&
+    !isLocalTurn && // we're waiting on opponent
+    !betweenGames &&
+    now - lastActivityMs >= INACTIVITY_FORFEIT_MS;
+
+  const claimByInactivity = useCallback(async () => {
+    if (!matchId || !match || !localColor || !canClaimByInactivity) return;
+    setError(null);
+    const opp: Player = localColor === 'white' ? 'black' : 'white';
+    void opp;
+    const points = Math.max(
+      1,
+      match.target - (localColor === 'white' ? match.white_score : match.black_score)
+    );
+    const newWhite = match.white_score + (localColor === 'white' ? points : 0);
+    const newBlack = match.black_score + (localColor === 'black' ? points : 0);
+
+    if (match.current_game_id) {
+      await supabase
+        .from('games')
+        .update({
+          winner: localColor,
+          win_type: 'single',
+          points_awarded: points,
+          finished_at: new Date().toISOString(),
+        })
+        .eq('id', match.current_game_id);
+    }
+
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update({
+        white_score: newWhite,
+        black_score: newBlack,
+        winner: localColor,
+        finished_at: new Date().toISOString(),
+        current_turn: null,
+        cube_offer: null,
+      })
+      .eq('id', matchId);
+    if (upErr) setError(upErr.message);
+    void refresh();
+  }, [matchId, match, localColor, canClaimByInactivity, refresh]);
+
   // Resign: end the match immediately, opponent wins remainder.
   const resign = useCallback(async () => {
     if (!matchId || !match || !localColor || matchFinished) return;
@@ -619,6 +686,8 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     canOfferDouble,
     betweenGames,
     inCrawfordGame,
+    secondsSinceActivity,
+    canClaimByInactivity,
     rollDice,
     selectFrom,
     cancelSelection,
@@ -628,5 +697,6 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     acceptDouble,
     dropDouble,
     resign,
+    claimByInactivity,
   };
 }

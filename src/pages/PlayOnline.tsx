@@ -238,6 +238,31 @@ export default function PlayOnline() {
             onOffer={game.offerDouble}
           />
 
+          {/* Inactivity countdown / claim button */}
+          {!isSpectator && !game.matchFinished && !game.isLocalTurn && !game.betweenGames && game.secondsSinceActivity >= 60 && (
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
+              {game.canClaimByInactivity ? (
+                <>
+                  <span>Opponent inactive for {Math.floor(game.secondsSinceActivity / 60)}m</span>
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Claim victory by opponent timeout?')) return;
+                      await game.claimByInactivity();
+                    }}
+                    className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
+                  >
+                    Claim victory
+                  </button>
+                </>
+              ) : (
+                <span>
+                  Opponent thinking · claim in{' '}
+                  {Math.max(0, 5 * 60 - game.secondsSinceActivity)}s
+                </span>
+              )}
+            </div>
+          )}
+
           {role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null && (
             <DiceTray
               turn={game.turn}
