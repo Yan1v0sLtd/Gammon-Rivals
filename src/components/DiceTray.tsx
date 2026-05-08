@@ -21,15 +21,22 @@ const FLOOR_Z = 28; // cube settles with its centre at z ≈ 0
 // bounces; gravity still pulls -z so the rolled face settles toward
 // the camera.
 const SPAWN_Z = 70;
-// Per-die slot geometry. Walls in the xy plane keep the cube inside its
-// own slot. SLOT_WIDTH = 150 (max that still fits 4 dice in the 600 px
-// tray for doubles) and SLOT_WALL_HALF = 70 give the cube ±42 px of
-// horizontal play — enough room for it to actually roll across the
-// felt and bounce off both walls multiple times.
-const SLOT_WIDTH = 150;
-const SLOT_WALL_HALF = 70;
+// Per-die slot geometry. Slot WIDTH and WALL_HALF depend on how many
+// dice are in play — for a regular 2-dice roll we get a much wider slot
+// since there's more tray space per die, which gives the cube proper
+// throwing distance.
+const SLOT_WIDTH_FOUR = 150; // doubles → 4 dice in 600 px tray (exact fit)
+const SLOT_WALL_HALF_FOUR = 70;
+const SLOT_WIDTH_TWO = 280; // regular roll → 2 dice, plenty of room
+const SLOT_WALL_HALF_TWO = 130;
 const WALL_HALF_Y = 100;
 const CUBE_HALF = DIE_SIZE / 2;
+
+function slotGeometry(diceCount: number): { width: number; wallHalf: number } {
+  return diceCount === 4
+    ? { width: SLOT_WIDTH_FOUR, wallHalf: SLOT_WALL_HALF_FOUR }
+    : { width: SLOT_WIDTH_TWO, wallHalf: SLOT_WALL_HALF_TWO };
+}
 // Tuned for a long, lively roll. Restitution 0.55 means each wall/floor
 // contact returns 55 % of the impact velocity, so the cube ricochets
 // across the slot 3-4 times before its energy bleeds down. Low friction
@@ -249,7 +256,7 @@ function diceToShow(
 /** A self-contained per-die physics world. Using one private world per
  *  die means brute-force re-rolls stay cheap (1 body each) and the
  *  per-slot walls geometrically prevent any overlap with neighbours. */
-function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
+function buildWorld(slotWallHalf: number): { world: CANNON.World; body: CANNON.Body } {
   const world = new CANNON.World({
     // Gravity into the screen — cube top face naturally settles toward
     // the camera (+z), which is the canonical pose. No 90° flip needed.
@@ -268,13 +275,13 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   // Left wall: normal +x.
   const left = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   left.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
-  left.position.set(-SLOT_WALL_HALF, 0, 0);
+  left.position.set(-slotWallHalf, 0, 0);
   world.addBody(left);
 
   // Right wall: normal -x.
   const right = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   right.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
-  right.position.set(SLOT_WALL_HALF, 0, 0);
+  right.position.set(slotWallHalf, 0, 0);
   world.addBody(right);
 
   // Top wall (CSS y-down, so "top of screen" is -y). Normal +y.
@@ -303,23 +310,22 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   return { world, body };
 }
 
-/** Reset the body to a fresh "thrown from one side" toss. The cube
- *  enters the slot horizontally and the player can clearly see it
- *  travel across the felt before settling. */
-function throwBody(body: CANNON.Body): void {
-  // Pick a side to throw from. The cube starts just inside that wall.
-  const startSide = Math.random() < 0.5 ? -1 : 1;
+/** Reset the body to a fresh "thrown from one side" toss. All cubes in
+ *  the same roll share `startSide` — they travel together in the same
+ *  direction, like real dice tossed from one hand. */
+function throwBody(body: CANNON.Body, slotWallHalf: number, startSide: number): void {
+  // Cube starts just inside the chosen wall.
   body.position.set(
-    startSide * (SLOT_WALL_HALF - CUBE_HALF - 4),
+    startSide * (slotWallHalf - CUBE_HALF - 4),
     (Math.random() - 0.5) * (WALL_HALF_Y - CUBE_HALF) * 1.2,
     SPAWN_Z + Math.random() * 25
   );
-  // Strong horizontal velocity so the cube traverses the slot,
-  // ricochets off the far wall, and bounces back several times before
-  // settling. Combined with restitution 0.55 and low damping this
-  // gives a visible 3-4 bounce roll, not a single quick slide.
+  // Throw velocity scales with slot width — wider slots get more
+  // initial energy so the cube actually traverses the longer distance.
+  // Base 280 px/s with up to +160 random for variation.
+  const slotEnergy = 280 + Math.max(0, slotWallHalf - 70) * 1.2;
   body.velocity.set(
-    -startSide * (290 + Math.random() * 140),
+    -startSide * (slotEnergy + Math.random() * 160),
     (Math.random() - 0.5) * 180,
     -20 + Math.random() * 30
   );
@@ -356,11 +362,11 @@ function simulateThrow(world: CANNON.World, body: CANNON.Body): {
   return { frames, finalUpFace: dieValueFacingCamera(body.quaternion) };
 }
 
-function rollDie(desiredValue: Die): Frame[] {
-  const { world, body } = buildWorld();
+function rollDie(desiredValue: Die, slotWallHalf: number, startSide: number): Frame[] {
+  const { world, body } = buildWorld(slotWallHalf);
   let lastFrames: Frame[] = [];
   for (let attempt = 0; attempt < ATTEMPTS_PER_DIE; attempt++) {
-    throwBody(body);
+    throwBody(body, slotWallHalf, startSide);
     const { frames, finalUpFace } = simulateThrow(world, body);
     lastFrames = frames;
     if (finalUpFace === desiredValue) return frames;
@@ -397,7 +403,11 @@ export default function DiceTray({
   const trajectoriesRef = useRef<Frame[][]>([]);
   const lastRollRef = useRef<DiceRoll | null>(null);
   if (roll && lastRollRef.current !== roll) {
-    trajectoriesRef.current = dice.map((d) => rollDie(d.value));
+    const { wallHalf } = slotGeometry(dice.length);
+    // Pick the throw direction ONCE for this roll — every die starts
+    // from the same side, like real dice tossed from one hand.
+    const startSide = Math.random() < 0.5 ? -1 : 1;
+    trajectoriesRef.current = dice.map((d) => rollDie(d.value, wallHalf, startSide));
     lastRollRef.current = roll;
   } else if (!roll) {
     lastRollRef.current = null;
@@ -558,7 +568,8 @@ export default function DiceTray({
                 }}
               >
                 {dice.map((d, i) => {
-                  const slotX = (i - (dice.length - 1) / 2) * SLOT_WIDTH;
+                  const slotW = slotGeometry(dice.length).width;
+                  const slotX = (i - (dice.length - 1) / 2) * slotW;
                   return (
                     <div
                       key={i}
