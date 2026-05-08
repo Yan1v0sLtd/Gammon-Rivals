@@ -53,9 +53,17 @@ export default function BoardLayout({
         enough to read no matter how narrow the viewport.
       */}
       <div className="flex-1 flex items-stretch justify-center px-1 sm:px-3 pb-2 sm:pb-3 min-h-0">
+        {/*
+          Wider side panels and a tighter board column. Reference layouts
+          give roughly 60% of the width to the board and 20% to each
+          side panel — narrow panels left the avatars looking lonely
+          on a sea of wood, and let the board stretch to absurd widths.
+        */}
         <div
-          className="relative w-full max-w-[1400px] min-w-[900px] grid items-stretch gap-1 sm:gap-2"
-          style={{ gridTemplateColumns: 'minmax(96px, 130px) minmax(0, 1fr) minmax(96px, 130px)' }}
+          className="relative w-full max-w-[1400px] min-w-[900px] grid items-stretch gap-2"
+          style={{
+            gridTemplateColumns: 'minmax(160px, 1fr) minmax(0, 3.2fr) minmax(160px, 1fr)',
+          }}
         >
           <SidePanel side="left" {...opponent} />
 
@@ -65,8 +73,17 @@ export default function BoardLayout({
               className="absolute inset-0 flex items-center justify-center"
               style={{ perspective: '1400px' }}
             >
+              {/*
+                Board aspect ratio matches a real backgammon board with
+                its frame — ~4:3, not 3:2. We use `width: 100%` + the
+                aspect ratio so the browser computes the height; if
+                that height would exceed the column it's clamped via
+                max-h-full and the width shrinks proportionally. End
+                result: the largest 4:3 box that fits the centre column,
+                no matter whether the column is taller or wider.
+              */}
               <div
-                className="relative w-full h-full max-h-full aspect-[3/2] rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
+                className="relative w-full aspect-[4/3] max-h-full rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
                 style={{
                   transform: 'rotateX(10deg)',
                   transformStyle: 'preserve-3d',

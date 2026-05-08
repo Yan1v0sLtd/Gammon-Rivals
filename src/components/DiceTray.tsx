@@ -381,10 +381,14 @@ interface Props {
   remaining: readonly Die[];
 }
 
-// Reference design width of the dice physics world. We compute physics in
-// pixels at this size; the rendered output is then scaled to fit whatever
-// the board container actually is.
-const DICE_DESIGN_WIDTH = 600;
+// Target die size as a fraction of the board's actual width — tuned to
+// match the reference mobile layouts, where the dice are small relative
+// to the playing surface (~4 % of board width per die). At our 56 px
+// design die size this works out to a render scale around 0.7 on a
+// ~1000 px board column, regardless of viewport zoom.
+const TARGET_DIE_RATIO = 0.045;
+const MAX_DICE_SCALE = 0.85;
+const MIN_DICE_SCALE = 0.55;
 
 export default function DiceTray({ roll, remaining }: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
@@ -400,7 +404,13 @@ export default function DiceTray({ roll, remaining }: Props) {
     if (!wrapperEl) return;
     const update = () => {
       const w = wrapperEl.clientWidth;
-      if (w > 0) setScale(Math.min(1.4, w / DICE_DESIGN_WIDTH));
+      if (w <= 0) return;
+      // Target die size = TARGET_DIE_RATIO * board width.
+      // Render scale = target / DIE_SIZE.
+      const targetDieSize = w * TARGET_DIE_RATIO;
+      const raw = targetDieSize / DIE_SIZE;
+      const next = Math.max(MIN_DICE_SCALE, Math.min(MAX_DICE_SCALE, raw));
+      setScale(next);
     };
     update();
     const ro = new ResizeObserver(update);
