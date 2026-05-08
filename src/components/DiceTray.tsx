@@ -4,23 +4,26 @@ import type { Die, DiceRoll, Player } from '../engine/types';
 import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
 
 // ─── Physics conventions ────────────────────────────────────────────────
-// Cannon-es with units = CSS pixels and y pointing DOWN (so +y is "fall"
-// direction, matching CSS). Each die has its own private world with a
-// floor + 4 walls. Walls are sized so each cube is geometrically locked
-// inside its slot — adjacent dice physically cannot reach each other.
-const GRAVITY_Y = 1100;
-const FLOOR_Y = 90; // dice come to rest at y ≈ +FLOOR_Y (below center)
-const SPAWN_Y = -260; // start above the tray
-// Per-die slot geometry. The wall is at slot-local ±SLOT_WALL_HALF, so
-// the cube CENTER can travel up to ±(SLOT_WALL_HALF − CUBE_HALF). With
-// SLOT_WIDTH = 140 and SLOT_WALL_HALF = 65 the cube has ±37 px of
-// horizontal play (plenty of visible rolling) while the cube's outer
-// edge max — SLOT_WIDTH/2 − (SLOT_WALL_HALF − CUBE_HALF + CUBE_HALF) —
-// keeps a 10 px gap to the neighbouring slot's cube. Adjacent dice
-// physically cannot touch.
+// Top-down dice tray view: gravity pulls cubes INTO the screen (along
+// world -z), so the cube's top face — opposite to gravity — naturally
+// settles facing the camera (+z). This is exactly the canonical pose,
+// so no 90° "flip" is needed at the end of the throw.
+//
+// Each die has its own private physics world with floor + 4 walls.
+// On-screen motion comes from the throw's initial xy velocity (cube
+// bouncing off slot walls); receding into the screen is the gravity-
+// driven "fall."
+const GRAVITY_Z = 1100;
+const FLOOR_Z = 28; // cube settles with its centre at z ≈ 0
+const SPAWN_Z = 200; // cube spawns close to the camera
+// Per-die slot geometry. Walls in the xy plane keep the cube inside its
+// own slot. Cube CENTER can travel up to ±(SLOT_WALL_HALF − CUBE_HALF).
+// With SLOT_WIDTH = 140 and SLOT_WALL_HALF = 65 the cube has ±37 px of
+// horizontal play (plenty of wall-bounces) while the cube's outer edge
+// max keeps a comfortable gap to the neighbouring slot's cube.
 const SLOT_WIDTH = 140;
 const SLOT_WALL_HALF = 65;
-const WALL_HALF_Z = 90;
+const WALL_HALF_Y = 80; // vertical bounds of slot (in CSS y-down coords)
 const CUBE_HALF = DIE_SIZE / 2;
 const RESTITUTION = 0.28;
 const FRICTION = 0.32;
@@ -99,20 +102,20 @@ interface Frame {
   qw: number;
 }
 
-function dieValueFacingUp(quat: CANNON.Quaternion): Die | null {
+function dieValueFacingCamera(quat: CANNON.Quaternion): Die | null {
   let best: Die | null = null;
-  let bestY = Infinity;
+  let bestZ = -Infinity;
   const v = new CANNON.Vec3();
   for (const die of [1, 2, 3, 4, 5, 6] as Die[]) {
     const n = FACE_LOCAL_NORMALS[die];
     v.set(n[0], n[1], n[2]);
     quat.vmult(v, v);
-    if (v.y < bestY) {
-      bestY = v.y;
+    if (v.z > bestZ) {
+      bestZ = v.z;
       best = die;
     }
   }
-  if (bestY > -0.85) return null; // tilted on edge
+  if (bestZ < 0.85) return null; // tilted on edge
   return best;
 }
 
@@ -237,19 +240,21 @@ function diceToShow(
  *  per-slot walls geometrically prevent any overlap with neighbours. */
 function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   const world = new CANNON.World({
-    gravity: new CANNON.Vec3(0, GRAVITY_Y, 0),
+    // Gravity into the screen — cube top face naturally settles toward
+    // the camera (+z), which is the canonical pose. No 90° flip needed.
+    gravity: new CANNON.Vec3(0, 0, -GRAVITY_Z),
     allowSleep: true,
   });
   world.defaultContactMaterial.restitution = RESTITUTION;
   world.defaultContactMaterial.friction = FRICTION;
 
-  // Floor: default plane normal +z; rotate so normal becomes -y.
+  // Floor at z=-FLOOR_Z. Default plane normal is +z (toward camera) —
+  // exactly the direction we want, opposite to gravity.
   const floor = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
-  floor.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-  floor.position.set(0, FLOOR_Y, 0);
+  floor.position.set(0, 0, -FLOOR_Z);
   world.addBody(floor);
 
-  // Left wall: normal points into the slot (+x).
+  // Left wall: normal +x.
   const left = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   left.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
   left.position.set(-SLOT_WALL_HALF, 0, 0);
@@ -261,16 +266,17 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   right.position.set(SLOT_WALL_HALF, 0, 0);
   world.addBody(right);
 
-  // Back wall (+z normal — default).
-  const back = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
-  back.position.set(0, 0, -WALL_HALF_Z);
-  world.addBody(back);
+  // Top wall (CSS y-down, so "top of screen" is -y). Normal +y.
+  const top = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  top.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+  top.position.set(0, -WALL_HALF_Y, 0);
+  world.addBody(top);
 
-  // Front wall (-z normal).
-  const front = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
-  front.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI);
-  front.position.set(0, 0, WALL_HALF_Z);
-  world.addBody(front);
+  // Bottom wall. Normal -y.
+  const bottom = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
+  bottom.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+  bottom.position.set(0, WALL_HALF_Y, 0);
+  world.addBody(bottom);
 
   const body = new CANNON.Body({
     mass: 1,
@@ -286,22 +292,21 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   return { world, body };
 }
 
-/** Reset the body to a fresh randomized throw above its slot. */
+/** Reset the body to a fresh randomized throw at the top of its slot. */
 function throwBody(body: CANNON.Body): void {
-  // Spawn well inside the slot's ±SLOT_WALL_HALF range so the cube can't
-  // start clipping the wall.
   body.position.set(
-    (Math.random() - 0.5) * 20,
-    SPAWN_Y - Math.random() * 60,
-    (Math.random() - 0.5) * 60
+    (Math.random() - 0.5) * 30,
+    (Math.random() - 0.5) * 30,
+    SPAWN_Z + Math.random() * 60
   );
-  const dir = Math.random() < 0.5 ? -1 : 1;
-  // With ±37 px of horizontal play, vx of 140-260 px/s gives a clear
-  // wall-to-wall traverse in ~0.3 s — multiple bounces during the throw.
+  const dirX = Math.random() < 0.5 ? -1 : 1;
+  const dirY = Math.random() < 0.5 ? -1 : 1;
+  // Throw across the slot — the cube bounces off the slot walls in xy
+  // while gravity pulls it -z onto the floor.
   body.velocity.set(
-    dir * (140 + Math.random() * 120),
-    260 + Math.random() * 200,
-    (Math.random() - 0.5) * 140
+    dirX * (140 + Math.random() * 120),
+    dirY * (100 + Math.random() * 100),
+    -50 + Math.random() * 80
   );
   body.angularVelocity.set(
     (Math.random() - 0.5) * 18,
@@ -330,7 +335,7 @@ function simulateThrow(world: CANNON.World, body: CANNON.Body): {
     frames.push({ px: p.x, py: p.y, pz: p.z, qx: q.x, qy: q.y, qz: q.z, qw: q.w });
     if (body.sleepState === CANNON.Body.SLEEPING) break;
   }
-  return { frames, finalUpFace: dieValueFacingUp(body.quaternion) };
+  return { frames, finalUpFace: dieValueFacingCamera(body.quaternion) };
 }
 
 function rollDie(desiredValue: Die): Frame[] {
