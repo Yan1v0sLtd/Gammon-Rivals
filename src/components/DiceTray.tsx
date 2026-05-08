@@ -462,7 +462,13 @@ export default function DiceTray({
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [roll, trajectories, dice]);
+    // We deliberately depend ONLY on `roll`. `trajectories` and `dice`
+    // are recomputed when a checker is consumed (used flag flips), but the
+    // throw should play exactly once per dice roll — not restart on every
+    // move. Both are captured by closure from this render, which is the
+    // same render that produced the trajectories.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roll]);
 
   return (
     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
