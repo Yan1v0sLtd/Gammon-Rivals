@@ -4,42 +4,43 @@ import type { Die, DiceRoll, Player } from '../engine/types';
 import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
 
 // ─── Physics conventions ────────────────────────────────────────────────
-// We use Cannon-es with units = CSS pixels and y pointing DOWN (so +y is
-// "fall" direction, matching CSS). The cube's body-local axes are also
-// y-down, which lines up directly with Die3D's face transforms — no
-// coordinate flip is needed when we hand quaternions to CSS matrix3d.
-const GRAVITY_Y = 950;
+// Cannon-es with units = CSS pixels and y pointing DOWN (so +y is "fall"
+// direction, matching CSS). Each die has its own private world with a
+// floor + 4 walls. Walls are sized so each cube is geometrically locked
+// inside its slot — adjacent dice physically cannot reach each other.
+const GRAVITY_Y = 1100;
 const FLOOR_Y = 90; // dice come to rest at y ≈ +FLOOR_Y (below center)
 const SPAWN_Y = -260; // start above the tray
-const WALL_HALF_X = 230;
+// SLOT_WIDTH (visual slot pitch) and SLOT_WALL_HALF (per-cube physics
+// half-width) are tuned so that with cube half-extent 28 the maximum
+// cube extent is SLOT_WALL_HALF + 28 = 60, which is comfortably less
+// than half a slot (65). No overlap with the neighbouring slot, ever.
+const SLOT_WIDTH = 130;
+const SLOT_WALL_HALF = 32;
 const WALL_HALF_Z = 90;
 const CUBE_HALF = DIE_SIZE / 2;
 const RESTITUTION = 0.28;
-const FRICTION = 0.35;
-const SLEEP_SPEED_LIMIT = 8;
-const SLEEP_TIME_LIMIT = 0.05;
-const LINEAR_DAMPING = 0.05;
-// Significant angular damping so a fast-spinning die actually slows
-// against the felt — without this, friction alone takes too long to bleed
-// the spin and the cube keeps rolling for whole seconds.
-const ANGULAR_DAMPING = 0.25;
+const FRICTION = 0.32;
+const SLEEP_SPEED_LIMIT = 6;
+const SLEEP_TIME_LIMIT = 0.04;
+const LINEAR_DAMPING = 0.04;
+const ANGULAR_DAMPING = 0.18;
 
 const PHYSICS_DT = 1 / 60;
-const MAX_SIM_STEPS = 480; // ~8 s safety cap; real settles ~80–180 steps
-const ATTEMPTS_PER_DIE = 60;
+const MAX_SIM_STEPS = 360;
+const ATTEMPTS_PER_DIE = 80;
 const PLAYBACK_FPS = 60;
 
-const POST_SETTLE_PAUSE_MS = 220;
-const CENTER_TWEEN_MS = 460;
+// Combined "settle + center" tween: rotation slerps to canonical face-up
+// with preserved yaw, while position glides from the physics rest spot
+// to the slot centre. One unified motion looks more natural than a
+// rotation-then-position sequence.
+const RESOLVE_MS = 620;
 
-// Maximum animation length the AI orchestrator should wait for. Real
-// playback ends as soon as both bodies sleep, but we expose an upper bound.
-export const DICE_ANIMATION_MS =
-  (MAX_SIM_STEPS / 60) * 1000 + POST_SETTLE_PAUSE_MS + CENTER_TWEEN_MS;
+export const DICE_ANIMATION_MS = (MAX_SIM_STEPS / 60) * 1000 + RESOLVE_MS;
 
 // ─── Die3D face → cube-local outward normal (CSS y-down coords) ─────────
 // Face 1 sits at +z, 2 at -z, 3 at -x, 4 at +x, 5 at +y, 6 at -y.
-// (5/6 swap from the standard die, which is the existing project convention.)
 const FACE_LOCAL_NORMALS: Record<Die, [number, number, number]> = {
   1: [0, 0, 1],
   2: [0, 0, -1],
@@ -49,9 +50,48 @@ const FACE_LOCAL_NORMALS: Record<Die, [number, number, number]> = {
   6: [0, -1, 0],
 };
 
-/** Returns the die value whose face points "up" (smallest CSS-y component
- *  in world space) after the cube has settled. Returns null if the cube
- *  came to rest tilted on an edge, in which case caller should re-throw. */
+// Canonical "face V points to -y world (up on screen)" quaternion. From
+// Q*n_V = -y with the smallest rotation that gets there. Yaw around
+// vertical is free; we pick yaw=0 here and resolve at runtime.
+const HALF_SQRT2 = Math.SQRT1_2;
+const FACE_UP_QUATS: Record<Die, Quat> = {
+  // Face 1 normal +z → -y: R_x(+π/2)
+  1: { x: HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
+  // Face 2 normal -z → -y: R_x(-π/2)
+  2: { x: -HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
+  // Face 3 normal -x → -y: R_z(+π/2)
+  3: { x: 0, y: 0, z: HALF_SQRT2, w: HALF_SQRT2 },
+  // Face 4 normal +x → -y: R_z(-π/2)
+  4: { x: 0, y: 0, z: -HALF_SQRT2, w: HALF_SQRT2 },
+  // Face 5 normal +y → -y: R_x(π)
+  5: { x: 1, y: 0, z: 0, w: 0 },
+  // Face 6 normal -y → -y: identity
+  6: { x: 0, y: 0, z: 0, w: 1 },
+};
+
+interface Quat {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+}
+
+interface Vec3Lite {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface Frame {
+  px: number;
+  py: number;
+  pz: number;
+  qx: number;
+  qy: number;
+  qz: number;
+  qw: number;
+}
+
 function dieValueFacingUp(quat: CANNON.Quaternion): Die | null {
   let best: Die | null = null;
   let bestY = Infinity;
@@ -65,12 +105,80 @@ function dieValueFacingUp(quat: CANNON.Quaternion): Die | null {
       best = die;
     }
   }
-  // Settled flat enough only if dot(face, -y) > ~0.95 (tilt < ~18°).
-  if (bestY > -0.95) return null;
+  if (bestY > -0.85) return null; // tilted on edge
   return best;
 }
 
-/** Convert quaternion + position to a CSS matrix3d() string. */
+function quatMul(a: Quat, b: Quat): Quat {
+  return {
+    x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+    y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+    z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+    w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+  };
+}
+
+function quatNormalize(q: Quat): Quat {
+  const n = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w) || 1;
+  return { x: q.x / n, y: q.y / n, z: q.z / n, w: q.w / n };
+}
+
+function slerp(qa: Quat, qb: Quat, t: number): Quat {
+  let cos = qa.x * qb.x + qa.y * qb.y + qa.z * qb.z + qa.w * qb.w;
+  let qbAdj = qb;
+  if (cos < 0) {
+    qbAdj = { x: -qb.x, y: -qb.y, z: -qb.z, w: -qb.w };
+    cos = -cos;
+  }
+  if (cos > 0.9995) {
+    // Falls back to nlerp when the two quaternions are nearly aligned —
+    // avoids the divide-by-zero and is visually identical at small angles.
+    return quatNormalize({
+      x: qa.x + t * (qbAdj.x - qa.x),
+      y: qa.y + t * (qbAdj.y - qa.y),
+      z: qa.z + t * (qbAdj.z - qa.z),
+      w: qa.w + t * (qbAdj.w - qa.w),
+    });
+  }
+  const angle = Math.acos(cos);
+  const sinAngle = Math.sin(angle);
+  const wa = Math.sin((1 - t) * angle) / sinAngle;
+  const wb = Math.sin(t * angle) / sinAngle;
+  return {
+    x: wa * qa.x + wb * qbAdj.x,
+    y: wa * qa.y + wb * qbAdj.y,
+    z: wa * qa.z + wb * qbAdj.z,
+    w: wa * qa.w + wb * qbAdj.w,
+  };
+}
+
+/** Among the four equivalent "face V up" orientations (rotated 0/90/180/270°
+ *  around vertical), pick the one closest to the physics-settled quaternion.
+ *  This preserves the cube's yaw — the slerp covers only the residual tilt. */
+function pickYawedFaceUp(qFinal: Quat, value: Die): Quat {
+  const qBase = FACE_UP_QUATS[value];
+  let best = qBase;
+  let bestDot = -Infinity;
+  for (let k = 0; k < 4; k++) {
+    const yaw = (k * Math.PI) / 2;
+    const half = yaw / 2;
+    // Yaw rotation is around world -y axis (visual "up" in CSS y-down coords).
+    const qYaw: Quat = { x: 0, y: -Math.sin(half), z: 0, w: Math.cos(half) };
+    const candidate = quatMul(qYaw, qBase);
+    const dot =
+      qFinal.x * candidate.x +
+      qFinal.y * candidate.y +
+      qFinal.z * candidate.z +
+      qFinal.w * candidate.w;
+    const abs = Math.abs(dot);
+    if (abs > bestDot) {
+      bestDot = abs;
+      best = candidate;
+    }
+  }
+  return best;
+}
+
 function quatToCSSMatrix(qx: number, qy: number, qz: number, qw: number, x: number, y: number, z: number): string {
   const m00 = 1 - 2 * (qy * qy + qz * qz);
   const m01 = 2 * (qx * qy - qz * qw);
@@ -81,7 +189,6 @@ function quatToCSSMatrix(qx: number, qy: number, qz: number, qw: number, x: numb
   const m20 = 2 * (qx * qz - qy * qw);
   const m21 = 2 * (qy * qz + qx * qw);
   const m22 = 1 - 2 * (qx * qx + qy * qy);
-  // matrix3d() is column-major.
   return (
     `matrix3d(${m00.toFixed(4)},${m10.toFixed(4)},${m20.toFixed(4)},0,` +
     `${m01.toFixed(4)},${m11.toFixed(4)},${m21.toFixed(4)},0,` +
@@ -90,14 +197,8 @@ function quatToCSSMatrix(qx: number, qy: number, qz: number, qw: number, x: numb
   );
 }
 
-interface Frame {
-  px: number;
-  py: number;
-  pz: number;
-  qx: number;
-  qy: number;
-  qz: number;
-  qw: number;
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function diceToShow(
@@ -123,7 +224,9 @@ function diceToShow(
   });
 }
 
-/** Builds a fresh Cannon world with floor + four walls + one die body. */
+/** A self-contained per-die physics world. Using one private world per
+ *  die means brute-force re-rolls stay cheap (1 body each) and the
+ *  per-slot walls geometrically prevent any overlap with neighbours. */
 function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   const world = new CANNON.World({
     gravity: new CANNON.Vec3(0, GRAVITY_Y, 0),
@@ -132,32 +235,30 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   world.defaultContactMaterial.restitution = RESTITUTION;
   world.defaultContactMaterial.friction = FRICTION;
 
-  // Floor: default plane normal is +z; rotate so normal becomes -y.
+  // Floor: default plane normal +z; rotate so normal becomes -y.
   const floor = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   floor.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
   floor.position.set(0, FLOOR_Y, 0);
   world.addBody(floor);
 
-  // Left wall at x=-WALL_HALF_X: normal +x (points into playing area).
-  // R_y(+π/2) takes default +z → +x.
+  // Left wall: normal points into the slot (+x).
   const left = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   left.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
-  left.position.set(-WALL_HALF_X, 0, 0);
+  left.position.set(-SLOT_WALL_HALF, 0, 0);
   world.addBody(left);
 
-  // Right wall at x=+WALL_HALF_X: normal -x.
-  // R_y(-π/2) takes +z → -x.
+  // Right wall: normal -x.
   const right = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   right.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
-  right.position.set(WALL_HALF_X, 0, 0);
+  right.position.set(SLOT_WALL_HALF, 0, 0);
   world.addBody(right);
 
-  // Back wall (normal +z = toward viewer) — default plane orientation.
+  // Back wall (+z normal — default).
   const back = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   back.position.set(0, 0, -WALL_HALF_Z);
   world.addBody(back);
 
-  // Front wall (normal -z = away from viewer).
+  // Front wall (-z normal).
   const front = new CANNON.Body({ type: CANNON.Body.STATIC, shape: new CANNON.Plane() });
   front.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI);
   front.position.set(0, 0, WALL_HALF_Z);
@@ -177,18 +278,20 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   return { world, body };
 }
 
-/** Reset body to a fresh random throw above the tray. */
-function throwBody(body: CANNON.Body, slotX: number): void {
-  const dir = Math.random() < 0.5 ? -1 : 1;
+/** Reset the body to a fresh randomized throw above its slot. */
+function throwBody(body: CANNON.Body): void {
+  // Spawn well inside the slot's ±SLOT_WALL_HALF range so the cube can't
+  // start clipping the wall.
   body.position.set(
-    slotX + (Math.random() - 0.5) * 80,
+    (Math.random() - 0.5) * 20,
     SPAWN_Y - Math.random() * 60,
     (Math.random() - 0.5) * 60
   );
+  const dir = Math.random() < 0.5 ? -1 : 1;
   body.velocity.set(
-    dir * (200 + Math.random() * 180),
+    dir * (60 + Math.random() * 90),
     260 + Math.random() * 200,
-    (Math.random() - 0.5) * 120
+    (Math.random() - 0.5) * 100
   );
   body.angularVelocity.set(
     (Math.random() - 0.5) * 14,
@@ -220,19 +323,17 @@ function simulateThrow(world: CANNON.World, body: CANNON.Body): {
   return { frames, finalUpFace: dieValueFacingUp(body.quaternion) };
 }
 
-/** Brute-force re-throw until the cube settles with `desiredValue` up.
- *  Captures every physics frame so the renderer can play it back. */
-function rollDie(desiredValue: Die, slotX: number): Frame[] {
+function rollDie(desiredValue: Die): Frame[] {
   const { world, body } = buildWorld();
   let lastFrames: Frame[] = [];
   for (let attempt = 0; attempt < ATTEMPTS_PER_DIE; attempt++) {
-    throwBody(body, slotX);
+    throwBody(body);
     const { frames, finalUpFace } = simulateThrow(world, body);
     lastFrames = frames;
     if (finalUpFace === desiredValue) return frames;
   }
-  // Fall through with last result — visually the cube will settle on the
-  // wrong face, but in practice we hit the desired value within ~10 attempts.
+  // If brute force failed, fall through with the last trajectory — the
+  // settle slerp will rotate the cube to the correct face anyway.
   return lastFrames;
 }
 
@@ -263,10 +364,7 @@ export default function DiceTray({
   const trajectoriesRef = useRef<Frame[][]>([]);
   const lastRollRef = useRef<DiceRoll | null>(null);
   if (roll && lastRollRef.current !== roll) {
-    trajectoriesRef.current = dice.map((d, i) => {
-      const slotX = (i - (dice.length - 1) / 2) * 70;
-      return rollDie(d.value, slotX);
-    });
+    trajectoriesRef.current = dice.map((d) => rollDie(d.value));
     lastRollRef.current = roll;
   } else if (!roll) {
     lastRollRef.current = null;
@@ -286,30 +384,36 @@ export default function DiceTray({
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    let phase: 'play' | 'pause' | 'center' | 'done' = 'play';
-    const playStart = performance.now();
-    let phaseStart = playStart;
-    const finalPos: Array<{ x: number; y: number; z: number }> = trajectories.map((t) => {
+    const finalQuats: Quat[] = trajectories.map((t) => {
+      const last = t[t.length - 1];
+      return last ? { x: last.qx, y: last.qy, z: last.qz, w: last.qw } : { x: 0, y: 0, z: 0, w: 1 };
+    });
+    const finalPos: Vec3Lite[] = trajectories.map((t) => {
       const last = t[t.length - 1];
       return last ? { x: last.px, y: last.py, z: last.pz } : { x: 0, y: 0, z: 0 };
     });
-    const finalQuat: Array<{ x: number; y: number; z: number; w: number }> = trajectories.map(
-      (t) => {
-        const last = t[t.length - 1];
-        return last ? { x: last.qx, y: last.qy, z: last.qz, w: last.qw } : { x: 0, y: 0, z: 0, w: 1 };
-      }
-    );
+    const targetQuats: Quat[] = dice.map((d, i) => pickYawedFaceUp(finalQuats[i], d.value));
 
-    const writeFrame = (idx: number, f: Frame) => {
+    let phase: 'play' | 'resolve' | 'done' = 'play';
+    const playStart = performance.now();
+    let phaseStart = playStart;
+
+    const writeRaw = (idx: number, f: Frame) => {
       const el = dieRefs.current[idx];
       if (!el) return;
       el.style.transform = quatToCSSMatrix(f.qx, f.qy, f.qz, f.qw, f.px, f.py, f.pz);
     };
+    const writeQP = (idx: number, q: Quat, x: number, y: number, z: number) => {
+      const el = dieRefs.current[idx];
+      if (!el) return;
+      el.style.transform = quatToCSSMatrix(q.x, q.y, q.z, q.w, x, y, z);
+    };
 
-    // Paint frame 0 immediately so first paint shows the throw start.
+    // Paint frame 0 immediately so the very first paint already shows the
+    // throw start (no default-pose flicker).
     for (let i = 0; i < trajectories.length; i++) {
       const f = trajectories[i][0];
-      if (f) writeFrame(i, f);
+      if (f) writeRaw(i, f);
     }
 
     const step = (nowTs: number) => {
@@ -322,34 +426,22 @@ export default function DiceTray({
           const idx = Math.min(targetIdx, traj.length - 1);
           const f = traj[idx];
           if (idx < traj.length - 1) allDone = false;
-          if (f) writeFrame(i, f);
+          if (f) writeRaw(i, f);
         }
         if (allDone) {
-          phase = 'pause';
+          phase = 'resolve';
           phaseStart = nowTs;
         }
-      } else if (phase === 'pause') {
-        if (nowTs - phaseStart >= POST_SETTLE_PAUSE_MS) {
-          phase = 'center';
-          phaseStart = nowTs;
-        }
-      } else if (phase === 'center') {
-        const t = Math.min((nowTs - phaseStart) / CENTER_TWEEN_MS, 1);
-        const e = 1 - Math.pow(1 - t, 3);
+      } else if (phase === 'resolve') {
+        const t = Math.min((nowTs - phaseStart) / RESOLVE_MS, 1);
+        const e = easeOutCubic(t);
         for (let i = 0; i < trajectories.length; i++) {
-          const fp = finalPos[i];
-          const fq = finalQuat[i];
-          // Position-only tween toward (slotOffset, 0, 0). The rest pose
-          // for each die is its flex-slot center, which in our shared
-          // perspective parent is just (0,0,0) — slot offsets are rendered
-          // via slot translation in the JSX, not here.
-          const px = fp.x * (1 - e);
-          const py = fp.y * (1 - e);
-          const pz = fp.z * (1 - e);
-          const el = dieRefs.current[i];
-          if (el) {
-            el.style.transform = quatToCSSMatrix(fq.x, fq.y, fq.z, fq.w, px, py, pz);
-          }
+          const q = slerp(finalQuats[i], targetQuats[i], e);
+          // Tween position from physics-settled spot to slot centre.
+          const px = finalPos[i].x * (1 - e);
+          const py = finalPos[i].y * (1 - e);
+          const pz = finalPos[i].z * (1 - e);
+          writeQP(i, q, px, py, pz);
         }
         if (t >= 1) phase = 'done';
       }
@@ -365,7 +457,7 @@ export default function DiceTray({
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [roll, trajectories]);
+  }, [roll, trajectories, dice]);
 
   return (
     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -401,7 +493,7 @@ export default function DiceTray({
                 }}
               >
                 {dice.map((d, i) => {
-                  const slotX = (i - (dice.length - 1) / 2) * 70;
+                  const slotX = (i - (dice.length - 1) / 2) * SLOT_WIDTH;
                   return (
                     <div
                       key={i}
