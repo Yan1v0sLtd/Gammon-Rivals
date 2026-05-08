@@ -11,12 +11,15 @@ import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
 const GRAVITY_Y = 1100;
 const FLOOR_Y = 90; // dice come to rest at y ≈ +FLOOR_Y (below center)
 const SPAWN_Y = -260; // start above the tray
-// SLOT_WIDTH (visual slot pitch) and SLOT_WALL_HALF (per-cube physics
-// half-width) are tuned so that with cube half-extent 28 the maximum
-// cube extent is SLOT_WALL_HALF + 28 = 60, which is comfortably less
-// than half a slot (65). No overlap with the neighbouring slot, ever.
-const SLOT_WIDTH = 130;
-const SLOT_WALL_HALF = 32;
+// Per-die slot geometry. The wall is at slot-local ±SLOT_WALL_HALF, so
+// the cube CENTER can travel up to ±(SLOT_WALL_HALF − CUBE_HALF). With
+// SLOT_WIDTH = 140 and SLOT_WALL_HALF = 65 the cube has ±37 px of
+// horizontal play (plenty of visible rolling) while the cube's outer
+// edge max — SLOT_WIDTH/2 − (SLOT_WALL_HALF − CUBE_HALF + CUBE_HALF) —
+// keeps a 10 px gap to the neighbouring slot's cube. Adjacent dice
+// physically cannot touch.
+const SLOT_WIDTH = 140;
+const SLOT_WALL_HALF = 65;
 const WALL_HALF_Z = 90;
 const CUBE_HALF = DIE_SIZE / 2;
 const RESTITUTION = 0.28;
@@ -288,15 +291,17 @@ function throwBody(body: CANNON.Body): void {
     (Math.random() - 0.5) * 60
   );
   const dir = Math.random() < 0.5 ? -1 : 1;
+  // With ±37 px of horizontal play, vx of 140-260 px/s gives a clear
+  // wall-to-wall traverse in ~0.3 s — multiple bounces during the throw.
   body.velocity.set(
-    dir * (60 + Math.random() * 90),
+    dir * (140 + Math.random() * 120),
     260 + Math.random() * 200,
-    (Math.random() - 0.5) * 100
+    (Math.random() - 0.5) * 140
   );
   body.angularVelocity.set(
-    (Math.random() - 0.5) * 14,
-    (Math.random() - 0.5) * 14,
-    (Math.random() - 0.5) * 14
+    (Math.random() - 0.5) * 18,
+    (Math.random() - 0.5) * 18,
+    (Math.random() - 0.5) * 18
   );
   body.quaternion.setFromEuler(
     Math.random() * 2 * Math.PI,
