@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as CANNON from 'cannon-es';
 import type { Die, DiceRoll } from '../engine/types';
 import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
@@ -381,8 +381,32 @@ interface Props {
   remaining: readonly Die[];
 }
 
+// Reference design width of the dice physics world. We compute physics in
+// pixels at this size; the rendered output is then scaled to fit whatever
+// the board container actually is.
+const DICE_DESIGN_WIDTH = 600;
+
 export default function DiceTray({ roll, remaining }: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
+
+  // Scale the dice rendering to the board's actual width. Physics stays
+  // in pixel coords at design size; the wrapper applies a CSS scale.
+  // We use a state-backed callback ref so the effect re-runs WHEN the
+  // wrapper element actually attaches — `roll === null` returns null
+  // below, so the wrapper isn't in the DOM until the first roll.
+  const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    if (!wrapperEl) return;
+    const update = () => {
+      const w = wrapperEl.clientWidth;
+      if (w > 0) setScale(Math.min(1.4, w / DICE_DESIGN_WIDTH));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(wrapperEl);
+    return () => ro.disconnect();
+  }, [wrapperEl]);
 
   // Trajectories are deterministic given (roll, dice.length). We compute
   // them synchronously when the roll changes so the very first paint can
@@ -525,7 +549,10 @@ export default function DiceTray({ roll, remaining }: Props) {
   if (roll === null) return null;
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+    <div
+      ref={setWrapperEl}
+      className="absolute inset-0 pointer-events-none flex items-center justify-center"
+    >
       <div className="flex flex-col items-center gap-3">
         <div
           style={{
@@ -535,6 +562,8 @@ export default function DiceTray({ roll, remaining }: Props) {
             perspective: 1400,
             transformStyle: 'preserve-3d',
             pointerEvents: 'none',
+            transform: `scale(${scale})`,
+            transformOrigin: 'center center',
           }}
         >
               {/* No parent tilt — the cube settles with the rolled face

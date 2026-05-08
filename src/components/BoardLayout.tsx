@@ -42,13 +42,20 @@ export default function BoardLayout({
   centerOverlay,
 }: Props) {
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#0e1d2f] via-[#0a1424] to-[#06101c]">
+    <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#0e1d2f] via-[#0a1424] to-[#06101c] overflow-x-auto">
       {header}
 
+      {/*
+        Horizontal-only layout. Below MIN_LAYOUT_WIDTH the page scrolls
+        horizontally rather than collapsing into a portrait orientation
+        — backgammon needs the board's long axis horizontal to be
+        playable. The min-width here keeps the panels + a 3:2 board big
+        enough to read no matter how narrow the viewport.
+      */}
       <div className="flex-1 flex items-stretch justify-center px-1 sm:px-3 pb-2 sm:pb-3 min-h-0">
         <div
-          className="relative w-full max-w-[1400px] grid items-stretch gap-1 sm:gap-2"
-          style={{ gridTemplateColumns: 'minmax(72px, 110px) minmax(0, 1fr) minmax(72px, 110px)' }}
+          className="relative w-full max-w-[1400px] min-w-[900px] grid items-stretch gap-1 sm:gap-2"
+          style={{ gridTemplateColumns: 'minmax(96px, 130px) minmax(0, 1fr) minmax(96px, 130px)' }}
         >
           <SidePanel side="left" {...opponent} />
 
