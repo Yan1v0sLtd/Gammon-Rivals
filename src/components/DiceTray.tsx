@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as CANNON from 'cannon-es';
-import type { Die, DiceRoll, Player } from '../engine/types';
+import type { Die, DiceRoll } from '../engine/types';
 import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
 
 // ─── Physics conventions ────────────────────────────────────────────────
@@ -377,24 +377,11 @@ function rollDie(desiredValue: Die, slotWallHalf: number, startSide: number): Fr
 }
 
 interface Props {
-  turn: Player;
   roll: DiceRoll | null;
   remaining: readonly Die[];
-  canRoll: boolean;
-  canEndTurn: boolean;
-  onRoll(): void;
-  onEndTurn(): void;
 }
 
-export default function DiceTray({
-  turn,
-  roll,
-  remaining,
-  canRoll,
-  canEndTurn,
-  onRoll,
-  onEndTurn,
-}: Props) {
+export default function DiceTray({ roll, remaining }: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
 
   // Trajectories are deterministic given (roll, dice.length). We compute
@@ -532,29 +519,24 @@ export default function DiceTray({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roll]);
 
+  // Pure dice renderer — when there's no roll yet there's nothing to show.
+  // The Roll / End-turn / Double / Undo buttons live in ActionButtons,
+  // which the parent layout renders alongside (not nested inside) the tray.
+  if (roll === null) return null;
+
   return (
     <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        {roll === null ? (
-          <button
-            onClick={onRoll}
-            disabled={!canRoll}
-            className="pointer-events-auto px-7 py-3 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 text-amber-950 font-display text-xl shadow-xl border-2 border-amber-700 hover:brightness-110 active:scale-95 transition disabled:opacity-50"
-          >
-            {turn === 'white' ? 'White' : 'Black'} — Roll
-          </button>
-        ) : (
-          <>
-            <div
-              style={{
-                position: 'relative',
-                width: 600,
-                height: 240,
-                perspective: 1400,
-                transformStyle: 'preserve-3d',
-                pointerEvents: 'none',
-              }}
-            >
+        <div
+          style={{
+            position: 'relative',
+            width: 600,
+            height: 240,
+            perspective: 1400,
+            transformStyle: 'preserve-3d',
+            pointerEvents: 'none',
+          }}
+        >
               {/* No parent tilt — the cube settles with the rolled face
                   perpendicular to the screen, so the player sees it flat-on.
                   Perspective on the wrapper above still gives 3D depth
@@ -609,18 +591,8 @@ export default function DiceTray({
                     </div>
                   );
                 })}
-              </div>
-            </div>
-            {canEndTurn && (
-              <button
-                onClick={onEndTurn}
-                className="pointer-events-auto px-5 py-2 rounded-md bg-amber-700/90 text-amber-50 font-medium shadow-md border border-amber-900 hover:brightness-110 active:scale-95 transition"
-              >
-                End turn
-              </button>
-            )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );

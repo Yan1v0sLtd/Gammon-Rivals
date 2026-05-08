@@ -18,6 +18,7 @@ export type Database = {
           display_name: string;
           is_guest: boolean;
           rating: number;
+          avatar_seed: string;
           created_at: string;
           updated_at: string;
         };
@@ -26,6 +27,7 @@ export type Database = {
           display_name: string;
           is_guest?: boolean;
           rating?: number;
+          avatar_seed?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -34,6 +36,7 @@ export type Database = {
           display_name?: string;
           is_guest?: boolean;
           rating?: number;
+          avatar_seed?: string;
           created_at?: string;
           updated_at?: string;
         };

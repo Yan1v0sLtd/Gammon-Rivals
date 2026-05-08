@@ -68,6 +68,7 @@ export interface MatchGameState {
   readonly validDestinations: readonly Position[];
   readonly canEndTurn: boolean;
   readonly canOfferDouble: boolean;
+  readonly canUndo: boolean;
   readonly pendingOffer: Player | null;
   readonly lastGameResult: GameResult | null;
   readonly matchOver: boolean;
@@ -82,12 +83,30 @@ export interface MatchGameActions {
   selectFrom(pos: Position): void;
   cancelSelection(): void;
   selectTo(pos: Position): void;
+  /** Revert the most recent move played in the current turn. Disabled
+   *  on AI turns and once the turn is ended (no longer "the most
+   *  recent move" in a meaningful sense). */
+  undoLastMove(): void;
   endTurn(): void;
   offerDouble(): void;
   acceptDouble(): void;
   dropDouble(): void;
   nextGame(): void;
   newMatch(target?: number, ai?: AIConfig | null): void;
+}
+
+/**
+ * Snapshot captured immediately before a checker move is applied. Holds
+ * exactly what's needed to roll back ONE move — board state, the dice
+ * still available, the move history, and the per-turn log. We keep the
+ * most recent snapshot only; chaining multiple undos isn't supported by
+ * design.
+ */
+interface MoveSnapshot {
+  readonly board: BoardState;
+  readonly remaining: readonly Die[];
+  readonly history: readonly Move[];
+  readonly turnLog: readonly TurnRecord[];
 }
 
 export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameActions {
@@ -102,6 +121,10 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   const [ai, setAi] = useState<AIConfig | null>(opts.ai ?? null);
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [turnLog, setTurnLog] = useState<readonly TurnRecord[]>([]);
+  // Snapshot of the state immediately BEFORE the most recent player move.
+  // Set in selectTo, cleared on roll/endTurn/new game/AI move. Lets us
+  // implement single-step undo without rebuilding the board from history.
+  const [undoSnapshot, setUndoSnapshot] = useState<MoveSnapshot | null>(null);
 
   const startTurnRecord = useCallback((player: Player, dice: DiceRoll) => {
     setTurnLog((curr) => [...curr, { player, dice, subMoves: [] }]);
@@ -154,6 +177,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setRemaining(expandDice(r));
     setSelectedFrom(null);
     setHistory([]);
+    setUndoSnapshot(null);
     startTurnRecord(board.turn, r);
   }, [diceRoll, gameFrozen, match.cubeOffer, board.turn, startTurnRecord]);
 
@@ -183,6 +207,10 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
           ? [...remaining.slice(0, dieIdx), ...remaining.slice(dieIdx + 1)]
           : [...remaining];
 
+      // Snapshot the current state BEFORE we commit the move so the user
+      // can undo it. We only keep the most recent move's snapshot.
+      setUndoSnapshot({ board, remaining, history, turnLog });
+
       setBoard(next);
       setRemaining(nextRemaining);
       setHistory([...history, move]);
@@ -194,10 +222,24 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
         const result = computeBearOffResult(match, next, w);
         setMatch(applyGameResult(match, result));
         setLastGameResult(result);
+        // Game ended — undo would be confusing once the result modal is up.
+        setUndoSnapshot(null);
       }
     },
-    [selectedFrom, legal, board, remaining, history, match, appendMoveToTurn]
+    [selectedFrom, legal, board, remaining, history, turnLog, match, appendMoveToTurn]
   );
+
+  const undoLastMove = useCallback(() => {
+    if (!undoSnapshot) return;
+    if (gameFrozen) return;
+    if (isAITurn) return;
+    setBoard(undoSnapshot.board);
+    setRemaining(undoSnapshot.remaining);
+    setHistory(undoSnapshot.history);
+    setTurnLog(undoSnapshot.turnLog);
+    setSelectedFrom(null);
+    setUndoSnapshot(null);
+  }, [undoSnapshot, gameFrozen, isAITurn]);
 
   const endTurn = useCallback(() => {
     if (!canEndTurn) return;
@@ -206,6 +248,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setRemaining([]);
     setSelectedFrom(null);
     setHistory([]);
+    setUndoSnapshot(null);
   }, [canEndTurn, board]);
 
   const offerDouble = useCallback(() => {
@@ -235,6 +278,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setHistory([]);
     setLastGameResult(null);
     setTurnLog([]);
+    setUndoSnapshot(null);
   }, [lastGameResult, matchOver]);
 
   const newMatch = useCallback(
@@ -248,6 +292,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
       setLastGameResult(null);
       setAi(nextAi);
       setTurnLog([]);
+      setUndoSnapshot(null);
     },
     [match.target, ai]
   );
@@ -335,6 +380,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
         setRemaining(expandDice(r));
         setSelectedFrom(null);
         setHistory([]);
+        setUndoSnapshot(null);
         startTurnRecord(aiPlayer, r);
         aiActiveRef.current = false;
       })();
@@ -377,6 +423,8 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     startTurnRecord,
   ]);
 
+  const canUndo = undoSnapshot !== null && !gameFrozen && !isAITurn;
+
   return {
     match,
     board,
@@ -388,6 +436,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     validDestinations,
     canEndTurn,
     canOfferDouble: canOfferDoubleNow,
+    canUndo,
     pendingOffer: match.cubeOffer,
     lastGameResult,
     matchOver,
@@ -399,6 +448,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     selectFrom,
     cancelSelection,
     selectTo,
+    undoLastMove,
     endTurn,
     offerDouble,
     acceptDouble,

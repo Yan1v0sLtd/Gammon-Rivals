@@ -4,16 +4,27 @@ import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
 import DoublingCube from '../components/DoublingCube';
 import CubeOfferDecision from '../components/CubeOfferDecision';
+import BoardLayout from '../components/BoardLayout';
+import ActionButtons from '../components/ActionButtons';
+import AutoRollToggle from '../components/AutoRollToggle';
+import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { useOnlineGame } from '../game/useOnlineGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
-import type { CubeValue } from '../engine';
+import type { CubeValue, MatchState } from '../engine';
 import { woodTheme } from '../board/theme';
 import type { Database } from '../types/database';
+import type { PlayerIdentity } from '../lib/identity';
+import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+
+function profileToIdentity(p: ProfileRow | null): PlayerIdentity | null {
+  if (!p) return null;
+  return { name: p.display_name, avatarSeed: p.avatar_seed };
+}
 
 export default function PlayOnline() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -71,6 +82,13 @@ export default function PlayOnline() {
       /* ignore */
     }
   };
+
+  // ---- Auto-roll preference ----
+  // Hooks must be called unconditionally — these run on every render.
+  const [autoRollOn, setAutoRollOn] = useAutoRoll();
+  useAutoRollEffect(autoRollOn, game.canRoll && !game.betweenGames, () => {
+    void game.rollDice();
+  });
 
   if (authLoading || game.loading) {
     return (
@@ -160,6 +178,19 @@ export default function PlayOnline() {
   const blackPip = pipCount(game.board, 'black');
   const isSpectator = role === 'spectator';
 
+  // Map owner/opponent profiles to seats based on local color. The local
+  // player sits on the right; the opponent on the left.
+  const ownerColor = match.owner_color === 'black' ? 'black' : 'white';
+  const opponentColor = ownerColor === 'white' ? 'black' : 'white';
+  const isOwnerLocal = user.id === match.owner_id;
+  const selfProfile = isOwnerLocal ? ownerProfile : opponentProfile;
+  const opponentProf = isOwnerLocal ? opponentProfile : ownerProfile;
+  const selfColor = isOwnerLocal ? ownerColor : opponentColor;
+  const oppColor = selfColor === 'white' ? 'black' : 'white';
+  const selfPip = selfColor === 'white' ? whitePip : blackPip;
+  const oppPip = oppColor === 'white' ? whitePip : blackPip;
+  const isLocalTurn = !!game.isLocalTurn;
+
   const turnLabel = game.matchFinished
     ? 'match over'
     : isSpectator
@@ -167,181 +198,179 @@ export default function PlayOnline() {
       : game.gameWinner
         ? `${game.gameWinner} wins game`
         : !game.isLocalTurn
-          ? `${game.turn}'s turn (waiting)`
+          ? `${game.turn}'s turn`
           : game.roll === null
             ? 'your turn — roll'
             : 'your turn — move';
 
+  // Build a synthetic MatchState for MatchHeader (it expects engine shape).
+  const headerMatch: MatchState = {
+    score: { white: match.white_score, black: match.black_score },
+    target: match.target,
+    cube: { value: game.cubeValue as CubeValue, owner: game.cubeOwner },
+    cubeOffer: game.cubeOffer,
+    crawfordGameNumber: null,
+    gameNumber: 1,
+    winner: null,
+  };
+
+  const showCubeDecisionCenter =
+    game.cubeOffer !== null &&
+    game.localColor !== null &&
+    game.cubeOffer !== game.localColor &&
+    !game.matchFinished;
+  const showCubePending =
+    game.cubeOffer !== null &&
+    game.cubeOffer === game.localColor &&
+    !game.matchFinished;
+  const showBetweenGames = game.betweenGames && !game.matchFinished && !!game.currentGame;
+  const showMatchOver = game.matchFinished && !!match.winner;
+
+  const showActions = role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null;
+
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-      <header className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2 text-board-felt/80 gap-x-3 gap-y-1">
-        <Link to="/" className="text-board-accent text-sm whitespace-nowrap order-1">← Home</Link>
-        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono order-3 sm:order-2 w-full sm:w-auto justify-center">
-          <span className="text-chip-cream truncate max-w-[8rem]">
-            {ownerProfile?.display_name ?? '…'}
-          </span>
-          <span className="px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 font-display tracking-wider whitespace-nowrap">
-            {match.white_score}–{match.black_score}
-          </span>
-          <span className="text-board-felt truncate max-w-[8rem]">
-            {opponentProfile?.display_name ?? '…'}
-          </span>
-          <span className="text-board-felt/40 hidden sm:inline">·</span>
-          <span className="text-board-felt/60 hidden sm:inline">to {match.target}</span>
-          <span className="text-board-felt/40 ml-2 hidden sm:inline">w {whitePip}</span>
-          <span className="text-board-felt/40 hidden sm:inline">b {blackPip}</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-board-felt/60 capitalize whitespace-nowrap">
-          {isSpectator && (
-            <span className="px-1.5 py-0.5 rounded bg-board-felt/10 border border-board-felt/30 font-display text-[10px] tracking-wider uppercase text-board-accent">
-              Spectator
-            </span>
-          )}
-          {game.inCrawfordGame && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-600/30 border border-amber-500/50 font-display text-[10px] tracking-wider uppercase text-amber-200">
-              Crawford
-            </span>
-          )}
-          {turnLabel}
-          {!isSpectator && !game.matchFinished && (
+    <BoardLayout
+      header={
+        <MatchHeader
+          match={headerMatch}
+          whitePip={whitePip}
+          blackPip={blackPip}
+          turnLabel={turnLabel}
+          inCrawford={game.inCrawfordGame}
+          onNewMatch={() => navigate('/')}
+        />
+      }
+      opponent={{
+        identity: profileToIdentity(opponentProf),
+        pipCount: oppPip,
+        scoreLabel: `${oppColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
+        isTurn: !isLocalTurn && !showMatchOver,
+      }}
+      self={{
+        identity: profileToIdentity(selfProfile),
+        pipCount: selfPip,
+        scoreLabel: `${selfColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
+        isTurn: isLocalTurn && !showMatchOver,
+        bottomSlot: !isSpectator && (
+          <AutoRollToggle enabled={autoRollOn} onChange={setAutoRollOn} />
+        ),
+      }}
+      actionsOverlay={
+        showActions ? (
+          <ActionButtons
+            canRoll={game.canRoll}
+            onRoll={() => void game.rollDice()}
+            canEndTurn={game.canEndTurn}
+            onEndTurn={() => void game.endTurn()}
+            canDouble={game.canOfferDouble}
+            onDouble={() => void game.offerDouble()}
+            cubeValue={game.cubeValue}
+            // Online undo not supported (server-authoritative). We still
+            // render the row so DOUBLE/ROLL stay positioned; UNDO simply
+            // never shows.
+            canUndo={false}
+            onUndo={() => {}}
+          />
+        ) : null
+      }
+      centerOverlay={
+        showCubeDecisionCenter ? (
+          <CubeOfferDecision
+            offeredBy={game.cubeOffer!}
+            currentValue={game.cubeValue as CubeValue}
+            onAccept={() => void game.acceptDouble()}
+            onDrop={() => void game.dropDouble()}
+          />
+        ) : showCubePending ? (
+          <div className="bg-amber-100/95 text-amber-950 px-6 py-4 rounded-xl border-2 border-amber-700 text-sm">
+            Waiting for opponent to accept or drop…
+          </div>
+        ) : showBetweenGames ? (
+          <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm">
+            <div className="font-display text-2xl uppercase tracking-wider mb-1 capitalize">
+              {game.currentGame!.winner} wins
+              {game.currentGame!.dropped_double
+                ? ' by drop'
+                : game.currentGame!.win_type
+                  ? ` ${game.currentGame!.win_type}`
+                  : ''}
+            </div>
+            <div className="text-sm mb-3">
+              +{game.currentGame!.points_awarded} · match {match.white_score}–{match.black_score} (to {match.target})
+            </div>
+            <div className="text-xs text-amber-900/70">
+              {game.localColor === game.turn
+                ? 'Roll to start the next game.'
+                : `Waiting for ${game.turn} to roll the next game…`}
+            </div>
+            {game.localColor === game.turn && (
+              <button
+                onClick={() => void game.rollDice()}
+                className="mt-4 px-5 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+              >
+                Roll · next game
+              </button>
+            )}
+          </div>
+        ) : showMatchOver ? (
+          <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
+            <div className="font-display text-3xl uppercase tracking-wider mb-1">Match over</div>
+            <div className="capitalize text-xl mb-3 font-display">
+              {match.winner} wins {match.white_score}–{match.black_score}
+            </div>
             <button
-              onClick={async () => {
-                if (!confirm('Resign? Opponent wins the match.')) return;
-                await game.resign();
-              }}
-              className="ml-2 text-[10px] uppercase tracking-wider text-board-felt/40 hover:text-rose-400 transition"
+              onClick={() => navigate('/')}
+              className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
             >
-              Resign
+              Home
             </button>
+          </div>
+        ) : null
+      }
+    >
+      <BoardCanvas
+        state={game.board}
+        theme={woodTheme}
+        selection={{
+          selectedFrom: game.selectedFrom,
+          validDestinations: game.validDestinations,
+          legalOrigins: game.legalOrigins,
+        }}
+        onPointClick={handlePointClick}
+      />
+      <DoublingCube
+        value={game.cubeValue as CubeValue}
+        owner={game.cubeOwner}
+        canOffer={false}
+        pendingOffer={game.cubeOffer}
+        onOffer={() => void game.offerDouble()}
+      />
+      <DiceTray roll={game.roll} remaining={game.remaining} />
+
+      {/* Inactivity countdown / claim button — sits at top of board. */}
+      {!isSpectator && !game.matchFinished && !game.isLocalTurn && !game.betweenGames && game.secondsSinceActivity >= 60 && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
+          {game.canClaimByInactivity ? (
+            <>
+              <span>Opponent inactive for {Math.floor(game.secondsSinceActivity / 60)}m</span>
+              <button
+                onClick={async () => {
+                  if (!confirm('Claim victory by opponent timeout?')) return;
+                  await game.claimByInactivity();
+                }}
+                className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
+              >
+                Claim victory
+              </button>
+            </>
+          ) : (
+            <span>
+              Opponent thinking · claim in{' '}
+              {Math.max(0, 5 * 60 - game.secondsSinceActivity)}s
+            </span>
           )}
         </div>
-      </header>
-
-      <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
-        <div className="relative w-full max-w-[1100px] aspect-[3/2] rounded-lg overflow-hidden shadow-2xl">
-          <BoardCanvas
-            state={game.board}
-            theme={woodTheme}
-            selection={{
-              selectedFrom: game.selectedFrom,
-              validDestinations: game.validDestinations,
-              legalOrigins: game.legalOrigins,
-            }}
-            onPointClick={handlePointClick}
-          />
-
-          <DoublingCube
-            value={game.cubeValue as CubeValue}
-            owner={game.cubeOwner}
-            canOffer={game.canOfferDouble}
-            pendingOffer={game.cubeOffer}
-            onOffer={game.offerDouble}
-          />
-
-          {/* Inactivity countdown / claim button */}
-          {!isSpectator && !game.matchFinished && !game.isLocalTurn && !game.betweenGames && game.secondsSinceActivity >= 60 && (
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
-              {game.canClaimByInactivity ? (
-                <>
-                  <span>Opponent inactive for {Math.floor(game.secondsSinceActivity / 60)}m</span>
-                  <button
-                    onClick={async () => {
-                      if (!confirm('Claim victory by opponent timeout?')) return;
-                      await game.claimByInactivity();
-                    }}
-                    className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
-                  >
-                    Claim victory
-                  </button>
-                </>
-              ) : (
-                <span>
-                  Opponent thinking · claim in{' '}
-                  {Math.max(0, 5 * 60 - game.secondsSinceActivity)}s
-                </span>
-              )}
-            </div>
-          )}
-
-          {role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null && (
-            <DiceTray
-              turn={game.turn}
-              roll={game.roll}
-              remaining={game.remaining}
-              canRoll={game.canRoll}
-              canEndTurn={game.canEndTurn}
-              onRoll={game.rollDice}
-              onEndTurn={game.endTurn}
-            />
-          )}
-
-          {/* Cube offer pending: opponent decides */}
-          {game.cubeOffer !== null && game.localColor !== null && game.cubeOffer !== game.localColor && !game.matchFinished && (
-            <CubeOfferDecision
-              offeredBy={game.cubeOffer}
-              currentValue={game.cubeValue as CubeValue}
-              onAccept={game.acceptDouble}
-              onDrop={game.dropDouble}
-            />
-          )}
-          {/* Cube offer pending and we are the offerer: just wait */}
-          {game.cubeOffer !== null && game.cubeOffer === game.localColor && !game.matchFinished && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-30 pointer-events-none">
-              <div className="bg-amber-100/95 text-amber-950 px-6 py-4 rounded-xl border-2 border-amber-700 text-sm">
-                Waiting for opponent to accept or drop…
-              </div>
-            </div>
-          )}
-
-          {game.betweenGames && !game.matchFinished && game.currentGame && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/65 z-30">
-              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm">
-                <div className="font-display text-2xl uppercase tracking-wider mb-1 capitalize">
-                  {game.currentGame.winner} wins
-                  {game.currentGame.dropped_double
-                    ? ' by drop'
-                    : game.currentGame.win_type
-                      ? ` ${game.currentGame.win_type}`
-                      : ''}
-                </div>
-                <div className="text-sm mb-3">
-                  +{game.currentGame.points_awarded} · match {match.white_score}–{match.black_score} (to {match.target})
-                </div>
-                <div className="text-xs text-amber-900/70">
-                  {game.localColor === game.turn
-                    ? 'Roll to start the next game.'
-                    : `Waiting for ${game.turn} to roll the next game…`}
-                </div>
-                {game.localColor === game.turn && (
-                  <button
-                    onClick={() => void game.rollDice()}
-                    className="mt-4 px-5 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
-                  >
-                    Roll · next game
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          {game.matchFinished && match.winner && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/65 z-30">
-              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
-                <div className="font-display text-3xl uppercase tracking-wider mb-1">Match over</div>
-                <div className="capitalize text-xl mb-3 font-display">
-                  {match.winner} wins {match.white_score}–{match.black_score}
-                </div>
-                <button
-                  onClick={() => navigate('/')}
-                  className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
-                >
-                  Home
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </main>
+      )}
+    </BoardLayout>
   );
 }
