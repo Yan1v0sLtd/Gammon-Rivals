@@ -34,13 +34,17 @@ const MAX_SIM_STEPS = 360;
 const ATTEMPTS_PER_DIE = 80;
 const PLAYBACK_FPS = 60;
 
-// Combined "settle + center" tween: rotation slerps to canonical face-up
-// with preserved yaw, while position glides from the physics rest spot
-// to the slot centre. One unified motion looks more natural than a
-// rotation-then-position sequence.
-const RESOLVE_MS = 620;
+// Three-stage settle. First we hold position and slerp rotation to
+// canonical (rolled face perpendicular to camera) so the player sees
+// exactly where the cube fell with the right number squarely up; then
+// we hold a beat so the value is readable; only then do we glide to
+// slot centre.
+const SETTLE_MS = 280;
+const HOLD_MS = 240;
+const CENTER_MS = 460;
 
-export const DICE_ANIMATION_MS = (MAX_SIM_STEPS / 60) * 1000 + RESOLVE_MS;
+export const DICE_ANIMATION_MS =
+  (MAX_SIM_STEPS / 60) * 1000 + SETTLE_MS + HOLD_MS + CENTER_MS;
 
 // ─── Die3D face → cube-local outward normal (CSS y-down coords) ─────────
 // Face 1 sits at +z, 2 at -z, 3 at -x, 4 at +x, 5 at +y, 6 at -y.
@@ -400,7 +404,7 @@ export default function DiceTray({
     });
     const targetQuats: Quat[] = dice.map((d, i) => pickYawedFaceFront(finalQuats[i], d.value));
 
-    let phase: 'play' | 'resolve' | 'done' = 'play';
+    let phase: 'play' | 'settle' | 'hold' | 'center' | 'done' = 'play';
     const playStart = performance.now();
     let phaseStart = playStart;
 
@@ -435,19 +439,43 @@ export default function DiceTray({
           if (f) writeRaw(i, f);
         }
         if (allDone) {
-          phase = 'resolve';
+          phase = 'settle';
           phaseStart = nowTs;
         }
-      } else if (phase === 'resolve') {
-        const t = Math.min((nowTs - phaseStart) / RESOLVE_MS, 1);
+      } else if (phase === 'settle') {
+        // Position is FROZEN at where the cube physics-stopped. Only
+        // rotation tweens — slerp from physics-final to canonical
+        // face-front, so the cube finishes rolling visibly in place
+        // with the rolled number squarely toward the camera.
+        const t = Math.min((nowTs - phaseStart) / SETTLE_MS, 1);
         const e = easeOutCubic(t);
         for (let i = 0; i < trajectories.length; i++) {
           const q = slerp(finalQuats[i], targetQuats[i], e);
-          // Tween position from physics-settled spot to slot centre.
-          const px = finalPos[i].x * (1 - e);
-          const py = finalPos[i].y * (1 - e);
-          const pz = finalPos[i].z * (1 - e);
-          writeQP(i, q, px, py, pz);
+          writeQP(i, q, finalPos[i].x, finalPos[i].y, finalPos[i].z);
+        }
+        if (t >= 1) {
+          phase = 'hold';
+          phaseStart = nowTs;
+        }
+      } else if (phase === 'hold') {
+        // Static read-time at canonical orientation + physics-final
+        // position — gives the player a beat to read the rolled value
+        // before the cubes glide to the centre.
+        if (nowTs - phaseStart >= HOLD_MS) {
+          phase = 'center';
+          phaseStart = nowTs;
+        }
+      } else if (phase === 'center') {
+        // Position-only tween from physics-rest spot to slot centre.
+        // Rotation stays at canonical — the rolled face stays visible
+        // throughout the slide.
+        const t = Math.min((nowTs - phaseStart) / CENTER_MS, 1);
+        const e = easeOutCubic(t);
+        for (let i = 0; i < trajectories.length; i++) {
+          const x = finalPos[i].x * (1 - e);
+          const y = finalPos[i].y * (1 - e);
+          const z = finalPos[i].z * (1 - e);
+          writeQP(i, targetQuats[i], x, y, z);
         }
         if (t >= 1) phase = 'done';
       }
