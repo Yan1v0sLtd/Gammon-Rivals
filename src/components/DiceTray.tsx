@@ -49,7 +49,9 @@ export default function DiceTray({
   useEffect(() => {
     if (roll !== null) {
       setRolling(true);
-      const t = setTimeout(() => setRolling(false), 500);
+      // Match Die3D's TOTAL_DURATION_MS so the static transform doesn't
+      // interrupt the in-flight throw animation.
+      const t = setTimeout(() => setRolling(false), 1500);
       return () => clearTimeout(t);
     }
   }, [roll]);
