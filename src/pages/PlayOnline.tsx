@@ -174,17 +174,22 @@ export default function PlayOnline() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-      <header className="flex items-center justify-between px-4 py-2 text-board-felt/80 gap-3">
-        <Link to="/" className="text-board-accent text-sm whitespace-nowrap">← Home</Link>
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <span className="text-chip-cream">
-            {ownerProfile?.display_name ?? '…'} {match.white_score}–{match.black_score}{' '}
+      <header className="flex flex-wrap items-center justify-between px-3 sm:px-4 py-2 text-board-felt/80 gap-x-3 gap-y-1">
+        <Link to="/" className="text-board-accent text-sm whitespace-nowrap order-1">← Home</Link>
+        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono order-3 sm:order-2 w-full sm:w-auto justify-center">
+          <span className="text-chip-cream truncate max-w-[8rem]">
+            {ownerProfile?.display_name ?? '…'}
+          </span>
+          <span className="px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 font-display tracking-wider whitespace-nowrap">
+            {match.white_score}–{match.black_score}
+          </span>
+          <span className="text-board-felt truncate max-w-[8rem]">
             {opponentProfile?.display_name ?? '…'}
           </span>
-          <span className="text-board-felt/40">·</span>
-          <span className="text-board-felt/60">to {match.target}</span>
-          <span className="text-board-felt/40 ml-2">w {whitePip}</span>
-          <span className="text-board-felt/40">b {blackPip}</span>
+          <span className="text-board-felt/40 hidden sm:inline">·</span>
+          <span className="text-board-felt/60 hidden sm:inline">to {match.target}</span>
+          <span className="text-board-felt/40 ml-2 hidden sm:inline">w {whitePip}</span>
+          <span className="text-board-felt/40 hidden sm:inline">b {blackPip}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-board-felt/60 capitalize whitespace-nowrap">
           {isSpectator && (
@@ -192,7 +197,23 @@ export default function PlayOnline() {
               Spectator
             </span>
           )}
+          {game.inCrawfordGame && (
+            <span className="px-1.5 py-0.5 rounded bg-amber-600/30 border border-amber-500/50 font-display text-[10px] tracking-wider uppercase text-amber-200">
+              Crawford
+            </span>
+          )}
           {turnLabel}
+          {!isSpectator && !game.matchFinished && (
+            <button
+              onClick={async () => {
+                if (!confirm('Resign? Opponent wins the match.')) return;
+                await game.resign();
+              }}
+              className="ml-2 text-[10px] uppercase tracking-wider text-board-felt/40 hover:text-rose-400 transition"
+            >
+              Resign
+            </button>
+          )}
         </div>
       </header>
 

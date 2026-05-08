@@ -19,8 +19,8 @@ export default function MatchHeader({
   onNewMatch,
 }: Props) {
   return (
-    <header className="flex items-center justify-between px-4 py-2 text-board-felt/80 gap-3">
-      <div className="flex items-center gap-3">
+    <header className="flex flex-wrap items-center justify-between px-3 py-2 sm:px-4 text-board-felt/80 gap-x-3 gap-y-1">
+      <div className="flex items-center gap-3 order-1">
         <Link to="/" className="text-board-accent text-sm whitespace-nowrap">
           ← Home
         </Link>
@@ -40,15 +40,19 @@ export default function MatchHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-3 text-xs font-mono">
+      <div className="text-xs text-board-felt/60 capitalize whitespace-nowrap order-2 sm:order-3">
+        {turnLabel}
+      </div>
+
+      <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono w-full sm:w-auto justify-center order-3 sm:order-2">
         <span className="text-chip-cream">
-          white <span className="text-board-felt/50">{whitePip}p</span>
+          w <span className="text-board-felt/50">{whitePip}</span>
         </span>
-        <span className="px-2 py-1 rounded bg-amber-900/40 text-amber-200 font-display tracking-wider">
+        <span className="px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 font-display tracking-wider">
           {match.score.white}–{match.score.black}
         </span>
         <span className="text-board-felt">
-          <span className="text-board-felt/50">{blackPip}p</span> black
+          <span className="text-board-felt/50">{blackPip}</span> b
         </span>
         <span className="text-board-felt/40">·</span>
         <span className="text-board-felt/60">to {match.target}</span>
@@ -58,8 +62,6 @@ export default function MatchHeader({
           </span>
         )}
       </div>
-
-      <div className="text-xs text-board-felt/60 capitalize whitespace-nowrap">{turnLabel}</div>
     </header>
   );
 }

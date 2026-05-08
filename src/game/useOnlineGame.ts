@@ -121,6 +121,7 @@ export interface OnlineGameState {
   readonly cubeOffer: Player | null;
   readonly canOfferDouble: boolean;
   readonly betweenGames: boolean;
+  readonly inCrawfordGame: boolean;
 }
 
 export interface OnlineGameActions {
@@ -132,6 +133,7 @@ export interface OnlineGameActions {
   offerDouble(): Promise<void>;
   acceptDouble(): Promise<void>;
   dropDouble(): Promise<void>;
+  resign(): Promise<void>;
 }
 
 export function useOnlineGame(matchId: string | undefined): OnlineGameState & OnlineGameActions {
@@ -249,6 +251,15 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
   // Between games, white always starts the next game (matches edge function expectation).
   const effectiveTurn: Player = betweenGames ? 'white' : derived.whoseTurn;
   const isLocalTurn = localColor !== null && effectiveTurn === localColor;
+
+  // Crawford game: the first game played after either side first reached target-1.
+  // No doubling allowed during the Crawford game (post-Crawford resumes doubling).
+  const inCrawfordGame =
+    !!match &&
+    match.crawford_game_number !== null &&
+    !!currentGame &&
+    match.crawford_game_number === currentGame.game_number &&
+    !gameFinishedInDb;
   const gameWinner = useMemo(
     () => (betweenGames ? (currentGame?.winner as Player | null) : engineWinner(derived.board)),
     [betweenGames, currentGame?.winner, derived.board]
@@ -301,6 +312,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
   const canOfferDouble =
     !matchFinished &&
     !betweenGames &&
+    !inCrawfordGame &&
     !!match &&
     !!match.opponent_id &&
     currentTurn === null &&
@@ -438,6 +450,14 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
         match.black_score + (result.winner === 'black' ? result.points : 0);
       const matchOver = newWhite >= match.target || newBlack >= match.target;
 
+      // Crawford detection: first time a player reaches target-1, the next game is Crawford.
+      const oldMax = Math.max(match.white_score, match.black_score);
+      const newMax = Math.max(newWhite, newBlack);
+      const newCrawford =
+        match.crawford_game_number === null && oldMax < match.target - 1 && newMax === match.target - 1
+          ? (currentGame?.game_number ?? 0) + 1
+          : match.crawford_game_number;
+
       // Keep current_game_id pointing at the just-finished game so both
       // clients can show a "game over" banner. The edge function on the
       // next roll detects this and lazy-creates the next game.
@@ -445,6 +465,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
         current_turn: null,
         white_score: newWhite,
         black_score: newBlack,
+        crawford_game_number: matchOver ? match.crawford_game_number : newCrawford,
         winner: matchOver ? result.winner : null,
         finished_at: matchOver ? new Date().toISOString() : null,
       };
@@ -516,19 +537,63 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     const newBlack = match.black_score + (winnerOfDrop === 'black' ? points : 0);
     const matchOver = newWhite >= match.target || newBlack >= match.target;
 
+    const oldMax = Math.max(match.white_score, match.black_score);
+    const newMax = Math.max(newWhite, newBlack);
+    const newCrawford =
+      match.crawford_game_number === null && oldMax < match.target - 1 && newMax === match.target - 1
+        ? (currentGame?.game_number ?? 0) + 1
+        : match.crawford_game_number;
+
     const { error: upErr } = await supabase
       .from('matches')
       .update({
         cube_offer: null,
         white_score: newWhite,
         black_score: newBlack,
+        crawford_game_number: matchOver ? match.crawford_game_number : newCrawford,
         winner: matchOver ? winnerOfDrop : null,
         finished_at: matchOver ? new Date().toISOString() : null,
       })
       .eq('id', matchId);
     if (upErr) setError(upErr.message);
     void refresh();
-  }, [matchId, match, cubeOffer, localColor, cubeValue, cubeOwner, refresh]);
+  }, [matchId, match, cubeOffer, localColor, cubeValue, cubeOwner, currentGame, refresh]);
+
+  // Resign: end the match immediately, opponent wins remainder.
+  const resign = useCallback(async () => {
+    if (!matchId || !match || !localColor || matchFinished) return;
+    setError(null);
+    const opp: Player = localColor === 'white' ? 'black' : 'white';
+    const points = Math.max(1, match.target - (opp === 'white' ? match.white_score : match.black_score));
+    const newWhite = match.white_score + (opp === 'white' ? points : 0);
+    const newBlack = match.black_score + (opp === 'black' ? points : 0);
+
+    if (match.current_game_id) {
+      await supabase
+        .from('games')
+        .update({
+          winner: opp,
+          win_type: 'single',
+          points_awarded: points,
+          finished_at: new Date().toISOString(),
+        })
+        .eq('id', match.current_game_id);
+    }
+
+    const { error: upErr } = await supabase
+      .from('matches')
+      .update({
+        white_score: newWhite,
+        black_score: newBlack,
+        winner: opp,
+        finished_at: new Date().toISOString(),
+        current_turn: null,
+        cube_offer: null,
+      })
+      .eq('id', matchId);
+    if (upErr) setError(upErr.message);
+    void refresh();
+  }, [matchId, match, localColor, matchFinished, refresh]);
 
   return {
     loading,
@@ -553,6 +618,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     cubeOffer,
     canOfferDouble,
     betweenGames,
+    inCrawfordGame,
     rollDice,
     selectFrom,
     cancelSelection,
@@ -561,5 +627,6 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     offerDouble,
     acceptDouble,
     dropDouble,
+    resign,
   };
 }
