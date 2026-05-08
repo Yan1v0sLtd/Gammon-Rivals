@@ -15,7 +15,12 @@ import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
 // driven "fall."
 const GRAVITY_Z = 1100;
 const FLOOR_Z = 28; // cube settles with its centre at z ≈ 0
-const SPAWN_Z = 200; // cube spawns close to the camera
+// Cube spawns just above the floor at one side of the slot — it's
+// THROWN across the slot rather than dropped onto it. The strong
+// horizontal velocity makes for visible lateral motion + multiple wall
+// bounces; gravity still pulls -z so the rolled face settles toward
+// the camera.
+const SPAWN_Z = 70;
 // Per-die slot geometry. Walls in the xy plane keep the cube inside its
 // own slot. Cube CENTER can travel up to ±(SLOT_WALL_HALF − CUBE_HALF).
 // With SLOT_WIDTH = 140 and SLOT_WALL_HALF = 65 the cube has ±37 px of
@@ -23,14 +28,18 @@ const SPAWN_Z = 200; // cube spawns close to the camera
 // max keeps a comfortable gap to the neighbouring slot's cube.
 const SLOT_WIDTH = 140;
 const SLOT_WALL_HALF = 65;
-const WALL_HALF_Y = 80; // vertical bounds of slot (in CSS y-down coords)
+const WALL_HALF_Y = 95; // vertical bounds of slot (in CSS y-down coords)
 const CUBE_HALF = DIE_SIZE / 2;
-const RESTITUTION = 0.28;
-const FRICTION = 0.32;
-const SLEEP_SPEED_LIMIT = 6;
-const SLEEP_TIME_LIMIT = 0.04;
-const LINEAR_DAMPING = 0.04;
-const ANGULAR_DAMPING = 0.18;
+// Bouncier dice — restitution 0.42 means each wall/floor hit returns
+// ~42 % of the impact velocity, so the cube ricochets off the far wall
+// with enough energy to traverse back across, giving 2-3 visible bounces
+// per throw instead of dying on first contact.
+const RESTITUTION = 0.42;
+const FRICTION = 0.22;
+const SLEEP_SPEED_LIMIT = 7;
+const SLEEP_TIME_LIMIT = 0.05;
+const LINEAR_DAMPING = 0.02;
+const ANGULAR_DAMPING = 0.16;
 
 const PHYSICS_DT = 1 / 60;
 const MAX_SIM_STEPS = 360;
@@ -292,26 +301,29 @@ function buildWorld(): { world: CANNON.World; body: CANNON.Body } {
   return { world, body };
 }
 
-/** Reset the body to a fresh randomized throw at the top of its slot. */
+/** Reset the body to a fresh "thrown from one side" toss. The cube
+ *  enters the slot horizontally and the player can clearly see it
+ *  travel across the felt before settling. */
 function throwBody(body: CANNON.Body): void {
+  // Pick a side to throw from. The cube starts just inside that wall.
+  const startSide = Math.random() < 0.5 ? -1 : 1;
   body.position.set(
-    (Math.random() - 0.5) * 30,
-    (Math.random() - 0.5) * 30,
-    SPAWN_Z + Math.random() * 60
+    startSide * (SLOT_WALL_HALF - CUBE_HALF - 4),
+    (Math.random() - 0.5) * (WALL_HALF_Y - CUBE_HALF) * 1.2,
+    SPAWN_Z + Math.random() * 25
   );
-  const dirX = Math.random() < 0.5 ? -1 : 1;
-  const dirY = Math.random() < 0.5 ? -1 : 1;
-  // Throw across the slot — the cube bounces off the slot walls in xy
-  // while gravity pulls it -z onto the floor.
+  // Velocity tuned so the slot traversal takes ~0.4 s — long enough for
+  // the lateral motion to read clearly, short enough that the cube
+  // still settles before the brute-force loop re-tries.
   body.velocity.set(
-    dirX * (140 + Math.random() * 120),
-    dirY * (100 + Math.random() * 100),
-    -50 + Math.random() * 80
+    -startSide * (170 + Math.random() * 100),
+    (Math.random() - 0.5) * 130,
+    -25 + Math.random() * 25
   );
   body.angularVelocity.set(
-    (Math.random() - 0.5) * 18,
-    (Math.random() - 0.5) * 18,
-    (Math.random() - 0.5) * 18
+    (Math.random() - 0.5) * 20,
+    (Math.random() - 0.5) * 20,
+    (Math.random() - 0.5) * 20
   );
   body.quaternion.setFromEuler(
     Math.random() * 2 * Math.PI,
