@@ -53,23 +53,23 @@ const FACE_LOCAL_NORMALS: Record<Die, [number, number, number]> = {
   6: [0, -1, 0],
 };
 
-// Canonical "face V points to -y world (up on screen)" quaternion. From
-// Q*n_V = -y with the smallest rotation that gets there. Yaw around
-// vertical is free; we pick yaw=0 here and resolve at runtime.
+// Canonical "face V points toward the camera (+z world)" quaternion.
+// At rest the player sees the rolled face flat-on, perpendicular to the
+// screen. (These are the same rotations Die3D uses in FACE_TARGET_ROTATION.)
 const HALF_SQRT2 = Math.SQRT1_2;
-const FACE_UP_QUATS: Record<Die, Quat> = {
-  // Face 1 normal +z → -y: R_x(+π/2)
-  1: { x: HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
-  // Face 2 normal -z → -y: R_x(-π/2)
-  2: { x: -HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
-  // Face 3 normal -x → -y: R_z(+π/2)
-  3: { x: 0, y: 0, z: HALF_SQRT2, w: HALF_SQRT2 },
-  // Face 4 normal +x → -y: R_z(-π/2)
-  4: { x: 0, y: 0, z: -HALF_SQRT2, w: HALF_SQRT2 },
-  // Face 5 normal +y → -y: R_x(π)
-  5: { x: 1, y: 0, z: 0, w: 0 },
-  // Face 6 normal -y → -y: identity
-  6: { x: 0, y: 0, z: 0, w: 1 },
+const FACE_FRONT_QUATS: Record<Die, Quat> = {
+  // Face 1 normal +z → +z: identity
+  1: { x: 0, y: 0, z: 0, w: 1 },
+  // Face 2 normal -z → +z: R_y(π)
+  2: { x: 0, y: 1, z: 0, w: 0 },
+  // Face 3 normal -x → +z: R_y(+π/2)
+  3: { x: 0, y: HALF_SQRT2, z: 0, w: HALF_SQRT2 },
+  // Face 4 normal +x → +z: R_y(-π/2)
+  4: { x: 0, y: -HALF_SQRT2, z: 0, w: HALF_SQRT2 },
+  // Face 5 normal +y → +z: R_x(+π/2)
+  5: { x: HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
+  // Face 6 normal -y → +z: R_x(-π/2)
+  6: { x: -HALF_SQRT2, y: 0, z: 0, w: HALF_SQRT2 },
 };
 
 interface Quat {
@@ -155,18 +155,19 @@ function slerp(qa: Quat, qb: Quat, t: number): Quat {
   };
 }
 
-/** Among the four equivalent "face V up" orientations (rotated 0/90/180/270°
- *  around vertical), pick the one closest to the physics-settled quaternion.
- *  This preserves the cube's yaw — the slerp covers only the residual tilt. */
-function pickYawedFaceUp(qFinal: Quat, value: Die): Quat {
-  const qBase = FACE_UP_QUATS[value];
+/** Among the four "face V toward camera" orientations rotated 0/90/180/270°
+ *  around the camera axis (+z world), pick the one closest to the
+ *  physics-settled quaternion. The rolled face stays perpendicular to the
+ *  screen; only the in-plane spin of the pip pattern is preserved. */
+function pickYawedFaceFront(qFinal: Quat, value: Die): Quat {
+  const qBase = FACE_FRONT_QUATS[value];
   let best = qBase;
   let bestDot = -Infinity;
   for (let k = 0; k < 4; k++) {
     const yaw = (k * Math.PI) / 2;
     const half = yaw / 2;
-    // Yaw rotation is around world -y axis (visual "up" in CSS y-down coords).
-    const qYaw: Quat = { x: 0, y: -Math.sin(half), z: 0, w: Math.cos(half) };
+    // Yaw rotation around world +z axis (camera-axis spin).
+    const qYaw: Quat = { x: 0, y: 0, z: Math.sin(half), w: Math.cos(half) };
     const candidate = quatMul(qYaw, qBase);
     const dot =
       qFinal.x * candidate.x +
@@ -397,7 +398,7 @@ export default function DiceTray({
       const last = t[t.length - 1];
       return last ? { x: last.px, y: last.py, z: last.pz } : { x: 0, y: 0, z: 0 };
     });
-    const targetQuats: Quat[] = dice.map((d, i) => pickYawedFaceUp(finalQuats[i], d.value));
+    const targetQuats: Quat[] = dice.map((d, i) => pickYawedFaceFront(finalQuats[i], d.value));
 
     let phase: 'play' | 'resolve' | 'done' = 'play';
     const playStart = performance.now();
@@ -493,14 +494,16 @@ export default function DiceTray({
                 pointerEvents: 'none',
               }}
             >
-              {/* Slight downward tilt so the top face reads cleanly while
-                  side faces remain visible during the tumble. */}
+              {/* No parent tilt — the cube settles with the rolled face
+                  perpendicular to the screen, so the player sees it flat-on.
+                  Perspective on the wrapper above still gives 3D depth
+                  (cubes at different z look different sizes during the
+                  throw). */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
                   transformStyle: 'preserve-3d',
-                  transform: 'rotateX(28deg)',
                 }}
               >
                 {dice.map((d, i) => {
