@@ -22,24 +22,26 @@ const FLOOR_Z = 28; // cube settles with its centre at z ≈ 0
 // the camera.
 const SPAWN_Z = 70;
 // Per-die slot geometry. Walls in the xy plane keep the cube inside its
-// own slot. Cube CENTER can travel up to ±(SLOT_WALL_HALF − CUBE_HALF).
-// With SLOT_WIDTH = 140 and SLOT_WALL_HALF = 65 the cube has ±37 px of
-// horizontal play (plenty of wall-bounces) while the cube's outer edge
-// max keeps a comfortable gap to the neighbouring slot's cube.
-const SLOT_WIDTH = 140;
-const SLOT_WALL_HALF = 65;
-const WALL_HALF_Y = 95; // vertical bounds of slot (in CSS y-down coords)
+// own slot. SLOT_WIDTH = 150 (max that still fits 4 dice in the 600 px
+// tray for doubles) and SLOT_WALL_HALF = 70 give the cube ±42 px of
+// horizontal play — enough room for it to actually roll across the
+// felt and bounce off both walls multiple times.
+const SLOT_WIDTH = 150;
+const SLOT_WALL_HALF = 70;
+const WALL_HALF_Y = 100;
 const CUBE_HALF = DIE_SIZE / 2;
-// Bouncier dice — restitution 0.42 means each wall/floor hit returns
-// ~42 % of the impact velocity, so the cube ricochets off the far wall
-// with enough energy to traverse back across, giving 2-3 visible bounces
-// per throw instead of dying on first contact.
-const RESTITUTION = 0.42;
-const FRICTION = 0.22;
-const SLEEP_SPEED_LIMIT = 7;
-const SLEEP_TIME_LIMIT = 0.05;
-const LINEAR_DAMPING = 0.02;
-const ANGULAR_DAMPING = 0.16;
+// Tuned for a long, lively roll. Restitution 0.55 means each wall/floor
+// contact returns 55 % of the impact velocity, so the cube ricochets
+// across the slot 3-4 times before its energy bleeds down. Low friction
+// and damping let the spin and slide carry on while the cube is in
+// motion. Sleep settings require the cube to be genuinely still before
+// it stops — no premature freeze mid-roll.
+const RESTITUTION = 0.55;
+const FRICTION = 0.18;
+const SLEEP_SPEED_LIMIT = 4;
+const SLEEP_TIME_LIMIT = 0.12;
+const LINEAR_DAMPING = 0.01;
+const ANGULAR_DAMPING = 0.08;
 
 const PHYSICS_DT = 1 / 60;
 const MAX_SIM_STEPS = 360;
@@ -312,18 +314,22 @@ function throwBody(body: CANNON.Body): void {
     (Math.random() - 0.5) * (WALL_HALF_Y - CUBE_HALF) * 1.2,
     SPAWN_Z + Math.random() * 25
   );
-  // Velocity tuned so the slot traversal takes ~0.4 s — long enough for
-  // the lateral motion to read clearly, short enough that the cube
-  // still settles before the brute-force loop re-tries.
+  // Strong horizontal velocity so the cube traverses the slot,
+  // ricochets off the far wall, and bounces back several times before
+  // settling. Combined with restitution 0.55 and low damping this
+  // gives a visible 3-4 bounce roll, not a single quick slide.
   body.velocity.set(
-    -startSide * (170 + Math.random() * 100),
-    (Math.random() - 0.5) * 130,
-    -25 + Math.random() * 25
+    -startSide * (290 + Math.random() * 140),
+    (Math.random() - 0.5) * 180,
+    -20 + Math.random() * 30
   );
+  // High angular velocity — combined with floor friction this turns
+  // sliding into rolling, so the cube visibly tumbles end-over-end as
+  // it travels.
   body.angularVelocity.set(
-    (Math.random() - 0.5) * 20,
-    (Math.random() - 0.5) * 20,
-    (Math.random() - 0.5) * 20
+    (Math.random() - 0.5) * 28,
+    (Math.random() - 0.5) * 28,
+    (Math.random() - 0.5) * 28
   );
   body.quaternion.setFromEuler(
     Math.random() * 2 * Math.PI,
