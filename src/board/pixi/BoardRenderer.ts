@@ -9,16 +9,58 @@ import {
 } from 'pixi.js';
 import { BAR, OFF } from '../../engine/types';
 import type { BoardState, Player, Position } from '../../engine/types';
-import { checkerCenterY, computeLayout, pointCoords, type Layout } from '../coordinates';
-import type { LoadedTheme, ThemeAssetKey, ThemeColors } from '../theme';
+import { checkerCenter, computeLayout, pointCoords, type Layout } from '../coordinates';
+import type { LoadedTheme, ThemeAssetKey, ThemeColors, ThemeLayout } from '../theme';
 
 export interface RenderSelection {
   readonly selectedFrom: Position | null;
   readonly validDestinations: readonly Position[];
   readonly legalOrigins: readonly Position[];
+  readonly opponentOrigins?: readonly Position[];
+  readonly opponentDestinations?: readonly Position[];
+  readonly alignmentDebug?: AlignmentDebugSelection;
+}
+
+export interface AlignmentDebugSelection {
+  readonly enabled: boolean;
+  readonly side: 'top' | 'bottom';
+  readonly column: number;
+  readonly anchor: 'base' | 'tip' | 'topChecker';
 }
 
 export type PointClickHandler = (pos: Position) => void;
+
+interface CheckerSkip {
+  readonly pos: Position;
+  readonly owner: Player;
+}
+
+interface MoveAnimation {
+  readonly owner: Player;
+  readonly from: { x: number; y: number };
+  readonly to: { x: number; y: number };
+  readonly skip: CheckerSkip | null;
+  readonly start: number;
+  readonly duration: number;
+}
+
+interface DealItem {
+  readonly owner: Player;
+  readonly pos: number;
+  readonly stackIndex: number;
+  readonly count: number;
+}
+
+interface DealAnimation {
+  readonly items: readonly DealItem[];
+  readonly start: number;
+  readonly itemDuration: number;
+  readonly stagger: number;
+  readonly totalDuration: number;
+}
+
+const DEAL_ITEM_DURATION_MS = 330;
+const DEAL_TOTAL_MS = 1750;
 
 // Deterministic LCG for reproducible "wood grain" patterns
 function lcg(seed: number) {
@@ -33,19 +75,32 @@ export class BoardRenderer {
   private readonly app: Application;
   private readonly root: Container;
   private layout: Layout;
+  private themeLayout: ThemeLayout | undefined;
   private readonly loaded: LoadedTheme;
   private onPointClick: PointClickHandler | null = null;
+  private previousState: BoardState | null = null;
+  private currentState: BoardState | null = null;
+  private currentSelection: RenderSelection | undefined;
+  private animation: MoveAnimation | null = null;
+  private dealAnimation: DealAnimation | null = null;
+  private animationFrame: number | null = null;
 
   constructor(app: Application, loaded: LoadedTheme) {
     this.app = app;
     this.loaded = loaded;
     this.root = new Container();
     this.app.stage.addChild(this.root);
-    this.layout = computeLayout(app.screen.width, app.screen.height);
+    this.themeLayout = loaded.theme.layout;
+    this.layout = computeLayout(app.screen.width, app.screen.height, this.themeLayout);
   }
 
   resize(width: number, height: number) {
-    this.layout = computeLayout(width, height);
+    this.layout = computeLayout(width, height, this.themeLayout);
+  }
+
+  setThemeLayout(themeLayout: ThemeLayout | undefined) {
+    this.themeLayout = themeLayout;
+    this.layout = computeLayout(this.app.screen.width, this.app.screen.height, this.themeLayout);
   }
 
   setOnPointClick(fn: PointClickHandler | null) {
@@ -53,17 +108,53 @@ export class BoardRenderer {
   }
 
   render(state: BoardState, selection?: RenderSelection) {
-    this.root.removeChildren();
-    this.drawFrame();
-    this.drawRails();
-    this.drawFelt();
-    this.drawPoints();
-    this.drawBar();
-    this.drawHinges();
-    this.drawCheckers(state);
-    this.drawBarCheckers(state);
-    this.drawOffTrays(state);
+    const alignmentMode = Boolean(selection?.alignmentDebug?.enabled);
+    const shouldDeal =
+      !alignmentMode &&
+      this.isStartingPosition(state) &&
+      (!this.previousState || !this.isStartingPosition(this.previousState));
+
+    if (shouldDeal) {
+      this.startDealAnimation(state);
+    }
+
+    if (this.previousState && this.previousState !== state) {
+      this.animation = this.detectMoveAnimation(this.previousState, state);
+      if (this.animation) this.startAnimationLoop();
+    }
+    this.previousState = state;
+    this.currentState = state;
+    this.currentSelection = selection;
+    this.drawScene(state, selection);
+  }
+
+  private drawScene(state: BoardState, selection?: RenderSelection) {
+    this.clearRoot();
+    const hasBoardTexture = Boolean(this.texture('board'));
+    if (hasBoardTexture) {
+      this.drawBoardTexture();
+    } else {
+      this.drawFrame();
+      this.drawRails();
+      this.drawFelt();
+      this.drawPoints();
+      this.drawBar();
+      this.drawHinges();
+    }
+    const animation = this.currentAnimation();
+    const dealAnimation = this.currentDealAnimation();
+    if (dealAnimation) {
+      this.drawDealCheckers(dealAnimation);
+    } else {
+      this.drawCheckers(state, animation?.skip ?? null);
+    }
+    this.drawBarCheckers(state, animation?.skip ?? null);
+    this.drawOffTrays(state, !hasBoardTexture, animation?.skip ?? null);
     if (selection) this.drawSelectionOverlay(state, selection);
+    if (selection?.alignmentDebug?.enabled) {
+      this.drawAlignmentDebugOverlay(state, selection.alignmentDebug);
+    }
+    if (animation) this.drawAnimatedChecker(animation);
     if (this.onPointClick) this.drawHitAreas(state);
   }
 
@@ -73,6 +164,244 @@ export class BoardRenderer {
 
   private texture(key: ThemeAssetKey): Texture | undefined {
     return this.loaded.textures[key];
+  }
+
+  private clearRoot() {
+    const children = this.root.removeChildren();
+    for (const child of children) {
+      child.destroy({ children: true, texture: false, textureSource: false });
+    }
+  }
+
+  private currentAnimation(): MoveAnimation | null {
+    const animation = this.animation;
+    if (!animation) return null;
+    if (performance.now() - animation.start >= animation.duration) {
+      this.animation = null;
+      return null;
+    }
+    return animation;
+  }
+
+  private currentDealAnimation(): DealAnimation | null {
+    const animation = this.dealAnimation;
+    if (!animation) return null;
+    if (performance.now() - animation.start >= animation.totalDuration) {
+      this.dealAnimation = null;
+      return null;
+    }
+    return animation;
+  }
+
+  private startAnimationLoop() {
+    if (this.animationFrame !== null) return;
+
+    const tick = () => {
+      this.animationFrame = null;
+      if ((!this.animation && !this.dealAnimation) || !this.currentState) return;
+      this.drawScene(this.currentState, this.currentSelection);
+      if (this.animation || this.dealAnimation) {
+        this.animationFrame = requestAnimationFrame(tick);
+      }
+    };
+
+    this.animationFrame = requestAnimationFrame(tick);
+  }
+
+  private startDealAnimation(state: BoardState) {
+    const items = this.dealItems(state);
+    if (items.length === 0) return;
+    const stagger =
+      items.length <= 1
+        ? 0
+        : Math.max(28, (DEAL_TOTAL_MS - DEAL_ITEM_DURATION_MS) / (items.length - 1));
+    this.dealAnimation = {
+      items,
+      start: performance.now(),
+      itemDuration: DEAL_ITEM_DURATION_MS,
+      stagger,
+      totalDuration: Math.min(2000, DEAL_ITEM_DURATION_MS + stagger * (items.length - 1)),
+    };
+    this.startAnimationLoop();
+  }
+
+  private dealItems(state: BoardState): readonly DealItem[] {
+    const stacks: DealItem[][] = [];
+    for (let pos = 0; pos < 24; pos++) {
+      const point = state.points[pos];
+      if (!point || !point.owner || point.count <= 0) continue;
+      stacks.push(
+        Array.from({ length: point.count }, (_, stackIndex) => ({
+          owner: point.owner!,
+          pos,
+          stackIndex,
+          count: point.count,
+        }))
+      );
+    }
+    stacks.sort((a, b) => {
+      const aPos = pointCoords(this.layout, a[0]!.pos);
+      const bPos = pointCoords(this.layout, b[0]!.pos);
+      return aPos.y - bPos.y || aPos.x - bPos.x;
+    });
+
+    const items: DealItem[] = [];
+    const tallest = Math.max(0, ...stacks.map((stack) => stack.length));
+    for (let n = 0; n < tallest; n++) {
+      for (const stack of stacks) {
+        const item = stack[n];
+        if (item) items.push(item);
+      }
+    }
+    return items;
+  }
+
+  private isStartingPosition(state: BoardState): boolean {
+    if (state.bar.white !== 0 || state.bar.black !== 0) return false;
+    if (state.off.white !== 0 || state.off.black !== 0) return false;
+    const expected: Record<number, readonly [Player, number]> = {
+      0: ['white', 2],
+      5: ['black', 5],
+      7: ['black', 3],
+      11: ['white', 5],
+      12: ['black', 5],
+      16: ['white', 3],
+      18: ['white', 5],
+      23: ['black', 2],
+    };
+
+    for (let idx = 0; idx < 24; idx++) {
+      const point = state.points[idx];
+      const exp = expected[idx];
+      if (!exp) {
+        if (point?.owner || point?.count) return false;
+        continue;
+      }
+      if (!point || point.owner !== exp[0] || point.count !== exp[1]) return false;
+    }
+    return true;
+  }
+
+  private detectMoveAnimation(previous: BoardState, next: BoardState): MoveAnimation | null {
+    const owner = previous.turn;
+    const positions: Position[] = [
+      ...Array.from({ length: 24 }, (_, idx) => idx),
+      BAR,
+      OFF,
+    ];
+    let from: Position | null = null;
+    let to: Position | null = null;
+    let totalAbsDelta = 0;
+
+    for (const pos of positions) {
+      const delta = this.checkerCount(next, pos, owner) - this.checkerCount(previous, pos, owner);
+      totalAbsDelta += Math.abs(delta);
+      if (delta === -1) {
+        if (from !== null) return null;
+        from = pos;
+      } else if (delta === 1) {
+        if (to !== null) return null;
+        to = pos;
+      } else if (delta !== 0) {
+        return null;
+      }
+    }
+
+    if (totalAbsDelta !== 2 || from === null || to === null) return null;
+
+    const fromAnchor = this.checkerAnchor(previous, from, owner);
+    const toAnchor = this.checkerAnchor(next, to, owner);
+    if (!fromAnchor || !toAnchor) return null;
+
+    return {
+      owner,
+      from: fromAnchor,
+      to: toAnchor,
+      skip: to === BAR ? null : { pos: to, owner },
+      start: performance.now(),
+      duration: 340,
+    };
+  }
+
+  private checkerCount(state: BoardState, pos: Position, owner: Player): number {
+    if (pos === BAR) return state.bar[owner];
+    if (pos === OFF) return state.off[owner];
+    const point = state.points[pos];
+    return point?.owner === owner ? point.count : 0;
+  }
+
+  private checkerAnchor(
+    state: BoardState,
+    pos: Position,
+    owner: Player
+  ): { x: number; y: number } | null {
+    if (pos === BAR) {
+      const count = state.bar[owner];
+      if (count <= 0) return null;
+      return this.barCheckerAnchor(owner, count - 1);
+    }
+    if (pos === OFF) return this.offCheckerAnchor(owner, Math.max(0, state.off[owner] - 1));
+
+    const point = state.points[pos];
+    if (!point || point.owner !== owner || point.count <= 0) return null;
+    const ppos = pointCoords(this.layout, pos);
+    return checkerCenter(this.layout, ppos, point.count - 1, point.count);
+  }
+
+  private barCheckerAnchor(owner: Player, stackIndex: number): { x: number; y: number } {
+    const { barX, barWidth, height, checkerRadius } = this.layout;
+    const cx = barX + barWidth / 2;
+    const diameter = 2 * checkerRadius;
+    const cy =
+      owner === 'white'
+        ? height / 2 + checkerRadius + 6 + stackIndex * diameter
+        : height / 2 - checkerRadius - 6 - stackIndex * diameter;
+    return { x: cx, y: cy };
+  }
+
+  private offTrayMetrics(owner: Player) {
+    const { width, height, railWidth, checkerRadius } = this.layout;
+    const trayHeight = height * 0.29;
+    const trayTop = owner === 'black' ? height * 0.105 : height * 0.605;
+    const usable = Math.max(checkerRadius, trayHeight - checkerRadius * 2);
+    return {
+      x: width - railWidth * 0.6,
+      top: trayTop,
+      width: Math.max(checkerRadius * 2.3, railWidth * 0.36),
+      height: trayHeight,
+      step: Math.min(checkerRadius * 0.5, usable / 14),
+    };
+  }
+
+  private offCheckerAnchor(owner: Player, stackIndex = 0): { x: number; y: number } {
+    const { checkerRadius } = this.layout;
+    const tray = this.offTrayMetrics(owner);
+    return {
+      x: tray.x,
+      y:
+        owner === 'black'
+          ? tray.top + checkerRadius + stackIndex * tray.step
+          : tray.top + tray.height - checkerRadius - stackIndex * tray.step,
+    };
+  }
+
+  private drawAnimatedChecker(animation: MoveAnimation) {
+    const raw = Math.min(1, (performance.now() - animation.start) / animation.duration);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    const lift = Math.sin(raw * Math.PI) * this.layout.checkerRadius * 0.55;
+    const x = animation.from.x + (animation.to.x - animation.from.x) * eased;
+    const y = animation.from.y + (animation.to.y - animation.from.y) * eased - lift;
+    this.drawChecker(x, y, animation.owner);
+  }
+
+  private drawBoardTexture() {
+    const tex = this.texture('board');
+    if (!tex) return;
+    const { width, height } = this.layout;
+    const sprite = new Sprite(tex);
+    sprite.width = width;
+    sprite.height = height;
+    this.root.addChild(sprite);
   }
 
   /**
@@ -335,27 +664,52 @@ export class BoardRenderer {
     }
   }
 
-  private drawCheckers(state: BoardState) {
+  private drawCheckers(state: BoardState, skip: CheckerSkip | null = null) {
     for (let i = 0; i < 24; i++) {
       const point = state.points[i];
       if (!point || point.count === 0 || point.owner === null) continue;
       const pos = pointCoords(this.layout, i);
       for (let n = 0; n < point.count; n++) {
-        const cy = checkerCenterY(this.layout, pos, n, point.count);
-        this.drawChecker(pos.x, cy, point.owner);
+        if (skip?.pos === i && skip.owner === point.owner && n === point.count - 1) continue;
+        const center = checkerCenter(this.layout, pos, n, point.count);
+        this.drawChecker(center.x, center.y, point.owner);
       }
+    }
+  }
+
+  private drawDealCheckers(animation: DealAnimation) {
+    const elapsed = performance.now() - animation.start;
+    const source = {
+      x: this.layout.width * 0.5,
+      y: Math.max(this.layout.checkerRadius * 1.2, this.layout.height * 0.07),
+    };
+
+    for (let idx = 0; idx < animation.items.length; idx++) {
+      const item = animation.items[idx]!;
+      const itemElapsed = elapsed - idx * animation.stagger;
+      if (itemElapsed < 0) continue;
+
+      const pos = pointCoords(this.layout, item.pos);
+      const target = checkerCenter(this.layout, pos, item.stackIndex, item.count);
+      const t = Math.min(1, itemElapsed / animation.itemDuration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const lift = Math.sin(t * Math.PI) * this.layout.checkerRadius * 0.6;
+      const fan = (idx % 5 - 2) * this.layout.checkerRadius * 0.18;
+      const x = source.x + fan * (1 - eased) + (target.x - source.x) * eased;
+      const y = source.y + (target.y - source.y) * eased - lift;
+      this.drawChecker(x, y, item.owner);
     }
   }
 
   private drawChecker(x: number, y: number, owner: Player) {
     const r = this.layout.checkerRadius;
+    const ry = r * this.layout.checkerScaleY;
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
-    // Stronger drop shadow — wider, darker, slightly lower
     const shadow = new Graphics();
     shadow
-      .ellipse(x + 2, y + r * 0.32, r * 1.0, r * 0.42)
-      .fill({ color: 0x000000, alpha: 0.55 });
+      .ellipse(x + r * 0.2, y + ry * 0.36, r * 0.46, ry * 0.11)
+      .fill({ color: 0x000000, alpha: 0.12 });
     this.root.addChild(shadow);
 
     if (tex) {
@@ -364,7 +718,7 @@ export class BoardRenderer {
       sprite.x = x;
       sprite.y = y;
       sprite.width = r * 2;
-      sprite.height = r * 2;
+      sprite.height = r * 2 * this.layout.checkerScaleY;
       this.root.addChild(sprite);
       return;
     }
@@ -408,72 +762,76 @@ export class BoardRenderer {
     this.root.addChild(g);
   }
 
-  private drawBarCheckers(state: BoardState) {
-    const { barX, barWidth, height, checkerRadius } = this.layout;
-    const cx = barX + barWidth / 2;
-    const diameter = 2 * checkerRadius;
-
-    for (let n = 0; n < state.bar.white; n++) {
-      const cy = height / 2 + checkerRadius + 6 + n * diameter;
-      this.drawChecker(cx, cy, 'white');
+  private drawBarCheckers(state: BoardState, skip: CheckerSkip | null = null) {
+    const whiteCount = Math.max(
+      0,
+      state.bar.white - (skip?.pos === BAR && skip.owner === 'white' ? 1 : 0)
+    );
+    const blackCount = Math.max(
+      0,
+      state.bar.black - (skip?.pos === BAR && skip.owner === 'black' ? 1 : 0)
+    );
+    for (let n = 0; n < whiteCount; n++) {
+      const { x, y } = this.barCheckerAnchor('white', n);
+      this.drawChecker(x, y, 'white');
     }
-    for (let n = 0; n < state.bar.black; n++) {
-      const cy = height / 2 - checkerRadius - 6 - n * diameter;
-      this.drawChecker(cx, cy, 'black');
+    for (let n = 0; n < blackCount; n++) {
+      const { x, y } = this.barCheckerAnchor('black', n);
+      this.drawChecker(x, y, 'black');
     }
   }
 
-  private drawOffTrays(state: BoardState) {
-    const { width, height, railWidth } = this.layout;
-    const trayPadding = 12;
-    const trayWidth = railWidth - 2 * trayPadding;
-    const trayHeight = height * 0.42;
-    const trayCx = width - railWidth / 2;
-    const trayLeft = trayCx - trayWidth / 2;
-
-    const bg = new Graphics();
-    const grad = new FillGradient(trayLeft, 0, trayLeft + trayWidth, 0);
-    grad.addColorStop(0, this.colors.frameInnerEdge);
-    grad.addColorStop(0.5, this.colors.trayBg);
-    grad.addColorStop(1, this.colors.frameInnerEdge);
-    bg.roundRect(trayLeft, trayPadding, trayWidth, trayHeight, 6).fill(grad);
-    bg.roundRect(trayLeft, height - trayPadding - trayHeight, trayWidth, trayHeight, 6).fill(grad);
-    bg.roundRect(trayLeft, trayPadding, trayWidth, trayHeight, 6).stroke({
-      color: this.colors.brassDark,
-      width: 1,
-      alpha: 0.6,
-    });
-    bg.roundRect(trayLeft, height - trayPadding - trayHeight, trayWidth, trayHeight, 6).stroke({
-      color: this.colors.brassDark,
-      width: 1,
-      alpha: 0.6,
-    });
-    this.root.addChild(bg);
-
-    const slabHeight = 5;
-    const slabGap = 2;
-    for (let n = 0; n < state.off.black; n++) {
-      const y = trayPadding + 6 + n * (slabHeight + slabGap);
-      const g = new Graphics();
-      g.roundRect(trayLeft + 4, y, trayWidth - 8, slabHeight, 1)
-        .fill(this.colors.blackCheckerDark)
-        .stroke({ color: this.colors.brass, width: 1 });
-      this.root.addChild(g);
+  private drawOffTrays(state: BoardState, drawBackground = true, skip: CheckerSkip | null = null) {
+    if (drawBackground) {
+      const bg = new Graphics();
+      for (const owner of ['black', 'white'] as const) {
+        const tray = this.offTrayMetrics(owner);
+        const left = tray.x - tray.width / 2;
+        const grad = new FillGradient(left, 0, left + tray.width, 0);
+        grad.addColorStop(0, this.colors.frameInnerEdge);
+        grad.addColorStop(0.5, this.colors.trayBg);
+        grad.addColorStop(1, this.colors.frameInnerEdge);
+        bg.roundRect(left, tray.top, tray.width, tray.height, 6).fill(grad);
+        bg.roundRect(left, tray.top, tray.width, tray.height, 6).stroke({
+          color: this.colors.brassDark,
+          width: 1,
+          alpha: 0.6,
+        });
+      }
+      this.root.addChild(bg);
     }
-    for (let n = 0; n < state.off.white; n++) {
-      const y = height - trayPadding - 6 - slabHeight - n * (slabHeight + slabGap);
-      const g = new Graphics();
-      g.roundRect(trayLeft + 4, y, trayWidth - 8, slabHeight, 1)
-        .fill(this.colors.whiteCheckerLight)
-        .stroke({ color: this.colors.brass, width: 1 });
-      this.root.addChild(g);
+
+    const blackCount = Math.max(
+      0,
+      state.off.black - (skip?.pos === OFF && skip.owner === 'black' ? 1 : 0)
+    );
+    const whiteCount = Math.max(
+      0,
+      state.off.white - (skip?.pos === OFF && skip.owner === 'white' ? 1 : 0)
+    );
+    for (let n = 0; n < blackCount; n++) {
+      const { x, y } = this.offCheckerAnchor('black', n);
+      this.drawChecker(x, y, 'black');
+    }
+    for (let n = 0; n < whiteCount; n++) {
+      const { x, y } = this.offCheckerAnchor('white', n);
+      this.drawChecker(x, y, 'white');
     }
   }
 
   // ---------- Selection overlay ----------
 
   private drawSelectionOverlay(state: BoardState, selection: RenderSelection) {
-    const { legalOrigins, selectedFrom, validDestinations } = selection;
+    const {
+      legalOrigins,
+      opponentDestinations = [],
+      opponentOrigins = [],
+      selectedFrom,
+      validDestinations,
+    } = selection;
+
+    for (const origin of opponentOrigins) this.drawThreatOriginHint(state, origin);
+    for (const dest of opponentDestinations) this.drawThreatDestinationRing(state, dest);
 
     for (const origin of legalOrigins) {
       if (origin === selectedFrom) continue;
@@ -497,7 +855,7 @@ export class BoardRenderer {
     const ppos = pointCoords(this.layout, pos);
     const point = state.points[pos];
     const top = Math.max(0, (point?.count ?? 1) - 1);
-    return { x: ppos.x, y: checkerCenterY(this.layout, ppos, top, point?.count ?? 1) };
+    return checkerCenter(this.layout, ppos, top, point?.count ?? 1);
   }
 
   private destinationAnchor(state: BoardState, pos: Position): { x: number; y: number } | null {
@@ -512,7 +870,7 @@ export class BoardRenderer {
     const point = state.points[pos];
     const stackIdx =
       point && point.owner === state.turn ? point.count : 0; // landing on top of own stack, else fresh stack
-    return { x: ppos.x, y: checkerCenterY(this.layout, ppos, stackIdx, stackIdx + 1) };
+    return checkerCenter(this.layout, ppos, stackIdx, stackIdx + 1);
   }
 
   private drawOriginHint(state: BoardState, pos: Position) {
@@ -521,6 +879,25 @@ export class BoardRenderer {
     const r = this.layout.checkerRadius;
     const g = new Graphics();
     g.circle(a.x, a.y, r * 1.18).stroke({ color: 0xffd34d, width: 2, alpha: 0.45 });
+    this.root.addChild(g);
+  }
+
+  private drawThreatOriginHint(state: BoardState, pos: Position) {
+    const a = this.originAnchor(state, pos);
+    if (!a) return;
+    const r = this.layout.checkerRadius;
+    const g = new Graphics();
+    g.circle(a.x, a.y, r * 1.2).stroke({ color: 0xff5c5c, width: 2.5, alpha: 0.55 });
+    this.root.addChild(g);
+  }
+
+  private drawThreatDestinationRing(state: BoardState, pos: Position) {
+    const a = this.destinationAnchor(state, pos);
+    if (!a) return;
+    const r = this.layout.checkerRadius;
+    const g = new Graphics();
+    g.circle(a.x, a.y, r * 0.98).fill({ color: 0xef4444, alpha: 0.22 });
+    g.circle(a.x, a.y, r * 1.08).stroke({ color: 0xff6b6b, width: 2.5, alpha: 0.9 });
     this.root.addChild(g);
   }
 
@@ -544,10 +921,62 @@ export class BoardRenderer {
     this.root.addChild(g);
   }
 
+  private pointIndexForColumn(side: 'top' | 'bottom', column: number): number {
+    return side === 'bottom' ? 12 + column : 11 - column;
+  }
+
+  private drawAlignmentDebugOverlay(state: BoardState, debug: AlignmentDebugSelection) {
+    const activeColumn = Math.max(0, Math.min(11, debug.column));
+    const g = new Graphics();
+    const r = this.layout.checkerRadius;
+
+    for (let column = 0; column < 12; column++) {
+      const idx = this.pointIndexForColumn(debug.side, column);
+      const pos = pointCoords(this.layout, idx);
+      const tipY = pos.y + pos.stackDir * this.layout.pointHeight;
+      const selected = column === activeColumn;
+      const color = selected ? 0xff4df3 : 0x23d7ff;
+      const alpha = selected ? 0.95 : 0.32;
+      const width = selected ? 3 : 1.5;
+
+      g.moveTo(pos.x, pos.y)
+        .lineTo(pos.tipX, tipY)
+        .stroke({ color, width, alpha });
+
+      g.circle(pos.x, pos.y, selected && debug.anchor === 'base' ? r * 0.22 : r * 0.13)
+        .fill({ color, alpha: selected && debug.anchor === 'base' ? 0.8 : 0.35 });
+      g.circle(pos.tipX, tipY, selected && debug.anchor === 'tip' ? r * 0.22 : r * 0.13)
+        .fill({ color, alpha: selected && debug.anchor === 'tip' ? 0.8 : 0.35 });
+    }
+
+    const selectedIdx = this.pointIndexForColumn(debug.side, activeColumn);
+    const selectedPoint = state.points[selectedIdx];
+    const selectedPos = pointCoords(this.layout, selectedIdx);
+    const ghostCount = selectedPoint?.count ?? 5;
+
+    for (let n = 0; n < ghostCount; n++) {
+      const center = checkerCenter(this.layout, selectedPos, n, ghostCount);
+      const activeTopChecker = debug.anchor === 'topChecker' && n === ghostCount - 1;
+      g.circle(center.x, center.y, r * 1.08).stroke({
+        color: activeTopChecker ? 0x7cff74 : 0xff4df3,
+        width: activeTopChecker ? 4 : 2.5,
+        alpha: activeTopChecker ? 1 : 0.9,
+      });
+      g.moveTo(center.x - r * 0.24, center.y)
+        .lineTo(center.x + r * 0.24, center.y)
+        .stroke({ color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8 });
+      g.moveTo(center.x, center.y - r * 0.24)
+        .lineTo(center.x, center.y + r * 0.24)
+        .stroke({ color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8 });
+    }
+
+    this.root.addChild(g);
+  }
+
   // ---------- Hit areas ----------
 
   private drawHitAreas(state: BoardState) {
-    const { width, height, railWidth, pointWidth, barX, barWidth } = this.layout;
+    const { width, height, railWidth, barX, barWidth } = this.layout;
     const cb = this.onPointClick;
     if (!cb) return;
     void state;
@@ -555,6 +984,7 @@ export class BoardRenderer {
     for (let i = 0; i < 24; i++) {
       const pos = pointCoords(this.layout, i);
       const isBottom = i >= 12;
+      const pointWidth = isBottom ? this.layout.bottomPointWidth : this.layout.topPointWidth;
       const x = pos.x - pointWidth / 2;
       const y = isBottom ? height / 2 : 0;
       const h = height / 2;
@@ -585,6 +1015,10 @@ export class BoardRenderer {
   }
 
   destroy() {
-    this.root.destroy({ children: true });
+    if (this.animationFrame !== null) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    this.root.destroy({ children: true, texture: false, textureSource: false });
   }
 }

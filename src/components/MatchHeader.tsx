@@ -19,8 +19,8 @@ export default function MatchHeader({
   onNewMatch,
 }: Props) {
   return (
-    <header className="flex flex-wrap items-center justify-between px-3 py-2 sm:px-4 text-board-felt/80 gap-x-3 gap-y-1">
-      <div className="flex items-center gap-3 order-1">
+    <header className="z-30 flex h-9 shrink-0 items-center justify-between gap-2 px-3 text-board-felt/80 sm:px-4">
+      <div className="flex min-w-0 items-center gap-3 order-1">
         <Link to="/" className="text-board-accent text-sm whitespace-nowrap">
           ← Home
         </Link>
@@ -40,11 +40,11 @@ export default function MatchHeader({
         )}
       </div>
 
-      <div className="text-xs text-board-felt/60 capitalize whitespace-nowrap order-2 sm:order-3">
+      <div className="hidden text-xs text-board-felt/60 capitalize whitespace-nowrap order-2 sm:order-3 sm:block">
         {turnLabel}
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono w-full sm:w-auto justify-center order-3 sm:order-2">
+      <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono justify-center order-3 sm:order-2">
         <span className="text-chip-cream">
           w <span className="text-board-felt/50">{whitePip}</span>
         </span>

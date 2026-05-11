@@ -23,7 +23,8 @@ export async function listMatchesForOwner(
   return (data ?? []).map((row) => {
     const games = (row as unknown as { games: { count: number }[] }).games;
     const game_count = Array.isArray(games) && games.length > 0 ? games[0]!.count : 0;
-    const { games: _ignored, ...rest } = row as MatchRow & { games?: unknown };
+    const rest = { ...(row as MatchRow & { games?: unknown }) };
+    delete rest.games;
     return { ...(rest as MatchRow), game_count };
   });
 }

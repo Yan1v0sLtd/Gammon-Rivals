@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { joinMatchByInvite } from '../lib/persistence';
 
 export default function JoinMatch() {
   const { code } = useParams<{ code: string }>();
+  const [params] = useSearchParams();
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+  const boardParam = params.get('board');
   const [error, setError] = useState<string | null>(null);
   const triedRef = useRef(false);
 
@@ -17,7 +19,9 @@ export default function JoinMatch() {
     (async () => {
       try {
         const matchId = await joinMatchByInvite(code);
-        navigate(`/play/${matchId}`, { replace: true });
+        navigate(`/play/${matchId}${boardParam ? `?board=${encodeURIComponent(boardParam)}` : ''}`, {
+          replace: true,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes('invalid_or_expired_invite')) {
@@ -27,7 +31,7 @@ export default function JoinMatch() {
         }
       }
     })();
-  }, [isLoading, user, code, navigate]);
+  }, [boardParam, isLoading, user, code, navigate]);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center text-board-felt/80 gap-4 p-6">

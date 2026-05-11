@@ -2,18 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
-import DoublingCube from '../components/DoublingCube';
 import CubeOfferDecision from '../components/CubeOfferDecision';
 import EndOfGameModal from '../components/EndOfGameModal';
 import MatchHeader from '../components/MatchHeader';
 import BoardLayout from '../components/BoardLayout';
 import ActionButtons from '../components/ActionButtons';
 import AutoRollToggle from '../components/AutoRollToggle';
+import AlignmentPanel from '../components/AlignmentPanel';
 import { useGame, type AIConfig, type TurnRecord } from '../game/useGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { GameResult, MatchState } from '../engine';
-import { woodTheme } from '../board/theme';
+import { getBoardTheme, premiumTheme, type ThemeLayout } from '../board/theme';
+import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { createMatch, finishMatch, modeFromAi, saveGame } from '../lib/persistence';
@@ -38,6 +39,58 @@ function parseTarget(raw: string | null): number {
   return n;
 }
 
+const ALIGNMENT_STORAGE_KEY = 'gammon-rivals:premium-alignment-layout';
+
+function copyRatios(value: readonly number[] | undefined): number[] | undefined {
+  return value?.length === 12 ? [...value] : undefined;
+}
+
+function basePremiumLayout(): ThemeLayout {
+  const layout = premiumTheme.layout ?? {};
+  return {
+    ...layout,
+    topPointCenterXRatios: copyRatios(layout.topPointCenterXRatios),
+    topPointTipXRatios: copyRatios(layout.topPointTipXRatios),
+    bottomPointCenterXRatios: copyRatios(layout.bottomPointCenterXRatios),
+    bottomPointTipXRatios: copyRatios(layout.bottomPointTipXRatios),
+    topCheckerOffsetXRatios: copyRatios(layout.topCheckerOffsetXRatios),
+    bottomCheckerOffsetXRatios: copyRatios(layout.bottomCheckerOffsetXRatios),
+  };
+}
+
+function mergeAlignmentLayout(saved: ThemeLayout): ThemeLayout {
+  const base = basePremiumLayout();
+  return {
+    ...base,
+    topPointCenterXRatios: copyRatios(saved.topPointCenterXRatios) ?? base.topPointCenterXRatios,
+    topPointTipXRatios: copyRatios(saved.topPointTipXRatios) ?? base.topPointTipXRatios,
+    bottomPointCenterXRatios:
+      copyRatios(saved.bottomPointCenterXRatios) ?? base.bottomPointCenterXRatios,
+    bottomPointTipXRatios: copyRatios(saved.bottomPointTipXRatios) ?? base.bottomPointTipXRatios,
+    topCheckerOffsetXRatios:
+      copyRatios(saved.topCheckerOffsetXRatios) ?? base.topCheckerOffsetXRatios,
+    bottomCheckerOffsetXRatios:
+      copyRatios(saved.bottomCheckerOffsetXRatios) ?? base.bottomCheckerOffsetXRatios,
+    pointHeightRatio: saved.pointHeightRatio ?? base.pointHeightRatio,
+    topPointYRatio: saved.topPointYRatio ?? base.topPointYRatio,
+    bottomPointYRatio: saved.bottomPointYRatio ?? base.bottomPointYRatio,
+    checkerStackSpacingRatio: saved.checkerStackSpacingRatio ?? base.checkerStackSpacingRatio,
+    topCheckerPaddingRatio: saved.topCheckerPaddingRatio ?? base.topCheckerPaddingRatio,
+    bottomCheckerPaddingRatio: saved.bottomCheckerPaddingRatio ?? base.bottomCheckerPaddingRatio,
+  };
+}
+
+function loadAlignmentLayout(): ThemeLayout {
+  if (typeof window === 'undefined') return basePremiumLayout();
+  const raw = window.localStorage.getItem(ALIGNMENT_STORAGE_KEY);
+  if (!raw) return basePremiumLayout();
+  try {
+    return mergeAlignmentLayout(JSON.parse(raw) as ThemeLayout);
+  } catch {
+    return basePremiumLayout();
+  }
+}
+
 export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -46,8 +99,26 @@ export default function HotSeat() {
   const opp = params.get('opp');
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
+  const boardParam = params.get('board');
+  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
+  const alignmentEnabled = params.get('align') === '1';
+  const [alignmentLayout, setAlignmentLayout] = useState<ThemeLayout>(() => loadAlignmentLayout());
+  const [alignmentDebug, setAlignmentDebug] = useState<AlignmentDebugSelection>({
+    enabled: true,
+    side: 'bottom',
+    column: 0,
+    anchor: 'base',
+  });
+
+  useEffect(() => {
+    if (!alignmentEnabled) return;
+    window.localStorage.setItem(ALIGNMENT_STORAGE_KEY, JSON.stringify(alignmentLayout));
+  }, [alignmentEnabled, alignmentLayout]);
 
   const game = useGame({ initialTarget: target, ai: aiConfig });
+  const alignmentPointIndex =
+    alignmentDebug.side === 'bottom' ? 12 + alignmentDebug.column : 11 - alignmentDebug.column;
+  const alignmentStackCount = game.board.points[alignmentPointIndex]?.count ?? 5;
   const whitePip = pipCount(game.board, 'white');
   const blackPip = pipCount(game.board, 'black');
 
@@ -63,18 +134,10 @@ export default function HotSeat() {
     return makeGuestIdentity();
   }, [profile]);
 
-  // We freeze the opponent identity once per match start so its avatar
-  // doesn't reshuffle on every render.
-  const opponentIdentityRef = useRef<PlayerIdentity | null>(null);
-  if (
-    opponentIdentityRef.current === null ||
-    (aiConfig && opponentIdentityRef.current.badge !== aiConfig.level.toUpperCase())
-  ) {
-    opponentIdentityRef.current = aiConfig
-      ? makeAIIdentity(aiConfig.level)
-      : makeGuestIdentity();
-  }
-  const opponentIdentity = opponentIdentityRef.current;
+  const opponentIdentity: PlayerIdentity = useMemo(
+    () => (aiConfig ? makeAIIdentity(aiConfig.level) : makeGuestIdentity()),
+    [aiConfig]
+  );
 
   // ---- Persistence ----
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -95,7 +158,6 @@ export default function HotSeat() {
         });
         setMatchId(id);
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.warn('createMatch failed', err);
       }
     })();
@@ -128,7 +190,6 @@ export default function HotSeat() {
       wasCrawford,
       moves: turnsForDb,
     }).catch((err) => {
-      // eslint-disable-next-line no-console
       console.warn('saveGame failed', err);
     });
   }, [matchId, game.lastGameResult, game.match, game.matchOver, game.turnLog]);
@@ -147,7 +208,6 @@ export default function HotSeat() {
       winner,
       crawfordGameNumber: game.match.crawfordGameNumber,
     }).catch((err) => {
-      // eslint-disable-next-line no-console
       console.warn('finishMatch failed', err);
     });
   }, [matchId, game.matchOver, game.match]);
@@ -205,6 +265,7 @@ export default function HotSeat() {
   const localPip = localColor === 'white' ? whitePip : blackPip;
   const opponentPip = opponentColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = game.board.turn === localColor && !game.isAITurn;
+  const isRollForSelf = game.board.turn === localColor;
 
   return (
     <BoardLayout
@@ -229,12 +290,9 @@ export default function HotSeat() {
         pipCount: localPip,
         scoreLabel: `${game.match.score[localColor]} / ${game.match.target}`,
         isTurn: isLocalTurn && !showGameEndModal,
-        bottomSlot: (
-          <AutoRollToggle enabled={autoRollOn} onChange={setAutoRollOn} />
-        ),
       }}
       actionsOverlay={
-        !showGameEndModal && !showCubeDecision ? (
+        !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (
           <ActionButtons
             canRoll={playerCanRoll}
             onRoll={game.rollDice}
@@ -245,6 +303,13 @@ export default function HotSeat() {
             cubeValue={game.match.cube.value}
             canUndo={game.canUndo}
             onUndo={game.undoLastMove}
+            autoRollSlot={
+              <AutoRollToggle
+                enabled={autoRollOn}
+                onChange={setAutoRollOn}
+                variant="inline"
+              />
+            }
           />
         ) : null
       }
@@ -269,23 +334,36 @@ export default function HotSeat() {
     >
       <BoardCanvas
         state={game.board}
-        theme={woodTheme}
+        theme={selectedTheme}
+        layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
         selection={{
-          selectedFrom: game.selectedFrom,
-          validDestinations: game.validDestinations,
-          legalOrigins: game.legalOrigins,
+          selectedFrom: !alignmentEnabled && humanCanInteract ? game.selectedFrom : null,
+          validDestinations: !alignmentEnabled && humanCanInteract ? game.validDestinations : [],
+          legalOrigins: !alignmentEnabled && humanCanInteract ? game.legalOrigins : [],
+          opponentOrigins: alignmentEnabled ? [] : game.opponentPreviewOrigins,
+          opponentDestinations: alignmentEnabled ? [] : game.opponentPreviewDestinations,
+          alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
         }}
-        onPointClick={handlePointClick}
+        onPointClick={alignmentEnabled ? undefined : handlePointClick}
       />
-      <DoublingCube
-        value={game.match.cube.value}
-        owner={game.match.cube.owner}
-        canOffer={false /* button is in ActionButtons now; we keep the cube
-                          as a visual indicator of value/owner only */}
-        pendingOffer={game.pendingOffer}
-        onOffer={game.offerDouble}
+      <DiceTray
+        roll={game.roll}
+        remaining={game.remaining}
+        settleSide={isRollForSelf ? 'right' : 'left'}
       />
-      <DiceTray roll={game.roll} remaining={game.remaining} />
+      {alignmentEnabled && (
+        <AlignmentPanel
+          layout={alignmentLayout}
+          debug={alignmentDebug}
+          stackCount={alignmentStackCount}
+          onDebugChange={setAlignmentDebug}
+          onLayoutChange={setAlignmentLayout}
+          onReset={() => {
+            window.localStorage.removeItem(ALIGNMENT_STORAGE_KEY);
+            setAlignmentLayout(basePremiumLayout());
+          }}
+        />
+      )}
     </BoardLayout>
   );
 }

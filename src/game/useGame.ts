@@ -27,12 +27,12 @@ import type {
 } from '../engine';
 import { pickMoveAsync } from '../ai/client';
 import type { AILevel } from '../ai';
-import { DICE_ANIMATION_MS } from '../components/DiceTray';
+import { DICE_ANIMATION_MS } from '../components/diceTiming';
 
 const DEFAULT_TARGET = 7;
 
 const AI_ROLL_DELAY = 500;
-const AI_PER_MOVE_DELAY = 600;
+const AI_PER_MOVE_DELAY = 900;
 const AI_END_TURN_DELAY = 400;
 const AI_CUBE_DECISION_DELAY = 800;
 // Wait at least this long after rolling before applying any move so the
@@ -66,6 +66,8 @@ export interface MatchGameState {
   readonly history: readonly Move[];
   readonly legalOrigins: readonly Position[];
   readonly validDestinations: readonly Position[];
+  readonly opponentPreviewOrigins: readonly Position[];
+  readonly opponentPreviewDestinations: readonly Position[];
   readonly canEndTurn: boolean;
   readonly canOfferDouble: boolean;
   readonly canUndo: boolean;
@@ -120,6 +122,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   const [lastGameResult, setLastGameResult] = useState<GameResult | null>(null);
   const [ai, setAi] = useState<AIConfig | null>(opts.ai ?? null);
   const [isAIThinking, setIsAIThinking] = useState(false);
+  const [aiPreviewReady, setAiPreviewReady] = useState(false);
   const [turnLog, setTurnLog] = useState<readonly TurnRecord[]>([]);
   // Snapshot of the state immediately BEFORE the most recent player move.
   // Set in selectTo, cleared on roll/endTurn/new game/AI move. Lets us
@@ -160,6 +163,18 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     return legal.filter((m) => m.from === selectedFrom).map((m) => m.to);
   }, [legal, selectedFrom]);
 
+  const opponentPreviewOrigins = useMemo(
+    () => (isAITurn && aiPreviewReady ? legalOrigins : []),
+    [aiPreviewReady, isAITurn, legalOrigins]
+  );
+
+  const opponentPreviewDestinations = useMemo(() => {
+    if (!isAITurn || !aiPreviewReady) return [] as Position[];
+    const set = new Set<Position>();
+    for (const m of legal) set.add(m.to);
+    return Array.from(set);
+  }, [aiPreviewReady, isAITurn, legal]);
+
   const canEndTurn =
     diceRoll !== null && !gameFrozen && (remaining.length === 0 || legal.length === 0);
 
@@ -178,6 +193,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setSelectedFrom(null);
     setHistory([]);
     setUndoSnapshot(null);
+    setAiPreviewReady(false);
     startTurnRecord(board.turn, r);
   }, [diceRoll, gameFrozen, match.cubeOffer, board.turn, startTurnRecord]);
 
@@ -249,6 +265,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setSelectedFrom(null);
     setHistory([]);
     setUndoSnapshot(null);
+    setAiPreviewReady(false);
   }, [canEndTurn, board]);
 
   const offerDouble = useCallback(() => {
@@ -279,6 +296,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setLastGameResult(null);
     setTurnLog([]);
     setUndoSnapshot(null);
+    setAiPreviewReady(false);
   }, [lastGameResult, matchOver]);
 
   const newMatch = useCallback(
@@ -293,6 +311,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
       setAi(nextAi);
       setTurnLog([]);
       setUndoSnapshot(null);
+      setAiPreviewReady(false);
     },
     [match.target, ai]
   );
@@ -300,7 +319,9 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   // -------------------- AI orchestration --------------------
   const aiActiveRef = useRef(false);
   const stateRef = useRef({ match, board, remaining });
-  stateRef.current = { match, board, remaining };
+  useEffect(() => {
+    stateRef.current = { match, board, remaining };
+  }, [match, board, remaining]);
 
   // Apply a planned sequence of moves with delays for visual feedback.
   // Maintains local copies of state to avoid stale-closure issues.
@@ -314,6 +335,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
 
       for (const move of initialMoves) {
         await sleep(AI_PER_MOVE_DELAY);
+        setAiPreviewReady(false);
         curBoard = applyMove(curBoard, move);
         const idx = curRemaining.indexOf(move.die);
         if (idx >= 0) {
@@ -356,7 +378,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     // Cube offer pending against AI: respond.
     if (match.cubeOffer !== null && match.cubeOffer !== ai.player) {
       aiActiveRef.current = true;
-      setIsAIThinking(true);
+      queueMicrotask(() => setIsAIThinking(true));
       (async () => {
         await sleep(AI_CUBE_DECISION_DELAY);
         // v1: AI always accepts. Cube AI is a future improvement.
@@ -381,6 +403,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
         setSelectedFrom(null);
         setHistory([]);
         setUndoSnapshot(null);
+        setAiPreviewReady(false);
         startTurnRecord(aiPlayer, r);
         aiActiveRef.current = false;
       })();
@@ -392,15 +415,16 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     // thinking time doesn't add on top of the dice animation.
     if (history.length === 0 && remaining.length > 0) {
       aiActiveRef.current = true;
-      setIsAIThinking(true);
+      queueMicrotask(() => setIsAIThinking(true));
       (async () => {
-        const [plan] = await Promise.all([
-          pickMoveAsync(board, remaining, ai.level),
-          sleep(AI_DICE_SETTLE_MS),
-        ]);
+        const planPromise = pickMoveAsync(board, remaining, ai.level);
+        await sleep(AI_DICE_SETTLE_MS);
+        setAiPreviewReady(true);
+        const plan = await planPromise;
         setIsAIThinking(false);
         if (plan.length === 0) {
           await sleep(AI_END_TURN_DELAY);
+          setAiPreviewReady(false);
           setBoard((b) => engineEndTurn(b));
           setDiceRoll(null);
           setRemaining([]);
@@ -434,6 +458,8 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     history,
     legalOrigins,
     validDestinations,
+    opponentPreviewOrigins,
+    opponentPreviewDestinations,
     canEndTurn,
     canOfferDouble: canOfferDoubleNow,
     canUndo,

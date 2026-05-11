@@ -27,6 +27,7 @@ export interface ThemeColors {
 }
 
 export type ThemeAssetKey =
+  | 'board'
   | 'frame'
   | 'felt'
   | 'rail'
@@ -39,8 +40,34 @@ export type ThemeAssetKey =
 
 export type ThemeAssets = Partial<Record<ThemeAssetKey, string>>;
 
+export interface ThemeLayout {
+  readonly railWidthRatio?: number;
+  readonly barWidthRatio?: number;
+  readonly pointHeightRatio?: number;
+  readonly topPointYRatio?: number;
+  readonly bottomPointYRatio?: number;
+  readonly checkerRadiusRatio?: number;
+  readonly topPointWidthRatio?: number;
+  readonly bottomPointWidthRatio?: number;
+  readonly topPlayLeftRatio?: number;
+  readonly bottomPlayLeftRatio?: number;
+  readonly topBarWidthRatio?: number;
+  readonly bottomBarWidthRatio?: number;
+  readonly topPointCenterXRatios?: readonly number[];
+  readonly bottomPointCenterXRatios?: readonly number[];
+  readonly topPointTipXRatios?: readonly number[];
+  readonly bottomPointTipXRatios?: readonly number[];
+  readonly topCheckerOffsetXRatios?: readonly number[];
+  readonly bottomCheckerOffsetXRatios?: readonly number[];
+  readonly checkerScaleYRatio?: number;
+  readonly checkerStackSpacingRatio?: number;
+  readonly topCheckerPaddingRatio?: number;
+  readonly bottomCheckerPaddingRatio?: number;
+}
+
 export interface Theme {
   readonly name: string;
   readonly colors: ThemeColors;
   readonly assets?: ThemeAssets;
+  readonly layout?: ThemeLayout;
 }

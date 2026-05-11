@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { applyMove, endTurn as engineEndTurn, initialBoard, pipCount } from '../engine';
 import type { BoardState, Die, Move } from '../engine';
 import { BAR, OFF, type Position } from '../engine/types';
 import BoardCanvas from '../board/BoardCanvas';
-import { woodTheme } from '../board/theme';
+import { getBoardTheme } from '../board/theme';
 import { getGameWithMoves, type GameWithMoves } from '../lib/queries';
 
 interface SubMove {
@@ -62,6 +62,7 @@ function describeTurn(moveRow: GameWithMoves['moves'][number]): string {
 
 export default function Replay() {
   const { gameId } = useParams<{ gameId: string }>();
+  const [params] = useSearchParams();
   const [data, setData] = useState<GameWithMoves | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ply, setPly] = useState(0);
@@ -86,16 +87,15 @@ export default function Replay() {
   }, [gameId]);
 
   const states = useMemo(() => (data ? reconstructStates(data) : []), [data]);
+  const boardParam = params.get('board');
+  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
   const totalPlies = states.length > 0 ? states.length - 1 : 0;
   const clampedPly = Math.min(Math.max(0, ply), totalPlies);
   const currentBoard = states[clampedPly] ?? null;
 
   useEffect(() => {
     if (!playing) return;
-    if (clampedPly >= totalPlies) {
-      setPlaying(false);
-      return;
-    }
+    if (clampedPly >= totalPlies) return;
     const t = setTimeout(() => setPly((p) => p + 1), 1400);
     return () => clearTimeout(t);
   }, [playing, clampedPly, totalPlies]);
@@ -146,7 +146,7 @@ export default function Replay() {
 
       <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
         <div className="relative w-full max-w-[1100px] aspect-[3/2] rounded-lg overflow-hidden shadow-2xl">
-          <BoardCanvas state={currentBoard} theme={woodTheme} />
+          <BoardCanvas state={currentBoard} theme={selectedTheme} />
         </div>
       </div>
 
@@ -188,7 +188,14 @@ export default function Replay() {
             ◀ prev
           </button>
           <button
-            onClick={() => setPlaying((p) => !p)}
+            onClick={() => {
+              if (clampedPly >= totalPlies) {
+                setPly(0);
+                setPlaying(true);
+                return;
+              }
+              setPlaying((p) => !p);
+            }}
             className="px-4 py-1 rounded bg-amber-700 text-amber-50 border border-amber-900 text-sm hover:brightness-110 active:scale-95"
           >
             {playing ? 'pause' : clampedPly >= totalPlies ? 'replay' : 'play'}

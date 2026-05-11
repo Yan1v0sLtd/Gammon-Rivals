@@ -91,7 +91,6 @@ export default function Profile() {
       await setDisplayName(draftName);
       setEditing(false);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('saveName failed', err);
     } finally {
       setSavingName(false);
@@ -115,7 +114,6 @@ export default function Profile() {
       if (finished.length === 0) return;
       navigate(`/replay/${finished[0]!.id}`);
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('open replay failed', err);
     }
   };

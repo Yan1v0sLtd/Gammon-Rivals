@@ -20,6 +20,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import type { Database } from '../types/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { DICE_ANIMATION_MS } from '../components/diceTiming';
 
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 type MoveRow = Database['public']['Tables']['moves']['Row'];
@@ -116,6 +117,8 @@ export interface OnlineGameState {
   readonly selectedFrom: Position | null;
   readonly legalOrigins: readonly Position[];
   readonly validDestinations: readonly Position[];
+  readonly opponentPreviewOrigins: readonly Position[];
+  readonly opponentPreviewDestinations: readonly Position[];
   readonly canRoll: boolean;
   readonly canEndTurn: boolean;
   readonly gameWinner: Player | null;
@@ -151,6 +154,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
   const [selectedFrom, setSelectedFrom] = useState<Position | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [opponentPreviewReadyKey, setOpponentPreviewReadyKey] = useState<string | null>(null);
   const fetchInFlight = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -197,7 +201,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
 
   useEffect(() => {
     if (!matchId) return;
-    void refresh();
+    queueMicrotask(() => void refresh());
 
     let channel: RealtimeChannel | null = supabase
       .channel(`match-${matchId}`)
@@ -282,12 +286,40 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     ? ([currentTurn.dice[0], currentTurn.dice[1]] as DiceRoll)
     : null;
   const remaining = (currentTurn?.remaining ?? []) as readonly Die[];
+  const opponentPreviewKey =
+    currentTurn && !isLocalTurn && currentTurn.remaining.length > 0 && !gameWinner
+      ? [
+          currentTurn.player,
+          currentTurn.dice.join('-'),
+          currentTurn.remaining.join('-'),
+          currentTurn.subMoves.length,
+        ].join(':')
+      : null;
+  const opponentPreviewReady =
+    opponentPreviewKey !== null && opponentPreviewReadyKey === opponentPreviewKey;
+
+  useEffect(() => {
+    if (!opponentPreviewKey) return;
+    const timer = window.setTimeout(
+      () => setOpponentPreviewReadyKey(opponentPreviewKey),
+      DICE_ANIMATION_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [opponentPreviewKey]);
 
   const legal = useMemo(() => {
     if (!currentTurn || !isLocalTurn || gameWinner) return [] as readonly Move[];
     if (currentTurn.remaining.length === 0) return [];
     return legalMoves(derived.board, currentTurn.remaining as readonly Die[]);
   }, [currentTurn, isLocalTurn, derived.board, gameWinner]);
+
+  const opponentLegal = useMemo(() => {
+    if (!currentTurn || isLocalTurn || gameWinner || !opponentPreviewReady) {
+      return [] as readonly Move[];
+    }
+    if (currentTurn.remaining.length === 0) return [];
+    return legalMoves(derived.board, currentTurn.remaining as readonly Die[]);
+  }, [currentTurn, isLocalTurn, derived.board, gameWinner, opponentPreviewReady]);
 
   const legalOrigins = useMemo(() => {
     const set = new Set<Position>();
@@ -299,6 +331,18 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     if (selectedFrom === null) return [] as Position[];
     return legal.filter((m) => m.from === selectedFrom).map((m) => m.to);
   }, [legal, selectedFrom]);
+
+  const opponentPreviewOrigins = useMemo(() => {
+    const set = new Set<Position>();
+    for (const m of opponentLegal) set.add(m.from);
+    return Array.from(set);
+  }, [opponentLegal]);
+
+  const opponentPreviewDestinations = useMemo(() => {
+    const set = new Set<Position>();
+    for (const m of opponentLegal) set.add(m.to);
+    return Array.from(set);
+  }, [opponentLegal]);
 
   const canRoll =
     !matchFinished &&
@@ -486,7 +530,19 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
       setError(upErr.message);
     }
     void refresh();
-  }, [matchId, match, currentTurn, isLocalTurn, canEndTurn, moves.length, derived.board, cubeValue, cubeOwner, refresh]);
+  }, [
+    matchId,
+    match,
+    currentTurn,
+    isLocalTurn,
+    canEndTurn,
+    moves.length,
+    derived.board,
+    cubeValue,
+    cubeOwner,
+    currentGame?.game_number,
+    refresh,
+  ]);
 
   // ---- cube actions ----
   const offerDouble = useCallback(async () => {
@@ -573,10 +629,7 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     return () => window.clearInterval(id);
   }, []);
 
-  const lastActivityMs = useMemo(() => {
-    if (!match?.updated_at) return now;
-    return new Date(match.updated_at).getTime();
-  }, [match?.updated_at, now]);
+  const lastActivityMs = match?.updated_at ? new Date(match.updated_at).getTime() : now;
 
   const secondsSinceActivity = Math.max(0, Math.floor((now - lastActivityMs) / 1000));
   const canClaimByInactivity =
@@ -676,6 +729,8 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     selectedFrom,
     legalOrigins,
     validDestinations,
+    opponentPreviewOrigins,
+    opponentPreviewDestinations,
     canRoll,
     canEndTurn,
     gameWinner,

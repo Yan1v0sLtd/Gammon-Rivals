@@ -16,7 +16,11 @@ export async function loadTheme(theme: Theme): Promise<LoadedTheme> {
       try {
         const head = await fetch(path, { method: 'HEAD' });
         if (!head.ok) return;
-        const tex = await Assets.load<Texture>(path);
+        let tex = await Assets.load<Texture>(path);
+        if (tex.destroyed || tex.source.destroyed) {
+          await Assets.unload(path).catch(() => undefined);
+          tex = await Assets.load<Texture>(path);
+        }
         textures[key] = tex;
       } catch {
         // Asset missing — silent fallback to procedural rendering

@@ -30,7 +30,6 @@ function ensureWorker(): Worker | null {
       }
     });
     worker.addEventListener('error', (e) => {
-      // eslint-disable-next-line no-console
       console.warn('AI worker error', e.message);
     });
     return worker;

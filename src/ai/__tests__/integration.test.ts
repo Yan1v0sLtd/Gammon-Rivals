@@ -16,7 +16,7 @@ import { pickMove } from '../picker';
 function playTurn(state: BoardState, dice: readonly Die[], level: 'easy' | 'medium' | 'hard') {
   const result = pickMove(state, dice, level);
   let s = state;
-  let r = [...dice];
+  const r = [...dice];
   for (const move of result.moves) {
     // Sanity: every move must be legal at its respective state
     const legal = legalMoves(s, r);
@@ -41,8 +41,7 @@ describe('AI integration — playing a full game', () => {
     const MAX_TURNS = 600;
 
     while (winner(state) === null && turns < MAX_TURNS) {
-      const r = roll(rng);
-      const dice = expandDice(r);
+      const dice = expandDice(roll(rng));
       state = playTurn(state, dice, 'medium');
       turns++;
     }
