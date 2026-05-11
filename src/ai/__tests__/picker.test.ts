@@ -19,7 +19,7 @@ function applySequence(state: BoardState, moves: readonly Move[]): BoardState {
 
 function isLegalSequence(state: BoardState, dice: readonly Die[], moves: readonly Move[]): boolean {
   let s = state;
-  let remaining = [...dice];
+  const remaining = [...dice];
   for (const m of moves) {
     const legal = legalMoves(s, remaining);
     if (!legal.some((x) => x.from === m.from && x.to === m.to && x.die === m.die)) return false;

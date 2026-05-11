@@ -9,10 +9,12 @@ import {
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { isSupabaseConfigured, supabase } from './supabase';
 import type { Database } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+const missingConfigMessage =
+  'Supabase is not configured. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.';
 
 export interface AuthContextValue {
   readonly session: Session | null;
@@ -32,10 +34,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [isLoading, setLoading] = useState(true);
+  const [isLoading, setLoading] = useState(isSupabaseConfigured);
   const profileFetchRef = useRef<string | null>(null);
 
   const fetchProfile = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured) return;
     if (profileFetchRef.current === userId) return;
     profileFetchRef.current = userId;
     const { data, error } = await supabase
@@ -44,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq('id', userId)
       .maybeSingle();
     if (error) {
-      // eslint-disable-next-line no-console
       console.warn('profile fetch error', error);
       profileFetchRef.current = null;
       return;
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session, fetchProfile]);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -87,23 +90,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Auto-create an anonymous session if none exists. Guest-by-default.
   useEffect(() => {
+    if (!isSupabaseConfigured) return;
     if (isLoading) return;
     if (session) return;
     (async () => {
       const { error } = await supabase.auth.signInAnonymously();
       if (error) {
-        // eslint-disable-next-line no-console
         console.warn('signInAnonymously failed', error);
       }
     })();
   }, [isLoading, session]);
 
   const signInAnonymously = useCallback(async () => {
+    if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
     const { error } = await supabase.auth.signInAnonymously();
     if (error) throw error;
   }, []);
 
   const sendMagicLink = useCallback(async (email: string) => {
+    if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: window.location.origin },
@@ -112,11 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
     await supabase.auth.signOut();
   }, []);
 
   const setDisplayName = useCallback(
     async (name: string) => {
+      if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
       if (!session?.user) throw new Error('not signed in');
       const trimmed = name.trim();
       if (trimmed.length === 0) throw new Error('name cannot be empty');
@@ -138,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       profile,
       isLoading,
-      isAnonymous: session?.user?.is_anonymous ?? false,
+      isAnonymous: isSupabaseConfigured ? (session?.user?.is_anonymous ?? false) : false,
       signInAnonymously,
       sendMagicLink,
       signOut,
@@ -160,6 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');

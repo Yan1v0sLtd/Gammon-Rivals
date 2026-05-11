@@ -17,8 +17,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Cinzel"', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['"Segoe UI"', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Segoe UI"', 'Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

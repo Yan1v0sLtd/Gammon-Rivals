@@ -6,6 +6,7 @@ interface PlayerSeat {
   pipCount?: number;
   scoreLabel?: string;
   isTurn?: boolean;
+  hudSlot?: React.ReactNode;
   bottomSlot?: React.ReactNode;
 }
 
@@ -16,7 +17,7 @@ interface Props {
   self: PlayerSeat;
   /** Top header (status, match score, nav). */
   header?: React.ReactNode;
-  /** The board itself — children render in the centre column. */
+  /** The board itself — children render in the centre table. */
   children: React.ReactNode;
   /** Floating action row over the board (Roll / Double / Undo). */
   actionsOverlay?: React.ReactNode;
@@ -25,13 +26,9 @@ interface Props {
 }
 
 /**
- * Mobile-first three-column layout: opponent panel | board | self panel.
- * The board fills the centre at full width; the panels are narrow enough
- * to keep the playing surface dominant on small screens, but wide enough
- * to show an avatar + name + pip count comfortably.
- *
- * On desktop the whole layout is centred in the viewport with a max
- * width — same composition, just bounded.
+ * Mobile-first game table. Narrow screens get compact player HUDs above
+ * the board so the playing surface owns the viewport; wider screens grow
+ * into the reference-style side panels around a large central board.
  */
 export default function BoardLayout({
   opponent,
@@ -42,74 +39,46 @@ export default function BoardLayout({
   centerOverlay,
 }: Props) {
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-b from-[#0e1d2f] via-[#0a1424] to-[#06101c] overflow-x-auto">
+    <main className="flex h-dvh min-h-dvh flex-col overflow-hidden bg-[radial-gradient(circle_at_center,#13243a_0%,#091525_58%,#050c17_100%)]">
       {header}
 
-      {/*
-        Horizontal-only layout. Below MIN_LAYOUT_WIDTH the page scrolls
-        horizontally rather than collapsing into a portrait orientation
-        — backgammon needs the board's long axis horizontal to be
-        playable. The min-width here keeps the panels + a 3:2 board big
-        enough to read no matter how narrow the viewport.
-      */}
-      <div className="flex-1 flex items-stretch justify-center px-1 sm:px-3 pb-2 sm:pb-3 min-h-0">
-        {/*
-          Wider side panels and a tighter board column. Reference layouts
-          give roughly 60% of the width to the board and 20% to each
-          side panel — narrow panels left the avatars looking lonely
-          on a sea of wood, and let the board stretch to absurd widths.
-        */}
-        <div
-          className="relative w-full max-w-[1400px] min-w-[900px] grid items-stretch gap-2"
-          style={{
-            gridTemplateColumns: 'minmax(160px, 1fr) minmax(0, 3.2fr) minmax(160px, 1fr)',
-          }}
-        >
-          <SidePanel side="left" {...opponent} />
+      <div className="relative flex-1 min-h-0 w-full px-2 pb-3 sm:px-3">
+        <div className="mx-auto grid h-full w-full max-w-[1920px] grid-rows-[auto_minmax(0,1fr)] gap-2 2xl:grid-cols-[clamp(128px,15vw,230px)_minmax(0,1fr)_clamp(128px,15vw,230px)] 2xl:grid-rows-1 2xl:gap-3">
+          <div className="z-20 flex items-start justify-between 2xl:hidden">
+            <SidePanel side="left" compact {...opponent} />
+            <SidePanel side="right" compact {...self} />
+          </div>
 
-          <div className="relative min-w-0 min-h-0">
-            {/* Board wrapper — slight tilt for that "tabletop" feel. */}
-            <div
-              className="absolute inset-0 flex items-center justify-center"
-              style={{ perspective: '1400px' }}
-            >
-              {/*
-                Board aspect ratio matches a real backgammon board with
-                its frame — ~4:3, not 3:2. We use `width: 100%` + the
-                aspect ratio so the browser computes the height; if
-                that height would exceed the column it's clamped via
-                max-h-full and the width shrinks proportionally. End
-                result: the largest 4:3 box that fits the centre column,
-                no matter whether the column is taller or wider.
-              */}
-              <div
-                className="relative w-full aspect-[4/3] max-h-full rounded-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]"
-                style={{
-                  transform: 'rotateX(10deg)',
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {children}
+          <div className="hidden min-h-0 2xl:block">
+            <SidePanel side="left" {...opponent} />
+          </div>
+
+          <div className="relative min-h-0 min-w-0">
+            <div className="absolute inset-0 flex items-start justify-center pt-1 2xl:items-center 2xl:pt-0">
+              <div className="relative aspect-[4/3] h-auto max-h-full w-full max-w-[calc((100dvh-8.5rem)*1.333)] overflow-visible 2xl:max-w-none">
+                <div className="absolute inset-0 rounded-[10px] bg-[#091525] shadow-[0_26px_70px_rgba(0,0,0,0.72)]" />
+                <div className="absolute inset-0 overflow-visible rounded-[10px] ring-1 ring-black/50">
+                  {children}
+                </div>
               </div>
             </div>
 
-            {/* Floating action overlay (Roll/Double/Undo) — sits in front
-                of the tilted board, NOT tilted itself, so buttons read flat. */}
             {actionsOverlay && (
-              <div className="absolute inset-x-0 bottom-2 sm:bottom-4 flex items-end justify-center pointer-events-none z-10">
+              <div className="absolute inset-x-0 bottom-2 z-10 flex items-end justify-center pointer-events-none sm:bottom-4">
                 <div className="pointer-events-auto">{actionsOverlay}</div>
               </div>
             )}
 
-            {/* Center overlay (cube decision, end-of-game modals). */}
             {centerOverlay && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                 <div className="pointer-events-auto">{centerOverlay}</div>
               </div>
             )}
           </div>
 
-          <SidePanel side="right" {...self} />
+          <div className="hidden min-h-0 2xl:block">
+            <SidePanel side="right" {...self} />
+          </div>
         </div>
       </div>
     </main>

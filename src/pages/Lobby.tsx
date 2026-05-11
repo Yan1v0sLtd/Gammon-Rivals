@@ -49,7 +49,7 @@ export default function Lobby() {
   );
 
   useEffect(() => {
-    void refresh();
+    queueMicrotask(() => void refresh());
     const channel = supabase
       .channel('lobby')
       .on(

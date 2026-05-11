@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import type { Die, DiceRoll } from '../engine/types';
-import { Face, FACE_TRANSFORMS, DIE_SIZE } from './Die3D';
+import { DIE_SIZE, PIPS } from './die3dConstants';
+import { CENTER_MS, HOLD_MS, MAX_SIM_STEPS, SETTLE_MS } from './diceTiming';
 
 // ─── Physics conventions ────────────────────────────────────────────────
 // Top-down dice tray view: gravity pulls cubes INTO the screen (along
@@ -37,35 +39,26 @@ function slotGeometry(diceCount: number): { width: number; wallHalf: number } {
     ? { width: SLOT_WIDTH_FOUR, wallHalf: SLOT_WALL_HALF_FOUR }
     : { width: SLOT_WIDTH_TWO, wallHalf: SLOT_WALL_HALF_TWO };
 }
-// Tuned for a long, lively roll. Restitution 0.55 means each wall/floor
-// contact returns 55 % of the impact velocity, so the cube ricochets
+// Tuned for a long, lively roll. Restitution 0.6 means each wall/floor
+// contact returns 60 % of the impact velocity, so the cube ricochets
 // across the slot 3-4 times before its energy bleeds down. Low friction
 // and damping let the spin and slide carry on while the cube is in
 // motion. Sleep settings require the cube to be genuinely still before
 // it stops — no premature freeze mid-roll.
-const RESTITUTION = 0.55;
-const FRICTION = 0.18;
+const RESTITUTION = 0.6;
+const FRICTION = 0.3;
 const SLEEP_SPEED_LIMIT = 4;
 const SLEEP_TIME_LIMIT = 0.12;
 const LINEAR_DAMPING = 0.01;
 const ANGULAR_DAMPING = 0.08;
 
 const PHYSICS_DT = 1 / 60;
-const MAX_SIM_STEPS = 360;
 const ATTEMPTS_PER_DIE = 80;
 const PLAYBACK_FPS = 60;
 
-// Three-stage settle. First we hold position and slerp rotation to
-// canonical (rolled face perpendicular to camera) so the player sees
-// exactly where the cube fell with the right number squarely up; then
-// we hold a beat so the value is readable; only then do we glide to
-// slot centre.
-const SETTLE_MS = 280;
-const HOLD_MS = 240;
-const CENTER_MS = 460;
-
-export const DICE_ANIMATION_MS =
-  (MAX_SIM_STEPS / 60) * 1000 + SETTLE_MS + HOLD_MS + CENTER_MS;
+// Three-stage settle. First we hold position and slerp rotation to a
+// readable 3D display pose; then we hold a beat so the value is readable;
+// only then do we glide to the turn-side tray.
 
 // ─── Die3D face → cube-local outward normal (CSS y-down coords) ─────────
 // Face 1 sits at +z, 2 at -z, 3 at -x, 4 at +x, 5 at +y, 6 at -y.
@@ -110,6 +103,10 @@ interface Vec3Lite {
   z: number;
 }
 
+interface RandomSource {
+  next(): number;
+}
+
 interface Frame {
   px: number;
   py: number;
@@ -118,6 +115,23 @@ interface Frame {
   qy: number;
   qz: number;
   qw: number;
+}
+
+function seededRandom(seed: number): RandomSource {
+  let state = seed >>> 0;
+  return {
+    next: () => {
+      state += 0x6d2b79f5;
+      let t = state;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    },
+  };
+}
+
+function seedFromRoll(roll: DiceRoll): number {
+  return ((roll[0] * 73856093) ^ (roll[1] * 19349663) ^ 0xa5a5a5a5) >>> 0;
 }
 
 function dieValueFacingCamera(quat: CANNON.Quaternion): Die | null {
@@ -151,6 +165,19 @@ function quatNormalize(q: Quat): Quat {
   return { x: q.x / n, y: q.y / n, z: q.z / n, w: q.w / n };
 }
 
+function quatFromAxisAngle(x: number, y: number, z: number, angle: number): Quat {
+  const half = angle / 2;
+  const s = Math.sin(half);
+  return { x: x * s, y: y * s, z: z * s, w: Math.cos(half) };
+}
+
+const DISPLAY_TILT_QUAT = quatNormalize(
+  quatMul(
+    quatFromAxisAngle(0, 1, 0, -0.34),
+    quatFromAxisAngle(1, 0, 0, 0.3)
+  )
+);
+
 function slerp(qa: Quat, qb: Quat, t: number): Quat {
   let cos = qa.x * qb.x + qa.y * qb.y + qa.z * qb.z + qa.w * qb.w;
   let qbAdj = qb;
@@ -182,9 +209,10 @@ function slerp(qa: Quat, qb: Quat, t: number): Quat {
 
 /** Among the four "face V toward camera" orientations rotated 0/90/180/270°
  *  around the camera axis (+z world), pick the one closest to the
- *  physics-settled quaternion. The rolled face stays perpendicular to the
- *  screen; only the in-plane spin of the pip pattern is preserved. */
-function pickYawedFaceFront(qFinal: Quat, value: Die): Quat {
+ *  physics-settled quaternion. The rolled face stays angled toward the
+ *  screen so the cube keeps visible depth; only the pip in-plane spin
+ *  is adjusted for the closest-looking final pose. */
+function pickReadableCubePose(qFinal: Quat, value: Die): Quat {
   const qBase = FACE_FRONT_QUATS[value];
   let best = qBase;
   let bestDot = -Infinity;
@@ -193,7 +221,7 @@ function pickYawedFaceFront(qFinal: Quat, value: Die): Quat {
     const half = yaw / 2;
     // Yaw rotation around world +z axis (camera-axis spin).
     const qYaw: Quat = { x: 0, y: 0, z: Math.sin(half), w: Math.cos(half) };
-    const candidate = quatMul(qYaw, qBase);
+    const candidate = quatMul(DISPLAY_TILT_QUAT, quatMul(qYaw, qBase));
     const dot =
       qFinal.x * candidate.x +
       qFinal.y * candidate.y +
@@ -206,24 +234,6 @@ function pickYawedFaceFront(qFinal: Quat, value: Die): Quat {
     }
   }
   return best;
-}
-
-function quatToCSSMatrix(qx: number, qy: number, qz: number, qw: number, x: number, y: number, z: number): string {
-  const m00 = 1 - 2 * (qy * qy + qz * qz);
-  const m01 = 2 * (qx * qy - qz * qw);
-  const m02 = 2 * (qx * qz + qy * qw);
-  const m10 = 2 * (qx * qy + qz * qw);
-  const m11 = 1 - 2 * (qx * qx + qz * qz);
-  const m12 = 2 * (qy * qz - qx * qw);
-  const m20 = 2 * (qx * qz - qy * qw);
-  const m21 = 2 * (qy * qz + qx * qw);
-  const m22 = 1 - 2 * (qx * qx + qy * qy);
-  return (
-    `matrix3d(${m00.toFixed(4)},${m10.toFixed(4)},${m20.toFixed(4)},0,` +
-    `${m01.toFixed(4)},${m11.toFixed(4)},${m21.toFixed(4)},0,` +
-    `${m02.toFixed(4)},${m12.toFixed(4)},${m22.toFixed(4)},0,` +
-    `${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)},1)`
-  );
 }
 
 function easeOutCubic(t: number): number {
@@ -313,34 +323,39 @@ function buildWorld(slotWallHalf: number): { world: CANNON.World; body: CANNON.B
 /** Reset the body to a fresh "thrown from one side" toss. All cubes in
  *  the same roll share `startSide` — they travel together in the same
  *  direction, like real dice tossed from one hand. */
-function throwBody(body: CANNON.Body, slotWallHalf: number, startSide: number): void {
+function throwBody(
+  body: CANNON.Body,
+  slotWallHalf: number,
+  startSide: number,
+  rng: RandomSource
+): void {
   // Cube starts just inside the chosen wall.
   body.position.set(
     startSide * (slotWallHalf - CUBE_HALF - 4),
-    (Math.random() - 0.5) * (WALL_HALF_Y - CUBE_HALF) * 1.2,
-    SPAWN_Z + Math.random() * 25
+    (rng.next() - 0.5) * (WALL_HALF_Y - CUBE_HALF) * 1.2,
+    SPAWN_Z + rng.next() * 25
   );
   // Throw velocity scales with slot width — wider slots get more
   // initial energy so the cube actually traverses the longer distance.
-  // Base 280 px/s with up to +160 random for variation.
-  const slotEnergy = 280 + Math.max(0, slotWallHalf - 70) * 1.2;
+  // Base 320 px/s with up to +180 random for variation.
+  const slotEnergy = 320 + Math.max(0, slotWallHalf - 70) * 1.35;
   body.velocity.set(
-    -startSide * (slotEnergy + Math.random() * 160),
-    (Math.random() - 0.5) * 180,
-    -20 + Math.random() * 30
+    -startSide * (slotEnergy + rng.next() * 180),
+    (rng.next() - 0.5) * 230,
+    -28 + rng.next() * 42
   );
   // High angular velocity — combined with floor friction this turns
   // sliding into rolling, so the cube visibly tumbles end-over-end as
   // it travels.
   body.angularVelocity.set(
-    (Math.random() - 0.5) * 28,
-    (Math.random() - 0.5) * 28,
-    (Math.random() - 0.5) * 28
+    (rng.next() - 0.5) * 35,
+    (rng.next() - 0.5) * 35,
+    (rng.next() - 0.5) * 35
   );
   body.quaternion.setFromEuler(
-    Math.random() * 2 * Math.PI,
-    Math.random() * 2 * Math.PI,
-    Math.random() * 2 * Math.PI
+    rng.next() * 2 * Math.PI,
+    rng.next() * 2 * Math.PI,
+    rng.next() * 2 * Math.PI
   );
   body.wakeUp();
   body.allowSleep = true;
@@ -362,11 +377,16 @@ function simulateThrow(world: CANNON.World, body: CANNON.Body): {
   return { frames, finalUpFace: dieValueFacingCamera(body.quaternion) };
 }
 
-function rollDie(desiredValue: Die, slotWallHalf: number, startSide: number): Frame[] {
+function rollDie(
+  desiredValue: Die,
+  slotWallHalf: number,
+  startSide: number,
+  rng: RandomSource
+): Frame[] {
   const { world, body } = buildWorld(slotWallHalf);
   let lastFrames: Frame[] = [];
   for (let attempt = 0; attempt < ATTEMPTS_PER_DIE; attempt++) {
-    throwBody(body, slotWallHalf, startSide);
+    throwBody(body, slotWallHalf, startSide, rng);
     const { frames, finalUpFace } = simulateThrow(world, body);
     lastFrames = frames;
     if (finalUpFace === desiredValue) return frames;
@@ -379,6 +399,28 @@ function rollDie(desiredValue: Die, slotWallHalf: number, startSide: number): Fr
 interface Props {
   roll: DiceRoll | null;
   remaining: readonly Die[];
+  settleSide?: 'left' | 'right';
+  placement?: 'board' | 'hud';
+}
+
+interface TrajectoryData {
+  readonly values: readonly Die[];
+  readonly frames: readonly Frame[][];
+}
+
+interface ThreeDie {
+  mesh: THREE.Mesh<THREE.BoxGeometry, THREE.MeshStandardMaterial[]>;
+  shadow: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  materials: THREE.MeshStandardMaterial[];
+}
+
+interface ThreeDiceStage {
+  renderer: THREE.WebGLRenderer;
+  scene: THREE.Scene;
+  camera: THREE.OrthographicCamera;
+  dice: ThreeDie[];
+  geometry: THREE.BoxGeometry;
+  shadowGeometry: THREE.CircleGeometry;
 }
 
 // Target die size as a fraction of the board's actual width — tuned to
@@ -390,8 +432,135 @@ const TARGET_DIE_RATIO = 0.045;
 const MAX_DICE_SCALE = 0.85;
 const MIN_DICE_SCALE = 0.55;
 
-export default function DiceTray({ roll, remaining }: Props) {
+const THREE_STAGE_WIDTH = 1800;
+const THREE_STAGE_HEIGHT = 1800;
+const DICE_FACE_TEXTURE_SIZE = 256;
+const FACE_MATERIAL_ORDER: Die[] = [4, 3, 5, 6, 1, 2];
+
+const textureCache = new Map<string, THREE.CanvasTexture>();
+
+function createDiceTexture(face: Die, used: boolean): THREE.CanvasTexture {
+  const cacheKey = `${face}-${used ? 'used' : 'live'}`;
+  const cached = textureCache.get(cacheKey);
+  if (cached) return cached;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = DICE_FACE_TEXTURE_SIZE;
+  canvas.height = DICE_FACE_TEXTURE_SIZE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    const fallback = new THREE.CanvasTexture(canvas);
+    textureCache.set(cacheKey, fallback);
+    return fallback;
+  }
+
+  const size = DICE_FACE_TEXTURE_SIZE;
+  const radius = 34;
+  const gradient = ctx.createLinearGradient(0, 0, size, size);
+  gradient.addColorStop(0, used ? '#e3d3ac' : '#fffaf4');
+  gradient.addColorStop(0.48, used ? '#c9b581' : '#f8e9ca');
+  gradient.addColorStop(1, used ? '#9f8351' : '#e1b46e');
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.roundRect(6, 6, size - 12, size - 12, radius);
+  ctx.fill();
+
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#725349';
+  ctx.stroke();
+
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(255, 236, 176, 0.78)';
+  ctx.beginPath();
+  ctx.roundRect(20, 20, size - 40, size - 40, radius * 0.65);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(81, 50, 40, 0.16)';
+  ctx.beginPath();
+  ctx.roundRect(17, size - 52, size - 34, 30, 16);
+  ctx.fill();
+
+  const positions = PIPS[face];
+  const pipBase = face === 1 || face === 4 ? '#d5483d' : '#331e18';
+  const centers = [
+    [size * 0.27, size * 0.27],
+    [size * 0.5, size * 0.27],
+    [size * 0.73, size * 0.27],
+    [size * 0.27, size * 0.5],
+    [size * 0.5, size * 0.5],
+    [size * 0.73, size * 0.5],
+    [size * 0.27, size * 0.73],
+    [size * 0.5, size * 0.73],
+    [size * 0.73, size * 0.73],
+  ];
+  const pipRadius = face === 1 ? 17 : 14;
+
+  for (const pos of positions) {
+    const [x, y] = centers[pos];
+    const pipGradient = ctx.createRadialGradient(
+      x - pipRadius * 0.35,
+      y - pipRadius * 0.35,
+      2,
+      x,
+      y,
+      pipRadius
+    );
+    pipGradient.addColorStop(0, used ? '#f2e6c4' : '#fff4d6');
+    pipGradient.addColorStop(0.28, used ? '#a9986c' : pipBase);
+    pipGradient.addColorStop(1, used ? '#685734' : '#1a0e05');
+    ctx.fillStyle = pipGradient;
+    ctx.beginPath();
+    ctx.arc(x, y, pipRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  textureCache.set(cacheKey, texture);
+  return texture;
+}
+
+function createDiceMaterials(used: boolean): THREE.MeshStandardMaterial[] {
+  return FACE_MATERIAL_ORDER.map((face) => {
+    const material = new THREE.MeshStandardMaterial({
+      map: createDiceTexture(face, used),
+      roughness: 0.72,
+      metalness: 0.02,
+      transparent: used,
+      opacity: used ? 0.45 : 1,
+    });
+    material.side = THREE.FrontSide;
+    return material;
+  });
+}
+
+function disposeStage(stage: ThreeDiceStage | null): void {
+  if (!stage) return;
+  stage.renderer.dispose();
+  stage.geometry.dispose();
+  stage.shadowGeometry.dispose();
+  for (const die of stage.dice) {
+    for (const material of die.materials) material.dispose();
+    die.shadow.material.dispose();
+  }
+  stage.renderer.domElement.remove();
+}
+
+export default function DiceTray({
+  roll,
+  remaining,
+  settleSide = 'right',
+  placement = 'board',
+}: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
+  const diceCount = dice.length;
 
   // Scale the dice rendering to the board's actual width. Physics stays
   // in pixel coords at design size; the wrapper applies a CSS scale.
@@ -405,6 +574,10 @@ export default function DiceTray({ roll, remaining }: Props) {
     const update = () => {
       const w = wrapperEl.clientWidth;
       if (w <= 0) return;
+      if (placement === 'hud') {
+        setScale(w < 170 ? 0.46 : 0.52);
+        return;
+      }
       // Target die size = TARGET_DIE_RATIO * board width.
       // Render scale = target / DIE_SIZE.
       const targetDieSize = w * TARGET_DIE_RATIO;
@@ -416,35 +589,132 @@ export default function DiceTray({ roll, remaining }: Props) {
     const ro = new ResizeObserver(update);
     ro.observe(wrapperEl);
     return () => ro.disconnect();
-  }, [wrapperEl]);
+  }, [placement, wrapperEl]);
 
   // Trajectories are deterministic given (roll, dice.length). We compute
   // them synchronously when the roll changes so the very first paint can
   // already show the cubes mid-flight (no flash from a default position).
-  const trajectoriesRef = useRef<Frame[][]>([]);
-  const lastRollRef = useRef<DiceRoll | null>(null);
-  if (roll && lastRollRef.current !== roll) {
-    const { wallHalf } = slotGeometry(dice.length);
+  const rollKey = roll ? `${roll[0]}-${roll[1]}` : 'none';
+  const trajectoryData = useMemo<TrajectoryData>(() => {
+    if (!roll) return { values: [], frames: [] };
+    const rollValues =
+      roll[0] === roll[1] ? Array.from({ length: 4 }, () => roll[0]) : [roll[0], roll[1]];
+    const rng = seededRandom(seedFromRoll(roll));
+    const { wallHalf } = slotGeometry(rollValues.length);
     // Pick the throw direction ONCE for this roll — every die starts
-    // from the same side, like real dice tossed from one hand.
-    const startSide = Math.random() < 0.5 ? -1 : 1;
-    trajectoriesRef.current = dice.map((d) => rollDie(d.value, wallHalf, startSide));
-    lastRollRef.current = roll;
-  } else if (!roll) {
-    lastRollRef.current = null;
-    trajectoriesRef.current = [];
-  }
-  const trajectories = trajectoriesRef.current;
+    // from the active player's side, like real dice tossed from one hand.
+    const startSide = placement === 'hud' ? (rng.next() < 0.5 ? -1 : 1) : settleSide === 'right' ? 1 : -1;
+    return {
+      values: rollValues,
+      frames: rollValues.map((value) => rollDie(value, wallHalf, startSide, rng)),
+    };
+  }, [placement, roll, settleSide]);
 
-  const dieRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const stageElRef = useRef<HTMLDivElement | null>(null);
+  const threeStageRef = useRef<ThreeDiceStage | null>(null);
   const animRef = useRef<number | null>(null);
 
-  if (dieRefs.current.length !== dice.length) {
-    dieRefs.current = Array(dice.length).fill(null);
-  }
+  useEffect(() => {
+    const stageEl = stageElRef.current;
+    if (!stageEl || rollKey === 'none' || diceCount === 0) return;
+
+    disposeStage(threeStageRef.current);
+    threeStageRef.current = null;
+    stageEl.textContent = '';
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setSize(THREE_STAGE_WIDTH, THREE_STAGE_HEIGHT, false);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.inset = '0';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    renderer.domElement.style.pointerEvents = 'none';
+    stageEl.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(
+      -THREE_STAGE_WIDTH / 2,
+      THREE_STAGE_WIDTH / 2,
+      THREE_STAGE_HEIGHT / 2,
+      -THREE_STAGE_HEIGHT / 2,
+      -1000,
+      1000
+    );
+    camera.position.set(0, 0, 500);
+    camera.lookAt(0, 0, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+    const keyLight = new THREE.DirectionalLight(0xfff0cc, 2.7);
+    keyLight.position.set(-120, 180, 420);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x7cc5ff, 0.85);
+    rimLight.position.set(180, -120, 240);
+    scene.add(rimLight);
+
+    const geometry = new THREE.BoxGeometry(DIE_SIZE, DIE_SIZE, DIE_SIZE);
+    const shadowGeometry = new THREE.CircleGeometry(DIE_SIZE * 0.62, 36);
+    const shadowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xf3bd2e,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+    });
+
+    const diceMeshes = Array.from({ length: diceCount }, (_, i) => {
+      const slotW = slotGeometry(diceCount).width;
+      const slotX = (i - (diceCount - 1) / 2) * slotW;
+      const materials = createDiceMaterials(false);
+      const mesh = new THREE.Mesh(geometry, materials);
+      mesh.position.set(slotX, 0, 0);
+      scene.add(mesh);
+
+      const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial.clone());
+      shadow.position.set(slotX + 6, -8, -42);
+      shadow.scale.set(1.08, 0.58, 1);
+      scene.add(shadow);
+
+      return { mesh, shadow, materials };
+    });
+    shadowMaterial.dispose();
+
+    const stage: ThreeDiceStage = {
+      renderer,
+      scene,
+      camera,
+      dice: diceMeshes,
+      geometry,
+      shadowGeometry,
+    };
+    threeStageRef.current = stage;
+    renderer.render(scene, camera);
+
+    return () => {
+      if (threeStageRef.current === stage) threeStageRef.current = null;
+      disposeStage(stage);
+    };
+  }, [diceCount, rollKey]);
 
   useEffect(() => {
-    if (!roll || trajectories.length === 0) return;
+    const stage = threeStageRef.current;
+    if (!stage) return;
+    dice.forEach((d, i) => {
+      const die = stage.dice[i];
+      if (!die) return;
+      die.mesh.visible = true;
+      const nextMaterials = createDiceMaterials(d.used);
+      for (const material of die.materials) material.dispose();
+      die.mesh.material = nextMaterials;
+      die.materials = nextMaterials;
+    });
+    stage.renderer.render(stage.scene, stage.camera);
+  }, [dice]);
+
+  useEffect(() => {
+    const trajectories = trajectoryData.frames;
+    const trajectoryValues = trajectoryData.values;
+    if (rollKey === 'none' || trajectories.length === 0) return;
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
@@ -456,21 +726,54 @@ export default function DiceTray({ roll, remaining }: Props) {
       const last = t[t.length - 1];
       return last ? { x: last.px, y: last.py, z: last.pz } : { x: 0, y: 0, z: 0 };
     });
-    const targetQuats: Quat[] = dice.map((d, i) => pickYawedFaceFront(finalQuats[i], d.value));
+    const targetQuats: Quat[] = trajectoryValues.map((value, i) =>
+      pickReadableCubePose(finalQuats[i], value)
+    );
+    const boardWidth = wrapperEl?.clientWidth ?? 600;
+    const boardHeight = wrapperEl?.clientHeight ?? 450;
+    const safeScale = Math.max(0.1, scale);
+    const sideSign = settleSide === 'right' ? 1 : -1;
+    const targetCenterX =
+      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.36;
+    const targetCenterY =
+      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.58;
+    const targetPositions = trajectories.map((_, i) => {
+      const slotX =
+        trajectories.length === 4
+          ? ((i % 2) - 0.5) * 76
+          : (i - (trajectories.length - 1) / 2) * 76;
+      const ySpread =
+        trajectories.length === 4 ? (Math.floor(i / 2) - 0.5) * 54 : 0;
+      return {
+        x: targetCenterX - slotX,
+        y: targetCenterY + ySpread,
+        z: 0,
+      };
+    });
 
     let phase: 'play' | 'settle' | 'hold' | 'center' | 'done' = 'play';
     const playStart = performance.now();
     let phaseStart = playStart;
 
-    const writeRaw = (idx: number, f: Frame) => {
-      const el = dieRefs.current[idx];
-      if (!el) return;
-      el.style.transform = quatToCSSMatrix(f.qx, f.qy, f.qz, f.qw, f.px, f.py, f.pz);
-    };
     const writeQP = (idx: number, q: Quat, x: number, y: number, z: number) => {
-      const el = dieRefs.current[idx];
-      if (!el) return;
-      el.style.transform = quatToCSSMatrix(q.x, q.y, q.z, q.w, x, y, z);
+      const die = threeStageRef.current?.dice[idx];
+      if (!die) return;
+      die.mesh.position.set(x, -y, z);
+      die.mesh.quaternion.set(q.x, q.y, q.z, q.w);
+
+      const height = Math.max(0, z);
+      const shadowScale = Math.max(0.52, 1.08 - height * 0.005);
+      die.shadow.position.set(x + 6, -y - 8, -44);
+      die.shadow.scale.set(shadowScale, shadowScale * 0.55, 1);
+      die.shadow.material.opacity = Math.max(0.05, 0.22 - height * 0.0025);
+    };
+    const writeRaw = (idx: number, f: Frame) => {
+      writeQP(idx, { x: f.qx, y: f.qy, z: f.qz, w: f.qw }, f.px, f.py, f.pz);
+    };
+    const renderStage = () => {
+      const stage = threeStageRef.current;
+      if (!stage) return;
+      stage.renderer.render(stage.scene, stage.camera);
     };
 
     // Paint frame 0 immediately so the very first paint already shows the
@@ -479,6 +782,7 @@ export default function DiceTray({ roll, remaining }: Props) {
       const f = trajectories[i][0];
       if (f) writeRaw(i, f);
     }
+    renderStage();
 
     const step = (nowTs: number) => {
       if (phase === 'play') {
@@ -492,45 +796,49 @@ export default function DiceTray({ roll, remaining }: Props) {
           if (idx < traj.length - 1) allDone = false;
           if (f) writeRaw(i, f);
         }
+        renderStage();
         if (allDone) {
           phase = 'settle';
           phaseStart = nowTs;
         }
       } else if (phase === 'settle') {
         // Position is FROZEN at where the cube physics-stopped. Only
-        // rotation tweens — slerp from physics-final to canonical
-        // face-front, so the cube finishes rolling visibly in place
-        // with the rolled number squarely toward the camera.
+        // rotation tweens — slerp from physics-final to a readable
+        // angled cube pose, so the rolled number is clear but the die
+        // still reads as a real cube instead of a flat tile.
         const t = Math.min((nowTs - phaseStart) / SETTLE_MS, 1);
         const e = easeOutCubic(t);
         for (let i = 0; i < trajectories.length; i++) {
           const q = slerp(finalQuats[i], targetQuats[i], e);
           writeQP(i, q, finalPos[i].x, finalPos[i].y, finalPos[i].z);
         }
+        renderStage();
         if (t >= 1) {
           phase = 'hold';
           phaseStart = nowTs;
         }
       } else if (phase === 'hold') {
-        // Static read-time at canonical orientation + physics-final
+        // Static read-time at the angled readable pose + physics-final
         // position — gives the player a beat to read the rolled value
-        // before the cubes glide to the centre.
+        // before the cubes glide to the turn-side tray.
         if (nowTs - phaseStart >= HOLD_MS) {
           phase = 'center';
           phaseStart = nowTs;
         }
       } else if (phase === 'center') {
-        // Position-only tween from physics-rest spot to slot centre.
-        // Rotation stays at canonical — the rolled face stays visible
+        // Position-only tween from physics-rest spot to the turn-side slot.
+        // Rotation stays readable — the rolled face stays visible
         // throughout the slide.
         const t = Math.min((nowTs - phaseStart) / CENTER_MS, 1);
         const e = easeOutCubic(t);
         for (let i = 0; i < trajectories.length; i++) {
-          const x = finalPos[i].x * (1 - e);
-          const y = finalPos[i].y * (1 - e);
-          const z = finalPos[i].z * (1 - e);
+          const target = targetPositions[i];
+          const x = finalPos[i].x * (1 - e) + target.x * e;
+          const y = finalPos[i].y * (1 - e) + target.y * e;
+          const z = finalPos[i].z * (1 - e) + target.z * e;
           writeQP(i, targetQuats[i], x, y, z);
         }
+        renderStage();
         if (t >= 1) phase = 'done';
       }
 
@@ -545,92 +853,46 @@ export default function DiceTray({ roll, remaining }: Props) {
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-    // We deliberately depend ONLY on `roll`. `trajectories` and `dice`
-    // are recomputed when a checker is consumed (used flag flips), but the
-    // throw should play exactly once per dice roll — not restart on every
-    // move. Both are captured by closure from this render, which is the
-    // same render that produced the trajectories.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roll]);
+  }, [placement, rollKey, scale, settleSide, trajectoryData, wrapperEl]);
 
   // Pure dice renderer — when there's no roll yet there's nothing to show.
   // The Roll / End-turn / Double / Undo buttons live in ActionButtons,
   // which the parent layout renders alongside (not nested inside) the tray.
   if (roll === null) return null;
 
+  const rootClass =
+    placement === 'hud'
+      ? 'relative pointer-events-none flex h-20 w-40 items-center justify-center overflow-visible sm:h-24 sm:w-48'
+      : 'absolute inset-0 pointer-events-none flex items-center justify-center';
+
   return (
     <div
       ref={setWrapperEl}
-      className="absolute inset-0 pointer-events-none flex items-center justify-center"
+      className={rootClass}
     >
       <div className="flex flex-col items-center gap-3">
         <div
           style={{
             position: 'relative',
-            width: 600,
-            height: 240,
-            perspective: 1400,
-            transformStyle: 'preserve-3d',
+            width: THREE_STAGE_WIDTH,
+            height: THREE_STAGE_HEIGHT,
             pointerEvents: 'none',
-            transform: `scale(${scale})`,
+            transform:
+              placement === 'hud'
+                ? `scale(${scale})`
+                : `scale(${scale}) rotateZ(-0.8deg)`,
             transformOrigin: 'center center',
           }}
         >
-              {/* No parent tilt — the cube settles with the rolled face
-                  perpendicular to the screen, so the player sees it flat-on.
-                  Perspective on the wrapper above still gives 3D depth
-                  (cubes at different z look different sizes during the
-                  throw). */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  transformStyle: 'preserve-3d',
-                }}
-              >
-                {dice.map((d, i) => {
-                  const slotW = slotGeometry(dice.length).width;
-                  const slotX = (i - (dice.length - 1) / 2) * slotW;
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        position: 'absolute',
-                        left: '50%',
-                        top: '50%',
-                        width: DIE_SIZE,
-                        height: DIE_SIZE,
-                        marginLeft: -DIE_SIZE / 2 + slotX,
-                        marginTop: -DIE_SIZE / 2,
-                        transformStyle: 'preserve-3d',
-                        transition: 'opacity 200ms ease',
-                        opacity: d.used ? 0.45 : 1,
-                      }}
-                    >
-                      <div
-                        ref={(el) => {
-                          dieRefs.current[i] = el;
-                        }}
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          transformStyle: 'preserve-3d',
-                          willChange: 'transform',
-                        }}
-                      >
-                        {([1, 2, 3, 4, 5, 6] as Die[]).map((face) => (
-                          <Face
-                            key={face}
-                            face={face}
-                            transform={FACE_TRANSFORMS[face]}
-                            used={d.used}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-          </div>
+          <div
+            ref={stageElRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              overflow: 'visible',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
       </div>
     </div>

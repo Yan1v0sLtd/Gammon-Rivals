@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
-import DoublingCube from '../components/DoublingCube';
 import CubeOfferDecision from '../components/CubeOfferDecision';
 import BoardLayout from '../components/BoardLayout';
 import ActionButtons from '../components/ActionButtons';
@@ -14,7 +13,7 @@ import { useOnlineGame } from '../game/useOnlineGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { CubeValue, MatchState } from '../engine';
-import { woodTheme } from '../board/theme';
+import { getBoardTheme } from '../board/theme';
 import type { Database } from '../types/database';
 import type { PlayerIdentity } from '../lib/identity';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
@@ -28,9 +27,12 @@ function profileToIdentity(p: ProfileRow | null): PlayerIdentity | null {
 
 export default function PlayOnline() {
   const { matchId } = useParams<{ matchId: string }>();
+  const [params] = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const game = useOnlineGame(matchId);
+  const boardParam = params.get('board');
+  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
 
   const [ownerProfile, setOwnerProfile] = useState<ProfileRow | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);
@@ -46,7 +48,7 @@ export default function PlayOnline() {
       setOwnerProfile(data?.find((p) => p.id === game.match!.owner_id) ?? null);
       setOpponentProfile(data?.find((p) => p.id === game.match!.opponent_id) ?? null);
     })();
-  }, [game.match?.owner_id, game.match?.opponent_id]);
+  }, [game.match]);
 
   const handlePointClick = (pos: Position) => {
     if (game.gameWinner || game.matchFinished) return;
@@ -64,12 +66,15 @@ export default function PlayOnline() {
     }
   };
 
+  const inviteCode = game.match?.invite_code;
   const inviteUrl = useMemo(
     () =>
-      game.match?.invite_code
-        ? `${window.location.origin}/join/${game.match.invite_code}`
+      inviteCode
+        ? `${window.location.origin}/join/${inviteCode}${
+            boardParam ? `?board=${encodeURIComponent(boardParam)}` : ''
+          }`
         : null,
-    [game.match?.invite_code]
+    [boardParam, inviteCode]
   );
 
   const copyLink = async () => {
@@ -190,6 +195,7 @@ export default function PlayOnline() {
   const selfPip = selfColor === 'white' ? whitePip : blackPip;
   const oppPip = oppColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = !!game.isLocalTurn;
+  const isRollForSelf = game.turn === selfColor;
 
   const turnLabel = game.matchFinished
     ? 'match over'
@@ -251,9 +257,6 @@ export default function PlayOnline() {
         pipCount: selfPip,
         scoreLabel: `${selfColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
         isTurn: isLocalTurn && !showMatchOver,
-        bottomSlot: !isSpectator && (
-          <AutoRollToggle enabled={autoRollOn} onChange={setAutoRollOn} />
-        ),
       }}
       actionsOverlay={
         showActions ? (
@@ -270,6 +273,15 @@ export default function PlayOnline() {
             // never shows.
             canUndo={false}
             onUndo={() => {}}
+            autoRollSlot={
+              !isSpectator ? (
+                <AutoRollToggle
+                  enabled={autoRollOn}
+                  onChange={setAutoRollOn}
+                  variant="inline"
+                />
+              ) : null
+            }
           />
         ) : null
       }
@@ -330,22 +342,21 @@ export default function PlayOnline() {
     >
       <BoardCanvas
         state={game.board}
-        theme={woodTheme}
+        theme={selectedTheme}
         selection={{
-          selectedFrom: game.selectedFrom,
-          validDestinations: game.validDestinations,
-          legalOrigins: game.legalOrigins,
+          selectedFrom: isLocalTurn && !isSpectator ? game.selectedFrom : null,
+          validDestinations: isLocalTurn && !isSpectator ? game.validDestinations : [],
+          legalOrigins: isLocalTurn && !isSpectator ? game.legalOrigins : [],
+          opponentOrigins: game.opponentPreviewOrigins,
+          opponentDestinations: game.opponentPreviewDestinations,
         }}
         onPointClick={handlePointClick}
       />
-      <DoublingCube
-        value={game.cubeValue as CubeValue}
-        owner={game.cubeOwner}
-        canOffer={false}
-        pendingOffer={game.cubeOffer}
-        onOffer={() => void game.offerDouble()}
+      <DiceTray
+        roll={game.roll}
+        remaining={game.remaining}
+        settleSide={isRollForSelf ? 'right' : 'left'}
       />
-      <DiceTray roll={game.roll} remaining={game.remaining} />
 
       {/* Inactivity countdown / claim button — sits at top of board. */}
       {!isSpectator && !game.matchFinished && !game.isLocalTurn && !game.betweenGames && game.secondsSinceActivity >= 60 && (

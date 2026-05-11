@@ -8,9 +8,15 @@ export const woodTheme: Theme = {
   name: 'wood',
   colors: {
     ...defaultTheme.colors,
-    frameLight: 0x6b4220,
-    frameDark: 0x2d1a08,
-    felt: 0xc9a86b,
+    frameLight: 0xa45f32,
+    frameDark: 0x4a2411,
+    frameBevel: 0xd38a4b,
+    felt: 0xe0ad63,
+    pointLightBase: 0xffe7a7,
+    pointLightTip: 0xd19145,
+    pointDarkBase: 0xbd6133,
+    pointDarkTip: 0x773018,
+    trayBg: 0x7b1718,
   },
   assets: {
     frame: '/themes/wood/frame.jpg',

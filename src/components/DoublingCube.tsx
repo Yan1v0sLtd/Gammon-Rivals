@@ -30,16 +30,12 @@ export default function DoublingCube({
     return () => clearTimeout(t);
   }, [confirming]);
 
-  // If offer goes through (pendingOffer becomes truthy) or canOffer becomes false, drop confirm
-  useEffect(() => {
-    if (!canOffer || pendingOffer !== null) setConfirming(false);
-  }, [canOffer, pendingOffer]);
-
   const ownerLabel =
     owner === null ? 'center' : owner === 'white' ? 'white owns' : 'black owns';
 
   const verticalAlign =
     owner === null ? 'items-center' : owner === 'white' ? 'items-end pb-4' : 'items-start pt-4';
+  const isConfirming = confirming && canOffer && pendingOffer === null;
 
   return (
     <div
@@ -61,7 +57,7 @@ export default function DoublingCube({
         >
           {value}
         </button>
-        {confirming && canOffer && (
+        {isConfirming && (
           <div className="flex flex-col items-center gap-1">
             <button
               onClick={() => {

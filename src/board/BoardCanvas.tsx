@@ -2,11 +2,12 @@ import { useEffect, useRef } from 'react';
 import { Application } from 'pixi.js';
 import type { BoardState, Position } from '../engine/types';
 import { BoardRenderer, type RenderSelection } from './pixi/BoardRenderer';
-import { defaultTheme, loadTheme, type Theme } from './theme';
+import { defaultTheme, loadTheme, type Theme, type ThemeLayout } from './theme';
 
 interface Props {
   state: BoardState;
   theme?: Theme;
+  layoutOverride?: ThemeLayout;
   selection?: RenderSelection;
   onPointClick?: (pos: Position) => void;
 }
@@ -14,6 +15,7 @@ interface Props {
 export default function BoardCanvas({
   state,
   theme = defaultTheme,
+  layoutOverride,
   selection,
   onPointClick,
 }: Props) {
@@ -24,17 +26,26 @@ export default function BoardCanvas({
   const stateRef = useRef(state);
   const selectionRef = useRef(selection);
   const clickRef = useRef(onPointClick);
-  stateRef.current = state;
-  selectionRef.current = selection;
-  clickRef.current = onPointClick;
+  const layoutOverrideRef = useRef(layoutOverride);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     let cancelled = false;
-    let resizeHandler: (() => void) | null = null;
+    let initialized = false;
+    let renderer: BoardRenderer | null = null;
+    let resizeObserver: ResizeObserver | null = null;
     const app = new Application();
+
+    const renderLatest = () => {
+      if (!renderer) return;
+      const width = Math.max(1, container.clientWidth);
+      const height = Math.max(1, container.clientHeight);
+      app.renderer.resize(width, height);
+      renderer.resize(width, height);
+      renderer.render(stateRef.current, selectionRef.current);
+    };
 
     (async () => {
       const [, loaded] = await Promise.all([
@@ -47,6 +58,7 @@ export default function BoardCanvas({
         }),
         loadTheme(theme),
       ]);
+      initialized = true;
       if (cancelled) {
         app.destroy(true);
         return;
@@ -54,34 +66,55 @@ export default function BoardCanvas({
       container.appendChild(app.canvas);
       appRef.current = app;
 
-      const renderer = new BoardRenderer(app, loaded);
+      renderer = new BoardRenderer(app, loaded);
+      renderer.setThemeLayout(layoutOverrideRef.current ?? theme.layout);
       renderer.setOnPointClick((pos) => clickRef.current?.(pos));
       rendererRef.current = renderer;
-      renderer.render(stateRef.current, selectionRef.current);
+      renderLatest();
 
-      resizeHandler = () => {
-        renderer.resize(app.screen.width, app.screen.height);
-        renderer.render(stateRef.current, selectionRef.current);
-      };
-      window.addEventListener('resize', resizeHandler);
+      resizeObserver = new ResizeObserver(renderLatest);
+      resizeObserver.observe(container);
     })();
 
     return () => {
       cancelled = true;
-      if (resizeHandler) window.removeEventListener('resize', resizeHandler);
-      const a = appRef.current;
-      if (a) {
-        rendererRef.current?.destroy();
-        a.destroy(true);
+      resizeObserver?.disconnect();
+      if (rendererRef.current === renderer) {
         appRef.current = null;
         rendererRef.current = null;
       }
+      renderer?.destroy();
+      if (initialized) app.destroy(true);
     };
   }, [theme]);
 
   useEffect(() => {
+    stateRef.current = state;
+    selectionRef.current = selection;
+    clickRef.current = onPointClick;
     rendererRef.current?.render(state, selection);
-  }, [state, selection]);
+  }, [state, selection, onPointClick]);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  useEffect(() => {
+    layoutOverrideRef.current = layoutOverride;
+    rendererRef.current?.setThemeLayout(layoutOverride ?? theme.layout);
+    rendererRef.current?.render(stateRef.current, selectionRef.current);
+  }, [layoutOverride, theme.layout]);
+
+  const boardBackground = theme.assets?.board
+    ? {
+        backgroundImage: `url("${theme.assets.board}")`,
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '100% 100%',
+      }
+    : undefined;
+
+  return (
+    <div
+      ref={containerRef}
+      className="h-full w-full overflow-hidden rounded-[10px]"
+      style={boardBackground}
+    />
+  );
 }
