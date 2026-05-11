@@ -8,6 +8,16 @@ type RatioKey =
   | 'topPointTipXRatios'
   | 'bottomPointTipXRatios';
 type OffsetKey = 'topCheckerOffsetXRatios' | 'bottomCheckerOffsetXRatios';
+type EdgeKey = 'topPointYRatio' | 'bottomPointYRatio';
+
+const EDGE_MIN = 0;
+const EDGE_MAX = 1;
+const PADDING_MIN = -0.5;
+const PADDING_MAX = 2.5;
+const POINT_HEIGHT_MIN = 0.08;
+const POINT_HEIGHT_MAX = 0.6;
+const SPACING_MIN = 0.55;
+const SPACING_MAX = 1.45;
 
 interface Props {
   layout: ThemeLayout;
@@ -65,6 +75,9 @@ export default function AlignmentPanel({
   const sidePaddingKey =
     debug.side === 'top' ? 'topCheckerPaddingRatio' : 'bottomCheckerPaddingRatio';
   const sidePaddingValue = layout[sidePaddingKey] ?? 1;
+  const sideEdgeKey: EdgeKey = debug.side === 'top' ? 'topPointYRatio' : 'bottomPointYRatio';
+  const sideEdgeValue = layout[sideEdgeKey] ?? (debug.side === 'top' ? 0 : 1);
+  const pointHeightValue = layout.pointHeightRatio ?? 0.44;
   const spacingValue = layout.checkerStackSpacingRatio ?? 1;
 
   const exportText = useMemo(
@@ -77,6 +90,9 @@ export default function AlignmentPanel({
           bottomPointTipXRatios: layout.bottomPointTipXRatios,
           topCheckerOffsetXRatios: layout.topCheckerOffsetXRatios,
           bottomCheckerOffsetXRatios: layout.bottomCheckerOffsetXRatios,
+          pointHeightRatio: layout.pointHeightRatio,
+          topPointYRatio: layout.topPointYRatio,
+          bottomPointYRatio: layout.bottomPointYRatio,
           checkerStackSpacingRatio: layout.checkerStackSpacingRatio,
           topCheckerPaddingRatio: layout.topCheckerPaddingRatio,
           bottomCheckerPaddingRatio: layout.bottomCheckerPaddingRatio,
@@ -88,11 +104,14 @@ export default function AlignmentPanel({
       layout.bottomPointCenterXRatios,
       layout.bottomPointTipXRatios,
       layout.bottomCheckerOffsetXRatios,
+      layout.bottomPointYRatio,
       layout.bottomCheckerPaddingRatio,
       layout.checkerStackSpacingRatio,
+      layout.pointHeightRatio,
       layout.topCheckerOffsetXRatios,
       layout.topPointCenterXRatios,
       layout.topPointTipXRatios,
+      layout.topPointYRatio,
       layout.topCheckerPaddingRatio,
     ]
   );
@@ -107,7 +126,7 @@ export default function AlignmentPanel({
     setCopyState('');
     if (debug.anchor === 'topChecker') {
       const nextOffsets = [...currentOffsets];
-      nextOffsets[debug.column] = roundRatio(clamp(value, -0.15, 0.15));
+      nextOffsets[debug.column] = roundRatio(clamp(value, -0.25, 0.25));
       onLayoutChange({ ...layout, [checkerOffsetKey]: nextOffsets });
       return;
     }
@@ -121,7 +140,9 @@ export default function AlignmentPanel({
     setCopyState('');
     if (debug.anchor === 'topChecker') {
       const nextOffsets = [...currentOffsets];
-      nextOffsets[debug.column] = roundRatio(clamp((currentOffsets[debug.column] ?? 0) + delta, -0.15, 0.15));
+      nextOffsets[debug.column] = roundRatio(
+        clamp((currentOffsets[debug.column] ?? 0) + delta, -0.25, 0.25)
+      );
       onLayoutChange({ ...layout, [checkerOffsetKey]: nextOffsets });
       return;
     }
@@ -135,7 +156,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      [sidePaddingKey]: roundRatio(clamp(sidePaddingValue + delta, 0.2, 2.5)),
+      [sidePaddingKey]: roundRatio(clamp(sidePaddingValue + delta, PADDING_MIN, PADDING_MAX)),
     });
   };
 
@@ -144,7 +165,43 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      [sidePaddingKey]: roundRatio(clamp(value, 0.2, 2.5)),
+      [sidePaddingKey]: roundRatio(clamp(value, PADDING_MIN, PADDING_MAX)),
+    });
+  };
+
+  const nudgeEdge = (delta: number) => {
+    setCopyState('');
+    onLayoutChange({
+      ...layout,
+      [sideEdgeKey]: roundRatio(clamp(sideEdgeValue + delta, EDGE_MIN, EDGE_MAX)),
+    });
+  };
+
+  const setEdge = (value: number) => {
+    if (!Number.isFinite(value)) return;
+    setCopyState('');
+    onLayoutChange({
+      ...layout,
+      [sideEdgeKey]: roundRatio(clamp(value, EDGE_MIN, EDGE_MAX)),
+    });
+  };
+
+  const nudgePointHeight = (delta: number) => {
+    setCopyState('');
+    onLayoutChange({
+      ...layout,
+      pointHeightRatio: roundRatio(
+        clamp(pointHeightValue + delta, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)
+      ),
+    });
+  };
+
+  const setPointHeight = (value: number) => {
+    if (!Number.isFinite(value)) return;
+    setCopyState('');
+    onLayoutChange({
+      ...layout,
+      pointHeightRatio: roundRatio(clamp(value, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)),
     });
   };
 
@@ -152,7 +209,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      checkerStackSpacingRatio: roundRatio(clamp(spacingValue + delta, 0.55, 1.45)),
+      checkerStackSpacingRatio: roundRatio(clamp(spacingValue + delta, SPACING_MIN, SPACING_MAX)),
     });
   };
 
@@ -161,7 +218,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      checkerStackSpacingRatio: roundRatio(clamp(value, 0.55, 1.45)),
+      checkerStackSpacingRatio: roundRatio(clamp(value, SPACING_MIN, SPACING_MAX)),
     });
   };
 
@@ -177,7 +234,7 @@ export default function AlignmentPanel({
   const panelPosition = panelSide === 'left' ? 'left-3' : 'right-3';
 
   return (
-    <div className={`fixed bottom-3 ${panelPosition} z-50 w-[min(92vw,430px)] rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}>
+    <div className={`fixed bottom-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}>
       <div className="mb-2 flex items-center justify-between gap-3">
         <div className="font-semibold text-cyan-100">Alignment mode</div>
         <button
@@ -273,13 +330,71 @@ export default function AlignmentPanel({
         <span>{debug.anchor === 'topChecker' ? `${checkerOffsetKey}[${debug.column}]` : `${key}[${debug.column}]`}</span>
         <input
           type="number"
-          min={debug.anchor === 'topChecker' ? -0.15 : 0}
-          max={debug.anchor === 'topChecker' ? 0.15 : 1}
+          min={debug.anchor === 'topChecker' ? -0.25 : 0}
+          max={debug.anchor === 'topChecker' ? 0.25 : 1}
           step={0.001}
           value={currentValue.toFixed(4)}
           onChange={(event) => setSelectedX(Number(event.target.value))}
           className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100"
         />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div>
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Row edge</div>
+          <div className="grid grid-cols-4 gap-1">
+            <button type="button" onClick={() => nudgeEdge(-0.02)} className="rounded bg-slate-800 px-2 py-2">
+              ↑ big
+            </button>
+            <button type="button" onClick={() => nudgeEdge(-0.005)} className="rounded bg-slate-800 px-2 py-2">
+              ↑
+            </button>
+            <button type="button" onClick={() => nudgeEdge(0.005)} className="rounded bg-slate-800 px-2 py-2">
+              ↓
+            </button>
+            <button type="button" onClick={() => nudgeEdge(0.02)} className="rounded bg-slate-800 px-2 py-2">
+              big ↓
+            </button>
+          </div>
+          <input
+            type="number"
+            min={EDGE_MIN}
+            max={EDGE_MAX}
+            step={0.001}
+            value={sideEdgeValue.toFixed(4)}
+            onChange={(event) => setEdge(Number(event.target.value))}
+            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            aria-label={sideEdgeKey}
+          />
+        </div>
+
+        <div>
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Point depth</div>
+          <div className="grid grid-cols-4 gap-1">
+            <button type="button" onClick={() => nudgePointHeight(-0.03)} className="rounded bg-slate-800 px-2 py-2">
+              -big
+            </button>
+            <button type="button" onClick={() => nudgePointHeight(-0.006)} className="rounded bg-slate-800 px-2 py-2">
+              -
+            </button>
+            <button type="button" onClick={() => nudgePointHeight(0.006)} className="rounded bg-slate-800 px-2 py-2">
+              +
+            </button>
+            <button type="button" onClick={() => nudgePointHeight(0.03)} className="rounded bg-slate-800 px-2 py-2">
+              big+
+            </button>
+          </div>
+          <input
+            type="number"
+            min={POINT_HEIGHT_MIN}
+            max={POINT_HEIGHT_MAX}
+            step={0.001}
+            value={pointHeightValue.toFixed(4)}
+            onChange={(event) => setPointHeight(Number(event.target.value))}
+            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            aria-label="pointHeightRatio"
+          />
+        </div>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -301,8 +416,8 @@ export default function AlignmentPanel({
           </div>
           <input
             type="number"
-            min={0.2}
-            max={2.5}
+            min={PADDING_MIN}
+            max={PADDING_MAX}
             step={0.01}
             value={sidePaddingValue.toFixed(2)}
             onChange={(event) => setPadding(Number(event.target.value))}
@@ -329,8 +444,8 @@ export default function AlignmentPanel({
           </div>
           <input
             type="number"
-            min={0.55}
-            max={1.45}
+            min={SPACING_MIN}
+            max={SPACING_MAX}
             step={0.01}
             value={spacingValue.toFixed(2)}
             onChange={(event) => setSpacing(Number(event.target.value))}

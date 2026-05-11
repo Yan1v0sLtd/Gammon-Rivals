@@ -71,6 +71,9 @@ function mergeAlignmentLayout(saved: ThemeLayout): ThemeLayout {
       copyRatios(saved.topCheckerOffsetXRatios) ?? base.topCheckerOffsetXRatios,
     bottomCheckerOffsetXRatios:
       copyRatios(saved.bottomCheckerOffsetXRatios) ?? base.bottomCheckerOffsetXRatios,
+    pointHeightRatio: saved.pointHeightRatio ?? base.pointHeightRatio,
+    topPointYRatio: saved.topPointYRatio ?? base.topPointYRatio,
+    bottomPointYRatio: saved.bottomPointYRatio ?? base.bottomPointYRatio,
     checkerStackSpacingRatio: saved.checkerStackSpacingRatio ?? base.checkerStackSpacingRatio,
     topCheckerPaddingRatio: saved.topCheckerPaddingRatio ?? base.topCheckerPaddingRatio,
     bottomCheckerPaddingRatio: saved.bottomCheckerPaddingRatio ?? base.bottomCheckerPaddingRatio,
