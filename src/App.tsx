@@ -10,6 +10,7 @@ const Replay = lazy(() => import('./pages/Replay'));
 const PlayOnline = lazy(() => import('./pages/PlayOnline'));
 const JoinMatch = lazy(() => import('./pages/JoinMatch'));
 const Lobby = lazy(() => import('./pages/Lobby'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 function RouteFallback() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/play/:matchId" element={<PlayOnline />} />
           <Route path="/join/:code" element={<JoinMatch />} />
           <Route path="/lobby" element={<Lobby />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </Suspense>
     </BrowserRouter>
