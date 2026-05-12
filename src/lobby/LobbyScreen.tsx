@@ -9,7 +9,8 @@ import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
-import { lobbyBoards, type LobbyBoard, type LobbyBoardId } from './lobbyData';
+import type { LobbyBoard, LobbyBoardId } from './lobbyData';
+import { useLobbyBoards } from './useLobbyBoards';
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -43,11 +44,15 @@ function LobbyBackgroundLayer({
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
+  const boards = useLobbyBoards();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('classic-green');
   const [creatingOnline, setCreatingOnline] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
+    ? selectedBoardId
+    : (boards[0]?.id ?? 'classic-green');
   const selectedBoard =
-    lobbyBoards.find((board) => board.id === selectedBoardId) ?? lobbyBoards[0]!;
+    boards.find((board) => board.id === effectiveSelectedBoardId) ?? boards[0]!;
   const previousBoardRef = useRef<LobbyBoard>(selectedBoard);
   const [fadingBoard, setFadingBoard] = useState<LobbyBoard | null>(null);
 
@@ -66,7 +71,7 @@ export function LobbyScreen() {
     const params = new URLSearchParams();
     params.set('opp', opponent);
     params.set('target', String(target));
-    params.set('board', selectedBoardId);
+    params.set('board', effectiveSelectedBoardId);
     navigate(`/hotseat?${params.toString()}`);
   };
 
@@ -80,7 +85,7 @@ export function LobbyScreen() {
     setOnlineError(null);
     try {
       const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 7 });
-      navigate(`/play/${matchId}?board=${selectedBoardId}`);
+      navigate(`/play/${matchId}?board=${effectiveSelectedBoardId}`);
     } catch (err) {
       setOnlineError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -107,8 +112,8 @@ export function LobbyScreen() {
 
           <div className="min-w-0">
             <LobbyBoardCarousel
-              boards={lobbyBoards}
-              selectedId={selectedBoardId}
+              boards={boards}
+              selectedId={effectiveSelectedBoardId}
               onSelectedIdChange={setSelectedBoardId}
               onPlay={() => startMatch('medium')}
             />

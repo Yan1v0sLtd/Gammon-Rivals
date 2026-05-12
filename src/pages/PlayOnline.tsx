@@ -13,7 +13,7 @@ import { useOnlineGame } from '../game/useOnlineGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { CubeValue, MatchState } from '../engine';
-import { getBoardTheme } from '../board/theme';
+import { useBoardThemeConfig } from '../board/theme';
 import type { Database } from '../types/database';
 import type { PlayerIdentity } from '../lib/identity';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
@@ -32,7 +32,7 @@ export default function PlayOnline() {
   const navigate = useNavigate();
   const game = useOnlineGame(matchId);
   const boardParam = params.get('board');
-  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
+  const selectedTheme = useBoardThemeConfig(boardParam);
 
   const [ownerProfile, setOwnerProfile] = useState<ProfileRow | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);

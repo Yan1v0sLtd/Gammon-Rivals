@@ -4,7 +4,7 @@ import { applyMove, endTurn as engineEndTurn, initialBoard, pipCount } from '../
 import type { BoardState, Die, Move } from '../engine';
 import { BAR, OFF, type Position } from '../engine/types';
 import BoardCanvas from '../board/BoardCanvas';
-import { getBoardTheme } from '../board/theme';
+import { useBoardThemeConfig } from '../board/theme';
 import { getGameWithMoves, type GameWithMoves } from '../lib/queries';
 
 interface SubMove {
@@ -88,7 +88,7 @@ export default function Replay() {
 
   const states = useMemo(() => (data ? reconstructStates(data) : []), [data]);
   const boardParam = params.get('board');
-  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
+  const selectedTheme = useBoardThemeConfig(boardParam);
   const totalPlies = states.length > 0 ? states.length - 1 : 0;
   const clampedPly = Math.min(Math.max(0, ply), totalPlies);
   const currentBoard = states[clampedPly] ?? null;

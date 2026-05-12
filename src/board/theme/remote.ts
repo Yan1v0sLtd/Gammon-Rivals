@@ -1,0 +1,129 @@
+import { useEffect, useMemo, useState } from 'react';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import type { Database, Json } from '../../types/database';
+import { getBoardTheme } from './boardThemes';
+import { premiumTheme } from './premium';
+import type { Theme, ThemeLayout } from './types';
+
+export type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
+
+function isObject(value: Json | undefined): value is Record<string, Json> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isNumberArray(value: Json | undefined): value is number[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'number');
+}
+
+function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
+  if (!isObject(metadata) || !isObject(metadata.layout)) return undefined;
+  const source = metadata.layout;
+  const layout: ThemeLayout = {
+    railWidthRatio: typeof source.railWidthRatio === 'number' ? source.railWidthRatio : undefined,
+    barWidthRatio: typeof source.barWidthRatio === 'number' ? source.barWidthRatio : undefined,
+    pointHeightRatio: typeof source.pointHeightRatio === 'number' ? source.pointHeightRatio : undefined,
+    topPointYRatio: typeof source.topPointYRatio === 'number' ? source.topPointYRatio : undefined,
+    bottomPointYRatio:
+      typeof source.bottomPointYRatio === 'number' ? source.bottomPointYRatio : undefined,
+    checkerRadiusRatio:
+      typeof source.checkerRadiusRatio === 'number' ? source.checkerRadiusRatio : undefined,
+    topPointWidthRatio:
+      typeof source.topPointWidthRatio === 'number' ? source.topPointWidthRatio : undefined,
+    bottomPointWidthRatio:
+      typeof source.bottomPointWidthRatio === 'number' ? source.bottomPointWidthRatio : undefined,
+    topPlayLeftRatio: typeof source.topPlayLeftRatio === 'number' ? source.topPlayLeftRatio : undefined,
+    bottomPlayLeftRatio:
+      typeof source.bottomPlayLeftRatio === 'number' ? source.bottomPlayLeftRatio : undefined,
+    topBarWidthRatio: typeof source.topBarWidthRatio === 'number' ? source.topBarWidthRatio : undefined,
+    bottomBarWidthRatio:
+      typeof source.bottomBarWidthRatio === 'number' ? source.bottomBarWidthRatio : undefined,
+    topPointCenterXRatios: isNumberArray(source.topPointCenterXRatios)
+      ? source.topPointCenterXRatios
+      : undefined,
+    bottomPointCenterXRatios: isNumberArray(source.bottomPointCenterXRatios)
+      ? source.bottomPointCenterXRatios
+      : undefined,
+    topPointTipXRatios: isNumberArray(source.topPointTipXRatios)
+      ? source.topPointTipXRatios
+      : undefined,
+    bottomPointTipXRatios: isNumberArray(source.bottomPointTipXRatios)
+      ? source.bottomPointTipXRatios
+      : undefined,
+    topCheckerOffsetXRatios: isNumberArray(source.topCheckerOffsetXRatios)
+      ? source.topCheckerOffsetXRatios
+      : undefined,
+    bottomCheckerOffsetXRatios: isNumberArray(source.bottomCheckerOffsetXRatios)
+      ? source.bottomCheckerOffsetXRatios
+      : undefined,
+    checkerScaleYRatio:
+      typeof source.checkerScaleYRatio === 'number' ? source.checkerScaleYRatio : undefined,
+    checkerStackSpacingRatio:
+      typeof source.checkerStackSpacingRatio === 'number'
+        ? source.checkerStackSpacingRatio
+        : undefined,
+    topCheckerPaddingRatio:
+      typeof source.topCheckerPaddingRatio === 'number'
+        ? source.topCheckerPaddingRatio
+        : undefined,
+    bottomCheckerPaddingRatio:
+      typeof source.bottomCheckerPaddingRatio === 'number'
+        ? source.bottomCheckerPaddingRatio
+        : undefined,
+  };
+  return layout;
+}
+
+function normalizePublicAssetPath(path: string | null | undefined): string | undefined {
+  const trimmed = path?.trim();
+  if (!trimmed) return undefined;
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return trimmed;
+  return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+}
+
+export function themeFromBoardConfig(config: BoardThemeConfig): Theme {
+  return {
+    ...premiumTheme,
+    name: config.id,
+    assets: {
+      ...premiumTheme.assets,
+      board: normalizePublicAssetPath(config.gameplay_image) ?? premiumTheme.assets?.board,
+      whiteChecker:
+        normalizePublicAssetPath(config.white_checker_image) ?? premiumTheme.assets?.whiteChecker,
+      blackChecker:
+        normalizePublicAssetPath(config.black_checker_image) ?? premiumTheme.assets?.blackChecker,
+    },
+    layout: {
+      ...premiumTheme.layout,
+      ...layoutFromMetadata(config.metadata),
+    },
+  };
+}
+
+export function useBoardThemeConfig(boardId: string | null | undefined): Theme {
+  const fallbackTheme = useMemo(() => getBoardTheme(boardId), [boardId]);
+  const [remoteTheme, setRemoteTheme] = useState<{ id: string; theme: Theme } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isSupabaseConfigured || !boardId) return;
+
+    void supabase
+      .from('board_theme_configs')
+      .select('*')
+      .eq('id', boardId)
+      .eq('is_enabled', true)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        setRemoteTheme({ id: boardId, theme: themeFromBoardConfig(data) });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
+
+  if (remoteTheme && remoteTheme.id === boardId) return remoteTheme.theme;
+  return fallbackTheme;
+}

@@ -134,6 +134,48 @@ const shopKinds: readonly ShopKind[] = [
 
 const roleOptions: readonly AdminRole[] = ['owner', 'admin', 'support', 'viewer'];
 
+const builtInBoardSeeds: readonly Database['public']['Tables']['board_theme_configs']['Insert'][] = [
+  {
+    id: 'classic-green',
+    display_name: 'Classic Green',
+    preview_image: '/lobby/board-previews/classic-green.webp',
+    gameplay_image: '/themes/classic-green/board.webp',
+    lobby_background_image: '/lobby/backgrounds/classic-green.webp',
+    unlock_level: 1,
+    price_coins: 0,
+    is_enabled: true,
+    is_featured: true,
+    sort_order: 10,
+    metadata: { accent: '#6dda72', subtitle: 'Traditional felt' },
+  },
+  {
+    id: 'ocean-blue',
+    display_name: 'Ocean Blue',
+    preview_image: '/lobby/board-previews/ocean-blue.webp',
+    gameplay_image: '/themes/ocean-blue/board.webp',
+    lobby_background_image: '/lobby/backgrounds/ocean-blue.webp',
+    unlock_level: 5,
+    price_coins: 1500,
+    is_enabled: true,
+    is_featured: false,
+    sort_order: 20,
+    metadata: { accent: '#39d7ff', subtitle: 'Bright coastal wood' },
+  },
+  {
+    id: 'royal-purple',
+    display_name: 'Royal Purple',
+    preview_image: '/lobby/board-previews/royal-purple.webp',
+    gameplay_image: '/themes/royal-purple/board.webp',
+    lobby_background_image: '/lobby/backgrounds/royal-purple.webp',
+    unlock_level: 10,
+    price_coins: 5000,
+    is_enabled: true,
+    is_featured: false,
+    sort_order: 30,
+    metadata: { accent: '#c174ff', subtitle: 'Gold tournament trim' },
+  },
+];
+
 const initialStats: AdminStats = {
   users: 0,
   matches: 0,
@@ -152,6 +194,25 @@ function isMissingMigrationError(error: { code?: string; message?: string } | nu
     error.message?.includes('relation') === true ||
     error.message?.includes('column') === true
   );
+}
+
+function isPolicyError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const maybeError = error as { code?: string; message?: string };
+  return maybeError.code === '42501' || maybeError.message?.toLowerCase().includes('row-level security') === true;
+}
+
+function withRequestTimeout<T>(request: PromiseLike<T>, label: string, timeoutMs = 12000): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${label} is taking too long. Please refresh and try again.`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([Promise.resolve(request), timeout]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
+  });
 }
 
 function formatNumber(value: number | null | undefined): string {
@@ -443,8 +504,11 @@ export default function Admin() {
   const [levelDraft, setLevelDraft] = useState<LevelDraft>(() => levelToDraft());
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft());
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft());
+  const [boardEditorOpen, setBoardEditorOpen] = useState(false);
+  const [boardEditorMode, setBoardEditorMode] = useState<'add' | 'edit'>('add');
   const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft());
   const [dataError, setDataError] = useState<string | null>(null);
+  const [boardMessage, setBoardMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
@@ -462,6 +526,22 @@ export default function Admin() {
     }
     setDataError(String(err));
   }, []);
+
+  async function loadBoardConfigs(successMessage?: string) {
+    const { data, error } = await withRequestTimeout(
+      supabase.from('board_theme_configs').select('*').order('sort_order', { ascending: true }),
+      'Loading board themes'
+    );
+    if (error) throw error;
+
+    const nextBoards = data ?? [];
+    setBoards(nextBoards);
+    setStats((current) => ({
+      ...current,
+      configItems: levels.length + tables.length + nextBoards.length,
+    }));
+    if (successMessage) setBoardMessage(successMessage);
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured || isLoading || !user) return;
@@ -706,6 +786,20 @@ export default function Admin() {
     [stats]
   );
 
+  function openAddBoard() {
+    setBoardMessage(null);
+    setBoardDraft(boardToDraft());
+    setBoardEditorMode('add');
+    setBoardEditorOpen(true);
+  }
+
+  function openEditBoard(board: BoardThemeConfig) {
+    setBoardMessage(null);
+    setBoardDraft(boardToDraft(board));
+    setBoardEditorMode('edit');
+    setBoardEditorOpen(true);
+  }
+
   async function saveProfile() {
     if (!canManage || !selectedUser) return;
     setSavingKey('profile');
@@ -837,6 +931,7 @@ export default function Admin() {
     if (!canManage) return;
     setSavingKey('board');
     setDataError(null);
+    setBoardMessage(null);
     try {
       const payload: Database['public']['Tables']['board_theme_configs']['Insert'] = {
         id: boardDraft.id.trim(),
@@ -857,12 +952,68 @@ export default function Admin() {
         metadata: parseJson(boardDraft.metadata, 'Metadata', 'object'),
         updated_by: user?.id ?? null,
       };
-      const { error } = await supabase.from('board_theme_configs').upsert(payload);
+      const { error } = await withRequestTimeout(
+        supabase.from('board_theme_configs').upsert(payload, { onConflict: 'id' }).select('id'),
+        'Saving board theme'
+      );
       if (error) throw error;
       setBoardDraft(boardToDraft());
-      await loadAdminData();
+      setBoardEditorOpen(false);
+      await loadBoardConfigs('Board theme saved.');
     } catch (err) {
       setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deleteBoard(board: BoardThemeConfig) {
+    if (!canManage) return;
+    const confirmed = window.confirm(`Delete ${board.display_name}? This removes it from the live board list.`);
+    if (!confirmed) return;
+    setSavingKey(`board-delete-${board.id}`);
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase.from('board_theme_configs').delete().eq('id', board.id).select('id'),
+        'Deleting board theme'
+      );
+      if (error) throw error;
+      if (boardDraft.id === board.id) {
+        setBoardDraft(boardToDraft());
+        setBoardEditorOpen(false);
+      }
+      await loadBoardConfigs('Board theme deleted.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function seedBuiltInBoards() {
+    if (!canManage) return;
+    setSavingKey('board-seed');
+    setDataError(null);
+    setBoardMessage('Adding the current game boards...');
+    try {
+      const payload = builtInBoardSeeds.map((board) => ({ ...board, updated_by: user?.id ?? null }));
+      const { data, error } = await withRequestTimeout(
+        supabase.from('board_theme_configs').upsert(payload, { onConflict: 'id' }).select('id'),
+        'Populating current boards'
+      );
+      if (error) throw error;
+      await loadBoardConfigs(`Current boards populated: ${data?.length ?? builtInBoardSeeds.length} boards are ready.`);
+    } catch (err) {
+      setBoardMessage(null);
+      if (isPolicyError(err)) {
+        setDataError(
+          'Supabase blocked the board write. Please run the latest board_theme_admin_write_policy migration in the Supabase SQL editor, then try again.'
+        );
+      } else {
+        setError(err);
+      }
     } finally {
       setSavingKey(null);
     }
@@ -1339,61 +1490,158 @@ export default function Admin() {
           )}
 
           {activeSection === 'Board Themes' && (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
-              <div className="grid gap-3 md:grid-cols-2">
-                {boards.map((row) => (
-                  <button
-                    key={row.id}
-                    onClick={() => setBoardDraft(boardToDraft(row))}
-                    className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] text-left shadow-xl shadow-black/15 transition hover:border-amber-200/40"
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <div>
+                  <h2 className="text-lg font-black">Board Themes</h2>
+                  <p className="mt-1 text-sm text-white/50">
+                    Visual list of live and draft boards used by the lobby and gameplay.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <SecondaryButton
+                    onClick={() => void seedBuiltInBoards()}
+                    disabled={!canManage || savingKey === 'board-seed'}
                   >
-                    <div className="aspect-[16/10] bg-black/20">
-                      <img src={row.preview_image} alt="" className="h-full w-full object-contain p-3" loading="lazy" />
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="text-lg font-black">{row.display_name}</h2>
-                          <p className="mt-1 text-xs text-white/45">{row.id}</p>
+                    {savingKey === 'board-seed' ? 'Populating...' : 'Populate Current Boards'}
+                  </SecondaryButton>
+                  <PrimaryButton onClick={openAddBoard} disabled={!canManage}>
+                    Add Board
+                  </PrimaryButton>
+                </div>
+              </div>
+
+              {boardMessage && (
+                <div className="rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-100">
+                  {boardMessage}
+                </div>
+              )}
+
+              {boards.length === 0 ? (
+                <EmptyState text="No board themes yet. Use Populate Current Boards or Add Board to create one." />
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                  {boards.map((row) => (
+                    <article
+                      key={row.id}
+                      onClick={() => openEditBoard(row)}
+                      className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-amber-200/45"
+                    >
+                      <div className="relative aspect-[16/10] overflow-hidden bg-black/25">
+                        {row.lobby_background_image ? (
+                          <img
+                            src={row.lobby_background_image}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover opacity-40 blur-sm transition group-hover:scale-105"
+                            loading="lazy"
+                          />
+                        ) : null}
+                        <img
+                          src={row.preview_image}
+                          alt={`${row.display_name} lobby preview`}
+                          className="relative z-10 h-full w-full object-contain p-4 drop-shadow-[0_18px_16px_rgba(0,0,0,0.45)]"
+                          loading="lazy"
+                        />
+                        <div className="absolute left-3 top-3 z-20">
+                          <StatusPill enabled={row.is_enabled} />
                         </div>
-                        <StatusPill enabled={row.is_enabled} />
                       </div>
-                      <div className="mt-3 text-xs text-white/55">
-                        Level {row.unlock_level} · {formatNumber(row.price_coins)} coins
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="truncate text-lg font-black">{row.display_name}</h3>
+                            <p className="mt-1 truncate font-mono text-xs text-white/40">{row.id}</p>
+                          </div>
+                          <div className="flex shrink-0 gap-2" onClick={(event) => event.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => openEditBoard(row)}
+                              className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 transition hover:bg-white/15"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void deleteBoard(row)}
+                              disabled={!canManage || savingKey === `board-delete-${row.id}`}
+                              className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-white/55">
+                          <div className="rounded-lg bg-black/18 p-2">
+                            <div className="text-white/35">Level</div>
+                            <div className="font-bold text-white">{row.unlock_level}</div>
+                          </div>
+                          <div className="rounded-lg bg-black/18 p-2">
+                            <div className="text-white/35">Price</div>
+                            <div className="font-bold text-white">{formatNumber(row.price_coins)}</div>
+                          </div>
+                          <div className="rounded-lg bg-black/18 p-2">
+                            <div className="text-white/35">Sort</div>
+                            <div className="font-bold text-white">{row.sort_order}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {boardEditorOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+                  <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/12 bg-[#0b1930] p-5 shadow-2xl shadow-black/50">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/65">
+                          {boardEditorMode === 'add' ? 'Add Board' : 'Edit Board'}
+                        </div>
+                        <h2 className="mt-1 text-2xl font-black">
+                          {boardEditorMode === 'add' ? 'New board theme' : boardDraft.display_name || 'Board theme'}
+                        </h2>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBoardEditorOpen(false)}
+                        className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white/70 transition hover:bg-white/15"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <Field label="Board id" value={boardDraft.id} disabled={boardEditorMode === 'edit'} onChange={(id) => setBoardDraft((d) => ({ ...d, id }))} />
+                      <Field label="Display name" value={boardDraft.display_name} onChange={(display_name) => setBoardDraft((d) => ({ ...d, display_name }))} />
+                      <Field label="Unlock level" value={boardDraft.unlock_level} onChange={(unlock_level) => setBoardDraft((d) => ({ ...d, unlock_level }))} />
+                      <Field label="Price coins" value={boardDraft.price_coins} onChange={(price_coins) => setBoardDraft((d) => ({ ...d, price_coins }))} />
+                      <Field label="Sort order" value={boardDraft.sort_order} onChange={(sort_order) => setBoardDraft((d) => ({ ...d, sort_order }))} />
+                    </div>
+                    <div className="mt-3 space-y-3">
+                      <Field label="Lobby image" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
+                      <Field label="Gameplay image" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
+                      <Field label="Lobby background image" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
+                      <Field label="White checker image" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
+                      <Field label="Black checker image" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
+                      <Field label="Dice image" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
+                      <Field label="Tray image" value={boardDraft.tray_image} onChange={(tray_image) => setBoardDraft((d) => ({ ...d, tray_image }))} />
+                      <Field label="Holder image" value={boardDraft.holder_image} onChange={(holder_image) => setBoardDraft((d) => ({ ...d, holder_image }))} />
+                      <TextArea label="Metadata JSON object" value={boardDraft.metadata} onChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <Toggle label="Enabled" checked={boardDraft.is_enabled} onChange={(is_enabled) => setBoardDraft((d) => ({ ...d, is_enabled }))} />
+                        <Toggle label="Featured" checked={boardDraft.is_featured} onChange={(is_featured) => setBoardDraft((d) => ({ ...d, is_featured }))} />
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2">
+                        <SecondaryButton onClick={() => setBoardEditorOpen(false)}>Cancel</SecondaryButton>
+                        <PrimaryButton onClick={() => void saveBoard()} disabled={!canManage || savingKey === 'board'}>
+                          {boardEditorMode === 'add' ? 'Add board' : 'Save changes'}
+                        </PrimaryButton>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h2 className="text-lg font-black">Edit board theme</h2>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Board id" value={boardDraft.id} onChange={(id) => setBoardDraft((d) => ({ ...d, id }))} />
-                  <Field label="Display name" value={boardDraft.display_name} onChange={(display_name) => setBoardDraft((d) => ({ ...d, display_name }))} />
-                  <Field label="Unlock level" value={boardDraft.unlock_level} onChange={(unlock_level) => setBoardDraft((d) => ({ ...d, unlock_level }))} />
-                  <Field label="Price coins" value={boardDraft.price_coins} onChange={(price_coins) => setBoardDraft((d) => ({ ...d, price_coins }))} />
-                  <Field label="Sort order" value={boardDraft.sort_order} onChange={(sort_order) => setBoardDraft((d) => ({ ...d, sort_order }))} />
-                </div>
-                <div className="mt-3 space-y-3">
-                  <Field label="Lobby image" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
-                  <Field label="Gameplay image" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
-                  <Field label="Lobby background image" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
-                  <Field label="White checker image" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
-                  <Field label="Black checker image" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
-                  <Field label="Dice image" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
-                  <Field label="Tray image" value={boardDraft.tray_image} onChange={(tray_image) => setBoardDraft((d) => ({ ...d, tray_image }))} />
-                  <Field label="Holder image" value={boardDraft.holder_image} onChange={(holder_image) => setBoardDraft((d) => ({ ...d, holder_image }))} />
-                  <TextArea label="Metadata JSON object" value={boardDraft.metadata} onChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))} />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Toggle label="Enabled" checked={boardDraft.is_enabled} onChange={(is_enabled) => setBoardDraft((d) => ({ ...d, is_enabled }))} />
-                    <Toggle label="Featured" checked={boardDraft.is_featured} onChange={(is_featured) => setBoardDraft((d) => ({ ...d, is_featured }))} />
-                  </div>
-                  <div className="flex gap-2">
-                    <PrimaryButton onClick={() => void saveBoard()} disabled={!canManage || savingKey === 'board'}>Save board</PrimaryButton>
-                    <SecondaryButton onClick={() => setBoardDraft(boardToDraft())}>New</SecondaryButton>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

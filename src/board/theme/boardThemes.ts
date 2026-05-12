@@ -1,11 +1,11 @@
 import { premiumTheme } from './premium';
 import type { Theme } from './types';
 
-export type BoardThemeId = 'classic-green' | 'ocean-blue' | 'royal-purple';
+export type BoardThemeId = string;
 
 export const DEFAULT_BOARD_THEME_ID: BoardThemeId = 'classic-green';
 
-export const boardThemes: Record<BoardThemeId, Theme> = {
+export const boardThemes: Record<string, Theme> = {
   'classic-green': {
     ...premiumTheme,
     name: 'classic-green',
@@ -33,7 +33,7 @@ export const boardThemes: Record<BoardThemeId, Theme> = {
 };
 
 export function isBoardThemeId(value: string | null | undefined): value is BoardThemeId {
-  return value === 'classic-green' || value === 'ocean-blue' || value === 'royal-purple';
+  return Boolean(value && value in boardThemes);
 }
 
 export function getBoardTheme(value: string | null | undefined): Theme {

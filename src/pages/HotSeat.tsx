@@ -13,7 +13,7 @@ import { useGame, type AIConfig, type TurnRecord } from '../game/useGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { GameResult, MatchState } from '../engine';
-import { getBoardTheme, premiumTheme, type ThemeLayout } from '../board/theme';
+import { premiumTheme, useBoardThemeConfig, type ThemeLayout } from '../board/theme';
 import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
@@ -100,7 +100,7 @@ export default function HotSeat() {
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
   const boardParam = params.get('board');
-  const selectedTheme = useMemo(() => getBoardTheme(boardParam), [boardParam]);
+  const selectedTheme = useBoardThemeConfig(boardParam);
   const alignmentEnabled = params.get('align') === '1';
   const [alignmentLayout, setAlignmentLayout] = useState<ThemeLayout>(() => loadAlignmentLayout());
   const [alignmentDebug, setAlignmentDebug] = useState<AlignmentDebugSelection>({
