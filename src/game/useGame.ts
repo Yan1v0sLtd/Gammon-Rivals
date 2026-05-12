@@ -90,6 +90,7 @@ export interface MatchGameActions {
    *  recent move" in a meaningful sense). */
   undoLastMove(): void;
   endTurn(): void;
+  forfeitTurn(): void;
   offerDouble(): void;
   acceptDouble(): void;
   dropDouble(): void;
@@ -267,6 +268,17 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setUndoSnapshot(null);
     setAiPreviewReady(false);
   }, [canEndTurn, board]);
+
+  const forfeitTurn = useCallback(() => {
+    if (gameFrozen || match.cubeOffer !== null) return;
+    setBoard(engineEndTurn(board));
+    setDiceRoll(null);
+    setRemaining([]);
+    setSelectedFrom(null);
+    setHistory([]);
+    setUndoSnapshot(null);
+    setAiPreviewReady(false);
+  }, [board, gameFrozen, match.cubeOffer]);
 
   const offerDouble = useCallback(() => {
     if (!canOfferDoubleNow) return;
@@ -476,6 +488,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     selectTo,
     undoLastMove,
     endTurn,
+    forfeitTurn,
     offerDouble,
     acceptDouble,
     dropDouble,

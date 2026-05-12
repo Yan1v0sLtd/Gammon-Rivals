@@ -96,6 +96,13 @@ export default function AlignmentPanel({
           checkerStackSpacingRatio: layout.checkerStackSpacingRatio,
           topCheckerPaddingRatio: layout.topCheckerPaddingRatio,
           bottomCheckerPaddingRatio: layout.bottomCheckerPaddingRatio,
+          blackOffTrayXRatio: layout.blackOffTrayXRatio,
+          blackOffTrayTopRatio: layout.blackOffTrayTopRatio,
+          blackOffTrayHeightRatio: layout.blackOffTrayHeightRatio,
+          whiteOffTrayXRatio: layout.whiteOffTrayXRatio,
+          whiteOffTrayTopRatio: layout.whiteOffTrayTopRatio,
+          whiteOffTrayHeightRatio: layout.whiteOffTrayHeightRatio,
+          offCheckerStackSpacingRatio: layout.offCheckerStackSpacingRatio,
         },
         null,
         2
@@ -113,6 +120,13 @@ export default function AlignmentPanel({
       layout.topPointTipXRatios,
       layout.topPointYRatio,
       layout.topCheckerPaddingRatio,
+      layout.blackOffTrayXRatio,
+      layout.blackOffTrayTopRatio,
+      layout.blackOffTrayHeightRatio,
+      layout.whiteOffTrayXRatio,
+      layout.whiteOffTrayTopRatio,
+      layout.whiteOffTrayHeightRatio,
+      layout.offCheckerStackSpacingRatio,
     ]
   );
 

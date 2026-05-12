@@ -63,11 +63,19 @@ export interface ThemeLayout {
   readonly checkerStackSpacingRatio?: number;
   readonly topCheckerPaddingRatio?: number;
   readonly bottomCheckerPaddingRatio?: number;
+  readonly blackOffTrayXRatio?: number;
+  readonly blackOffTrayTopRatio?: number;
+  readonly blackOffTrayHeightRatio?: number;
+  readonly whiteOffTrayXRatio?: number;
+  readonly whiteOffTrayTopRatio?: number;
+  readonly whiteOffTrayHeightRatio?: number;
+  readonly offCheckerStackSpacingRatio?: number;
 }
 
 export interface Theme {
   readonly name: string;
   readonly colors: ThemeColors;
   readonly assets?: ThemeAssets;
+  readonly backgroundImage?: string;
   readonly layout?: ThemeLayout;
 }

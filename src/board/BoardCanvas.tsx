@@ -113,7 +113,7 @@ export default function BoardCanvas({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-[10px]"
+      className="h-full w-full overflow-visible"
       style={boardBackground}
     />
   );

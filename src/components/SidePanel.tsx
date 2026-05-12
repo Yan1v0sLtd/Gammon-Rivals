@@ -1,4 +1,5 @@
 import Avatar from './Avatar';
+import TurnTimerBar from './TurnTimerBar';
 import type { PlayerIdentity } from '../lib/identity';
 
 interface Props {
@@ -7,8 +8,13 @@ interface Props {
   pipCount?: number;
   /** Match score for this player ("0–0" style — formatted by parent). */
   scoreLabel?: string;
+  level?: number;
+  stateLabel?: string;
+  coinsLabel?: string;
   /** True if it's this player's turn. Drives the avatar ring + a glow. */
   isTurn?: boolean;
+  timerProgress?: number;
+  timerSecondsLeft?: number;
   /** Compact turn-adjacent visual, such as dice, rendered near the avatar. */
   hudSlot?: React.ReactNode;
   /** Stack of action chips below the avatar (auto-roll toggle, store, etc.). */
@@ -29,7 +35,12 @@ export default function SidePanel({
   identity,
   pipCount,
   scoreLabel,
+  level = 23,
+  stateLabel = 'Rookie',
+  coinsLabel = '400',
   isTurn,
+  timerProgress,
+  timerSecondsLeft,
   hudSlot,
   bottomSlot,
   side,
@@ -37,7 +48,8 @@ export default function SidePanel({
 }: Props) {
   const align = side === 'left' ? 'items-start' : 'items-end';
   const textAlign = side === 'left' ? 'text-left' : 'text-right';
-  const avatarSize = compact ? 64 : 96;
+  const avatarSize = compact ? 66 : 106;
+  const innerAvatarSize = Math.round(avatarSize * 0.66);
   const hudOffset = avatarSize + (compact ? 6 : 12);
   const hudStyle =
     side === 'left'
@@ -46,37 +58,87 @@ export default function SidePanel({
   return (
     <aside
       className={`flex flex-col ${align} justify-between gap-3 ${
-        compact ? 'p-0' : 'py-2 px-2 sm:px-3'
+        compact
+          ? `w-full max-w-[10.75rem] overflow-hidden p-0 ${
+              side === 'right' ? 'justify-self-end' : 'justify-self-start'
+            }`
+          : 'py-2 px-2 sm:px-3'
       } h-full min-w-0`}
     >
       <div className={`relative flex flex-col ${align} gap-2 min-w-0 w-full`}>
-        <Avatar
-          seed={identity?.avatarSeed ?? 'placeholder'}
-          size={avatarSize}
-          ring={isTurn ? 'active' : 'idle'}
-          badge={identity?.badge}
-        />
-        <div className={`flex flex-col gap-0 ${textAlign} min-w-0 w-full`}>
+        <div
+          className={`relative grid shrink-0 place-items-center ${
+            isTurn ? 'drop-shadow-[0_0_18px_rgba(255,211,77,0.38)]' : ''
+          }`}
+          style={{ width: avatarSize, height: avatarSize }}
+        >
+          <div className="absolute inset-[17%] rounded-full bg-gradient-to-b from-[#fff2bd] to-[#68411f]" />
+          <Avatar
+            seed={identity?.avatarSeed ?? 'placeholder'}
+            size={innerAvatarSize}
+            ring="none"
+            className="relative z-10"
+          />
+          <img
+            src="/lobby/icons/avatar-frame.webp"
+            alt=""
+            className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+            draggable={false}
+          />
+          <span
+            className={`absolute bottom-[8%] right-[9%] z-20 grid place-items-center rounded-full border border-[#ffd56c] bg-[#19233a] font-black text-[#ffe9a5] shadow-[0_2px_5px_rgba(0,0,0,0.42)] ${
+              compact ? 'h-5 min-w-5 px-1 text-[0.62rem]' : 'h-7 min-w-7 px-1 text-sm'
+            }`}
+          >
+            {level}
+          </span>
+        </div>
+        <div className={`flex flex-col gap-1 ${textAlign} min-w-0 w-full`}>
           <div
             className={`text-amber-50 font-display truncate leading-tight ${
-              compact ? 'max-w-[10rem] text-sm' : 'text-base sm:text-lg'
+              compact ? 'max-w-[10rem] text-sm' : 'text-lg sm:text-xl'
             }`}
           >
             {identity?.name ?? PLACEHOLDER_NAME}
           </div>
-          {pipCount !== undefined && (
-            <div
-              className={`${compact ? 'text-xs' : 'text-sm'} text-amber-200/70 font-medium`}
-            >
-              pip {pipCount}
+          <div
+            className={`grid w-full gap-1 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${
+              compact ? 'text-[0.65rem]' : 'text-xs'
+            }`}
+          >
+            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-sky-500 text-[0.62rem] font-black text-white shadow">
+                ★
+              </span>
+              <span className="font-black text-sky-100">Level {level}</span>
             </div>
-          )}
-          {scoreLabel && (
-            <div
-              className={`${compact ? 'text-xs' : 'text-sm'} text-amber-300/85 font-medium mt-0.5`}
-            >
-              {scoreLabel}
+            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
+              <span className="grid h-4 w-4 place-items-center rounded-sm bg-gradient-to-r from-blue-700 via-yellow-300 to-red-600 shadow" />
+              <span className="font-semibold text-white/80">{stateLabel}</span>
             </div>
+            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-b from-yellow-200 to-amber-600 text-[0.6rem] font-black text-amber-950 shadow">
+                $
+              </span>
+              <span className="font-black text-amber-100">{coinsLabel}</span>
+            </div>
+            {pipCount !== undefined && (
+              <div className={`text-amber-200/70 ${side === 'right' ? 'text-right' : 'text-left'}`}>
+                pip {pipCount}
+              </div>
+            )}
+            {scoreLabel && (
+              <div className={`font-black text-amber-300 ${side === 'right' ? 'text-right' : 'text-left'}`}>
+                {scoreLabel}
+              </div>
+            )}
+          </div>
+          {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (
+            <TurnTimerBar
+              progress={timerProgress}
+              secondsLeft={timerSecondsLeft}
+              compact={compact}
+            />
           )}
         </div>
         {hudSlot && (

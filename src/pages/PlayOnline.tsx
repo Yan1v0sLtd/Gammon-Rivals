@@ -236,6 +236,7 @@ export default function PlayOnline() {
 
   return (
     <BoardLayout
+      backgroundImage={selectedTheme.backgroundImage}
       header={
         <MatchHeader
           match={headerMatch}
@@ -250,12 +251,18 @@ export default function PlayOnline() {
         identity: profileToIdentity(opponentProf),
         pipCount: oppPip,
         scoreLabel: `${oppColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
+        level: opponentProf?.level ?? 23,
+        stateLabel: 'Rookie',
+        coinsLabel: '400',
         isTurn: !isLocalTurn && !showMatchOver,
       }}
       self={{
         identity: profileToIdentity(selfProfile),
         pipCount: selfPip,
         scoreLabel: `${selfColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
+        level: selfProfile?.level ?? 23,
+        stateLabel: 'Rookie',
+        coinsLabel: '400',
         isTurn: isLocalTurn && !showMatchOver,
       }}
       actionsOverlay={

@@ -40,6 +40,7 @@ function parseTarget(raw: string | null): number {
 }
 
 const ALIGNMENT_STORAGE_KEY = 'gammon-rivals:premium-alignment-layout';
+const DEFAULT_TURN_SECONDS = 45;
 
 function copyRatios(value: readonly number[] | undefined): number[] | undefined {
   return value?.length === 12 ? [...value] : undefined;
@@ -77,6 +78,14 @@ function mergeAlignmentLayout(saved: ThemeLayout): ThemeLayout {
     checkerStackSpacingRatio: saved.checkerStackSpacingRatio ?? base.checkerStackSpacingRatio,
     topCheckerPaddingRatio: saved.topCheckerPaddingRatio ?? base.topCheckerPaddingRatio,
     bottomCheckerPaddingRatio: saved.bottomCheckerPaddingRatio ?? base.bottomCheckerPaddingRatio,
+    blackOffTrayXRatio: saved.blackOffTrayXRatio ?? base.blackOffTrayXRatio,
+    blackOffTrayTopRatio: saved.blackOffTrayTopRatio ?? base.blackOffTrayTopRatio,
+    blackOffTrayHeightRatio: saved.blackOffTrayHeightRatio ?? base.blackOffTrayHeightRatio,
+    whiteOffTrayXRatio: saved.whiteOffTrayXRatio ?? base.whiteOffTrayXRatio,
+    whiteOffTrayTopRatio: saved.whiteOffTrayTopRatio ?? base.whiteOffTrayTopRatio,
+    whiteOffTrayHeightRatio: saved.whiteOffTrayHeightRatio ?? base.whiteOffTrayHeightRatio,
+    offCheckerStackSpacingRatio:
+      saved.offCheckerStackSpacingRatio ?? base.offCheckerStackSpacingRatio,
   };
 }
 
@@ -256,6 +265,57 @@ export default function HotSeat() {
     game.pendingOffer !== null &&
     !game.lastGameResult &&
     !(aiConfig && game.pendingOffer !== aiConfig.player);
+  const turnTimerActive =
+    !alignmentEnabled && !showGameEndModal && !showCubeDecision && !game.matchOver && !game.lastGameResult;
+  const [timerNow, setTimerNow] = useState(() => performance.now());
+  const turnTimerKey = `${game.match.gameNumber}:${game.board.turn}:${game.pendingOffer ?? 'play'}:${game.lastGameResult ? 'done' : 'active'}`;
+  const [turnTimerState, setTurnTimerState] = useState(() => ({
+    key: turnTimerKey,
+    startedAt: performance.now(),
+  }));
+  const timeoutHandledRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (turnTimerState.key === turnTimerKey) return;
+    const reset = window.setTimeout(() => {
+      const now = performance.now();
+      setTurnTimerState({ key: turnTimerKey, startedAt: now });
+      setTimerNow(now);
+      timeoutHandledRef.current = null;
+    }, 0);
+    return () => window.clearTimeout(reset);
+  }, [turnTimerKey, turnTimerState.key]);
+
+  useEffect(() => {
+    if (!turnTimerActive) return;
+    const interval = window.setInterval(() => setTimerNow(performance.now()), 220);
+    return () => window.clearInterval(interval);
+  }, [turnTimerActive]);
+
+  const turnElapsedSeconds = turnTimerActive ? (timerNow - turnTimerState.startedAt) / 1000 : 0;
+  const turnSecondsLeft = Math.max(0, Math.ceil(DEFAULT_TURN_SECONDS - turnElapsedSeconds));
+  const turnTimerProgress = Math.max(
+    0,
+    Math.min(1, (DEFAULT_TURN_SECONDS - turnElapsedSeconds) / DEFAULT_TURN_SECONDS)
+  );
+  const { forfeitTurn } = game;
+
+  useEffect(() => {
+    if (!turnTimerActive) return;
+    if (!humanCanInteract) return;
+    if (turnElapsedSeconds < DEFAULT_TURN_SECONDS) return;
+    const key = `${game.match.gameNumber}:${game.board.turn}`;
+    if (timeoutHandledRef.current === key) return;
+    timeoutHandledRef.current = key;
+    forfeitTurn();
+  }, [
+    forfeitTurn,
+    game.board.turn,
+    game.match.gameNumber,
+    humanCanInteract,
+    turnElapsedSeconds,
+    turnTimerActive,
+  ]);
 
   // ---- Layout ----
   // Local player is white in 2-player hot-seat (and when there's no AI);
@@ -266,9 +326,14 @@ export default function HotSeat() {
   const opponentPip = opponentColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = game.board.turn === localColor && !game.isAITurn;
   const isRollForSelf = game.board.turn === localColor;
+  const selfLevel = profile?.level ?? 23;
+  const selfCoins = '400';
+  const opponentLevel = aiConfig ? 40 : 23;
+  const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
 
   return (
     <BoardLayout
+      backgroundImage={selectedTheme.backgroundImage}
       header={
         <MatchHeader
           match={game.match as MatchState}
@@ -283,13 +348,23 @@ export default function HotSeat() {
         identity: opponentIdentity,
         pipCount: opponentPip,
         scoreLabel: `${game.match.score[opponentColor]} / ${game.match.target}`,
+        level: opponentLevel,
+        stateLabel: opponentState,
+        coinsLabel: aiConfig ? '22.7K' : '400',
         isTurn: !isLocalTurn && !showGameEndModal,
+        timerProgress: !isLocalTurn ? turnTimerProgress : 1,
+        timerSecondsLeft: turnSecondsLeft,
       }}
       self={{
         identity: selfIdentity,
         pipCount: localPip,
         scoreLabel: `${game.match.score[localColor]} / ${game.match.target}`,
+        level: selfLevel,
+        stateLabel: 'Rookie',
+        coinsLabel: selfCoins,
         isTurn: isLocalTurn && !showGameEndModal,
+        timerProgress: isLocalTurn ? turnTimerProgress : 1,
+        timerSecondsLeft: turnSecondsLeft,
       }}
       actionsOverlay={
         !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (

@@ -360,16 +360,27 @@ export class BoardRenderer {
   }
 
   private offTrayMetrics(owner: Player) {
-    const { width, height, railWidth, checkerRadius } = this.layout;
-    const trayHeight = height * 0.29;
-    const trayTop = owner === 'black' ? height * 0.105 : height * 0.605;
+    const {
+      blackOffTrayHeight,
+      blackOffTrayTop,
+      blackOffTrayX,
+      checkerRadius,
+      offCheckerStackSpacing,
+      railWidth,
+      whiteOffTrayHeight,
+      whiteOffTrayTop,
+      whiteOffTrayX,
+    } = this.layout;
+    const trayHeight = owner === 'black' ? blackOffTrayHeight : whiteOffTrayHeight;
+    const trayTop = owner === 'black' ? blackOffTrayTop : whiteOffTrayTop;
+    const trayX = owner === 'black' ? blackOffTrayX : whiteOffTrayX;
     const usable = Math.max(checkerRadius, trayHeight - checkerRadius * 2);
     return {
-      x: width - railWidth * 0.6,
+      x: trayX,
       top: trayTop,
       width: Math.max(checkerRadius * 2.3, railWidth * 0.36),
       height: trayHeight,
-      step: Math.min(checkerRadius * 0.5, usable / 14),
+      step: Math.min(checkerRadius * offCheckerStackSpacing, usable / 14),
     };
   }
 
@@ -860,10 +871,7 @@ export class BoardRenderer {
 
   private destinationAnchor(state: BoardState, pos: Position): { x: number; y: number } | null {
     if (pos === OFF) {
-      const { width, height, railWidth } = this.layout;
-      const trayCx = width - railWidth / 2;
-      const cy = state.turn === 'white' ? height * 0.78 : height * 0.22;
-      return { x: trayCx, y: cy };
+      return this.offCheckerAnchor(state.turn, state.off[state.turn]);
     }
     if (pos === BAR) return null;
     const ppos = pointCoords(this.layout, pos);

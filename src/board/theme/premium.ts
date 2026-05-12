@@ -17,6 +17,7 @@ export const premiumTheme: Theme = {
     whiteChecker: '/themes/premium/checker-white.svg',
     blackChecker: '/themes/premium/checker-black.svg',
   },
+  backgroundImage: '/lobby/backgrounds/classic-green.webp',
   layout: {
     railWidthRatio: 0.205,
     barWidthRatio: 0.05,
@@ -58,5 +59,12 @@ export const premiumTheme: Theme = {
       0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0,
     ],
+    blackOffTrayXRatio: 0.925,
+    blackOffTrayTopRatio: 0.145,
+    blackOffTrayHeightRatio: 0.255,
+    whiteOffTrayXRatio: 0.925,
+    whiteOffTrayTopRatio: 0.61,
+    whiteOffTrayHeightRatio: 0.255,
+    offCheckerStackSpacingRatio: 0.56,
   },
 };

@@ -69,6 +69,26 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       typeof source.bottomCheckerPaddingRatio === 'number'
         ? source.bottomCheckerPaddingRatio
         : undefined,
+    blackOffTrayXRatio:
+      typeof source.blackOffTrayXRatio === 'number' ? source.blackOffTrayXRatio : undefined,
+    blackOffTrayTopRatio:
+      typeof source.blackOffTrayTopRatio === 'number' ? source.blackOffTrayTopRatio : undefined,
+    blackOffTrayHeightRatio:
+      typeof source.blackOffTrayHeightRatio === 'number'
+        ? source.blackOffTrayHeightRatio
+        : undefined,
+    whiteOffTrayXRatio:
+      typeof source.whiteOffTrayXRatio === 'number' ? source.whiteOffTrayXRatio : undefined,
+    whiteOffTrayTopRatio:
+      typeof source.whiteOffTrayTopRatio === 'number' ? source.whiteOffTrayTopRatio : undefined,
+    whiteOffTrayHeightRatio:
+      typeof source.whiteOffTrayHeightRatio === 'number'
+        ? source.whiteOffTrayHeightRatio
+        : undefined,
+    offCheckerStackSpacingRatio:
+      typeof source.offCheckerStackSpacingRatio === 'number'
+        ? source.offCheckerStackSpacingRatio
+        : undefined,
   };
   return layout;
 }
@@ -92,6 +112,8 @@ export function themeFromBoardConfig(config: BoardThemeConfig): Theme {
       blackChecker:
         normalizePublicAssetPath(config.black_checker_image) ?? premiumTheme.assets?.blackChecker,
     },
+    backgroundImage:
+      normalizePublicAssetPath(config.lobby_background_image) ?? premiumTheme.backgroundImage,
     layout: {
       ...premiumTheme.layout,
       ...layoutFromMetadata(config.metadata),

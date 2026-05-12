@@ -734,16 +734,18 @@ export default function DiceTray({
     const safeScale = Math.max(0.1, scale);
     const sideSign = settleSide === 'right' ? 1 : -1;
     const targetCenterX =
-      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.36;
+      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.405;
     const targetCenterY =
-      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.58;
+      placement === 'hud' ? 0 : (boardHeight / safeScale) * 0.02;
     const targetPositions = trajectories.map((_, i) => {
       const slotX =
         trajectories.length === 4
-          ? ((i % 2) - 0.5) * 76
-          : (i - (trajectories.length - 1) / 2) * 76;
+          ? ((i % 2) - 0.5) * 58
+          : 0;
       const ySpread =
-        trajectories.length === 4 ? (Math.floor(i / 2) - 0.5) * 54 : 0;
+        trajectories.length === 4
+          ? (Math.floor(i / 2) - 0.5) * 58
+          : (i - (trajectories.length - 1) / 2) * 62;
       return {
         x: targetCenterX - slotX,
         y: targetCenterY + ySpread,

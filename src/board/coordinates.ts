@@ -29,6 +29,13 @@ export interface Layout {
   readonly checkerStackSpacing: number;
   readonly topCheckerPadding: number;
   readonly bottomCheckerPadding: number;
+  readonly blackOffTrayX: number;
+  readonly blackOffTrayTop: number;
+  readonly blackOffTrayHeight: number;
+  readonly whiteOffTrayX: number;
+  readonly whiteOffTrayTop: number;
+  readonly whiteOffTrayHeight: number;
+  readonly offCheckerStackSpacing: number;
 }
 
 export function computeLayout(width: number, height: number, themeLayout?: ThemeLayout): Layout {
@@ -84,6 +91,13 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   const checkerStackSpacing = themeLayout?.checkerStackSpacingRatio ?? 1;
   const topCheckerPadding = themeLayout?.topCheckerPaddingRatio ?? 1;
   const bottomCheckerPadding = themeLayout?.bottomCheckerPaddingRatio ?? 1;
+  const blackOffTrayX = width * (themeLayout?.blackOffTrayXRatio ?? 0.925);
+  const blackOffTrayTop = height * (themeLayout?.blackOffTrayTopRatio ?? 0.145);
+  const blackOffTrayHeight = height * (themeLayout?.blackOffTrayHeightRatio ?? 0.255);
+  const whiteOffTrayX = width * (themeLayout?.whiteOffTrayXRatio ?? 0.925);
+  const whiteOffTrayTop = height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61);
+  const whiteOffTrayHeight = height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255);
+  const offCheckerStackSpacing = themeLayout?.offCheckerStackSpacingRatio ?? 0.56;
   return {
     width,
     height,
@@ -113,6 +127,13 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     checkerStackSpacing,
     topCheckerPadding,
     bottomCheckerPadding,
+    blackOffTrayX,
+    blackOffTrayTop,
+    blackOffTrayHeight,
+    whiteOffTrayX,
+    whiteOffTrayTop,
+    whiteOffTrayHeight,
+    offCheckerStackSpacing,
   };
 }
 
