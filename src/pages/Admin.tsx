@@ -229,6 +229,20 @@ function accountType(row: ProfileRow): 'Google' | 'Guest' | 'Test/Unknown' {
   return 'Test/Unknown';
 }
 
+function isMissingColumnError(error: unknown, columnName: string): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const maybeError = error as { code?: string; message?: string };
+  return maybeError.code === '42703' && maybeError.message?.includes(columnName) === true;
+}
+
+function isDeletedProfile(row: ProfileRow): boolean {
+  return (
+    Boolean(row.deleted_at) ||
+    row.suspension_reason === 'Deleted in Back Office' ||
+    row.admin_note?.includes('[Deleted in Back Office]') === true
+  );
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'Never';
   return new Intl.DateTimeFormat('en-US', {
@@ -705,18 +719,16 @@ export default function Admin() {
         auditResult,
         roleResult,
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase
           .from('profiles')
           .select('id', { count: 'exact', head: true })
-          .is('deleted_at', null)
           .eq('is_suspended', true),
         supabase.from('matches').select('id', { count: 'exact', head: true }),
         supabase.from('matches').select('id', { count: 'exact', head: true }).is('finished_at', null),
         supabase
           .from('profiles')
           .select('*')
-          .is('deleted_at', null)
           .order('created_at', { ascending: false })
           .limit(120),
         supabase.from('level_configs').select('*').order('level', { ascending: true }),
@@ -741,7 +753,7 @@ export default function Admin() {
         roleResult.error;
       if (firstError) throw firstError;
 
-      const profileRows = profilesResult.data ?? [];
+      const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row));
       const profileIds = profileRows.map((row) => row.id);
       const wallets = profileIds.length
         ? await supabase.from('user_wallets').select('*').in('profile_id', profileIds)
@@ -763,7 +775,7 @@ export default function Admin() {
       setAudit(auditResult.data ?? []);
       setAdminRoles(roleResult.data ?? []);
       setStats({
-        users: userCount.count ?? 0,
+        users: profileRows.length || userCount.count || 0,
         matches: matchCount.count ?? 0,
         activeMatches: activeMatchCount.count ?? 0,
         configItems: (levelResult.data ?? []).length + (tableResult.data ?? []).length + (boardResult.data ?? []).length,
@@ -866,19 +878,30 @@ export default function Admin() {
     setSavingKey('user-delete');
     setDataError(null);
     try {
+      const deletePayload: Database['public']['Tables']['profiles']['Update'] = {
+        deleted_at: new Date().toISOString(),
+        deleted_by: user?.id ?? null,
+        delete_note: emptyToNull(note) ?? 'Back Office soft delete',
+        is_suspended: true,
+        suspended_at: new Date().toISOString(),
+        suspension_reason: 'Deleted in Back Office',
+        admin_note: `[Deleted in Back Office] ${emptyToNull(note) ?? 'Soft delete'}`,
+      };
       const { error } = await supabase
         .from('profiles')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: user?.id ?? null,
-          delete_note: emptyToNull(note) ?? 'Back Office soft delete',
-          is_suspended: true,
-          suspended_at: new Date().toISOString(),
-          suspension_reason: 'Deleted in Back Office',
-        })
+        .update(deletePayload)
         .in('id', uniqueIds)
         .is('deleted_at', null);
-      if (error) throw error;
+      if (isMissingColumnError(error, 'deleted_at')) {
+        const fallbackPayload = { ...deletePayload };
+        delete fallbackPayload.deleted_at;
+        delete fallbackPayload.deleted_by;
+        delete fallbackPayload.delete_note;
+        const fallback = await supabase.from('profiles').update(fallbackPayload).in('id', uniqueIds);
+        if (fallback.error) throw fallback.error;
+      } else if (error) {
+        throw error;
+      }
 
       setCheckedUserIds(new Set());
       if (selectedUserId && uniqueIds.includes(selectedUserId)) {
@@ -1024,7 +1047,14 @@ export default function Admin() {
         updated_by: user?.id ?? null,
       };
       const { error } = await supabase.from('level_configs').upsert(payload);
-      if (error) throw error;
+      if (isMissingColumnError(error, 'status_label')) {
+        const fallbackPayload = { ...payload };
+        delete fallbackPayload.status_label;
+        const fallback = await supabase.from('level_configs').upsert(fallbackPayload);
+        if (fallback.error) throw fallback.error;
+      } else if (error) {
+        throw error;
+      }
       setLevelDraft(levelToDraft());
       await loadAdminData();
     } catch (err) {
@@ -1627,7 +1657,7 @@ export default function Admin() {
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
               <ConfigTable title="Levels" rows={levels.map((row) => [
                 `Level ${row.level}`,
-                row.status_label,
+                row.status_label ?? 'Rookie',
                 `${formatNumber(row.xp_required)} XP`,
                 `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
                 row.is_enabled ? 'Enabled' : 'Disabled',

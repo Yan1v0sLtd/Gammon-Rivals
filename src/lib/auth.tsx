@@ -248,7 +248,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select()
         .single();
       if (insertError && insertError.message.toLowerCase().includes('avatar_url')) {
-        insertPayload = { ...insertPayload, avatar_url: null };
+        insertPayload = { ...insertPayload };
+        delete insertPayload.avatar_url;
         const retry = await supabase
           .from('profiles')
           .insert(insertPayload)
