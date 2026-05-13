@@ -15,17 +15,29 @@ export async function listMatchesForOwner(
 ): Promise<MatchSummary[]> {
   const { data, error } = await supabase
     .from('matches')
-    .select('*, games(count)')
+    .select('*')
     .eq('owner_id', ownerId)
     .order('started_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
-  return (data ?? []).map((row) => {
-    const games = (row as unknown as { games: { count: number }[] }).games;
-    const game_count = Array.isArray(games) && games.length > 0 ? games[0]!.count : 0;
-    const rest = { ...(row as MatchRow & { games?: unknown }) };
-    delete rest.games;
-    return { ...(rest as MatchRow), game_count };
+
+  const matches = data ?? [];
+  if (matches.length === 0) return [];
+
+  const matchIds = matches.map((match) => match.id);
+  const { data: games, error: gamesError } = await supabase
+    .from('games')
+    .select('match_id')
+    .in('match_id', matchIds);
+  if (gamesError) throw gamesError;
+
+  const gameCounts = new Map<string, number>();
+  for (const game of games ?? []) {
+    gameCounts.set(game.match_id, (gameCounts.get(game.match_id) ?? 0) + 1);
+  }
+
+  return matches.map((match) => {
+    return { ...match, game_count: gameCounts.get(match.id) ?? 0 };
   });
 }
 
