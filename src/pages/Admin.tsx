@@ -232,7 +232,19 @@ function accountType(row: ProfileRow): 'Google' | 'Guest' | 'Test/Unknown' {
 function isMissingColumnError(error: unknown, columnName: string): boolean {
   if (!error || typeof error !== 'object') return false;
   const maybeError = error as { code?: string; message?: string };
-  return maybeError.code === '42703' && maybeError.message?.includes(columnName) === true;
+  const message = maybeError.message?.toLowerCase() ?? '';
+  const normalizedColumnName = columnName.toLowerCase();
+  return (
+    message.includes(normalizedColumnName) &&
+    (maybeError.code === '42703' ||
+      maybeError.code === 'PGRST204' ||
+      message.includes('schema cache') ||
+      message.includes('could not find'))
+  );
+}
+
+function isMissingAnyColumnError(error: unknown, columnNames: readonly string[]): boolean {
+  return columnNames.some((columnName) => isMissingColumnError(error, columnName));
 }
 
 function isDeletedProfile(row: ProfileRow): boolean {
@@ -892,7 +904,7 @@ export default function Admin() {
         .update(deletePayload)
         .in('id', uniqueIds)
         .is('deleted_at', null);
-      if (isMissingColumnError(error, 'deleted_at')) {
+      if (isMissingAnyColumnError(error, ['deleted_at', 'deleted_by', 'delete_note'])) {
         const fallbackPayload = { ...deletePayload };
         delete fallbackPayload.deleted_at;
         delete fallbackPayload.deleted_by;
