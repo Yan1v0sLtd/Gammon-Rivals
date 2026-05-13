@@ -51,6 +51,18 @@ function redirectToOAuthProvider(url: string | null): void {
   window.location.assign(url);
 }
 
+function baseProfileInsert(user: User): Database['public']['Tables']['profiles']['Insert'] {
+  return {
+    id: user.id,
+    display_name: googleName(user) ?? 'Player',
+    is_guest: user.is_anonymous ?? false,
+    avatar_seed: user.id.replaceAll('-', '').slice(0, 12),
+    avatar_url: googleAvatar(user),
+    level: 1,
+    xp: 0,
+  };
+}
+
 export interface AuthContextValue {
   readonly session: Session | null;
   readonly user: User | null;
@@ -149,6 +161,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       if (!data) profileFetchRef.current = null;
+      if (data?.deleted_at) {
+        profileFetchRef.current = null;
+        walletFetchRef.current = null;
+        setProfile(null);
+        setWallet(null);
+        await supabase.auth.signOut();
+        return;
+      }
       setProfile(data);
       await fetchWallet(userId);
     },
@@ -167,7 +187,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     const currentUser = data.session?.user;
-    if (!currentUser) return;
+    if (!currentUser) {
+      throw new Error('Google sign-in completed without an active session. Please try again.');
+    }
 
     const hasGoogleIdentity =
       currentUser.app_metadata.provider === 'google' ||
@@ -182,25 +204,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (displayName) update.display_name = displayName;
     if (!currentUser.is_anonymous || hasGoogleIdentity) update.is_guest = false;
 
-    let { data: updated, error: updateError } = await supabase
+    const { data: existingProfile, error: existingProfileError } = await supabase
       .from('profiles')
-      .update(update)
+      .select('*')
       .eq('id', currentUser.id)
-      .select()
-      .single();
-    if (updateError && updateError.message.toLowerCase().includes('avatar_url')) {
-      const fallbackUpdate = { ...update };
-      delete fallbackUpdate.avatar_url;
-      const retry = await supabase
+      .maybeSingle();
+    if (existingProfileError) throw existingProfileError;
+    if (existingProfile?.deleted_at) {
+      await supabase.auth.signOut();
+      throw new Error('This player account was removed in the Back Office.');
+    }
+
+    let updated: ProfileRow | null;
+    if (existingProfile) {
+      let { data: updatedProfile, error: updateError } = await supabase
         .from('profiles')
-        .update(fallbackUpdate)
+        .update(update)
         .eq('id', currentUser.id)
         .select()
         .single();
-      updated = retry.data;
-      updateError = retry.error;
+      if (updateError && updateError.message.toLowerCase().includes('avatar_url')) {
+        const fallbackUpdate = { ...update };
+        delete fallbackUpdate.avatar_url;
+        const retry = await supabase
+          .from('profiles')
+          .update(fallbackUpdate)
+          .eq('id', currentUser.id)
+          .select()
+          .single();
+        updatedProfile = retry.data;
+        updateError = retry.error;
+      }
+      if (updateError) throw updateError;
+      updated = updatedProfile;
+    } else {
+      let insertPayload = {
+        ...baseProfileInsert(currentUser),
+        is_guest: hasGoogleIdentity ? false : currentUser.is_anonymous ?? false,
+      };
+      let { data: insertedProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert(insertPayload)
+        .select()
+        .single();
+      if (insertError && insertError.message.toLowerCase().includes('avatar_url')) {
+        insertPayload = { ...insertPayload, avatar_url: null };
+        const retry = await supabase
+          .from('profiles')
+          .insert(insertPayload)
+          .select()
+          .single();
+        insertedProfile = retry.data;
+        insertError = retry.error;
+      }
+      if (insertError) throw insertError;
+      updated = insertedProfile;
     }
-    if (updateError) throw updateError;
+    if (!updated) throw new Error('Could not load your player profile after sign-in.');
 
     profileFetchRef.current = currentUser.id;
     walletFetchRef.current = null;

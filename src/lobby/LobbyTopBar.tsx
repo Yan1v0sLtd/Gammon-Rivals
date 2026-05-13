@@ -14,6 +14,7 @@ interface LobbyTopBarProps {
   readonly progression: ProfileProgression;
   readonly isGuest: boolean;
   onLinkGoogle(): Promise<void>;
+  onSignOut(): Promise<void>;
 }
 
 function CurrencyPill({
@@ -90,8 +91,10 @@ export function LobbyTopBar({
   progression,
   isGuest,
   onLinkGoogle,
+  onSignOut,
 }: LobbyTopBarProps) {
   const [linking, setLinking] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const name = profile?.display_name ?? 'Player';
   const currencies = [
     {
@@ -114,6 +117,15 @@ export function LobbyTopBar({
       await onLinkGoogle();
     } finally {
       setLinking(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await onSignOut();
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -166,6 +178,16 @@ export function LobbyTopBar({
               className="mt-2 rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
             >
               {linking ? 'Opening Google…' : 'Save progress'}
+            </button>
+          )}
+          {!isGuest && (
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              disabled={signingOut}
+              className="ml-2 mt-2 rounded-full bg-black/28 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white/62 transition hover:bg-black/42 hover:text-white disabled:opacity-50"
+            >
+              {signingOut ? 'Logging out…' : 'Log out'}
             </button>
           )}
         </div>

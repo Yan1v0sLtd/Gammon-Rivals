@@ -1,7 +1,15 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured } from '../lib/supabase';
+
+function isLocalhostOrigin(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === 'localhost';
+}
+
+function loopbackUrl(): string {
+  return `http://127.0.0.1:${window.location.port}${window.location.pathname}${window.location.search}`;
+}
 
 function AuthScreen() {
   const location = useLocation();
@@ -9,8 +17,18 @@ function AuthScreen() {
   const [busy, setBusy] = useState<'google' | 'guest' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nextPath = `${location.pathname}${location.search}`;
+  const isSwitchingLocalHost = isLocalhostOrigin();
+
+  useEffect(() => {
+    if (!isSwitchingLocalHost) return;
+    window.location.replace(loopbackUrl());
+  }, [isSwitchingLocalHost]);
 
   const continueWithGoogle = async () => {
+    if (isLocalhostOrigin()) {
+      window.location.replace(loopbackUrl());
+      return;
+    }
     setBusy('google');
     setError(null);
     try {
@@ -60,24 +78,30 @@ function AuthScreen() {
           </p>
         </div>
 
-        <div className="mt-6 grid gap-3">
-          <button
-            type="button"
-            onClick={continueWithGoogle}
-            disabled={!isSupabaseConfigured || busy !== null}
-            className="rounded-xl bg-gradient-to-b from-[#ffffff] to-[#dbe8ff] px-5 py-3 font-display text-lg font-black text-[#16233b] shadow-[0_5px_0_#7a8cac,0_14px_22px_rgba(0,0,0,0.34)] transition hover:brightness-110 active:translate-y-1 active:shadow-[0_2px_0_#7a8cac,0_8px_14px_rgba(0,0,0,0.3)] disabled:opacity-55"
-          >
-            {busy === 'google' ? 'Opening Google…' : 'Continue with Google'}
-          </button>
-          <button
-            type="button"
-            onClick={playAsGuest}
-            disabled={!isSupabaseConfigured || busy !== null}
-            className="rounded-xl border border-[#f4d26e]/75 bg-[#071429]/72 px-5 py-3 font-display text-base font-black text-[#f7da7d] shadow-[inset_0_1px_0_rgba(255,255,255,0.13),0_8px_18px_rgba(0,0,0,0.3)] transition hover:bg-[#0d2142] active:translate-y-0.5 disabled:opacity-55"
-          >
-            {busy === 'guest' ? 'Starting guest…' : 'Play as Guest'}
-          </button>
-        </div>
+        {isSwitchingLocalHost ? (
+          <div className="mt-6 rounded-xl border border-[#f4d26e]/35 bg-[#071429]/72 px-5 py-4 text-center text-sm font-bold text-[#f7da7d]">
+            Preparing sign-in…
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-3">
+            <button
+              type="button"
+              onClick={continueWithGoogle}
+              disabled={!isSupabaseConfigured || busy !== null}
+              className="rounded-xl bg-gradient-to-b from-[#ffffff] to-[#dbe8ff] px-5 py-3 font-display text-lg font-black text-[#16233b] shadow-[0_5px_0_#7a8cac,0_14px_22px_rgba(0,0,0,0.34)] transition hover:brightness-110 active:translate-y-1 active:shadow-[0_2px_0_#7a8cac,0_8px_14px_rgba(0,0,0,0.3)] disabled:opacity-55"
+            >
+              {busy === 'google' ? 'Opening Google…' : 'Continue with Google'}
+            </button>
+            <button
+              type="button"
+              onClick={playAsGuest}
+              disabled={!isSupabaseConfigured || busy !== null}
+              className="rounded-xl border border-[#f4d26e]/75 bg-[#071429]/72 px-5 py-3 font-display text-base font-black text-[#f7da7d] shadow-[inset_0_1px_0_rgba(255,255,255,0.13),0_8px_18px_rgba(0,0,0,0.3)] transition hover:bg-[#0d2142] active:translate-y-0.5 disabled:opacity-55"
+            >
+              {busy === 'guest' ? 'Starting guest…' : 'Play as Guest'}
+            </button>
+          </div>
+        )}
 
         {!isSupabaseConfigured && (
           <div className="mt-4 rounded-lg border border-amber-300/25 bg-amber-900/25 px-3 py-2 text-xs text-amber-100">

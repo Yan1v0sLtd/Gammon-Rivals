@@ -418,6 +418,26 @@ function SecondaryButton({
   );
 }
 
+function DangerButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick(): void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-lg border border-rose-300/30 bg-rose-500/16 px-4 py-2 text-sm font-black text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
+
 function levelToDraft(row?: LevelConfig): LevelDraft {
   return {
     level: row?.level.toString() ?? '',
@@ -503,6 +523,7 @@ export default function Admin() {
   const [stats, setStats] = useState<AdminStats>(initialStats);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(() => new Set());
   const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null);
   const [userSearch, setUserSearch] = useState('');
   const [profileDraft, setProfileDraft] = useState({ level: '1', xp: '0', rating: '1500', admin_note: '', suspension_reason: '' });
@@ -684,11 +705,20 @@ export default function Admin() {
         auditResult,
         roleResult,
       ] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_suspended', true),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .is('deleted_at', null)
+          .eq('is_suspended', true),
         supabase.from('matches').select('id', { count: 'exact', head: true }),
         supabase.from('matches').select('id', { count: 'exact', head: true }).is('finished_at', null),
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }).limit(120),
+        supabase
+          .from('profiles')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(120),
         supabase.from('level_configs').select('*').order('level', { ascending: true }),
         supabase.from('table_configs').select('*').order('sort_order', { ascending: true }),
         supabase.from('board_theme_configs').select('*').order('sort_order', { ascending: true }),
@@ -722,6 +752,10 @@ export default function Admin() {
       const adminUsers = profileRows.map((row) => ({ ...row, wallet: walletMap.get(row.id) }));
 
       setUsers(adminUsers);
+      setCheckedUserIds((current) => {
+        const visibleIds = new Set(adminUsers.map((row) => row.id));
+        return new Set([...current].filter((id) => visibleIds.has(id)));
+      });
       setLevels(levelResult.data ?? []);
       setTables(tableResult.data ?? []);
       setBoards(boardResult.data ?? []);
@@ -751,6 +785,21 @@ export default function Admin() {
           });
         }
         await loadSelectedUser(nextSelected);
+      } else {
+        const fallbackSelected = adminUsers[0] ?? null;
+        setSelectedUserId(fallbackSelected?.id ?? null);
+        if (fallbackSelected) {
+          setProfileDraft({
+            level: fallbackSelected.level.toString(),
+            xp: fallbackSelected.xp.toString(),
+            rating: fallbackSelected.rating.toString(),
+            admin_note: fallbackSelected.admin_note ?? '',
+            suspension_reason: fallbackSelected.suspension_reason ?? '',
+          });
+          await loadSelectedUser(fallbackSelected.id);
+        } else {
+          setSelectedUserDetail(null);
+        }
       }
     } catch (err) {
       if (isMissingMigrationError(err as { code?: string; message?: string })) {
@@ -778,6 +827,72 @@ export default function Admin() {
     void loadSelectedUser(nextUser.id);
   }
 
+  function toggleCheckedUser(profileId: string, checked: boolean) {
+    setCheckedUserIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(profileId);
+      else next.delete(profileId);
+      return next;
+    });
+  }
+
+  function toggleAllFilteredUsers(checked: boolean) {
+    setCheckedUserIds((current) => {
+      const next = new Set(current);
+      for (const profileId of selectableFilteredUserIds) {
+        if (checked) next.add(profileId);
+        else next.delete(profileId);
+      }
+      return next;
+    });
+  }
+
+  async function softDeleteUsers(profileIds: string[]) {
+    if (!canManage) return;
+    const uniqueIds = [...new Set(profileIds)].filter((profileId) => profileId !== user?.id);
+    if (uniqueIds.length === 0) {
+      setDataError('Select at least one user that is not your current admin profile.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}? They will be removed from the live user list, but their data will remain recoverable in the database.`
+    );
+    if (!confirmed) return;
+
+    const note = window.prompt('Delete note', 'Back Office soft delete');
+    if (note === null) return;
+
+    setSavingKey('user-delete');
+    setDataError(null);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          deleted_at: new Date().toISOString(),
+          deleted_by: user?.id ?? null,
+          delete_note: emptyToNull(note) ?? 'Back Office soft delete',
+          is_suspended: true,
+          suspended_at: new Date().toISOString(),
+          suspension_reason: 'Deleted in Back Office',
+        })
+        .in('id', uniqueIds)
+        .is('deleted_at', null);
+      if (error) throw error;
+
+      setCheckedUserIds(new Set());
+      if (selectedUserId && uniqueIds.includes(selectedUserId)) {
+        setSelectedUserId(null);
+        setSelectedUserDetail(null);
+      }
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
     if (!query) return users;
@@ -788,6 +903,14 @@ export default function Admin() {
         .includes(query)
     );
   }, [userSearch, users]);
+
+  const selectableFilteredUserIds = filteredUsers
+    .filter((row) => row.id !== user?.id)
+    .map((row) => row.id);
+  const checkedUserCount = checkedUserIds.size;
+  const allFilteredUsersChecked =
+    selectableFilteredUserIds.length > 0 &&
+    selectableFilteredUserIds.every((id) => checkedUserIds.has(id));
 
   const dashboardCards = useMemo(
     () => [
@@ -1252,16 +1375,40 @@ export default function Admin() {
                     className="w-full max-w-sm rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/60"
                   />
                 </div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/16 px-3 py-2 text-xs text-white/55">
+                  <span>
+                    {checkedUserCount > 0
+                      ? `${checkedUserCount} selected`
+                      : `${filteredUsers.length} live users shown`}
+                  </span>
+                  <DangerButton
+                    onClick={() => void softDeleteUsers([...checkedUserIds])}
+                    disabled={!canManage || checkedUserCount === 0 || savingKey === 'user-delete'}
+                  >
+                    Delete selected
+                  </DangerButton>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-white/10 text-sm">
                     <thead className="bg-black/20 text-left text-xs uppercase tracking-wider text-white/35">
                       <tr>
+                        <th className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            checked={allFilteredUsersChecked}
+                            disabled={selectableFilteredUserIds.length === 0}
+                            onChange={(event) => toggleAllFilteredUsers(event.target.checked)}
+                            className="h-4 w-4 accent-amber-300"
+                            aria-label="Select all visible users"
+                          />
+                        </th>
                         <th className="px-4 py-3">Player</th>
                         <th className="px-4 py-3">Account</th>
                         <th className="px-4 py-3">Level</th>
                         <th className="px-4 py-3">Wallet</th>
                         <th className="px-4 py-3">Rating</th>
                         <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/10">
@@ -1274,6 +1421,17 @@ export default function Admin() {
                           }`}
                         >
                           <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={checkedUserIds.has(row.id)}
+                              disabled={row.id === user?.id}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) => toggleCheckedUser(row.id, event.target.checked)}
+                              className="h-4 w-4 accent-amber-300"
+                              aria-label={`Select ${row.display_name}`}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
                             <div className="font-bold text-white">{row.display_name}</div>
                             <div className="max-w-[16rem] truncate font-mono text-xs text-white/35">{row.id}</div>
                           </td>
@@ -1285,6 +1443,19 @@ export default function Admin() {
                           <td className="px-4 py-3">{formatNumber(row.rating)}</td>
                           <td className="px-4 py-3">
                             {row.is_suspended ? <StatusPill enabled={false} /> : <StatusPill enabled />}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void softDeleteUsers([row.id]);
+                              }}
+                              disabled={!canManage || row.id === user?.id || savingKey === 'user-delete'}
+                              className="rounded-md border border-rose-300/25 px-2 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1307,7 +1478,15 @@ export default function Admin() {
                           </div>
                           <div className="mt-1 break-all font-mono text-xs text-white/35">{selectedUser.id}</div>
                         </div>
-                        <StatusPill enabled={!selectedUser.is_suspended} />
+                        <div className="flex flex-col items-end gap-2">
+                          <StatusPill enabled={!selectedUser.is_suspended} />
+                          <DangerButton
+                            onClick={() => void softDeleteUsers([selectedUser.id])}
+                            disabled={!canManage || selectedUser.id === user?.id || savingKey === 'user-delete'}
+                          >
+                            Delete user
+                          </DangerButton>
+                        </div>
                       </div>
                       <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/55">
                         <div className="rounded-lg bg-black/18 p-2">
