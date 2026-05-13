@@ -46,6 +46,11 @@ function googleAvatar(user: User): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function redirectToOAuthProvider(url: string | null): void {
+  if (!url) throw new Error('Google sign-in did not return a redirect URL.');
+  window.location.assign(url);
+}
+
 export interface AuthContextValue {
   readonly session: Session | null;
   readonly user: User | null;
@@ -239,14 +244,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async (options?: { redirectTo?: string }) => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: options?.redirectTo ?? makeAuthRedirect(),
         queryParams: { prompt: 'select_account' },
+        skipBrowserRedirect: true,
       },
     });
     if (error) throw error;
+    redirectToOAuthProvider(data.url);
   }, []);
 
   const linkGoogleIdentity = useCallback(
@@ -256,14 +263,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signInWithGoogle(options);
         return;
       }
-      const { error } = await supabase.auth.linkIdentity({
+      const { data, error } = await supabase.auth.linkIdentity({
         provider: 'google',
         options: {
           redirectTo: options?.redirectTo ?? makeAuthRedirect('/profile'),
           queryParams: { prompt: 'select_account' },
+          skipBrowserRedirect: true,
         },
       });
       if (error) throw error;
+      redirectToOAuthProvider(data.url);
     },
     [session, signInWithGoogle]
   );
