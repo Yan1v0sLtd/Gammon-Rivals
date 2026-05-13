@@ -52,6 +52,7 @@ interface UserDetail {
 type LevelDraft = {
   level: string;
   xp_required: string;
+  status_label: string;
   reward_coins: string;
   reward_gems: string;
   reward_items: string;
@@ -220,6 +221,12 @@ function withRequestTimeout<T>(request: PromiseLike<T>, label: string, timeoutMs
 
 function formatNumber(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-US').format(value ?? 0);
+}
+
+function accountType(row: ProfileRow): 'Google' | 'Guest' | 'Test/Unknown' {
+  if (row.is_guest) return 'Guest';
+  if (row.avatar_url) return 'Google';
+  return 'Test/Unknown';
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -415,6 +422,7 @@ function levelToDraft(row?: LevelConfig): LevelDraft {
   return {
     level: row?.level.toString() ?? '',
     xp_required: row?.xp_required.toString() ?? '0',
+    status_label: row?.status_label ?? 'Rookie',
     reward_coins: row?.reward_coins.toString() ?? '0',
     reward_gems: row?.reward_gems.toString() ?? '0',
     reward_items: jsonToString(row?.reward_items, '[]'),
@@ -774,7 +782,7 @@ export default function Admin() {
     const query = userSearch.trim().toLowerCase();
     if (!query) return users;
     return users.filter((row) =>
-      [row.display_name, row.id, row.rating.toString(), row.level.toString()]
+      [row.display_name, row.id, row.rating.toString(), row.level.toString(), accountType(row)]
         .join(' ')
         .toLowerCase()
         .includes(query)
@@ -884,6 +892,7 @@ export default function Admin() {
       const payload: Database['public']['Tables']['level_configs']['Insert'] = {
         level: requiredNumber(levelDraft.level, 'Level'),
         xp_required: requiredNumber(levelDraft.xp_required, 'XP required'),
+        status_label: levelDraft.status_label.trim() || 'Rookie',
         reward_coins: requiredNumber(levelDraft.reward_coins, 'Reward coins'),
         reward_gems: requiredNumber(levelDraft.reward_gems, 'Reward gems'),
         reward_items: parseJson(levelDraft.reward_items, 'Reward items', 'array'),
@@ -1248,6 +1257,7 @@ export default function Admin() {
                     <thead className="bg-black/20 text-left text-xs uppercase tracking-wider text-white/35">
                       <tr>
                         <th className="px-4 py-3">Player</th>
+                        <th className="px-4 py-3">Account</th>
                         <th className="px-4 py-3">Level</th>
                         <th className="px-4 py-3">Wallet</th>
                         <th className="px-4 py-3">Rating</th>
@@ -1267,6 +1277,7 @@ export default function Admin() {
                             <div className="font-bold text-white">{row.display_name}</div>
                             <div className="max-w-[16rem] truncate font-mono text-xs text-white/35">{row.id}</div>
                           </td>
+                          <td className="px-4 py-3">{accountType(row)}</td>
                           <td className="px-4 py-3">L{row.level} · {formatNumber(row.xp)} XP</td>
                           <td className="px-4 py-3">
                             {formatNumber(row.wallet?.coins)} coins · {formatNumber(row.wallet?.gems)} gems
@@ -1291,6 +1302,9 @@ export default function Admin() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h2 className="text-xl font-black">{selectedUser.display_name}</h2>
+                          <div className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-200/70">
+                            {accountType(selectedUser)}
+                          </div>
                           <div className="mt-1 break-all font-mono text-xs text-white/35">{selectedUser.id}</div>
                         </div>
                         <StatusPill enabled={!selectedUser.is_suspended} />
@@ -1434,6 +1448,7 @@ export default function Admin() {
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
               <ConfigTable title="Levels" rows={levels.map((row) => [
                 `Level ${row.level}`,
+                row.status_label,
                 `${formatNumber(row.xp_required)} XP`,
                 `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
                 row.is_enabled ? 'Enabled' : 'Disabled',
@@ -1443,6 +1458,7 @@ export default function Admin() {
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <Field label="Level" value={levelDraft.level} onChange={(level) => setLevelDraft((d) => ({ ...d, level }))} />
                   <Field label="XP required" value={levelDraft.xp_required} onChange={(xp_required) => setLevelDraft((d) => ({ ...d, xp_required }))} />
+                  <Field label="Status label" value={levelDraft.status_label} onChange={(status_label) => setLevelDraft((d) => ({ ...d, status_label }))} />
                   <Field label="Reward coins" value={levelDraft.reward_coins} onChange={(reward_coins) => setLevelDraft((d) => ({ ...d, reward_coins }))} />
                   <Field label="Reward gems" value={levelDraft.reward_gems} onChange={(reward_gems) => setLevelDraft((d) => ({ ...d, reward_gems }))} />
                 </div>

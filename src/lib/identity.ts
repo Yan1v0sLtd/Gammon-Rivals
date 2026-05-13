@@ -62,6 +62,7 @@ export function avatarUrl(seed: string, size = 128): string {
 export interface PlayerIdentity {
   readonly name: string;
   readonly avatarSeed: string;
+  readonly avatarUrl?: string | null;
   /** Optional small badge — e.g. AI level pill, or a country flag later. */
   readonly badge?: string;
 }

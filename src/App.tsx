@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import AuthGate from './components/AuthGate';
 import Home from './pages/Home';
 
 // Code-split everything except Home (the landing page) so the initial JS
@@ -11,6 +12,7 @@ const PlayOnline = lazy(() => import('./pages/PlayOnline'));
 const JoinMatch = lazy(() => import('./pages/JoinMatch'));
 const Lobby = lazy(() => import('./pages/Lobby'));
 const Admin = lazy(() => import('./pages/Admin'));
+const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 
 function RouteFallback() {
   return (
@@ -25,13 +27,14 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/hotseat" element={<HotSeat />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/replay/:gameId" element={<Replay />} />
-          <Route path="/play/:matchId" element={<PlayOnline />} />
-          <Route path="/join/:code" element={<JoinMatch />} />
-          <Route path="/lobby" element={<Lobby />} />
+          <Route path="/" element={<AuthGate><Home /></AuthGate>} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/hotseat" element={<AuthGate><HotSeat /></AuthGate>} />
+          <Route path="/profile" element={<AuthGate><Profile /></AuthGate>} />
+          <Route path="/replay/:gameId" element={<AuthGate><Replay /></AuthGate>} />
+          <Route path="/play/:matchId" element={<AuthGate><PlayOnline /></AuthGate>} />
+          <Route path="/join/:code" element={<AuthGate><JoinMatch /></AuthGate>} />
+          <Route path="/lobby" element={<AuthGate><Lobby /></AuthGate>} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </Suspense>

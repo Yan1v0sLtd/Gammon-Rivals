@@ -9,6 +9,8 @@ import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { formatCompactNumber } from '../lib/format';
+import { getProfileProgression } from '../lib/progression';
 import { useOnlineGame } from '../game/useOnlineGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
@@ -22,13 +24,19 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 function profileToIdentity(p: ProfileRow | null): PlayerIdentity | null {
   if (!p) return null;
-  return { name: p.display_name, avatarSeed: p.avatar_seed };
+  return { name: p.display_name, avatarSeed: p.avatar_seed, avatarUrl: p.avatar_url };
 }
 
 export default function PlayOnline() {
   const { matchId } = useParams<{ matchId: string }>();
   const [params] = useSearchParams();
-  const { user, isLoading: authLoading } = useAuth();
+  const {
+    user,
+    wallet,
+    progression,
+    levelConfigs,
+    isLoading: authLoading,
+  } = useAuth();
   const navigate = useNavigate();
   const game = useOnlineGame(matchId);
   const boardParam = params.get('board');
@@ -196,6 +204,9 @@ export default function PlayOnline() {
   const oppPip = oppColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = !!game.isLocalTurn;
   const isRollForSelf = game.turn === selfColor;
+  const selfProgression =
+    selfProfile?.id === user.id ? progression : getProfileProgression(selfProfile, levelConfigs);
+  const opponentProgression = getProfileProgression(opponentProf, levelConfigs);
 
   const turnLabel = game.matchFinished
     ? 'match over'
@@ -251,18 +262,18 @@ export default function PlayOnline() {
         identity: profileToIdentity(opponentProf),
         pipCount: oppPip,
         scoreLabel: `${oppColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
-        level: opponentProf?.level ?? 23,
-        stateLabel: 'Rookie',
-        coinsLabel: '400',
+        level: opponentProgression.level,
+        stateLabel: opponentProgression.statusLabel,
+        coinsLabel: '—',
         isTurn: !isLocalTurn && !showMatchOver,
       }}
       self={{
         identity: profileToIdentity(selfProfile),
         pipCount: selfPip,
         scoreLabel: `${selfColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
-        level: selfProfile?.level ?? 23,
-        stateLabel: 'Rookie',
-        coinsLabel: '400',
+        level: selfProgression.level,
+        stateLabel: selfProgression.statusLabel,
+        coinsLabel: formatCompactNumber(wallet?.coins),
         isTurn: isLocalTurn && !showMatchOver,
       }}
       actionsOverlay={

@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import Avatar from '../components/Avatar';
+import { formatCompactNumber } from '../lib/format';
+import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
 
 interface LobbyTopBarProps {
   readonly profile: ProfileRow | null;
+  readonly wallet: UserWallet | null;
+  readonly progression: ProfileProgression;
+  readonly isGuest: boolean;
+  onLinkGoogle(): Promise<void>;
 }
-
-const currencies = [
-  { id: 'chips', label: 'Chips', value: '63,140', icon: '/lobby/icons/poker-chip.webp' },
-  { id: 'coins', label: 'Coins', value: '400', icon: '/lobby/icons/gold-coin.webp' },
-  { id: 'gems', label: 'Gems', value: '50', icon: '/lobby/icons/gem.webp' },
-] as const;
 
 function CurrencyPill({
   label,
@@ -81,16 +84,50 @@ function TopShortcut({
   );
 }
 
-export function LobbyTopBar({ profile }: LobbyTopBarProps) {
-  const name = profile?.display_name ?? 'Amit';
-  const initial = name.trim()[0]?.toUpperCase() ?? 'A';
+export function LobbyTopBar({
+  profile,
+  wallet,
+  progression,
+  isGuest,
+  onLinkGoogle,
+}: LobbyTopBarProps) {
+  const [linking, setLinking] = useState(false);
+  const name = profile?.display_name ?? 'Player';
+  const currencies = [
+    {
+      id: 'coins',
+      label: 'Coins',
+      value: formatCompactNumber(wallet?.coins),
+      icon: '/lobby/icons/gold-coin.webp',
+    },
+    {
+      id: 'gems',
+      label: 'Gems',
+      value: formatCompactNumber(wallet?.gems),
+      icon: '/lobby/icons/gem.webp',
+    },
+  ] as const;
+
+  const handleLinkGoogle = async () => {
+    setLinking(true);
+    try {
+      await onLinkGoogle();
+    } finally {
+      setLinking(false);
+    }
+  };
 
   return (
     <header className="relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(14rem,1fr)_auto] md:items-start">
-      <Link to="/profile" className="group flex min-w-0 items-center gap-3">
-        <div className="relative grid h-[6.1rem] w-[6.1rem] shrink-0 place-items-center">
-          <div className="absolute left-[1.05rem] top-[1.05rem] grid h-[4rem] w-[4rem] place-items-center rounded-full bg-gradient-to-b from-[#fff0bd] via-[#7d4b25] to-[#201421] text-4xl font-black text-[#142339] shadow-inner">
-            {initial}
+      <div className="group flex min-w-0 items-center gap-3">
+        <Link to="/profile" className="relative grid h-[6.1rem] w-[6.1rem] shrink-0 place-items-center">
+          <div className="absolute left-[1.05rem] top-[1.05rem] grid h-[4rem] w-[4rem] place-items-center rounded-full bg-gradient-to-b from-[#fff0bd] via-[#7d4b25] to-[#201421] shadow-inner">
+            <Avatar
+              seed={profile?.avatar_seed ?? 'guest'}
+              imageUrl={profile?.avatar_url}
+              size={64}
+              ring="none"
+            />
           </div>
           <img
             src="/lobby/icons/avatar-frame.webp"
@@ -99,25 +136,40 @@ export function LobbyTopBar({ profile }: LobbyTopBarProps) {
             draggable={false}
           />
           <div className="absolute bottom-1 right-2 grid h-7 min-w-7 place-items-center rounded-full border border-[#ffd56c] bg-[#19233a] px-1 text-sm font-black text-[#ffe9a5] shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
-            23
+            {progression.level}
           </div>
-        </div>
+        </Link>
         <div className="min-w-0">
-          <div className="truncate font-display text-2xl font-black text-white drop-shadow">{name}</div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="rounded-md border border-[#f0a54b] bg-[#8b552e] px-2 py-0.5 text-sm font-black text-[#ffd779]">
-              Rookie
-            </span>
-            <span className="h-3 w-28 overflow-hidden rounded-full border border-black/50 bg-black/45 shadow-inner">
-              <span className="block h-full w-[34%] rounded-full bg-gradient-to-r from-[#ff8e1d] to-[#ffe063]" />
-            </span>
-          </div>
-          <div className="mt-2 flex w-fit items-center gap-2 rounded-full bg-[#071429]/65 px-3 py-1 font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-            <span className="text-xl text-[#ffd45c]">*</span>
-            <span>25%</span>
-          </div>
+          <Link to="/profile" className="block">
+            <div className="truncate font-display text-2xl font-black text-white drop-shadow">{name}</div>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="rounded-md border border-[#f0a54b] bg-[#8b552e] px-2 py-0.5 text-sm font-black text-[#ffd779]">
+                {progression.statusLabel}
+              </span>
+              <span className="h-3 w-28 overflow-hidden rounded-full border border-black/50 bg-black/45 shadow-inner">
+                <span
+                  className="block h-full rounded-full bg-gradient-to-r from-[#ff8e1d] to-[#ffe063]"
+                  style={{ width: `${progression.progressPercent}%` }}
+                />
+              </span>
+            </div>
+            <div className="mt-2 flex w-fit items-center gap-2 rounded-full bg-[#071429]/65 px-3 py-1 font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+              <span className="text-xl text-[#ffd45c]">*</span>
+              <span>{progression.progressLabel}</span>
+            </div>
+          </Link>
+          {isGuest && (
+            <button
+              type="button"
+              onClick={() => void handleLinkGoogle()}
+              disabled={linking}
+              className="mt-2 rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
+            >
+              {linking ? 'Opening Google…' : 'Save progress'}
+            </button>
+          )}
         </div>
-      </Link>
+      </div>
 
       <div className="flex flex-wrap items-start justify-end gap-3">
         <div className="flex flex-wrap justify-end gap-3">

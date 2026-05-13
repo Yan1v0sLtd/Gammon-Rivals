@@ -3,6 +3,8 @@ import { avatarUrl } from '../lib/identity';
 interface Props {
   /** The seed used to deterministically generate the avatar. */
   seed: string;
+  /** Optional account avatar image, such as a Google profile photo. */
+  imageUrl?: string | null;
   /** Pixel size of the rendered circle. Defaults to 64. */
   size?: number;
   /** Optional ring colour for the active player. */
@@ -23,7 +25,14 @@ const RING_CLASS: Record<NonNullable<Props['ring']>, string> = {
  * DiceBear API directly — no proxy or local image needed. The avatar
  * itself is generated; we layer a coloured ring + optional badge on top.
  */
-export default function Avatar({ seed, size = 64, ring = 'idle', badge, className = '' }: Props) {
+export default function Avatar({
+  seed,
+  imageUrl,
+  size = 64,
+  ring = 'idle',
+  badge,
+  className = '',
+}: Props) {
   const ringClass = RING_CLASS[ring];
   return (
     <div
@@ -31,7 +40,7 @@ export default function Avatar({ seed, size = 64, ring = 'idle', badge, classNam
       style={{ width: size, height: size }}
     >
       <img
-        src={avatarUrl(seed, size * 2)}
+        src={imageUrl || avatarUrl(seed, size * 2)}
         alt=""
         width={size}
         height={size}

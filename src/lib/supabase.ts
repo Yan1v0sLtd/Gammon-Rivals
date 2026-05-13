@@ -25,7 +25,8 @@ export const supabase: SupabaseClient<Database> = isSupabaseConfigured
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
+        detectSessionInUrl: false,
+        flowType: 'pkce',
       },
     })
   : createMissingSupabaseClient();

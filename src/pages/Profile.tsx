@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Avatar from '../components/Avatar';
 import { useAuth } from '../lib/auth';
+import { formatCompactNumber } from '../lib/format';
 import {
   getOwnerStats,
   listMatchesForOwner,
@@ -30,6 +32,14 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString();
 }
 
+function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return String(err);
+}
+
 function ownerOutcome(m: MatchSummary): 'won' | 'lost' | 'open' | 'hotseat' {
   if (!m.finished_at) return 'open';
   if (m.mode === 'hotseat') return 'hotseat';
@@ -40,10 +50,13 @@ export default function Profile() {
   const {
     user,
     profile,
+    wallet,
+    progression,
     isLoading,
     setDisplayName,
-    sendMagicLink,
-    isAnonymous,
+    isGuest,
+    linkGoogleIdentity,
+    signOut,
     refreshProfile,
   } = useAuth();
   const navigate = useNavigate();
@@ -53,9 +66,8 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [savingName, setSavingName] = useState(false);
-  const [email, setEmail] = useState('');
-  const [magicSent, setMagicSent] = useState(false);
-  const [magicErr, setMagicErr] = useState<string | null>(null);
+  const [linkingGoogle, setLinkingGoogle] = useState(false);
+  const [linkErr, setLinkErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -72,7 +84,7 @@ export default function Profile() {
         setMatches(m);
       } catch (err) {
         if (cancelled) return;
-        setLoadErr(err instanceof Error ? err.message : String(err));
+        setLoadErr(errorMessage(err));
       }
     })();
     return () => {
@@ -97,13 +109,16 @@ export default function Profile() {
     }
   };
 
-  const handleMagicLink = async () => {
-    setMagicErr(null);
+  const handleLinkGoogle = async () => {
+    setLinkErr(null);
+    setLinkingGoogle(true);
     try {
-      await sendMagicLink(email.trim());
-      setMagicSent(true);
+      await linkGoogleIdentity({
+        redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+      });
     } catch (err) {
-      setMagicErr(err instanceof Error ? err.message : String(err));
+      setLinkErr(errorMessage(err));
+      setLinkingGoogle(false);
     }
   };
 
@@ -133,12 +148,24 @@ export default function Profile() {
           ← Home
         </Link>
         <div className="text-xs text-board-felt/50">Profile</div>
-        <div className="w-12" />
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="text-xs text-board-felt/50 hover:text-board-accent"
+        >
+          Sign out
+        </button>
       </header>
 
       <div className="max-w-2xl mx-auto p-4 sm:p-6 flex flex-col gap-6">
         <section className="rounded-lg border border-board-felt/10 bg-board-felt/5 p-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <Avatar
+              seed={profile?.avatar_seed ?? 'profile'}
+              imageUrl={profile?.avatar_url}
+              size={86}
+              ring="active"
+            />
             <div className="flex-1 min-w-0">
               {editing ? (
                 <div className="flex gap-2">
@@ -182,49 +209,60 @@ export default function Profile() {
                     Rating <span className="text-board-accent font-mono">{profile.rating}</span>
                   </div>
                 )}
-                {isAnonymous && (
+                {isGuest && (
                   <div className="text-xs text-board-felt/50">Guest account</div>
                 )}
+              </div>
+              <div className="mt-3 grid gap-2">
+                <div className="flex items-center justify-between text-xs text-board-felt/60">
+                  <span>
+                    Level {progression.level} · {progression.statusLabel}
+                  </span>
+                  <span>{progression.progressLabel}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full border border-board-felt/10 bg-black/35">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-200"
+                    style={{ width: `${progression.progressPercent}%` }}
+                  />
+                </div>
+                <div className="text-xs text-board-felt/45">
+                  {progression.nextLevelXp
+                    ? `${formatCompactNumber(progression.xpNeededForNext)} XP to next level`
+                    : 'Max configured level reached'}
+                </div>
               </div>
             </div>
           </div>
 
-          {isAnonymous && (
+          {isGuest && (
             <div className="mt-4 pt-4 border-t border-board-felt/10">
               <div className="text-xs uppercase tracking-wider text-board-felt/50 mb-2">
                 Save progress
               </div>
-              {magicSent ? (
-                <div className="text-sm text-board-accent">
-                  Magic link sent to <strong>{email}</strong>. Open it to link this guest profile to
-                  your email.
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-sm text-board-felt/65">
+                  Link Google to keep XP, coins, boards, purchases, and match history.
                 </div>
-              ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="flex-1 bg-board-felt/10 border border-board-felt/20 rounded px-2 py-1 text-sm focus:outline-none focus:border-board-accent"
-                  />
-                  <button
-                    onClick={handleMagicLink}
-                    disabled={!email.includes('@')}
-                    className="px-3 py-1 rounded bg-amber-700/80 text-amber-50 text-sm disabled:opacity-50"
-                  >
-                    Send link
-                  </button>
-                </div>
-              )}
-              {magicErr && <div className="text-xs text-red-400 mt-2">{magicErr}</div>}
+                <button
+                  type="button"
+                  onClick={() => void handleLinkGoogle()}
+                  disabled={linkingGoogle}
+                  className="rounded bg-amber-700 px-4 py-2 text-sm font-black text-amber-50 disabled:opacity-50"
+                >
+                  {linkingGoogle ? 'Opening Google…' : 'Link Google account'}
+                </button>
+              </div>
+              {linkErr && <div className="text-xs text-red-400 mt-2">{linkErr}</div>}
             </div>
           )}
         </section>
 
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Stat label="Coins" value={wallet?.coins ?? 0} accent />
+          <Stat label="Gems" value={wallet?.gems ?? 0} />
           <Stat label="Finished" value={stats?.totalFinished ?? 0} />
-          <Stat label="AI wins" value={stats?.aiWins ?? 0} accent />
+          <Stat label="AI wins" value={stats?.aiWins ?? 0} />
           <Stat label="AI losses" value={stats?.aiLosses ?? 0} />
           <Stat label="Hot-seat" value={stats?.hotseatPlayed ?? 0} />
         </section>

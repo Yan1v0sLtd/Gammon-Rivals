@@ -75,6 +75,7 @@ export default function SidePanel({
           <div className="absolute inset-[17%] rounded-full bg-gradient-to-b from-[#fff2bd] to-[#68411f]" />
           <Avatar
             seed={identity?.avatarSeed ?? 'placeholder'}
+            imageUrl={identity?.avatarUrl}
             size={innerAvatarSize}
             ring="none"
             className="relative z-10"

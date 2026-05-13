@@ -17,6 +17,7 @@ import { premiumTheme, useBoardThemeConfig, type ThemeLayout } from '../board/th
 import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
+import { formatCompactNumber } from '../lib/format';
 import { createMatch, finishMatch, modeFromAi, saveGame } from '../lib/persistence';
 import {
   makeAIIdentity,
@@ -103,7 +104,7 @@ function loadAlignmentLayout(): ThemeLayout {
 export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { user, profile, isLoading: authLoading } = useAuth();
+  const { user, profile, wallet, progression, isLoading: authLoading } = useAuth();
 
   const opp = params.get('opp');
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
@@ -138,7 +139,11 @@ export default function HotSeat() {
   // local guest for true hot-seat 2-player.
   const selfIdentity: PlayerIdentity = useMemo(() => {
     if (profile) {
-      return { name: profile.display_name, avatarSeed: profile.avatar_seed };
+      return {
+        name: profile.display_name,
+        avatarSeed: profile.avatar_seed,
+        avatarUrl: profile.avatar_url,
+      };
     }
     return makeGuestIdentity();
   }, [profile]);
@@ -326,8 +331,8 @@ export default function HotSeat() {
   const opponentPip = opponentColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = game.board.turn === localColor && !game.isAITurn;
   const isRollForSelf = game.board.turn === localColor;
-  const selfLevel = profile?.level ?? 23;
-  const selfCoins = '400';
+  const selfLevel = progression.level;
+  const selfCoins = formatCompactNumber(wallet?.coins);
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
 
@@ -360,7 +365,7 @@ export default function HotSeat() {
         pipCount: localPip,
         scoreLabel: `${game.match.score[localColor]} / ${game.match.target}`,
         level: selfLevel,
-        stateLabel: 'Rookie',
+        stateLabel: progression.statusLabel,
         coinsLabel: selfCoins,
         isTurn: isLocalTurn && !showGameEndModal,
         timerProgress: isLocalTurn ? turnTimerProgress : 1,
