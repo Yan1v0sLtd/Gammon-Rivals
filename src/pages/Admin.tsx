@@ -123,6 +123,9 @@ const sections: readonly Section[] = [
   'Admin Access',
 ];
 
+const TEMP_OPEN_ADMIN_ACCESS = true;
+const temporaryAdminRole: AdminRole = 'owner';
+
 const shopKinds: readonly ShopKind[] = [
   'coin_pack',
   'gem_pack',
@@ -483,9 +486,11 @@ function shopToDraft(row?: ShopItem): ShopDraft {
 export default function Admin() {
   const { user, profile, isLoading } = useAuth();
   const [accessState, setAccessState] = useState<AccessState>(() =>
-    isSupabaseConfigured ? 'checking' : 'missing-config'
+    isSupabaseConfigured ? (TEMP_OPEN_ADMIN_ACCESS ? 'allowed' : 'checking') : 'missing-config'
   );
-  const [role, setRole] = useState<AdminRole | null>(null);
+  const [role, setRole] = useState<AdminRole | null>(
+    TEMP_OPEN_ADMIN_ACCESS && isSupabaseConfigured ? temporaryAdminRole : null
+  );
   const [activeSection, setActiveSection] = useState<Section>('Dashboard');
   const [stats, setStats] = useState<AdminStats>(initialStats);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -545,6 +550,7 @@ export default function Admin() {
 
   useEffect(() => {
     if (!isSupabaseConfigured || isLoading || !user) return;
+    if (TEMP_OPEN_ADMIN_ACCESS) return;
 
     let cancelled = false;
     (async () => {
