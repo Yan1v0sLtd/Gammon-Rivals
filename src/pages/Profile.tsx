@@ -13,9 +13,9 @@ import {
 
 const MODE_LABEL: Record<string, string> = {
   hotseat: 'Hot-seat',
-  'ai-easy': 'AI · Easy',
-  'ai-medium': 'AI · Medium',
-  'ai-hard': 'AI · Hard',
+  'ai-easy': 'AI - Easy',
+  'ai-medium': 'AI - Medium',
+  'ai-hard': 'AI - Hard',
 };
 
 function formatDate(iso: string): string {
@@ -46,6 +46,12 @@ function ownerOutcome(m: MatchSummary): 'won' | 'lost' | 'open' | 'hotseat' {
   return m.winner === 'white' ? 'won' : 'lost';
 }
 
+function modeIcon(mode: string): 'hotseat' | 'online' | 'ai' {
+  if (mode === 'hotseat') return 'hotseat';
+  if (mode.startsWith('ai-')) return 'ai';
+  return 'online';
+}
+
 export default function Profile() {
   const {
     user,
@@ -68,6 +74,7 @@ export default function Profile() {
   const [savingName, setSavingName] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [linkErr, setLinkErr] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -122,6 +129,16 @@ export default function Profile() {
     }
   };
 
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate('/');
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
   const openReplay = async (matchId: string) => {
     try {
       const games = await listGamesForMatch(matchId);
@@ -135,212 +152,251 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen flex items-center justify-center text-board-felt/60">
-        Loading…
+      <main className="profile-page grid min-h-screen place-items-center">
+        <div className="font-display text-sm uppercase text-[#f7d76b]/70">
+          Loading
+        </div>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-      <header className="flex items-center justify-between px-4 py-3 text-board-felt/80">
-        <Link to="/" className="text-board-accent text-sm">
-          ← Home
-        </Link>
-        <div className="text-xs text-board-felt/50">Profile</div>
-        <button
-          type="button"
-          onClick={() => void signOut()}
-          className="text-xs text-board-felt/50 hover:text-board-accent"
-        >
-          Sign out
-        </button>
-      </header>
+  const nextXpText = progression.nextLevelXp
+    ? `${formatCompactNumber(progression.xpNeededForNext)} XP to next level`
+    : 'Max configured level reached';
 
-      <div className="max-w-2xl mx-auto p-4 sm:p-6 flex flex-col gap-6">
-        <section className="rounded-lg border border-board-felt/10 bg-board-felt/5 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <Avatar
-              seed={profile?.avatar_seed ?? 'profile'}
-              imageUrl={profile?.avatar_url}
-              size={86}
-              ring="active"
-            />
-            <div className="flex-1 min-w-0">
+  return (
+    <main className="profile-page min-h-screen px-4 py-[max(1rem,env(safe-area-inset-top))] text-white sm:px-6">
+      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-[61rem] flex-col">
+        <header className="profile-page-header">
+          <Link to="/" className="profile-icon-button" aria-label="Back to lobby">
+            <span className="profile-back-chevron" />
+          </Link>
+          <h1 className="font-display text-[clamp(2rem,5vw,3.45rem)] font-black uppercase drop-shadow-[0_4px_0_rgba(0,0,0,0.35)]">
+            My Profile
+          </h1>
+          <button type="button" className="profile-icon-button" aria-label="Settings">
+            <span className="profile-gear-icon" />
+          </button>
+        </header>
+
+        <section className="profile-main-card">
+          <div className="profile-identity-grid">
+            <div className="profile-avatar-stage">
+              <div className="profile-avatar-glow" />
+              <Avatar
+                seed={profile?.avatar_seed ?? 'profile'}
+                imageUrl={profile?.avatar_url}
+                size={172}
+                ring="none"
+                className="profile-avatar-image"
+              />
+              <div className="profile-level-shield">
+                <span>{progression.level}</span>
+              </div>
+            </div>
+
+            <div className="min-w-0">
               {editing ? (
-                <div className="flex gap-2">
+                <div className="profile-name-editor">
                   <input
                     value={draftName}
                     onChange={(e) => setDraftName(e.target.value)}
-                    className="flex-1 bg-board-felt/10 border border-board-felt/20 rounded px-2 py-1 text-board-felt focus:outline-none focus:border-board-accent"
+                    className="profile-name-input"
                     maxLength={32}
                     autoFocus
                   />
                   <button
-                    onClick={saveName}
+                    type="button"
+                    onClick={() => void saveName()}
                     disabled={savingName || draftName.trim().length === 0}
-                    className="px-3 py-1 rounded bg-amber-700 text-amber-50 text-sm disabled:opacity-50"
+                    className="profile-small-action"
                   >
                     Save
                   </button>
                   <button
+                    type="button"
                     onClick={() => setEditing(false)}
-                    className="px-3 py-1 rounded text-board-felt/60 text-sm hover:text-board-felt"
+                    className="profile-small-action profile-small-action--ghost"
                   >
                     Cancel
                   </button>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
-                  <h1 className="font-display text-2xl text-board-accent truncate">
-                    {profile?.display_name ?? '…'}
-                  </h1>
+                <div className="flex min-w-0 items-center gap-3">
+                  <h2 className="truncate font-display text-[clamp(2.35rem,6vw,4.4rem)] font-black leading-none text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.42)]">
+                    {profile?.display_name ?? 'Player'}
+                  </h2>
                   <button
+                    type="button"
                     onClick={startEditName}
-                    className="text-xs text-board-felt/50 hover:text-board-accent transition"
+                    className="profile-edit-button"
+                    aria-label="Edit name"
                   >
-                    edit
+                    <span />
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-3 mt-1">
-                {profile && (
-                  <div className="text-xs text-board-felt/60">
-                    Rating <span className="text-board-accent font-mono">{profile.rating}</span>
-                  </div>
-                )}
-                {isGuest && (
-                  <div className="text-xs text-board-felt/50">Guest account</div>
-                )}
-              </div>
-              <div className="mt-3 grid gap-2">
-                <div className="flex items-center justify-between text-xs text-board-felt/60">
-                  <span>
-                    Level {progression.level} · {progression.statusLabel}
+
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <span className="profile-rank-badge">
+                  <span className="profile-rank-shield" aria-hidden="true">
+                    <span />
                   </span>
-                  <span>{progression.progressLabel}</span>
+                  <span>{progression.statusLabel}</span>
+                </span>
+                <span className="profile-rating">
+                  <span className="profile-rating-cup" aria-hidden="true" />
+                  Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
+                </span>
+              </div>
+
+              <div className="profile-progress-panel mt-5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-display text-xl font-black uppercase text-white">
+                    Level {progression.level}
+                  </span>
+                  <span className="profile-progress-arrow" aria-hidden="true" />
+                  <span className="font-display text-xl font-black uppercase text-[#c895ff]">
+                    Level {progression.nextLevelXp ? progression.level + 1 : progression.level}
+                  </span>
                 </div>
-                <div className="h-3 overflow-hidden rounded-full border border-board-felt/10 bg-black/35">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-200"
-                    style={{ width: `${progression.progressPercent}%` }}
-                  />
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="profile-xp-bar" aria-label={`XP progress ${progression.progressLabel}`}>
+                    <span style={{ width: `${progression.progressPercent}%` }} />
+                  </div>
+                  <span className="profile-xp-percent">{progression.progressLabel}</span>
                 </div>
-                <div className="text-xs text-board-felt/45">
-                  {progression.nextLevelXp
-                    ? `${formatCompactNumber(progression.xpNeededForNext)} XP to next level`
-                    : 'Max configured level reached'}
-                </div>
+                <div className="mt-3 text-lg font-bold text-white/55">{nextXpText}</div>
               </div>
             </div>
           </div>
 
           {isGuest && (
-            <div className="mt-4 pt-4 border-t border-board-felt/10">
-              <div className="text-xs uppercase tracking-wider text-board-felt/50 mb-2">
-                Save progress
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-board-felt/65">
+            <div className="profile-save-progress">
+              <div>
+                <div className="font-display text-lg font-black uppercase text-[#f7d76b]">
+                  Save progress
+                </div>
+                <div className="text-sm font-semibold text-white/64">
                   Link Google to keep XP, coins, boards, purchases, and match history.
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void handleLinkGoogle()}
-                  disabled={linkingGoogle}
-                  className="rounded bg-amber-700 px-4 py-2 text-sm font-black text-amber-50 disabled:opacity-50"
-                >
-                  {linkingGoogle ? 'Opening Google…' : 'Link Google account'}
-                </button>
               </div>
-              {linkErr && <div className="text-xs text-red-400 mt-2">{linkErr}</div>}
+              <button
+                type="button"
+                onClick={() => void handleLinkGoogle()}
+                disabled={linkingGoogle}
+                className="profile-google-button"
+              >
+                {linkingGoogle ? 'Opening Google...' : 'Link Google account'}
+              </button>
+              {linkErr && <div className="text-sm font-bold text-rose-300">{linkErr}</div>}
             </div>
           )}
         </section>
 
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <Stat label="Coins" value={wallet?.coins ?? 0} accent />
-          <Stat label="Gems" value={wallet?.gems ?? 0} />
-          <Stat label="Finished" value={stats?.totalFinished ?? 0} />
-          <Stat label="AI wins" value={stats?.aiWins ?? 0} />
-          <Stat label="AI losses" value={stats?.aiLosses ?? 0} />
-          <Stat label="Hot-seat" value={stats?.hotseatPlayed ?? 0} />
+        <section className="profile-stat-grid" aria-label="Player stats">
+          <Stat icon="coins" label="Coins" value={wallet?.coins ?? 0} />
+          <Stat icon="gems" label="Gems" value={wallet?.gems ?? 0} />
+          <Stat icon="finished" label="Finished" value={stats?.totalFinished ?? 0} />
+          <Stat icon="wins" label="AI Wins" value={stats?.aiWins ?? 0} />
+          <Stat icon="losses" label="AI Losses" value={stats?.aiLosses ?? 0} wide />
+          <Stat icon="hotseat" label="Hot-seat" value={stats?.hotseatPlayed ?? 0} wide />
         </section>
 
-        <section>
-          <div className="text-xs uppercase tracking-wider text-board-felt/50 mb-2">
-            Match history
-          </div>
-          {loadErr && <div className="text-xs text-red-400">{loadErr}</div>}
+        <section className="profile-history-panel">
+          <h3 className="font-display text-2xl font-black uppercase text-white">
+            Match History
+          </h3>
+          {loadErr && <div className="mt-3 text-sm font-bold text-rose-300">{loadErr}</div>}
           {matches === null ? (
-            <div className="text-board-felt/40 text-sm">Loading…</div>
+            <div className="py-8 text-center font-bold text-white/45">Loading...</div>
           ) : matches.length === 0 ? (
-            <div className="text-board-felt/40 text-sm py-6 text-center">
-              No matches yet. <Link to="/" className="text-board-accent">Start one</Link>.
+            <div className="py-8 text-center font-bold text-white/45">
+              No matches yet. <Link to="/" className="text-[#f7d76b]">Start one</Link>.
             </div>
           ) : (
-            <ul className="flex flex-col gap-1">
+            <ul className="mt-4 flex flex-col gap-3">
               {matches.map((m) => {
                 const outcome = ownerOutcome(m);
-                const outcomeClass =
-                  outcome === 'won'
-                    ? 'text-emerald-400'
-                    : outcome === 'lost'
-                    ? 'text-rose-400'
-                    : outcome === 'open'
-                    ? 'text-amber-300/70'
-                    : 'text-board-felt/60';
                 const outcomeLabel =
                   outcome === 'won'
-                    ? 'won'
+                    ? 'Won'
                     : outcome === 'lost'
-                    ? 'lost'
+                    ? 'Lost'
                     : outcome === 'open'
-                    ? 'in progress'
-                    : 'hot-seat';
+                    ? 'In Progress'
+                    : 'Hot-seat';
                 return (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-board-felt/5 hover:bg-board-felt/10 cursor-pointer border border-transparent hover:border-board-felt/20 transition"
-                    onClick={() => m.finished_at && openReplay(m.id)}
-                    title={m.finished_at ? 'Open replay' : 'Open match'}
-                  >
-                    <div className="flex flex-col min-w-0">
-                      <div className="text-sm">
-                        <span className="font-display">{MODE_LABEL[m.mode] ?? m.mode}</span>
-                        <span className="text-board-felt/40"> · to {m.target}</span>
-                      </div>
-                      <div className="text-xs text-board-felt/50">
-                        {formatDate(m.finished_at ?? m.started_at)}
-                        {m.game_count > 0 && ` · ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="font-mono text-sm tabular-nums">
-                        {m.white_score}–{m.black_score}
-                      </div>
-                      <div className={`text-xs uppercase tracking-wider w-16 text-right ${outcomeClass}`}>
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      className="profile-history-row"
+                      onClick={() => m.finished_at && void openReplay(m.id)}
+                      disabled={!m.finished_at}
+                    >
+                      <span className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`} aria-hidden="true">
+                        <span />
+                      </span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <span className="block truncate font-display text-xl font-black text-white">
+                          {MODE_LABEL[m.mode] ?? m.mode}{' '}
+                          <span className="font-sans text-base font-bold text-[#f7d76b]">- to {m.target}</span>
+                        </span>
+                        <span className="mt-1 block text-base font-semibold text-white/48">
+                          {formatDate(m.finished_at ?? m.started_at)}
+                          {m.game_count > 0 && ` - ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
+                        </span>
+                      </span>
+                      <span className="profile-history-score">
+                        {m.white_score} - {m.black_score}
+                      </span>
+                      <span className={`profile-history-status profile-history-status--${outcome}`}>
                         {outcomeLabel}
-                      </div>
-                    </div>
+                      </span>
+                    </button>
                   </li>
                 );
               })}
             </ul>
           )}
         </section>
+
+        {!isGuest ? (
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            disabled={signingOut}
+            className="profile-logout-button"
+          >
+            <span className="profile-logout-icon" aria-hidden="true" />
+            {signingOut ? 'Logging out...' : 'Log Out'}
+          </button>
+        ) : null}
       </div>
     </main>
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function Stat({
+  icon,
+  label,
+  value,
+  wide = false,
+}: {
+  readonly icon: 'coins' | 'gems' | 'finished' | 'wins' | 'losses' | 'hotseat';
+  readonly label: string;
+  readonly value: number;
+  readonly wide?: boolean;
+}) {
   return (
-    <div className="bg-board-felt/5 border border-board-felt/10 rounded-md p-3 text-center">
-      <div className={`font-display text-2xl ${accent ? 'text-board-accent' : 'text-board-felt'}`}>
-        {value}
+    <div className={`profile-stat-card ${wide ? 'profile-stat-card--wide' : ''}`}>
+      <span className={`profile-stat-icon profile-stat-icon--${icon}`} aria-hidden="true">
+        <span />
+      </span>
+      <div className="font-display text-[clamp(2.5rem,7vw,4rem)] font-black leading-none text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.36)]">
+        {formatCompactNumber(value)}
       </div>
-      <div className="text-[10px] uppercase tracking-wider text-board-felt/50">{label}</div>
+      <div className="mt-1 text-base font-black uppercase text-white/58">{label}</div>
     </div>
   );
 }

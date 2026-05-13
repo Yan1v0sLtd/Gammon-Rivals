@@ -14,7 +14,6 @@ interface LobbyTopBarProps {
   readonly progression: ProfileProgression;
   readonly isGuest: boolean;
   onLinkGoogle(): Promise<void>;
-  onSignOut(): Promise<void>;
 }
 
 function CurrencyPill({
@@ -91,10 +90,8 @@ export function LobbyTopBar({
   progression,
   isGuest,
   onLinkGoogle,
-  onSignOut,
 }: LobbyTopBarProps) {
   const [linking, setLinking] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const name = profile?.display_name ?? 'Player';
   const currencies = [
     {
@@ -120,74 +117,56 @@ export function LobbyTopBar({
     }
   };
 
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    try {
-      await onSignOut();
-    } finally {
-      setSigningOut(false);
-    }
-  };
-
   return (
-    <header className="relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(14rem,1fr)_auto] md:items-start">
-      <div className="group flex min-w-0 items-center gap-3">
-        <Link to="/profile" className="relative grid h-[6.1rem] w-[6.1rem] shrink-0 place-items-center">
-          <div className="absolute left-[1.05rem] top-[1.05rem] grid h-[4rem] w-[4rem] place-items-center rounded-full bg-gradient-to-b from-[#fff0bd] via-[#7d4b25] to-[#201421] shadow-inner">
-            <Avatar
-              seed={profile?.avatar_seed ?? 'guest'}
-              imageUrl={profile?.avatar_url}
-              size={64}
-              ring="none"
-            />
-          </div>
-          <img
-            src="/lobby/icons/avatar-frame.webp"
-            alt=""
-            className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_7px_11px_rgba(0,0,0,0.36)]"
-            draggable={false}
-          />
-          <div className="absolute bottom-1 right-2 grid h-7 min-w-7 place-items-center rounded-full border border-[#ffd56c] bg-[#19233a] px-1 text-sm font-black text-[#ffe9a5] shadow-[0_2px_5px_rgba(0,0,0,0.4)]">
-            {progression.level}
-          </div>
-        </Link>
-        <div className="min-w-0">
-          <Link to="/profile" className="block">
-            <div className="truncate font-display text-2xl font-black text-white drop-shadow">{name}</div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="rounded-md border border-[#f0a54b] bg-[#8b552e] px-2 py-0.5 text-sm font-black text-[#ffd779]">
-                {progression.statusLabel}
+    <header className="relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
+      <div className="lobby-profile-card group">
+        <div className="lobby-profile-avatar-wrap">
+          <Link to="/profile" className="block" aria-label="Open profile">
+            <div className="lobby-profile-avatar-core">
+              <Avatar
+                seed={profile?.avatar_seed ?? 'guest'}
+                imageUrl={profile?.avatar_url}
+                size={78}
+                ring="none"
+              />
+            </div>
+            <div className="lobby-profile-level-shield">
+              {progression.level}
+            </div>
+          </Link>
+        </div>
+        <div className="lobby-profile-copy">
+          <Link to="/profile" className="block min-w-0" aria-label="Open profile">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="truncate font-display text-[clamp(1.45rem,2.2vw,2.25rem)] font-black leading-none text-white drop-shadow-[0_3px_0_rgba(0,0,0,0.44)]">
+                {name}
+              </div>
+              <span className="lobby-profile-edit" aria-hidden="true">i</span>
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="lobby-rank-badge">
+                <span className="lobby-rank-star" aria-hidden="true" />
+                <span>{progression.statusLabel}</span>
               </span>
-              <span className="h-3 w-28 overflow-hidden rounded-full border border-black/50 bg-black/45 shadow-inner">
+              <span className="lobby-profile-progress">
                 <span
-                  className="block h-full rounded-full bg-gradient-to-r from-[#ff8e1d] to-[#ffe063]"
+                  className="lobby-profile-progress-fill"
                   style={{ width: `${progression.progressPercent}%` }}
                 />
               </span>
-            </div>
-            <div className="mt-2 flex w-fit items-center gap-2 rounded-full bg-[#071429]/65 px-3 py-1 font-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              <span className="text-xl text-[#ffd45c]">*</span>
-              <span>{progression.progressLabel}</span>
+              <span className="lobby-profile-progress-text">{progression.progressLabel}</span>
             </div>
           </Link>
           {isGuest && (
             <button
               type="button"
-              onClick={() => void handleLinkGoogle()}
+              onClick={() => {
+                void handleLinkGoogle();
+              }}
               disabled={linking}
               className="mt-2 rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
             >
-              {linking ? 'Opening Google…' : 'Save progress'}
-            </button>
-          )}
-          {!isGuest && (
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              disabled={signingOut}
-              className="ml-2 mt-2 rounded-full bg-black/28 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-white/62 transition hover:bg-black/42 hover:text-white disabled:opacity-50"
-            >
-              {signingOut ? 'Logging out…' : 'Log out'}
+              {linking ? 'Opening Google...' : 'Save progress'}
             </button>
           )}
         </div>

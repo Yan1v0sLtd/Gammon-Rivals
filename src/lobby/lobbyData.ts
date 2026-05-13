@@ -59,8 +59,9 @@ export interface LobbyOffer {
 export interface LobbyNavItem {
   readonly id: string;
   readonly label: string;
-  readonly symbol: string;
+  readonly icon: 'missions' | 'road' | 'bonus' | 'trophy' | 'vip';
   readonly badge?: string;
+  readonly featured?: boolean;
 }
 
 export const lobbyBoards: readonly LobbyBoard[] = [
@@ -127,10 +128,9 @@ export const lobbyOffers: readonly LobbyOffer[] = [
 ];
 
 export const lobbyNavItems: readonly LobbyNavItem[] = [
-  { id: 'store', label: 'Store', symbol: '$' },
-  { id: 'boards', label: 'Boards', symbol: 'B' },
-  { id: 'missions', label: 'Missions', symbol: 'T', badge: '3' },
-  { id: 'leaderboard', label: 'Leaders', symbol: '1' },
-  { id: 'collection', label: 'Collection', symbol: 'D' },
-  { id: 'vip', label: 'VIP Club', symbol: 'V' },
+  { id: 'daily-missions', label: 'Daily Missions', icon: 'missions' },
+  { id: 'road-board', label: 'Road Board', icon: 'road' },
+  { id: 'hourly-bonus', label: 'Hourly Bonus', icon: 'bonus', featured: true },
+  { id: 'tournaments', label: 'Tournaments', icon: 'trophy' },
+  { id: 'vip-club', label: 'VIP Club', icon: 'vip' },
 ];

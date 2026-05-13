@@ -11,6 +11,138 @@ html, body, #root {
   -webkit-font-smoothing: antialiased;
 }
 
+.lobby-profile-card {
+  display: flex;
+  min-width: 0;
+  max-width: min(34rem, 100%);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.2rem 0.4rem 0.35rem 0;
+}
+
+.lobby-profile-avatar-wrap {
+  position: relative;
+  width: clamp(5.4rem, 9vw, 7.8rem);
+  height: clamp(5.4rem, 9vw, 7.8rem);
+  flex: 0 0 auto;
+}
+
+.lobby-profile-avatar-core {
+  position: absolute;
+  inset: 0.32rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(180, 80, 255, 0.95), rgba(83, 17, 135, 0.82) 55%, rgba(21, 7, 49, 0.96)),
+    linear-gradient(135deg, #fff4b1, #ca7624 45%, #4e228a 82%);
+  box-shadow:
+    0 0 0 0.22rem #1b123b,
+    0 0 0 0.38rem #ffcc42,
+    0 0 0 0.48rem rgba(255, 255, 255, 0.36),
+    0 0 1.15rem rgba(173, 69, 255, 0.82),
+    0 0.55rem 0.95rem rgba(0, 0, 0, 0.45);
+}
+
+.lobby-profile-avatar-core img {
+  box-shadow: inset 0 0 1rem rgba(255, 255, 255, 0.18);
+}
+
+.lobby-profile-level-shield {
+  position: absolute;
+  right: 0.05rem;
+  bottom: -0.08rem;
+  display: grid;
+  width: clamp(2.1rem, 3.25vw, 2.7rem);
+  height: clamp(2.55rem, 3.9vw, 3.3rem);
+  place-items: center;
+  clip-path: polygon(50% 0, 94% 18%, 86% 78%, 50% 100%, 14% 78%, 6% 18%);
+  background:
+    linear-gradient(180deg, rgba(255, 246, 173, 0.95), rgba(223, 167, 45, 0.95) 26%, #131936 27%, #14163b 100%);
+  color: #fff6c7;
+  font: 900 clamp(1rem, 1.7vw, 1.32rem) / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0.25rem 0.7rem rgba(0, 0, 0, 0.5);
+}
+
+.lobby-profile-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.lobby-profile-edit {
+  display: grid;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 227, 131, 0.5);
+  border-radius: 0.36rem;
+  background: rgba(3, 11, 28, 0.55);
+  color: #ffda75;
+  font: 900 0.95rem / 1 Georgia, serif;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 0.25rem 0.6rem rgba(0, 0, 0, 0.35);
+}
+
+.lobby-rank-badge {
+  display: inline-flex;
+  min-width: 6.4rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid #f7c457;
+  border-radius: 0.48rem;
+  background:
+    linear-gradient(180deg, #f3c758 0%, #a75d15 45%, #70400f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(67, 27, 0, 0.62),
+    0 0.25rem 0.65rem rgba(0, 0, 0, 0.36);
+  color: #fff0b2;
+  font: 900 0.9rem / 1 "Segoe UI", sans-serif;
+  padding: 0.22rem 0.68rem 0.28rem 0.42rem;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(58, 23, 0, 0.72);
+}
+
+.lobby-rank-star {
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 79% 91%, 50% 70%, 21% 91%, 31% 56%, 2% 35%, 38% 34%);
+  background: linear-gradient(180deg, #fff8a8, #ffc11d 52%, #bf6710);
+  box-shadow: 0 0 0.45rem rgba(255, 213, 63, 0.72);
+}
+
+.lobby-profile-progress {
+  display: block;
+  width: clamp(6.4rem, 13vw, 11rem);
+  height: 1rem;
+  overflow: hidden;
+  border: 2px solid rgba(3, 9, 20, 0.72);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #04070f, #182235);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.lobby-profile-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), transparent 36%),
+    linear-gradient(90deg, #ff9d1f, #ffe166);
+  box-shadow: 0 0 0.75rem rgba(255, 198, 45, 0.85);
+}
+
+.lobby-profile-progress-text {
+  min-width: 2.7rem;
+  color: white;
+  font: 900 0.9rem / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.54);
+}
+
 .lobby-background-layer {
   pointer-events: none;
   will-change: opacity;
@@ -83,18 +215,18 @@ html, body, #root {
 
 .lobby-bottom-nav-shell {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 24%),
-    linear-gradient(180deg, rgba(25, 30, 39, 0.94), rgba(5, 14, 27, 0.98));
-  clip-path: polygon(5.2% 0, 94.8% 0, 100% 100%, 0 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.58);
-  border-top-left-radius: 2.8rem;
-  border-top-right-radius: 2.8rem;
+    radial-gradient(ellipse at 50% -25%, rgba(255, 229, 141, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(34, 39, 49, 0.95), rgba(4, 13, 26, 0.99));
+  border: 1px solid rgba(255, 238, 184, 0.48);
+  border-bottom: 0;
+  border-top-left-radius: clamp(1.4rem, 4vw, 3.4rem);
+  border-top-right-radius: clamp(1.4rem, 4vw, 3.4rem);
   box-shadow:
-    0 -9px 24px rgba(0, 0, 0, 0.32),
+    0 -0.65rem 2rem rgba(0, 0, 0, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.20),
-    inset 0 14px 22px rgba(255, 255, 255, 0.04);
+    inset 0 1.1rem 1.8rem rgba(255, 255, 255, 0.055);
 }
 
 .lobby-bottom-nav-shell::after {
@@ -120,6 +252,859 @@ html, body, #root {
     rgba(255, 255, 255, 0.08),
     transparent
   );
+}
+
+.lobby-bottom-nav-item.is-featured {
+  margin-top: -2.85rem;
+}
+
+.lobby-nav-label {
+  max-width: 9rem;
+  text-align: center;
+  color: rgba(255, 239, 194, 0.94);
+  font: 900 clamp(0.7rem, 1vw, 1rem) / 1.05 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+
+.lobby-nav-icon {
+  position: relative;
+  display: grid;
+  width: clamp(2.8rem, 5vw, 4.4rem);
+  height: clamp(2.5rem, 4.5vw, 3.75rem);
+  place-items: center;
+  color: #f6cf72;
+  filter: drop-shadow(0 0.25rem 0.2rem rgba(0, 0, 0, 0.42));
+}
+
+.lobby-bottom-nav-item.is-featured .lobby-nav-icon {
+  width: clamp(5.2rem, 8vw, 7.2rem);
+  height: clamp(5.2rem, 8vw, 7.2rem);
+  border: 0.18rem solid rgba(255, 224, 96, 0.96);
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 232, 124, 0.38), transparent 38%),
+    linear-gradient(180deg, rgba(28, 30, 43, 0.96), rgba(4, 14, 27, 0.98));
+  box-shadow:
+    0 0 0 0.18rem rgba(81, 43, 5, 0.92),
+    0 0 1.1rem rgba(255, 190, 27, 0.95),
+    0 0.55rem 1rem rgba(0, 0, 0, 0.5),
+    inset 0 0 1.5rem rgba(255, 211, 79, 0.18);
+}
+
+.lobby-bottom-nav-item.is-featured .lobby-nav-label {
+  margin-top: -0.1rem;
+}
+
+.lobby-nav-icon-mark,
+.lobby-nav-icon-mark::before,
+.lobby-nav-icon-mark::after {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.lobby-nav-icon--missions .lobby-nav-icon-mark {
+  width: 1.85rem;
+  height: 2.35rem;
+  border: 0.18rem solid currentColor;
+  border-radius: 0.28rem;
+  box-shadow: inset 0 0 0 0.15rem rgba(255, 255, 255, 0.08);
+}
+
+.lobby-nav-icon--missions .lobby-nav-icon-mark::before {
+  left: 0.32rem;
+  right: 0.32rem;
+  top: -0.38rem;
+  height: 0.42rem;
+  border-radius: 0.2rem;
+  background: currentColor;
+}
+
+.lobby-nav-icon--missions .lobby-nav-icon-mark::after {
+  right: -0.55rem;
+  bottom: -0.28rem;
+  width: 0.95rem;
+  height: 0.6rem;
+  border-left: 0.2rem solid currentColor;
+  border-bottom: 0.2rem solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.lobby-nav-icon--road .lobby-nav-icon-mark {
+  width: 2.7rem;
+  height: 1.6rem;
+  border-radius: 0.2rem;
+  background:
+    linear-gradient(90deg, transparent 46%, #1f1730 46% 54%, transparent 54%),
+    repeating-linear-gradient(90deg, currentColor 0 0.34rem, transparent 0.34rem 0.55rem);
+  box-shadow: 0 0 0 0.17rem rgba(255, 224, 133, 0.52);
+}
+
+.lobby-nav-icon--bonus .lobby-nav-icon-mark {
+  width: 2.8rem;
+  height: 2.25rem;
+  border-radius: 0.22rem;
+  background: linear-gradient(180deg, #ffeaa0, #d09122 52%, #9c5d0d);
+  box-shadow: inset 0 0 0 0.15rem rgba(72, 38, 0, 0.32);
+}
+
+.lobby-nav-icon--bonus .lobby-nav-icon-mark::before {
+  left: 50%;
+  top: -0.65rem;
+  width: 2.5rem;
+  height: 0.9rem;
+  border: 0.18rem solid currentColor;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  transform: translateX(-50%);
+}
+
+.lobby-nav-icon--bonus .lobby-nav-icon-mark::after {
+  left: 50%;
+  top: -0.1rem;
+  width: 0.34rem;
+  height: 2.55rem;
+  border-radius: 0.18rem;
+  background: #fff3b4;
+  transform: translateX(-50%);
+}
+
+.lobby-nav-icon--trophy .lobby-nav-icon-mark {
+  width: 2.25rem;
+  height: 1.8rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+  background: linear-gradient(180deg, #fff1ac, #d79a26 56%, #95560d);
+}
+
+.lobby-nav-icon--trophy .lobby-nav-icon-mark::before {
+  left: -0.55rem;
+  top: 0.1rem;
+  width: 0.7rem;
+  height: 0.9rem;
+  border: 0.18rem solid currentColor;
+  border-right: 0;
+  border-radius: 0.5rem 0 0 0.5rem;
+}
+
+.lobby-nav-icon--trophy .lobby-nav-icon-mark::after {
+  right: -0.55rem;
+  top: 0.1rem;
+  width: 0.7rem;
+  height: 0.9rem;
+  border: 0.18rem solid currentColor;
+  border-left: 0;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.lobby-nav-icon--vip .lobby-nav-icon-mark {
+  width: 2.35rem;
+  height: 2.75rem;
+  clip-path: polygon(50% 0, 92% 16%, 84% 74%, 50% 100%, 16% 74%, 8% 16%);
+  background: linear-gradient(180deg, #fff0a5, #d89825 45%, #82500c);
+}
+
+.lobby-nav-icon--vip .lobby-nav-icon-mark::before {
+  content: 'VIP';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #2b1930;
+  font: 900 0.72rem / 1 "Segoe UI", sans-serif;
+}
+
+.lobby-nav-badge {
+  position: absolute;
+  top: 0.2rem;
+  right: 23%;
+  min-width: 1.45rem;
+  border-radius: 9999px;
+  background: #df3131;
+  color: white;
+  font: 900 0.82rem / 1 "Segoe UI", sans-serif;
+  padding: 0.2rem 0.36rem;
+  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.45);
+}
+
+.profile-page {
+  background:
+    radial-gradient(circle at 22% 12%, rgba(133, 55, 255, 0.3), transparent 30rem),
+    radial-gradient(circle at 82% 8%, rgba(34, 82, 185, 0.22), transparent 26rem),
+    radial-gradient(circle at 50% 100%, rgba(141, 22, 150, 0.24), transparent 34rem),
+    linear-gradient(180deg, #050817 0%, #09051b 48%, #030611 100%);
+}
+
+.profile-page-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0 1.8rem;
+  text-align: center;
+}
+
+.profile-icon-button {
+  position: relative;
+  display: grid;
+  width: clamp(3.4rem, 7vw, 4.9rem);
+  height: clamp(3.4rem, 7vw, 4.9rem);
+  place-items: center;
+  border: 1px solid rgba(255, 201, 57, 0.85);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, rgba(31, 32, 61, 0.94), rgba(10, 11, 34, 0.98)),
+    radial-gradient(circle at 50% 0, rgba(255, 211, 70, 0.15), transparent 62%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(145, 71, 255, 0.32),
+    0 0.45rem 1rem rgba(0, 0, 0, 0.42);
+}
+
+.profile-back-chevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-left: 0.42rem solid #ffcc47;
+  border-bottom: 0.42rem solid #ffcc47;
+  transform: rotate(45deg) translateX(0.12rem);
+  filter: drop-shadow(0 0.12rem 0 rgba(0, 0, 0, 0.5));
+}
+
+.profile-gear-icon {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  border: 0.45rem dashed #ffcc47;
+  border-radius: 50%;
+  filter: drop-shadow(0 0.12rem 0 rgba(0, 0, 0, 0.5));
+}
+
+.profile-gear-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0.38rem;
+  border-radius: inherit;
+  background: #0b1028;
+  box-shadow: inset 0 0 0 0.18rem rgba(255, 204, 71, 0.7);
+}
+
+.profile-main-card,
+.profile-history-panel,
+.profile-stat-grid {
+  border: 1px solid rgba(177, 75, 255, 0.38);
+  background:
+    radial-gradient(circle at 18% 18%, rgba(152, 51, 245, 0.24), transparent 26rem),
+    linear-gradient(180deg, rgba(15, 12, 42, 0.9), rgba(6, 5, 25, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1rem 2rem rgba(0, 0, 0, 0.36);
+}
+
+.profile-main-card {
+  border-color: rgba(255, 137, 33, 0.75);
+  border-radius: 1.55rem;
+  padding: clamp(1.4rem, 4vw, 2.35rem);
+}
+
+.profile-identity-grid {
+  display: grid;
+  grid-template-columns: minmax(10rem, 17rem) minmax(0, 1fr);
+  gap: clamp(1.4rem, 4vw, 2.4rem);
+  align-items: center;
+}
+
+.profile-avatar-stage {
+  position: relative;
+  display: grid;
+  min-height: 16.5rem;
+  place-items: center;
+}
+
+.profile-avatar-glow {
+  position: absolute;
+  width: min(92%, 15.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 48% 45%, rgba(224, 132, 255, 0.86), rgba(115, 27, 197, 0.54) 54%, transparent 70%);
+  filter: blur(0.15rem);
+  box-shadow: 0 0 2.2rem rgba(176, 68, 255, 0.82);
+}
+
+.profile-avatar-image {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fff4b1, #cf861e 48%, #6027af);
+  box-shadow:
+    0 0 0 0.35rem #17133b,
+    0 0 0 0.62rem #ffd159,
+    0 0 0 0.78rem rgba(255, 255, 255, 0.34),
+    0 0.9rem 1.4rem rgba(0, 0, 0, 0.45);
+}
+
+.profile-level-shield {
+  position: absolute;
+  z-index: 2;
+  right: calc(50% - 6.3rem);
+  bottom: 0.7rem;
+  display: grid;
+  width: 4.2rem;
+  height: 5.15rem;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
+  background:
+    linear-gradient(180deg, #fff0a5, #d6931f 26%, #111739 27%, #14133c 100%);
+  color: #fff8c7;
+  font: 900 2.15rem / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 0.18rem 0 rgba(0, 0, 0, 0.65);
+  box-shadow: 0 0.4rem 1rem rgba(0, 0, 0, 0.52);
+}
+
+.profile-name-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.profile-name-input {
+  min-width: min(100%, 22rem);
+  flex: 1 1 16rem;
+  border: 1px solid rgba(255, 214, 91, 0.45);
+  border-radius: 0.7rem;
+  background: rgba(0, 0, 0, 0.36);
+  color: white;
+  font: 900 1.6rem / 1 "Segoe UI", sans-serif;
+  padding: 0.85rem 1rem;
+  outline: none;
+}
+
+.profile-name-input:focus {
+  border-color: #ffd85d;
+  box-shadow: 0 0 0 0.2rem rgba(255, 216, 93, 0.16);
+}
+
+.profile-small-action {
+  border-radius: 0.7rem;
+  background: linear-gradient(180deg, #ffe27c, #e49a20);
+  color: #26120a;
+  font-weight: 900;
+  padding: 0.72rem 1rem;
+  box-shadow: 0 0.24rem 0 #784100;
+}
+
+.profile-small-action--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: none;
+}
+
+.profile-edit-button {
+  position: relative;
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 220, 101, 0.38);
+  border-radius: 0.6rem;
+  background: rgba(7, 8, 28, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.profile-edit-button span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.2rem;
+  height: 0.35rem;
+  border-radius: 9999px;
+  background: #ffc940;
+  transform: translate(-50%, -50%) rotate(-38deg);
+}
+
+.profile-edit-button span::after {
+  content: '';
+  position: absolute;
+  right: -0.28rem;
+  top: 0.01rem;
+  width: 0;
+  height: 0;
+  border-left: 0.34rem solid #ffc940;
+  border-top: 0.16rem solid transparent;
+  border-bottom: 0.16rem solid transparent;
+}
+
+.profile-rank-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid #ffd462;
+  border-radius: 0.8rem;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 108, 0.96), #b56a14 48%, #74400b);
+  color: #211004;
+  font: 900 clamp(1.35rem, 3.1vw, 2rem) / 1 "Segoe UI", sans-serif;
+  padding: 0.22rem 1rem 0.34rem 0.28rem;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 0.45rem 0.95rem rgba(0, 0, 0, 0.38);
+}
+
+.profile-rank-shield {
+  position: relative;
+  display: grid;
+  width: 3rem;
+  height: 3.45rem;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
+  background: linear-gradient(180deg, #ffd765, #8d500f);
+}
+
+.profile-rank-shield span {
+  width: 1.72rem;
+  height: 1.72rem;
+  clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 79% 91%, 50% 70%, 21% 91%, 31% 56%, 2% 35%, 38% 34%);
+  background: linear-gradient(180deg, #fff8b8, #ffc11f 55%, #ae5c09);
+}
+
+.profile-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.65);
+  font: 800 1.25rem / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profile-rating strong {
+  color: #ffd449;
+}
+
+.profile-rating-cup {
+  width: 1.35rem;
+  height: 1.15rem;
+  border-radius: 0 0 0.55rem 0.55rem;
+  background: linear-gradient(180deg, #fff3ad, #d58e18);
+  box-shadow: 0 0 0.45rem rgba(255, 197, 51, 0.45);
+}
+
+.profile-progress-panel {
+  border: 1px solid rgba(66, 63, 150, 0.55);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, rgba(12, 17, 58, 0.82), rgba(7, 8, 36, 0.94));
+  padding: clamp(1rem, 2.6vw, 1.45rem);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.profile-progress-arrow {
+  width: 1rem;
+  height: 1rem;
+  border-right: 0.38rem solid #ffd25b;
+  border-bottom: 0.38rem solid #ffd25b;
+  transform: rotate(-45deg);
+  filter: drop-shadow(0 0.18rem 0 rgba(0, 0, 0, 0.55));
+}
+
+.profile-xp-bar {
+  position: relative;
+  flex: 1 1 auto;
+  height: clamp(1.5rem, 4vw, 2.3rem);
+  overflow: hidden;
+  border: 0.18rem solid #ffdc73;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #05091c, #141733);
+  box-shadow:
+    inset 0 0.25rem 0.6rem rgba(0, 0, 0, 0.75),
+    0 0 0 0.12rem rgba(218, 65, 255, 0.46);
+}
+
+.profile-xp-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
+    linear-gradient(90deg, #ff9c1f, #ffdf41);
+  box-shadow: 0 0 1.1rem rgba(255, 198, 32, 0.82);
+}
+
+.profile-xp-percent {
+  min-width: 3.5rem;
+  text-align: right;
+  font: 900 1.8rem / 1 "Segoe UI", sans-serif;
+}
+
+.profile-save-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.2rem;
+}
+
+.profile-google-button {
+  border: 1px solid rgba(255, 220, 100, 0.76);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffe77b, #c87e18);
+  color: #241109;
+  font-weight: 900;
+  padding: 0.85rem 1.1rem;
+  box-shadow: 0 0.28rem 0 #704000;
+}
+
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.55rem;
+  border-radius: 1.35rem;
+  padding: 0.9rem;
+}
+
+.profile-stat-card {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(146, 80, 255, 0.42);
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(146, 67, 255, 0.24), transparent 52%),
+    rgba(9, 9, 34, 0.78);
+  text-align: center;
+  padding: 1.05rem 0.6rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.profile-stat-card--wide {
+  grid-column: span 2;
+  min-height: 8rem;
+  grid-template-columns: auto auto 1fr;
+  justify-content: center;
+  column-gap: 1rem;
+  text-align: left;
+}
+
+.profile-stat-icon {
+  position: relative;
+  display: grid;
+  width: 4.3rem;
+  height: 4.3rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 223, 91, 0.25), rgba(65, 23, 118, 0.82));
+  box-shadow: 0 0 1rem rgba(139, 53, 255, 0.42);
+}
+
+.profile-stat-icon span,
+.profile-stat-icon span::before,
+.profile-stat-icon span::after {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profile-stat-icon--coins span,
+.profile-stat-icon--gems span {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff4a7, #ffb820 52%, #a96106);
+  box-shadow: inset 0 0 0 0.22rem rgba(255, 255, 255, 0.34);
+}
+
+.profile-stat-icon--gems span {
+  clip-path: polygon(18% 18%, 50% 4%, 82% 18%, 96% 44%, 50% 96%, 4% 44%);
+  border-radius: 0;
+  background: linear-gradient(180deg, #ffa8ff, #a43cff 52%, #451283);
+}
+
+.profile-stat-icon--finished span {
+  width: 2rem;
+  height: 2rem;
+  border-left: 0.32rem solid #f5f5ff;
+  border-bottom: 0.32rem solid #f5f5ff;
+  transform: rotate(-45deg);
+}
+
+.profile-stat-icon--wins span {
+  width: 2.25rem;
+  height: 1.9rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+  background: linear-gradient(180deg, #fff2a4, #d89216);
+}
+
+.profile-stat-icon--losses span {
+  width: 2.4rem;
+  height: 2.7rem;
+  clip-path: polygon(50% 0, 92% 16%, 84% 74%, 50% 100%, 16% 74%, 8% 16%);
+  background: linear-gradient(180deg, #d798ff, #7527d9 52%, #35105f);
+}
+
+.profile-stat-icon--hotseat span {
+  width: 1.9rem;
+  height: 2.3rem;
+  border-radius: 48% 48% 42% 42%;
+  background: linear-gradient(180deg, #fff17b, #ff7d1d 42%, #b0002c);
+}
+
+.profile-history-panel {
+  margin-top: 1.05rem;
+  border-radius: 1.2rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+}
+
+.profile-history-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: clamp(0.65rem, 2vw, 1.35rem);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, rgba(26, 25, 55, 0.94), rgba(11, 10, 31, 0.96));
+  padding: 0.88rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.profile-history-row:disabled {
+  cursor: default;
+}
+
+.profile-match-icon {
+  position: relative;
+  display: grid;
+  width: 3.8rem;
+  height: 3.8rem;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, rgba(103, 31, 255, 0.42), rgba(24, 10, 55, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(190, 95, 255, 0.54);
+}
+
+.profile-match-icon span,
+.profile-match-icon span::before,
+.profile-match-icon span::after {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profile-match-icon--hotseat span {
+  width: 1.9rem;
+  height: 1.55rem;
+  border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
+  background: linear-gradient(180deg, #e07dff, #8615d0);
+}
+
+.profile-match-icon--online span {
+  width: 2rem;
+  height: 2rem;
+  border: 0.2rem solid #67ff8f;
+  border-radius: 50%;
+}
+
+.profile-match-icon--ai span {
+  width: 2.1rem;
+  height: 1.65rem;
+  border-radius: 0.42rem;
+  background: linear-gradient(180deg, #68dbff, #2055ff);
+}
+
+.profile-match-icon--ai span::before,
+.profile-match-icon--ai span::after {
+  top: 0.55rem;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: white;
+}
+
+.profile-match-icon--ai span::before {
+  left: 0.55rem;
+}
+
+.profile-match-icon--ai span::after {
+  right: 0.55rem;
+}
+
+.profile-history-score {
+  min-width: 5.6rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding-left: clamp(0.7rem, 2vw, 1.35rem);
+  text-align: center;
+  font: 900 1.55rem / 1 "Segoe UI", sans-serif;
+  color: white;
+}
+
+.profile-history-status {
+  min-width: 7rem;
+  text-align: right;
+  font: 900 1rem / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profile-history-status--won {
+  color: #6dff9a;
+}
+
+.profile-history-status--lost {
+  color: #ff6b8b;
+}
+
+.profile-history-status--open,
+.profile-history-status--hotseat {
+  color: #ffe33d;
+}
+
+.profile-logout-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.7rem 0 0.2rem;
+  min-height: 5.2rem;
+  border: 1px solid rgba(255, 41, 152, 0.62);
+  border-radius: 1.05rem;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 36, 166, 0.18), transparent 58%),
+    linear-gradient(180deg, rgba(40, 7, 56, 0.94), rgba(17, 4, 36, 0.98));
+  color: #ff514d;
+  font: 900 2rem / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.profile-logout-icon {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0.22rem solid currentColor;
+  border-right: 0;
+  border-radius: 0.15rem;
+}
+
+.profile-logout-icon::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 0.78rem;
+  width: 1.4rem;
+  height: 0.46rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.profile-logout-icon::after {
+  content: '';
+  position: absolute;
+  right: -0.32rem;
+  top: 0.5rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-right: 0.24rem solid currentColor;
+  border-bottom: 0.24rem solid currentColor;
+  transform: rotate(-45deg);
+}
+
+@media (max-width: 900px) {
+  .profile-identity-grid {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .profile-identity-grid > div:last-child {
+    display: grid;
+    justify-items: center;
+  }
+
+  .profile-name-editor {
+    justify-content: center;
+  }
+
+  .profile-progress-panel {
+    width: 100%;
+  }
+
+  .profile-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .lobby-profile-card {
+    max-width: 100%;
+  }
+
+  .lobby-profile-progress-text {
+    display: none;
+  }
+
+  .lobby-bottom-nav-shell {
+    height: 6.15rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
+  .lobby-bottom-nav-item.is-featured {
+    margin-top: -1.85rem;
+  }
+
+  .lobby-nav-label {
+    font-size: 0.62rem;
+  }
+
+  .profile-page-header {
+    gap: 0.6rem;
+  }
+
+  .profile-main-card {
+    padding: 1rem;
+  }
+
+  .profile-avatar-stage {
+    min-height: 13.4rem;
+  }
+
+  .profile-avatar-image {
+    transform: scale(0.82);
+  }
+
+  .profile-level-shield {
+    right: calc(50% - 5rem);
+    bottom: 0.35rem;
+    transform: scale(0.84);
+  }
+
+  .profile-stat-card,
+  .profile-stat-card--wide {
+    grid-column: span 1;
+    min-height: 10rem;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .profile-history-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profile-history-score,
+  .profile-history-status {
+    grid-column: 2;
+    min-width: 0;
+    border-left: 0;
+    padding-left: 0;
+    text-align: left;
+  }
+
+  .profile-logout-button {
+    min-height: 4.3rem;
+    font-size: 1.45rem;
+  }
 }
 
 @keyframes lobby-background-fade-in {

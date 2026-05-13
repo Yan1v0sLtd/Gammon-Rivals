@@ -43,7 +43,7 @@ function LobbyBackgroundLayer({
 
 export function LobbyScreen() {
   const navigate = useNavigate();
-  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, signOut } = useAuth();
+  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
   const boards = useLobbyBoards();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('classic-green');
   const [creatingOnline, setCreatingOnline] = useState(false);
@@ -111,7 +111,6 @@ export function LobbyScreen() {
           progression={progression}
           isGuest={isGuest}
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
-          onSignOut={signOut}
         />
 
         <div className="grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
