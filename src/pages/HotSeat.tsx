@@ -335,10 +335,14 @@ export default function HotSeat() {
   const selfCoins = formatCompactNumber(wallet?.coins);
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
+  const whiteName = localColor === 'white' ? selfIdentity.name : opponentIdentity.name;
+  const blackName = localColor === 'black' ? selfIdentity.name : opponentIdentity.name;
+  const gameplayBackground =
+    selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
 
   return (
     <BoardLayout
-      backgroundImage={selectedTheme.backgroundImage}
+      backgroundImage={gameplayBackground}
       header={
         <MatchHeader
           match={game.match as MatchState}
@@ -346,7 +350,8 @@ export default function HotSeat() {
           blackPip={blackPip}
           turnLabel={turnLabel}
           inCrawford={game.inCrawfordGame}
-          onNewMatch={() => navigate('/')}
+          whiteName={whiteName}
+          blackName={blackName}
         />
       }
       opponent={{
@@ -357,8 +362,8 @@ export default function HotSeat() {
         stateLabel: opponentState,
         coinsLabel: aiConfig ? '22.7K' : '400',
         isTurn: !isLocalTurn && !showGameEndModal,
-        timerProgress: !isLocalTurn ? turnTimerProgress : 1,
-        timerSecondsLeft: turnSecondsLeft,
+        timerProgress: !isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
+        timerSecondsLeft: !isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined,
       }}
       self={{
         identity: selfIdentity,
@@ -368,8 +373,8 @@ export default function HotSeat() {
         stateLabel: progression.statusLabel,
         coinsLabel: selfCoins,
         isTurn: isLocalTurn && !showGameEndModal,
-        timerProgress: isLocalTurn ? turnTimerProgress : 1,
-        timerSecondsLeft: turnSecondsLeft,
+        timerProgress: isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
+        timerSecondsLeft: isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined,
       }}
       actionsOverlay={
         !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (

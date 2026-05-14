@@ -15,6 +15,12 @@ function isNumberArray(value: Json | undefined): value is number[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'number');
 }
 
+function metadataText(metadata: Json, key: string): string | undefined {
+  if (!isObject(metadata)) return undefined;
+  const value = metadata[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
 function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
   if (!isObject(metadata) || !isObject(metadata.layout)) return undefined;
   const source = metadata.layout;
@@ -114,6 +120,11 @@ export function themeFromBoardConfig(config: BoardThemeConfig): Theme {
     },
     backgroundImage:
       normalizePublicAssetPath(config.lobby_background_image) ?? premiumTheme.backgroundImage,
+    gameplayBackgroundImage:
+      normalizePublicAssetPath(metadataText(config.metadata, 'gameplayBackgroundImage')) ??
+      normalizePublicAssetPath(config.lobby_background_image) ??
+      premiumTheme.gameplayBackgroundImage ??
+      premiumTheme.backgroundImage,
     layout: {
       ...premiumTheme.layout,
       ...layoutFromMetadata(config.metadata),

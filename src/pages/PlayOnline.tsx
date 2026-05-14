@@ -207,6 +207,14 @@ export default function PlayOnline() {
   const selfProgression =
     selfProfile?.id === user.id ? progression : getProfileProgression(selfProfile, levelConfigs);
   const opponentProgression = getProfileProgression(opponentProf, levelConfigs);
+  const whiteName =
+    ownerColor === 'white'
+      ? ownerProfile?.display_name
+      : opponentProfile?.display_name;
+  const blackName =
+    ownerColor === 'black'
+      ? ownerProfile?.display_name
+      : opponentProfile?.display_name;
 
   const turnLabel = game.matchFinished
     ? 'match over'
@@ -244,10 +252,12 @@ export default function PlayOnline() {
   const showMatchOver = game.matchFinished && !!match.winner;
 
   const showActions = role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null;
+  const gameplayBackground =
+    selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
 
   return (
     <BoardLayout
-      backgroundImage={selectedTheme.backgroundImage}
+      backgroundImage={gameplayBackground}
       header={
         <MatchHeader
           match={headerMatch}
@@ -255,7 +265,8 @@ export default function PlayOnline() {
           blackPip={blackPip}
           turnLabel={turnLabel}
           inCrawford={game.inCrawfordGame}
-          onNewMatch={() => navigate('/')}
+          whiteName={whiteName}
+          blackName={blackName}
         />
       }
       opponent={{

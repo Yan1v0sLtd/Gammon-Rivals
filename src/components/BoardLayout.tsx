@@ -28,7 +28,7 @@ interface Props {
   actionsOverlay?: React.ReactNode;
   /** Modal overlay (cube decision, end-of-game, etc.) — fills the centre. */
   centerOverlay?: React.ReactNode;
-  /** Soft table background, usually the lobby background for the selected board. */
+  /** Dedicated gameplay background for the selected board, with lobby art as a fallback. */
   backgroundImage?: string;
 }
 
@@ -47,57 +47,52 @@ export default function BoardLayout({
   backgroundImage,
 }: Props) {
   return (
-    <main className="relative h-dvh min-h-dvh overflow-hidden bg-[#050c17]">
+    <main className="game-screen">
       {backgroundImage && (
         <>
           <img
             src={backgroundImage}
             alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover opacity-55 blur-xl"
+            className="game-background-image"
             draggable={false}
           />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(8,20,35,0.28),rgba(3,9,18,0.78)_72%,rgba(2,6,12,0.96))]" />
         </>
       )}
-      <div className="relative z-10 flex h-dvh min-h-dvh flex-col">
+      <div className="game-background-tone" />
+
+      <div className="game-content">
         {header}
 
-        <div className="relative flex-1 min-h-0 w-full px-2 pb-3 sm:px-3">
-          <div className="mx-auto grid h-full w-full max-w-[1920px] grid-rows-[auto_minmax(0,1fr)] gap-2 2xl:grid-cols-[clamp(128px,15vw,230px)_minmax(0,1fr)_clamp(128px,15vw,230px)] 2xl:grid-rows-1 2xl:gap-3">
-            <div className="z-20 grid grid-cols-2 gap-2 2xl:hidden">
-              <SidePanel side="left" compact {...opponent} />
-              <SidePanel side="right" compact {...self} />
+        <div className="game-stage">
+          <div className="game-mobile-players">
+            <SidePanel side="left" compact {...opponent} />
+            <SidePanel side="right" compact {...self} />
+          </div>
+
+          <div className="game-side-slot game-side-slot--left">
+            <SidePanel side="left" {...opponent} />
+          </div>
+
+          <div className="game-board-column">
+            <div className="game-board-stage">
+              <div className="game-board-shell">{children}</div>
             </div>
 
-            <div className="hidden min-h-0 2xl:block">
-              <SidePanel side="left" {...opponent} />
-            </div>
-
-            <div className="relative min-h-0 min-w-0">
-              <div className="absolute inset-0 flex items-start justify-center pt-1 2xl:items-center 2xl:pt-0">
-                <div className="relative aspect-[4/3] h-auto max-h-full w-full max-w-[calc((100dvh-8.5rem)*1.333)] overflow-visible drop-shadow-[0_28px_64px_rgba(0,0,0,0.58)] 2xl:max-w-none">
-                  <div className="absolute inset-0 overflow-visible">
-                    {children}
-                  </div>
-                </div>
+            {actionsOverlay && (
+              <div className="game-actions-layer">
+                <div className="game-actions-inner">{actionsOverlay}</div>
               </div>
+            )}
 
-              {actionsOverlay && (
-                <div className="absolute inset-x-0 bottom-2 z-10 flex items-end justify-center pointer-events-none sm:bottom-4">
-                  <div className="pointer-events-auto">{actionsOverlay}</div>
-                </div>
-              )}
+            {centerOverlay && (
+              <div className="game-center-layer">
+                <div className="game-center-inner">{centerOverlay}</div>
+              </div>
+            )}
+          </div>
 
-              {centerOverlay && (
-                <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                  <div className="pointer-events-auto">{centerOverlay}</div>
-                </div>
-              )}
-            </div>
-
-            <div className="hidden min-h-0 2xl:block">
-              <SidePanel side="right" {...self} />
-            </div>
+          <div className="game-side-slot game-side-slot--right">
+            <SidePanel side="right" {...self} />
           </div>
         </div>
       </div>

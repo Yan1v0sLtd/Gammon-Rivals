@@ -27,6 +27,12 @@ interface Props {
 
 const PLACEHOLDER_NAME = '— —';
 
+function firstNameOnly(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return PLACEHOLDER_NAME;
+  return trimmed.split(/\s+/)[0] ?? trimmed;
+}
+
 /**
  * Vertical column with avatar + name + pip/score info on top, free-form
  * action chips on the bottom. Two of these flank the board.
@@ -55,6 +61,81 @@ export default function SidePanel({
     side === 'left'
       ? { left: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' }
       : { right: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' };
+  const displayName = firstNameOnly(identity?.name);
+
+  if (!compact) {
+    return (
+      <aside
+        className={`game-player-panel game-player-panel--${side} ${
+          isTurn ? 'is-turn' : ''
+        }`}
+      >
+        <section className="game-player-card">
+          <div className="game-player-card-glow" />
+          <div className="game-player-top">
+            <div className="game-avatar-stage">
+              <div className="game-avatar-ring" />
+              <Avatar
+                seed={identity?.avatarSeed ?? 'placeholder'}
+                imageUrl={identity?.avatarUrl}
+                size={104}
+                ring="none"
+                className="game-avatar-image"
+              />
+              <span className="game-level-shield">{level}</span>
+            </div>
+
+            <div className={`game-player-identity ${textAlign}`}>
+              <h2>{displayName}</h2>
+              <div className="game-player-line">
+                <span className="game-meta-icon game-meta-icon--level">★</span>
+                <span>Level {level}</span>
+              </div>
+              <div className="game-player-line">
+                <span className="game-meta-flag" />
+                <span>{stateLabel}</span>
+              </div>
+              <div className="game-player-line">
+                <span className="game-meta-icon game-meta-icon--coin">$</span>
+                <span>{coinsLabel}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="game-stat-list">
+            <div className="game-stat-row">
+              <span className="game-stat-icon game-stat-icon--dice" />
+              <span className="game-stat-copy">
+                <span className="game-stat-label">Pip Count</span>
+                <strong>{pipCount ?? '—'}</strong>
+              </span>
+            </div>
+            <div className="game-stat-row">
+              <span className="game-stat-icon game-stat-icon--score" />
+              <span className="game-stat-copy">
+                <span className="game-stat-label">Score</span>
+                <strong>{scoreLabel ?? '0/7'}</strong>
+              </span>
+            </div>
+          </div>
+
+          {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (
+            <TurnTimerBar
+              progress={timerProgress}
+              secondsLeft={timerSecondsLeft}
+            />
+          )}
+          {hudSlot && (
+            <div className="pointer-events-none absolute z-30" style={hudStyle}>
+              {hudSlot}
+            </div>
+          )}
+        </section>
+        {bottomSlot && <div className="game-panel-bottom">{bottomSlot}</div>}
+      </aside>
+    );
+  }
+
   return (
     <aside
       className={`flex flex-col ${align} justify-between gap-3 ${
@@ -100,7 +181,7 @@ export default function SidePanel({
               compact ? 'max-w-[10rem] text-sm' : 'text-lg sm:text-xl'
             }`}
           >
-            {identity?.name ?? PLACEHOLDER_NAME}
+            {displayName}
           </div>
           <div
             className={`grid w-full gap-1 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${

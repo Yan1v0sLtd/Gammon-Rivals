@@ -14,6 +14,7 @@ export const boardThemes: Record<string, Theme> = {
       board: '/themes/classic-green/board.webp',
     },
     backgroundImage: '/lobby/backgrounds/classic-green.webp',
+    gameplayBackgroundImage: '/lobby/backgrounds/classic-green.webp',
   },
   'ocean-blue': {
     ...premiumTheme,
@@ -23,6 +24,7 @@ export const boardThemes: Record<string, Theme> = {
       board: '/themes/ocean-blue/board.webp',
     },
     backgroundImage: '/lobby/backgrounds/ocean-blue.webp',
+    gameplayBackgroundImage: '/lobby/backgrounds/ocean-blue.webp',
   },
   'royal-purple': {
     ...premiumTheme,
@@ -32,6 +34,7 @@ export const boardThemes: Record<string, Theme> = {
       board: '/themes/royal-purple/board.webp',
     },
     backgroundImage: '/lobby/backgrounds/royal-purple.webp',
+    gameplayBackgroundImage: '/lobby/backgrounds/royal-purple.webp',
   },
 };
 

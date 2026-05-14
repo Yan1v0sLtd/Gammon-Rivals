@@ -82,6 +82,7 @@ type BoardDraft = {
   preview_image: string;
   gameplay_image: string;
   lobby_background_image: string;
+  gameplay_background_image: string;
   white_checker_image: string;
   black_checker_image: string;
   dice_image: string;
@@ -148,7 +149,11 @@ const builtInBoardSeeds: readonly Database['public']['Tables']['board_theme_conf
     is_enabled: true,
     is_featured: true,
     sort_order: 10,
-    metadata: { accent: '#6dda72', subtitle: 'Traditional felt' },
+    metadata: {
+      accent: '#6dda72',
+      subtitle: 'Traditional felt',
+      gameplayBackgroundImage: '/lobby/backgrounds/classic-green.webp',
+    },
   },
   {
     id: 'ocean-blue',
@@ -161,7 +166,11 @@ const builtInBoardSeeds: readonly Database['public']['Tables']['board_theme_conf
     is_enabled: true,
     is_featured: false,
     sort_order: 20,
-    metadata: { accent: '#39d7ff', subtitle: 'Bright coastal wood' },
+    metadata: {
+      accent: '#39d7ff',
+      subtitle: 'Bright coastal wood',
+      gameplayBackgroundImage: '/lobby/backgrounds/ocean-blue.webp',
+    },
   },
   {
     id: 'royal-purple',
@@ -174,7 +183,11 @@ const builtInBoardSeeds: readonly Database['public']['Tables']['board_theme_conf
     is_enabled: true,
     is_featured: false,
     sort_order: 30,
-    metadata: { accent: '#c174ff', subtitle: 'Gold tournament trim' },
+    metadata: {
+      accent: '#c174ff',
+      subtitle: 'Gold tournament trim',
+      gameplayBackgroundImage: '/lobby/backgrounds/royal-purple.webp',
+    },
   },
 ];
 
@@ -289,6 +302,30 @@ function parseJson(value: string, label: string, expected: 'object' | 'array'): 
     if (err instanceof Error && err.message.includes('must be')) throw err;
     throw new Error(`${label} is not valid JSON.`, { cause: err });
   }
+}
+
+function metadataText(metadata: Json | null | undefined, key: string): string {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return '';
+  const value = metadata[key];
+  return typeof value === 'string' ? value : '';
+}
+
+function withGameplayBackgroundMetadata(metadata: Json, value: string): Json {
+  const source =
+    metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+      ? metadata
+      : {};
+  const next: Record<string, Json> = {};
+  Object.entries(source).forEach(([key, metadataValue]) => {
+    if (metadataValue !== undefined) next[key] = metadataValue;
+  });
+  const trimmed = value.trim();
+  if (trimmed) {
+    next.gameplayBackgroundImage = trimmed;
+  } else {
+    delete next.gameplayBackgroundImage;
+  }
+  return next;
 }
 
 function numberOrNull(value: string): number | null {
@@ -505,6 +542,7 @@ function boardToDraft(row?: BoardThemeConfig): BoardDraft {
     preview_image: row?.preview_image ?? '',
     gameplay_image: row?.gameplay_image ?? '',
     lobby_background_image: row?.lobby_background_image ?? '',
+    gameplay_background_image: metadataText(row?.metadata, 'gameplayBackgroundImage'),
     white_checker_image: row?.white_checker_image ?? '',
     black_checker_image: row?.black_checker_image ?? '',
     dice_image: row?.dice_image ?? '',
@@ -1151,6 +1189,10 @@ export default function Admin() {
     setDataError(null);
     setBoardMessage(null);
     try {
+      const metadata = withGameplayBackgroundMetadata(
+        parseJson(boardDraft.metadata, 'Metadata', 'object'),
+        boardDraft.gameplay_background_image
+      );
       const payload: Database['public']['Tables']['board_theme_configs']['Insert'] = {
         id: boardDraft.id.trim(),
         display_name: boardDraft.display_name.trim(),
@@ -1167,7 +1209,7 @@ export default function Admin() {
         is_enabled: boardDraft.is_enabled,
         is_featured: boardDraft.is_featured,
         sort_order: requiredNumber(boardDraft.sort_order, 'Sort order'),
-        metadata: parseJson(boardDraft.metadata, 'Metadata', 'object'),
+        metadata,
         updated_by: user?.id ?? null,
       };
       const { error } = await withRequestTimeout(
@@ -1999,6 +2041,7 @@ export default function Admin() {
                       <Field label="Lobby image" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
                       <Field label="Gameplay image" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
                       <Field label="Lobby background image" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
+                      <Field label="Gameplay background image" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
                       <Field label="White checker image" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
                       <Field label="Black checker image" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
                       <Field label="Dice image" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />

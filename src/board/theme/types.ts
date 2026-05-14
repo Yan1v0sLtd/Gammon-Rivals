@@ -77,5 +77,6 @@ export interface Theme {
   readonly colors: ThemeColors;
   readonly assets?: ThemeAssets;
   readonly backgroundImage?: string;
+  readonly gameplayBackgroundImage?: string;
   readonly layout?: ThemeLayout;
 }

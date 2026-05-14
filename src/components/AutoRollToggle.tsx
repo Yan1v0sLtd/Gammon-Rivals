@@ -21,24 +21,14 @@ export default function AutoRollToggle({
       <button
         type="button"
         onClick={() => onChange(!enabled)}
-        className={`flex h-10 items-center gap-1.5 rounded-full border-2 border-slate-950 bg-[#101827]/95 px-1.5 shadow-[inset_0_2px_0_rgba(255,255,255,0.12),0_0_0_2px_rgba(245,197,90,0.45)] transition hover:brightness-110 active:scale-95 sm:h-12 sm:gap-2 sm:px-2.5 ${className}`}
+        className={`game-auto-toggle ${enabled ? 'is-on' : ''} ${className}`}
         aria-pressed={enabled}
         title={enabled ? 'Auto-roll is on' : 'Auto-roll is off'}
       >
-        <span
-          className={`relative inline-flex h-6 w-10 items-center rounded-full border transition sm:h-7 sm:w-12 ${
-            enabled
-              ? 'border-lime-200 bg-gradient-to-b from-lime-300 to-emerald-600'
-              : 'border-amber-500/45 bg-gradient-to-b from-stone-700 to-stone-950'
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-amber-100 shadow transition-transform sm:h-6 sm:w-6 ${
-              enabled ? 'translate-x-4 sm:translate-x-5' : 'translate-x-0.5'
-            }`}
-          />
+        <span className="game-auto-switch">
+          <span className="game-auto-knob" />
         </span>
-        <span className="hidden text-[10px] font-semibold uppercase tracking-wide text-amber-100/80 sm:block">
+        <span className="game-auto-label">
           Auto
         </span>
       </button>

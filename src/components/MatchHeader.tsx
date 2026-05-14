@@ -8,6 +8,14 @@ interface Props {
   turnLabel: string;
   inCrawford: boolean;
   onNewMatch?: () => void;
+  whiteName?: string;
+  blackName?: string;
+}
+
+function displayName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Player';
+  return trimmed.split(/\s+/)[0] ?? trimmed;
 }
 
 export default function MatchHeader({
@@ -16,52 +24,45 @@ export default function MatchHeader({
   blackPip,
   turnLabel,
   inCrawford,
-  onNewMatch,
+  whiteName = 'White',
+  blackName = 'Black',
 }: Props) {
+  const cleanTurnLabel = turnLabel.replace(/\s*\(AI\)/i, '').toUpperCase();
+  const whiteDisplayName = displayName(whiteName).toUpperCase();
+  const blackDisplayName = displayName(blackName).toUpperCase();
+
   return (
-    <header className="z-30 flex h-9 shrink-0 items-center justify-between gap-2 px-3 text-board-felt/80 sm:px-4">
-      <div className="flex min-w-0 items-center gap-3 order-1">
-        <Link to="/" className="text-board-accent text-sm whitespace-nowrap">
-          ← Home
+    <header className="game-match-header">
+      <div className="game-nav-home">
+        <Link to="/" className="game-home-link">
+          <span className="game-home-icon" aria-hidden="true" />
+          <span>Home</span>
         </Link>
-        <Link
-          to="/profile"
-          className="text-xs text-board-felt/50 hover:text-board-accent transition"
-        >
-          Profile
-        </Link>
-        {onNewMatch && (
-          <button
-            onClick={onNewMatch}
-            className="text-xs text-board-felt/50 hover:text-board-accent transition"
-          >
-            New match
-          </button>
-        )}
       </div>
 
-      <div className="hidden text-xs text-board-felt/60 capitalize whitespace-nowrap order-2 sm:order-3 sm:block">
-        {turnLabel}
+      <div className="game-match-hud">
+        <div className="game-score-strip">
+          <div className="game-score-player game-score-player--left">
+            <span>{whiteDisplayName}</span>
+            <strong>{whitePip}</strong>
+          </div>
+          <div className="game-score-core">
+            <span>{match.score.white}</span>
+            <span className="game-score-separator">:</span>
+            <span>{match.score.black}</span>
+          </div>
+          <div className="game-score-player game-score-player--right">
+            <span>{blackDisplayName}</span>
+            <strong>{blackPip}</strong>
+          </div>
+        </div>
+        <div className="game-turn-pill">
+          <span className="game-turn-dot" />
+          <span>{cleanTurnLabel}</span>
+          {inCrawford && <span className="game-crawford-pill">Crawford</span>}
+        </div>
       </div>
-
-      <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono justify-center order-3 sm:order-2">
-        <span className="text-chip-cream">
-          w <span className="text-board-felt/50">{whitePip}</span>
-        </span>
-        <span className="px-2 py-0.5 rounded bg-amber-900/40 text-amber-200 font-display tracking-wider">
-          {match.score.white}–{match.score.black}
-        </span>
-        <span className="text-board-felt">
-          <span className="text-board-felt/50">{blackPip}</span> b
-        </span>
-        <span className="text-board-felt/40">·</span>
-        <span className="text-board-felt/60">to {match.target}</span>
-        {inCrawford && (
-          <span className="px-1.5 py-0.5 rounded bg-amber-600/30 text-amber-200 font-display text-[10px] tracking-wider uppercase">
-            Crawford
-          </span>
-        )}
-      </div>
+      <div aria-hidden="true" />
     </header>
   );
 }
