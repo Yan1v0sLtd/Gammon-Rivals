@@ -83,7 +83,7 @@ export function LobbyBoardCarousel({
   const carouselDragStyle = { '--drag-x': `${dragOffset}px` } as CSSProperties;
 
   return (
-    <section className="relative mx-auto w-full max-w-[64rem] overflow-visible">
+    <section className="lobby-carousel-section relative mx-auto w-full max-w-[64rem] overflow-visible">
       <div
         className="lobby-carousel-viewport relative aspect-[1.05/1] min-h-[25rem] touch-pan-y overflow-visible sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
         data-dragging={isDragging ? 'true' : 'false'}

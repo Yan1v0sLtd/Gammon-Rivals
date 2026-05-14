@@ -536,6 +536,309 @@ html, body, #root {
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.45);
 }
 
+.lobby-screen {
+  overscroll-behavior: none;
+}
+
+@media (orientation: landscape) and (max-height: 720px) {
+  .lobby-screen {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .lobby-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: max(0.2rem, env(safe-area-inset-top)) 0.6rem 0;
+  }
+
+  .lobby-topbar {
+    grid-template-columns: minmax(15rem, 1fr) auto;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.15rem 0 0.25rem;
+  }
+
+  .lobby-profile-card {
+    gap: 0.55rem;
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .lobby-profile-avatar-wrap {
+    width: 4.45rem;
+    height: 4.45rem;
+  }
+
+  .lobby-profile-avatar-core {
+    inset: 0.24rem;
+    box-shadow:
+      0 0 0 0.16rem #1b123b,
+      0 0 0 0.28rem #ffcc42,
+      0 0 0 0.36rem rgba(255, 255, 255, 0.32),
+      0 0.42rem 0.7rem rgba(0, 0, 0, 0.42);
+  }
+
+  .lobby-profile-level-shield {
+    width: 1.75rem;
+    height: 2.12rem;
+    font-size: 0.86rem;
+  }
+
+  .lobby-profile-edit {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.28rem;
+    font-size: 0.75rem;
+  }
+
+  .lobby-profile-copy > a > div:first-child > div {
+    font-size: 1.4rem;
+  }
+
+  .lobby-rank-badge {
+    min-width: 5.1rem;
+    gap: 0.28rem;
+    border-radius: 0.35rem;
+    font-size: 0.7rem;
+    padding: 0.16rem 0.42rem 0.2rem 0.3rem;
+  }
+
+  .lobby-rank-star {
+    width: 0.8rem;
+    height: 0.8rem;
+  }
+
+  .lobby-profile-progress {
+    width: 5.2rem;
+    height: 0.72rem;
+    border-width: 1px;
+  }
+
+  .lobby-profile-progress-text {
+    display: none;
+  }
+
+  .lobby-profile-copy button {
+    margin-top: 0.28rem;
+    padding: 0.16rem 0.55rem;
+    font-size: 0.55rem;
+  }
+
+  .lobby-topbar-actions,
+  .lobby-currency-strip {
+    gap: 0.45rem;
+  }
+
+  .lobby-currency-pill {
+    min-width: 6.2rem;
+    height: 2.35rem;
+  }
+
+  .lobby-currency-icon {
+    width: 2.8rem;
+    height: 2.8rem;
+    margin-left: -0.7rem;
+  }
+
+  .lobby-currency-value {
+    height: 1.8rem;
+    margin-left: -0.45rem;
+    padding-inline: 0.65rem;
+    font-size: 1rem;
+  }
+
+  .lobby-currency-add {
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 0.35rem;
+  }
+
+  .lobby-currency-add > span:first-child {
+    width: 0.34rem;
+    height: 1.05rem;
+  }
+
+  .lobby-currency-add > span:last-child {
+    width: 1.05rem;
+    height: 0.34rem;
+  }
+
+  .lobby-main-grid {
+    flex: 1 1 auto;
+    grid-template-columns: minmax(9rem, 0.9fr) minmax(22rem, 1.55fr) minmax(9rem, 0.9fr);
+    gap: 0.55rem;
+    min-height: 0;
+    align-items: stretch;
+    padding: 0.15rem 0 0.1rem;
+  }
+
+  .lobby-offers {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .lobby-offer-card {
+    min-width: 0;
+    min-height: 0;
+    height: clamp(4.1rem, 22%, 5.8rem);
+    aspect-ratio: auto !important;
+    border-radius: 0.55rem;
+    gap: 0.45rem;
+  }
+
+  .lobby-board-region {
+    display: flex;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lobby-carousel-section {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    align-items: center;
+  }
+
+  .lobby-carousel-viewport {
+    width: 100%;
+    height: min(100%, 19.75rem);
+    max-height: calc(100dvh - 8.1rem);
+    min-height: 0 !important;
+    aspect-ratio: 1.42 / 1;
+  }
+
+  .lobby-carousel-board {
+    top: 9%;
+    width: 58%;
+  }
+
+  .lobby-play-button {
+    bottom: 0.6rem;
+    height: 2.55rem;
+    min-width: 10rem;
+    padding: 0 2rem;
+    font-size: 1.25rem;
+  }
+
+  .lobby-carousel-viewport > div[class*='bottom-24'] {
+    bottom: 4.1rem;
+    gap: 0.5rem;
+  }
+
+  .lobby-carousel-viewport > div[class*='bottom-24'] button {
+    width: 0.62rem;
+    height: 0.62rem;
+  }
+
+  .lobby-action-stack {
+    grid-template-columns: 1fr !important;
+    align-self: stretch;
+    align-content: center;
+    gap: 0.5rem;
+    min-height: 0;
+  }
+
+  .lobby-action-card {
+    min-height: 0;
+    height: clamp(4.15rem, 24%, 5.4rem);
+    gap: 0.45rem;
+    border-radius: 0.6rem;
+    padding: 0.55rem 0.6rem;
+  }
+
+  .lobby-action-icon {
+    width: 3.1rem;
+    height: 3.1rem;
+  }
+
+  .lobby-action-icon img {
+    max-width: 3.4rem;
+    max-height: 3.4rem;
+  }
+
+  .lobby-action-icon > span {
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: 1.45rem;
+  }
+
+  .lobby-action-title {
+    font-size: 0.88rem;
+  }
+
+  .lobby-action-subtitle {
+    margin-top: 0.18rem;
+    font-size: 0.62rem;
+    line-height: 1.1;
+  }
+
+  .lobby-bottom-nav-shell {
+    flex: 0 0 auto;
+    width: min(88vw, 46rem);
+    min-height: 3.65rem;
+    margin-top: 0;
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+    padding-bottom: max(0.05rem, env(safe-area-inset-bottom));
+  }
+
+  .lobby-bottom-nav-frame {
+    top: 0.45rem;
+    border-radius: 1rem 1rem 0.42rem 0.42rem;
+    transform: perspective(22rem) rotateX(6deg);
+  }
+
+  .lobby-bottom-nav-item {
+    min-height: 3.15rem;
+    gap: 0.02rem;
+  }
+
+  .lobby-bottom-nav-item.is-featured {
+    width: 4.1rem;
+    min-height: 4.1rem;
+    margin-top: -1rem;
+    border-width: 0.11rem;
+  }
+
+  .lobby-nav-icon,
+  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
+    width: 2.2rem;
+    height: 1.9rem;
+    transform: scale(0.58);
+  }
+
+  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
+    transform: scale(0.56);
+  }
+
+  .lobby-nav-label,
+  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
+    max-width: 3.9rem;
+    font-size: 0.46rem;
+  }
+
+  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
+    max-width: 3.3rem;
+  }
+
+  .lobby-nav-badge {
+    top: 0.1rem;
+    right: 18%;
+    min-width: 1.05rem;
+    padding: 0.12rem 0.24rem;
+    font-size: 0.58rem;
+  }
+}
+
 .profile-page {
   background:
     radial-gradient(circle at 22% 12%, rgba(133, 55, 255, 0.3), transparent 30rem),

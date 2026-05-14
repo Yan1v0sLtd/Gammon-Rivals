@@ -94,7 +94,7 @@ export function LobbyScreen() {
   };
 
   return (
-    <main className="relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
+    <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
       {fadingBoard ? (
         <LobbyBackgroundLayer key={`leaving-${fadingBoard.id}`} board={fadingBoard} state="leaving" />
       ) : null}
@@ -104,7 +104,7 @@ export function LobbyScreen() {
         state="entering"
       />
 
-      <div className="relative z-10 flex min-h-dvh flex-col px-4 pb-0 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 lg:px-9">
+      <div className="lobby-shell relative z-10 flex min-h-dvh flex-col px-4 pb-0 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 lg:px-9">
         <LobbyTopBar
           profile={profile}
           wallet={wallet}
@@ -113,10 +113,10 @@ export function LobbyScreen() {
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
         />
 
-        <div className="grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
+        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
           <LobbySideOffers />
 
-          <div className="min-w-0">
+          <div className="lobby-board-region min-w-0">
             <LobbyBoardCarousel
               boards={boards}
               selectedId={effectiveSelectedBoardId}
@@ -125,7 +125,7 @@ export function LobbyScreen() {
             />
           </div>
 
-          <aside className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <aside className="lobby-action-stack grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
             <LobbyActionCard
               title={creatingOnline ? 'Creating' : 'Play Online'}
               subtitle="Challenge players around the world"

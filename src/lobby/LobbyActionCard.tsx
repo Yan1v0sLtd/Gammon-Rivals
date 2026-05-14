@@ -28,10 +28,10 @@ export function LobbyActionCard({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`group relative flex min-h-[7.1rem] w-full items-center gap-3 overflow-hidden rounded-xl border-2 bg-gradient-to-br p-4 text-left shadow-[0_10px_22px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.18)] transition hover:brightness-110 active:translate-y-1 disabled:cursor-default disabled:opacity-65 ${toneClass[tone]}`}
+      className={`lobby-action-card group relative flex min-h-[7.1rem] w-full items-center gap-3 overflow-hidden rounded-xl border-2 bg-gradient-to-br p-4 text-left shadow-[0_10px_22px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.18)] transition hover:brightness-110 active:translate-y-1 disabled:cursor-default disabled:opacity-65 ${toneClass[tone]}`}
     >
       <span className="absolute inset-x-0 top-0 h-1/2 bg-white/10" />
-      <span className="relative grid h-20 w-20 shrink-0 place-items-center">
+      <span className="lobby-action-icon relative grid h-20 w-20 shrink-0 place-items-center">
         {iconSrc ? (
           <img
             src={iconSrc}
@@ -46,10 +46,10 @@ export function LobbyActionCard({
         )}
       </span>
       <span className="relative min-w-0 flex-1">
-        <span className="block font-display text-[1.45rem] font-black uppercase leading-[0.95] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.34)] 2xl:text-2xl">
+        <span className="lobby-action-title block font-display text-[1.45rem] font-black uppercase leading-[0.95] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.34)] 2xl:text-2xl">
           {title}
         </span>
-        <span className="mt-2 block text-sm font-semibold leading-snug text-white/78">{subtitle}</span>
+        <span className="lobby-action-subtitle mt-2 block text-sm font-semibold leading-snug text-white/78">{subtitle}</span>
       </span>
       <span className="relative text-4xl font-black text-[#ffe3a0] drop-shadow-[0_2px_0_rgba(0,0,0,0.45)]">
         ›

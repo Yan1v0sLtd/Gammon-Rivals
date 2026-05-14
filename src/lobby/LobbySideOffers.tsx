@@ -2,13 +2,13 @@ import { lobbyOffers } from './lobbyData';
 
 export function LobbySideOffers() {
   return (
-    <aside className="flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
+    <aside className="lobby-offers flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
       {lobbyOffers.map((offer) => (
         <button
           key={offer.id}
           type="button"
           style={offer.image ? { aspectRatio: offer.aspectRatio } : undefined}
-          className={`relative flex min-h-[6.7rem] min-w-[13rem] flex-1 items-center gap-3 overflow-hidden text-left transition hover:brightness-110 active:translate-y-1 ${
+          className={`lobby-offer-card relative flex min-h-[6.7rem] min-w-[13rem] flex-1 items-center gap-3 overflow-hidden text-left transition hover:brightness-110 active:translate-y-1 ${
             offer.image
               ? 'rounded-lg border border-white/22 bg-black/20 p-0 shadow-[0_9px_18px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.16)]'
               : `rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`

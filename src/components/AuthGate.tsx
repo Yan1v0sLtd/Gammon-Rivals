@@ -1,10 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 function isLocalhostOrigin(): boolean {
-  return typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  return (
+    typeof window !== 'undefined' &&
+    window.location.hostname === 'localhost' &&
+    !Capacitor.isNativePlatform()
+  );
 }
 
 function loopbackUrl(): string {

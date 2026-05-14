@@ -28,9 +28,9 @@ function CurrencyPill({
   return (
     <div
       aria-label={`${label}: ${value}`}
-      className="relative flex h-12 min-w-[8.55rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+      className="lobby-currency-pill relative flex h-12 min-w-[8.55rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
-      <span className="-ml-4 grid h-14 w-14 shrink-0 place-items-center">
+      <span className="lobby-currency-icon -ml-4 grid h-14 w-14 shrink-0 place-items-center">
         <img
           src={icon}
           alt=""
@@ -38,13 +38,13 @@ function CurrencyPill({
           draggable={false}
         />
       </span>
-      <span className="-ml-2 flex h-[2.55rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-4 text-center font-display text-xl font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+      <span className="lobby-currency-value -ml-2 flex h-[2.55rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-4 text-center font-display text-xl font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
         {value}
       </span>
       <button
         type="button"
         aria-label={`Add ${label}`}
-        className="relative mr-1 grid h-10 w-10 shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710]"
+        className="lobby-currency-add relative mr-1 grid h-10 w-10 shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710]"
       >
         <span className="absolute left-1/2 top-1/2 h-6 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
         <span className="absolute left-1/2 top-1/2 h-1.5 w-6 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
@@ -118,7 +118,7 @@ export function LobbyTopBar({
   };
 
   return (
-    <header className="relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
+    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
       <div className="lobby-profile-card group">
         <div className="lobby-profile-avatar-wrap">
           <Link to="/profile" className="block" aria-label="Open profile">
@@ -172,8 +172,8 @@ export function LobbyTopBar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-start justify-end gap-3">
-        <div className="flex flex-wrap justify-end gap-3">
+      <div className="lobby-topbar-actions flex flex-wrap items-start justify-end gap-3">
+        <div className="lobby-currency-strip flex flex-wrap justify-end gap-3">
           {currencies.map((currency) => (
             <CurrencyPill key={currency.id} {...currency} />
           ))}
