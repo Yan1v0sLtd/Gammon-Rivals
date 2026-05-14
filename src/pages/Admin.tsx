@@ -6,6 +6,7 @@ import type { Database, Json } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
+type AdminEmailRoleRow = Database['public']['Tables']['admin_email_allowlist']['Row'];
 type AdminRole = AdminRoleRow['role'];
 type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
@@ -124,9 +125,6 @@ const sections: readonly Section[] = [
   'Admin Access',
 ];
 
-const TEMP_OPEN_ADMIN_ACCESS = true;
-const temporaryAdminRole: AdminRole = 'owner';
-
 const shopKinds: readonly ShopKind[] = [
   'coin_pack',
   'gem_pack',
@@ -193,7 +191,9 @@ function isMissingMigrationError(error: { code?: string; message?: string } | nu
   if (!error) return false;
   return (
     error.code === '42P01' ||
+    error.code === 'PGRST202' ||
     error.code === 'PGRST205' ||
+    error.message?.includes('Could not find the function') === true ||
     error.message?.includes('Could not find the table') === true ||
     error.message?.includes('relation') === true ||
     error.message?.includes('column') === true
@@ -307,6 +307,10 @@ function requiredNumber(value: string, label: string): number {
 function emptyToNull(value: string): string | null {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 function StatusPill({ enabled }: { enabled: boolean }) {
@@ -538,13 +542,11 @@ function shopToDraft(row?: ShopItem): ShopDraft {
 }
 
 export default function Admin() {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, signInWithGoogle, linkGoogleIdentity } = useAuth();
   const [accessState, setAccessState] = useState<AccessState>(() =>
-    isSupabaseConfigured ? (TEMP_OPEN_ADMIN_ACCESS ? 'allowed' : 'checking') : 'missing-config'
+    isSupabaseConfigured ? 'checking' : 'missing-config'
   );
-  const [role, setRole] = useState<AdminRole | null>(
-    TEMP_OPEN_ADMIN_ACCESS && isSupabaseConfigured ? temporaryAdminRole : null
-  );
+  const [role, setRole] = useState<AdminRole | null>(null);
   const [activeSection, setActiveSection] = useState<Section>('Dashboard');
   const [stats, setStats] = useState<AdminStats>(initialStats);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -560,7 +562,13 @@ export default function Admin() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   const [adminRoles, setAdminRoles] = useState<AdminRoleRow[]>([]);
+  const [adminEmailRoles, setAdminEmailRoles] = useState<AdminEmailRoleRow[]>([]);
   const [roleDraft, setRoleDraft] = useState({ profile_id: '', role: 'viewer' as AdminRole, note: '' });
+  const [emailRoleDraft, setEmailRoleDraft] = useState({
+    email: 'contact@yanivos.com',
+    role: 'owner' as AdminRole,
+    note: 'Initial owner email',
+  });
   const [levelDraft, setLevelDraft] = useState<LevelDraft>(() => levelToDraft());
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft());
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft());
@@ -574,6 +582,9 @@ export default function Admin() {
 
   const canManage = role === 'owner' || role === 'admin';
   const selectedUser = users.find((row) => row.id === selectedUserId) ?? null;
+  const currentUserEmail = normalizeEmail(user?.email ?? '');
+  const selectedEmailRole =
+    adminEmailRoles.find((row) => row.email === normalizeEmail(emailRoleDraft.email)) ?? null;
 
   const setError = useCallback((err: unknown) => {
     if (err instanceof Error) {
@@ -604,20 +615,33 @@ export default function Admin() {
   }
 
   useEffect(() => {
-    if (!isSupabaseConfigured || isLoading || !user) return;
-    if (TEMP_OPEN_ADMIN_ACCESS) return;
+    if (!isSupabaseConfigured) {
+      queueMicrotask(() => {
+        setAccessState('missing-config');
+        setRole(null);
+      });
+      return;
+    }
+    if (isLoading) return;
+    if (!user) {
+      queueMicrotask(() => {
+        setAccessState('denied');
+        setRole(null);
+      });
+      return;
+    }
 
     let cancelled = false;
     (async () => {
       await Promise.resolve();
       if (cancelled) return;
       setAccessState('checking');
+      setDataError(null);
 
-      const { data, error } = await supabase
-        .from('admin_roles')
-        .select('role')
-        .eq('profile_id', user.id)
-        .maybeSingle();
+      const { data: adminRole, error } = await withRequestTimeout(
+        supabase.rpc('get_my_admin_role', {}),
+        'Checking admin access'
+      );
 
       if (cancelled) return;
       if (isMissingMigrationError(error)) {
@@ -631,7 +655,7 @@ export default function Admin() {
         setRole(null);
         return;
       }
-      if (!data) {
+      if (!adminRole) {
         setAccessState('denied');
         setRole(null);
         return;
@@ -655,7 +679,7 @@ export default function Admin() {
         return;
       }
 
-      setRole(data.role);
+      setRole(adminRole);
       setAccessState('allowed');
     })();
 
@@ -730,6 +754,7 @@ export default function Admin() {
         shopResult,
         auditResult,
         roleResult,
+        emailRoleResult,
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase
@@ -749,6 +774,7 @@ export default function Admin() {
         supabase.from('shop_items').select('*').order('sort_order', { ascending: true }),
         supabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(20),
         supabase.from('admin_roles').select('*').order('created_at', { ascending: false }),
+        supabase.from('admin_email_allowlist').select('*').order('created_at', { ascending: false }),
       ]);
 
       const firstError =
@@ -762,7 +788,8 @@ export default function Admin() {
         boardResult.error ??
         shopResult.error ??
         auditResult.error ??
-        roleResult.error;
+        roleResult.error ??
+        emailRoleResult.error;
       if (firstError) throw firstError;
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row));
@@ -786,6 +813,7 @@ export default function Admin() {
       setShopItems(shopResult.data ?? []);
       setAudit(auditResult.data ?? []);
       setAdminRoles(roleResult.data ?? []);
+      setAdminEmailRoles(emailRoleResult.data ?? []);
       setStats({
         users: profileRows.length || userCount.count || 0,
         matches: matchCount.count ?? 0,
@@ -899,20 +927,30 @@ export default function Admin() {
         suspension_reason: 'Deleted in Back Office',
         admin_note: `[Deleted in Back Office] ${emptyToNull(note) ?? 'Soft delete'}`,
       };
-      const { error } = await supabase
+      const { data: deletedRows, error } = await supabase
         .from('profiles')
         .update(deletePayload)
         .in('id', uniqueIds)
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .select('id');
       if (isMissingAnyColumnError(error, ['deleted_at', 'deleted_by', 'delete_note'])) {
         const fallbackPayload = { ...deletePayload };
         delete fallbackPayload.deleted_at;
         delete fallbackPayload.deleted_by;
         delete fallbackPayload.delete_note;
-        const fallback = await supabase.from('profiles').update(fallbackPayload).in('id', uniqueIds);
+        const fallback = await supabase
+          .from('profiles')
+          .update(fallbackPayload)
+          .in('id', uniqueIds)
+          .select('id');
         if (fallback.error) throw fallback.error;
+        if ((fallback.data ?? []).length === 0) {
+          throw new Error('No users were deleted. Check that your admin email has owner/admin permissions.');
+        }
       } else if (error) {
         throw error;
+      } else if ((deletedRows ?? []).length === 0) {
+        throw new Error('No users were deleted. Check that your admin email has owner/admin permissions.');
       }
 
       setCheckedUserIds(new Set());
@@ -1256,15 +1294,100 @@ export default function Admin() {
     }
   }
 
+  async function signInToAdmin() {
+    setSavingKey('admin-login');
+    setDataError(null);
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?${new URLSearchParams({
+        next: '/admin',
+      }).toString()}`;
+      if (user?.is_anonymous) {
+        await linkGoogleIdentity({ redirectTo });
+      } else {
+        await signInWithGoogle({ redirectTo });
+      }
+    } catch (err) {
+      setError(err);
+      setSavingKey(null);
+    }
+  }
+
+  async function saveAdminEmailRole() {
+    if (!canManage) return;
+    const email = normalizeEmail(emailRoleDraft.email);
+    if (!email.includes('@')) {
+      setDataError('Enter a valid email address.');
+      return;
+    }
+
+    setSavingKey('email-role');
+    setDataError(null);
+    try {
+      const payload: Database['public']['Tables']['admin_email_allowlist']['Insert'] = {
+        email,
+        role: emailRoleDraft.role,
+        note: emptyToNull(emailRoleDraft.note),
+        created_by: user?.id ?? null,
+      };
+      const { error } = await supabase
+        .from('admin_email_allowlist')
+        .upsert(payload, { onConflict: 'email' });
+      if (error) throw error;
+      setEmailRoleDraft({ email: '', role: 'viewer', note: '' });
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deleteAdminEmailRole(row: AdminEmailRoleRow) {
+    if (!canManage) return;
+    if (row.email === currentUserEmail) {
+      setDataError("You can't remove the admin email you are currently using.");
+      return;
+    }
+    const confirmed = window.confirm(`Remove admin access for ${row.email}?`);
+    if (!confirmed) return;
+
+    setSavingKey(`email-role-delete-${row.email}`);
+    setDataError(null);
+    try {
+      const { error } = await supabase.from('admin_email_allowlist').delete().eq('email', row.email);
+      if (error) throw error;
+      setEmailRoleDraft({ email: '', role: 'viewer', note: '' });
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   if (accessState !== 'allowed') {
+    const needsGoogleSignIn =
+      accessState === 'denied' && (!user || user.is_anonymous || currentUserEmail.length === 0);
     const title =
       accessState === 'missing-config'
         ? 'Supabase is not configured'
         : accessState === 'migration-missing'
           ? 'Back Office database is not ready'
-          : accessState === 'denied'
+          : needsGoogleSignIn
+            ? 'Back Office sign-in required'
+            : accessState === 'denied'
             ? 'Admin access required'
             : 'Checking admin access';
+    const message =
+      accessState === 'migration-missing'
+        ? 'Apply the latest Back Office migration to add email-based admin access and the required management tables.'
+        : needsGoogleSignIn
+          ? 'Sign in with Google using an allowlisted admin email to unlock the Back Office.'
+          : accessState === 'denied'
+            ? 'This Google account is not on the Back Office admin email list.'
+            : accessState === 'missing-config'
+              ? 'Add the Supabase URL and publishable key to your local environment to use Back Office.'
+              : 'One moment while the access check finishes.';
 
     return (
       <main className="min-h-screen bg-[#061225] text-white">
@@ -1278,18 +1401,29 @@ export default function Admin() {
             </div>
             <h1 className="mt-3 text-3xl font-black tracking-tight">{title}</h1>
             <p className="mt-3 text-sm leading-6 text-white/60">
-              {accessState === 'migration-missing'
-                ? 'Apply the Back Office V1 migration to add users, wallets, inventory, purchases, and shop tables.'
-                : accessState === 'denied'
-                  ? 'This area is protected. Add your profile to admin_roles to unlock the Back Office.'
-                  : accessState === 'missing-config'
-                    ? 'Add the Supabase URL and publishable key to your local environment to use Back Office.'
-                    : 'One moment while the access check finishes.'}
+              {message}
             </p>
+            {accessState === 'denied' && isSupabaseConfigured && (
+              <div className="mt-5">
+                <PrimaryButton onClick={() => void signInToAdmin()} disabled={savingKey === 'admin-login'}>
+                  {savingKey === 'admin-login'
+                    ? 'Opening Google…'
+                    : user?.is_anonymous
+                      ? 'Link Google account'
+                      : 'Continue with Google'}
+                </PrimaryButton>
+              </div>
+            )}
             {user && accessState !== 'checking' && (
-              <div className="mt-4 rounded-lg bg-black/25 px-3 py-2 text-left text-xs text-white/55">
-                <div className="text-white/35">Current profile id</div>
-                <div className="mt-1 break-all font-mono text-amber-100">{user.id}</div>
+              <div className="mt-4 space-y-2 rounded-lg bg-black/25 px-3 py-2 text-left text-xs text-white/55">
+                <div>
+                  <div className="text-white/35">Current email</div>
+                  <div className="mt-1 break-all font-mono text-amber-100">{user.email ?? 'No verified email'}</div>
+                </div>
+                <div>
+                  <div className="text-white/35">Current profile id</div>
+                  <div className="mt-1 break-all font-mono text-amber-100">{user.id}</div>
+                </div>
               </div>
             )}
           </div>
@@ -1309,7 +1443,7 @@ export default function Admin() {
             <h1 className="mt-1 text-2xl font-black tracking-tight">Back Office</h1>
           </div>
           <div className="text-right text-xs text-white/55">
-            <div className="text-sm font-bold text-white">{profile?.display_name ?? 'Admin'}</div>
+            <div className="text-sm font-bold text-white">{profile?.display_name ?? user?.email ?? 'Admin'}</div>
             <div className="capitalize text-amber-200">{role}</div>
           </div>
         </div>
@@ -1941,6 +2075,16 @@ export default function Admin() {
           {activeSection === 'Admin Access' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
               <div className="space-y-4">
+                <ConfigTable title="Admin emails" rows={adminEmailRoles.map((row) => [
+                  row.email,
+                  row.role,
+                  row.note ?? '',
+                  formatDate(row.created_at),
+                ])} onRowClick={(index) => setEmailRoleDraft({
+                  email: adminEmailRoles[index].email,
+                  role: adminEmailRoles[index].role,
+                  note: adminEmailRoles[index].note ?? '',
+                })} />
                 <ConfigTable title="Admin roles" rows={adminRoles.map((row) => [
                   row.profile_id,
                   row.role,
@@ -1958,24 +2102,64 @@ export default function Admin() {
                   entry.actor_profile_id ?? 'system',
                 ])} />
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h2 className="text-lg font-black">Grant admin role</h2>
-                <div className="mt-3 space-y-3">
-                  <Field label="Profile id" value={roleDraft.profile_id} onChange={(profile_id) => setRoleDraft((d) => ({ ...d, profile_id }))} />
-                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                    Role
-                    <select
-                      value={roleDraft.role}
-                      onChange={(event) => setRoleDraft((d) => ({ ...d, role: event.target.value as AdminRole }))}
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                    >
-                      {roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </select>
-                  </label>
-                  <Field label="Note" value={roleDraft.note} onChange={(note) => setRoleDraft((d) => ({ ...d, note }))} />
-                  <PrimaryButton onClick={() => void saveAdminRole()} disabled={!canManage || savingKey === 'role'}>
-                    Save role
-                  </PrimaryButton>
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                  <h2 className="text-lg font-black">Grant admin email</h2>
+                  <div className="mt-3 space-y-3">
+                    <Field label="Email" value={emailRoleDraft.email} onChange={(email) => setEmailRoleDraft((d) => ({ ...d, email }))} />
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                      Role
+                      <select
+                        value={emailRoleDraft.role}
+                        onChange={(event) => setEmailRoleDraft((d) => ({ ...d, role: event.target.value as AdminRole }))}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                      >
+                        {roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    <Field label="Note" value={emailRoleDraft.note} onChange={(note) => setEmailRoleDraft((d) => ({ ...d, note }))} />
+                    <div className="flex flex-wrap gap-2">
+                      <PrimaryButton onClick={() => void saveAdminEmailRole()} disabled={!canManage || savingKey === 'email-role'}>
+                        Save email
+                      </PrimaryButton>
+                      <SecondaryButton onClick={() => setEmailRoleDraft({ email: '', role: 'viewer', note: '' })}>
+                        New
+                      </SecondaryButton>
+                      <DangerButton
+                        onClick={() => {
+                          if (selectedEmailRole) void deleteAdminEmailRole(selectedEmailRole);
+                        }}
+                        disabled={
+                          !canManage ||
+                          !selectedEmailRole ||
+                          selectedEmailRole.email === currentUserEmail ||
+                          savingKey === `email-role-delete-${selectedEmailRole?.email ?? ''}`
+                        }
+                      >
+                        Remove
+                      </DangerButton>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                  <h2 className="text-lg font-black">Grant profile role</h2>
+                  <div className="mt-3 space-y-3">
+                    <Field label="Profile id" value={roleDraft.profile_id} onChange={(profile_id) => setRoleDraft((d) => ({ ...d, profile_id }))} />
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                      Role
+                      <select
+                        value={roleDraft.role}
+                        onChange={(event) => setRoleDraft((d) => ({ ...d, role: event.target.value as AdminRole }))}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                      >
+                        {roleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                      </select>
+                    </label>
+                    <Field label="Note" value={roleDraft.note} onChange={(note) => setRoleDraft((d) => ({ ...d, note }))} />
+                    <PrimaryButton onClick={() => void saveAdminRole()} disabled={!canManage || savingKey === 'role'}>
+                      Save role
+                    </PrimaryButton>
+                  </div>
                 </div>
               </div>
             </div>

@@ -249,6 +249,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      admin_email_allowlist: {
+        Row: {
+          email: string;
+          role: 'owner' | 'admin' | 'support' | 'viewer';
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          email: string;
+          role: 'owner' | 'admin' | 'support' | 'viewer';
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          email?: string;
+          role?: 'owner' | 'admin' | 'support' | 'viewer';
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       admin_audit_log: {
         Row: {
           id: string;
@@ -678,6 +705,10 @@ export type Database = {
           adjustment_reason: string;
         };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
+      };
+      get_my_admin_role: {
+        Args: Record<string, never>;
+        Returns: 'owner' | 'admin' | 'support' | 'viewer' | null;
       };
     };
     Enums: { [_ in never]: never };
