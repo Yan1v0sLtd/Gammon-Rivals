@@ -22,15 +22,8 @@ export function LobbySideOffers() {
                 className="absolute inset-0 h-full w-full object-cover"
                 draggable={false}
               />
-              <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(0,0,0,0.20)_42%,rgba(0,0,0,0.70)_100%)]" />
-              <span className="relative ml-[42%] min-w-0 pr-5">
-                <span className="block font-display text-xl font-black uppercase leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.50)]">
-                  {offer.title}
-                </span>
-                <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-white/80">
-                  {offer.subtitle}
-                </span>
-              </span>
+              <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,transparent_72%,rgba(0,0,0,0.42)_100%)]" />
+              <span className="lobby-offer-arrow" aria-hidden="true">›</span>
             </>
           ) : (
             <>
@@ -46,6 +39,7 @@ export function LobbySideOffers() {
                   {offer.subtitle}
                 </span>
               </span>
+              <span className="lobby-offer-arrow" aria-hidden="true">›</span>
             </>
           )}
         </button>

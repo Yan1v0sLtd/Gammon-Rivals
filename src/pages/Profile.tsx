@@ -18,6 +18,11 @@ const MODE_LABEL: Record<string, string> = {
   'ai-hard': 'AI - Hard',
 };
 
+const profileShortcuts = [
+  { label: 'Friends', icon: '/lobby/icons/friends.webp' },
+  { label: 'Settings', icon: '/lobby/icons/settings-gear.webp' },
+] as const;
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
   const now = new Date();
@@ -160,208 +165,207 @@ export default function Profile() {
     );
   }
 
-  const nextXpText = progression.nextLevelXp
-    ? `${formatCompactNumber(progression.xpNeededForNext)} XP to next level`
-    : 'Max configured level reached';
+  const xpTarget = progression.nextLevelXp ?? Math.max(progression.xp, progression.currentLevelXp + 1000);
+  const xpText = `${formatCompactNumber(progression.xp)} / ${formatCompactNumber(xpTarget)} XP`;
+  const nextLevelLabel = progression.nextLevelXp ? progression.level + 1 : progression.level;
+  const visibleMatches = matches?.slice(0, 3) ?? null;
 
   return (
-    <main className="profile-page min-h-screen px-4 py-[max(1rem,env(safe-area-inset-top))] text-white sm:px-6">
-      <div className="mx-auto flex min-h-[calc(100vh-2rem)] w-full max-w-[61rem] flex-col">
-        <header className="profile-page-header">
+    <main className="profile-page text-white">
+      <div className="profile-screen">
+        <header className="profile-top-nav">
           <Link to="/" className="profile-icon-button" aria-label="Back to lobby">
             <span className="profile-back-chevron" />
           </Link>
-          <h1 className="font-display text-[clamp(2rem,5vw,3.45rem)] font-black uppercase drop-shadow-[0_4px_0_rgba(0,0,0,0.35)]">
-            My Profile
-          </h1>
-          <button type="button" className="profile-icon-button" aria-label="Settings">
-            <span className="profile-gear-icon" />
-          </button>
+
+          <div className="profile-currency-bar" aria-label="Wallet">
+            <ProfileCurrency icon="/lobby/icons/gold-coin.webp" label="Coins" value={wallet?.coins ?? 0} />
+            <span className="profile-currency-divider" aria-hidden="true" />
+            <ProfileCurrency icon="/lobby/icons/gem.webp" label="Gems" value={wallet?.gems ?? 0} />
+          </div>
+
+          <nav className="profile-shortcuts" aria-label="Profile shortcuts">
+            {profileShortcuts.map((shortcut) => (
+              <button key={shortcut.label} type="button" className="profile-shortcut">
+                <span className="profile-shortcut-icon">
+                  <img src={shortcut.icon} alt="" draggable={false} />
+                </span>
+                <span>{shortcut.label}</span>
+              </button>
+            ))}
+          </nav>
         </header>
 
         <section className="profile-main-card">
-          <div className="profile-identity-grid">
-            <div className="profile-avatar-stage">
-              <div className="profile-avatar-glow" />
-              <Avatar
-                seed={profile?.avatar_seed ?? 'profile'}
-                imageUrl={profile?.avatar_url}
-                size={172}
-                ring="none"
-                className="profile-avatar-image"
-              />
-              <div className="profile-level-shield">
-                <span>{progression.level}</span>
-              </div>
-            </div>
-
-            <div className="min-w-0">
-              {editing ? (
-                <div className="profile-name-editor">
-                  <input
-                    value={draftName}
-                    onChange={(e) => setDraftName(e.target.value)}
-                    className="profile-name-input"
-                    maxLength={32}
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void saveName()}
-                    disabled={savingName || draftName.trim().length === 0}
-                    className="profile-small-action"
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditing(false)}
-                    className="profile-small-action profile-small-action--ghost"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="flex min-w-0 items-center gap-3">
-                  <h2 className="truncate font-display text-[clamp(2.35rem,6vw,4.4rem)] font-black leading-none text-white drop-shadow-[0_5px_0_rgba(0,0,0,0.42)]">
-                    {profile?.display_name ?? 'Player'}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={startEditName}
-                    className="profile-edit-button"
-                    aria-label="Edit name"
-                  >
-                    <span />
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <span className="profile-rank-badge">
-                  <span className="profile-rank-shield" aria-hidden="true">
-                    <span />
-                  </span>
-                  <span>{progression.statusLabel}</span>
-                </span>
-                <span className="profile-rating">
-                  <span className="profile-rating-cup" aria-hidden="true" />
-                  Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
-                </span>
-              </div>
-
-              <div className="profile-progress-panel mt-5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-display text-xl font-black uppercase text-white">
-                    Level {progression.level}
-                  </span>
-                  <span className="profile-progress-arrow" aria-hidden="true" />
-                  <span className="font-display text-xl font-black uppercase text-[#c895ff]">
-                    Level {progression.nextLevelXp ? progression.level + 1 : progression.level}
-                  </span>
-                </div>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="profile-xp-bar" aria-label={`XP progress ${progression.progressLabel}`}>
-                    <span style={{ width: `${progression.progressPercent}%` }} />
-                  </div>
-                  <span className="profile-xp-percent">{progression.progressLabel}</span>
-                </div>
-                <div className="mt-3 text-lg font-bold text-white/55">{nextXpText}</div>
-              </div>
+          <div className="profile-avatar-stage">
+            <div className="profile-avatar-glow" />
+            <Avatar
+              seed={profile?.avatar_seed ?? 'profile'}
+              imageUrl={profile?.avatar_url}
+              size={220}
+              ring="none"
+              className="profile-avatar-image"
+            />
+            <div className="profile-level-shield">
+              <span>{progression.level}</span>
             </div>
           </div>
 
-          {isGuest && (
-            <div className="profile-save-progress">
-              <div>
-                <div className="font-display text-lg font-black uppercase text-[#f7d76b]">
-                  Save progress
-                </div>
-                <div className="text-sm font-semibold text-white/64">
-                  Link Google to keep XP, coins, boards, purchases, and match history.
-                </div>
+          <div className="profile-info-column">
+            {editing ? (
+              <div className="profile-name-editor">
+                <input
+                  value={draftName}
+                  onChange={(e) => setDraftName(e.target.value)}
+                  className="profile-name-input"
+                  maxLength={32}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => void saveName()}
+                  disabled={savingName || draftName.trim().length === 0}
+                  className="profile-small-action"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  className="profile-small-action profile-small-action--ghost"
+                >
+                  Cancel
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => void handleLinkGoogle()}
-                disabled={linkingGoogle}
-                className="profile-google-button"
-              >
-                {linkingGoogle ? 'Opening Google...' : 'Link Google account'}
-              </button>
-              {linkErr && <div className="text-sm font-bold text-rose-300">{linkErr}</div>}
+            ) : (
+              <div className="profile-name-row">
+                <h1>{profile?.display_name ?? 'Player'}</h1>
+                <button
+                  type="button"
+                  onClick={startEditName}
+                  className="profile-edit-button"
+                  aria-label="Edit name"
+                >
+                  <span />
+                </button>
+              </div>
+            )}
+
+            <div className="profile-rank-row">
+              <span className="profile-rank-badge">
+                <span className="profile-rank-shield" aria-hidden="true">
+                  <span />
+                </span>
+                <span>{progression.statusLabel}</span>
+              </span>
+              <span className="profile-rating">
+                <span className="profile-rating-cup" aria-hidden="true" />
+                Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
+              </span>
             </div>
-          )}
-        </section>
 
-        <section className="profile-stat-grid" aria-label="Player stats">
-          <Stat icon="coins" label="Coins" value={wallet?.coins ?? 0} />
-          <Stat icon="gems" label="Gems" value={wallet?.gems ?? 0} />
-          <Stat icon="finished" label="Finished" value={stats?.totalFinished ?? 0} />
-          <Stat icon="wins" label="AI Wins" value={stats?.aiWins ?? 0} />
-          <Stat icon="losses" label="AI Losses" value={stats?.aiLosses ?? 0} wide />
-          <Stat icon="hotseat" label="Hot-seat" value={stats?.hotseatPlayed ?? 0} wide />
-        </section>
-
-        <section className="profile-history-panel">
-          <h3 className="font-display text-2xl font-black uppercase text-white">
-            Match History
-          </h3>
-          {loadErr && <div className="mt-3 text-sm font-bold text-rose-300">{loadErr}</div>}
-          {matches === null ? (
-            <div className="py-8 text-center font-bold text-white/45">Loading...</div>
-          ) : matches.length === 0 ? (
-            <div className="py-8 text-center font-bold text-white/45">
-              No matches yet. <Link to="/" className="text-[#f7d76b]">Start one</Link>.
+            <div className="profile-xp-section">
+              <div className="profile-level-row">
+                <span>Level {progression.level}</span>
+                <span>Level {nextLevelLabel}</span>
+              </div>
+              <div className="profile-xp-row">
+                <div className="profile-xp-bar" aria-label={`XP progress ${progression.progressLabel}`}>
+                  <span style={{ width: `${progression.progressPercent}%` }} />
+                </div>
+                <span className="profile-xp-text">{xpText}</span>
+              </div>
+              <div className="profile-next-reward">
+                <span>Next Reward:</span>
+                <img src="/lobby/icons/gold-coin.webp" alt="" draggable={false} />
+                <strong>500 Coins</strong>
+              </div>
+              {isGuest && (
+                <div className="profile-save-progress">
+                  <button
+                    type="button"
+                    onClick={() => void handleLinkGoogle()}
+                    disabled={linkingGoogle}
+                    className="profile-google-button"
+                  >
+                    {linkingGoogle ? 'Opening Google...' : 'Link Google'}
+                  </button>
+                  {linkErr && <span>{linkErr}</span>}
+                </div>
+              )}
             </div>
-          ) : (
-            <ul className="mt-4 flex flex-col gap-3">
-              {matches.map((m) => {
-                const outcome = ownerOutcome(m);
-                const outcomeLabel =
-                  outcome === 'won'
-                    ? 'Won'
-                    : outcome === 'lost'
-                    ? 'Lost'
-                    : outcome === 'open'
-                    ? 'In Progress'
-                    : 'Hot-seat';
-                return (
-                  <li key={m.id}>
-                    <button
-                      type="button"
-                      className="profile-history-row"
-                      onClick={() => m.finished_at && void openReplay(m.id)}
-                      disabled={!m.finished_at}
-                    >
-                      <span className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`} aria-hidden="true">
-                        <span />
-                      </span>
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className="block truncate font-display text-xl font-black text-white">
-                          {MODE_LABEL[m.mode] ?? m.mode}{' '}
-                          <span className="font-sans text-base font-bold text-[#f7d76b]">- to {m.target}</span>
-                        </span>
-                        <span className="mt-1 block text-base font-semibold text-white/48">
-                          {formatDate(m.finished_at ?? m.started_at)}
-                          {m.game_count > 0 && ` - ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
-                        </span>
-                      </span>
-                      <span className="profile-history-score">
-                        {m.white_score} - {m.black_score}
-                      </span>
-                      <span className={`profile-history-status profile-history-status--${outcome}`}>
-                        {outcomeLabel}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+
+          </div>
+
+          <section className="profile-stat-grid" aria-label="Player stats">
+            <Stat icon="coins" label="Coins" value={wallet?.coins ?? 0} />
+            <Stat icon="gems" label="Gems" value={wallet?.gems ?? 0} />
+            <Stat icon="finished" label="Finished" value={stats?.totalFinished ?? 0} />
+            <Stat icon="wins" label="AI Wins" value={stats?.aiWins ?? 0} />
+            <Stat icon="losses" label="AI Losses" value={stats?.aiLosses ?? 0} wide />
+            <Stat icon="hotseat" label="Hot-seat" value={stats?.hotseatPlayed ?? 0} wide />
+          </section>
         </section>
 
-        {!isGuest ? (
+        <div className="profile-bottom-grid">
+          <section className="profile-history-panel">
+            <h2>Match History</h2>
+            {loadErr && <div className="profile-panel-message profile-panel-message--error">{loadErr}</div>}
+            {visibleMatches === null ? (
+              <div className="profile-panel-message">Loading...</div>
+            ) : visibleMatches.length === 0 ? (
+              <div className="profile-panel-message">
+                <span>No matches yet.</span>
+                <Link to="/">Start one</Link>
+              </div>
+            ) : (
+              <ul className="profile-history-list">
+                {visibleMatches.map((m) => {
+                  const outcome = ownerOutcome(m);
+                  const outcomeLabel =
+                    outcome === 'won'
+                      ? 'Won'
+                      : outcome === 'lost'
+                      ? 'Lost'
+                      : outcome === 'open'
+                      ? 'In Progress'
+                      : 'Hot-seat';
+                  return (
+                    <li key={m.id}>
+                      <button
+                        type="button"
+                        className="profile-history-row"
+                        onClick={() => m.finished_at && void openReplay(m.id)}
+                        disabled={!m.finished_at}
+                      >
+                        <span className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`} aria-hidden="true">
+                          <span />
+                        </span>
+                        <span className="profile-history-copy">
+                          <span>
+                            {MODE_LABEL[m.mode] ?? m.mode}
+                            <em> to {m.target}</em>
+                          </span>
+                          <small>
+                            {formatDate(m.finished_at ?? m.started_at)}
+                            {m.game_count > 0 && ` - ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
+                          </small>
+                        </span>
+                        <span className="profile-history-score">
+                          {m.white_score} - {m.black_score}
+                        </span>
+                        <span className={`profile-history-status profile-history-status--${outcome}`}>
+                          {outcomeLabel}
+                        </span>
+                        <span className="profile-history-chevron" aria-hidden="true">›</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
           <button
             type="button"
             onClick={() => void handleSignOut()}
@@ -371,9 +375,27 @@ export default function Profile() {
             <span className="profile-logout-icon" aria-hidden="true" />
             {signingOut ? 'Logging out...' : 'Log Out'}
           </button>
-        ) : null}
+        </div>
       </div>
     </main>
+  );
+}
+
+function ProfileCurrency({
+  icon,
+  label,
+  value,
+}: {
+  readonly icon: string;
+  readonly label: string;
+  readonly value: number;
+}) {
+  return (
+    <div className="profile-currency-pill" aria-label={`${label}: ${formatCompactNumber(value)}`}>
+      <img src={icon} alt="" draggable={false} />
+      <span>{formatCompactNumber(value)}</span>
+      <button type="button" aria-label={`Add ${label}`}>+</button>
+    </div>
   );
 }
 
@@ -393,10 +415,8 @@ function Stat({
       <span className={`profile-stat-icon profile-stat-icon--${icon}`} aria-hidden="true">
         <span />
       </span>
-      <div className="font-display text-[clamp(2.5rem,7vw,4rem)] font-black leading-none text-white drop-shadow-[0_4px_0_rgba(0,0,0,0.36)]">
-        {formatCompactNumber(value)}
-      </div>
-      <div className="mt-1 text-base font-black uppercase text-white/58">{label}</div>
+      <strong>{formatCompactNumber(value)}</strong>
+      <small>{label}</small>
     </div>
   );
 }
