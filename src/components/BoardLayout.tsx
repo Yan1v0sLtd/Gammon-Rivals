@@ -5,6 +5,7 @@ interface PlayerSeat {
   identity: PlayerIdentity | null;
   pipCount?: number;
   scoreLabel?: string;
+  doublesLabel?: string;
   level?: number;
   stateLabel?: string;
   coinsLabel?: string;

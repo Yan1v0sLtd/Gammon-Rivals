@@ -8,6 +8,8 @@ interface Props {
   pipCount?: number;
   /** Match score for this player ("0–0" style — formatted by parent). */
   scoreLabel?: string;
+  /** Cube/double status for this player. */
+  doublesLabel?: string;
   level?: number;
   stateLabel?: string;
   coinsLabel?: string;
@@ -41,6 +43,7 @@ export default function SidePanel({
   identity,
   pipCount,
   scoreLabel,
+  doublesLabel = '0',
   level = 23,
   stateLabel = 'Rookie',
   coinsLabel = '400',
@@ -62,6 +65,10 @@ export default function SidePanel({
       ? { left: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' }
       : { right: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' };
   const displayName = firstNameOnly(identity?.name);
+  const playerArt =
+    side === 'left'
+      ? '/gameplay/premium-purple/left-player.webp'
+      : '/gameplay/premium-purple/right-player.webp';
 
   if (!compact) {
     return (
@@ -71,6 +78,13 @@ export default function SidePanel({
         }`}
       >
         <section className="game-player-card">
+          <span className="game-player-neon-rail" aria-hidden="true" />
+          <img
+            src={playerArt}
+            alt=""
+            className="game-player-frame-art"
+            draggable={false}
+          />
           <div className="game-player-card-glow" />
           <div className="game-player-top">
             <div className="game-avatar-stage">
@@ -103,18 +117,31 @@ export default function SidePanel({
           </div>
 
           <div className="game-stat-list">
-            <div className="game-stat-row">
+            <img
+              src="/gameplay/premium-purple/player-stats.webp"
+              alt=""
+              className="game-player-stats-art"
+              draggable={false}
+            />
+            <div className="game-stat-row game-stat-row--pip">
               <span className="game-stat-icon game-stat-icon--dice" />
               <span className="game-stat-copy">
                 <span className="game-stat-label">Pip Count</span>
                 <strong>{pipCount ?? '—'}</strong>
               </span>
             </div>
-            <div className="game-stat-row">
+            <div className="game-stat-row game-stat-row--score">
               <span className="game-stat-icon game-stat-icon--score" />
               <span className="game-stat-copy">
                 <span className="game-stat-label">Score</span>
                 <strong>{scoreLabel ?? '0/7'}</strong>
+              </span>
+            </div>
+            <div className="game-stat-row game-stat-row--doubles">
+              <span className="game-stat-icon game-stat-icon--cube" />
+              <span className="game-stat-copy">
+                <span className="game-stat-label">Doubles</span>
+                <strong>{doublesLabel}</strong>
               </span>
             </div>
           </div>
@@ -123,6 +150,7 @@ export default function SidePanel({
             <TurnTimerBar
               progress={timerProgress}
               secondsLeft={timerSecondsLeft}
+              side={side}
             />
           )}
           {hudSlot && (
@@ -193,22 +221,30 @@ export default function SidePanel({
             </span>
           </div>
         )}
-        {scoreLabel && (
-          <div className="game-compact-stat-row">
+      {scoreLabel && (
+        <div className="game-compact-stat-row">
             <span className="game-compact-stat-icon game-compact-stat-icon--score" />
             <span className="game-compact-stat-copy">
               <span>Score</span>
               <strong>{scoreLabel}</strong>
             </span>
-          </div>
-        )}
+        </div>
+      )}
+      <div className="game-compact-stat-row">
+        <span className="game-compact-stat-icon game-compact-stat-icon--cube" />
+        <span className="game-compact-stat-copy">
+          <span>Doubles</span>
+          <strong>{doublesLabel}</strong>
+        </span>
       </div>
+    </div>
 
       {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (
         <TurnTimerBar
           progress={timerProgress}
           secondsLeft={timerSecondsLeft}
           compact={compact}
+          side={side}
         />
       )}
       {hudSlot && (

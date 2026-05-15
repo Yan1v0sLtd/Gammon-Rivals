@@ -42,6 +42,16 @@ export default function ActionButtons({
   return (
     <div className="game-action-row">
       <button
+        type="button"
+        disabled
+        className="game-cube-button"
+        aria-label={`Cube value ${cubeValue}`}
+      >
+        <strong>{cubeValue}</strong>
+        <span>Cube</span>
+      </button>
+
+      <button
         onClick={canDouble ? onDouble : undefined}
         disabled={!canDouble}
         className={`game-double-button ${

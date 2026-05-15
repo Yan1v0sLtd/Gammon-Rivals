@@ -95,6 +95,16 @@ export const lobbyBoards: readonly LobbyBoard[] = [
     backgroundTone:
       'linear-gradient(180deg,rgba(9,8,36,0.38),rgba(56,18,83,0.16)_42%,rgba(2,8,18,0.72)),radial-gradient(circle_at_58%_44%,rgba(169,88,255,0.24),transparent_54%)',
   },
+  {
+    id: 'premium-purple',
+    name: 'Premium Purple',
+    subtitle: 'Asset-led gameplay preview',
+    image: '/lobby/board-previews/premium-purple.webp',
+    accent: '#c94dff',
+    background: '/gameplay/premium-purple/background.webp',
+    backgroundTone:
+      'linear-gradient(180deg,rgba(12,4,14,0.45),rgba(66,22,56,0.10)_42%,rgba(0,0,0,0.78)),radial-gradient(circle_at_58%_44%,rgba(198,72,255,0.22),transparent_54%)',
+  },
 ];
 
 export const lobbyOffers: readonly LobbyOffer[] = [

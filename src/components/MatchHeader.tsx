@@ -41,6 +41,12 @@ export default function MatchHeader({
       </div>
 
       <div className="game-match-hud">
+        <img
+          src="/gameplay/premium-purple/header.webp"
+          alt=""
+          className="game-match-hud-art"
+          draggable={false}
+        />
         <div className="game-match-label">Match to {match.target}</div>
         <div className="game-score-strip">
           <div className="game-score-player game-score-player--left">
@@ -63,7 +69,14 @@ export default function MatchHeader({
           {inCrawford && <span className="game-crawford-pill">Crawford</span>}
         </div>
       </div>
-      <div aria-hidden="true" />
+      <div className="game-header-actions">
+        <button type="button" className="game-header-icon-button" aria-label="Statistics">
+          <img src="/gameplay/premium-purple/stats.webp" alt="" draggable={false} />
+        </button>
+        <button type="button" className="game-header-icon-button" aria-label="Settings">
+          <img src="/gameplay/premium-purple/settings.webp" alt="" draggable={false} />
+        </button>
+      </div>
     </header>
   );
 }

@@ -335,6 +335,7 @@ export default function HotSeat() {
   const selfCoins = formatCompactNumber(wallet?.coins);
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
+  const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
   const whiteName = localColor === 'white' ? selfIdentity.name : opponentIdentity.name;
   const blackName = localColor === 'black' ? selfIdentity.name : opponentIdentity.name;
   const gameplayBackground =
@@ -358,6 +359,7 @@ export default function HotSeat() {
         identity: opponentIdentity,
         pipCount: opponentPip,
         scoreLabel: `${game.match.score[opponentColor]} / ${game.match.target}`,
+        doublesLabel,
         level: opponentLevel,
         stateLabel: opponentState,
         coinsLabel: aiConfig ? '22.7K' : '400',
@@ -369,6 +371,7 @@ export default function HotSeat() {
         identity: selfIdentity,
         pipCount: localPip,
         scoreLabel: `${game.match.score[localColor]} / ${game.match.target}`,
+        doublesLabel,
         level: selfLevel,
         stateLabel: progression.statusLabel,
         coinsLabel: selfCoins,
