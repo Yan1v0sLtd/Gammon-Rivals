@@ -138,7 +138,7 @@ export default function SidePanel({
 
   return (
     <aside
-      className={`flex flex-col ${align} justify-between gap-3 ${
+      className={`game-compact-panel flex flex-col ${align} justify-between gap-3 ${
         compact
           ? `w-full max-w-[10.75rem] overflow-hidden p-0 ${
               side === 'right' ? 'justify-self-end' : 'justify-self-start'
@@ -148,7 +148,7 @@ export default function SidePanel({
     >
       <div className={`relative flex flex-col ${align} gap-2 min-w-0 w-full`}>
         <div
-          className={`relative grid shrink-0 place-items-center ${
+          className={`game-compact-avatar-stage relative grid shrink-0 place-items-center ${
             isTurn ? 'drop-shadow-[0_0_18px_rgba(255,211,77,0.38)]' : ''
           }`}
           style={{ width: avatarSize, height: avatarSize }}
@@ -177,14 +177,14 @@ export default function SidePanel({
         </div>
         <div className={`flex flex-col gap-1 ${textAlign} min-w-0 w-full`}>
           <div
-            className={`text-amber-50 font-display truncate leading-tight ${
+            className={`game-compact-name text-amber-50 font-display truncate leading-tight ${
               compact ? 'max-w-[10rem] text-sm' : 'text-lg sm:text-xl'
             }`}
           >
             {displayName}
           </div>
           <div
-            className={`grid w-full gap-1 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${
+            className={`game-compact-details grid w-full gap-1 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${
               compact ? 'text-[0.65rem]' : 'text-xs'
             }`}
           >
