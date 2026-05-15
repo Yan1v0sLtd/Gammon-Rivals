@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 interface Props {
   readonly progress: number;
   readonly secondsLeft: number;
@@ -9,12 +11,17 @@ export default function TurnTimerBar({ progress, secondsLeft, compact = false }:
   const tone = clamped > 0.34 ? 'is-safe' : clamped > 0.16 ? 'is-warning' : 'is-danger';
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = String(secondsLeft % 60).padStart(2, '0');
+  const timerStyle = { '--timer-progress': clamped } as CSSProperties;
 
   return (
     <div className={`game-turn-timer ${compact ? 'is-compact' : ''} ${tone}`}>
       <span className="game-turn-timer-icon" aria-hidden="true" />
-      <div className="game-turn-timer-track" aria-label={`${secondsLeft} seconds left`}>
-        <div className="game-turn-timer-fill" style={{ width: `${clamped * 100}%` }} />
+      <div
+        className="game-turn-timer-track"
+        aria-label={`${secondsLeft} seconds left`}
+        style={timerStyle}
+      >
+        <div className="game-turn-timer-fill" />
       </div>
       <strong>{minutes}:{seconds}</strong>
     </div>

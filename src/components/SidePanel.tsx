@@ -54,7 +54,7 @@ export default function SidePanel({
 }: Props) {
   const align = side === 'left' ? 'items-start' : 'items-end';
   const textAlign = side === 'left' ? 'text-left' : 'text-right';
-  const avatarSize = compact ? 66 : 106;
+  const avatarSize = compact ? 58 : 106;
   const innerAvatarSize = Math.round(avatarSize * 0.66);
   const hudOffset = avatarSize + (compact ? 6 : 12);
   const hudStyle =
@@ -138,100 +138,85 @@ export default function SidePanel({
 
   return (
     <aside
-      className={`game-compact-panel game-player-panel--${side} flex flex-col ${align} justify-between gap-3 ${
-        compact
-          ? `w-full max-w-[10.75rem] overflow-hidden p-0 ${
-              side === 'right' ? 'justify-self-end' : 'justify-self-start'
-            }`
-          : 'py-2 px-2 sm:px-3'
-      } h-full min-w-0`}
+      className={`game-compact-panel game-player-panel--${side} ${isTurn ? 'is-turn' : ''} ${
+        side === 'right' ? 'justify-self-end' : 'justify-self-start'
+      }`}
     >
-      <div className={`relative flex flex-col ${align} gap-2 min-w-0 w-full`}>
+      <div className="game-compact-top">
         <div
-          className={`game-compact-avatar-stage relative grid shrink-0 place-items-center ${
-            isTurn ? 'drop-shadow-[0_0_18px_rgba(255,211,77,0.38)]' : ''
-          }`}
+          className="game-compact-avatar-stage"
           style={{ width: avatarSize, height: avatarSize }}
         >
-          <div className="absolute inset-[17%] rounded-full bg-gradient-to-b from-[#fff2bd] to-[#68411f]" />
           <Avatar
             seed={identity?.avatarSeed ?? 'placeholder'}
             imageUrl={identity?.avatarUrl}
             size={innerAvatarSize}
             ring="none"
-            className="relative z-10"
+            className="game-compact-avatar-image"
           />
-          <img
-            src="/lobby/icons/avatar-frame.webp"
-            alt=""
-            className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-            draggable={false}
-          />
-          <span
-            className={`absolute bottom-[8%] right-[9%] z-20 grid place-items-center rounded-full border border-[#ffd56c] bg-[#19233a] font-black text-[#ffe9a5] shadow-[0_2px_5px_rgba(0,0,0,0.42)] ${
-              compact ? 'h-5 min-w-5 px-1 text-[0.62rem]' : 'h-7 min-w-7 px-1 text-sm'
-            }`}
-          >
+          <span className="game-compact-level">
             {level}
           </span>
         </div>
-        <div className={`flex flex-col gap-1 ${textAlign} min-w-0 w-full`}>
-          <div
-            className={`game-compact-name text-amber-50 font-display truncate leading-tight ${
-              compact ? 'max-w-[10rem] text-sm' : 'text-lg sm:text-xl'
-            }`}
-          >
+        <div className={`game-compact-identity ${textAlign}`}>
+          <div className="game-compact-name">
             {displayName}
           </div>
-          <div
-            className={`game-compact-details grid w-full gap-1 rounded-md border border-white/10 bg-black/30 px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ${
-              compact ? 'text-[0.65rem]' : 'text-xs'
-            }`}
-          >
-            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-sky-500 text-[0.62rem] font-black text-white shadow">
+          <div className="game-compact-details">
+            <div className="game-compact-line">
+              <span className="game-compact-meta game-compact-meta--level">
                 ★
               </span>
-              <span className="font-black text-sky-100">Level {level}</span>
+              <span>Level {level}</span>
             </div>
-            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
-              <span className="grid h-4 w-4 place-items-center rounded-sm bg-gradient-to-r from-blue-700 via-yellow-300 to-red-600 shadow" />
-              <span className="font-semibold text-white/80">{stateLabel}</span>
+            <div className="game-compact-line">
+              <span className="game-compact-meta game-compact-meta--flag" />
+              <span>{stateLabel}</span>
             </div>
-            <div className={`flex items-center gap-1.5 ${side === 'right' ? 'justify-end' : ''}`}>
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gradient-to-b from-yellow-200 to-amber-600 text-[0.6rem] font-black text-amber-950 shadow">
+            <div className="game-compact-line">
+              <span className="game-compact-meta game-compact-meta--coin">
                 $
               </span>
-              <span className="font-black text-amber-100">{coinsLabel}</span>
+              <span>{coinsLabel}</span>
             </div>
-            {pipCount !== undefined && (
-              <div className={`text-amber-200/70 ${side === 'right' ? 'text-right' : 'text-left'}`}>
-                pip {pipCount}
-              </div>
-            )}
-            {scoreLabel && (
-              <div className={`font-black text-amber-300 ${side === 'right' ? 'text-right' : 'text-left'}`}>
-                {scoreLabel}
-              </div>
-            )}
           </div>
-          {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (
-            <TurnTimerBar
-              progress={timerProgress}
-              secondsLeft={timerSecondsLeft}
-              compact={compact}
-            />
-          )}
         </div>
-        {hudSlot && (
-          <div className="pointer-events-none absolute z-30" style={hudStyle}>
-            {hudSlot}
+      </div>
+
+      <div className="game-compact-stat-list">
+        {pipCount !== undefined && (
+          <div className="game-compact-stat-row">
+            <span className="game-compact-stat-icon game-compact-stat-icon--dice" />
+            <span className="game-compact-stat-copy">
+              <span>Pip Count</span>
+              <strong>{pipCount}</strong>
+            </span>
+          </div>
+        )}
+        {scoreLabel && (
+          <div className="game-compact-stat-row">
+            <span className="game-compact-stat-icon game-compact-stat-icon--score" />
+            <span className="game-compact-stat-copy">
+              <span>Score</span>
+              <strong>{scoreLabel}</strong>
+            </span>
           </div>
         )}
       </div>
-      {bottomSlot && (
-        <div className={`flex flex-col ${align} gap-2 w-full`}>{bottomSlot}</div>
+
+      {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (
+        <TurnTimerBar
+          progress={timerProgress}
+          secondsLeft={timerSecondsLeft}
+          compact={compact}
+        />
       )}
+      {hudSlot && (
+        <div className="pointer-events-none absolute z-30" style={hudStyle}>
+          {hudSlot}
+        </div>
+      )}
+      {bottomSlot && <div className={`flex flex-col ${align} gap-2 w-full`}>{bottomSlot}</div>}
     </aside>
   );
 }
