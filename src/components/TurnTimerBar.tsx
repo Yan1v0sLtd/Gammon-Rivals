@@ -16,7 +16,7 @@ export default function TurnTimerBar({ progress, secondsLeft, compact = false }:
       <div className="game-turn-timer-track" aria-label={`${secondsLeft} seconds left`}>
         <div className="game-turn-timer-fill" style={{ width: `${clamped * 100}%` }} />
       </div>
-      {!compact && <strong>{minutes}:{seconds}</strong>}
+      <strong>{minutes}:{seconds}</strong>
     </div>
   );
 }

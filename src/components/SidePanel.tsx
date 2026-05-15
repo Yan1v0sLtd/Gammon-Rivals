@@ -138,7 +138,7 @@ export default function SidePanel({
 
   return (
     <aside
-      className={`game-compact-panel flex flex-col ${align} justify-between gap-3 ${
+      className={`game-compact-panel game-player-panel--${side} flex flex-col ${align} justify-between gap-3 ${
         compact
           ? `w-full max-w-[10.75rem] overflow-hidden p-0 ${
               side === 'right' ? 'justify-self-end' : 'justify-self-start'

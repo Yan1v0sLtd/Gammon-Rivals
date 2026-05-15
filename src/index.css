@@ -4399,13 +4399,20 @@ html, body, #root {
   }
 
   .game-match-hud {
-    min-width: clamp(7rem, 19vw, 9.5rem);
-    transform: translateY(0.08rem);
+    min-width: min(48vw, 24rem);
+    transform: translateY(0.02rem);
+  }
+
+  .game-match-label {
+    display: block;
+    margin-bottom: 0.03rem;
+    font-size: clamp(0.45rem, 1.5vw, 0.62rem);
+    letter-spacing: 0.06em;
   }
 
   .game-score-strip {
-    min-width: clamp(7rem, 19vw, 9.5rem);
-    grid-template-columns: 1fr;
+    min-width: min(45vw, 24rem);
+    grid-template-columns: minmax(3.45rem, 1fr) clamp(6.2rem, 16vw, 8rem) minmax(3.45rem, 1fr);
   }
 
   .game-score-strip::before {
@@ -4421,24 +4428,24 @@ html, body, #root {
   }
 
   .game-score-player {
-    display: none;
+    display: grid;
   }
 
   .game-score-player span {
-    max-width: 5.2rem;
-    font-size: clamp(0.62rem, 2vw, 0.82rem);
+    max-width: 4.9rem;
+    font-size: clamp(0.55rem, 1.8vw, 0.72rem);
   }
 
   .game-score-player strong {
-    font-size: clamp(0.7rem, 2.25vw, 0.95rem);
+    font-size: clamp(0.62rem, 2vw, 0.85rem);
   }
 
   .game-score-core {
-    min-height: clamp(2.2rem, 9.5dvh, 3rem);
-    gap: 0.26rem;
+    min-height: clamp(1.95rem, 7.8dvh, 2.55rem);
+    gap: 0.22rem;
     border-width: 1px;
     border-radius: 1rem;
-    font-size: clamp(1.65rem, 5.8vw, 2.35rem);
+    font-size: clamp(1.35rem, 4.6vw, 2rem);
     box-shadow:
       0 0 0 0.08rem rgba(0, 0, 0, 0.62),
       0 0.45rem 0.75rem rgba(0, 0, 0, 0.46),
@@ -4454,43 +4461,43 @@ html, body, #root {
   }
 
   .game-turn-pill {
-    min-height: 1.36rem;
-    gap: 0.32rem;
-    margin-top: -0.02rem;
-    padding: 0 0.72rem;
-    border-radius: 0 0 0.7rem 0.7rem;
-    font-size: clamp(0.56rem, 1.95vw, 0.78rem);
+    min-height: clamp(1.05rem, 4dvh, 1.28rem);
+    gap: 0.28rem;
+    margin-top: -0.05rem;
+    padding: 0 0.62rem;
+    border-radius: 0 0 0.62rem 0.62rem;
+    font-size: clamp(0.52rem, 1.75vw, 0.7rem);
   }
 
   .game-turn-dot {
-    width: 0.78rem;
-    height: 0.78rem;
+    width: 0.68rem;
+    height: 0.68rem;
   }
 
   .game-stage {
     grid-template-rows: minmax(0, 1fr);
     gap: 0;
-    padding-top: clamp(3.65rem, 12dvh, 4.6rem);
-    padding-bottom: clamp(3.65rem, 13dvh, 4.85rem);
+    padding-top: clamp(3.8rem, 12.6dvh, 4.6rem);
+    padding-bottom: clamp(3.2rem, 12dvh, 4.35rem);
   }
 
   .game-mobile-players {
     position: absolute;
     z-index: 17;
-    top: clamp(3.35rem, 12dvh, 4.35rem);
+    top: clamp(3.55rem, 12.6dvh, 4.45rem);
     inset-inline:
       max(0.7rem, env(safe-area-inset-left))
       max(0.7rem, env(safe-area-inset-right));
     display: grid;
-    grid-template-columns: 7.6rem 7.6rem;
+    grid-template-columns: 8rem 8rem;
     justify-content: space-between;
     gap: 0;
     pointer-events: none;
   }
 
   .game-compact-panel {
-    max-width: 7.6rem !important;
-    gap: 0.28rem !important;
+    max-width: 8rem !important;
+    gap: 0.22rem !important;
     pointer-events: auto;
   }
 
@@ -4506,23 +4513,67 @@ html, body, #root {
   }
 
   .game-compact-name {
-    max-width: 7rem !important;
-    font-size: clamp(0.78rem, 2.4vw, 0.95rem) !important;
+    max-width: 7.4rem !important;
+    font-size: clamp(0.7rem, 2.15vw, 0.86rem) !important;
     text-shadow: 0 0.12rem 0.2rem #000;
   }
 
   .game-compact-details {
-    display: none !important;
+    display: grid !important;
+    width: 7.4rem !important;
+    gap: 0.14rem !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 0.45rem !important;
+    background: rgba(0, 0, 0, 0.42) !important;
+    padding: 0.28rem 0.4rem !important;
+    font-size: clamp(0.45rem, 1.45vw, 0.58rem) !important;
+    line-height: 1.08;
+  }
+
+  .game-compact-details .h-4 {
+    width: 0.72rem !important;
+    height: 0.72rem !important;
+    font-size: 0.4rem !important;
+  }
+
+  .game-compact-details .font-black,
+  .game-compact-details .font-semibold {
+    line-height: 1.05;
   }
 
   .game-mobile-players .game-turn-timer {
-    width: 5.9rem;
-    max-width: 5.9rem;
-    padding: 0.14rem;
+    width: 7.4rem;
+    max-width: 7.4rem;
+    grid-template-columns: 0.72rem minmax(0, 1fr) auto;
+    gap: 0.28rem;
+    border-color: rgba(150, 86, 241, 0.72);
+    background: rgba(4, 7, 14, 0.78);
+    padding: 0.16rem 0.36rem;
+  }
+
+  .game-mobile-players .game-player-panel--right .game-turn-timer {
+    border-color: rgba(70, 185, 255, 0.68);
+  }
+
+  .game-mobile-players .game-turn-timer-icon,
+  .game-mobile-players .game-turn-timer strong {
+    display: block;
+  }
+
+  .game-mobile-players .game-turn-timer-icon {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-width: 0.11rem;
   }
 
   .game-mobile-players .game-turn-timer-track {
-    height: 0.34rem;
+    height: 0.3rem;
+  }
+
+  .game-mobile-players .game-turn-timer strong {
+    color: #ffe7a4;
+    font-size: clamp(0.44rem, 1.45vw, 0.56rem);
+    line-height: 1;
   }
 
   .game-board-column {
@@ -4532,9 +4583,9 @@ html, body, #root {
   }
 
   .game-board-stage {
-    width: min(64vw, 35rem, calc((100dvh - 8.15rem) * 1.333));
+    width: min(58vw, 33rem, calc((100dvh - 9.25rem) * 1.333));
     max-width: none;
-    max-height: calc(100dvh - 8.15rem);
+    max-height: calc(100dvh - 9.25rem);
   }
 
   .game-actions-layer {
@@ -4544,46 +4595,46 @@ html, body, #root {
   }
 
   .game-actions-inner {
-    width: min(94vw, 37rem);
+    width: min(48vw, 29rem);
   }
 
   .game-action-row {
     width: 100%;
-    max-width: 37rem;
-    gap: clamp(0.25rem, 1.1vw, 0.55rem);
+    max-width: 29rem;
+    gap: clamp(0.2rem, 0.9vw, 0.45rem);
     filter: drop-shadow(0 0.35rem 0.6rem rgba(0, 0, 0, 0.62));
   }
 
   .game-double-button,
   .game-auto-toggle,
   .game-roll-button {
-    min-height: clamp(2.85rem, 13dvh, 3.6rem);
-    border-radius: clamp(0.75rem, 2.4vw, 1rem);
+    min-height: clamp(2.35rem, 10dvh, 2.95rem);
+    border-radius: clamp(0.62rem, 1.9vw, 0.85rem);
   }
 
   .game-double-button,
   .game-auto-toggle {
-    width: clamp(5.7rem, 20vw, 7.25rem);
+    width: clamp(4.2rem, 13.5vw, 5.4rem);
   }
 
   .game-double-button strong {
-    font-size: clamp(1.15rem, 4.5vw, 1.7rem);
+    font-size: clamp(0.95rem, 3.8vw, 1.38rem);
   }
 
   .game-double-button span,
   .game-auto-label {
-    font-size: clamp(0.56rem, 2.2vw, 0.72rem);
+    font-size: clamp(0.5rem, 1.8vw, 0.64rem);
     letter-spacing: 0.06em;
   }
 
   .game-roll-button {
     flex: 1 1 auto;
     width: auto;
-    min-width: clamp(10.5rem, 38vw, 14.5rem);
+    min-width: clamp(8rem, 26vw, 10.5rem);
   }
 
   .game-roll-button strong {
-    font-size: clamp(1.65rem, 6.5vw, 2.35rem);
+    font-size: clamp(1.35rem, 5vw, 1.9rem);
   }
 
   .game-roll-button span {
@@ -4596,8 +4647,8 @@ html, body, #root {
   }
 
   .game-auto-switch {
-    width: clamp(2.45rem, 8vw, 3.2rem);
-    height: clamp(1.35rem, 4.2vw, 1.7rem);
+    width: clamp(2.05rem, 6.5vw, 2.7rem);
+    height: clamp(1.12rem, 3.5vw, 1.45rem);
   }
 }
 

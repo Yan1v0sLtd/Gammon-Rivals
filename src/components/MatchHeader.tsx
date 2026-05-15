@@ -41,6 +41,7 @@ export default function MatchHeader({
       </div>
 
       <div className="game-match-hud">
+        <div className="game-match-label">Match to {match.target}</div>
         <div className="game-score-strip">
           <div className="game-score-player game-score-player--left">
             <span>{whiteDisplayName}</span>
