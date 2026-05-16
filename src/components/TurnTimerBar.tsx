@@ -21,7 +21,6 @@ export default function TurnTimerBar({
 
   return (
     <div className={`game-turn-timer game-turn-timer--${side} ${compact ? 'is-compact' : ''} ${tone}`}>
-      <span className="game-turn-timer-icon" aria-hidden="true" />
       <div
         className="game-turn-timer-track"
         aria-label={`${secondsLeft} seconds left`}

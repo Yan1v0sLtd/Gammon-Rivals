@@ -78,7 +78,6 @@ export default function SidePanel({
         }`}
       >
         <section className="game-player-card">
-          <span className="game-player-neon-rail" aria-hidden="true" />
           <img
             src={playerArt}
             alt=""

@@ -52,6 +52,7 @@ export default function ActionButtons({
       </button>
 
       <button
+        type="button"
         onClick={canDouble ? onDouble : undefined}
         disabled={!canDouble}
         className={`game-double-button ${
@@ -66,6 +67,7 @@ export default function ActionButtons({
 
       {canUndo && (
         <button
+          type="button"
           onClick={onUndo}
           className="game-undo-button"
         >
@@ -75,6 +77,7 @@ export default function ActionButtons({
 
       {showRoll && (
         <button
+          type="button"
           onClick={onRoll}
           className="game-roll-button"
         >
@@ -85,6 +88,7 @@ export default function ActionButtons({
 
       {showEndTurn && (
         <button
+          type="button"
           onClick={onEndTurn}
           className="game-roll-button game-roll-button--end"
         >

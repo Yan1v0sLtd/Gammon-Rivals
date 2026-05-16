@@ -6211,13 +6211,26 @@ html, body, #root {
   inset-inline: -1.2%;
   top: 101.8%;
   height: 18.2%;
+  z-index: 120 !important;
+  pointer-events: auto !important;
 }
 
 .game-action-row {
+  position: relative;
+  z-index: 121 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3.15%;
+  pointer-events: auto !important;
+}
+
+.game-actions-inner,
+.game-action-row button,
+.game-auto-slot,
+.game-auto-toggle {
+  pointer-events: auto !important;
+  touch-action: manipulation;
 }
 
 .game-cube-button,
@@ -6227,6 +6240,7 @@ html, body, #root {
   height: 100%;
   aspect-ratio: 500 / 493;
   flex: 0 0 auto;
+  pointer-events: auto;
 }
 
 .game-roll-button {
@@ -6234,6 +6248,7 @@ html, body, #root {
   height: 100%;
   aspect-ratio: 1505 / 500;
   flex: 0 0 auto;
+  pointer-events: auto;
 }
 
 .game-cube-button strong,
@@ -6283,6 +6298,17 @@ html, body, #root {
 .game-score-strip {
   top: 26.2%;
   height: 38.2%;
+  min-width: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.game-score-strip::before,
+.game-score-core::before,
+.game-score-core::after {
+  display: none !important;
+  content: none !important;
 }
 
 .game-score-player {
@@ -6295,6 +6321,12 @@ html, body, #root {
 
 .game-score-core {
   font-size: clamp(1.22rem, 3.2vw, 3.1rem);
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: inherit;
 }
 
 .game-turn-pill {
@@ -6302,6 +6334,9 @@ html, body, #root {
   width: 53%;
   height: 21%;
   font-size: clamp(0.52rem, 1.08vw, 1rem);
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .game-header-actions {
@@ -6335,10 +6370,7 @@ html, body, #root {
 }
 
 .game-player-neon-rail {
-  top: 1.2%;
-  bottom: 4%;
-  width: 0.42%;
-  opacity: 0.82;
+  display: none !important;
 }
 
 .game-player-panel--left .game-player-neon-rail {
@@ -6491,12 +6523,15 @@ html, body, #root {
 }
 
 .game-turn-timer-icon {
-  width: 0.92em;
-  height: 0.92em;
-  flex: 0 0 auto;
+  display: none !important;
+}
+
+.game-turn-timer-track {
+  grid-column: 2;
 }
 
 .game-turn-timer strong {
+  grid-column: 3;
   font-size: clamp(0.5rem, 0.9vw, 0.88rem);
 }
 
