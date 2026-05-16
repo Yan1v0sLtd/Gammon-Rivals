@@ -7034,12 +7034,14 @@ html, body, #root {
   height: 31.8%;
 }
 
+/* The avatar stage is sized to the gold/purple ring that's baked into
+   the panel art (left-player.webp / right-player.webp). The ring's
+   inner edge sits at ~29% x / ~17% y of the slot with radius ~16% of
+   slot width. Stage is a 32% square so the avatar fills the ring with
+   no visible gap. */
 .game-avatar-stage {
-  top: 8.4%;
-  width: 24.8%;
-  /* Avatar slot must be square so the circular clip is round, not
-     stretched. Height tracks width via aspect-ratio rather than picking
-     up the panel card's tall bounding box. */
+  top: 6.5%;
+  width: 28%;
   height: auto;
   aspect-ratio: 1 / 1;
   overflow: visible;
@@ -7047,11 +7049,11 @@ html, body, #root {
 }
 
 .game-player-panel--left .game-avatar-stage {
-  left: 18.1%;
+  left: 15.3%;
 }
 
 .game-player-panel--right .game-avatar-stage {
-  right: 15.5%;
+  right: 12.7%;
 }
 
 .game-avatar-clip {
@@ -7059,7 +7061,9 @@ html, body, #root {
   inset: 0;
   overflow: hidden !important;
   border-radius: 50%;
-  clip-path: circle(49.2% at 50% 50%);
+  /* Fill the whole stage square with the avatar — the panel art's gold
+     ring sits at the stage edge. */
+  clip-path: circle(50% at 50% 50%);
   z-index: 2;
 }
 
@@ -7120,48 +7124,53 @@ html, body, #root {
   clip-path: none !important;
 }
 
-/* The hexagon shape baked into left-player.webp sits at roughly
-   (38.9%, 72.3%) of the panel art. The level-shield is rendered as a
-   child of .game-avatar-stage (top:8.4%, left:18.1%, w:24.8%, h: same
-   as width via aspect 1/1). Place the number relative to the stage so
-   it lands on top of the hex. Right panel mirrors the same offset. */
+/* The hex sits at (~41% slot-x, ~27% slot-y). With the avatar stage at
+   left:15.3% top:6.5% w/h:28%×28% (in pixels, since aspect 1/1), the
+   hex center maps to:
+     (41-15.3)/28 = 91.8% of stage width (X)
+     ((27-6.5)/100*slot_h) / (28/100*slot_w) — depends on slot aspect.
+   Slot is 174×252 → 28% slot_w = 48.7 px. 20.5% slot_h = 51.7 px.
+   So hex Y in stage coords = 51.7/48.7 = 106.1% of stage height. */
 .game-player-panel--left .game-level-shield {
-  left: 84%;
-  top: 136%;
+  left: 92%;
+  top: 106%;
   right: auto;
   bottom: auto;
   transform: translate(-50%, -50%);
 }
 
 .game-player-panel--right .game-level-shield {
-  right: 84%;
-  top: 136%;
+  right: 92%;
+  top: 106%;
   left: auto;
   bottom: auto;
   transform: translate(50%, -50%);
 }
 
+/* Identity sits to the right of the avatar in the top block — pushed
+   further from the ring (left:52%) so there's clear breathing room,
+   and the column is vertically centred in the panel-top section. */
 .game-player-identity {
-  top: 7.3%;
-  width: 50.8%;
-  gap: 7.5%;
+  top: 12%;
+  width: 44%;
+  gap: 5.5%;
 }
 
 .game-player-panel--left .game-player-identity {
-  left: 47.4%;
+  left: 52%;
 }
 
 .game-player-panel--right .game-player-identity {
-  right: 47.4%;
+  right: 52%;
 }
 
 .game-player-identity h2 {
-  font-size: clamp(0.64rem, 1.04vw, 1.06rem);
+  font-size: clamp(0.82rem, 1.32vw, 1.34rem);
 }
 
 .game-player-line {
-  gap: 0.45em;
-  font-size: clamp(0.5rem, 0.9vw, 0.88rem);
+  gap: 0.48em;
+  font-size: clamp(0.58rem, 1vw, 0.98rem);
   line-height: 1.05;
 }
 
@@ -7173,40 +7182,44 @@ html, body, #root {
 }
 
 .game-meta-icon {
-  font-size: 0.8em;
+  font-size: 0.82em;
 }
 
 .game-stat-list {
   top: 36.9%;
-  bottom: 12.2%;
+  bottom: 14.5%;
 }
 
 .game-player-stats-art {
   top: 1.4%;
   bottom: 1.4%;
-  width: 15.6%;
+  /* Bigger icon strip (was 15.6%) so the dice / trophy / cube glyphs
+     read clearly. */
+  width: 22%;
   height: 97.2%;
   object-fit: contain;
 }
 
 .game-player-panel--left .game-player-stats-art {
-  left: 5.8%;
+  left: 5.5%;
 }
 
 .game-player-panel--right .game-player-stats-art {
-  right: 5.8%;
+  right: 5.5%;
 }
 
+/* Stat rows now have a narrower invisible icon column so the label /
+   value sits right next to the (wider) icon strip. */
 .game-stat-row {
   min-height: 0;
-  grid-template-columns: 23% minmax(0, 1fr);
-  column-gap: 4%;
+  grid-template-columns: 24% minmax(0, 1fr);
+  column-gap: 2.5%;
   align-items: center;
-  padding: 0 5.4%;
+  padding: 0 5.5%;
 }
 
 .game-player-panel--right .game-stat-row {
-  grid-template-columns: minmax(0, 1fr) 23%;
+  grid-template-columns: minmax(0, 1fr) 24%;
 }
 
 .game-stat-icon {
@@ -7221,7 +7234,7 @@ html, body, #root {
   flex-direction: column;
   justify-content: center;
   align-self: stretch;
-  gap: 0.04em;
+  gap: 0.08em;
   transform: translateY(-1%);
 }
 
@@ -7230,23 +7243,26 @@ html, body, #root {
 }
 
 .game-stat-label {
-  font-size: clamp(0.42rem, 0.72vw, 0.72rem);
-  font-weight: 680;
-  letter-spacing: 0.025em;
+  font-size: clamp(0.48rem, 0.85vw, 0.84rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
   line-height: 1.02;
+  text-transform: uppercase;
 }
 
 .game-stat-copy strong {
-  font-size: clamp(0.72rem, 1.2vw, 1.18rem);
-  font-weight: 820;
+  font-size: clamp(0.84rem, 1.45vw, 1.45rem);
+  font-weight: 880;
   line-height: 1;
 }
 
+/* Pulled tighter to the stat list (was bottom:2.4%) so the timer sits
+   just under the last stat row, like the mockup. */
 .game-turn-timer {
-  left: 5.8%;
-  bottom: 2.4%;
-  width: 53.2%;
-  height: 8.9%;
+  left: 5.5%;
+  bottom: 3.5%;
+  width: 58%;
+  height: 9.5%;
   grid-template-columns: 20% minmax(0, 1fr) 25%;
   gap: 2.2%;
   padding: 0 6.7%;
@@ -7255,7 +7271,7 @@ html, body, #root {
 
 .game-turn-timer--right {
   left: auto;
-  right: 5.8%;
+  right: 5.5%;
 }
 
 .game-turn-timer-icon {
@@ -7342,14 +7358,14 @@ html, body, #root {
   }
 
   .game-avatar-stage {
-    width: 24.2%;
+    width: 28%;
   }
 
   .game-player-panel--left .game-avatar-stage {
-    left: 18.8%;
+    left: 15.3%;
   }
 
   .game-player-panel--right .game-avatar-stage {
-    right: 16.2%;
+    right: 12.7%;
   }
 }
