@@ -7007,10 +7007,17 @@ html, body, #root {
   text-align: center;
 }
 
+/* Fixed aspect-ratio so the side panel preserves its proportions when
+   the viewport's aspect ratio changes. Without this, slot height
+   tracks content height (58.6%) but the avatar stage is sized via
+   width-based aspect-ratio — so on taller viewports the slot would
+   stretch but the avatar would stay put, leaving the stats stranded
+   below the avatar instead of moving together with it. */
 .game-side-slot {
   top: 15.3%;
   width: 18.7%;
-  height: 58.6%;
+  height: auto;
+  aspect-ratio: 174 / 252;
 }
 
 .game-side-slot--left {
@@ -7238,6 +7245,12 @@ html, body, #root {
   min-height: 100%;
   flex-direction: column;
   justify-content: center;
+  /* Left panel: copy sits to the RIGHT of the icon, so label/value
+     hug the LEFT edge (close to the icon). Mirror for the right
+     panel below. Without this, an earlier rule's align-items:center
+     was centring the text in the 113px copy column, leaving a big
+     visual gap between the icon and the label. */
+  align-items: flex-start;
   align-self: stretch;
   gap: 0.08em;
   transform: translateY(-1%);
