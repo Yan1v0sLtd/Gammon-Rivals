@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Die, DiceRoll } from '../engine/types';
-
-const PIPS: Record<Die, readonly number[]> = {
-  1: [4],
-  2: [0, 8],
-  3: [0, 4, 8],
-  4: [0, 2, 6, 8],
-  5: [0, 2, 4, 6, 8],
-  6: [0, 2, 3, 5, 6, 8],
-};
+import DieFace from './DieFace';
 
 interface Props {
   roll: DiceRoll | null;
@@ -195,19 +187,9 @@ function dieStyle({
   };
 }
 
-function DiePips({ value }: { value: Die }) {
-  const pipSet = new Set(PIPS[value]);
-  return (
-    <span className="game-die-pips" aria-hidden="true">
-      {Array.from({ length: 9 }, (_, index) => (
-        <span
-          key={index}
-          className={pipSet.has(index) ? 'game-die-pip is-visible' : 'game-die-pip'}
-        />
-      ))}
-    </span>
-  );
-}
+// Pips are now drawn by <DieFace> as inline SVG sprites (DieFace.tsx).
+// The old <DiePips> CSS-grid stack is gone; the SVG handles face,
+// bevel, pip rendering and highlights in one element.
 
 export default function DiceTray({
   roll,
@@ -253,7 +235,7 @@ export default function DiceTray({
               <span className="game-die-side game-die-side--right" />
               <span className="game-die-side game-die-side--bottom" />
               <span className="game-die-face">
-                <DiePips value={die.value} />
+                <DieFace value={die.value} variant="white" />
               </span>
             </span>
           </span>
