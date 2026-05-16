@@ -4311,8 +4311,7 @@ html, body, #root {
 .game-cube-button,
 .game-double-button,
 .game-roll-button,
-.game-auto-toggle,
-.game-undo-button {
+.game-auto-toggle {
   border: 1px solid rgba(225, 165, 49, 0.76);
   background: linear-gradient(180deg, rgba(28, 31, 39, 0.98), rgba(6, 11, 19, 0.98));
   color: #f5d083;
@@ -4355,16 +4354,14 @@ html, body, #root {
 }
 
 .game-double-button.is-enabled:hover,
-.game-roll-button:hover,
-.game-auto-toggle:hover,
-.game-undo-button:hover {
+.game-roll-button:not(:disabled):hover,
+.game-auto-toggle:hover {
   filter: brightness(1.12);
 }
 
 .game-double-button.is-enabled:active,
-.game-roll-button:active,
-.game-auto-toggle:active,
-.game-undo-button:active {
+.game-roll-button:not(:disabled):active,
+.game-auto-toggle:active {
   transform: translateY(1px) scale(0.99);
 }
 
@@ -4374,51 +4371,18 @@ html, body, #root {
   filter: grayscale(0.55);
 }
 
+/* The roll/undo/end-turn slot is sized to leave room for the image
+   asset; the actual button visuals come from the background-image
+   set later in the precision pass. No live text — the asset has it
+   baked in. */
 .game-roll-button {
   display: grid;
   width: clamp(19rem, 25vw, 30rem);
   min-height: clamp(4.4rem, 8.6dvh, 7rem);
   place-items: center;
-  border: 2px solid rgba(250, 229, 118, 0.92);
-  border-radius: clamp(1.15rem, 1.6vw, 1.75rem);
-  background:
-    radial-gradient(ellipse at 50% 7%, rgba(255, 255, 215, 0.52), transparent 35%),
-    linear-gradient(180deg, #dcff77 0%, #93f241 32%, #38b724 66%, #086511 100%);
-  color: #f6f2ca;
-  box-shadow:
-    inset 0 0.18rem 0 rgba(255, 255, 255, 0.65),
-    inset 0 -0.42rem 0 rgba(0, 54, 5, 0.48),
-    0 0 0 0.16rem rgba(12, 34, 12, 0.9),
-    0 0 0.9rem rgba(210, 255, 80, 0.3),
-    0 0.55rem 1.25rem rgba(0, 0, 0, 0.42);
-}
-
-.game-roll-button strong {
-  color: #fff9d2;
-  font-size: clamp(2.05rem, 3vw, 3.8rem);
-  font-weight: 950;
-  letter-spacing: 0.05em;
-  line-height: 1;
-  text-shadow: 0 0.12rem 0.2rem rgba(0, 0, 0, 0.62);
-}
-
-.game-roll-button span {
-  margin-top: -0.15rem;
-  color: rgba(255, 239, 188, 0.84);
-  font-size: clamp(0.78rem, 1.18vw, 1.45rem);
-  font-weight: 750;
-  text-transform: none;
-}
-
-.game-roll-button--end {
-  background: linear-gradient(180deg, #ffda64, #bd6e17);
-}
-
-.game-undo-button {
-  min-height: clamp(3.2rem, 6.8dvh, 5.1rem);
-  border-radius: 999px;
-  padding: 0 clamp(1rem, 1.5vw, 1.55rem);
-  font-weight: 900;
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 
 .game-auto-slot {
@@ -5456,8 +5420,25 @@ html, body, #root {
   background-image: url('/gameplay/premium-purple/double.webp');
 }
 
+/* Roll slot — single button that swaps its asset based on game state:
+   - roll  → roll.webp     (pre-roll, or after dice settled before move)
+   - undo  → undo.webp     (orange UNDO pill — at least one move played)
+   - end   → end-turn.webp (red END TURN pill — all dice consumed)
+   The text is baked into each asset, so the button has no children. */
 .game-roll-button {
   background-image: url('/gameplay/premium-purple/roll.webp');
+}
+
+.game-roll-button--roll {
+  background-image: url('/gameplay/premium-purple/roll.webp');
+}
+
+.game-roll-button--undo {
+  background-image: url('/gameplay/premium-purple/undo.webp');
+}
+
+.game-roll-button--end {
+  background-image: url('/gameplay/premium-purple/end-turn.webp');
 }
 
 .game-auto-slot {
@@ -5486,54 +5467,12 @@ html, body, #root {
   text-shadow: 0 0.07em 0.1em rgba(0, 0, 0, 0.75);
 }
 
-.game-roll-button strong {
-  display: block;
-  margin-top: 2%;
-  font-size: clamp(1.35rem, 4.05vw, 3.85rem);
-  font-weight: 950;
-  line-height: 0.9;
-  color: #ffe8a8;
-  letter-spacing: 0.045em;
-  text-shadow:
-    0 0.08em 0.1em rgba(0, 0, 0, 0.62),
-    0 0 0.2em rgba(255, 255, 210, 0.3);
-}
-
-.game-roll-button span {
-  display: block;
-  margin-top: 3%;
-  font-size: clamp(0.62rem, 1.35vw, 1.25rem);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: rgba(255, 238, 184, 0.82);
-  text-transform: none;
-}
-
-.game-roll-button:not(.game-roll-button--end) strong,
-.game-roll-button:not(.game-roll-button--end) span {
-  opacity: 0;
-}
-
 .game-double-button.is-disabled,
 .game-roll-button:disabled,
 .game-cube-button:disabled {
   cursor: default;
   opacity: 0.72;
   filter: saturate(0.75);
-}
-
-.game-undo-button {
-  position: absolute;
-  right: 40%;
-  top: -46%;
-  z-index: 6;
-  border: 1px solid rgba(255, 214, 103, 0.6);
-  border-radius: 999px;
-  background: rgba(11, 13, 19, 0.86);
-  color: #ffe7a4;
-  font-size: 0.85rem;
-  font-weight: 900;
-  padding: 0.45rem 1rem;
 }
 
 .game-auto-toggle {
