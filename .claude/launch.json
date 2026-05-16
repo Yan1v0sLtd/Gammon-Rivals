@@ -4,7 +4,7 @@
     {
       "name": "backgammon",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "Backgammon", "run", "dev"],
+      "runtimeArgs": ["run", "dev"],
       "port": 5174
     }
   ]

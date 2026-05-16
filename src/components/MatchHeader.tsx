@@ -41,32 +41,46 @@ export default function MatchHeader({
       </div>
 
       <div className="game-match-hud">
-        <img
-          src="/gameplay/premium-purple/header.webp"
-          alt=""
-          className="game-match-hud-art"
-          draggable={false}
-        />
+        {/* "MATCH TO N" sits ABOVE the header asset, not inside it. */}
         <div className="game-match-label">Match to {match.target}</div>
-        <div className="game-score-strip">
-          <div className="game-score-player game-score-player--left">
-            <span>{whiteDisplayName}</span>
-            <strong>{whitePip}</strong>
+
+        {/* The new header art has the rails baked in, so the row just
+            contains the pill with the score overlay + turn label. The
+            player names overlay the rail areas of the art at left/right. */}
+        <div className="game-match-hud-row">
+          <div className="game-match-hud-pill">
+            <img
+              src="/gameplay/premium-purple/header.webp"
+              alt=""
+              className="game-match-hud-art"
+              draggable={false}
+            />
+            <div
+              className="game-score-player game-score-player--left"
+              aria-label={`${whiteDisplayName} pip count`}
+            >
+              <span>{whiteDisplayName}</span>
+              <strong>{whitePip}</strong>
+            </div>
+            <div className="game-score-core">
+              <span>{match.score.white}</span>
+              <span className="game-score-separator">:</span>
+              <span>{match.score.black}</span>
+            </div>
+            <div
+              className="game-score-player game-score-player--right"
+              aria-label={`${blackDisplayName} pip count`}
+            >
+              <span>{blackDisplayName}</span>
+              <strong>{blackPip}</strong>
+            </div>
+            {/* Turn indicator sits in the BOTTOM tab of the header art. */}
+            <div className="game-turn-pill">
+              <span className="game-turn-dot" />
+              <span>{cleanTurnLabel}</span>
+              {inCrawford && <span className="game-crawford-pill">Crawford</span>}
+            </div>
           </div>
-          <div className="game-score-core">
-            <span>{match.score.white}</span>
-            <span className="game-score-separator">:</span>
-            <span>{match.score.black}</span>
-          </div>
-          <div className="game-score-player game-score-player--right">
-            <span>{blackDisplayName}</span>
-            <strong>{blackPip}</strong>
-          </div>
-        </div>
-        <div className="game-turn-pill">
-          <span className="game-turn-dot" />
-          <span>{cleanTurnLabel}</span>
-          {inCrawford && <span className="game-crawford-pill">Crawford</span>}
         </div>
       </div>
       <div className="game-header-actions">

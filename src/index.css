@@ -4046,22 +4046,41 @@ html, body, #root {
   border-radius: 999px;
 }
 
+/* Compact-mode level badge — same hexagon look as the full panel. */
 .game-compact-level {
   position: absolute;
-  right: -0.1rem;
-  bottom: -0.12rem;
+  right: -0.2rem;
+  bottom: -0.18rem;
   z-index: 2;
   display: grid;
-  min-width: 1.3rem;
-  height: 1.3rem;
+  width: 1.3rem;
+  height: auto;
+  aspect-ratio: 1 / 1.15;
   place-items: center;
-  border: 1px solid #d5a338;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #273246, #080d18);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(180deg, #f6d281 0%, #c08b27 60%, #7a4f10 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   color: #ffe083;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 950;
   text-shadow: 0 0.1rem 0.1rem #000;
+  isolation: isolate;
+}
+
+.game-compact-level::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  background: linear-gradient(180deg, #2b3858 0%, #0a0f1d 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: -1;
+}
+
+.game-player-panel--right .game-compact-level {
+  right: auto;
+  left: -0.2rem;
 }
 
 .game-compact-identity {
@@ -5305,6 +5324,22 @@ html, body, #root {
   min-height: 0;
 }
 
+/* The header layer fills the viewport so its absolutely-positioned
+   children (home link, HUD, action icons) can be placed against the
+   premium mockup. The layer itself must NOT capture clicks — otherwise
+   it sits on top of the action bar at z-index 42 and swallows ROLL /
+   AUTO taps. Re-enable pointer events on each interactive child. */
+.game-match-header {
+  pointer-events: none;
+}
+.game-match-header .game-nav-home,
+.game-match-header .game-match-hud,
+.game-match-header .game-header-actions,
+.game-match-header a,
+.game-match-header button {
+  pointer-events: auto;
+}
+
 .game-mobile-players {
   display: none !important;
 }
@@ -5517,29 +5552,51 @@ html, body, #root {
 .game-auto-switch {
   position: relative;
   width: 76%;
-  aspect-ratio: 1.9;
+  aspect-ratio: 1.9 / 1;
   border-radius: 999px;
-  background: linear-gradient(180deg, #16120c, #0b0b0b);
+  background: linear-gradient(180deg, #1c1813, #0a0a0d);
   box-shadow:
-    inset 0 0.08rem 0.5rem rgba(0, 0, 0, 0.82),
-    inset 0 0 0 0.08rem rgba(255, 204, 101, 0.18);
+    inset 0 0.12rem 0.4rem rgba(0, 0, 0, 0.85),
+    inset 0 0 0 0.08rem rgba(255, 204, 101, 0.22);
+  transition: background 220ms ease, box-shadow 220ms ease;
+}
+
+/* ON state — green pill with a soft outer glow. */
+.game-auto-toggle.is-on .game-auto-switch {
+  background: linear-gradient(180deg, #1bb55a 0%, #07703a 100%);
+  box-shadow:
+    inset 0 0.12rem 0.35rem rgba(0, 0, 0, 0.42),
+    inset 0 0 0 0.08rem rgba(180, 255, 196, 0.55),
+    0 0 0.55em rgba(40, 210, 100, 0.45);
 }
 
 .game-auto-knob {
   position: absolute;
   top: 50%;
-  left: 8%;
-  width: 42%;
+  /* Knob fits snugly inside the track with a small inset on each side.
+     left/right offsets are derived from a 4% rail-inset. */
+  left: 4%;
+  width: 47%;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 28%, #fff7cf 0 32%, #f7d37b 68%, #b37a23 100%);
-  box-shadow: 0 0.18rem 0.55rem rgba(0, 0, 0, 0.58);
+  background: radial-gradient(circle at 32% 26%, #fff8db 0 34%, #f7d37b 70%, #a86d18 100%);
+  box-shadow:
+    0 0.18rem 0.42rem rgba(0, 0, 0, 0.55),
+    inset 0 -0.06rem 0.12rem rgba(0, 0, 0, 0.18),
+    inset 0 0.05rem 0.1rem rgba(255, 255, 255, 0.45);
   transform: translateY(-50%);
-  transition: left 180ms ease;
+  transition: left 220ms cubic-bezier(0.4, 0, 0.2, 1),
+    background 220ms ease;
 }
 
 .game-auto-toggle.is-on .game-auto-knob {
-  left: 50%;
+  /* Slide the knob to the right rail. The earlier base rule (around
+     line 4463) applies a `transform: translate(100%, -50%)` to the
+     on-state knob — we override it back to translateY(-50%) so the
+     knob doesn't shift twice and overshoot the track. */
+  left: 49%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 32% 26%, #ffffff 0 34%, #ecfff1 60%, #a8e7bb 100%);
 }
 
 .game-auto-label {
@@ -5591,89 +5648,132 @@ html, body, #root {
   transform: translateX(12%) rotate(45deg);
 }
 
+/* Header HUD is a vertical column: "MATCH TO N" label sits ABOVE a
+   row containing [rail-L][name-L][pill][name-R][rail-R]. The pill
+   holds the score core (central oval) and the "WHITE TO ROLL" turn
+   pill (in the bottom tab). */
 .game-match-hud {
   position: absolute;
-  left: 31.2%;
-  top: 0.6%;
-  width: 37.6%;
-  height: 18.8%;
+  left: 13%;
+  right: 13%;
+  top: 0.4%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.08rem;
+}
+
+.game-match-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.game-match-hud-pill {
+  position: relative;
   display: block;
+  flex: 0 0 auto;
+  /* New header art is 2170 x 332 (≈6.535:1). Spans the full row width. */
+  width: 100%;
+  aspect-ratio: 2170 / 332;
 }
 
 .game-match-hud-art {
   position: absolute;
-  left: 50%;
-  top: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translateX(-50%);
   pointer-events: none;
   filter: drop-shadow(0 0.38rem 0.42rem rgba(0, 0, 0, 0.42));
 }
 
 .game-match-label {
-  position: absolute;
-  left: 50%;
-  top: 10%;
-  z-index: 2;
-  transform: translateX(-50%);
+  position: static;
+  margin: 0 0 0.05rem;
   color: #ffe1a0;
-  font-size: clamp(0.58rem, 1.25vw, 1.04rem);
+  font-size: clamp(0.5rem, 1vw, 0.92rem);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-shadow: 0 0.08em 0.1em rgba(0, 0, 0, 0.68);
+  line-height: 1;
+  text-align: center;
 }
 
-.game-score-strip {
-  position: absolute;
-  left: 0;
-  top: 23%;
-  z-index: 2;
-  display: grid;
-  width: 100%;
-  height: 42%;
-  grid-template-columns: 28% 44% 28%;
-  align-items: center;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
+/* Names sit OUTSIDE the pill, between the rail and the pill. */
 .game-score-player {
-  display: grid;
-  gap: 0;
+  position: static;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.06em;
   color: #fff9ef;
-  font-size: clamp(0.68rem, 1.35vw, 1.18rem);
+  font-size: clamp(0.6rem, 1.15vw, 1.05rem);
   font-weight: 950;
   line-height: 1.05;
   text-transform: uppercase;
   text-shadow: 0 0.08em 0.13em rgba(0, 0, 0, 0.7);
+  text-align: center;
+  white-space: nowrap;
 }
 
 .game-score-player strong {
   color: #ffd85c;
-  font-size: clamp(0.76rem, 1.45vw, 1.38rem);
+  font-size: clamp(0.68rem, 1.28vw, 1.18rem);
 }
 
-.game-score-player--left {
-  justify-items: end;
-  padding-right: 10%;
+/* Horizontal gold lines fill the remaining space outside the names,
+   fading away from the names so the header reads as a banner. */
+.game-score-rail {
+  position: static;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 0.18rem;
+  background: none;
+  box-shadow: 0 0 0.45em rgba(255, 209, 102, 0.38);
+  border-radius: 999px;
+  pointer-events: none;
+  align-self: center;
 }
 
-.game-score-player--right {
-  justify-items: start;
-  padding-left: 10%;
+.game-score-rail--left {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(217, 162, 64, 0.92) 30%,
+    #f1c772 75%,
+    #ffd87a 100%
+  );
+}
+
+.game-score-rail--right {
+  background: linear-gradient(
+    90deg,
+    #ffd87a 0%,
+    #f1c772 25%,
+    rgba(217, 162, 64, 0.92) 70%,
+    transparent 100%
+  );
 }
 
 .game-score-core {
+  position: absolute;
+  left: 50%;
+  /* The pill's aspect-ratio includes the bottom tab so geometric 50%
+     of the pill sits BELOW the oval. The visual oval center is at
+     ~42% of pill height. */
+  top: 42%;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.15em;
+  transform: translate(-50%, -50%);
   color: #ffd96d;
-  font-size: clamp(1.6rem, 4vw, 3.7rem);
+  font-size: clamp(1.2rem, 3.4vw, 3.05rem);
   font-weight: 950;
   line-height: 1;
   text-shadow:
@@ -5689,23 +5789,24 @@ html, body, #root {
 .game-turn-pill {
   position: absolute;
   left: 50%;
-  top: 64%;
-  z-index: 3;
+  top: 86%;
+  z-index: 6;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5em;
-  width: 51%;
-  height: 22%;
-  transform: translateX(-50%);
+  padding: 0 0.7em;
   border: 0;
-  border-radius: 0 0 1rem 1rem;
+  border-radius: 0;
   background: transparent;
   color: #ffe8a8;
-  font-size: clamp(0.62rem, 1.4vw, 1.22rem);
+  font-size: clamp(0.5rem, 1vw, 0.9rem);
   font-weight: 950;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  text-shadow: 0 0.08em 0.12em rgba(0, 0, 0, 0.72);
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
   box-shadow: none;
 }
 
@@ -6283,28 +6384,24 @@ html, body, #root {
   width: clamp(1.85rem, 3vw, 2.85rem);
 }
 
+/* HUD spans between home (~13%) and settings icons (~13%); the column
+   stacks "MATCH TO N" above the header art pill, with the turn pill
+   below. Height is intrinsic so the children flow naturally. */
 .game-match-hud {
-  left: 33.1%;
-  top: 0.45%;
-  width: 33.8%;
-  height: 15.7%;
+  left: 13%;
+  right: 13%;
+  width: auto;
+  top: 0.5%;
+  height: auto;
 }
+
+/* Pill geometry (width: 100%, aspect-ratio: 3.104/1) comes from the
+   asset-led skin's base rule — calibration just tweaks typography. */
 
 .game-match-label {
-  top: 9%;
-  font-size: clamp(0.48rem, 1.02vw, 0.92rem);
+  font-size: clamp(0.46rem, 0.98vw, 0.88rem);
 }
 
-.game-score-strip {
-  top: 26.2%;
-  height: 38.2%;
-  min-width: 0;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-.game-score-strip::before,
 .game-score-core::before,
 .game-score-core::after {
   display: none !important;
@@ -6312,15 +6409,15 @@ html, body, #root {
 }
 
 .game-score-player {
-  font-size: clamp(0.56rem, 1.06vw, 1rem);
+  font-size: clamp(0.54rem, 1.04vw, 0.96rem);
 }
 
 .game-score-player strong {
-  font-size: clamp(0.64rem, 1.18vw, 1.12rem);
+  font-size: clamp(0.6rem, 1.14vw, 1.06rem);
 }
 
 .game-score-core {
-  font-size: clamp(1.22rem, 3.2vw, 3.1rem);
+  font-size: clamp(1.18rem, 3.05vw, 2.92rem);
   min-height: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -6330,10 +6427,7 @@ html, body, #root {
 }
 
 .game-turn-pill {
-  top: 65.4%;
-  width: 53%;
-  height: 21%;
-  font-size: clamp(0.52rem, 1.08vw, 1rem);
+  font-size: clamp(0.5rem, 1.04vw, 0.95rem);
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -6767,12 +6861,35 @@ html, body, #root {
 
 /* Premium gameplay precision pass: side panels, header, timers, and tap targets. */
 .game-match-hud {
-  top: 0.2%;
-  left: 34.05%;
-  width: 31.9%;
-  height: 15.9%;
+  top: 0.3%;
+  left: 13%;
+  right: 13%;
+  width: auto;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.05rem;
   overflow: visible;
   z-index: 62;
+}
+
+/* The new header art already includes the rails baked into the image,
+   so the row just centres the pill. */
+.game-match-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.game-match-hud-pill {
+  position: relative;
+  flex: 0 0 auto;
+  /* New header art is 2170 x 332 (≈6.535:1). Half the previous width
+     (was 100% of wrapper). */
+  width: 50%;
+  aspect-ratio: 2170 / 332;
 }
 
 .game-match-hud-art {
@@ -6782,86 +6899,107 @@ html, body, #root {
 }
 
 .game-match-label {
-  top: -1.6%;
+  position: static;
+  margin: 0;
   z-index: 4;
-  font-size: clamp(0.5rem, 1vw, 0.9rem);
+  font-size: clamp(0.48rem, 0.98vw, 0.88rem);
   letter-spacing: 0.065em;
+  line-height: 1;
+  text-align: center;
 }
 
-.game-score-strip {
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
+/* Names overlay the LEFT and RIGHT rail areas of the new header art,
+   centred vertically with the score's oval. */
+.game-score-player {
+  position: absolute;
+  top: 35%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.04em;
+  transform: translateY(-50%);
+  font-size: clamp(0.58rem, 1.12vw, 1rem);
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.game-score-player--left {
+  /* Push the name ~10px further to the side. Pill width ≈ 345px at
+     viewport 932, so 10px ≈ 3% of pill width. */
+  left: 15%;
+  width: 12%;
+  right: auto;
+}
+
+.game-score-player--right {
+  right: 15%;
+  width: 12%;
+  left: auto;
+}
+
+.game-score-player span {
+  max-width: none;
   overflow: visible;
+  text-overflow: clip;
+}
+
+.game-score-player strong {
+  font-size: clamp(0.66rem, 1.22vw, 1.1rem);
+  line-height: 0.95;
+}
+
+/* Rails are baked into the new header image — hide the CSS rail
+   elements (kept in DOM for accessibility neutrality / backwards
+   compatibility, but invisible). */
+.game-score-rail {
+  display: none !important;
 }
 
 .game-score-core {
   position: absolute;
   left: 50%;
-  top: 25.2%;
+  /* New header art's central oval centres at ~30% of pill height (the
+     pill aspect-ratio bounding box includes the bottom tab so geometric
+     50% sits BELOW the oval). Nudged up from 35% — the score's optical
+     center sits slightly below its bounding-box center, so this puts
+     it visually in the middle of the oval. */
+  top: 30%;
   z-index: 5;
-  width: 44.8%;
-  height: 38%;
+  width: 22%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateX(-50%);
-  font-size: clamp(1.38rem, 3.45vw, 3.18rem);
+  gap: 0.12em;
+  transform: translate(-50%, -50%);
+  font-size: clamp(1.32rem, 3.3vw, 3.02rem);
   line-height: 1;
-}
-
-.game-score-player {
-  position: absolute;
-  top: 33.4%;
-  z-index: 4;
-  width: 29%;
-  display: grid;
-  gap: 0;
-  font-size: clamp(0.56rem, 1.05vw, 1rem);
-  line-height: 0.96;
-}
-
-.game-score-player--left {
-  right: 73.6%;
-  justify-items: end;
-  text-align: right;
-}
-
-.game-score-player--right {
-  left: 73.6%;
-  justify-items: start;
-  text-align: left;
-}
-
-.game-score-player span {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.game-score-player strong {
-  font-size: clamp(0.64rem, 1.2vw, 1.1rem);
-  line-height: 0.95;
+  text-align: center;
 }
 
 .game-turn-pill {
-  top: 63.9%;
+  position: absolute;
   left: 50%;
-  z-index: 4;
-  width: 51%;
-  height: 20.8%;
-  display: flex;
+  /* In the new header art the bottom tab centres at ~80% of pill height. */
+  top: 80%;
+  width: auto;
+  height: auto;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.48em;
-  transform: translateX(-50%);
+  gap: 0.42em;
+  margin: 0;
+  padding: 0 0.6em;
+  white-space: nowrap;
   text-align: center;
+  transform: translate(-50%, -50%);
+  font-size: clamp(0.48rem, 0.95vw, 0.88rem);
+  z-index: 6;
 }
 
 .game-turn-pill > span:nth-child(2) {
   display: inline-block;
-  min-width: 0;
+  white-space: nowrap;
   text-align: center;
 }
 
@@ -6899,6 +7037,11 @@ html, body, #root {
 .game-avatar-stage {
   top: 8.4%;
   width: 24.8%;
+  /* Avatar slot must be square so the circular clip is round, not
+     stretched. Height tracks width via aspect-ratio rather than picking
+     up the panel card's tall bounding box. */
+  height: auto;
+  aspect-ratio: 1 / 1;
   overflow: visible;
   z-index: 4;
 }
@@ -6940,31 +7083,62 @@ html, body, #root {
   transform: none !important;
 }
 
+/* The hexagonal badge shape is already baked into the panel art image
+   (left-player.webp / right-player.webp). We don't draw our own hex —
+   we just position the level number to overlay the existing hexagon
+   in the art at the correct panel-coordinate location. */
 .game-level-shield {
+  position: absolute;
   z-index: 5;
-  width: 33%;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
   min-width: 0;
-  height: 33%;
-  display: grid;
-  place-items: center;
-  padding: 0 0 0.02em;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: clamp(0.54rem, 0.98vw, 0.95rem);
+  padding: 0;
+  background: transparent !important;
+  clip-path: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: #ffe083;
+  font-size: clamp(0.6rem, 1.15vw, 1.1rem);
+  font-weight: 950;
   line-height: 1;
   text-align: center;
+  text-shadow:
+    0 0.08em 0.1em rgba(0, 0, 0, 0.85),
+    0 0 0.35em rgba(255, 208, 76, 0.32);
+  isolation: auto;
+  display: inline-block;
+  pointer-events: none;
 }
 
+.game-level-shield::before {
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  clip-path: none !important;
+}
+
+/* The hexagon shape baked into left-player.webp sits at roughly
+   (38.9%, 72.3%) of the panel art. The level-shield is rendered as a
+   child of .game-avatar-stage (top:8.4%, left:18.1%, w:24.8%, h: same
+   as width via aspect 1/1). Place the number relative to the stage so
+   it lands on top of the hex. Right panel mirrors the same offset. */
 .game-player-panel--left .game-level-shield {
-  right: -37%;
-  bottom: 1%;
+  left: 84%;
+  top: 136%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
 }
 
 .game-player-panel--right .game-level-shield {
-  left: -37%;
-  right: auto;
-  bottom: 1%;
+  right: 84%;
+  top: 136%;
+  left: auto;
+  bottom: auto;
+  transform: translate(50%, -50%);
 }
 
 .game-player-identity {
@@ -7125,17 +7299,19 @@ html, body, #root {
 .game-auto-toggle {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 38% 30%;
+  /* auto-sized rows so each child gets exactly the space it needs and
+     they never overlap. */
+  grid-template-rows: auto auto;
   align-items: center;
   justify-items: center;
-  gap: 0;
-  padding: 19% 11% 14%;
+  gap: clamp(0.12rem, 0.55vw, 0.32rem);
+  padding: 14% 10% 12%;
 }
 
 .game-auto-label {
   grid-row: 1;
   justify-self: center;
-  align-self: end;
+  align-self: center;
   width: 100%;
   font-size: clamp(0.42rem, 0.74vw, 0.74rem);
   line-height: 1;
@@ -7146,14 +7322,15 @@ html, body, #root {
   grid-row: 2;
   justify-self: center;
   align-self: center;
-  width: 46%;
+  width: 72%;
 }
 
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
   .game-match-hud {
     top: 0.1%;
-    width: 30.7%;
-    left: 34.65%;
+    left: 13%;
+    right: 13%;
+    width: auto;
   }
 
   .game-side-slot--left {
