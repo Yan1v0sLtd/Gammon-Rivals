@@ -5422,9 +5422,11 @@ html, body, #root {
 
 /* Roll slot — single button that swaps its asset based on game state:
    - roll  → roll.webp     (pre-roll, or after dice settled before move)
-   - undo  → undo.webp     (orange UNDO pill — at least one move played)
-   - end   → end-turn.webp (red END TURN pill — all dice consumed)
-   The text is baked into each asset, so the button has no children. */
+   - undo  → undo.webp     (orange UNDO pill — at least one move played
+                            while dice still remain)
+   The "all dice consumed" state uses a separate UNDO + END-TURN PAIR
+   that replaces the single button entirely — see .game-end-turn-pair
+   below. Text is baked into each asset, so no children. */
 .game-roll-button {
   background-image: url('/gameplay/premium-purple/roll.webp');
 }
@@ -5437,8 +5439,56 @@ html, body, #root {
   background-image: url('/gameplay/premium-purple/undo.webp');
 }
 
-.game-roll-button--end {
-  background-image: url('/gameplay/premium-purple/end-turn.webp');
+/* Dual-button pair shown on the last move so the player can still undo
+   instead of being forced to end the turn. The pair occupies the SAME
+   slot the single ROLL button would have taken (so the action row stays
+   proportional), but each child is square — matching the new
+   undo-square.webp / end-turn-square.webp asset aspect (~1:1). */
+.game-end-turn-pair {
+  display: flex;
+  gap: clamp(0.45rem, 0.95vw, 1rem);
+  align-items: stretch;
+  justify-content: center;
+  width: clamp(19rem, 25vw, 30rem);
+  height: clamp(4.4rem, 8.6dvh, 7rem);
+  padding: 0;
+}
+
+.game-end-turn-pair-button {
+  flex: 0 0 auto;
+  align-self: stretch;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.game-end-turn-pair-button:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.game-end-turn-pair-button:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.game-end-turn-pair-button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  filter: saturate(0.7);
+}
+
+.game-end-turn-pair-button--undo {
+  background-image: url('/gameplay/premium-purple/undo-square.webp');
+}
+
+.game-end-turn-pair-button--end {
+  background-image: url('/gameplay/premium-purple/end-turn-square.webp');
 }
 
 .game-auto-slot {

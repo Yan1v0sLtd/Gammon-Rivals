@@ -37,35 +37,25 @@ export default function ActionButtons({
 }: Props) {
   const nextCube = cubeValue * 2;
 
-  // The roll slot is a single button that morphs through three states:
-  //   1. ROLL      — pre-roll, or after the dice have settled but before
-  //                  the player has moved (stays in place to anchor the
-  //                  action row).
-  //   2. UNDO      — the player has made at least one move and still has
-  //                  dice left to play.
-  //   3. END TURN  — the player has used all their dice (or has no
-  //                  legal moves), so the turn needs to be ended.
+  // The roll slot morphs through three single-button states plus a
+  // fourth dual-button state for the last move:
+  //   1. ROLL                — pre-roll, or dice settled but no move yet
+  //                            (stays in place to anchor the action row).
+  //   2. UNDO                — at least one move played, dice still remain.
+  //   3. END TURN + UNDO     — all dice consumed / no legal moves left,
+  //                            but the player should still be able to
+  //                            undo the move that ended their turn.
+  //                            Renders both buttons side by side, each
+  //                            half the width of a single roll-slot
+  //                            button so the row stays proportional.
   //
-  // The button's background image is the only visual cue (the text is
-  // baked into each asset), so we don't render any live label/sublabel.
-  const rollSlotState: 'roll' | 'undo' | 'end' = canEndTurn
-    ? 'end'
-    : canUndo
-    ? 'undo'
-    : 'roll';
+  // Text is baked into the assets, so the buttons have no children.
+  const showEndTurnPair = canEndTurn;
+  const rollSlotState: 'roll' | 'undo' = canUndo && !canEndTurn ? 'undo' : 'roll';
   const rollSlotDisabled = rollSlotState === 'roll' && !canRoll;
-  const rollSlotOnClick =
-    rollSlotState === 'end'
-      ? onEndTurn
-      : rollSlotState === 'undo'
-      ? onUndo
-      : onRoll;
+  const rollSlotOnClick = rollSlotState === 'undo' ? onUndo : onRoll;
   const rollSlotLabel =
-    rollSlotState === 'end'
-      ? 'End turn'
-      : rollSlotState === 'undo'
-      ? 'Undo last move'
-      : 'Roll the dice';
+    rollSlotState === 'undo' ? 'Undo last move' : 'Roll the dice';
 
   return (
     <div className="game-action-row">
@@ -93,13 +83,31 @@ export default function ActionButtons({
         <span>Double</span>
       </button>
 
-      <button
-        type="button"
-        onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
-        disabled={rollSlotDisabled}
-        className={`game-roll-button game-roll-button--${rollSlotState}`}
-        aria-label={rollSlotLabel}
-      />
+      {showEndTurnPair ? (
+        <div className="game-end-turn-pair">
+          <button
+            type="button"
+            onClick={canUndo ? onUndo : undefined}
+            disabled={!canUndo}
+            className="game-end-turn-pair-button game-end-turn-pair-button--undo"
+            aria-label="Undo last move"
+          />
+          <button
+            type="button"
+            onClick={onEndTurn}
+            className="game-end-turn-pair-button game-end-turn-pair-button--end"
+            aria-label="End turn"
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
+          disabled={rollSlotDisabled}
+          className={`game-roll-button game-roll-button--${rollSlotState}`}
+          aria-label={rollSlotLabel}
+        />
+      )}
 
       {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
     </div>
