@@ -88,14 +88,15 @@ export default function SidePanel({
           <div className="game-player-card-glow" />
           <div className="game-player-top">
             <div className="game-avatar-stage">
-              <div className="game-avatar-ring" />
-              <Avatar
-                seed={identity?.avatarSeed ?? 'placeholder'}
-                imageUrl={identity?.avatarUrl}
-                size={104}
-                ring="none"
-                className="game-avatar-image"
-              />
+              <div className="game-avatar-clip">
+                <Avatar
+                  seed={identity?.avatarSeed ?? 'placeholder'}
+                  imageUrl={identity?.avatarUrl}
+                  size={104}
+                  ring="none"
+                  className="game-avatar-image"
+                />
+              </div>
               <span className="game-level-shield">{level}</span>
             </div>
 

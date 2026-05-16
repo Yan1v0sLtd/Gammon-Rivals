@@ -16,7 +16,12 @@ export function useLobbyBoards(): readonly LobbyBoard[] {
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
         if (cancelled || error || !data?.length) return;
-        setBoards(data.map(lobbyBoardFromConfig));
+        const remoteBoards = data.map(lobbyBoardFromConfig);
+        const remoteIds = new Set(remoteBoards.map((board) => board.id));
+        setBoards([
+          ...remoteBoards,
+          ...lobbyBoards.filter((board) => !remoteIds.has(board.id)),
+        ]);
       });
 
     return () => {

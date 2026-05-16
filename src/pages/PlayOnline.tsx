@@ -207,14 +207,8 @@ export default function PlayOnline() {
   const selfProgression =
     selfProfile?.id === user.id ? progression : getProfileProgression(selfProfile, levelConfigs);
   const opponentProgression = getProfileProgression(opponentProf, levelConfigs);
-  const whiteName =
-    ownerColor === 'white'
-      ? ownerProfile?.display_name
-      : opponentProfile?.display_name;
-  const blackName =
-    ownerColor === 'black'
-      ? ownerProfile?.display_name
-      : opponentProfile?.display_name;
+  const selfName = selfProfile?.display_name;
+  const oppName = opponentProf?.display_name;
 
   const turnLabel = game.matchFinished
     ? 'match over'
@@ -261,12 +255,12 @@ export default function PlayOnline() {
       header={
         <MatchHeader
           match={headerMatch}
-          whitePip={whitePip}
-          blackPip={blackPip}
+          whitePip={oppPip}
+          blackPip={selfPip}
           turnLabel={turnLabel}
           inCrawford={game.inCrawfordGame}
-          whiteName={whiteName}
-          blackName={blackName}
+          whiteName={oppName ?? 'Opponent'}
+          blackName={selfName ?? 'Player'}
         />
       }
       opponent={{

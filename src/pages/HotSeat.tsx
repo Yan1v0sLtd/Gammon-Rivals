@@ -336,8 +336,6 @@ export default function HotSeat() {
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
-  const whiteName = localColor === 'white' ? selfIdentity.name : opponentIdentity.name;
-  const blackName = localColor === 'black' ? selfIdentity.name : opponentIdentity.name;
   const gameplayBackground =
     selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
 
@@ -347,12 +345,12 @@ export default function HotSeat() {
       header={
         <MatchHeader
           match={game.match as MatchState}
-          whitePip={whitePip}
-          blackPip={blackPip}
+          whitePip={opponentPip}
+          blackPip={localPip}
           turnLabel={turnLabel}
           inCrawford={game.inCrawfordGame}
-          whiteName={whiteName}
-          blackName={blackName}
+          whiteName={opponentIdentity.name}
+          blackName={selfIdentity.name}
         />
       }
       opponent={{

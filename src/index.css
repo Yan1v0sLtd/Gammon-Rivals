@@ -6197,3 +6197,358 @@ html, body, #root {
     top: 103%;
   }
 }
+
+/* Premium gameplay mockup calibration: keep every supplied image proportional. */
+.game-board-column {
+  left: 24.7%;
+  top: 17.35%;
+  width: 54.6%;
+  height: auto;
+  aspect-ratio: 1686 / 933;
+}
+
+.game-actions-layer {
+  inset-inline: -1.2%;
+  top: 101.8%;
+  height: 18.2%;
+}
+
+.game-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.15%;
+}
+
+.game-cube-button,
+.game-double-button,
+.game-auto-slot {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 500 / 493;
+  flex: 0 0 auto;
+}
+
+.game-roll-button {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1505 / 500;
+  flex: 0 0 auto;
+}
+
+.game-cube-button strong,
+.game-double-button strong {
+  font-size: clamp(0.82rem, 2.22vw, 2rem);
+}
+
+.game-cube-button span,
+.game-double-button span {
+  font-size: clamp(0.46rem, 0.86vw, 0.82rem);
+}
+
+.game-auto-label {
+  font-size: clamp(0.52rem, 1.08vw, 1.04rem);
+}
+
+.game-auto-toggle {
+  padding: 0 14% 0 12%;
+}
+
+.game-nav-home {
+  left: 1.85%;
+  top: 2.5%;
+}
+
+.game-home-link {
+  gap: 0.52em;
+  font-size: clamp(0.72rem, 1.3vw, 1.24rem);
+}
+
+.game-home-icon {
+  width: clamp(1.85rem, 3vw, 2.85rem);
+}
+
+.game-match-hud {
+  left: 33.1%;
+  top: 0.45%;
+  width: 33.8%;
+  height: 15.7%;
+}
+
+.game-match-label {
+  top: 9%;
+  font-size: clamp(0.48rem, 1.02vw, 0.92rem);
+}
+
+.game-score-strip {
+  top: 26.2%;
+  height: 38.2%;
+}
+
+.game-score-player {
+  font-size: clamp(0.56rem, 1.06vw, 1rem);
+}
+
+.game-score-player strong {
+  font-size: clamp(0.64rem, 1.18vw, 1.12rem);
+}
+
+.game-score-core {
+  font-size: clamp(1.22rem, 3.2vw, 3.1rem);
+}
+
+.game-turn-pill {
+  top: 65.4%;
+  width: 53%;
+  height: 21%;
+  font-size: clamp(0.52rem, 1.08vw, 1rem);
+}
+
+.game-header-actions {
+  right: 2%;
+  top: 2.6%;
+  gap: clamp(0.65rem, 1.8vw, 1.65rem);
+}
+
+.game-header-icon-button {
+  width: clamp(1.95rem, 3.35vw, 3.2rem);
+}
+
+.game-side-slot {
+  top: 15.1%;
+  width: 19.35%;
+  height: 58.8%;
+}
+
+.game-side-slot--left {
+  left: 5.05%;
+}
+
+.game-side-slot--right {
+  right: 5.05%;
+}
+
+.game-player-frame-art {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.game-player-neon-rail {
+  top: 1.2%;
+  bottom: 4%;
+  width: 0.42%;
+  opacity: 0.82;
+}
+
+.game-player-panel--left .game-player-neon-rail {
+  left: -6.1%;
+}
+
+.game-player-panel--right .game-player-neon-rail {
+  right: -6.1%;
+}
+
+.game-player-top {
+  inset-inline: 4.2%;
+  top: 4%;
+  height: 32.5%;
+}
+
+.game-avatar-stage {
+  top: 8%;
+  width: 34%;
+  overflow: visible;
+}
+
+.game-avatar-clip {
+  position: absolute;
+  inset: 5.5%;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.game-avatar-ring {
+  display: none;
+}
+
+.game-avatar-image {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+}
+
+.game-avatar-image img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.game-level-shield {
+  right: -9%;
+  bottom: -7%;
+  min-width: 32%;
+  height: 32%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ffde61;
+  font-size: clamp(0.56rem, 1.08vw, 1.05rem);
+  text-shadow:
+    0 0.08em 0.08em rgba(0, 0, 0, 0.84),
+    0 0 0.35em rgba(255, 208, 76, 0.34);
+}
+
+.game-player-panel--right .game-level-shield {
+  right: auto;
+  left: -9%;
+}
+
+.game-player-identity {
+  top: 6.5%;
+  width: 52%;
+  gap: 7%;
+}
+
+.game-player-panel--left .game-player-identity {
+  left: 48.5%;
+}
+
+.game-player-panel--right .game-player-identity {
+  right: 48.5%;
+}
+
+.game-player-identity h2 {
+  font-size: clamp(0.68rem, 1.12vw, 1.14rem);
+}
+
+.game-player-line {
+  gap: 0.52em;
+  font-size: clamp(0.5rem, 0.9vw, 0.9rem);
+}
+
+.game-meta-icon,
+.game-meta-flag {
+  width: 1.12em;
+  height: 1.12em;
+  flex: 0 0 1.12em;
+}
+
+.game-meta-icon {
+  font-size: 0.78em;
+  line-height: 1;
+}
+
+.game-stat-list {
+  top: 38.6%;
+  bottom: 11.8%;
+}
+
+.game-player-stats-art {
+  top: 1.5%;
+  bottom: 1.5%;
+  width: 14%;
+  height: 97%;
+}
+
+.game-stat-row {
+  grid-template-columns: 22.5% minmax(0, 1fr);
+  column-gap: 5.2%;
+}
+
+.game-player-panel--right .game-stat-row {
+  grid-template-columns: minmax(0, 1fr) 22.5%;
+}
+
+.game-stat-label {
+  font-size: clamp(0.42rem, 0.76vw, 0.76rem);
+}
+
+.game-stat-copy strong {
+  font-size: clamp(0.72rem, 1.28vw, 1.24rem);
+}
+
+.game-turn-timer {
+  left: 6.4%;
+  bottom: 1.6%;
+  width: 56.2%;
+  height: 9.2%;
+  grid-template-columns: 16% minmax(0, 1fr) 26%;
+  padding: 0 7.2%;
+}
+
+.game-turn-timer--right {
+  right: 6.4%;
+}
+
+.game-turn-timer-track {
+  height: 24%;
+}
+
+.game-turn-timer-icon {
+  width: 0.92em;
+  height: 0.92em;
+  flex: 0 0 auto;
+}
+
+.game-turn-timer strong {
+  font-size: clamp(0.5rem, 0.9vw, 0.88rem);
+}
+
+@media (max-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .game-board-column {
+    left: 23.3%;
+    width: 53.4%;
+    height: auto;
+  }
+
+  .game-side-slot {
+    width: 20.3%;
+  }
+
+  .game-side-slot--left {
+    left: 2.8%;
+  }
+
+  .game-side-slot--right {
+    right: 2.8%;
+  }
+}
+
+/* Phone landscape spread: match the mockup's wider side-card and control spacing. */
+@media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .game-board-column {
+    left: 22.85%;
+    top: 16.85%;
+    width: 56.35%;
+    height: auto;
+    aspect-ratio: 1686 / 933;
+  }
+
+  .game-side-slot--left {
+    left: 2.05%;
+  }
+
+  .game-side-slot--right {
+    right: 2.05%;
+  }
+
+  .game-actions-layer {
+    top: 101.6%;
+    height: 18.6%;
+  }
+
+  .game-action-row {
+    gap: 4.6%;
+  }
+
+  .game-auto-slot {
+    aspect-ratio: 500 / 493;
+    background-size: contain;
+  }
+}

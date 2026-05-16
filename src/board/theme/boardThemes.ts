@@ -3,7 +3,7 @@ import type { Theme } from './types';
 
 export type BoardThemeId = string;
 
-export const DEFAULT_BOARD_THEME_ID: BoardThemeId = 'classic-green';
+export const DEFAULT_BOARD_THEME_ID: BoardThemeId = 'premium-purple';
 
 const premiumPurpleLayout = {
   ...premiumTheme.layout,
