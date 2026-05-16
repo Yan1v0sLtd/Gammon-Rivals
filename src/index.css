@@ -3753,11 +3753,10 @@ html, body, #root {
   box-shadow: inset 0 0 0 1px rgba(255, 230, 166, 0.08);
 }
 
+/* No glow on the player card when it's the player's turn — the avatar
+   ring colour change (and the timer animation) already telegraph it. */
 .game-player-panel.is-turn .game-player-card {
-  box-shadow:
-    0 0 1.2rem rgba(126, 207, 255, 0.22),
-    inset 0 0 1.2rem rgba(255, 217, 113, 0.08),
-    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+  box-shadow: 0 1.1rem 2rem rgba(0, 0, 0, 0.44);
 }
 
 .game-player-panel--left .game-player-card {
@@ -5346,7 +5345,9 @@ html, body, #root {
 
 .game-board-column {
   position: absolute;
-  left: 24.55%;
+  /* Centred horizontally — was left:24.55% which leaned the board ~10px
+     to the right and made the right side panel feel cramped. */
+  left: 22.65%;
   top: 18.2%;
   z-index: 12;
   display: block;
@@ -6301,7 +6302,8 @@ html, body, #root {
 
 /* Premium gameplay mockup calibration: keep every supplied image proportional. */
 .game-board-column {
-  left: 24.7%;
+  /* Centred — (100 - 54.6) / 2 = 22.7% */
+  left: 22.7%;
   top: 17.35%;
   width: 54.6%;
   height: auto;
@@ -6631,6 +6633,7 @@ html, body, #root {
 
 @media (max-aspect-ratio: 1.95/1) and (orientation: landscape) {
   .game-board-column {
+    /* Centred — (100 - 53.4) / 2 = 23.3% (already centred) */
     left: 23.3%;
     width: 53.4%;
     height: auto;
@@ -6652,7 +6655,8 @@ html, body, #root {
 /* Phone landscape spread: match the mockup's wider side-card and control spacing. */
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
   .game-board-column {
-    left: 22.85%;
+    /* Centred — (100 - 56.35) / 2 = 21.825% */
+    left: 21.825%;
     top: 16.85%;
     width: 56.35%;
     height: auto;
@@ -7034,14 +7038,14 @@ html, body, #root {
   height: 31.8%;
 }
 
-/* The avatar stage is sized to the gold/purple ring that's baked into
-   the panel art (left-player.webp / right-player.webp). The ring's
-   inner edge sits at ~29% x / ~17% y of the slot with radius ~16% of
-   slot width. Stage is a 32% square so the avatar fills the ring with
-   no visible gap. */
+/* The avatar stage matches the gold/purple ring baked into the panel
+   art (left-player.webp / right-player.webp). The ring's inner edge is
+   ~28-32% of slot width. Stage is sized + positioned to fill the ring
+   with no visible gap. Values are relative to .game-player-top (which
+   is 91.6% of slot wide × 31.8% of slot tall). */
 .game-avatar-stage {
-  top: 6.5%;
-  width: 28%;
+  top: 7%;
+  width: 34.8%;
   height: auto;
   aspect-ratio: 1 / 1;
   overflow: visible;
@@ -7049,11 +7053,11 @@ html, body, #root {
 }
 
 .game-player-panel--left .game-avatar-stage {
-  left: 15.3%;
+  left: 9.2%;
 }
 
 .game-player-panel--right .game-avatar-stage {
-  right: 12.7%;
+  right: 9.2%;
 }
 
 .game-avatar-clip {
@@ -7124,35 +7128,36 @@ html, body, #root {
   clip-path: none !important;
 }
 
-/* The hex sits at (~41% slot-x, ~27% slot-y). With the avatar stage at
-   left:15.3% top:6.5% w/h:28%×28% (in pixels, since aspect 1/1), the
-   hex center maps to:
-     (41-15.3)/28 = 91.8% of stage width (X)
-     ((27-6.5)/100*slot_h) / (28/100*slot_w) — depends on slot aspect.
-   Slot is 174×252 → 28% slot_w = 48.7 px. 20.5% slot_h = 51.7 px.
-   So hex Y in stage coords = 51.7/48.7 = 106.1% of stage height. */
+/* The hexagon sits ~21% slot-w / ~25% slot-h offset from the stage
+   center. With stage at 55×55 viewport px, that's 88% / 95% of stage
+   width from the TL corner — so we anchor the shield there and use
+   translate(-50%, -50%) to centre the number ON the hex. */
 .game-player-panel--left .game-level-shield {
-  left: 92%;
-  top: 106%;
+  left: 88%;
+  top: 95%;
   right: auto;
   bottom: auto;
   transform: translate(-50%, -50%);
 }
 
 .game-player-panel--right .game-level-shield {
-  right: 92%;
-  top: 106%;
+  right: 88%;
+  top: 95%;
   left: auto;
   bottom: auto;
   transform: translate(50%, -50%);
 }
 
 /* Identity sits to the right of the avatar in the top block — pushed
-   further from the ring (left:52%) so there's clear breathing room,
-   and the column is vertically centred in the panel-top section. */
+   further from the ring (left:52%) so there's clear breathing room.
+   Top set to 0 + height:100% + display:grid + align-content:center so
+   the column is centred against the panel-top height regardless of how
+   many lines it has. */
 .game-player-identity {
-  top: 12%;
+  top: 0;
+  height: 100%;
   width: 44%;
+  align-content: center;
   gap: 5.5%;
 }
 
@@ -7358,14 +7363,14 @@ html, body, #root {
   }
 
   .game-avatar-stage {
-    width: 28%;
+    width: 34.8%;
   }
 
   .game-player-panel--left .game-avatar-stage {
-    left: 15.3%;
+    left: 9.2%;
   }
 
   .game-player-panel--right .game-avatar-stage {
-    right: 12.7%;
+    right: 9.2%;
   }
 }
