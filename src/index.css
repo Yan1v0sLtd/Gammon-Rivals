@@ -5444,19 +5444,31 @@ html, body, #root {
    slot the single ROLL button would have taken (so the action row stays
    proportional), but each child is square — matching the new
    undo-square.webp / end-turn-square.webp asset aspect (~1:1). */
+/* Container takes the SAME slot dimensions as a single .game-roll-button
+   (height: 100% of the action row, aspect-ratio: 1505/500 — the same
+   override applied to the other action-row buttons in the calibration
+   block). That keeps CUBE / DOUBLE / AUTO from shifting when the pair
+   replaces the single roll button. */
 .game-end-turn-pair {
   display: flex;
   gap: clamp(0.45rem, 0.95vw, 1rem);
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  width: clamp(19rem, 25vw, 30rem);
-  height: clamp(4.4rem, 8.6dvh, 7rem);
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1505 / 500;
+  flex: 0 0 auto;
   padding: 0;
+  pointer-events: auto;
 }
 
+/* Each child is a SQUARE the height of the row — matching the visual
+   height of CUBE / DOUBLE / AUTO. Two squares + gap are centred inside
+   the wider ROLL slot. */
 .game-end-turn-pair-button {
   flex: 0 0 auto;
-  align-self: stretch;
+  width: auto;
+  height: 100%;
   aspect-ratio: 1 / 1;
   min-width: 0;
   padding: 0;
