@@ -4578,25 +4578,32 @@ html, body, #root {
 /* .game-die-pips / .game-die-pip rules removed — pips are now rendered
    by the DieFace SVG sprite inside .game-die-face. */
 
+/* Dice flight — translate + rotate from the off-screen start point to
+   the settle position. Removed the scale pop (1.18 → 0.92 → 1.06 → 0.96
+   → 1) that made the dice feel like they were squashing in mid-air;
+   real dice don't change size while rolling. The TumblingDieFace
+   component handles the "face changing during the roll" feel. */
 @keyframes game-die-flight {
   0% {
     opacity: 0;
-    transform: translate3d(var(--dice-start-x), var(--dice-start-y), 0) rotate(var(--dice-start-rot)) scale(0.72);
+    transform: translate3d(var(--dice-start-x), var(--dice-start-y), 0) rotate(var(--dice-start-rot)) scale(0.9);
   }
-  9% {
+  8% {
     opacity: 1;
   }
-  28% {
-    transform: translate3d(var(--dice-hop-a-x), var(--dice-hop-a-y), 0) rotate(var(--dice-hop-a-rot)) scale(1.18);
+  32% {
+    transform: translate3d(var(--dice-hop-a-x), var(--dice-hop-a-y), 0) rotate(var(--dice-hop-a-rot)) scale(1);
   }
-  50% {
-    transform: translate3d(var(--dice-hop-b-x), var(--dice-hop-b-y), 0) rotate(var(--dice-hop-b-rot)) scale(0.92);
+  58% {
+    transform: translate3d(var(--dice-hop-b-x), var(--dice-hop-b-y), 0) rotate(var(--dice-hop-b-rot)) scale(1);
   }
-  72% {
-    transform: translate3d(var(--dice-hop-c-x), var(--dice-hop-c-y), 0) rotate(var(--dice-mid-rot)) scale(1.06);
+  80% {
+    transform: translate3d(var(--dice-hop-c-x), var(--dice-hop-c-y), 0) rotate(var(--dice-mid-rot)) scale(1);
   }
-  84% {
-    transform: translate3d(var(--dice-bounce-x), var(--dice-bounce-y), 0) rotate(var(--dice-end-rot)) scale(0.96);
+  92% {
+    /* Tiny settle bounce — keeps the "landing impact" feel without
+       the mid-flight size jumps. */
+    transform: translate3d(var(--dice-bounce-x), var(--dice-bounce-y), 0) rotate(var(--dice-end-rot)) scale(1.02);
   }
   100% {
     opacity: 1;

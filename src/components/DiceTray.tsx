@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Die, DiceRoll } from '../engine/types';
-import DieFace from './DieFace';
+import TumblingDieFace from './TumblingDieFace';
 
 interface Props {
   roll: DiceRoll | null;
@@ -235,7 +235,13 @@ export default function DiceTray({
               <span className="game-die-side game-die-side--right" />
               <span className="game-die-side game-die-side--bottom" />
               <span className="game-die-face">
-                <DieFace value={die.value} variant="white" />
+                <TumblingDieFace
+                  value={die.value}
+                  variant="white"
+                  delayMs={index * 58}
+                  tumbleMs={720}
+                  animate={!die.used}
+                />
               </span>
             </span>
           </span>
