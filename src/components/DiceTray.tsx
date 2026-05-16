@@ -428,9 +428,12 @@ interface ThreeDiceStage {
 // to the playing surface (~4 % of board width per die). At our 56 px
 // design die size this works out to a render scale around 0.7 on a
 // ~1000 px board column, regardless of viewport zoom.
-const TARGET_DIE_RATIO = 0.045;
-const MAX_DICE_SCALE = 0.85;
-const MIN_DICE_SCALE = 0.55;
+// Dice sized to ~3.15% of the board width — 30 % smaller than the
+// previous 4.5 % which read oversized on mobile. Min/max scales
+// clamped down to match.
+const TARGET_DIE_RATIO = 0.0315;
+const MAX_DICE_SCALE = 0.6;
+const MIN_DICE_SCALE = 0.38;
 
 const THREE_STAGE_WIDTH = 1800;
 const THREE_STAGE_HEIGHT = 1800;

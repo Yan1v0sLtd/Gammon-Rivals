@@ -1,32 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'gammon.auto-roll';
-
-function readInitial(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 /**
- * Local-only auto-roll preference. When enabled, the player's dice are
+ * Per-match auto-roll preference. When enabled, the player's dice are
  * rolled automatically as soon as it's their turn — they don't have to
- * tap "Roll" each turn. Stored in localStorage; we'll move it to the
- * Supabase profile in a follow-up so it persists across devices.
+ * tap "Roll" each turn.
+ *
+ * Always defaults to OFF when a match starts. The previous version
+ * persisted the toggle to localStorage so it carried over between
+ * matches; that meant any player who'd ever turned it on would have
+ * auto-roll enabled at the start of every new match (annoying). Now
+ * the toggle is session-only — players opt in fresh per match.
  */
 export function useAutoRoll(): [boolean, (next: boolean) => void] {
-  const [enabled, setEnabledState] = useState<boolean>(readInitial);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
-    } catch {
-      /* ignore quota / private mode failures */
-    }
-  }, [enabled]);
+  const [enabled, setEnabledState] = useState<boolean>(false);
 
   const setEnabled = useCallback((next: boolean) => {
     setEnabledState(next);
