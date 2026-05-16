@@ -5451,7 +5451,10 @@ html, body, #root {
    replaces the single roll button. */
 .game-end-turn-pair {
   display: flex;
-  gap: clamp(0.45rem, 0.95vw, 1rem);
+  /* Match the action row's button-to-button gap (~25px at 932 viewport)
+     so the spacing between UNDO and END TURN reads the same as
+     CUBE↔DOUBLE and PAIR↔AUTO. */
+  gap: clamp(1rem, 2.7vw, 2rem);
   align-items: center;
   justify-content: center;
   width: auto;
