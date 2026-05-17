@@ -79,11 +79,13 @@ function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
-const CORNER_COLORS: Record<Corner, { ring: string; dot: string; label: string }> = {
-  tl: { ring: 'border-emerald-300', dot: 'bg-emerald-300', label: 'Top-left' },
-  tr: { ring: 'border-amber-300', dot: 'bg-amber-300', label: 'Top-right' },
-  bl: { ring: 'border-cyan-300', dot: 'bg-cyan-300', label: 'Bottom-left' },
-  br: { ring: 'border-rose-300', dot: 'bg-rose-300', label: 'Bottom-right' },
+// Inline RGB so Tailwind's JIT can't strip the dynamically-built
+// class names (it would only ship CSS for classes it sees statically).
+const CORNER_COLORS: Record<Corner, { color: string; label: string }> = {
+  tl: { color: '#6ee7b7', label: 'Top-left' }, // emerald-300
+  tr: { color: '#fcd34d', label: 'Top-right' }, // amber-300
+  bl: { color: '#67e8f9', label: 'Bottom-left' }, // cyan-300
+  br: { color: '#fda4af', label: 'Bottom-right' }, // rose-300
 };
 
 /**
@@ -161,7 +163,10 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
     const value = corners[key];
     return (
       <div key={key} className="flex flex-wrap items-center gap-2">
-        <span className={`inline-block h-2 w-2 rounded-full ${palette.dot}`} />
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ backgroundColor: palette.color }}
+        />
         <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
         {numberInput('X%', value[0], (x) => updateCorner(key, [x, value[1]]))}
         {numberInput('Y%', value[1], (y) => updateCorner(key, [value[0], y]))}
@@ -239,7 +244,7 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
 interface HandleProps {
   xPct: number;
   yPct: number;
-  palette: { ring: string; dot: string; label: string };
+  palette: { color: string; label: string };
   active: boolean;
   onPointerDown(event: ReactPointerEvent<HTMLDivElement>): void;
   onPointerEnter(): void;
@@ -252,8 +257,15 @@ function Handle({ xPct, yPct, palette, active, onPointerDown, onPointerEnter, on
       onPointerDown={onPointerDown}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
-      style={{ left: `${xPct}%`, top: `${yPct}%`, touchAction: 'none' }}
-      className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${palette.ring} ${palette.dot}/80 ${
+      title={palette.label}
+      style={{
+        left: `${xPct}%`,
+        top: `${yPct}%`,
+        touchAction: 'none',
+        backgroundColor: palette.color,
+        borderColor: palette.color,
+      }}
+      className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${
         active ? 'scale-150' : 'scale-100'
       }`}
     />
