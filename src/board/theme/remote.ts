@@ -109,6 +109,10 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       typeof source.offCheckerStackSpacingRatio === 'number'
         ? source.offCheckerStackSpacingRatio
         : undefined,
+    blackOffTrayTiltDeg:
+      typeof source.blackOffTrayTiltDeg === 'number' ? source.blackOffTrayTiltDeg : undefined,
+    whiteOffTrayTiltDeg:
+      typeof source.whiteOffTrayTiltDeg === 'number' ? source.whiteOffTrayTiltDeg : undefined,
   };
   return layout;
 }

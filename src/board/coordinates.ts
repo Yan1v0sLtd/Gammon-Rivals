@@ -40,6 +40,8 @@ export interface Layout {
   readonly whiteOffTrayTop: number;
   readonly whiteOffTrayHeight: number;
   readonly offCheckerStackSpacing: number;
+  readonly blackOffTrayTiltDeg: number;
+  readonly whiteOffTrayTiltDeg: number;
 }
 
 export function computeLayout(width: number, height: number, themeLayout?: ThemeLayout): Layout {
@@ -118,6 +120,8 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   const whiteOffTrayTop = height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61);
   const whiteOffTrayHeight = height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255);
   const offCheckerStackSpacing = themeLayout?.offCheckerStackSpacingRatio ?? 0.56;
+  const blackOffTrayTiltDeg = themeLayout?.blackOffTrayTiltDeg ?? 0;
+  const whiteOffTrayTiltDeg = themeLayout?.whiteOffTrayTiltDeg ?? 0;
   return {
     width,
     height,
@@ -158,6 +162,8 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     whiteOffTrayTop,
     whiteOffTrayHeight,
     offCheckerStackSpacing,
+    blackOffTrayTiltDeg,
+    whiteOffTrayTiltDeg,
   };
 }
 

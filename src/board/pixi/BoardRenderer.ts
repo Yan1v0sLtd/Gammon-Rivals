@@ -365,37 +365,50 @@ export class BoardRenderer {
   private offTrayMetrics(owner: Player) {
     const {
       blackOffTrayHeight,
+      blackOffTrayTiltDeg,
       blackOffTrayTop,
       blackOffTrayX,
       checkerRadius,
       offCheckerStackSpacing,
       railWidth,
       whiteOffTrayHeight,
+      whiteOffTrayTiltDeg,
       whiteOffTrayTop,
       whiteOffTrayX,
     } = this.layout;
     const trayHeight = owner === 'black' ? blackOffTrayHeight : whiteOffTrayHeight;
     const trayTop = owner === 'black' ? blackOffTrayTop : whiteOffTrayTop;
     const trayX = owner === 'black' ? blackOffTrayX : whiteOffTrayX;
+    const tiltDeg = owner === 'black' ? blackOffTrayTiltDeg : whiteOffTrayTiltDeg;
+    const tiltRad = (tiltDeg * Math.PI) / 180;
     const usable = Math.max(checkerRadius, trayHeight - checkerRadius * 2);
+    const step = Math.min(checkerRadius * offCheckerStackSpacing, usable / 14);
     return {
       x: trayX,
       top: trayTop,
       width: Math.max(checkerRadius * 2.3, railWidth * 0.36),
       height: trayHeight,
-      step: Math.min(checkerRadius * offCheckerStackSpacing, usable / 14),
+      step,
+      // Per-step delta vector: black stacks downward (y > 0), white upward
+      // (y < 0). Positive tilt shifts each successive checker right.
+      tiltDx: step * Math.sin(tiltRad),
+      tiltDy: step * (Math.cos(tiltRad) - 1),
     };
   }
 
   private offCheckerAnchor(owner: Player, stackIndex = 0): { x: number; y: number } {
     const { checkerRadius } = this.layout;
     const tray = this.offTrayMetrics(owner);
+    const baseY =
+      owner === 'black'
+        ? tray.top + checkerRadius + stackIndex * tray.step
+        : tray.top + tray.height - checkerRadius - stackIndex * tray.step;
+    // For white the stack travels upward, so the cos-component shortens
+    // the upward stride; for black it lengthens the downward stride.
+    const dirY = owner === 'black' ? 1 : -1;
     return {
-      x: tray.x,
-      y:
-        owner === 'black'
-          ? tray.top + checkerRadius + stackIndex * tray.step
-          : tray.top + tray.height - checkerRadius - stackIndex * tray.step,
+      x: tray.x + stackIndex * tray.tiltDx,
+      y: baseY + stackIndex * tray.tiltDy * dirY,
     };
   }
 
@@ -1044,14 +1057,11 @@ export class BoardRenderer {
       alpha: 0.95,
     });
     // Ghost the 15 stack slots so the user can see where each finished
-    // checker would land at the current spacing.
+    // checker would land at the current spacing + tilt.
     for (let n = 0; n < 15; n++) {
-      const y =
-        owner === 'black'
-          ? tray.top + r + n * tray.step
-          : tray.top + tray.height - r - n * tray.step;
-      if (y < tray.top + r * 0.6 || y > tray.top + tray.height - r * 0.6) break;
-      g.circle(tray.x, y, r * 0.95).stroke({
+      const anchor = this.offCheckerAnchor(owner, n);
+      if (anchor.y < tray.top + r * 0.6 || anchor.y > tray.top + tray.height - r * 0.6) break;
+      g.circle(anchor.x, anchor.y, r * 0.95).stroke({
         color: 0xff4df3,
         width: 1.5,
         alpha: 0.7,

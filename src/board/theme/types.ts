@@ -78,6 +78,10 @@ export interface ThemeLayout {
   readonly whiteOffTrayTopRatio?: number;
   readonly whiteOffTrayHeightRatio?: number;
   readonly offCheckerStackSpacingRatio?: number;
+  /** Angle (deg) tilting the off-tray stack axis away from vertical.
+   *  0 stacks straight up/down; positive tilts checkers' top right. */
+  readonly blackOffTrayTiltDeg?: number;
+  readonly whiteOffTrayTiltDeg?: number;
 }
 
 export interface Theme {

@@ -26,6 +26,8 @@ const OFF_HEIGHT_MIN = 0.05;
 const OFF_HEIGHT_MAX = 0.7;
 const OFF_SPACING_MIN = 0.2;
 const OFF_SPACING_MAX = 1.2;
+const OFF_TILT_MIN = -45;
+const OFF_TILT_MAX = 45;
 
 interface Props {
   layout: ThemeLayout;
@@ -199,6 +201,8 @@ export default function AlignmentPanel({
           whiteOffTrayTopRatio: layout.whiteOffTrayTopRatio,
           whiteOffTrayHeightRatio: layout.whiteOffTrayHeightRatio,
           offCheckerStackSpacingRatio: layout.offCheckerStackSpacingRatio,
+          blackOffTrayTiltDeg: layout.blackOffTrayTiltDeg,
+          whiteOffTrayTiltDeg: layout.whiteOffTrayTiltDeg,
         },
         null,
         2
@@ -227,6 +231,8 @@ export default function AlignmentPanel({
       layout.whiteOffTrayTopRatio,
       layout.whiteOffTrayHeightRatio,
       layout.offCheckerStackSpacingRatio,
+      layout.blackOffTrayTiltDeg,
+      layout.whiteOffTrayTiltDeg,
     ]
   );
 
@@ -661,6 +667,7 @@ type OffOwner = 'white' | 'black';
 type OffXKey = 'whiteOffTrayXRatio' | 'blackOffTrayXRatio';
 type OffTopKey = 'whiteOffTrayTopRatio' | 'blackOffTrayTopRatio';
 type OffHeightKey = 'whiteOffTrayHeightRatio' | 'blackOffTrayHeightRatio';
+type OffTiltKey = 'whiteOffTrayTiltDeg' | 'blackOffTrayTiltDeg';
 
 interface OffTrayProps {
   owner: OffOwner;
@@ -673,11 +680,13 @@ function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
   const topKey: OffTopKey = owner === 'white' ? 'whiteOffTrayTopRatio' : 'blackOffTrayTopRatio';
   const heightKey: OffHeightKey =
     owner === 'white' ? 'whiteOffTrayHeightRatio' : 'blackOffTrayHeightRatio';
+  const tiltKey: OffTiltKey = owner === 'white' ? 'whiteOffTrayTiltDeg' : 'blackOffTrayTiltDeg';
 
   const x = layout[xKey] ?? 0.925;
   const top = layout[topKey] ?? (owner === 'white' ? 0.61 : 0.145);
   const height = layout[heightKey] ?? 0.255;
   const spacing = layout.offCheckerStackSpacingRatio ?? 0.56;
+  const tilt = layout[tiltKey] ?? 0;
 
   const update = (patch: Partial<ThemeLayout>) => onLayoutChange({ ...layout, ...patch });
   const setX = (value: number) =>
@@ -692,6 +701,9 @@ function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
   const setSpacing = (value: number) =>
     update({ offCheckerStackSpacingRatio: roundRatio(clamp(value, OFF_SPACING_MIN, OFF_SPACING_MAX)) });
   const nudgeSpacing = (delta: number) => setSpacing(spacing + delta);
+  const setTilt = (value: number) =>
+    update({ [tiltKey]: Math.round(clamp(value, OFF_TILT_MIN, OFF_TILT_MAX) * 10) / 10 });
+  const nudgeTilt = (delta: number) => setTilt(tilt + delta);
 
   const row = (
     label: string,
@@ -742,6 +754,7 @@ function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
       {row('Tray top', top, nudgeTop, setTop, 0.02, 0.004, OFF_TOP_MIN, OFF_TOP_MAX)}
       {row('Tray height', height, nudgeHeight, setHeight, 0.02, 0.004, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)}
       {row('Stack spacing', spacing, nudgeSpacing, setSpacing, 0.08, 0.02, OFF_SPACING_MIN, OFF_SPACING_MAX, 2)}
+      {row('Stack tilt (°)', tilt, nudgeTilt, setTilt, 5, 0.5, OFF_TILT_MIN, OFF_TILT_MAX, 1)}
     </div>
   );
 }
