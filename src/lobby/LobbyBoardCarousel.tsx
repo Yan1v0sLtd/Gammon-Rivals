@@ -20,6 +20,23 @@ export function LobbyBoardCarousel({
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef<number | null>(null);
   const dragPointerId = useRef<number | null>(null);
+
+  // Render an empty placeholder until the lobby has at least one board
+  // to show (e.g., while the Back Office query is still resolving, or
+  // when no boards are enabled there). Returning early avoids touching
+  // boards[0] / boards.length math on an empty array.
+  if (boards.length === 0) {
+    return (
+      <section className="lobby-carousel-section relative mx-auto flex w-full max-w-[64rem] items-center justify-center overflow-visible">
+        <div className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]">
+          <p className="px-6 text-center text-sm font-bold uppercase tracking-[0.18em]">
+            Loading boards…
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   const selectedIndex = boards.findIndex((board) => board.id === selectedId);
   const safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
   const selected = boards[safeIndex]!;

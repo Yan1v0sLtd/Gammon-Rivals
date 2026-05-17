@@ -13,7 +13,9 @@ export function useLobbyBoards(): readonly LobbyBoard[] {
       .from('board_theme_configs')
       .select('*')
       .eq('is_enabled', true)
-      .order('sort_order', { ascending: true })
+      // Highest sort_order first so the operator can prioritise a
+      // featured board by giving it the biggest number.
+      .order('sort_order', { ascending: false })
       .then(({ data, error }) => {
         if (cancelled || error || !data?.length) return;
         const remoteBoards = data.map(lobbyBoardFromConfig);

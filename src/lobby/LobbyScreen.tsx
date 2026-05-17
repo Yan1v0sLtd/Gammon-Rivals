@@ -45,22 +45,25 @@ export function LobbyScreen() {
   const navigate = useNavigate();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
   const boards = useLobbyBoards();
-  const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('classic-green');
+  const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
   const [creatingOnline, setCreatingOnline] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
     ? selectedBoardId
-    : (boards[0]?.id ?? 'classic-green');
-  const selectedBoard =
-    boards.find((board) => board.id === effectiveSelectedBoardId) ?? boards[0]!;
-  const previousBoardRef = useRef<LobbyBoard>(selectedBoard);
+    : (boards[0]?.id ?? '');
+  // selectedBoard may be undefined briefly before useLobbyBoards's DB
+  // fetch resolves (or if no boards are configured in the back office).
+  // All downstream code now treats it as optional.
+  const selectedBoard = boards.find((board) => board.id === effectiveSelectedBoardId) ?? boards[0];
+  const previousBoardRef = useRef<LobbyBoard | null>(selectedBoard ?? null);
   const [fadingBoard, setFadingBoard] = useState<LobbyBoard | null>(null);
 
   useEffect(() => {
+    if (!selectedBoard) return;
     const previousBoard = previousBoardRef.current;
-    if (previousBoard.id === selectedBoard.id) return;
+    if (previousBoard && previousBoard.id === selectedBoard.id) return;
 
-    setFadingBoard(previousBoard);
+    if (previousBoard) setFadingBoard(previousBoard);
     previousBoardRef.current = selectedBoard;
 
     const clearPrevious = window.setTimeout(() => setFadingBoard(null), 560);
@@ -98,11 +101,13 @@ export function LobbyScreen() {
       {fadingBoard ? (
         <LobbyBackgroundLayer key={`leaving-${fadingBoard.id}`} board={fadingBoard} state="leaving" />
       ) : null}
-      <LobbyBackgroundLayer
-        key={`entering-${selectedBoard.id}`}
-        board={selectedBoard}
-        state="entering"
-      />
+      {selectedBoard ? (
+        <LobbyBackgroundLayer
+          key={`entering-${selectedBoard.id}`}
+          board={selectedBoard}
+          state="entering"
+        />
+      ) : null}
 
       <div className="lobby-shell relative z-10 flex min-h-dvh flex-col px-4 pb-0 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 lg:px-9">
         <LobbyTopBar
