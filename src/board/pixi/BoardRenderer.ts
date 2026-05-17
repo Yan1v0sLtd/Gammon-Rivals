@@ -538,7 +538,7 @@ export class BoardRenderer {
   }
 
   private drawPoints() {
-    const { pointWidth, pointHeight } = this.layout;
+    const { pointWidth, topPointHeight, bottomPointHeight } = this.layout;
     const lightTex = this.texture('pointLight');
     const darkTex = this.texture('pointDark');
 
@@ -546,6 +546,9 @@ export class BoardRenderer {
       const pos = pointCoords(this.layout, i);
       const isLight = pos.column % 2 === 0;
       const tex = isLight ? lightTex : darkTex;
+      // Per-row depth so editing "Point depth (bottom)" only affects
+      // the bottom-row triangles (and the same for top).
+      const pointHeight = pos.stackDir === 1 ? topPointHeight : bottomPointHeight;
 
       if (tex) {
         const sprite = new Sprite(tex);
@@ -941,7 +944,11 @@ export class BoardRenderer {
     for (let column = 0; column < 12; column++) {
       const idx = this.pointIndexForColumn(debug.side, column);
       const pos = pointCoords(this.layout, idx);
-      const tipY = pos.y + pos.stackDir * this.layout.pointHeight;
+      // Per-row depth so the alignment overlay matches the actual
+      // triangle length for the row being edited.
+      const rowPointHeight =
+        pos.stackDir === 1 ? this.layout.topPointHeight : this.layout.bottomPointHeight;
+      const tipY = pos.y + pos.stackDir * rowPointHeight;
       const selected = column === activeColumn;
       const color = selected ? 0xff4df3 : 0x23d7ff;
       const alpha = selected ? 0.95 : 0.32;

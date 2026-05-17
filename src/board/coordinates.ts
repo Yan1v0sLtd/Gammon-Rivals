@@ -22,11 +22,15 @@ export interface Layout {
   readonly topCheckerOffsetXs: readonly number[] | null;
   readonly bottomCheckerOffsetXs: readonly number[] | null;
   readonly pointHeight: number;
+  readonly topPointHeight: number;
+  readonly bottomPointHeight: number;
   readonly topPointY: number;
   readonly bottomPointY: number;
   readonly checkerRadius: number;
   readonly checkerScaleY: number;
   readonly checkerStackSpacing: number;
+  readonly topCheckerStackSpacing: number;
+  readonly bottomCheckerStackSpacing: number;
   readonly topCheckerPadding: number;
   readonly bottomCheckerPadding: number;
   readonly blackOffTrayX: number;
@@ -83,12 +87,28 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     themeLayout?.bottomCheckerOffsetXRatios?.length === 12
       ? themeLayout.bottomCheckerOffsetXRatios.map((ratio) => width * ratio)
       : null;
-  const pointHeight = Math.round(height * (themeLayout?.pointHeightRatio ?? 0.44));
+  // Point depth — shared default with per-row overrides so top and
+  // bottom rows can be tuned independently in alignment mode.
+  const sharedPointHeightRatio = themeLayout?.pointHeightRatio ?? 0.44;
+  const topPointHeight = Math.round(
+    height * (themeLayout?.topPointHeightRatio ?? sharedPointHeightRatio)
+  );
+  const bottomPointHeight = Math.round(
+    height * (themeLayout?.bottomPointHeightRatio ?? sharedPointHeightRatio)
+  );
+  // Legacy single value kept for any callers that haven't switched to
+  // the per-row pair yet.
+  const pointHeight = Math.round(height * sharedPointHeightRatio);
   const topPointY = Math.round(height * (themeLayout?.topPointYRatio ?? 0));
   const bottomPointY = Math.round(height * (themeLayout?.bottomPointYRatio ?? 1));
   const checkerRadius = Math.floor(pointWidth * (themeLayout?.checkerRadiusRatio ?? 0.42));
   const checkerScaleY = themeLayout?.checkerScaleYRatio ?? 1;
-  const checkerStackSpacing = themeLayout?.checkerStackSpacingRatio ?? 1;
+  const sharedCheckerStackSpacing = themeLayout?.checkerStackSpacingRatio ?? 1;
+  const topCheckerStackSpacing =
+    themeLayout?.topCheckerStackSpacingRatio ?? sharedCheckerStackSpacing;
+  const bottomCheckerStackSpacing =
+    themeLayout?.bottomCheckerStackSpacingRatio ?? sharedCheckerStackSpacing;
+  const checkerStackSpacing = sharedCheckerStackSpacing;
   const topCheckerPadding = themeLayout?.topCheckerPaddingRatio ?? 1;
   const bottomCheckerPadding = themeLayout?.bottomCheckerPaddingRatio ?? 1;
   const blackOffTrayX = width * (themeLayout?.blackOffTrayXRatio ?? 0.925);
@@ -120,11 +140,15 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     topCheckerOffsetXs,
     bottomCheckerOffsetXs,
     pointHeight,
+    topPointHeight,
+    bottomPointHeight,
     topPointY,
     bottomPointY,
     checkerRadius,
     checkerScaleY,
     checkerStackSpacing,
+    topCheckerStackSpacing,
+    bottomCheckerStackSpacing,
     topCheckerPadding,
     bottomCheckerPadding,
     blackOffTrayX,
@@ -175,10 +199,16 @@ export function checkerCenter(
   stackIndex: number,
   count: number
 ): { x: number; y: number } {
-  const { checkerRadius, checkerScaleY, checkerStackSpacing, pointHeight } = layout;
+  const { checkerRadius, checkerScaleY } = layout;
   const verticalRadius = checkerRadius * checkerScaleY;
   const diameter = 2 * verticalRadius;
   const paddingRatio = pos.stackDir === 1 ? layout.topCheckerPadding : layout.bottomCheckerPadding;
+  // Per-row depth / spacing so top and bottom rows can be tuned
+  // independently. stackDir === 1 means a top-row point (stacks
+  // downward into the play area).
+  const pointHeight = pos.stackDir === 1 ? layout.topPointHeight : layout.bottomPointHeight;
+  const checkerStackSpacing =
+    pos.stackDir === 1 ? layout.topCheckerStackSpacing : layout.bottomCheckerStackSpacing;
   const startPadding = verticalRadius * paddingRatio;
   const naturalSpacing = diameter * checkerStackSpacing;
   const maxSpacing = count > 1 ? Math.max(1, (pointHeight - startPadding) / (count - 0.5)) : naturalSpacing;

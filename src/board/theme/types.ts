@@ -44,6 +44,10 @@ export interface ThemeLayout {
   readonly railWidthRatio?: number;
   readonly barWidthRatio?: number;
   readonly pointHeightRatio?: number;
+  /** Per-row overrides for point depth. If omitted, falls back to the
+   *  shared pointHeightRatio. */
+  readonly topPointHeightRatio?: number;
+  readonly bottomPointHeightRatio?: number;
   readonly topPointYRatio?: number;
   readonly bottomPointYRatio?: number;
   readonly checkerRadiusRatio?: number;
@@ -61,6 +65,10 @@ export interface ThemeLayout {
   readonly bottomCheckerOffsetXRatios?: readonly number[];
   readonly checkerScaleYRatio?: number;
   readonly checkerStackSpacingRatio?: number;
+  /** Per-row overrides for checker stack spacing. If omitted, falls
+   *  back to the shared checkerStackSpacingRatio. */
+  readonly topCheckerStackSpacingRatio?: number;
+  readonly bottomCheckerStackSpacingRatio?: number;
   readonly topCheckerPaddingRatio?: number;
   readonly bottomCheckerPaddingRatio?: number;
   readonly blackOffTrayXRatio?: number;

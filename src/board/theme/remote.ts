@@ -28,6 +28,12 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
     railWidthRatio: typeof source.railWidthRatio === 'number' ? source.railWidthRatio : undefined,
     barWidthRatio: typeof source.barWidthRatio === 'number' ? source.barWidthRatio : undefined,
     pointHeightRatio: typeof source.pointHeightRatio === 'number' ? source.pointHeightRatio : undefined,
+    topPointHeightRatio:
+      typeof source.topPointHeightRatio === 'number' ? source.topPointHeightRatio : undefined,
+    bottomPointHeightRatio:
+      typeof source.bottomPointHeightRatio === 'number'
+        ? source.bottomPointHeightRatio
+        : undefined,
     topPointYRatio: typeof source.topPointYRatio === 'number' ? source.topPointYRatio : undefined,
     bottomPointYRatio:
       typeof source.bottomPointYRatio === 'number' ? source.bottomPointYRatio : undefined,
@@ -66,6 +72,14 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
     checkerStackSpacingRatio:
       typeof source.checkerStackSpacingRatio === 'number'
         ? source.checkerStackSpacingRatio
+        : undefined,
+    topCheckerStackSpacingRatio:
+      typeof source.topCheckerStackSpacingRatio === 'number'
+        ? source.topCheckerStackSpacingRatio
+        : undefined,
+    bottomCheckerStackSpacingRatio:
+      typeof source.bottomCheckerStackSpacingRatio === 'number'
+        ? source.bottomCheckerStackSpacingRatio
         : undefined,
     topCheckerPaddingRatio:
       typeof source.topCheckerPaddingRatio === 'number'

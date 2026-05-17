@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import type { ThemeLayout } from '../board/theme';
 
@@ -64,6 +64,69 @@ export default function AlignmentPanel({
 }: Props) {
   const [copyState, setCopyState] = useState('');
   const [panelSide, setPanelSide] = useState<'left' | 'right'>('right');
+  // Drag position override. When non-null, the panel is positioned
+  // absolutely at (x, y) and the panelSide default is ignored.
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{
+    startMouseX: number;
+    startMouseY: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const panelEl = useRef<HTMLDivElement | null>(null);
+
+  // Window-level pointer move / up handlers when the user is dragging.
+  // Attaching to window (not the panel) is critical — pointermove on
+  // the panel itself loses tracking if the mouse moves faster than the
+  // panel can repaint.
+  useEffect(() => {
+    const onMove = (event: PointerEvent) => {
+      if (!dragRef.current) return;
+      event.preventDefault();
+      const { startMouseX, startMouseY, startX, startY } = dragRef.current;
+      const dx = event.clientX - startMouseX;
+      const dy = event.clientY - startMouseY;
+      const panelW = panelEl.current?.offsetWidth ?? 430;
+      const panelH = panelEl.current?.offsetHeight ?? 200;
+      const margin = 4;
+      const maxX = Math.max(margin, window.innerWidth - panelW - margin);
+      const maxY = Math.max(margin, window.innerHeight - panelH - margin);
+      const x = Math.min(maxX, Math.max(margin, startX + dx));
+      const y = Math.min(maxY, Math.max(margin, startY + dy));
+      setDragPos({ x, y });
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+    };
+  }, []);
+
+  const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!panelEl.current) return;
+    // Ignore drags that start on buttons / inputs inside the header
+    // (so the "Move panel" / close affordances still click).
+    if ((event.target as HTMLElement).closest('button, input, textarea')) return;
+    event.preventDefault();
+    const rect = panelEl.current.getBoundingClientRect();
+    dragRef.current = {
+      startMouseX: event.clientX,
+      startMouseY: event.clientY,
+      startX: rect.left,
+      startY: rect.top,
+    };
+    // Seed dragPos so the panel switches from corner-anchored to
+    // absolute-positioned on the very first move.
+    setDragPos({ x: rect.left, y: rect.top });
+    document.body.style.userSelect = 'none';
+  };
   const key = ratioKey(debug.side, debug.anchor === 'tip' ? 'tip' : 'base');
   const checkerOffsetKey = offsetKey(debug.side);
   const currentRatios = ratiosFor(layout, key);
@@ -77,8 +140,16 @@ export default function AlignmentPanel({
   const sidePaddingValue = layout[sidePaddingKey] ?? 1;
   const sideEdgeKey: EdgeKey = debug.side === 'top' ? 'topPointYRatio' : 'bottomPointYRatio';
   const sideEdgeValue = layout[sideEdgeKey] ?? (debug.side === 'top' ? 0 : 1);
-  const pointHeightValue = layout.pointHeightRatio ?? 0.44;
-  const spacingValue = layout.checkerStackSpacingRatio ?? 1;
+  // Per-row point depth / stack spacing — fall back to the shared
+  // legacy fields when the per-row override isn't set yet.
+  const sharedPointHeight = layout.pointHeightRatio ?? 0.44;
+  const sharedSpacing = layout.checkerStackSpacingRatio ?? 1;
+  const pointHeightKey =
+    debug.side === 'top' ? 'topPointHeightRatio' : 'bottomPointHeightRatio';
+  const spacingKey =
+    debug.side === 'top' ? 'topCheckerStackSpacingRatio' : 'bottomCheckerStackSpacingRatio';
+  const pointHeightValue = layout[pointHeightKey] ?? sharedPointHeight;
+  const spacingValue = layout[spacingKey] ?? sharedSpacing;
 
   const exportText = useMemo(
     () =>
@@ -91,9 +162,13 @@ export default function AlignmentPanel({
           topCheckerOffsetXRatios: layout.topCheckerOffsetXRatios,
           bottomCheckerOffsetXRatios: layout.bottomCheckerOffsetXRatios,
           pointHeightRatio: layout.pointHeightRatio,
+          topPointHeightRatio: layout.topPointHeightRatio,
+          bottomPointHeightRatio: layout.bottomPointHeightRatio,
           topPointYRatio: layout.topPointYRatio,
           bottomPointYRatio: layout.bottomPointYRatio,
           checkerStackSpacingRatio: layout.checkerStackSpacingRatio,
+          topCheckerStackSpacingRatio: layout.topCheckerStackSpacingRatio,
+          bottomCheckerStackSpacingRatio: layout.bottomCheckerStackSpacingRatio,
           topCheckerPaddingRatio: layout.topCheckerPaddingRatio,
           bottomCheckerPaddingRatio: layout.bottomCheckerPaddingRatio,
           blackOffTrayXRatio: layout.blackOffTrayXRatio,
@@ -114,7 +189,11 @@ export default function AlignmentPanel({
       layout.bottomPointYRatio,
       layout.bottomCheckerPaddingRatio,
       layout.checkerStackSpacingRatio,
+      layout.topCheckerStackSpacingRatio,
+      layout.bottomCheckerStackSpacingRatio,
       layout.pointHeightRatio,
+      layout.topPointHeightRatio,
+      layout.bottomPointHeightRatio,
       layout.topCheckerOffsetXRatios,
       layout.topPointCenterXRatios,
       layout.topPointTipXRatios,
@@ -204,7 +283,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      pointHeightRatio: roundRatio(
+      [pointHeightKey]: roundRatio(
         clamp(pointHeightValue + delta, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)
       ),
     });
@@ -215,7 +294,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      pointHeightRatio: roundRatio(clamp(value, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)),
+      [pointHeightKey]: roundRatio(clamp(value, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)),
     });
   };
 
@@ -223,7 +302,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      checkerStackSpacingRatio: roundRatio(clamp(spacingValue + delta, SPACING_MIN, SPACING_MAX)),
+      [spacingKey]: roundRatio(clamp(spacingValue + delta, SPACING_MIN, SPACING_MAX)),
     });
   };
 
@@ -232,7 +311,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      checkerStackSpacingRatio: roundRatio(clamp(value, SPACING_MIN, SPACING_MAX)),
+      [spacingKey]: roundRatio(clamp(value, SPACING_MIN, SPACING_MAX)),
     });
   };
 
@@ -246,17 +325,36 @@ export default function AlignmentPanel({
   };
 
   const panelPosition = panelSide === 'left' ? 'left-3' : 'right-3';
+  // While the user has manually dragged the panel, anchor it to (x, y)
+  // via inline styles. Otherwise let the Tailwind corner classes pin it.
+  const dragStyle: React.CSSProperties | undefined = dragPos
+    ? { left: dragPos.x, top: dragPos.y, right: 'auto', bottom: 'auto' }
+    : undefined;
 
   return (
-    <div className={`fixed bottom-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <div className="font-semibold text-cyan-100">Alignment mode</div>
+    <div
+      ref={panelEl}
+      style={dragStyle}
+      className={`fixed top-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}
+    >
+      <div
+        onPointerDown={startDrag}
+        className="mb-2 flex cursor-grab items-center justify-between gap-3 active:cursor-grabbing select-none"
+        title="Drag to move"
+      >
+        <div className="font-semibold text-cyan-100">⋮⋮ Alignment mode</div>
         <button
           type="button"
-          onClick={() => setPanelSide(panelSide === 'left' ? 'right' : 'left')}
+          onClick={(e) => {
+            e.stopPropagation();
+            // "Reset to corner" if the panel was dragged; otherwise
+            // flip the corner side.
+            if (dragPos) setDragPos(null);
+            else setPanelSide(panelSide === 'left' ? 'right' : 'left');
+          }}
           className="rounded border border-cyan-300/30 px-2 py-1 text-xs text-cyan-100"
         >
-          Move panel
+          {dragPos ? 'Snap corner' : 'Move panel'}
         </button>
       </div>
       <div className="mb-2 text-xs text-cyan-200/70">
@@ -383,7 +481,9 @@ export default function AlignmentPanel({
         </div>
 
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Point depth</div>
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+            Point depth ({debug.side})
+          </div>
           <div className="grid grid-cols-4 gap-1">
             <button type="button" onClick={() => nudgePointHeight(-0.03)} className="rounded bg-slate-800 px-2 py-2">
               -big
@@ -406,7 +506,7 @@ export default function AlignmentPanel({
             value={pointHeightValue.toFixed(4)}
             onChange={(event) => setPointHeight(Number(event.target.value))}
             className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
-            aria-label="pointHeightRatio"
+            aria-label={pointHeightKey}
           />
         </div>
       </div>
@@ -441,7 +541,9 @@ export default function AlignmentPanel({
         </div>
 
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Checker spacing</div>
+          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+            Checker spacing ({debug.side})
+          </div>
           <div className="grid grid-cols-4 gap-1">
             <button type="button" onClick={() => nudgeSpacing(-0.16)} className="rounded bg-slate-800 px-2 py-2">
               -big
@@ -464,7 +566,7 @@ export default function AlignmentPanel({
             value={spacingValue.toFixed(2)}
             onChange={(event) => setSpacing(Number(event.target.value))}
             className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
-            aria-label="checkerStackSpacingRatio"
+            aria-label={spacingKey}
           />
         </div>
       </div>
