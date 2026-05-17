@@ -6035,17 +6035,18 @@ html, body, #root {
 
 .game-player-panel--left .game-player-identity {
   left: 49%;
-  text-align: center;
-  /* justify-items: stretch (default) so each grid item spans the full
-     identity width. justify-content: center on each flex line then
-     centers the icon+text as a unit, and all lines share the same
-     horizontal centre regardless of content width. */
+  /* Text + icon rows aligned to the LEFT of the identity container.
+     For the left player that's toward the avatar; for the right
+     player the identity is on the opposite side of the avatar but
+     still left-aligned, so the icons line up on the same column
+     across both cards. */
+  text-align: left;
   justify-items: stretch;
 }
 
 .game-player-panel--right .game-player-identity {
   right: 49%;
-  text-align: center;
+  text-align: left;
   justify-items: stretch;
 }
 
@@ -6064,7 +6065,7 @@ html, body, #root {
 .game-player-line {
   display: flex;
   align-items: center;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   gap: 0.48em;
   color: #f5e5c2;
   font-size: clamp(0.58rem, 1.05vw, 0.98rem);
@@ -7205,11 +7206,12 @@ html, body, #root {
 
 /* Identity sits to the right of the avatar in the top block — pushed
    further from the ring (left:52%) so there's clear breathing room.
-   Top set to 0 + height:100% + display:grid + align-content:center so
-   the column is centred against the panel-top height regardless of how
-   many lines it has. */
+   top is biased slightly upward to compensate for the avatar's own
+   7 % top inset (the avatar centre sits ~9 % above the player-top
+   midline, so we shift the identity column to match). align-content
+   keeps the lines vertically centred within the identity box. */
 .game-player-identity {
-  top: 0;
+  top: -9%;
   height: 100%;
   width: 44%;
   align-content: center;
