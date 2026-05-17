@@ -1018,26 +1018,57 @@ export class BoardRenderer {
   // ---------- Hit areas ----------
 
   private drawHitAreas(state: BoardState) {
-    const { width, height, railWidth, barX, barWidth } = this.layout;
+    const { width, height, railWidth, barX, barWidth, checkerRadius } = this.layout;
     const cb = this.onPointClick;
     if (!cb) return;
     void state;
 
-    for (let i = 0; i < 24; i++) {
-      const pos = pointCoords(this.layout, i);
-      const isBottom = i >= 12;
+    // Build per-row hit rects whose horizontal span fills the gap to the
+    // neighboring point's center (capped at the bar / rail edges). On themes
+    // with custom pointCenterXs (e.g. premium-purple) the per-point hit
+    // rectangle would otherwise be narrower than the inter-center spacing,
+    // leaving dead zones between adjacent points where taps fell through.
+    const leftRail = railWidth;
+    const rightRail = width - railWidth;
+    const barLeft = barX;
+    const barRight = barX + barWidth;
+
+    const addRow = (isBottom: boolean) => {
       const pointWidth = isBottom ? this.layout.bottomPointWidth : this.layout.topPointWidth;
-      const x = pos.x - pointWidth / 2;
+      const xs: number[] = [];
+      for (let c = 0; c < 12; c++) {
+        const idx = isBottom ? 12 + c : 11 - c;
+        xs.push(pointCoords(this.layout, idx).x);
+      }
       const y = isBottom ? height / 2 : 0;
       const h = height / 2;
-
-      const hit = new Graphics();
-      hit.rect(x, y, pointWidth, h).fill({ color: 0xffffff, alpha: 0.001 });
-      hit.eventMode = 'static';
-      hit.cursor = 'pointer';
-      hit.on('pointerdown', () => cb(i));
-      this.root.addChild(hit);
-    }
+      // Make sure each rect is at least as wide as the visible checker so
+      // taps on the green destination ring always register.
+      const minHalf = Math.max(pointWidth, checkerRadius * 2) / 2;
+      for (let c = 0; c < 12; c++) {
+        const idx = isBottom ? 12 + c : 11 - c;
+        const center = xs[c]!;
+        let left: number;
+        let right: number;
+        if (c <= 5) {
+          left = c === 0 ? leftRail : (xs[c - 1]! + center) / 2;
+          right = c === 5 ? barLeft : (center + xs[c + 1]!) / 2;
+        } else {
+          left = c === 6 ? barRight : (xs[c - 1]! + center) / 2;
+          right = c === 11 ? rightRail : (center + xs[c + 1]!) / 2;
+        }
+        left = Math.min(left, center - minHalf);
+        right = Math.max(right, center + minHalf);
+        const hit = new Graphics();
+        hit.rect(left, y, right - left, h).fill({ color: 0xffffff, alpha: 0.001 });
+        hit.eventMode = 'static';
+        hit.cursor = 'pointer';
+        hit.on('pointerdown', () => cb(idx));
+        this.root.addChild(hit);
+      }
+    };
+    addRow(false);
+    addRow(true);
 
     const barHit = new Graphics();
     barHit.rect(barX, 0, barWidth, height).fill({ color: 0xffffff, alpha: 0.001 });
