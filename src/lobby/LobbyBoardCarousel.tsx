@@ -145,14 +145,15 @@ export function LobbyBoardCarousel({
                 className="lobby-carousel-board-pill pointer-events-none absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 select-none"
                 draggable={false}
               />
-              {/* Gem icon inside the pill on the left side. Shares the
-                  pill's vertical anchor (bottom-[30px] + translate-y-1/4)
-                  so they line up. Centred horizontally at 36 % of the
-                  board so it sits cleanly inside the pill's left edge. */}
+              {/* Gem icon inside the pill on the left side. 10 % smaller
+                  than the previous 8 %, and lifted 6 px relative to the
+                  pill so its centre lines up vertically with the pill's
+                  centre (the pill is taller than the gem, so sharing the
+                  pill's bottom anchor left the gem sitting too low). */}
               <img
                 src="/lobby/carousel/gem.webp"
                 alt=""
-                className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[30px] left-[36%] w-[8%] -translate-x-1/2 translate-y-1/4 select-none"
+                className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[36px] left-[36%] w-[7.2%] -translate-x-1/2 translate-y-1/4 select-none"
                 draggable={false}
               />
             </div>
