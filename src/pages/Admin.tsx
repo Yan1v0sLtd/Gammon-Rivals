@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Database, Json } from '../types/database';
+import ImageField from '../admin/ImageField';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2038,15 +2039,15 @@ export default function Admin() {
                       <Field label="Sort order" value={boardDraft.sort_order} onChange={(sort_order) => setBoardDraft((d) => ({ ...d, sort_order }))} />
                     </div>
                     <div className="mt-3 space-y-3">
-                      <Field label="Lobby image" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
-                      <Field label="Gameplay image" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
-                      <Field label="Lobby background image" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
-                      <Field label="Gameplay background image" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
-                      <Field label="White checker image" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
-                      <Field label="Black checker image" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
-                      <Field label="Dice image" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
-                      <Field label="Tray image" value={boardDraft.tray_image} onChange={(tray_image) => setBoardDraft((d) => ({ ...d, tray_image }))} />
-                      <Field label="Holder image" value={boardDraft.holder_image} onChange={(holder_image) => setBoardDraft((d) => ({ ...d, holder_image }))} />
+                      <ImageField label="Lobby image" folder={boardDraft.id} kind="preview" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
+                      <ImageField label="Gameplay image" folder={boardDraft.id} kind="gameplay" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
+                      <ImageField label="Lobby background image" folder={boardDraft.id} kind="lobby-bg" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
+                      <ImageField label="Gameplay background image" folder={boardDraft.id} kind="gameplay-bg" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
+                      <ImageField label="White checker image" folder={boardDraft.id} kind="checker-white" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
+                      <ImageField label="Black checker image" folder={boardDraft.id} kind="checker-black" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
+                      <ImageField label="Dice image" folder={boardDraft.id} kind="dice" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
+                      <ImageField label="Tray image" folder={boardDraft.id} kind="tray" value={boardDraft.tray_image} onChange={(tray_image) => setBoardDraft((d) => ({ ...d, tray_image }))} />
+                      <ImageField label="Holder image" folder={boardDraft.id} kind="holder" value={boardDraft.holder_image} onChange={(holder_image) => setBoardDraft((d) => ({ ...d, holder_image }))} />
                       <TextArea label="Metadata JSON object" value={boardDraft.metadata} onChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))} />
                       <div className="grid grid-cols-2 gap-2">
                         <Toggle label="Enabled" checked={boardDraft.is_enabled} onChange={(is_enabled) => setBoardDraft((d) => ({ ...d, is_enabled }))} />
