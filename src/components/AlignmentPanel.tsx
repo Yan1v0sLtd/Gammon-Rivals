@@ -83,6 +83,19 @@ export default function AlignmentPanel({
   } | null>(null);
   const panelEl = useRef<HTMLDivElement | null>(null);
 
+  // Convert a viewport-space (x, y) to a value safe to write into
+  // `style.left / style.top`. The panel's offsetParent isn't always the
+  // viewport (some ancestor with filter/transform — e.g. the board
+  // stage's drop-shadow — promotes itself to a containing block for
+  // `position: fixed` children). Writing raw viewport coords there
+  // would shift the panel by the offsetParent's own offset.
+  const toLocalPos = (xViewport: number, yViewport: number) => {
+    const op = (panelEl.current?.offsetParent as HTMLElement | null) ?? null;
+    if (!op) return { x: xViewport, y: yViewport };
+    const opRect = op.getBoundingClientRect();
+    return { x: xViewport - opRect.left, y: yViewport - opRect.top };
+  };
+
   // Window-level pointer move / up handlers when the user is dragging.
   // Attaching to window (not the panel) is critical — pointermove on
   // the panel itself loses tracking if the mouse moves faster than the
@@ -101,7 +114,7 @@ export default function AlignmentPanel({
       const maxY = Math.max(margin, window.innerHeight - panelH - margin);
       const x = Math.min(maxX, Math.max(margin, startX + dx));
       const y = Math.min(maxY, Math.max(margin, startY + dy));
-      setDragPos({ x, y });
+      setDragPos(toLocalPos(x, y));
     };
     const onUp = () => {
       dragRef.current = null;
@@ -132,7 +145,7 @@ export default function AlignmentPanel({
     };
     // Seed dragPos so the panel switches from corner-anchored to
     // absolute-positioned on the very first move.
-    setDragPos({ x: rect.left, y: rect.top });
+    setDragPos(toLocalPos(rect.left, rect.top));
     document.body.style.userSelect = 'none';
   };
   const key = ratioKey(debug.side, debug.anchor === 'tip' ? 'tip' : 'base');
