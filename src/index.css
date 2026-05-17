@@ -5323,7 +5323,16 @@ html, body, #root {
   aspect-ratio: auto;
   border-radius: 1.4%;
   overflow: visible;
-  filter: drop-shadow(0 2.1% 1.6% rgba(0, 0, 0, 0.58));
+  /* Layered drop-shadow so the board reads as resting on the surface
+     above the gameplay background. Three stacked layers at falling
+     alpha + growing blur fake a soft falloff (same idea as the
+     checker shadow's concentric half-discs). The previous single
+     drop-shadow used % values for offset / blur — invalid CSS, so it
+     rendered as nothing. */
+  filter:
+    drop-shadow(0 0.45rem 0.55rem rgba(0, 0, 0, 0.42))
+    drop-shadow(0 1.4rem 1.8rem rgba(0, 0, 0, 0.5))
+    drop-shadow(0 2.6rem 3.4rem rgba(0, 0, 0, 0.28));
 }
 
 .game-board-shell {
