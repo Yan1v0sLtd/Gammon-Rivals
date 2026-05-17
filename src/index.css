@@ -3754,9 +3754,13 @@ html, body, #root {
 }
 
 /* No glow on the player card when it's the player's turn — the avatar
-   ring colour change (and the timer animation) already telegraph it. */
+   ring colour change (and the timer animation) already telegraph it.
+   The previous box-shadow rendered as a rectangular dark halo around
+   the painted card (since box-shadow follows the element bounding
+   box, ignoring the painted rounded corners), so the active player
+   read as "card sitting in a square shadow". */
 .game-player-panel.is-turn .game-player-card {
-  box-shadow: 0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+  box-shadow: none;
 }
 
 .game-player-panel--left .game-player-card {
