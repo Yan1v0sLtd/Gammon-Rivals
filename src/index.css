@@ -5911,11 +5911,6 @@ html, body, #root {
   pointer-events: none;
   user-select: none;
   filter: drop-shadow(0 0.35rem 0.7rem rgba(0, 0, 0, 0.48));
-  /* The painted asset carries a cyan/violet rounded-rect glow around
-     the card. Hide it so the player identity reads cleanly on the
-     panel background. Avatar + identity text are rendered via React
-     on top of this layer, so they remain visible. */
-  display: none;
 }
 
 .game-player-panel--left .game-player-frame-art {
