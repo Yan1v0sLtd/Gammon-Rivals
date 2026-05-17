@@ -580,7 +580,10 @@ export class BoardRenderer {
 
       const baseColor = isLight ? this.colors.pointLightBase : this.colors.pointDarkBase;
       const tipColor = isLight ? this.colors.pointLightTip : this.colors.pointDarkTip;
-      const tipY = pos.y + pos.stackDir * pointHeight;
+      // pos.tipY already incorporates the felt-tilt perspective; using
+      // pos.y + stackDir*pointHeight would mix tilted base + flat delta.
+      const tipY = pos.tipY;
+      void pointHeight;
 
       const grad = new FillGradient(pos.x, pos.y, pos.x, tipY);
       grad.addColorStop(0, baseColor);
@@ -992,11 +995,9 @@ export class BoardRenderer {
     for (let column = 0; column < 12; column++) {
       const idx = this.pointIndexForColumn(debug.side, column);
       const pos = pointCoords(this.layout, idx);
-      // Per-row depth so the alignment overlay matches the actual
-      // triangle length for the row being edited.
-      const rowPointHeight =
-        pos.stackDir === 1 ? this.layout.topPointHeight : this.layout.bottomPointHeight;
-      const tipY = pos.y + pos.stackDir * rowPointHeight;
+      // pos.tipY already accounts for per-row pointHeight and the
+      // felt-tilt perspective transform.
+      const tipY = pos.tipY;
       const selected = column === activeColumn;
       const color = selected ? 0xff4df3 : 0x23d7ff;
       const alpha = selected ? 0.95 : 0.32;

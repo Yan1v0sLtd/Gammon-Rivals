@@ -116,9 +116,17 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
     feltInnerTopLeftRatio: isPairOfNumbers(source.feltInnerTopLeftRatio)
       ? source.feltInnerTopLeftRatio
       : undefined,
+    feltInnerTopRightRatio: isPairOfNumbers(source.feltInnerTopRightRatio)
+      ? source.feltInnerTopRightRatio
+      : undefined,
+    feltInnerBottomLeftRatio: isPairOfNumbers(source.feltInnerBottomLeftRatio)
+      ? source.feltInnerBottomLeftRatio
+      : undefined,
     feltInnerBottomRightRatio: isPairOfNumbers(source.feltInnerBottomRightRatio)
       ? source.feltInnerBottomRightRatio
       : undefined,
+    feltDepthScaleRatio:
+      typeof source.feltDepthScaleRatio === 'number' ? source.feltDepthScaleRatio : undefined,
   };
   return layout;
 }

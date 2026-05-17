@@ -6,20 +6,29 @@ interface Props {
   onMetadataChange(next: string): void;
 }
 
-type Corner = 'tl' | 'br';
+type Corner = 'tl' | 'tr' | 'bl' | 'br';
+type Pair = [number, number];
 
 interface Corners {
-  tl: [number, number]; // [xRatio, yRatio] within the image, 0..1
-  br: [number, number];
+  tl: Pair;
+  tr: Pair;
+  bl: Pair;
+  br: Pair;
 }
 
 const DEFAULT_CORNERS: Corners = {
   tl: [0.08, 0.08],
+  tr: [0.92, 0.08],
+  bl: [0.08, 0.92],
   br: [0.92, 0.92],
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isPair(value: unknown): value is Pair {
+  return Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number';
 }
 
 function readCorners(metadata: string): Corners {
@@ -32,18 +41,14 @@ function readCorners(metadata: string): Corners {
   }
   if (!isObject(parsed) || !isObject(parsed.layout)) return DEFAULT_CORNERS;
   const layout = parsed.layout as Record<string, unknown>;
-  const tl = layout.feltInnerTopLeftRatio;
-  const br = layout.feltInnerBottomRightRatio;
-  return {
-    tl:
-      Array.isArray(tl) && typeof tl[0] === 'number' && typeof tl[1] === 'number'
-        ? [tl[0], tl[1]]
-        : DEFAULT_CORNERS.tl,
-    br:
-      Array.isArray(br) && typeof br[0] === 'number' && typeof br[1] === 'number'
-        ? [br[0], br[1]]
-        : DEFAULT_CORNERS.br,
-  };
+  const tl = isPair(layout.feltInnerTopLeftRatio) ? layout.feltInnerTopLeftRatio : DEFAULT_CORNERS.tl;
+  const br = isPair(layout.feltInnerBottomRightRatio) ? layout.feltInnerBottomRightRatio : DEFAULT_CORNERS.br;
+  // For TR / BL fall back to axis-aligned derivation so opening a
+  // 2-corner board doesn't force the felt to look tilted before the
+  // user has touched anything.
+  const tr = isPair(layout.feltInnerTopRightRatio) ? layout.feltInnerTopRightRatio : [br[0], tl[1]];
+  const bl = isPair(layout.feltInnerBottomLeftRatio) ? layout.feltInnerBottomLeftRatio : [tl[0], br[1]];
+  return { tl, tr, bl, br };
 }
 
 function writeCorners(metadata: string, corners: Corners): string {
@@ -58,27 +63,38 @@ function writeCorners(metadata: string, corners: Corners): string {
   if (!isObject(parsed)) parsed = {};
   const root = parsed as Record<string, unknown>;
   const layout = isObject(root.layout) ? { ...root.layout } : {};
-  layout.feltInnerTopLeftRatio = [round4(corners.tl[0]), round4(corners.tl[1])];
-  layout.feltInnerBottomRightRatio = [round4(corners.br[0]), round4(corners.br[1])];
+  layout.feltInnerTopLeftRatio = roundPair(corners.tl);
+  layout.feltInnerTopRightRatio = roundPair(corners.tr);
+  layout.feltInnerBottomLeftRatio = roundPair(corners.bl);
+  layout.feltInnerBottomRightRatio = roundPair(corners.br);
   root.layout = layout;
   return JSON.stringify(root, null, 2);
 }
 
-function round4(value: number): number {
-  return Math.round(value * 10000) / 10000;
+function roundPair(value: Pair): Pair {
+  return [Math.round(value[0] * 10000) / 10000, Math.round(value[1] * 10000) / 10000];
 }
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
 
+const CORNER_COLORS: Record<Corner, { ring: string; dot: string; label: string }> = {
+  tl: { ring: 'border-emerald-300', dot: 'bg-emerald-300', label: 'Top-left' },
+  tr: { ring: 'border-amber-300', dot: 'bg-amber-300', label: 'Top-right' },
+  bl: { ring: 'border-cyan-300', dot: 'bg-cyan-300', label: 'Bottom-left' },
+  br: { ring: 'border-rose-300', dot: 'bg-rose-300', label: 'Bottom-right' },
+};
+
 /**
- * Lets the admin mark the inner top-left and inner bottom-right corners
- * of the felt rectangle on the gameplay image. Saves to
- * metadata.layout.feltInnerTopLeftRatio / feltInnerBottomRightRatio so
- * the engine can map points / bar / off-trays relative to where the
- * artist actually painted the felt — even when the wood frame margin
- * varies between boards.
+ * Lets the admin mark all four inner corners of the painted felt on
+ * the gameplay image. When TR/BL deviate from axis-aligned (i.e. the
+ * felt isn't a perfect rectangle from the camera's POV), the engine
+ * bilinear-maps every point/checker into the resulting quadrilateral
+ * so stacks follow the painted perspective.
+ *
+ * Saves to metadata.layout.feltInner{TopLeft,TopRight,BottomLeft,
+ * BottomRight}Ratio so the renderer can read it through remote.ts.
  */
 export default function FeltCornersField({ gameplayImage, metadata, onMetadataChange }: Props) {
   const corners = useMemo(() => readCorners(metadata), [metadata]);
@@ -86,14 +102,8 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
   const dragRef = useRef<Corner | null>(null);
   const [hover, setHover] = useState<Corner | null>(null);
 
-  const updateCorner = (which: Corner, ratio: [number, number]) => {
+  const updateCorner = (which: Corner, ratio: Pair) => {
     const next: Corners = { ...corners, [which]: ratio };
-    // Keep TL above-left of BR (small gap so the felt is always non-zero).
-    if (which === 'tl') {
-      next.tl = [Math.min(ratio[0], corners.br[0] - 0.02), Math.min(ratio[1], corners.br[1] - 0.02)];
-    } else {
-      next.br = [Math.max(ratio[0], corners.tl[0] + 0.02), Math.max(ratio[1], corners.tl[1] + 0.02)];
-    }
     onMetadataChange(writeCorners(metadata, next));
   };
 
@@ -119,20 +129,16 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
     dragRef.current = null;
   };
 
-  const tlPct = { x: corners.tl[0] * 100, y: corners.tl[1] * 100 };
-  const brPct = { x: corners.br[0] * 100, y: corners.br[1] * 100 };
-  const rectStyle = {
-    left: `${tlPct.x}%`,
-    top: `${tlPct.y}%`,
-    width: `${brPct.x - tlPct.x}%`,
-    height: `${brPct.y - tlPct.y}%`,
-  } as const;
+  const cornerPct = (key: Corner) => ({ x: corners[key][0] * 100, y: corners[key][1] * 100 });
+  const tl = cornerPct('tl');
+  const tr = cornerPct('tr');
+  const bl = cornerPct('bl');
+  const br = cornerPct('br');
+  // SVG-style quad overlay so the felt outline follows the four
+  // corners even when they form a non-rectangular trapezoid.
+  const quadPoints = `${tl.x},${tl.y} ${tr.x},${tr.y} ${br.x},${br.y} ${bl.x},${bl.y}`;
 
-  const numberInput = (
-    label: string,
-    value: number,
-    onChange: (next: number) => void
-  ) => (
+  const numberInput = (label: string, value: number, onChange: (next: number) => void) => (
     <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
       {label}
       <input
@@ -150,12 +156,25 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
     </label>
   );
 
+  const cornerRow = (key: Corner) => {
+    const palette = CORNER_COLORS[key];
+    const value = corners[key];
+    return (
+      <div key={key} className="flex flex-wrap items-center gap-2">
+        <span className={`inline-block h-2 w-2 rounded-full ${palette.dot}`} />
+        <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
+        {numberInput('X%', value[0], (x) => updateCorner(key, [x, value[1]]))}
+        {numberInput('Y%', value[1], (y) => updateCorner(key, [value[0], y]))}
+      </div>
+    );
+  };
+
   return (
     <div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
       <div className="mb-1.5 flex items-center justify-between">
         <span>Felt corners</span>
         <span className="text-[10px] normal-case tracking-normal text-white/35">
-          Drag the green / red dot to the inner corners of the felt rectangle
+          Drag the four dots to the inner corners of the painted felt
         </span>
       </div>
       <div
@@ -178,66 +197,63 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
             Upload the Gameplay image above to position the felt corners.
           </div>
         )}
-        <div
-          className="pointer-events-none absolute border border-amber-200/70"
-          style={{ ...rectStyle, background: 'rgba(255,212,128,0.07)' }}
-        />
-        <Handle
-          color="emerald"
-          xPct={tlPct.x}
-          yPct={tlPct.y}
-          active={hover === 'tl' || dragRef.current === 'tl'}
-          onPointerDown={handlePointerDown('tl')}
-          onPointerEnter={() => setHover('tl')}
-          onPointerLeave={() => setHover(null)}
-        />
-        <Handle
-          color="rose"
-          xPct={brPct.x}
-          yPct={brPct.y}
-          active={hover === 'br' || dragRef.current === 'br'}
-          onPointerDown={handlePointerDown('br')}
-          onPointerEnter={() => setHover('br')}
-          onPointerLeave={() => setHover(null)}
-        />
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="pointer-events-none absolute inset-0 h-full w-full"
+        >
+          <polygon
+            points={quadPoints}
+            fill="rgba(255,212,128,0.07)"
+            stroke="rgba(253,224,71,0.7)"
+            strokeWidth={0.2}
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        {(Object.keys(CORNER_COLORS) as Corner[]).map((key) => {
+          const pct = cornerPct(key);
+          return (
+            <Handle
+              key={key}
+              xPct={pct.x}
+              yPct={pct.y}
+              palette={CORNER_COLORS[key]}
+              active={hover === key || dragRef.current === key}
+              onPointerDown={handlePointerDown(key)}
+              onPointerEnter={() => setHover(key)}
+              onPointerLeave={() => setHover(null)}
+            />
+          );
+        })}
       </div>
       <div className="mt-2 grid grid-cols-2 gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-300" />
-          <span className="text-[10px] normal-case tracking-normal text-white/55">Top-left</span>
-          {numberInput('X%', corners.tl[0], (x) => updateCorner('tl', [x, corners.tl[1]]))}
-          {numberInput('Y%', corners.tl[1], (y) => updateCorner('tl', [corners.tl[0], y]))}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-full bg-rose-300" />
-          <span className="text-[10px] normal-case tracking-normal text-white/55">Bottom-right</span>
-          {numberInput('X%', corners.br[0], (x) => updateCorner('br', [x, corners.br[1]]))}
-          {numberInput('Y%', corners.br[1], (y) => updateCorner('br', [corners.br[0], y]))}
-        </div>
+        {cornerRow('tl')}
+        {cornerRow('tr')}
+        {cornerRow('bl')}
+        {cornerRow('br')}
       </div>
     </div>
   );
 }
 
 interface HandleProps {
-  color: 'emerald' | 'rose';
   xPct: number;
   yPct: number;
+  palette: { ring: string; dot: string; label: string };
   active: boolean;
   onPointerDown(event: ReactPointerEvent<HTMLDivElement>): void;
   onPointerEnter(): void;
   onPointerLeave(): void;
 }
 
-function Handle({ color, xPct, yPct, active, onPointerDown, onPointerEnter, onPointerLeave }: HandleProps) {
-  const ring = color === 'emerald' ? 'border-emerald-300 bg-emerald-400/80' : 'border-rose-300 bg-rose-400/80';
+function Handle({ xPct, yPct, palette, active, onPointerDown, onPointerEnter, onPointerLeave }: HandleProps) {
   return (
     <div
       onPointerDown={onPointerDown}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
       style={{ left: `${xPct}%`, top: `${yPct}%`, touchAction: 'none' }}
-      className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${ring} ${
+      className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${palette.ring} ${palette.dot}/80 ${
         active ? 'scale-150' : 'scale-100'
       }`}
     />

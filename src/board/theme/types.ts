@@ -78,7 +78,14 @@ export interface ThemeLayout {
    *  align without retuning. When omitted the play area falls back to
    *  the legacy railWidth-derived rectangle. */
   readonly feltInnerTopLeftRatio?: readonly [number, number];
+  readonly feltInnerTopRightRatio?: readonly [number, number];
+  readonly feltInnerBottomLeftRatio?: readonly [number, number];
   readonly feltInnerBottomRightRatio?: readonly [number, number];
+  /** Optional perspective depth-scale: checkers near the front of the
+   *  felt (v=1) get scaled up by `1 + feltDepthScaleRatio`, checkers
+   *  at the back (v=0) by `1 - feltDepthScaleRatio`. Defaults to 0
+   *  (no scaling). Reserved for a later step. */
+  readonly feltDepthScaleRatio?: number;
   readonly blackOffTrayXRatio?: number;
   readonly blackOffTrayTopRatio?: number;
   readonly blackOffTrayHeightRatio?: number;
