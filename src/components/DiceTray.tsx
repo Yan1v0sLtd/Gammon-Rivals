@@ -767,23 +767,54 @@ export default function DiceTray({
     const boardHeight = wrapperEl?.clientHeight ?? 450;
     const safeScale = Math.max(0.1, scale);
     const sideSign = settleSide === 'right' ? 1 : -1;
-    // Settle the dice inside the header band, beside the active
-    // player's name in the central pill. The names sit on the pill's
-    // wings — roughly ±27 % of board width from the board centre
-    // (which maps to the content-x position of the player names like
-    // "NICO 167" / "MARLOWE 167" on a standard 2.17:1 viewport).
-    // Vertically we push above the board area at -0.6 × boardHeight
-    // which lands the dice roughly at the header pill's vertical
-    // centre. The 1800×1800 stage has overflow:visible so the dice
-    // can render outside the board column up into the header.
+    // Position the dice by looking up the actual header player-name
+    // element's bounding rect in the DOM. This keeps the dice locked
+    // to the visible name regardless of viewport aspect / size — the
+    // previous board-width-relative math was tuned for 2.17:1 and
+    // drifted at other aspects.
     //
-    // writeQP() does `mesh.position.set(x, -y, z)` and three's ortho
-    // camera has +y pointing UP, so a NEGATIVE targetCenterY here
-    // puts the dice ABOVE the board centre.
-    const targetCenterX =
-      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.27;
-    const targetCenterY =
-      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.6;
+    // The wrapper's CSS centre maps to the three.js scene origin.
+    // After writeQP's `mesh.position.set(x, -y, z)` and the wrapper's
+    // `transform: scale(safeScale)`, a die at scene coords (X, Y) ends
+    // up at (X·safeScale, -Y·safeScale) CSS pixels from the wrapper
+    // centre. We compute the target name's CSS centre offset from the
+    // wrapper centre, then divide by safeScale to get scene coords.
+    let targetCenterX: number;
+    let targetCenterY: number;
+    if (placement === 'hud') {
+      targetCenterX = 0;
+      targetCenterY = 0;
+    } else if (wrapperEl) {
+      const nameEl =
+        document.querySelector(
+          settleSide === 'right'
+            ? '.game-score-player--right'
+            : '.game-score-player--left'
+        ) ?? document.querySelector('.game-match-hud-pill');
+      if (nameEl) {
+        const wrapperRect = wrapperEl.getBoundingClientRect();
+        const nameRect = nameEl.getBoundingClientRect();
+        const dxCss =
+          nameRect.left + nameRect.width / 2 -
+          (wrapperRect.left + wrapperRect.width / 2);
+        const dyCss =
+          nameRect.top + nameRect.height / 2 -
+          (wrapperRect.top + wrapperRect.height / 2);
+        // CSS +y is DOWN; mesh.y is set to -y so positive scene-Y =
+        // up on screen. dyCss is negative (name above wrapper centre),
+        // we keep the same sign because writeQP negates Y at render.
+        targetCenterX = dxCss / safeScale;
+        targetCenterY = dyCss / safeScale;
+      } else {
+        // Fallback to the board-relative tuning when the header
+        // hasn't mounted yet for some reason.
+        targetCenterX = sideSign * (boardWidth / safeScale) * 0.27;
+        targetCenterY = -(boardHeight / safeScale) * 0.6;
+      }
+    } else {
+      targetCenterX = sideSign * (boardWidth / safeScale) * 0.27;
+      targetCenterY = -(boardHeight / safeScale) * 0.6;
+    }
     // Two dice always; spread them horizontally now since they sit in
     // a row beneath the player's name rather than stacked along the
     // side rail. 92 px between centres reads cleanly at every scale.
