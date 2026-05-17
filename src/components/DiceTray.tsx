@@ -801,12 +801,18 @@ export default function DiceTray({
         const wrapperRect = wrapperEl.getBoundingClientRect();
         const targetRect = profileEl.getBoundingClientRect();
         const profileCenterX = targetRect.left + targetRect.width / 2;
-        // Aim ABOVE the profile card — the dice should hover in the
-        // gap between the header band and the profile box, not on top
-        // of the avatar. Half the profile height above its top edge
-        // is roughly half a profile-card outside, which leaves the
-        // dice clearly above without colliding with the header.
-        const profileTopWithGap = targetRect.top - targetRect.height * 0.5;
+        // Aim just above the profile card — the dice should sit in
+        // the thin gap between the Home/header row and the profile
+        // box. Approximate dice render diameter is DIE_SIZE×safeScale;
+        // we use half that plus a small visual padding so the dice
+        // bottom rests near the profile top edge without clipping the
+        // viewport. Clamp the target to keep dice on-screen even if
+        // the profile sits right at the top edge.
+        const diceHalfHeight = (DIE_SIZE * safeScale) / 2;
+        const gap = 6;
+        const desiredCenterY = targetRect.top - diceHalfHeight - gap;
+        const minCenterY = diceHalfHeight + 2; // never above the viewport
+        const profileTopWithGap = Math.max(minCenterY, desiredCenterY);
         const wrapperCenterX = wrapperRect.left + wrapperRect.width / 2;
         const wrapperCenterY = wrapperRect.top + wrapperRect.height / 2;
         const dxCss = profileCenterX - wrapperCenterX;
