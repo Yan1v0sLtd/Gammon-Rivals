@@ -608,10 +608,40 @@ export default function DiceTray({
     // Pick the throw direction ONCE for this roll — every die starts
     // from the active player's side, like real dice tossed from one hand.
     const startSide = placement === 'hud' ? (rng.next() < 0.5 ? -1 : 1) : settleSide === 'right' ? 1 : -1;
-    return {
-      values: rollValues,
-      frames: rollValues.map((value) => rollDie(value, wallHalf, startSide, rng)),
-    };
+    const frames = rollValues.map((value) => rollDie(value, wallHalf, startSide, rng));
+    // Each die simulates in its own physics world, so the two cubes
+    // can't see each other and sometimes settle on (nearly) identical
+    // (x, y) coordinates. Post-process the final frames: if the cubes
+    // are closer than ~1.4 × DIE_SIZE, push them apart along their
+    // connecting axis so the visible settle pose has clear separation.
+    if (frames.length === 2 && frames[0].length > 0 && frames[1].length > 0) {
+      const a = frames[0][frames[0].length - 1]!;
+      const b = frames[1][frames[1].length - 1]!;
+      const dx = b.px - a.px;
+      const dy = b.py - a.py;
+      const dist = Math.hypot(dx, dy);
+      const minDist = DIE_SIZE * 1.4;
+      if (dist < minDist) {
+        // Choose a separation axis — vertical when the cubes are
+        // basically on top of each other, otherwise along the line
+        // between them.
+        let nx: number;
+        let ny: number;
+        if (dist < 1) {
+          nx = 0;
+          ny = 1;
+        } else {
+          nx = dx / dist;
+          ny = dy / dist;
+        }
+        const push = (minDist - dist) / 2;
+        a.px -= nx * push;
+        a.py -= ny * push;
+        b.px += nx * push;
+        b.py += ny * push;
+      }
+    }
+    return { values: rollValues, frames };
   }, [placement, roll, settleSide]);
 
   const stageElRef = useRef<HTMLDivElement | null>(null);
