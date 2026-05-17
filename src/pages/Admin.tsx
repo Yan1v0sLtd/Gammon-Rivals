@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
+import FeltCornersField from '../admin/FeltCornersField';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2041,6 +2042,11 @@ export default function Admin() {
                     <div className="mt-3 space-y-3">
                       <ImageField label="Lobby image" folder={boardDraft.id} kind="preview" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
                       <ImageField label="Gameplay image" folder={boardDraft.id} kind="gameplay" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
+                      <FeltCornersField
+                        gameplayImage={boardDraft.gameplay_image}
+                        metadata={boardDraft.metadata}
+                        onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
+                      />
                       <ImageField label="Lobby background image" folder={boardDraft.id} kind="lobby-bg" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
                       <ImageField label="Gameplay background image" folder={boardDraft.id} kind="gameplay-bg" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
                       <ImageField label="White checker image" folder={boardDraft.id} kind="checker-white" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />

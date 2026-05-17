@@ -71,6 +71,14 @@ export interface ThemeLayout {
   readonly bottomCheckerStackSpacingRatio?: number;
   readonly topCheckerPaddingRatio?: number;
   readonly bottomCheckerPaddingRatio?: number;
+  /** Inner top-left corner of the painted felt rectangle, expressed as
+   *  [xRatio, yRatio] of the board image. The engine maps points / bar
+   *  to fit between these corners and feltInnerBottomRightRatio so a
+   *  board with a wide ornate frame and a board with a thin frame both
+   *  align without retuning. When omitted the play area falls back to
+   *  the legacy railWidth-derived rectangle. */
+  readonly feltInnerTopLeftRatio?: readonly [number, number];
+  readonly feltInnerBottomRightRatio?: readonly [number, number];
   readonly blackOffTrayXRatio?: number;
   readonly blackOffTrayTopRatio?: number;
   readonly blackOffTrayHeightRatio?: number;

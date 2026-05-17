@@ -46,8 +46,18 @@ export interface Layout {
 
 export function computeLayout(width: number, height: number, themeLayout?: ThemeLayout): Layout {
   const railWidth = Math.round(width * (themeLayout?.railWidthRatio ?? 0.07));
-  const playLeft = railWidth;
-  const playWidth = width - 2 * railWidth;
+  // When the theme provides felt-corner ratios, derive the play area
+  // (left edge, width, top/bottom Y) from those corners. Otherwise fall
+  // back to the legacy railWidth-derived rectangle so existing themes
+  // keep rendering identically.
+  const feltTL = themeLayout?.feltInnerTopLeftRatio;
+  const feltBR = themeLayout?.feltInnerBottomRightRatio;
+  const feltL = feltTL ? width * feltTL[0] : railWidth;
+  const feltT = feltTL ? height * feltTL[1] : 0;
+  const feltR = feltBR ? width * feltBR[0] : width - railWidth;
+  const feltB = feltBR ? height * feltBR[1] : height;
+  const playLeft = feltL;
+  const playWidth = Math.max(1, feltR - feltL);
   const barWidth = Math.round(playWidth * (themeLayout?.barWidthRatio ?? 0.08));
   const pointWidth = (playWidth - barWidth) / 12;
   const barX = playLeft + 6 * pointWidth;
@@ -101,8 +111,15 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   // Legacy single value kept for any callers that haven't switched to
   // the per-row pair yet.
   const pointHeight = Math.round(height * sharedPointHeightRatio);
-  const topPointY = Math.round(height * (themeLayout?.topPointYRatio ?? 0));
-  const bottomPointY = Math.round(height * (themeLayout?.bottomPointYRatio ?? 1));
+  // Default the row Y anchors to the felt's top / bottom edges when
+  // felt corners are provided. Per-row overrides (topPointYRatio /
+  // bottomPointYRatio) still win when explicitly set.
+  const topPointY = Math.round(
+    themeLayout?.topPointYRatio !== undefined ? height * themeLayout.topPointYRatio : feltT
+  );
+  const bottomPointY = Math.round(
+    themeLayout?.bottomPointYRatio !== undefined ? height * themeLayout.bottomPointYRatio : feltB
+  );
   const checkerRadius = Math.floor(pointWidth * (themeLayout?.checkerRadiusRatio ?? 0.42));
   const checkerScaleY = themeLayout?.checkerScaleYRatio ?? 1;
   const sharedCheckerStackSpacing = themeLayout?.checkerStackSpacingRatio ?? 1;

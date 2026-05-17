@@ -113,8 +113,23 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       typeof source.blackOffTrayTiltDeg === 'number' ? source.blackOffTrayTiltDeg : undefined,
     whiteOffTrayTiltDeg:
       typeof source.whiteOffTrayTiltDeg === 'number' ? source.whiteOffTrayTiltDeg : undefined,
+    feltInnerTopLeftRatio: isPairOfNumbers(source.feltInnerTopLeftRatio)
+      ? source.feltInnerTopLeftRatio
+      : undefined,
+    feltInnerBottomRightRatio: isPairOfNumbers(source.feltInnerBottomRightRatio)
+      ? source.feltInnerBottomRightRatio
+      : undefined,
   };
   return layout;
+}
+
+function isPairOfNumbers(value: Json | undefined): value is [number, number] {
+  return (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === 'number' &&
+    typeof value[1] === 'number'
+  );
 }
 
 function normalizePublicAssetPath(path: string | null | undefined): string | undefined {
