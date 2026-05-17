@@ -863,8 +863,11 @@ html, body, #root {
   }
 
   .lobby-profile-copy > a > div:first-child > div {
-    max-width: calc(140 * var(--lobby-u));
-    font-size: calc(40 * var(--lobby-u));
+    /* Wider max-width + smaller font-size so longer profile names
+       (e.g., "Yaniv Alfassi") render in full instead of clipping
+       with an ellipsis after ~7 characters. */
+    max-width: calc(260 * var(--lobby-u));
+    font-size: calc(32 * var(--lobby-u));
     line-height: 1;
   }
 
@@ -926,17 +929,23 @@ html, body, #root {
   }
 
   .lobby-profile-progress {
+    /* Width matched to .lobby-rank-badge (160 lobby-u) so the level
+       bar reads as the same length as the "ROOKIE" status pill above
+       it. Was 280 lobby-u — almost twice as wide as the badge. */
     position: absolute;
     left: 0;
     top: calc(110 * var(--lobby-u));
-    width: calc(280 * var(--lobby-u));
+    width: calc(160 * var(--lobby-u));
     height: calc(34 * var(--lobby-u));
     border-width: calc(3 * var(--lobby-u));
   }
 
   .lobby-profile-progress-text {
+    /* Shifted left to match the shorter level bar (was anchored to
+       the wider 280 lobby-u bar at left:231 — pulled in to 175 to
+     sit just past the new 160-wide bar's right edge). */
     position: absolute;
-    left: calc(231 * var(--lobby-u));
+    left: calc(175 * var(--lobby-u));
     top: calc(119 * var(--lobby-u));
     display: block;
     min-width: calc(48 * var(--lobby-u));
@@ -956,9 +965,16 @@ html, body, #root {
   }
 
   .lobby-currency-strip {
+    /* Horizontally centred on the viewport. The previous
+       left: 700 lobby-u + width: 590 lobby-u placed the strip
+       ~50 px right of centre at the 932 x 430 reference viewport
+       because the lobby-shell width isn't exactly 1990 lobby-u
+       (the original design grid the absolute positions were
+       authored against). Using translateX(-50%) is scale-free. */
     position: absolute;
-    left: calc(700 * var(--lobby-u));
+    left: 50%;
     top: calc(32 * var(--lobby-u));
+    transform: translateX(-50%);
     display: grid;
     width: calc(590 * var(--lobby-u));
     height: calc(82 * var(--lobby-u));
@@ -1080,13 +1096,22 @@ html, body, #root {
   .lobby-action-stack {
     align-self: start;
     width: 100%;
-    margin-top: calc(80 * var(--lobby-u));
+    /* Pushed all six side cards 20 px below the previous 80 lobby-u
+       anchor so they sit closer to the level of the carousel. */
+    margin-top: calc(80 * var(--lobby-u) + 20px);
   }
 
   .lobby-offers {
     display: flex;
     height: calc(400 * var(--lobby-u));
     flex-direction: column;
+    /* Pack from the top so the first card aligns with the first
+       card of the right-side .lobby-action-stack (which is a grid
+       with align-content: start). An earlier media-query rule sets
+       justify-content: center here, which left a ~21 px gap above
+       the first card and made the two stacks render at different
+       y-positions. */
+    justify-content: flex-start;
     gap: calc(10 * var(--lobby-u));
     overflow: visible;
     padding: 0;
@@ -1197,10 +1222,10 @@ html, body, #root {
   }
 
   .lobby-carousel-viewport > img.pointer-events-none {
-    /* 20 % larger podium so it matches the enlarged board carousel.
-       Dropped 30 px below its old anchor so the board sits ON the
-       podium instead of overlapping it. */
-    bottom: calc(-8 * var(--lobby-u) - 30px);
+    /* Podium: 20 % larger than baseline, dropped a total of 40 px
+       below its original anchor so the board sits cleanly on the
+       front carving. */
+    bottom: calc(-8 * var(--lobby-u) - 40px);
     width: calc(780 * var(--lobby-u));
     max-width: none;
   }
@@ -1210,10 +1235,9 @@ html, body, #root {
   }
 
   .lobby-play-button {
-    /* Lowered 30 px to match the dropped podium so the Play button
-       sits on the wooden deck below it rather than over the carved
-       front of the podium itself. */
-    bottom: calc(-35 * var(--lobby-u) - 30px);
+    /* Lowered a total of 50 px to follow the dropped podium and
+       sit on the wooden deck below the carved front. */
+    bottom: calc(-35 * var(--lobby-u) - 50px);
     height: calc(80 * var(--lobby-u));
     min-width: calc(350 * var(--lobby-u));
     padding: 0 calc(42 * var(--lobby-u));
