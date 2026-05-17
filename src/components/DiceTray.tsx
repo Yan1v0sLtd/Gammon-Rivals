@@ -767,16 +767,25 @@ export default function DiceTray({
     const boardHeight = wrapperEl?.clientHeight ?? 450;
     const safeScale = Math.max(0.1, scale);
     const sideSign = settleSide === 'right' ? 1 : -1;
+    // Settle the dice just below the header, horizontally under the
+    // active player's name in the central pill (the names sit on the
+    // pill's wings ≈ ±11 % of board width from the board centre).
+    // The previous 0.405 offset put the dice at the far side panels,
+    // away from the header.
+    //
+    // writeQP() does `mesh.position.set(x, -y, z)` and three's ortho
+    // camera has +y pointing UP, so a NEGATIVE targetCenterY here
+    // puts the dice ABOVE the board centre — i.e. up near the header.
     const targetCenterX =
-      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.405;
+      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.11;
     const targetCenterY =
-      placement === 'hud' ? 0 : (boardHeight / safeScale) * 0.02;
-    // Two dice always; widened the vertical spread (was 62 → 84) so
-    // the settled cubes never visually overlap, even at the smallest
-    // dice scale on phone-portrait viewports.
+      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.4;
+    // Two dice always; spread them horizontally now since they sit in
+    // a row beneath the player's name rather than stacked along the
+    // side rail. 92 px between centres reads cleanly at every scale.
     const targetPositions = trajectories.map((_, i) => ({
-      x: targetCenterX,
-      y: targetCenterY + (i - (trajectories.length - 1) / 2) * 84,
+      x: targetCenterX + (i - (trajectories.length - 1) / 2) * 92,
+      y: targetCenterY,
       z: 0,
     }));
 
