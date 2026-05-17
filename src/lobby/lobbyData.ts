@@ -59,7 +59,10 @@ export interface LobbyOffer {
 export interface LobbyNavItem {
   readonly id: string;
   readonly label: string;
-  readonly icon: 'missions' | 'road' | 'bonus' | 'trophy' | 'vip';
+  /** Pre-rendered icon+label asset for the new wood-bar nav. When
+   *  omitted the slot renders as an empty placeholder (used for the
+   *  middle slot until we decide what goes there). */
+  readonly image?: string;
   readonly badge?: string;
   readonly featured?: boolean;
 }
@@ -128,9 +131,10 @@ export const lobbyOffers: readonly LobbyOffer[] = [
 ];
 
 export const lobbyNavItems: readonly LobbyNavItem[] = [
-  { id: 'daily-missions', label: 'Daily Missions', icon: 'missions' },
-  { id: 'road-board', label: 'Road Board', icon: 'road' },
-  { id: 'hourly-bonus', label: 'Hourly Bonus', icon: 'bonus', featured: true },
-  { id: 'tournaments', label: 'Tournaments', icon: 'trophy' },
-  { id: 'vip-club', label: 'VIP Club', icon: 'vip' },
+  { id: 'missions', label: 'Missions', image: '/lobby/nav/missions.webp' },
+  { id: 'events', label: 'Events', image: '/lobby/nav/events.webp' },
+  // Middle slot reserved — leave empty for now.
+  { id: 'placeholder', label: '' },
+  { id: 'tournaments', label: 'Tournaments', image: '/lobby/nav/tournaments.webp' },
+  { id: 'vip-club', label: 'VIP Club', image: '/lobby/nav/vip-club.webp' },
 ];

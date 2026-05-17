@@ -223,20 +223,80 @@ html, body, #root {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
+/* --- Lobby bottom navigator --- */
 .lobby-bottom-nav-shell {
   position: relative;
   z-index: 40;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  width: min(83vw, 78rem);
-  min-height: clamp(5.4rem, 7vw, 6.65rem);
-  margin-bottom: 0;
-  padding: 0 clamp(1.75rem, 5vw, 5.4rem) max(0.2rem, env(safe-area-inset-bottom));
+  display: block;
+  width: min(92vw, 80rem);
+  margin: 0 auto;
+  padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
   overflow: visible;
   background: transparent;
   border: 0;
   isolation: isolate;
+}
+
+.lobby-bottom-nav-bar {
+  position: absolute;
+  inset: 0 0 max(0.2rem, env(safe-area-inset-bottom));
+  background-image: url('/lobby/nav/nav-bg.webp');
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lobby-bottom-nav-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+  min-height: clamp(5.4rem, 7vw, 6.65rem);
+  padding: 0 clamp(1rem, 3vw, 3rem);
+}
+
+.lobby-bottom-nav-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.lobby-bottom-nav-slot.is-placeholder {
+  cursor: default;
+}
+
+.lobby-bottom-nav-slot img {
+  display: block;
+  width: clamp(2.6rem, 4.6vw, 4.4rem);
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  user-select: none;
+}
+
+.lobby-bottom-nav-slot:not(.is-placeholder):hover img {
+  filter:
+    drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 0.6rem rgba(255, 196, 78, 0.45));
+}
+
+.lobby-bottom-nav-slot:not(.is-placeholder):active {
+  transform: translateY(1px);
 }
 
 .lobby-bottom-nav-frame {
