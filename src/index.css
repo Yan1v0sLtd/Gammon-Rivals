@@ -6659,25 +6659,40 @@ html, body, #root {
 /* Phone landscape spread: match the mockup's wider side-card and control spacing. */
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
   .game-board-column {
-    /* Centred — (100 - 56.35) / 2 = 21.825% */
-    left: 21.825%;
-    top: 16.85%;
-    width: 56.35%;
+    /* Centred — (100 - 65) / 2 = 17.5%. Roughly +20% vs the previous
+       56.35% width, pulling the side panels in and pushing the action
+       bar closer to the viewport bottom so the board owns more of the
+       screen. */
+    left: 17.5%;
+    top: 11%;
+    width: 65%;
     height: auto;
     aspect-ratio: 1686 / 933;
   }
 
+  .game-side-slot {
+    /* Was 18.95% globally — narrower here so the side panels stay
+       pushed flush to the screen edge while the board grows. */
+    width: 16%;
+  }
+
   .game-side-slot--left {
-    left: 2.05%;
+    left: 1.2%;
   }
 
   .game-side-slot--right {
-    right: 2.05%;
+    right: 1.2%;
   }
 
   .game-actions-layer {
-    top: 101.6%;
-    height: 18.6%;
+    /* Sit closer to the viewport bottom (was top: 101.6% / height
+       18.6% of column — both proportional to the bigger board, which
+       was overflowing). Pinned to viewport bottom instead so the row
+       size stays controlled and the home-indicator safe area is
+       preserved. */
+    top: auto;
+    bottom: 1.5%;
+    height: 11%;
   }
 
   .game-action-row {
@@ -7032,6 +7047,23 @@ html, body, #root {
   right: 5.65%;
 }
 
+/* Phone-landscape override: shrink slot width and push to screen edge so
+   the enlarged board column has room. Has to live AFTER the global
+   .game-side-slot{ width:18.7% } rule above to win on source order. */
+@media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .game-side-slot {
+    width: 16%;
+  }
+
+  .game-side-slot--left {
+    left: 1.2%;
+  }
+
+  .game-side-slot--right {
+    right: 1.2%;
+  }
+}
+
 .game-player-card::before {
   display: none !important;
   content: none !important;
@@ -7372,11 +7404,11 @@ html, body, #root {
   }
 
   .game-side-slot--left {
-    left: 5.35%;
+    left: 1.2%;
   }
 
   .game-side-slot--right {
-    right: 5.35%;
+    right: 1.2%;
   }
 
   .game-avatar-stage {
