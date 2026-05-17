@@ -767,19 +767,23 @@ export default function DiceTray({
     const boardHeight = wrapperEl?.clientHeight ?? 450;
     const safeScale = Math.max(0.1, scale);
     const sideSign = settleSide === 'right' ? 1 : -1;
-    // Settle the dice just below the header, horizontally under the
-    // active player's name in the central pill (the names sit on the
-    // pill's wings ≈ ±11 % of board width from the board centre).
-    // The previous 0.405 offset put the dice at the far side panels,
-    // away from the header.
+    // Settle the dice inside the header band, beside the active
+    // player's name in the central pill. The names sit on the pill's
+    // wings — roughly ±27 % of board width from the board centre
+    // (which maps to the content-x position of the player names like
+    // "NICO 167" / "MARLOWE 167" on a standard 2.17:1 viewport).
+    // Vertically we push above the board area at -0.6 × boardHeight
+    // which lands the dice roughly at the header pill's vertical
+    // centre. The 1800×1800 stage has overflow:visible so the dice
+    // can render outside the board column up into the header.
     //
     // writeQP() does `mesh.position.set(x, -y, z)` and three's ortho
     // camera has +y pointing UP, so a NEGATIVE targetCenterY here
-    // puts the dice ABOVE the board centre — i.e. up near the header.
+    // puts the dice ABOVE the board centre.
     const targetCenterX =
-      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.11;
+      placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.27;
     const targetCenterY =
-      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.4;
+      placement === 'hud' ? 0 : -(boardHeight / safeScale) * 0.6;
     // Two dice always; spread them horizontally now since they sit in
     // a row beneath the player's name rather than stacked along the
     // side rail. 92 px between centres reads cleanly at every scale.
