@@ -1059,14 +1059,17 @@ html, body, #root {
   }
 
   .lobby-main-grid {
+    /* Side stacks shrunk 20 %, centre carousel grown 20 % wide /
+       10 % tall. New widths: 264 + 72 + 1032 + 72 + 280 = 1720
+       lobby-u. */
     position: absolute;
     left: calc(55 * var(--lobby-u));
     top: calc(150 * var(--lobby-u));
     z-index: 20;
     display: grid;
-    width: calc(1685 * var(--lobby-u));
+    width: calc(1720 * var(--lobby-u));
     height: calc(490 * var(--lobby-u));
-    grid-template-columns: calc(330 * var(--lobby-u)) calc(860 * var(--lobby-u)) calc(350 * var(--lobby-u));
+    grid-template-columns: calc(264 * var(--lobby-u)) calc(1032 * var(--lobby-u)) calc(280 * var(--lobby-u));
     column-gap: calc(72 * var(--lobby-u));
     align-items: start;
     padding: 0;
@@ -1089,16 +1092,17 @@ html, body, #root {
   }
 
   .lobby-offer-card {
-    flex: 0 0 calc(125 * var(--lobby-u));
-    width: calc(330 * var(--lobby-u));
+    /* 20 % smaller across the board. 330 -> 264, 125 -> 100. */
+    flex: 0 0 calc(100 * var(--lobby-u));
+    width: calc(264 * var(--lobby-u));
     min-width: 0;
-    height: calc(125 * var(--lobby-u));
+    height: calc(100 * var(--lobby-u));
     min-height: 0;
-    border-radius: calc(14 * var(--lobby-u));
-    gap: calc(12 * var(--lobby-u));
+    border-radius: calc(11 * var(--lobby-u));
+    gap: calc(10 * var(--lobby-u));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.14),
-      0 calc(9 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
+      0 calc(7 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
   }
 
   .lobby-offer-card:has(> img) > span.absolute.inset-0 {
@@ -1106,26 +1110,26 @@ html, body, #root {
   }
 
   .lobby-offer-card:not(:has(> img)) > span.relative.grid {
-    width: calc(96 * var(--lobby-u));
-    height: calc(96 * var(--lobby-u));
-    margin-left: calc(22 * var(--lobby-u));
+    width: calc(77 * var(--lobby-u));
+    height: calc(77 * var(--lobby-u));
+    margin-left: calc(18 * var(--lobby-u));
     border-width: calc(2 * var(--lobby-u));
-    font-size: calc(46 * var(--lobby-u));
+    font-size: calc(37 * var(--lobby-u));
   }
 
   .lobby-offer-card:not(:has(> img)) > span.relative:not(.grid) {
-    width: calc(175 * var(--lobby-u));
-    padding-right: calc(40 * var(--lobby-u));
+    width: calc(140 * var(--lobby-u));
+    padding-right: calc(32 * var(--lobby-u));
   }
 
   .lobby-offer-card > span.relative > span:first-child {
-    font-size: calc(28 * var(--lobby-u));
+    font-size: calc(22 * var(--lobby-u));
     line-height: 0.98;
   }
 
   .lobby-offer-card > span.relative > span:last-child {
-    margin-top: calc(7 * var(--lobby-u));
-    font-size: calc(15 * var(--lobby-u));
+    margin-top: calc(6 * var(--lobby-u));
+    font-size: calc(12 * var(--lobby-u));
     line-height: 1.08;
   }
 
@@ -1140,22 +1144,26 @@ html, body, #root {
   }
 
   .lobby-board-region {
+    /* 20 % wider than the previous 860 x 490. Height stays at 490 so
+       the Play button below the carousel doesn't slide into the
+       bottom navigator at short iPhone-landscape viewports. The
+       boards still read as larger because they're sized by width. */
     display: block;
-    width: calc(860 * var(--lobby-u));
+    width: calc(1032 * var(--lobby-u));
     height: calc(490 * var(--lobby-u));
     min-width: 0;
     overflow: visible;
   }
 
   .lobby-carousel-section {
-    width: calc(860 * var(--lobby-u));
+    width: calc(1032 * var(--lobby-u));
     max-width: none;
     height: calc(490 * var(--lobby-u));
     overflow: visible;
   }
 
   .lobby-carousel-viewport {
-    width: calc(860 * var(--lobby-u));
+    width: calc(1032 * var(--lobby-u));
     height: calc(490 * var(--lobby-u));
     max-height: none;
     min-height: 0 !important;
@@ -1188,8 +1196,9 @@ html, body, #root {
   }
 
   .lobby-carousel-viewport > img.pointer-events-none {
+    /* 20 % larger podium so it matches the enlarged board carousel. */
     bottom: calc(-8 * var(--lobby-u));
-    width: calc(650 * var(--lobby-u));
+    width: calc(780 * var(--lobby-u));
     max-width: none;
   }
 
@@ -1198,6 +1207,9 @@ html, body, #root {
   }
 
   .lobby-play-button {
+    /* The 20 %-taller carousel already drops the play button below
+       the podium, so no extra shift is needed (and an extra -20 px
+       would slide the button under the bottom nav). */
     bottom: calc(-35 * var(--lobby-u));
     height: calc(80 * var(--lobby-u));
     min-width: calc(350 * var(--lobby-u));
@@ -1244,55 +1256,56 @@ html, body, #root {
   }
 
   .lobby-action-card {
-    width: calc(350 * var(--lobby-u));
-    height: calc(125 * var(--lobby-u));
+    /* 20 % smaller across the board. 350 -> 280, 125 -> 100. */
+    width: calc(280 * var(--lobby-u));
+    height: calc(100 * var(--lobby-u));
     min-height: 0;
-    gap: calc(8 * var(--lobby-u));
+    gap: calc(6 * var(--lobby-u));
     border-width: calc(2 * var(--lobby-u));
-    border-radius: calc(14 * var(--lobby-u));
-    padding: calc(14 * var(--lobby-u)) calc(44 * var(--lobby-u)) calc(14 * var(--lobby-u)) calc(12 * var(--lobby-u));
+    border-radius: calc(11 * var(--lobby-u));
+    padding: calc(11 * var(--lobby-u)) calc(35 * var(--lobby-u)) calc(11 * var(--lobby-u)) calc(10 * var(--lobby-u));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.16),
-      0 calc(10 * var(--lobby-u)) calc(22 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
+      0 calc(8 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
   }
 
   .lobby-action-icon {
-    width: calc(86 * var(--lobby-u));
-    height: calc(96 * var(--lobby-u));
+    width: calc(69 * var(--lobby-u));
+    height: calc(77 * var(--lobby-u));
   }
 
   .lobby-action-icon img {
-    max-width: calc(86 * var(--lobby-u));
-    max-height: calc(86 * var(--lobby-u));
+    max-width: calc(69 * var(--lobby-u));
+    max-height: calc(69 * var(--lobby-u));
   }
 
   .lobby-action-icon > span {
-    width: calc(70 * var(--lobby-u));
-    height: calc(70 * var(--lobby-u));
-    font-size: calc(36 * var(--lobby-u));
+    width: calc(56 * var(--lobby-u));
+    height: calc(56 * var(--lobby-u));
+    font-size: calc(29 * var(--lobby-u));
   }
 
   .lobby-action-card > span.relative.min-w-0 {
-    width: calc(210 * var(--lobby-u));
-    flex: 0 0 calc(210 * var(--lobby-u));
+    width: calc(168 * var(--lobby-u));
+    flex: 0 0 calc(168 * var(--lobby-u));
   }
 
   .lobby-action-title {
-    font-size: calc(28 * var(--lobby-u));
+    font-size: calc(22 * var(--lobby-u));
     line-height: 0.98;
   }
 
   .lobby-action-subtitle {
-    margin-top: calc(8 * var(--lobby-u));
-    font-size: calc(16 * var(--lobby-u));
+    margin-top: calc(6 * var(--lobby-u));
+    font-size: calc(13 * var(--lobby-u));
     line-height: 1.15;
   }
 
   .lobby-action-card > span:last-child {
     position: absolute;
-    right: calc(16 * var(--lobby-u));
+    right: calc(13 * var(--lobby-u));
     top: 50%;
-    font-size: calc(42 * var(--lobby-u));
+    font-size: calc(34 * var(--lobby-u));
     transform: translateY(-50%);
   }
 
