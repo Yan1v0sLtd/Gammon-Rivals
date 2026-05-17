@@ -13,7 +13,8 @@ import { useGame, type AIConfig, type TurnRecord } from '../game/useGame';
 import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { GameResult, MatchState } from '../engine';
-import { premiumTheme, useBoardThemeConfig, type ThemeLayout } from '../board/theme';
+import { useBoardThemeConfig, type ThemeLayout } from '../board/theme';
+import { boardThemes } from '../board/theme/boardThemes';
 import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
@@ -48,7 +49,10 @@ function copyRatios(value: readonly number[] | undefined): number[] | undefined 
 }
 
 function basePremiumLayout(): ThemeLayout {
-  const layout = premiumTheme.layout ?? {};
+  // Reset of the alignment tool should match the premium-purple board
+  // theme (the actual default the gameplay screen renders with), not
+  // the generic premium base which has different ratios.
+  const layout = boardThemes['premium-purple']?.layout ?? {};
   return {
     ...layout,
     topPointCenterXRatios: copyRatios(layout.topPointCenterXRatios),
@@ -74,9 +78,15 @@ function mergeAlignmentLayout(saved: ThemeLayout): ThemeLayout {
     bottomCheckerOffsetXRatios:
       copyRatios(saved.bottomCheckerOffsetXRatios) ?? base.bottomCheckerOffsetXRatios,
     pointHeightRatio: saved.pointHeightRatio ?? base.pointHeightRatio,
+    topPointHeightRatio: saved.topPointHeightRatio ?? base.topPointHeightRatio,
+    bottomPointHeightRatio: saved.bottomPointHeightRatio ?? base.bottomPointHeightRatio,
     topPointYRatio: saved.topPointYRatio ?? base.topPointYRatio,
     bottomPointYRatio: saved.bottomPointYRatio ?? base.bottomPointYRatio,
     checkerStackSpacingRatio: saved.checkerStackSpacingRatio ?? base.checkerStackSpacingRatio,
+    topCheckerStackSpacingRatio:
+      saved.topCheckerStackSpacingRatio ?? base.topCheckerStackSpacingRatio,
+    bottomCheckerStackSpacingRatio:
+      saved.bottomCheckerStackSpacingRatio ?? base.bottomCheckerStackSpacingRatio,
     topCheckerPaddingRatio: saved.topCheckerPaddingRatio ?? base.topCheckerPaddingRatio,
     bottomCheckerPaddingRatio: saved.bottomCheckerPaddingRatio ?? base.bottomCheckerPaddingRatio,
     blackOffTrayXRatio: saved.blackOffTrayXRatio ?? base.blackOffTrayXRatio,
