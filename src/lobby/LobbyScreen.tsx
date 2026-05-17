@@ -45,7 +45,7 @@ export function LobbyScreen() {
   const navigate = useNavigate();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
   const boards = useLobbyBoards();
-  const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('premium-purple');
+  const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('classic-green');
   const [creatingOnline, setCreatingOnline] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
