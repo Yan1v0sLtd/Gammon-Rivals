@@ -5,6 +5,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
 import FeltCornersField from '../admin/FeltCornersField';
+import BoardTuningField from '../admin/BoardTuningField';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2044,6 +2045,10 @@ export default function Admin() {
                       <ImageField label="Gameplay image" folder={boardDraft.id} kind="gameplay" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
                       <FeltCornersField
                         gameplayImage={boardDraft.gameplay_image}
+                        metadata={boardDraft.metadata}
+                        onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
+                      />
+                      <BoardTuningField
                         metadata={boardDraft.metadata}
                         onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
                       />
