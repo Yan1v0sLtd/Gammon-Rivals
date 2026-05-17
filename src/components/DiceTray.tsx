@@ -785,29 +785,41 @@ export default function DiceTray({
       targetCenterX = 0;
       targetCenterY = 0;
     } else if (wrapperEl) {
-      const nameEl =
-        document.querySelector(
-          settleSide === 'right'
-            ? '.game-score-player--right'
-            : '.game-score-player--left'
-        ) ?? document.querySelector('.game-match-hud-pill');
-      if (nameEl) {
+      // Target the active side's player profile card — the dark
+      // rectangle that holds the avatar + identity (Sasha / Marlowe
+      // etc.). We resolve the side panel's profile-top element via DOM
+      // so the dice settle wherever it actually is in the viewport.
+      const sideSlotSel =
+        settleSide === 'right' ? '.game-side-slot--right' : '.game-side-slot--left';
+      const slotEl = document.querySelector(sideSlotSel);
+      const profileEl =
+        slotEl?.querySelector('.game-player-top') ??
+        slotEl?.querySelector('.game-player-card') ??
+        slotEl ??
+        document.querySelector('.game-match-hud-pill');
+      if (profileEl) {
         const wrapperRect = wrapperEl.getBoundingClientRect();
-        const nameRect = nameEl.getBoundingClientRect();
-        const dxCss =
-          nameRect.left + nameRect.width / 2 -
-          (wrapperRect.left + wrapperRect.width / 2);
-        const dyCss =
-          nameRect.top + nameRect.height / 2 -
-          (wrapperRect.top + wrapperRect.height / 2);
+        const targetRect = profileEl.getBoundingClientRect();
+        const profileCenterX = targetRect.left + targetRect.width / 2;
+        // Aim ABOVE the profile card — the dice should hover in the
+        // gap between the header band and the profile box, not on top
+        // of the avatar. Half the profile height above its top edge
+        // is roughly half a profile-card outside, which leaves the
+        // dice clearly above without colliding with the header.
+        const profileTopWithGap = targetRect.top - targetRect.height * 0.5;
+        const wrapperCenterX = wrapperRect.left + wrapperRect.width / 2;
+        const wrapperCenterY = wrapperRect.top + wrapperRect.height / 2;
+        const dxCss = profileCenterX - wrapperCenterX;
+        const dyCss = profileTopWithGap - wrapperCenterY;
         // CSS +y is DOWN; mesh.y is set to -y so positive scene-Y =
-        // up on screen. dyCss is negative (name above wrapper centre),
-        // we keep the same sign because writeQP negates Y at render.
+        // up on screen. dyCss is negative when the target is above
+        // the wrapper centre; we keep the same sign because writeQP
+        // negates Y at render.
         targetCenterX = dxCss / safeScale;
         targetCenterY = dyCss / safeScale;
       } else {
-        // Fallback to the board-relative tuning when the header
-        // hasn't mounted yet for some reason.
+        // Fallback to the board-relative tuning when neither the
+        // side panel nor the header is in the DOM.
         targetCenterX = sideSign * (boardWidth / safeScale) * 0.27;
         targetCenterY = -(boardHeight / safeScale) * 0.6;
       }
