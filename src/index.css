@@ -6036,13 +6036,17 @@ html, body, #root {
 .game-player-panel--left .game-player-identity {
   left: 49%;
   text-align: center;
-  justify-items: center;
+  /* justify-items: stretch (default) so each grid item spans the full
+     identity width. justify-content: center on each flex line then
+     centers the icon+text as a unit, and all lines share the same
+     horizontal centre regardless of content width. */
+  justify-items: stretch;
 }
 
 .game-player-panel--right .game-player-identity {
   right: 49%;
   text-align: center;
-  justify-items: center;
+  justify-items: stretch;
 }
 
 .game-player-identity h2 {
