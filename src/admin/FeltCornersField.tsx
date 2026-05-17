@@ -46,8 +46,12 @@ function readCorners(metadata: string): Corners {
   // For TR / BL fall back to axis-aligned derivation so opening a
   // 2-corner board doesn't force the felt to look tilted before the
   // user has touched anything.
-  const tr = isPair(layout.feltInnerTopRightRatio) ? layout.feltInnerTopRightRatio : [br[0], tl[1]];
-  const bl = isPair(layout.feltInnerBottomLeftRatio) ? layout.feltInnerBottomLeftRatio : [tl[0], br[1]];
+  const tr: Pair = isPair(layout.feltInnerTopRightRatio)
+    ? layout.feltInnerTopRightRatio
+    : [br[0], tl[1]];
+  const bl: Pair = isPair(layout.feltInnerBottomLeftRatio)
+    ? layout.feltInnerBottomLeftRatio
+    : [tl[0], br[1]];
   return { tl, tr, bl, br };
 }
 
