@@ -18,6 +18,14 @@ const POINT_HEIGHT_MIN = 0.08;
 const POINT_HEIGHT_MAX = 0.6;
 const SPACING_MIN = 0.55;
 const SPACING_MAX = 1.45;
+const OFF_X_MIN = 0;
+const OFF_X_MAX = 1;
+const OFF_TOP_MIN = 0;
+const OFF_TOP_MAX = 1;
+const OFF_HEIGHT_MIN = 0.05;
+const OFF_HEIGHT_MAX = 0.7;
+const OFF_SPACING_MIN = 0.2;
+const OFF_SPACING_MAX = 1.2;
 
 interface Props {
   layout: ThemeLayout;
@@ -358,9 +366,48 @@ export default function AlignmentPanel({
         </button>
       </div>
       <div className="mb-2 text-xs text-cyan-200/70">
-        {debug.side} {debug.column + 1} · {debug.anchor === 'topChecker' ? 'top checker' : debug.anchor}
+        {(debug.target ?? 'point') === 'point'
+          ? `${debug.side} ${debug.column + 1} · ${debug.anchor === 'topChecker' ? 'top checker' : debug.anchor}`
+          : `${debug.target === 'offWhite' ? 'white' : 'black'} off-tray`}
       </div>
 
+      <div className="mb-3">
+        <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Target</div>
+        <div className="grid grid-cols-3 gap-1">
+          {(
+            [
+              ['point', 'Point'],
+              ['offWhite', 'Off (white)'],
+              ['offBlack', 'Off (black)'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => updateDebug({ target: value })}
+              className={`rounded border px-2 py-1 text-xs ${
+                (debug.target ?? 'point') === value
+                  ? 'border-emerald-300 bg-emerald-300 text-slate-950'
+                  : 'border-slate-600 bg-slate-900 text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {(debug.target ?? 'point') !== 'point' ? (
+        <OffTrayControls
+          owner={debug.target === 'offWhite' ? 'white' : 'black'}
+          layout={layout}
+          onLayoutChange={(next) => {
+            setCopyState('');
+            onLayoutChange(next);
+          }}
+        />
+      ) : (
+      <>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Row</div>
@@ -571,6 +618,9 @@ export default function AlignmentPanel({
         </div>
       </div>
 
+      </>
+      )}
+
       <div className="mt-3 flex gap-2">
         <button
           type="button"
@@ -590,6 +640,95 @@ export default function AlignmentPanel({
         value={exportText}
         className="mt-2 h-24 w-full resize-none rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-300"
       />
+    </div>
+  );
+}
+
+type OffOwner = 'white' | 'black';
+type OffXKey = 'whiteOffTrayXRatio' | 'blackOffTrayXRatio';
+type OffTopKey = 'whiteOffTrayTopRatio' | 'blackOffTrayTopRatio';
+type OffHeightKey = 'whiteOffTrayHeightRatio' | 'blackOffTrayHeightRatio';
+
+interface OffTrayProps {
+  owner: OffOwner;
+  layout: ThemeLayout;
+  onLayoutChange: (next: ThemeLayout) => void;
+}
+
+function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
+  const xKey: OffXKey = owner === 'white' ? 'whiteOffTrayXRatio' : 'blackOffTrayXRatio';
+  const topKey: OffTopKey = owner === 'white' ? 'whiteOffTrayTopRatio' : 'blackOffTrayTopRatio';
+  const heightKey: OffHeightKey =
+    owner === 'white' ? 'whiteOffTrayHeightRatio' : 'blackOffTrayHeightRatio';
+
+  const x = layout[xKey] ?? 0.925;
+  const top = layout[topKey] ?? (owner === 'white' ? 0.61 : 0.145);
+  const height = layout[heightKey] ?? 0.255;
+  const spacing = layout.offCheckerStackSpacingRatio ?? 0.56;
+
+  const update = (patch: Partial<ThemeLayout>) => onLayoutChange({ ...layout, ...patch });
+  const setX = (value: number) =>
+    update({ [xKey]: roundRatio(clamp(value, OFF_X_MIN, OFF_X_MAX)) });
+  const nudgeX = (delta: number) => setX(x + delta);
+  const setTop = (value: number) =>
+    update({ [topKey]: roundRatio(clamp(value, OFF_TOP_MIN, OFF_TOP_MAX)) });
+  const nudgeTop = (delta: number) => setTop(top + delta);
+  const setHeight = (value: number) =>
+    update({ [heightKey]: roundRatio(clamp(value, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)) });
+  const nudgeHeight = (delta: number) => setHeight(height + delta);
+  const setSpacing = (value: number) =>
+    update({ offCheckerStackSpacingRatio: roundRatio(clamp(value, OFF_SPACING_MIN, OFF_SPACING_MAX)) });
+  const nudgeSpacing = (delta: number) => setSpacing(spacing + delta);
+
+  const row = (
+    label: string,
+    value: number,
+    onNudge: (d: number) => void,
+    onSet: (v: number) => void,
+    bigStep: number,
+    smallStep: number,
+    min: number,
+    max: number,
+    decimals = 4
+  ) => (
+    <div>
+      <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="grid grid-cols-4 gap-1">
+        <button type="button" onClick={() => onNudge(-bigStep)} className="rounded bg-slate-800 px-2 py-2">
+          -big
+        </button>
+        <button type="button" onClick={() => onNudge(-smallStep)} className="rounded bg-slate-800 px-2 py-2">
+          -
+        </button>
+        <button type="button" onClick={() => onNudge(smallStep)} className="rounded bg-slate-800 px-2 py-2">
+          +
+        </button>
+        <button type="button" onClick={() => onNudge(bigStep)} className="rounded bg-slate-800 px-2 py-2">
+          big+
+        </button>
+      </div>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={smallStep}
+        value={value.toFixed(decimals)}
+        onChange={(event) => {
+          const next = Number(event.target.value);
+          if (Number.isFinite(next)) onSet(next);
+        }}
+        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+        aria-label={label}
+      />
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {row('Tray X', x, nudgeX, setX, 0.02, 0.004, OFF_X_MIN, OFF_X_MAX)}
+      {row('Tray top', top, nudgeTop, setTop, 0.02, 0.004, OFF_TOP_MIN, OFF_TOP_MAX)}
+      {row('Tray height', height, nudgeHeight, setHeight, 0.02, 0.004, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)}
+      {row('Stack spacing', spacing, nudgeSpacing, setSpacing, 0.08, 0.02, OFF_SPACING_MIN, OFF_SPACING_MAX, 2)}
     </div>
   );
 }

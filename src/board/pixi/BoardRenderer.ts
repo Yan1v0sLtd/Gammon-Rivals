@@ -26,6 +26,9 @@ export interface AlignmentDebugSelection {
   readonly side: 'top' | 'bottom';
   readonly column: number;
   readonly anchor: 'base' | 'tip' | 'topChecker';
+  // 'point' (default) edits a point's geometry; 'offWhite' / 'offBlack'
+  // switch the overlay + panel to edit one of the bear-off trays.
+  readonly target?: 'point' | 'offWhite' | 'offBlack';
 }
 
 export type PointClickHandler = (pos: Position) => void;
@@ -964,6 +967,11 @@ export class BoardRenderer {
   }
 
   private drawAlignmentDebugOverlay(state: BoardState, debug: AlignmentDebugSelection) {
+    const target = debug.target ?? 'point';
+    if (target === 'offWhite' || target === 'offBlack') {
+      this.drawOffTrayDebugOverlay(target === 'offWhite' ? 'white' : 'black');
+      return;
+    }
     const activeColumn = Math.max(0, Math.min(11, debug.column));
     const g = new Graphics();
     const r = this.layout.checkerRadius;
@@ -1012,6 +1020,43 @@ export class BoardRenderer {
         .stroke({ color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8 });
     }
 
+    this.root.addChild(g);
+  }
+
+  private drawOffTrayDebugOverlay(owner: Player) {
+    const tray = this.offTrayMetrics(owner);
+    const r = this.layout.checkerRadius;
+    const left = tray.x - tray.width / 2;
+    const g = new Graphics();
+    // Outline the active tray in magenta + a soft cyan tint for the
+    // inactive one so the user can compare positions while editing.
+    const other = owner === 'white' ? 'black' : 'white';
+    const otherTray = this.offTrayMetrics(other);
+    const otherLeft = otherTray.x - otherTray.width / 2;
+    g.rect(otherLeft, otherTray.top, otherTray.width, otherTray.height).stroke({
+      color: 0x23d7ff,
+      width: 1.5,
+      alpha: 0.35,
+    });
+    g.rect(left, tray.top, tray.width, tray.height).stroke({
+      color: 0xff4df3,
+      width: 3,
+      alpha: 0.95,
+    });
+    // Ghost the 15 stack slots so the user can see where each finished
+    // checker would land at the current spacing.
+    for (let n = 0; n < 15; n++) {
+      const y =
+        owner === 'black'
+          ? tray.top + r + n * tray.step
+          : tray.top + tray.height - r - n * tray.step;
+      if (y < tray.top + r * 0.6 || y > tray.top + tray.height - r * 0.6) break;
+      g.circle(tray.x, y, r * 0.95).stroke({
+        color: 0xff4df3,
+        width: 1.5,
+        alpha: 0.7,
+      });
+    }
     this.root.addChild(g);
   }
 
