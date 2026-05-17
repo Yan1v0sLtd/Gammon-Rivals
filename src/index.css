@@ -225,16 +225,21 @@ html, body, #root {
 
 /* --- Lobby bottom navigator ---
    Width / row height / icon size are 30 % smaller than the original
-   spec so the bar takes less vertical real estate in the lobby and
-   doesn't force the rest of the page into a scrollbar on shorter
-   viewports. */
+   spec so the bar takes less vertical real estate in the lobby. The
+   bar is fixed to the viewport bottom so it appears at every
+   viewport (the per-aspect-ratio media queries below only re-anchor
+   it for finer placement; this base rule guarantees visibility on
+   anything they don't cover — including portrait phones, where the
+   --lobby-u variable isn't even defined). */
 .lobby-bottom-nav-shell {
-  position: relative;
+  position: fixed;
+  left: 50%;
+  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
   z-index: 40;
   display: block;
   width: min(64.4vw, 56rem);
-  margin: 0 auto;
-  padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  padding-bottom: 0;
   overflow: visible;
   background: transparent;
   border: 0;
