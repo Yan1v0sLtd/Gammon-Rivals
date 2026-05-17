@@ -23,21 +23,16 @@ const FLOOR_Z = 28; // cube settles with its centre at z ≈ 0
 // bounces; gravity still pulls -z so the rolled face settles toward
 // the camera.
 const SPAWN_Z = 70;
-// Per-die slot geometry. Slot WIDTH and WALL_HALF depend on how many
-// dice are in play — for a regular 2-dice roll we get a much wider slot
-// since there's more tray space per die, which gives the cube proper
-// throwing distance.
-const SLOT_WIDTH_FOUR = 150; // doubles → 4 dice in 600 px tray (exact fit)
-const SLOT_WALL_HALF_FOUR = 70;
-const SLOT_WIDTH_TWO = 280; // regular roll → 2 dice, plenty of room
-const SLOT_WALL_HALF_TWO = 130;
+// Per-die slot geometry. Doubles are now rendered as two dice (not
+// four), so there's always plenty of room for each cube to throw and
+// bounce. One constant set, no per-count branching.
+const SLOT_WIDTH = 280;
+const SLOT_WALL_HALF = 130;
 const WALL_HALF_Y = 100;
 const CUBE_HALF = DIE_SIZE / 2;
 
-function slotGeometry(diceCount: number): { width: number; wallHalf: number } {
-  return diceCount === 4
-    ? { width: SLOT_WIDTH_FOUR, wallHalf: SLOT_WALL_HALF_FOUR }
-    : { width: SLOT_WIDTH_TWO, wallHalf: SLOT_WALL_HALF_TWO };
+function slotGeometry(_diceCount: number): { width: number; wallHalf: number } {
+  return { width: SLOT_WIDTH, wallHalf: SLOT_WALL_HALF };
 }
 // Tuned for a long, lively roll. Restitution 0.6 means each wall/floor
 // contact returns 60 % of the impact velocity, so the cube ricochets
@@ -245,12 +240,17 @@ function diceToShow(
   remaining: readonly Die[]
 ): Array<{ value: Die; used: boolean }> {
   if (roll[0] === roll[1]) {
-    const total = 4;
-    const used = total - remaining.length;
-    return Array.from({ length: total }, (_, i) => ({
-      value: roll[0],
-      used: i < used,
-    }));
+    // Doubles grant FOUR moves but we still render only TWO dice (real
+    // backgammon — the player knows doubles means ×2). The dice grey
+    // out progressively to indicate how many of the four moves remain:
+    //   0–1 moves used → both fresh
+    //   2–3 moves used → one die greyed
+    //   4   moves used → both greyed
+    const used = 4 - remaining.length;
+    return [
+      { value: roll[0], used: used >= 2 },
+      { value: roll[0], used: used >= 4 },
+    ];
   }
   const remCopy = [...remaining];
   return ([roll[0], roll[1]] as const).map((v) => {
@@ -600,8 +600,9 @@ export default function DiceTray({
   const rollKey = roll ? `${roll[0]}-${roll[1]}` : 'none';
   const trajectoryData = useMemo<TrajectoryData>(() => {
     if (!roll) return { values: [], frames: [] };
-    const rollValues =
-      roll[0] === roll[1] ? Array.from({ length: 4 }, () => roll[0]) : [roll[0], roll[1]];
+    // Always render two physical dice — doubles are conveyed by both
+    // dice showing the same face, not by spawning four cubes.
+    const rollValues = [roll[0], roll[1]];
     const rng = seededRandom(seedFromRoll(roll));
     const { wallHalf } = slotGeometry(rollValues.length);
     // Pick the throw direction ONCE for this roll — every die starts
@@ -740,21 +741,14 @@ export default function DiceTray({
       placement === 'hud' ? 0 : sideSign * (boardWidth / safeScale) * 0.405;
     const targetCenterY =
       placement === 'hud' ? 0 : (boardHeight / safeScale) * 0.02;
-    const targetPositions = trajectories.map((_, i) => {
-      const slotX =
-        trajectories.length === 4
-          ? ((i % 2) - 0.5) * 58
-          : 0;
-      const ySpread =
-        trajectories.length === 4
-          ? (Math.floor(i / 2) - 0.5) * 58
-          : (i - (trajectories.length - 1) / 2) * 62;
-      return {
-        x: targetCenterX - slotX,
-        y: targetCenterY + ySpread,
-        z: 0,
-      };
-    });
+    // Two dice always; widened the vertical spread (was 62 → 84) so
+    // the settled cubes never visually overlap, even at the smallest
+    // dice scale on phone-portrait viewports.
+    const targetPositions = trajectories.map((_, i) => ({
+      x: targetCenterX,
+      y: targetCenterY + (i - (trajectories.length - 1) / 2) * 84,
+      z: 0,
+    }));
 
     let phase: 'play' | 'settle' | 'hold' | 'center' | 'done' = 'play';
     const playStart = performance.now();
