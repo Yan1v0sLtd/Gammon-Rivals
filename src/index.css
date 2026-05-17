@@ -289,11 +289,15 @@ html, body, #root {
 
 .lobby-bottom-nav-slot img {
   display: block;
-  /* Identical square box per icon so width and height match across
-     every slot regardless of each asset's natural aspect ratio.
-     object-fit: contain keeps icons in proportion. */
-  width: clamp(1.82rem, 3.22vw, 3.08rem);
-  height: clamp(1.82rem, 3.22vw, 3.08rem);
+  /* Height-based sizing keeps every icon visually the same vertical
+     scale — the source webps are all ~613 px tall but vary in width,
+     so a square box made Tournaments (widest aspect) read as smaller.
+     Width auto + max-width: 100% lets each icon's natural aspect drive
+     its horizontal footprint. Size is 20 % larger than the previous
+     1.82–3.08 rem range. */
+  width: auto;
+  height: clamp(2.2rem, 3.86vw, 3.7rem);
+  max-width: 100%;
   object-fit: contain;
   filter: drop-shadow(0 0.17rem 0.31rem rgba(0, 0, 0, 0.55));
   pointer-events: none;
