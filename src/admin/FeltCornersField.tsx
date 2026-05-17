@@ -1,4 +1,10 @@
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import {
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type SyntheticEvent,
+} from 'react';
 
 interface Props {
   gameplayImage: string;
@@ -107,6 +113,19 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Corner | null>(null);
   const [hover, setHover] = useState<Corner | null>(null);
+  // Container's aspect-ratio matches the loaded image's natural aspect
+  // so the image fills the box edge-to-edge (no letterboxing). That's
+  // critical: with letterboxing, the dots were positioned relative to
+  // the container while the engine reads them as image-relative — so
+  // a 2:1 board image in a 2.17:1 container would store corner ratios
+  // that the engine later misinterpreted at render time.
+  const [imageAspect, setImageAspect] = useState<number>(2170 / 1000);
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    const img = event.currentTarget;
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      setImageAspect(img.naturalWidth / img.naturalHeight);
+    }
+  };
 
   const updateCorner = (which: Corner, ratio: Pair) => {
     const next: Corners = { ...corners, [which]: ratio };
@@ -191,14 +210,15 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ aspectRatio: '2170 / 1000', touchAction: 'none' }}
+        style={{ aspectRatio: String(imageAspect), touchAction: 'none' }}
         className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
       >
         {gameplayImage ? (
           <img
             src={gameplayImage}
             alt=""
-            className="absolute inset-0 h-full w-full object-contain"
+            onLoad={handleImageLoad}
+            className="absolute inset-0 h-full w-full"
             draggable={false}
           />
         ) : (
