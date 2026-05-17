@@ -753,15 +753,10 @@ html, body, #root {
 
 /* Lobby premium landscape pass, mapped from the 1792x828 mobile mockup. */
 .lobby-screen::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse at 50% 45%, transparent 34%, rgba(1, 5, 12, 0.18) 58%, rgba(1, 5, 12, 0.64) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent 15%, transparent 85%, rgba(0, 0, 0, 0.54)),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.36), transparent 22%, transparent 70%, rgba(0, 0, 0, 0.58));
+  /* Was a stacked vignette + edge-darkening overlay; removed per
+     user request so the lobby background reads at full brightness
+     edge to edge. */
+  display: none;
 }
 
 .lobby-background-layer {
