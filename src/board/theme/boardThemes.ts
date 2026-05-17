@@ -36,20 +36,22 @@ const premiumPurpleLayout = {
     0.56, 0.614, 0.664, 0.717, 0.768, 0.821,
   ],
   topCheckerOffsetXRatios: [
-    0, 0.018, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
   ],
   bottomCheckerOffsetXRatios: [
     0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
   ],
-  blackOffTrayXRatio: 0.925,
-  blackOffTrayTopRatio: 0.145,
-  blackOffTrayHeightRatio: 0.255,
-  whiteOffTrayXRatio: 0.925,
-  whiteOffTrayTopRatio: 0.61,
-  whiteOffTrayHeightRatio: 0.255,
-  offCheckerStackSpacingRatio: 0.56,
+  blackOffTrayXRatio: 0.865,
+  blackOffTrayTopRatio: 0.041,
+  blackOffTrayHeightRatio: 0.247,
+  whiteOffTrayXRatio: 0.941,
+  whiteOffTrayTopRatio: 0.57,
+  whiteOffTrayHeightRatio: 0.307,
+  offCheckerStackSpacingRatio: 0.68,
+  blackOffTrayTiltDeg: 10.5,
+  whiteOffTrayTiltDeg: -10.5,
 } satisfies NonNullable<typeof premiumTheme.layout>;
 
 export const boardThemes: Record<string, Theme> = {
