@@ -97,6 +97,8 @@ function mergeAlignmentLayout(saved: ThemeLayout): ThemeLayout {
     whiteOffTrayHeightRatio: saved.whiteOffTrayHeightRatio ?? base.whiteOffTrayHeightRatio,
     offCheckerStackSpacingRatio:
       saved.offCheckerStackSpacingRatio ?? base.offCheckerStackSpacingRatio,
+    blackOffTrayTiltDeg: saved.blackOffTrayTiltDeg ?? base.blackOffTrayTiltDeg,
+    whiteOffTrayTiltDeg: saved.whiteOffTrayTiltDeg ?? base.whiteOffTrayTiltDeg,
   };
 }
 

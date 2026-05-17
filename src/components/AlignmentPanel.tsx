@@ -82,6 +82,10 @@ export default function AlignmentPanel({
     startMouseY: number;
     startX: number;
     startY: number;
+    lastLocalX: number;
+    lastLocalY: number;
+    pointerId: number;
+    captureTarget: HTMLElement | null;
   } | null>(null);
   const panelEl = useRef<HTMLDivElement | null>(null);
 
@@ -99,26 +103,50 @@ export default function AlignmentPanel({
   };
 
   // Window-level pointer move / up handlers when the user is dragging.
-  // Attaching to window (not the panel) is critical — pointermove on
-  // the panel itself loses tracking if the mouse moves faster than the
-  // panel can repaint.
+  // We write the new position directly to the DOM each frame to avoid a
+  // full React re-render of the panel on every pointermove (the panel
+  // has heavy controls, and 60 react renders/sec made drag stutter on
+  // larger viewports). We only commit the final position to React state
+  // on pointerup, so subsequent renders stay anchored where the user
+  // dropped the panel.
   useEffect(() => {
     const onMove = (event: PointerEvent) => {
-      if (!dragRef.current) return;
+      const ref = dragRef.current;
+      if (!ref) return;
       event.preventDefault();
-      const { startMouseX, startMouseY, startX, startY } = dragRef.current;
-      const dx = event.clientX - startMouseX;
-      const dy = event.clientY - startMouseY;
+      const dx = event.clientX - ref.startMouseX;
+      const dy = event.clientY - ref.startMouseY;
       const panelW = panelEl.current?.offsetWidth ?? 430;
       const panelH = panelEl.current?.offsetHeight ?? 200;
       const margin = 4;
       const maxX = Math.max(margin, window.innerWidth - panelW - margin);
       const maxY = Math.max(margin, window.innerHeight - panelH - margin);
-      const x = Math.min(maxX, Math.max(margin, startX + dx));
-      const y = Math.min(maxY, Math.max(margin, startY + dy));
-      setDragPos(toLocalPos(x, y));
+      const x = Math.min(maxX, Math.max(margin, ref.startX + dx));
+      const y = Math.min(maxY, Math.max(margin, ref.startY + dy));
+      const local = toLocalPos(x, y);
+      ref.lastLocalX = local.x;
+      ref.lastLocalY = local.y;
+      const el = panelEl.current;
+      if (el) {
+        el.style.left = `${local.x}px`;
+        el.style.top = `${local.y}px`;
+        el.style.right = 'auto';
+        el.style.bottom = 'auto';
+      }
     };
-    const onUp = () => {
+    const onUp = (event: PointerEvent) => {
+      const ref = dragRef.current;
+      if (!ref) return;
+      // Commit final position so the next React render keeps the panel
+      // pinned where the user dropped it.
+      setDragPos({ x: ref.lastLocalX, y: ref.lastLocalY });
+      if (ref.captureTarget) {
+        try {
+          ref.captureTarget.releasePointerCapture(event.pointerId);
+        } catch {
+          // pointer already released
+        }
+      }
       dragRef.current = null;
       document.body.style.userSelect = '';
     };
@@ -139,15 +167,26 @@ export default function AlignmentPanel({
     if ((event.target as HTMLElement).closest('button, input, textarea')) return;
     event.preventDefault();
     const rect = panelEl.current.getBoundingClientRect();
+    const seedLocal = toLocalPos(rect.left, rect.top);
+    const captureTarget = event.currentTarget as HTMLElement;
+    try {
+      captureTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // pointer capture not supported; fall back to window listeners
+    }
     dragRef.current = {
       startMouseX: event.clientX,
       startMouseY: event.clientY,
       startX: rect.left,
       startY: rect.top,
+      lastLocalX: seedLocal.x,
+      lastLocalY: seedLocal.y,
+      pointerId: event.pointerId,
+      captureTarget,
     };
     // Seed dragPos so the panel switches from corner-anchored to
-    // absolute-positioned on the very first move.
-    setDragPos(toLocalPos(rect.left, rect.top));
+    // absolute-positioned (so a click without movement still works).
+    setDragPos(seedLocal);
     document.body.style.userSelect = 'none';
   };
   const key = ratioKey(debug.side, debug.anchor === 'tip' ? 'tip' : 'base');
