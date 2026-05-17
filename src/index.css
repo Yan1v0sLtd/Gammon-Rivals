@@ -763,7 +763,11 @@ html, body, #root {
   z-index: 0;
 }
 
-@media (orientation: landscape) and (max-height: 720px) {
+/* Unified lobby layout — was previously gated behind
+   @media (orientation: landscape) and (max-height: 720px) so the
+   --lobby-u proportional grid only ran on iPhone landscape. Lifted
+   to base so desktop / tablet / phone all render the same lobby
+   chrome scaled proportionally by --lobby-u. */
   .lobby-screen {
     height: 100dvh;
     max-height: 100dvh;
@@ -1368,7 +1372,7 @@ html, body, #root {
     padding: calc(4 * var(--lobby-u)) calc(7 * var(--lobby-u));
     font-size: calc(16 * var(--lobby-u));
   }
-}
+/* end unified lobby layout block */
 
 .profile-page {
   background:
