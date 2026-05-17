@@ -24,6 +24,14 @@ type ShopItem = Database['public']['Tables']['shop_items']['Row'];
 type ShopKind = ShopItem['kind'];
 
 type AccessState = 'checking' | 'missing-config' | 'migration-missing' | 'denied' | 'allowed';
+
+// Mirrors the DB check constraint on board_theme_configs.id so the
+// admin sees a clear inline error instead of a Postgres round-trip
+// failure when adding a board.
+const BOARD_ID_REGEX = /^[a-z0-9][a-z0-9_-]*$/;
+function isValidBoardId(id: string): boolean {
+  return BOARD_ID_REGEX.test(id);
+}
 type Section =
   | 'Dashboard'
   | 'Users'
@@ -2035,7 +2043,20 @@ export default function Admin() {
                     </div>
 
                     <div className="mt-5 grid grid-cols-2 gap-3">
-                      <Field label="Board id" value={boardDraft.id} disabled={boardEditorMode === 'edit'} onChange={(id) => setBoardDraft((d) => ({ ...d, id }))} />
+                      <div>
+                        <Field
+                          label="Board id"
+                          value={boardDraft.id}
+                          disabled={boardEditorMode === 'edit'}
+                          onChange={(id) => setBoardDraft((d) => ({ ...d, id }))}
+                        />
+                        {boardEditorMode === 'add' && boardDraft.id !== '' && !isValidBoardId(boardDraft.id) && (
+                          <div className="mt-1 text-[10px] font-bold normal-case tracking-normal text-rose-300">
+                            Must be lowercase letters/digits, separated by - or _.
+                            Start with a letter or digit. Examples: caribbean-full, zen-garden, classic_purple.
+                          </div>
+                        )}
+                      </div>
                       <Field label="Display name" value={boardDraft.display_name} onChange={(display_name) => setBoardDraft((d) => ({ ...d, display_name }))} />
                       <Field label="Unlock level" value={boardDraft.unlock_level} onChange={(unlock_level) => setBoardDraft((d) => ({ ...d, unlock_level }))} />
                       <Field label="Price coins" value={boardDraft.price_coins} onChange={(price_coins) => setBoardDraft((d) => ({ ...d, price_coins }))} />
@@ -2073,7 +2094,14 @@ export default function Admin() {
                       </div>
                       <div className="flex justify-end gap-2 pt-2">
                         <SecondaryButton onClick={() => setBoardEditorOpen(false)}>Cancel</SecondaryButton>
-                        <PrimaryButton onClick={() => void saveBoard()} disabled={!canManage || savingKey === 'board'}>
+                        <PrimaryButton
+                          onClick={() => void saveBoard()}
+                          disabled={
+                            !canManage ||
+                            savingKey === 'board' ||
+                            (boardEditorMode === 'add' && !isValidBoardId(boardDraft.id))
+                          }
+                        >
                           {boardEditorMode === 'add' ? 'Add board' : 'Save changes'}
                         </PrimaryButton>
                       </div>
