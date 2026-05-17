@@ -82,6 +82,11 @@ export default function AlignmentPanel({
     startMouseY: number;
     startX: number;
     startY: number;
+    opLeft: number;
+    opTop: number;
+    maxX: number;
+    maxY: number;
+    margin: number;
     lastLocalX: number;
     lastLocalY: number;
     pointerId: number;
@@ -89,56 +94,66 @@ export default function AlignmentPanel({
   } | null>(null);
   const panelEl = useRef<HTMLDivElement | null>(null);
 
-  // Convert a viewport-space (x, y) to a value safe to write into
-  // `style.left / style.top`. The panel's offsetParent isn't always the
-  // viewport (some ancestor with filter/transform — e.g. the board
-  // stage's drop-shadow — promotes itself to a containing block for
-  // `position: fixed` children). Writing raw viewport coords there
-  // would shift the panel by the offsetParent's own offset.
-  const toLocalPos = (xViewport: number, yViewport: number) => {
-    const op = (panelEl.current?.offsetParent as HTMLElement | null) ?? null;
-    if (!op) return { x: xViewport, y: yViewport };
-    const opRect = op.getBoundingClientRect();
-    return { x: xViewport - opRect.left, y: yViewport - opRect.top };
-  };
-
-  // Window-level pointer move / up handlers when the user is dragging.
-  // We write the new position directly to the DOM each frame to avoid a
-  // full React re-render of the panel on every pointermove (the panel
-  // has heavy controls, and 60 react renders/sec made drag stutter on
-  // larger viewports). We only commit the final position to React state
-  // on pointerup, so subsequent renders stay anchored where the user
-  // dropped the panel.
+  // Window-level pointer handlers. Every pointermove only stashes the
+  // latest (clientX, clientY) and schedules a single rAF write — so
+  // even at 240Hz event rates we touch the DOM at most once per frame.
+  // We also avoid layout reads (getBoundingClientRect / offsetWidth) in
+  // the hot path: clamp bounds and offsetParent rect are snapshotted
+  // once at drag start, since the panel size doesn't change mid-drag.
   useEffect(() => {
-    const onMove = (event: PointerEvent) => {
+    let rafId = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+    let pending = false;
+
+    const flush = () => {
+      rafId = 0;
+      if (!pending) return;
+      pending = false;
       const ref = dragRef.current;
       if (!ref) return;
-      event.preventDefault();
-      const dx = event.clientX - ref.startMouseX;
-      const dy = event.clientY - ref.startMouseY;
-      const panelW = panelEl.current?.offsetWidth ?? 430;
-      const panelH = panelEl.current?.offsetHeight ?? 200;
-      const margin = 4;
-      const maxX = Math.max(margin, window.innerWidth - panelW - margin);
-      const maxY = Math.max(margin, window.innerHeight - panelH - margin);
-      const x = Math.min(maxX, Math.max(margin, ref.startX + dx));
-      const y = Math.min(maxY, Math.max(margin, ref.startY + dy));
-      const local = toLocalPos(x, y);
-      ref.lastLocalX = local.x;
-      ref.lastLocalY = local.y;
+      const dx = pendingX - ref.startMouseX;
+      const dy = pendingY - ref.startMouseY;
+      const x = Math.min(ref.maxX, Math.max(ref.margin, ref.startX + dx));
+      const y = Math.min(ref.maxY, Math.max(ref.margin, ref.startY + dy));
+      const localX = x - ref.opLeft;
+      const localY = y - ref.opTop;
+      ref.lastLocalX = localX;
+      ref.lastLocalY = localY;
       const el = panelEl.current;
       if (el) {
-        el.style.left = `${local.x}px`;
-        el.style.top = `${local.y}px`;
+        el.style.left = `${localX}px`;
+        el.style.top = `${localY}px`;
         el.style.right = 'auto';
         el.style.bottom = 'auto';
       }
     };
+
+    const onMove = (event: PointerEvent) => {
+      if (!dragRef.current) return;
+      pendingX = event.clientX;
+      pendingY = event.clientY;
+      pending = true;
+      if (!rafId) rafId = requestAnimationFrame(flush);
+    };
     const onUp = (event: PointerEvent) => {
       const ref = dragRef.current;
       if (!ref) return;
-      // Commit final position so the next React render keeps the panel
-      // pinned where the user dropped it.
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      // Flush any pending move so the committed position matches the
+      // last pointer location, not whatever was last rendered.
+      if (pending) {
+        pending = false;
+        const dx = pendingX - ref.startMouseX;
+        const dy = pendingY - ref.startMouseY;
+        const x = Math.min(ref.maxX, Math.max(ref.margin, ref.startX + dx));
+        const y = Math.min(ref.maxY, Math.max(ref.margin, ref.startY + dy));
+        ref.lastLocalX = x - ref.opLeft;
+        ref.lastLocalY = y - ref.opTop;
+      }
       setDragPos({ x: ref.lastLocalX, y: ref.lastLocalY });
       if (ref.captureTarget) {
         try {
@@ -154,6 +169,7 @@ export default function AlignmentPanel({
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
     return () => {
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
@@ -176,13 +192,24 @@ export default function AlignmentPanel({
   }, [dragPos]);
 
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!panelEl.current) return;
+    const el = panelEl.current;
+    if (!el) return;
     // Ignore drags that start on buttons / inputs inside the header
     // (so the "Move panel" / close affordances still click).
     if ((event.target as HTMLElement).closest('button, input, textarea')) return;
     event.preventDefault();
-    const rect = panelEl.current.getBoundingClientRect();
-    const seedLocal = toLocalPos(rect.left, rect.top);
+    const rect = el.getBoundingClientRect();
+    const op = el.offsetParent as HTMLElement | null;
+    const opRect = op?.getBoundingClientRect();
+    const opLeft = opRect?.left ?? 0;
+    const opTop = opRect?.top ?? 0;
+    const seedLocalX = rect.left - opLeft;
+    const seedLocalY = rect.top - opTop;
+    const margin = 4;
+    // Cache clamp bounds — panel size doesn't change during a drag so
+    // we don't want to read offsetWidth/offsetHeight on every move.
+    const maxX = Math.max(margin, window.innerWidth - rect.width - margin);
+    const maxY = Math.max(margin, window.innerHeight - rect.height - margin);
     const captureTarget = event.currentTarget as HTMLElement;
     try {
       captureTarget.setPointerCapture(event.pointerId);
@@ -194,14 +221,19 @@ export default function AlignmentPanel({
       startMouseY: event.clientY,
       startX: rect.left,
       startY: rect.top,
-      lastLocalX: seedLocal.x,
-      lastLocalY: seedLocal.y,
+      opLeft,
+      opTop,
+      maxX,
+      maxY,
+      margin,
+      lastLocalX: seedLocalX,
+      lastLocalY: seedLocalY,
       pointerId: event.pointerId,
       captureTarget,
     };
     // Seed dragPos so the panel switches from corner-anchored to
     // absolute-positioned (so a click without movement still works).
-    setDragPos(seedLocal);
+    setDragPos({ x: seedLocalX, y: seedLocalY });
     document.body.style.userSelect = 'none';
   };
   const key = ratioKey(debug.side, debug.anchor === 'tip' ? 'tip' : 'base');
