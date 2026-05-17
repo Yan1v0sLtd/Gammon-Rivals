@@ -123,7 +123,25 @@ export function LobbyBoardCarousel({
               <img
                 src={board.image}
                 alt={slot === 'selected' ? `${board.name} board preview` : ''}
-                className="h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
+                className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
+                draggable={false}
+              />
+              {/* Lock icon roughly centred over the board image,
+                  nudged 5 px upward. 10 % smaller than the previous
+                  11 %. */}
+              <img
+                src="/lobby/carousel/lock.webp"
+                alt=""
+                className="lobby-carousel-board-lock pointer-events-none absolute left-1/2 top-[calc(50%-5px)] w-[10%] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
+                draggable={false}
+              />
+              {/* Black pill sitting near the bottom of the board, mostly
+                  on the board with just a sliver extending below onto
+                  the podium. Width is 40 % of the board. */}
+              <img
+                src="/lobby/carousel/pill.webp"
+                alt=""
+                className="lobby-carousel-board-pill pointer-events-none absolute bottom-0 left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 select-none"
                 draggable={false}
               />
             </div>
