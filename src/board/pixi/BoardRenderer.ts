@@ -727,10 +727,17 @@ export class BoardRenderer {
     const ry = r * this.layout.checkerScaleY;
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
+    // Soft ground shadow — three concentric ellipses with falling
+    // alpha simulate a blurred drop shadow without needing a filter.
+    // Centred just below the checker with a small offset for depth.
+    const sx = x + r * 0.08;
+    const sy = y + ry * 0.38;
+    const sw = r * 0.78;
+    const sh = ry * 0.18;
     const shadow = new Graphics();
-    shadow
-      .ellipse(x + r * 0.2, y + ry * 0.36, r * 0.46, ry * 0.11)
-      .fill({ color: 0x000000, alpha: 0.12 });
+    shadow.ellipse(sx, sy, sw * 1.35, sh * 1.55).fill({ color: 0x000000, alpha: 0.07 });
+    shadow.ellipse(sx, sy, sw * 1.1, sh * 1.2).fill({ color: 0x000000, alpha: 0.12 });
+    shadow.ellipse(sx, sy, sw * 0.85, sh * 0.9).fill({ color: 0x000000, alpha: 0.18 });
     this.root.addChild(shadow);
 
     if (tex) {
