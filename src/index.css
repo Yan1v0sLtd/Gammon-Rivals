@@ -6035,12 +6035,14 @@ html, body, #root {
 
 .game-player-panel--left .game-player-identity {
   left: 49%;
-  text-align: left;
+  text-align: center;
+  justify-items: center;
 }
 
 .game-player-panel--right .game-player-identity {
   right: 49%;
-  text-align: left;
+  text-align: center;
+  justify-items: center;
 }
 
 .game-player-identity h2 {
@@ -6058,7 +6060,7 @@ html, body, #root {
 .game-player-line {
   display: flex;
   align-items: center;
-  justify-content: flex-start !important;
+  justify-content: center !important;
   gap: 0.48em;
   color: #f5e5c2;
   font-size: clamp(0.58rem, 1.05vw, 0.98rem);

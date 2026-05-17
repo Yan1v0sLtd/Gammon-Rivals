@@ -56,7 +56,7 @@ export default function SidePanel({
   compact = false,
 }: Props) {
   const align = side === 'left' ? 'items-start' : 'items-end';
-  const textAlign = side === 'left' ? 'text-left' : 'text-right';
+  const textAlign = 'text-center';
   const avatarSize = compact ? 58 : 106;
   const innerAvatarSize = Math.round(avatarSize * 0.66);
   const hudOffset = avatarSize + (compact ? 6 : 12);
