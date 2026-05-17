@@ -727,12 +727,14 @@ export class BoardRenderer {
     const ry = r * this.layout.checkerScaleY;
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
-    // Soft half-circle shadow sitting at the BOTTOM of the checker.
-    // Flat (chord) edge aligned with the checker's bottom edge; the
-    // semicircle bulges downward like a puddle. Three concentric
-    // half-discs at falling alpha fake a soft edge without a blur pass.
+    // Soft half-circle shadow tucked UNDERNEATH the checker. The chord
+    // sits inside the checker's lower portion so the upper half of the
+    // shadow is hidden behind the disc itself — the visible bottom
+    // half reads as the checker's cast shadow on the felt rather than
+    // a separate puddle floating below. Three concentric half-discs
+    // at falling alpha + decreasing radius fake the soft edge.
     const cx = x;
-    const cy = y + ry; // chord sits along the checker's bottom edge
+    const cy = y + ry * 0.55;
     const shadow = new Graphics();
     const drawHalfDisc = (radius: number, alpha: number) => {
       shadow.moveTo(cx + radius, cy);
@@ -740,9 +742,9 @@ export class BoardRenderer {
       shadow.lineTo(cx + radius, cy);
       shadow.fill({ color: 0x000000, alpha });
     };
-    drawHalfDisc(r * 0.95, 0.2);
-    drawHalfDisc(r * 0.8, 0.3);
-    drawHalfDisc(r * 0.62, 0.4);
+    drawHalfDisc(r * 1.05, 0.18);
+    drawHalfDisc(r * 0.92, 0.28);
+    drawHalfDisc(r * 0.78, 0.38);
     this.root.addChild(shadow);
 
     if (tex) {
