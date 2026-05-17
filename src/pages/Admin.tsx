@@ -6,6 +6,7 @@ import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
 import FeltCornersField from '../admin/FeltCornersField';
 import BoardTuningField from '../admin/BoardTuningField';
+import BoardPreview from '../admin/BoardPreview';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2051,6 +2052,12 @@ export default function Admin() {
                       <BoardTuningField
                         metadata={boardDraft.metadata}
                         onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
+                      />
+                      <BoardPreview
+                        gameplayImage={boardDraft.gameplay_image}
+                        whiteChecker={boardDraft.white_checker_image}
+                        blackChecker={boardDraft.black_checker_image}
+                        metadata={boardDraft.metadata}
                       />
                       <ImageField label="Lobby background image" folder={boardDraft.id} kind="lobby-bg" value={boardDraft.lobby_background_image} onChange={(lobby_background_image) => setBoardDraft((d) => ({ ...d, lobby_background_image }))} />
                       <ImageField label="Gameplay background image" folder={boardDraft.id} kind="gameplay-bg" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
