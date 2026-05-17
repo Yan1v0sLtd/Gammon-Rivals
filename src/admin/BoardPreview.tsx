@@ -42,15 +42,23 @@ function layoutFromMetadataString(metadata: string): Partial<ThemeLayout> {
  * position. Updates instantly as the user nudges felt corners /
  * point depth / stack spacing / checker radius.
  */
+// Render the preview at 75 % of the configured checker radius so the
+// proportion matches the in-game canvas (whose aspect is taller than
+// the preview's 2:1 frame and was visually shrinking the checkers).
+const PREVIEW_CHECKER_SCALE = 0.75;
+
 export default function BoardPreview({
   gameplayImage,
   whiteChecker,
   blackChecker,
   metadata,
 }: Props) {
+  // Theme is memoised on ASSETS only so a metadata nudge doesn't bump
+  // the reference and force BoardCanvas to tear down + rebuild the
+  // Pixi app (which would otherwise replay the deal animation every
+  // time the admin nudges a value).
   const draftTheme: Theme | null = useMemo(() => {
     if (!gameplayImage.trim()) return null;
-    const layoutOverride = layoutFromMetadataString(metadata);
     return {
       ...premiumTheme,
       name: 'preview',
@@ -60,12 +68,22 @@ export default function BoardPreview({
         whiteChecker: normalizeAsset(whiteChecker) ?? premiumTheme.assets?.whiteChecker,
         blackChecker: normalizeAsset(blackChecker) ?? premiumTheme.assets?.blackChecker,
       },
-      layout: {
-        ...premiumTheme.layout,
-        ...layoutOverride,
-      },
     };
-  }, [gameplayImage, whiteChecker, blackChecker, metadata]);
+  }, [gameplayImage, whiteChecker, blackChecker]);
+
+  // Layout is the part that changes on every tuning nudge. Passing it
+  // through layoutOverride lets BoardCanvas hot-swap it without
+  // recreating the renderer.
+  const layoutOverride = useMemo<ThemeLayout>(() => {
+    const fromMetadata = layoutFromMetadataString(metadata);
+    const baseRadius =
+      fromMetadata.checkerRadiusRatio ?? premiumTheme.layout?.checkerRadiusRatio ?? 0.42;
+    return {
+      ...premiumTheme.layout,
+      ...fromMetadata,
+      checkerRadiusRatio: baseRadius * PREVIEW_CHECKER_SCALE,
+    };
+  }, [metadata]);
 
   const initialState = useMemo(() => initialBoard(), []);
 
@@ -83,7 +101,7 @@ export default function BoardPreview({
       >
         {draftTheme ? (
           <div className="absolute inset-0">
-            <BoardCanvas state={initialState} theme={draftTheme} />
+            <BoardCanvas state={initialState} theme={draftTheme} layoutOverride={layoutOverride} />
           </div>
         ) : (
           <div className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
