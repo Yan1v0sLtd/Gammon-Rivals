@@ -1054,12 +1054,14 @@ html, body, #root {
   }
 
   .lobby-main-grid {
-    /* Side stacks shrunk 20 %, centre carousel grown 20 % wide /
-       10 % tall. New widths: 264 + 72 + 1032 + 72 + 280 = 1720
-       lobby-u. */
+    /* Side stacks shrunk 20 %, centre carousel grown 20 % wide.
+       New widths: 264 + 72 + 1032 + 72 + 280 = 1720 lobby-u.
+       Pulled up 56 lobby-u (150 -> 94) so the lowered podium +
+       Play button don't slide under the bottom navigator on the
+       short iPhone landscape viewport. */
     position: absolute;
     left: calc(55 * var(--lobby-u));
-    top: calc(150 * var(--lobby-u));
+    top: calc(94 * var(--lobby-u));
     z-index: 20;
     display: grid;
     width: calc(1720 * var(--lobby-u));
@@ -1191,8 +1193,10 @@ html, body, #root {
   }
 
   .lobby-carousel-viewport > img.pointer-events-none {
-    /* 20 % larger podium so it matches the enlarged board carousel. */
-    bottom: calc(-8 * var(--lobby-u));
+    /* 20 % larger podium so it matches the enlarged board carousel.
+       Dropped 30 px below its old anchor so the board sits ON the
+       podium instead of overlapping it. */
+    bottom: calc(-8 * var(--lobby-u) - 30px);
     width: calc(780 * var(--lobby-u));
     max-width: none;
   }
@@ -1202,10 +1206,10 @@ html, body, #root {
   }
 
   .lobby-play-button {
-    /* The 20 %-taller carousel already drops the play button below
-       the podium, so no extra shift is needed (and an extra -20 px
-       would slide the button under the bottom nav). */
-    bottom: calc(-35 * var(--lobby-u));
+    /* Lowered 30 px to match the dropped podium so the Play button
+       sits on the wooden deck below it rather than over the carved
+       front of the podium itself. */
+    bottom: calc(-35 * var(--lobby-u) - 30px);
     height: calc(80 * var(--lobby-u));
     min-width: calc(350 * var(--lobby-u));
     padding: 0 calc(42 * var(--lobby-u));
