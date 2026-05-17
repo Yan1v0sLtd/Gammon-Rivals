@@ -12,7 +12,7 @@ const premiumPurpleLayout = {
   pointHeightRatio: 0.262,
   bottomPointHeightRatio: 0.286,
   topPointYRatio: 0.07,
-  bottomPointYRatio: 0.848,
+  bottomPointYRatio: 0.858,
   checkerRadiusRatio: 0.47,
   checkerScaleYRatio: 0.92,
   checkerStackSpacingRatio: 0.8,
@@ -36,7 +36,7 @@ const premiumPurpleLayout = {
     0.56, 0.614, 0.664, 0.717, 0.768, 0.821,
   ],
   topCheckerOffsetXRatios: [
-    -0.004, 0.018, 0, 0, 0, 0,
+    0, 0.018, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0,
   ],
   bottomCheckerOffsetXRatios: [
