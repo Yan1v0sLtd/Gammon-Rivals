@@ -131,6 +131,9 @@ export default function AlignmentPanel({
 
     const onMove = (event: PointerEvent) => {
       if (!dragRef.current) return;
+      // Stop the browser from treating the gesture as a scroll/swipe
+      // (which would fire pointercancel and end the drag mid-stride).
+      event.preventDefault();
       pendingX = event.clientX;
       pendingY = event.clientY;
       pending = true;
@@ -165,7 +168,8 @@ export default function AlignmentPanel({
       dragRef.current = null;
       document.body.style.userSelect = '';
     };
-    window.addEventListener('pointermove', onMove);
+    // passive: false so preventDefault inside onMove is honored.
+    window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
     return () => {
@@ -453,6 +457,7 @@ export default function AlignmentPanel({
       <div
         onPointerDown={startDrag}
         className="mb-2 flex cursor-grab items-center justify-between gap-3 active:cursor-grabbing select-none"
+        style={{ touchAction: 'none' }}
         title="Drag to move"
       >
         <div className="font-semibold text-cyan-100">⋮⋮ Alignment mode</div>
