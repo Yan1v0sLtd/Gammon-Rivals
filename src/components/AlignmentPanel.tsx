@@ -160,6 +160,21 @@ export default function AlignmentPanel({
     };
   }, []);
 
+  // When the user snaps back to a corner (dragPos -> null), the inline
+  // left/top/right/bottom we wrote imperatively during drag would
+  // otherwise persist and keep the panel stuck where it was. Clear
+  // them whenever dragPos becomes null so the Tailwind corner anchors
+  // (top-3 + left-3/right-3) take over again.
+  useEffect(() => {
+    if (dragPos !== null) return;
+    const el = panelEl.current;
+    if (!el) return;
+    el.style.left = '';
+    el.style.top = '';
+    el.style.right = '';
+    el.style.bottom = '';
+  }, [dragPos]);
+
   const startDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!panelEl.current) return;
     // Ignore drags that start on buttons / inputs inside the header
