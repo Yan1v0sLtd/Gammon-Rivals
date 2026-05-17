@@ -579,7 +579,7 @@ html, body, #root {
     --lobby-incoming-prev-x: -78%;
     --lobby-incoming-next-x: 78%;
     --lobby-incoming-scale: 0.68;
-    top: 4%;
+    top: calc(4% + 20px);
     width: 61%;
     height: auto;
     aspect-ratio: 4 / 3;
@@ -1170,7 +1170,7 @@ html, body, #root {
     --lobby-incoming-prev-x: -84%;
     --lobby-incoming-next-x: 84%;
     --lobby-incoming-scale: 0.64;
-    top: calc(20 * var(--lobby-u));
+    top: calc(20 * var(--lobby-u) + 20px);
     width: 56%;
     height: auto;
   }
