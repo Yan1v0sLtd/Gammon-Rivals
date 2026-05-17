@@ -683,7 +683,14 @@ export class BoardRenderer {
       const point = state.points[i];
       if (!point || point.count === 0 || point.owner === null) continue;
       const pos = pointCoords(this.layout, i);
-      for (let n = 0; n < point.count; n++) {
+      // Bottom-row spikes point UP; the bottom of the stack (n=0) is
+      // closest to the camera in the slight 3-D tilt, so it should be
+      // drawn LAST (on top in z). Reverse the iteration order for those.
+      // Top-row spikes already match the natural order — the spike's
+      // tip end (n=count-1) is closest to the camera there.
+      const reverse = pos.stackDir === -1;
+      for (let k = 0; k < point.count; k++) {
+        const n = reverse ? point.count - 1 - k : k;
         if (skip?.pos === i && skip.owner === point.owner && n === point.count - 1) continue;
         const center = checkerCenter(this.layout, pos, n, point.count);
         this.drawChecker(center.x, center.y, point.owner);
