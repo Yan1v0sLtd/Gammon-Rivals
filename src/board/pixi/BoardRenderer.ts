@@ -727,20 +727,22 @@ export class BoardRenderer {
     const ry = r * this.layout.checkerScaleY;
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
-    // Soft ground shadow — three concentric ellipses with falling
-    // alpha fake a blurred drop shadow without a BlurFilter pass.
-    // Centred just below the checker with a small offset for depth.
-    // Alpha is bumped relative to a typical "subtle" shadow because
-    // the premium-purple board is already dark — low alphas read as
-    // no shadow at all on that surface.
-    const sx = x + r * 0.1;
-    const sy = y + ry * 0.42;
-    const sw = r * 0.88;
-    const sh = ry * 0.22;
+    // Soft half-circle shadow sitting at the BOTTOM of the checker.
+    // Flat (chord) edge aligned with the checker's bottom edge; the
+    // semicircle bulges downward like a puddle. Three concentric
+    // half-discs at falling alpha fake a soft edge without a blur pass.
+    const cx = x;
+    const cy = y + ry; // chord sits along the checker's bottom edge
     const shadow = new Graphics();
-    shadow.ellipse(sx, sy, sw * 1.45, sh * 1.7).fill({ color: 0x000000, alpha: 0.2 });
-    shadow.ellipse(sx, sy, sw * 1.15, sh * 1.25).fill({ color: 0x000000, alpha: 0.3 });
-    shadow.ellipse(sx, sy, sw * 0.9, sh * 0.95).fill({ color: 0x000000, alpha: 0.4 });
+    const drawHalfDisc = (radius: number, alpha: number) => {
+      shadow.moveTo(cx + radius, cy);
+      shadow.arc(cx, cy, radius, 0, Math.PI);
+      shadow.lineTo(cx + radius, cy);
+      shadow.fill({ color: 0x000000, alpha });
+    };
+    drawHalfDisc(r * 0.95, 0.2);
+    drawHalfDisc(r * 0.8, 0.3);
+    drawHalfDisc(r * 0.62, 0.4);
     this.root.addChild(shadow);
 
     if (tex) {
