@@ -800,23 +800,37 @@ export default function DiceTray({
       if (profileEl) {
         const wrapperRect = wrapperEl.getBoundingClientRect();
         const targetRect = profileEl.getBoundingClientRect();
-        const profileCenterX = targetRect.left + targetRect.width / 2;
-        // Aim just above the profile card — the dice should sit in
-        // the thin gap between the Home/header row and the profile
-        // box. Approximate dice render diameter is DIE_SIZE×safeScale;
-        // we use half that plus a small visual padding so the dice
-        // bottom rests near the profile top edge without clipping the
-        // viewport. Clamp the target to keep dice on-screen even if
-        // the profile sits right at the top edge.
+        // Horizontally: aim at the profile box's INNER edge — the
+        // edge that faces the centre of the screen — so the dice sit
+        // toward the inside of the panel rather than at its outer
+        // corner. Pull inward by ~12 % of the profile width so the
+        // dice cluster slightly overlaps the inside of the box.
+        const isRightSide = settleSide === 'right';
+        const innerEdgeX = isRightSide
+          ? targetRect.left + targetRect.width * 0.12
+          : targetRect.right - targetRect.width * 0.12;
+        // Vertically: align with the header-action icons (stats /
+        // settings) row, falling back to a tight offset above the
+        // profile when the icons aren't in the DOM.
+        const iconEl = document.querySelector('.game-header-icon-button');
+        let targetY: number;
+        if (iconEl) {
+          const iconRect = iconEl.getBoundingClientRect();
+          targetY = iconRect.top + iconRect.height / 2;
+        } else {
+          const diceHalfHeight = (DIE_SIZE * safeScale) / 2;
+          const gap = 6;
+          targetY = targetRect.top - diceHalfHeight - gap;
+        }
+        // Keep the dice fully on-screen even when the icon row is
+        // flush against the viewport top.
         const diceHalfHeight = (DIE_SIZE * safeScale) / 2;
-        const gap = 6;
-        const desiredCenterY = targetRect.top - diceHalfHeight - gap;
-        const minCenterY = diceHalfHeight + 2; // never above the viewport
-        const profileTopWithGap = Math.max(minCenterY, desiredCenterY);
+        const minCenterY = diceHalfHeight + 2;
+        const clampedY = Math.max(minCenterY, targetY);
         const wrapperCenterX = wrapperRect.left + wrapperRect.width / 2;
         const wrapperCenterY = wrapperRect.top + wrapperRect.height / 2;
-        const dxCss = profileCenterX - wrapperCenterX;
-        const dyCss = profileTopWithGap - wrapperCenterY;
+        const dxCss = innerEdgeX - wrapperCenterX;
+        const dyCss = clampedY - wrapperCenterY;
         // CSS +y is DOWN; mesh.y is set to -y so positive scene-Y =
         // up on screen. dyCss is negative when the target is above
         // the wrapper centre; we keep the same sign because writeQP
