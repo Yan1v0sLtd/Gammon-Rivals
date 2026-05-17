@@ -14,7 +14,7 @@ import { pipCount } from '../engine';
 import type { Position } from '../engine/types';
 import type { GameResult, MatchState } from '../engine';
 import { useBoardThemeConfig, type ThemeLayout } from '../board/theme';
-import { boardThemes, DEFAULT_BOARD_THEME_ID } from '../board/theme/boardThemes';
+import { premiumTheme } from '../board/theme/premium';
 import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
@@ -49,10 +49,10 @@ function copyRatios(value: readonly number[] | undefined): number[] | undefined 
 }
 
 function basePremiumLayout(): ThemeLayout {
-  // Alignment tool's reset target. Defaults to the generic premium
-  // theme's layout — back-office-managed boards bring their own
-  // layouts so the alignment tool doesn't need a per-theme baseline.
-  const layout = boardThemes[DEFAULT_BOARD_THEME_ID]?.layout ?? {};
+  // Alignment tool's reset target. Boards are managed via Back Office
+  // and bring their own layouts; this fallback uses the generic
+  // premium theme so the alignment tool has a baseline to nudge from.
+  const layout = premiumTheme.layout ?? {};
   return {
     ...layout,
     topPointCenterXRatios: copyRatios(layout.topPointCenterXRatios),

@@ -3,45 +3,20 @@ import type { Theme } from './types';
 
 export type BoardThemeId = string;
 
-export const DEFAULT_BOARD_THEME_ID: BoardThemeId = 'classic-green';
+// All board themes are managed via the Back Office (board_theme_configs
+// table); the registry below is intentionally empty so nothing is
+// hard-coded into the bundle. `getBoardTheme` falls back to the generic
+// `premiumTheme` while a DB-managed theme is still loading, or if a
+// caller asks for a theme id that doesn't exist anywhere.
+export const DEFAULT_BOARD_THEME_ID: BoardThemeId = '';
 
-export const boardThemes: Record<string, Theme> = {
-  'classic-green': {
-    ...premiumTheme,
-    name: 'classic-green',
-    assets: {
-      ...premiumTheme.assets,
-      board: '/themes/classic-green/board.webp',
-    },
-    backgroundImage: '/lobby/backgrounds/classic-green.webp',
-    gameplayBackgroundImage: '/lobby/backgrounds/classic-green.webp',
-  },
-  'ocean-blue': {
-    ...premiumTheme,
-    name: 'ocean-blue',
-    assets: {
-      ...premiumTheme.assets,
-      board: '/themes/ocean-blue/board.webp',
-    },
-    backgroundImage: '/lobby/backgrounds/ocean-blue.webp',
-    gameplayBackgroundImage: '/lobby/backgrounds/ocean-blue.webp',
-  },
-  'royal-purple': {
-    ...premiumTheme,
-    name: 'royal-purple',
-    assets: {
-      ...premiumTheme.assets,
-      board: '/themes/royal-purple/board.webp',
-    },
-    backgroundImage: '/lobby/backgrounds/royal-purple.webp',
-    gameplayBackgroundImage: '/lobby/backgrounds/royal-purple.webp',
-  },
-};
+export const boardThemes: Record<string, Theme> = {};
 
 export function isBoardThemeId(value: string | null | undefined): value is BoardThemeId {
   return Boolean(value && value in boardThemes);
 }
 
 export function getBoardTheme(value: string | null | undefined): Theme {
-  return boardThemes[isBoardThemeId(value) ? value : DEFAULT_BOARD_THEME_ID];
+  if (value && isBoardThemeId(value)) return boardThemes[value];
+  return premiumTheme;
 }

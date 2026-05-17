@@ -67,38 +67,10 @@ export interface LobbyNavItem {
   readonly featured?: boolean;
 }
 
-export const lobbyBoards: readonly LobbyBoard[] = [
-  {
-    id: 'classic-green',
-    name: 'Classic Green',
-    subtitle: 'Traditional felt',
-    image: '/lobby/board-previews/classic-green.webp',
-    accent: '#6dda72',
-    background: '/lobby/backgrounds/classic-green.webp',
-    backgroundTone:
-      'linear-gradient(180deg,rgba(3,13,29,0.40),rgba(3,13,29,0.12)_42%,rgba(2,8,18,0.68)),radial-gradient(circle_at_58%_45%,rgba(48,160,86,0.22),transparent_52%)',
-  },
-  {
-    id: 'ocean-blue',
-    name: 'Ocean Blue',
-    subtitle: 'Bright coastal wood',
-    image: '/lobby/board-previews/ocean-blue.webp',
-    accent: '#39d7ff',
-    background: '/lobby/backgrounds/ocean-blue.webp',
-    backgroundTone:
-      'linear-gradient(180deg,rgba(3,14,34,0.34),rgba(2,76,111,0.10)_42%,rgba(2,8,18,0.70)),radial-gradient(circle_at_60%_43%,rgba(42,200,255,0.26),transparent_54%)',
-  },
-  {
-    id: 'royal-purple',
-    name: 'Royal Purple',
-    subtitle: 'Gold tournament trim',
-    image: '/lobby/board-previews/royal-purple.webp',
-    accent: '#c174ff',
-    background: '/lobby/backgrounds/royal-purple.webp',
-    backgroundTone:
-      'linear-gradient(180deg,rgba(9,8,36,0.38),rgba(56,18,83,0.16)_42%,rgba(2,8,18,0.72)),radial-gradient(circle_at_58%_44%,rgba(169,88,255,0.24),transparent_54%)',
-  },
-];
+// All boards are managed through the Back Office (board_theme_configs
+// table) — this array is intentionally empty so the lobby only shows
+// DB-managed boards.
+export const lobbyBoards: readonly LobbyBoard[] = [];
 
 export const lobbyOffers: readonly LobbyOffer[] = [
   {
