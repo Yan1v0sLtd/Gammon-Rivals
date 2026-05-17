@@ -137,11 +137,12 @@ export function LobbyBoardCarousel({
               />
               {/* Black pill sitting near the bottom of the board, mostly
                   on the board with just a sliver extending below onto
-                  the podium. Width is 40 % of the board. */}
+                  the podium. Width is 40 % of the board. Lifted 30 px
+                  off the board's bottom edge per the latest request. */}
               <img
                 src="/lobby/carousel/pill.webp"
                 alt=""
-                className="lobby-carousel-board-pill pointer-events-none absolute bottom-0 left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 select-none"
+                className="lobby-carousel-board-pill pointer-events-none absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 select-none"
                 draggable={false}
               />
             </div>
