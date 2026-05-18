@@ -13,7 +13,8 @@
     "android:build": "npm run build && npx cap build android",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
@@ -42,6 +43,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.14",
     "sharp": "^0.34.5",
