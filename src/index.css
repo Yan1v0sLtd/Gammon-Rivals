@@ -3298,6 +3298,13 @@ html, body, #root {
   font-weight: 850;
   text-decoration: none;
   text-shadow: 0 0.16rem 0.18rem rgba(0, 0, 0, 0.75);
+  /* Reset button chrome — this class is now used on a <button> so it
+     can intercept the click and put the loader up before navigating. */
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .game-home-icon {

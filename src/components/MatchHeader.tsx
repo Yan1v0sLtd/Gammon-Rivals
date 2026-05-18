@@ -1,5 +1,6 @@
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { MatchState } from '../engine';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 
 interface Props {
   match: MatchState;
@@ -27,17 +28,26 @@ export default function MatchHeader({
   whiteName = 'White',
   blackName = 'Black',
 }: Props) {
+  const navigate = useNavigate();
+  const { show: showOverlay } = useNavigationOverlay();
   const cleanTurnLabel = turnLabel.replace(/\s*\(AI\)/i, '').toUpperCase();
   const whiteDisplayName = displayName(whiteName).toUpperCase();
   const blackDisplayName = displayName(blackName).toUpperCase();
 
+  const goHome = () => {
+    // Put the loader up before the route changes so the gameplay never
+    // flashes between unmount and the lobby's own preload gate.
+    showOverlay();
+    navigate('/');
+  };
+
   return (
     <header className="game-match-header">
       <div className="game-nav-home">
-        <Link to="/" className="game-home-link">
+        <button type="button" onClick={goHome} className="game-home-link">
           <span className="game-home-icon" aria-hidden="true" />
           <span>Home</span>
-        </Link>
+        </button>
       </div>
 
       <div className="game-match-hud">

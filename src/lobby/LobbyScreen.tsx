@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useAuth } from '../lib/auth';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { createOnlineMatch } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
@@ -72,6 +73,7 @@ function LobbyBackgroundLayer({
 
 export function LobbyScreen() {
   const navigate = useNavigate();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
@@ -180,11 +182,15 @@ export function LobbyScreen() {
     params.set('opp', opponent);
     params.set('target', String(target));
     params.set('board', effectiveSelectedBoardId);
+    // Put the loader up before the route changes so the lobby never
+    // flashes between unmount and the gameplay's own preload gate.
+    showOverlay();
     navigate(`/hotseat?${params.toString()}`);
   };
 
   const startOnline = async () => {
     if (!isSupabaseConfigured) {
+      showOverlay();
       navigate('/lobby');
       return;
     }
@@ -193,6 +199,7 @@ export function LobbyScreen() {
     setOnlineError(null);
     try {
       const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 7 });
+      showOverlay();
       navigate(`/play/${matchId}?board=${effectiveSelectedBoardId}`);
     } catch (err) {
       setOnlineError(err instanceof Error ? err.message : String(err));
@@ -219,6 +226,13 @@ export function LobbyScreen() {
   useEffect(() => {
     if (!boardsLoading && assetsReady) setLobbyShown(true);
   }, [boardsLoading, assetsReady]);
+
+  // Once the lobby is fully composed, fade the navigation overlay out.
+  // No-op when the overlay was never up (initial app load with the
+  // route's own gate handling the wait).
+  useEffect(() => {
+    if (lobbyShown) hideOverlay();
+  }, [lobbyShown, hideOverlay]);
 
   if (!lobbyShown) return <LoadingScreen />;
 

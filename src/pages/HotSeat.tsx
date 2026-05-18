@@ -20,6 +20,7 @@ import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { createMatch, finishMatch, modeFromAi, saveGame } from '../lib/persistence';
 import {
   makeAIIdentity,
@@ -139,6 +140,7 @@ function loadAlignmentLayout(): ThemeLayout {
 export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
   const { user, profile, wallet, progression, isLoading: authLoading } = useAuth();
 
   const opp = params.get('opp');
@@ -286,6 +288,13 @@ export default function HotSeat() {
   useEffect(() => {
     if (assetsReady) setGameShown(true);
   }, [assetsReady]);
+
+  // Hand-off to the route-spanning overlay: once we're fully composed,
+  // fade it out so the new screen reveals smoothly underneath. No-op
+  // on direct/initial loads (overlay was never up).
+  useEffect(() => {
+    if (gameShown) hideOverlay();
+  }, [gameShown, hideOverlay]);
 
   // ---- Auto-roll preference ----
   const [autoRollOn, setAutoRollOn] = useAutoRoll();
@@ -481,7 +490,10 @@ export default function HotSeat() {
             match={game.match}
             matchOver={game.matchOver}
             onNextGame={game.nextGame}
-            onNewMatch={() => navigate('/')}
+            onNewMatch={() => {
+              showOverlay();
+              navigate('/');
+            }}
           />
         ) : null
       }
