@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { createOnlineMatch } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { LobbyActionCard } from './LobbyActionCard';
@@ -14,6 +16,30 @@ import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
+
+// Static lobby assets — referenced unconditionally by sub-components,
+// so they're always part of the first-paint preload. Per-board imagery
+// (backgrounds, previews) is added dynamically once Supabase resolves.
+const LOBBY_STATIC_ASSETS: readonly string[] = [
+  '/lobby/carousel/gem.webp',
+  '/lobby/carousel/lock.webp',
+  '/lobby/carousel/pill.webp',
+  '/lobby/holders/royal-holder.webp',
+  '/lobby/icons/friends.webp',
+  '/lobby/icons/gem.webp',
+  '/lobby/icons/gold-coin.webp',
+  '/lobby/icons/online-players.webp',
+  '/lobby/icons/rewards-gift.webp',
+  '/lobby/icons/settings-gear.webp',
+  '/lobby/icons/trophy.webp',
+  '/lobby/cards/coins-offer.webp',
+  '/lobby/cards/daily-bonus.webp',
+  '/lobby/nav/events.webp',
+  '/lobby/nav/missions.webp',
+  '/lobby/nav/nav-bg.webp',
+  '/lobby/nav/tournaments.webp',
+  '/lobby/nav/vip-club.webp',
+];
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -46,8 +72,9 @@ function LobbyBackgroundLayer({
 
 export function LobbyScreen() {
   const navigate = useNavigate();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
-  const boards = useLobbyBoards();
+  const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
   const [creatingOnline, setCreatingOnline] = useState(false);
@@ -154,11 +181,15 @@ export function LobbyScreen() {
     params.set('opp', opponent);
     params.set('target', String(target));
     params.set('board', effectiveSelectedBoardId);
+    // Put the loader up before the route changes so the lobby never
+    // flashes between unmount and the gameplay's own preload gate.
+    showOverlay();
     navigate(`/hotseat?${params.toString()}`);
   };
 
   const startOnline = async () => {
     if (!isSupabaseConfigured) {
+      showOverlay();
       navigate('/lobby');
       return;
     }
@@ -167,6 +198,7 @@ export function LobbyScreen() {
     setOnlineError(null);
     try {
       const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 7 });
+      showOverlay();
       navigate(`/play/${matchId}?board=${effectiveSelectedBoardId}`);
     } catch (err) {
       setOnlineError(err instanceof Error ? err.message : String(err));
@@ -174,6 +206,40 @@ export function LobbyScreen() {
       setCreatingOnline(false);
     }
   };
+
+  // ---- Asset preload gate ----
+  // Don't paint the lobby until the boards data is resolved AND every
+  // image (statics + per-board previews/backgrounds) has loaded. Latch
+  // the gate open after first success so a late-arriving board (e.g. a
+  // new theme added in Back Office) doesn't re-hide the screen.
+  const assetUrls = useMemo<readonly string[]>(() => {
+    const list: string[] = [...LOBBY_STATIC_ASSETS];
+    for (const board of boards) {
+      if (board.image) list.push(board.image);
+      if (board.background) list.push(board.background);
+    }
+    return list;
+  }, [boards]);
+  const { ready: assetsReady } = useImagePreloader(assetUrls);
+  const lobbyReady = assetsReady && !boardsLoading;
+
+  // Cover the screen with the overlay from the moment we mount, even
+  // on a cold load. useLayoutEffect runs before paint so the overlay
+  // is composited in the same frame as the route's first DOM commit.
+  useLayoutEffect(() => {
+    showOverlay();
+  }, [showOverlay]);
+
+  // Once Supabase has returned and every image has loaded, fade the
+  // overlay out to reveal the fully composed lobby underneath.
+  useEffect(() => {
+    if (lobbyReady) hideOverlay();
+  }, [lobbyReady, hideOverlay]);
+
+  // Note: no early-return loading gate here. The full lobby JSX renders
+  // behind the route-spanning overlay so any internal layout work
+  // settles while the loader is up — the overlay fades on lobbyReady to
+  // reveal a stable, fully painted view.
 
   return (
     <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">

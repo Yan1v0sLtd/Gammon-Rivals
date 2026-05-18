@@ -88,7 +88,7 @@ export default function Replay() {
 
   const states = useMemo(() => (data ? reconstructStates(data) : []), [data]);
   const boardParam = params.get('board');
-  const selectedTheme = useBoardThemeConfig(boardParam);
+  const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
   const totalPlies = states.length > 0 ? states.length - 1 : 0;
   const clampedPly = Math.min(Math.max(0, ply), totalPlies);
   const currentBoard = states[clampedPly] ?? null;

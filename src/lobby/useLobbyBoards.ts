@@ -2,13 +2,25 @@ import { useEffect, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { lobbyBoardFromConfig, lobbyBoards, type LobbyBoard } from './lobbyData';
 
-export function useLobbyBoards(): readonly LobbyBoard[] {
+export interface LobbyBoardsResult {
+  readonly boards: readonly LobbyBoard[];
+  /** True while the Supabase fetch for board configs is in flight.
+   *  Stays false when Supabase isn't configured (nothing to wait for). */
+  readonly isLoading: boolean;
+}
+
+export function useLobbyBoards(): LobbyBoardsResult {
   const [boards, setBoards] = useState<readonly LobbyBoard[]>(lobbyBoards);
+  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
 
     let cancelled = false;
+    setIsLoading(true);
     void supabase
       .from('board_theme_configs')
       .select('*')
@@ -17,7 +29,9 @@ export function useLobbyBoards(): readonly LobbyBoard[] {
       // featured board by giving it the biggest number.
       .order('sort_order', { ascending: false })
       .then(({ data, error }) => {
-        if (cancelled || error || !data?.length) return;
+        if (cancelled) return;
+        setIsLoading(false);
+        if (error || !data?.length) return;
         const remoteBoards = data.map(lobbyBoardFromConfig);
         const remoteIds = new Set(remoteBoards.map((board) => board.id));
         setBoards([
@@ -31,5 +45,5 @@ export function useLobbyBoards(): readonly LobbyBoard[] {
     };
   }, []);
 
-  return boards;
+  return { boards, isLoading };
 }

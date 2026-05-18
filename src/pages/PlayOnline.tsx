@@ -40,7 +40,7 @@ export default function PlayOnline() {
   const navigate = useNavigate();
   const game = useOnlineGame(matchId);
   const boardParam = params.get('board');
-  const selectedTheme = useBoardThemeConfig(boardParam);
+  const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
   const [ownerProfile, setOwnerProfile] = useState<ProfileRow | null>(null);
   const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);

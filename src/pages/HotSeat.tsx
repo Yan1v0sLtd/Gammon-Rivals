@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
@@ -19,6 +19,7 @@ import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { createMatch, finishMatch, modeFromAi, saveGame } from '../lib/persistence';
 import {
   makeAIIdentity,
@@ -26,6 +27,28 @@ import {
   type PlayerIdentity,
 } from '../lib/identity';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
+import { useImagePreloader } from '../lib/useImagePreloader';
+
+// Static gameplay chrome — header art, action-button icons, etc. — that
+// every match shares regardless of board theme. Pre-fetched so the
+// game-screen renders fully composed.
+const GAMEPLAY_STATIC_ASSETS: readonly string[] = [
+  '/gameplay/premium-purple/auto.webp',
+  '/gameplay/premium-purple/cube.webp',
+  '/gameplay/premium-purple/double.webp',
+  '/gameplay/premium-purple/end-turn-square.webp',
+  '/gameplay/premium-purple/header.webp',
+  '/gameplay/premium-purple/left-player.webp',
+  '/gameplay/premium-purple/left-timer.webp',
+  '/gameplay/premium-purple/player-stats.webp',
+  '/gameplay/premium-purple/right-player.webp',
+  '/gameplay/premium-purple/right-timer.webp',
+  '/gameplay/premium-purple/roll.webp',
+  '/gameplay/premium-purple/settings.webp',
+  '/gameplay/premium-purple/stats.webp',
+  '/gameplay/premium-purple/undo-square.webp',
+  '/gameplay/premium-purple/undo.webp',
+];
 
 function parseOpponent(raw: string | null): AIConfig | null {
   if (!raw || raw === 'hotseat') return null;
@@ -116,13 +139,14 @@ function loadAlignmentLayout(): ThemeLayout {
 export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
   const { user, profile, wallet, progression, isLoading: authLoading } = useAuth();
 
   const opp = params.get('opp');
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
   const boardParam = params.get('board');
-  const selectedTheme = useBoardThemeConfig(boardParam);
+  const { theme: selectedTheme, isLoading: themeLoading } = useBoardThemeConfig(boardParam);
   const alignmentEnabled = params.get('align') === '1';
   const [alignmentLayout, setAlignmentLayout] = useState<ThemeLayout>(() => loadAlignmentLayout());
   const [alignmentDebug, setAlignmentDebug] = useState<AlignmentDebugSelection>({
@@ -238,12 +262,76 @@ export default function HotSeat() {
     });
   }, [matchId, game.matchOver, game.match]);
 
+  // ---- Asset preload gate ----
+  // Statics + the selected theme's HTML backgrounds and Pixi textures.
+  // Loading them via <img> warms the browser cache so BoardCanvas's
+  // internal Pixi loader hits cache and the board paints with the rest
+  // of the chrome instead of popping in after the surround. Declared
+  // here (rather than just before the return) so dependent effects like
+  // auto-roll can be gated on the same `gameShown` flag.
+  const assetUrls = useMemo<readonly string[]>(() => {
+    const list: string[] = [...GAMEPLAY_STATIC_ASSETS];
+    if (selectedTheme.backgroundImage) list.push(selectedTheme.backgroundImage);
+    if (selectedTheme.gameplayBackgroundImage) {
+      list.push(selectedTheme.gameplayBackgroundImage);
+    }
+    if (selectedTheme.assets) {
+      for (const value of Object.values(selectedTheme.assets)) {
+        if (typeof value === 'string' && value.length > 0) list.push(value);
+      }
+    }
+    return list;
+  }, [selectedTheme]);
+  const { ready: assetsReady } = useImagePreloader(assetUrls);
+  // BoardCanvas reports back when Pixi has actually drawn the first
+  // frame. The loader overlay can only fade once that's true — fading
+  // earlier reveals an empty board area while WebGL is still
+  // initialising. Alignment-tool route bypasses this gate.
+  const [boardReady, setBoardReady] = useState(false);
+  const handleBoardReady = useCallback(() => setBoardReady(true), []);
+  // We defer mounting BoardCanvas until the theme has settled
+  // (Supabase has either returned a remote config or confirmed there
+  // isn't one). Mounting earlier means Pixi initialises with the
+  // fallback theme and has to destroy + re-init when the remote
+  // arrives — which briefly flashes an empty board.
+  const canvasMountAllowed = !themeLoading || alignmentEnabled;
+  // Safety net: if Pixi init errors or stalls AFTER we've allowed the
+  // canvas to mount, don't trap the user on the loader forever.
+  // Reveal after 6s regardless — they'll see whatever the page
+  // rendered, which beats an indefinite spinner.
+  useEffect(() => {
+    if (boardReady) return;
+    if (!canvasMountAllowed) return;
+    const id = window.setTimeout(() => setBoardReady(true), 6000);
+    return () => window.clearTimeout(id);
+  }, [boardReady, canvasMountAllowed]);
+  const gameReady = assetsReady && (boardReady || alignmentEnabled);
+
+  // Cover the screen with the overlay from the moment we mount, even on
+  // a direct/cold load to /hotseat. useLayoutEffect runs before paint
+  // so the overlay is composited in the same frame as the route's
+  // first DOM commit — no flash of half-painted gameplay.
+  useLayoutEffect(() => {
+    if (alignmentEnabled) return;
+    showOverlay();
+  }, [alignmentEnabled, showOverlay]);
+
+  // Once HTML images are cached AND Pixi has painted its first frame,
+  // fade the overlay out to reveal the fully composed game screen.
+  useEffect(() => {
+    if (gameReady) hideOverlay();
+  }, [gameReady, hideOverlay]);
+
   // ---- Auto-roll preference ----
   const [autoRollOn, setAutoRollOn] = useAutoRoll();
   const humanCanInteract = !game.isAITurn && !game.isAIThinking;
   const playerCanRoll =
     game.roll === null && !game.lastGameResult && !game.matchOver && humanCanInteract;
-  useAutoRollEffect(autoRollOn, playerCanRoll, game.rollDice);
+  // Suppress auto-roll until the gameplay UI is fully revealed —
+  // otherwise dice fly in the background while the loading screen is
+  // up and the player sees the dice already settled when the board
+  // appears.
+  useAutoRollEffect(autoRollOn && gameReady, playerCanRoll, game.rollDice);
 
   // ---- Game UI ----
   const handlePointClick = (pos: Position) => {
@@ -348,8 +436,20 @@ export default function HotSeat() {
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
+  // Only hand a real background URL to BoardLayout once the theme has
+  // settled AND the image is preloaded. Before that we'd be passing the
+  // fallback (premium green) URL, which the loader overlay covers — but
+  // if the overlay's fade timing is ever off, an <img src> swap from
+  // fallback → remote leaks through as a flash of the wrong board art.
   const gameplayBackground =
-    selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
+    canvasMountAllowed && assetsReady
+      ? selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage
+      : undefined;
+
+  // Note: no early-return loading gate here. The full JSX (including
+  // BoardCanvas) renders behind the route-spanning overlay so Pixi can
+  // initialise while the loader is up, and onReady can fire to release
+  // the overlay on a fully composed screen.
 
   return (
     <BoardLayout
@@ -425,25 +525,31 @@ export default function HotSeat() {
             match={game.match}
             matchOver={game.matchOver}
             onNextGame={game.nextGame}
-            onNewMatch={() => navigate('/')}
+            onNewMatch={() => {
+              showOverlay();
+              navigate('/');
+            }}
           />
         ) : null
       }
     >
-      <BoardCanvas
-        state={game.board}
-        theme={selectedTheme}
-        layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
-        selection={{
-          selectedFrom: !alignmentEnabled && humanCanInteract ? game.selectedFrom : null,
-          validDestinations: !alignmentEnabled && humanCanInteract ? game.validDestinations : [],
-          legalOrigins: !alignmentEnabled && humanCanInteract ? game.legalOrigins : [],
-          opponentOrigins: alignmentEnabled ? [] : game.opponentPreviewOrigins,
-          opponentDestinations: alignmentEnabled ? [] : game.opponentPreviewDestinations,
-          alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
-        }}
-        onPointClick={alignmentEnabled ? undefined : handlePointClick}
-      />
+      {canvasMountAllowed ? (
+        <BoardCanvas
+          state={game.board}
+          theme={selectedTheme}
+          layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
+          selection={{
+            selectedFrom: !alignmentEnabled && humanCanInteract ? game.selectedFrom : null,
+            validDestinations: !alignmentEnabled && humanCanInteract ? game.validDestinations : [],
+            legalOrigins: !alignmentEnabled && humanCanInteract ? game.legalOrigins : [],
+            opponentOrigins: alignmentEnabled ? [] : game.opponentPreviewOrigins,
+            opponentDestinations: alignmentEnabled ? [] : game.opponentPreviewDestinations,
+            alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
+          }}
+          onPointClick={alignmentEnabled ? undefined : handlePointClick}
+          onReady={handleBoardReady}
+        />
+      ) : null}
       <DiceTray
         roll={game.roll}
         remaining={game.remaining}

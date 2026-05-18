@@ -10,6 +10,11 @@ interface Props {
   layoutOverride?: ThemeLayout;
   selection?: RenderSelection;
   onPointClick?: (pos: Position) => void;
+  /** Fires once Pixi has finished initialising and the first board
+   *  frame has been rendered. Lets the surrounding route hold its
+   *  loader overlay open until the WebGL surface is actually painted,
+   *  instead of fading on HTML-image readiness alone. */
+  onReady?: () => void;
 }
 
 export default function BoardCanvas({
@@ -18,6 +23,7 @@ export default function BoardCanvas({
   layoutOverride,
   selection,
   onPointClick,
+  onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -27,6 +33,12 @@ export default function BoardCanvas({
   const selectionRef = useRef(selection);
   const clickRef = useRef(onPointClick);
   const layoutOverrideRef = useRef(layoutOverride);
+  // Held in a ref so the init effect (theme-keyed) doesn't have to
+  // re-run just because the parent passed a new onReady identity.
+  const onReadyRef = useRef(onReady);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -71,6 +83,26 @@ export default function BoardCanvas({
       renderer.setOnPointClick((pos) => clickRef.current?.(pos));
       rendererRef.current = renderer;
       renderLatest();
+
+      // renderer.render() only updates Pixi's scene graph; the actual
+      // GPU draw happens on the next ticker tick (rAF). If we fire
+      // onReady immediately, the overlay can start fading on a canvas
+      // that's still blank, briefly exposing the underlying layout.
+      // Force a synchronous render so the canvas is composited before
+      // we signal ready. Wrapped in try because in some pixi build
+      // variants the renderer.render shape differs slightly; the
+      // double-rAF fallback below covers that.
+      try {
+        app.renderer.render({ container: app.stage });
+      } catch {
+        // ignore — fall through to the rAF wait below
+      }
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          onReadyRef.current?.();
+        });
+      });
 
       resizeObserver = new ResizeObserver(renderLatest);
       resizeObserver.observe(container);
