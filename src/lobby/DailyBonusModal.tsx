@@ -164,11 +164,11 @@ function DayCard({
   return (
     <div className={outerClass}>
       <div
-        className={`relative flex flex-col items-center overflow-hidden rounded-[14px] ${innerBg} px-3 py-3`}
+        className={`relative flex flex-col overflow-hidden rounded-[14px] ${innerBg}`}
       >
         {/* Diagonal CLAIMED ribbon — top-left corner */}
         {isClaimed ? (
-          <div className="pointer-events-none absolute -left-px -top-px h-24 w-24 overflow-hidden">
+          <div className="pointer-events-none absolute -left-px -top-px z-10 h-24 w-24 overflow-hidden">
             <div className="absolute -left-7 top-4 origin-center -rotate-45 bg-gradient-to-b from-emerald-500 to-emerald-700 px-9 py-1 font-display text-[clamp(0.55rem,1.1vw,0.8rem)] font-black uppercase tracking-[0.18em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
               Claimed
             </div>
@@ -177,7 +177,7 @@ function DayCard({
 
         {/* Green check circle — top-right */}
         {isClaimed ? (
-          <div className="pointer-events-none absolute right-2 top-2 grid h-[clamp(1.5rem,3vw,2.25rem)] w-[clamp(1.5rem,3vw,2.25rem)] place-items-center rounded-full border-[3px] border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
+          <div className="pointer-events-none absolute right-2 top-2 z-10 grid h-[clamp(1.5rem,3vw,2.25rem)] w-[clamp(1.5rem,3vw,2.25rem)] place-items-center rounded-full border-[3px] border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
             <svg
               viewBox="0 0 24 24"
               className="h-[60%] w-[60%]"
@@ -193,34 +193,44 @@ function DayCard({
           </div>
         ) : null}
 
-        {/* Header: ✦ DAY N ✦ */}
-        <div className="flex items-center gap-2">
-          <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
-          <span className="whitespace-nowrap font-display text-[clamp(0.7rem,1.5vw,1.05rem)] font-black uppercase tracking-[0.14em] text-[#3a1f08]">
-            Day&nbsp;{day}
-          </span>
-          <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
-        </div>
-        <div className="mx-auto mt-1 h-px w-[60%] bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
+        {/* TOP section: header + reward chip(s). Takes remaining vertical
+         *  space so the bottom strip stays a consistent visual band on
+         *  every card. */}
+        <div className="flex flex-1 flex-col items-center px-3 pb-2 pt-3">
+          {/* Header: ✦ DAY N ✦ */}
+          <div className="flex items-center gap-2">
+            <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
+            <span className="whitespace-nowrap font-display text-[clamp(0.7rem,1.5vw,1.05rem)] font-black uppercase tracking-[0.14em] text-[#3a1f08]">
+              Day&nbsp;{day}
+            </span>
+            <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
+          </div>
+          <div className="mx-auto mt-1 h-px w-[60%] bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
 
-        {/* Reward content — horizontal icon+value pair(s) */}
-        <div
-          className={`mt-2 flex flex-1 items-center justify-center gap-${fullWidth ? '6' : '2'}`}
-        >
-          {chips}
-        </div>
-
-        {/* Active card gets a small Claim button under the reward */}
-        {isActive ? (
-          <button
-            type="button"
-            disabled={isClaiming}
-            onClick={onClaim}
-            className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[clamp(0.65rem,1.3vw,1rem)] font-black uppercase tracking-[0.12em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+          {/* Reward content — horizontal icon+value pair(s) */}
+          <div
+            className={`mt-2 flex flex-1 items-center justify-center ${fullWidth ? 'gap-6' : 'gap-2'}`}
           >
-            {isClaiming ? '…' : 'Claim'}
-          </button>
-        ) : null}
+            {chips}
+          </div>
+        </div>
+
+        {/* BOTTOM strip — consistent darker band across all cards.
+         *  Active cards host the Claim button here; locked / claimed
+         *  cards leave it visually empty so every box has the same
+         *  two-tone "reward zone + action zone" footprint. */}
+        <div className="flex min-h-[clamp(2rem,3.5vw,2.75rem)] items-center justify-center border-t border-amber-300/50 bg-amber-200/35 px-3 py-1.5">
+          {isActive ? (
+            <button
+              type="button"
+              disabled={isClaiming}
+              onClick={onClaim}
+              className="whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1 font-display text-[clamp(0.65rem,1.3vw,1rem)] font-black uppercase tracking-[0.12em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isClaiming ? '…' : 'Claim'}
+            </button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
