@@ -209,51 +209,91 @@ export function DailyBonusModal({
       ref={rootRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3"
     >
-      {/* Modal contents float directly on the dimmed backdrop — no card frame. */}
-      <div className="w-full max-w-4xl px-2">
-        {/* Title with gold gradient + decorative ornaments */}
-        <div className="flex items-center justify-center gap-4">
-          <span className="text-lg text-amber-300/90">◆</span>
-          <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-300/80" />
-          <h2 className="bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#b45309] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)] md:text-4xl">
-            Daily Bonus
-          </h2>
-          <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/80" />
-          <span className="text-lg text-amber-300/90">◆</span>
-        </div>
-        <div className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-amber-100/85 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-          <span className="text-amber-300/90">✦</span>
-          <span>Come back every day to claim more rewards!</span>
-          <span className="text-amber-300/90">✦</span>
-        </div>
+      {/* OUTER thick gold gradient frame. The two stacked padding layers
+       *  give a "double-band" effect — a brighter outer rim, then a
+       *  slightly darker mid-band, then the cream interior. */}
+      <div className="relative w-full max-w-4xl rounded-[28px] bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[6px] shadow-[0_25px_60px_rgba(0,0,0,0.65),inset_0_2px_0_rgba(255,255,255,0.55)]">
+        <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
+          <div className="relative rounded-[20px] bg-gradient-to-b from-[#fefaf3] to-[#f7ead0] px-5 pb-7 pt-7 shadow-[inset_0_2px_4px_rgba(120,53,15,0.12)]">
+            {/* Top-center decorative gold lozenge — a rotated square
+             *  with a faceted gradient, sitting astride the frame's
+             *  top edge. */}
+            <div
+              aria-hidden="true"
+              className="absolute -top-[14px] left-1/2 z-20 h-6 w-6 -translate-x-1/2 rotate-45 rounded-[3px] bg-gradient-to-br from-[#fef08a] via-[#f59e0b] to-[#7c2d12] shadow-[0_3px_8px_rgba(120,53,15,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
+            />
+            {/* Bottom-center decorative gold lozenge. */}
+            <div
+              aria-hidden="true"
+              className="absolute -bottom-[14px] left-1/2 z-20 h-6 w-6 -translate-x-1/2 rotate-45 rounded-[3px] bg-gradient-to-br from-[#fef08a] via-[#f59e0b] to-[#7c2d12] shadow-[0_3px_8px_rgba(120,53,15,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
+            />
+            {/* Four corner accents — small L-shaped gold strokes that
+             *  echo the reference's "filigree" feel without an asset. */}
+            <CornerAccent className="left-2 top-2" />
+            <CornerAccent className="right-2 top-2 -scale-x-100" />
+            <CornerAccent className="left-2 bottom-2 -scale-y-100" />
+            <CornerAccent className="right-2 bottom-2 -scale-100" />
 
-        {/* 7 day cards. items-end so Day 7's extra height pokes up. */}
-        <div className="mt-6 grid grid-cols-7 items-end gap-2">
-          {[1, 2, 3, 4, 5, 6, 7].map((day) => {
-            const cfg = byDay.get(day);
-            const isActive = day === upcomingDay && canClaim && !justClaimed;
-            const isClaimed = !!justClaimed && day === justClaimed.day;
-            return (
-              <DayCard
-                key={day}
-                day={day}
-                gems={cfg?.reward_gems ?? 0}
-                isActive={isActive}
-                isClaimed={isClaimed}
-                isMilestone={day === 7}
-                isClaiming={isClaiming}
-                onClaim={onClaim}
-              />
-            );
-          })}
-        </div>
+            {/* Title with gold gradient + decorative ornaments */}
+            <div className="flex items-center justify-center gap-4">
+              <span className="text-lg text-amber-500/80">◆</span>
+              <span className="h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-amber-600/80" />
+              <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] md:text-4xl">
+                Daily Bonus
+              </h2>
+              <span className="h-px w-12 bg-gradient-to-l from-transparent via-amber-500/70 to-amber-600/80" />
+              <span className="text-lg text-amber-500/80">◆</span>
+            </div>
+            <div className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-amber-900/65">
+              <span className="text-amber-500/80">✦</span>
+              <span>Come back every day to claim more rewards!</span>
+              <span className="text-amber-500/80">✦</span>
+            </div>
 
-        {errorMessage ? (
-          <div className="mt-4 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-2 text-center text-xs font-bold text-rose-900">
-            {errorMessage}
+            {/* 7 day cards. items-end so Day 7's extra height pokes up. */}
+            <div className="mt-6 grid grid-cols-7 items-end gap-2">
+              {[1, 2, 3, 4, 5, 6, 7].map((day) => {
+                const cfg = byDay.get(day);
+                const isActive = day === upcomingDay && canClaim && !justClaimed;
+                const isClaimed = !!justClaimed && day === justClaimed.day;
+                return (
+                  <DayCard
+                    key={day}
+                    day={day}
+                    gems={cfg?.reward_gems ?? 0}
+                    isActive={isActive}
+                    isClaimed={isClaimed}
+                    isMilestone={day === 7}
+                    isClaiming={isClaiming}
+                    onClaim={onClaim}
+                  />
+                );
+              })}
+            </div>
+
+            {errorMessage ? (
+              <div className="mt-4 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-2 text-center text-xs font-bold text-rose-900">
+                {errorMessage}
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Two perpendicular gold strokes in the corner of the inner cream
+ *  area. Tailwind `-scale-x-100` / `-scale-y-100` are used by the caller
+ *  to mirror the same artwork into the other three corners. */
+function CornerAccent({ className }: { readonly className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute z-10 h-7 w-7 ${className}`}
+    >
+      <span className="absolute left-0 top-0 h-[2px] w-7 rounded-full bg-gradient-to-r from-[#92400e] via-[#d97706] to-transparent" />
+      <span className="absolute left-0 top-0 h-7 w-[2px] rounded-full bg-gradient-to-b from-[#92400e] via-[#d97706] to-transparent" />
+    </span>
   );
 }
