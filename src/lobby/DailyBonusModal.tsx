@@ -249,7 +249,7 @@ export function DailyBonusModal({
        * Asset: /public/lobby/daily-bonus/frame.webp
        */}
       <div
-        className="relative flex w-full origin-center scale-[0.88] aspect-[1488/983] flex-col bg-no-repeat px-[5%] pb-[7%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)] lg:scale-[0.8]"
+        className="relative flex w-full origin-center scale-[0.704] aspect-[1488/983] flex-col bg-no-repeat px-[5%] pb-[7%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)] lg:scale-[0.64]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
