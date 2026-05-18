@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
@@ -481,7 +481,7 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
           <span className="text-amber-500">✦</span>
           <span className="h-px flex-1 max-w-[6rem] bg-gradient-to-l from-transparent to-amber-500/60" />
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-6 gap-3">
           {TOP_OFFERS.map((offer) => (
             <TopOfferCard
               key={offer.id}
@@ -493,7 +493,7 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
       </section>
 
       {/* Daily Deals + Monthly Pass row */}
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
         {/* Daily Deals */}
         <div className="rounded-xl border border-amber-300/60 bg-gradient-to-b from-[#fdf6e3] to-[#f0e1b8] p-3 shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -505,7 +505,7 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
               <span>Refreshes in: 12h 45m</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-4 gap-2">
             {DAILY_DEALS.map((deal) => (
               <DailyDealCard key={deal.id} deal={deal} onBuy={() => onStubbedBuy(`${deal.priceGems} gem purchase`)} />
             ))}
@@ -523,11 +523,38 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
 // Top-level Shop screen
 // -----------------------------------------------------------------------------
 
+// Natural design size of the shop panel. The scale-to-fit wrapper below
+// shrinks this to whatever the viewport allows. Bumping these means the
+// panel can render larger on big screens before getting capped at scale 1.
+const PANEL_DESIGN_W = 1280;
+const PANEL_DESIGN_H = 640;
+
 export default function Shop() {
   const navigate = useNavigate();
   const { wallet } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [stubMessage, setStubMessage] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+
+  // Compute the scale-to-fit factor on mount and on every resize. CSS
+  // `scale(calc(... vw / 1280))` doesn't work because `vw` is a length
+  // and `scale()` needs a unitless number — so we measure window
+  // dimensions in JS and pass a plain number into the transform.
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const s = Math.min(
+        1,
+        (w * 0.98) / PANEL_DESIGN_W,
+        (h * 0.96) / PANEL_DESIGN_H
+      );
+      setScale(s);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const onStubbedBuy = (label: string) => {
     setStubMessage(label);
@@ -535,28 +562,43 @@ export default function Shop() {
   };
 
   return (
-    <main className="relative min-h-dvh bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)] text-white">
-      <div className="mx-auto flex max-w-7xl flex-col">
-        {/* Decorative parchment panel */}
-        <div className="relative m-3 overflow-hidden rounded-3xl border-[5px] border-[#c89a47] bg-gradient-to-b from-[#fef3c7] via-[#f7e9c8] to-[#e7d09a] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
-          <ShopTopBar
-            gems={wallet?.gems ?? 0}
-            coins={wallet?.coins ?? 0}
-            onBack={() => navigate(-1)}
-            onClose={() => navigate('/')}
-          />
+    <main className="relative flex h-dvh w-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)] text-white">
+      {/*
+       * Scale-to-fit wrapper. The panel is authored at its natural
+       * desktop size (~1280 × 620). On any viewport smaller than that,
+       * we shrink the whole panel by min(viewport_w/panel_w, viewport_h/
+       * panel_h) so the entire shop is always visible at once without
+       * scrolling. On big viewports the scale clamps to 1 — no growth
+       * beyond design size.
+       */}
+      <div
+        className="origin-center"
+        style={{
+          transform: `scale(${scale})`,
+        }}
+      >
+        <div className="w-[1280px]">
+          {/* Decorative parchment panel */}
+          <div className="relative overflow-hidden rounded-3xl border-[5px] border-[#c89a47] bg-gradient-to-b from-[#fef3c7] via-[#f7e9c8] to-[#e7d09a] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
+            <ShopTopBar
+              gems={wallet?.gems ?? 0}
+              coins={wallet?.coins ?? 0}
+              onBack={() => navigate(-1)}
+              onClose={() => navigate('/')}
+            />
 
-          <div className="flex">
-            <ShopSidebar active={activeTab} onSelect={setActiveTab} />
+            <div className="flex">
+              <ShopSidebar active={activeTab} onSelect={setActiveTab} />
 
-            <div className="min-w-0 flex-1 rounded-tl-2xl bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] p-4">
-              {activeTab === 'featured' ? (
-                <FeaturedView onStubbedBuy={onStubbedBuy} />
-              ) : (
-                <div className="grid place-items-center py-12 text-amber-900/60 font-display text-sm font-bold uppercase tracking-widest">
-                  {activeTab} — coming soon
-                </div>
-              )}
+              <div className="min-w-0 flex-1 rounded-tl-2xl bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] p-4">
+                {activeTab === 'featured' ? (
+                  <FeaturedView onStubbedBuy={onStubbedBuy} />
+                ) : (
+                  <div className="grid place-items-center py-12 text-amber-900/60 font-display text-sm font-bold uppercase tracking-widest">
+                    {activeTab} — coming soon
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
