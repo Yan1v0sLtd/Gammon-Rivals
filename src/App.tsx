@@ -13,6 +13,7 @@ const PlayOnline = lazy(() => import('./pages/PlayOnline'));
 const JoinMatch = lazy(() => import('./pages/JoinMatch'));
 const Lobby = lazy(() => import('./pages/Lobby'));
 const Admin = lazy(() => import('./pages/Admin'));
+const Shop = lazy(() => import('./pages/Shop'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/play/:matchId" element={<AuthGate><PlayOnline /></AuthGate>} />
           <Route path="/join/:code" element={<AuthGate><JoinMatch /></AuthGate>} />
           <Route path="/lobby" element={<AuthGate><Lobby /></AuthGate>} />
+          <Route path="/shop" element={<AuthGate><Shop /></AuthGate>} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </Suspense>
