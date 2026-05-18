@@ -378,6 +378,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      daily_bonus_configs: {
+        Row: {
+          day: number;
+          reward_coins: number;
+          reward_gems: number;
+          reward_xp: number;
+          reward_items: Json;
+          metadata: Json;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          day: number;
+          reward_coins?: number;
+          reward_gems?: number;
+          reward_xp?: number;
+          reward_items?: Json;
+          metadata?: Json;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          day?: number;
+          reward_coins?: number;
+          reward_gems?: number;
+          reward_xp?: number;
+          reward_items?: Json;
+          metadata?: Json;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       level_configs: {
         Row: {
           level: number;
@@ -579,6 +615,33 @@ export type Database = {
           source?: 'default' | 'purchase' | 'level_reward' | 'admin_grant' | 'bundle';
           granted_by?: string | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_daily_bonuses: {
+        Row: {
+          profile_id: string;
+          current_day: number;
+          last_claim_date_et: string | null;
+          last_claim_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          profile_id: string;
+          current_day?: number;
+          last_claim_date_et?: string | null;
+          last_claim_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          profile_id?: string;
+          current_day?: number;
+          last_claim_date_et?: string | null;
+          last_claim_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
