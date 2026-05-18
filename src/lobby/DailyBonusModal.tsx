@@ -1,4 +1,4 @@
-// Visual redesign — gold tab header, sparkles, crown on Day 7.
+import { useRef } from 'react';
 import type { DailyBonusConfig } from './useDailyBonus';
 
 interface DailyBonusModalProps {
@@ -10,8 +10,8 @@ interface DailyBonusModalProps {
   readonly canClaim: boolean;
   readonly isClaiming: boolean;
   readonly errorMessage: string | null;
-  /** Server response from claim_daily_bonus, shown as a "you got X" celebration
-   *  banner once the claim lands. Null until a claim succeeds. */
+  /** Server response from claim_daily_bonus. Drives the CLAIMED state on
+   *  the claimed day card. Null until a claim succeeds. */
   readonly justClaimed: {
     readonly day: number;
     readonly coins: number;
@@ -19,7 +19,6 @@ interface DailyBonusModalProps {
     readonly xp: number;
   } | null;
   readonly onClaim: () => void;
-  readonly onClose: () => void;
 }
 
 interface DayCardProps {
@@ -27,6 +26,9 @@ interface DayCardProps {
   readonly gems: number;
   /** True for the day the player can claim right now (gold frame + Claim). */
   readonly isActive: boolean;
+  /** True for the day that was just successfully claimed (gold frame +
+   *  checkmark + 'CLAIMED' label). */
+  readonly isClaimed: boolean;
   /** True for Day 7 — slightly taller, crown above. */
   readonly isMilestone: boolean;
   readonly isClaiming: boolean;
@@ -34,8 +36,6 @@ interface DayCardProps {
 }
 
 function Sparkles() {
-  // Tiny absolutely-positioned glyphs inside the active card to evoke
-  // the sparkle particles in the reference. Pure CSS, no assets.
   return (
     <>
       <span className="pointer-events-none absolute left-[18%] top-[22%] text-[10px] text-amber-400/85">✦</span>
@@ -47,12 +47,19 @@ function Sparkles() {
   );
 }
 
-function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayCardProps) {
+function DayCard({
+  day,
+  gems,
+  isActive,
+  isClaimed,
+  isMilestone,
+  isClaiming,
+  onClaim,
+}: DayCardProps) {
   const cardHeight = isMilestone ? 'min-h-[16rem]' : 'min-h-[14.5rem]';
 
+  // ACTIVE: claimable now. Gold frame + tab + Claim button.
   if (isActive) {
-    // Highlighted card with thick gold gradient frame + outer glow,
-    // tab-style header on top, sparkle particles, and a Claim button.
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
@@ -68,7 +75,6 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
           <div
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-2 pt-6 ${cardHeight}`}
           >
-            {/* Tab-style header */}
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
               <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
@@ -77,11 +83,11 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
 
             <Sparkles />
 
-            {/* Gem + amount, vertically centered in the upper region */}
             <div className="flex flex-1 flex-col items-center justify-center gap-1">
               <img
                 src="/lobby/carousel/gem.webp"
                 alt=""
+                data-fly-source="gems"
                 className="h-12 w-12 select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
                 draggable={false}
               />
@@ -90,7 +96,6 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
               </div>
             </div>
 
-            {/* Claim button anchored at the bottom of the card */}
             <button
               type="button"
               disabled={isClaiming}
@@ -105,7 +110,51 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
     );
   }
 
-  // Locked / future / past day — neutral cream card with lock at bottom.
+  // CLAIMED: just successfully claimed this session. Gold frame stays,
+  // gem is replaced by a green check, 'CLAIMED' label replaces the button.
+  if (isClaimed) {
+    return (
+      <div className="relative flex flex-col">
+        {isMilestone ? (
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-2xl drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+            👑
+          </div>
+        ) : null}
+        <div
+          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
+            isMilestone ? 'mt-2' : ''
+          }`}
+        >
+          <div
+            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-2 pt-6 ${cardHeight}`}
+          >
+            <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-md">
+                Day&nbsp;{day}
+              </div>
+            </div>
+
+            <Sparkles />
+
+            <div className="flex flex-1 flex-col items-center justify-center gap-1">
+              {/* White circle with green check */}
+              <div className="grid h-14 w-14 place-items-center rounded-full border-2 border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
+                <svg viewBox="0 0 24 24" className="h-8 w-8 stroke-emerald-600" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="4 12 10 18 20 6" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="mt-2 whitespace-nowrap text-center font-display text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+              Claimed
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // LOCKED / future / past day — neutral cream card with lock at bottom.
   return (
     <div className="relative flex flex-col">
       {isMilestone ? (
@@ -118,13 +167,11 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
           isMilestone ? 'mt-2' : ''
         }`}
       >
-        {/* "Day N" header + thin gold divider */}
         <div className="whitespace-nowrap text-center font-display text-[11px] font-bold uppercase tracking-[0.14em] text-amber-900/70">
           Day&nbsp;{day}
         </div>
         <div className="mx-auto mt-1 h-px w-10 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
 
-        {/* Gem + amount, dimmed */}
         <div className="flex flex-1 flex-col items-center justify-center gap-1 opacity-65">
           <img
             src="/lobby/carousel/gem.webp"
@@ -137,7 +184,6 @@ function DayCard({ day, gems, isActive, isMilestone, isClaiming, onClaim }: DayC
           </div>
         </div>
 
-        {/* Bottom strip with lock icon */}
         <div className="-mx-2 mt-1 border-t border-amber-200/70 bg-amber-50/40 px-2 py-2">
           <div className="text-center text-amber-900/45">🔒</div>
         </div>
@@ -154,43 +200,46 @@ export function DailyBonusModal({
   errorMessage,
   justClaimed,
   onClaim,
-  onClose,
 }: DailyBonusModalProps) {
   const byDay = new Map(configs.map((c) => [c.day, c]));
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
-      <div className="w-full max-w-4xl rounded-2xl border border-amber-200 bg-gradient-to-b from-[#fefaf3] to-[#f7ead0] px-5 pb-5 pt-6 shadow-2xl">
+    <div
+      ref={rootRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-3"
+    >
+      {/* Modal contents float directly on the dimmed backdrop — no card frame. */}
+      <div className="w-full max-w-4xl px-2">
         {/* Title with gold gradient + decorative ornaments */}
         <div className="flex items-center justify-center gap-4">
-          <span className="text-lg text-amber-400/80">◆</span>
-          <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-500/60" />
-          <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] md:text-4xl">
+          <span className="text-lg text-amber-300/90">◆</span>
+          <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-300/80" />
+          <h2 className="bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#b45309] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)] md:text-4xl">
             Daily Bonus
           </h2>
-          <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-500/60" />
-          <span className="text-lg text-amber-400/80">◆</span>
+          <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-300/80" />
+          <span className="text-lg text-amber-300/90">◆</span>
         </div>
-        <div className="mt-1 flex items-center justify-center gap-2 text-xs text-amber-900/70">
-          <span className="text-amber-400/70">✦</span>
-          <span>
-            {canClaim
-              ? 'Come back every day to claim more rewards!'
-              : 'Come back tomorrow for more rewards!'}
-          </span>
-          <span className="text-amber-400/70">✦</span>
+        <div className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-amber-100/85 drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+          <span className="text-amber-300/90">✦</span>
+          <span>Come back every day to claim more rewards!</span>
+          <span className="text-amber-300/90">✦</span>
         </div>
 
         {/* 7 day cards. items-end so Day 7's extra height pokes up. */}
         <div className="mt-6 grid grid-cols-7 items-end gap-2">
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const cfg = byDay.get(day);
+            const isActive = day === upcomingDay && canClaim && !justClaimed;
+            const isClaimed = !!justClaimed && day === justClaimed.day;
             return (
               <DayCard
                 key={day}
                 day={day}
                 gems={cfg?.reward_gems ?? 0}
-                isActive={day === upcomingDay && canClaim && !justClaimed}
+                isActive={isActive}
+                isClaimed={isClaimed}
                 isMilestone={day === 7}
                 isClaiming={isClaiming}
                 onClaim={onClaim}
@@ -199,38 +248,11 @@ export function DailyBonusModal({
           })}
         </div>
 
-        {/* Status banners */}
-        {justClaimed ? (
-          <div className="mt-4 rounded-lg border border-emerald-700/40 bg-emerald-50 px-4 py-2 text-center text-sm font-bold text-emerald-900">
-            Day {justClaimed.day} claimed!
-            <div className="mt-1 flex flex-wrap items-center justify-center gap-3 text-xs">
-              {justClaimed.coins > 0 ? <span>+{justClaimed.coins.toLocaleString()} coins</span> : null}
-              {justClaimed.gems > 0 ? <span>+{justClaimed.gems.toLocaleString()} gems</span> : null}
-              {justClaimed.xp > 0 ? <span>+{justClaimed.xp.toLocaleString()} XP</span> : null}
-            </div>
-          </div>
-        ) : !canClaim ? (
-          <div className="mt-4 rounded-lg border border-amber-700/40 bg-amber-100/70 px-4 py-2 text-center text-sm font-bold text-amber-900">
-            You've already claimed today. Come back tomorrow!
-          </div>
-        ) : null}
-
         {errorMessage ? (
-          <div className="mt-3 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-2 text-center text-xs font-bold text-rose-900">
+          <div className="mt-4 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-2 text-center text-xs font-bold text-rose-900">
             {errorMessage}
           </div>
         ) : null}
-
-        <div className="mt-4 flex justify-center">
-          <button
-            type="button"
-            disabled={isClaiming}
-            onClick={onClose}
-            className="rounded-md border border-stone-700/50 bg-stone-700 px-6 py-2 font-display text-sm font-bold uppercase tracking-[0.12em] text-stone-50 shadow transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import { LobbyBottomNav } from './LobbyBottomNav';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
+import { RewardFlight, type RewardFlightSpec, type FlightCurrency } from './RewardFlight';
 import { useDailyBonus } from './useDailyBonus';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
@@ -75,7 +76,7 @@ function LobbyBackgroundLayer({
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
-  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
+  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
@@ -96,6 +97,8 @@ export function LobbyScreen() {
     xp: number;
   } | null>(null);
   const autoOpenedDailyBonusRef = useRef(false);
+  const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
+  const nextFlightIdRef = useRef(0);
 
   const boardStateOf = (board: LobbyBoard) =>
     computeBoardState({
@@ -174,11 +177,37 @@ export function LobbyScreen() {
     setDailyBonusOpen(true);
   };
 
-  const closeDailyBonus = () => {
-    if (isClaimingDailyBonus) return;
-    setDailyBonusOpen(false);
-    setDailyBonusError(null);
-    setJustClaimedBonus(null);
+  /** Spawn a burst of flying tokens from the just-claimed day card's gem
+   *  to the matching wallet pill in the top bar. Coins fly to the coins
+   *  pill; gems fly to the gems pill. Each currency gets `count` tokens
+   *  with a small staggered delay so the flight reads as a stream. */
+  const spawnFlights = (currency: FlightCurrency, sourceEl: Element, count: number) => {
+    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
+    if (!target) return;
+    const src = sourceEl.getBoundingClientRect();
+    const dst = target.getBoundingClientRect();
+    const startX = src.left + src.width / 2;
+    const startY = src.top + src.height / 2;
+    const endX = dst.left + dst.width / 2;
+    const endY = dst.top + dst.height / 2;
+    const additions: RewardFlightSpec[] = [];
+    for (let i = 0; i < count; i++) {
+      additions.push({
+        id: nextFlightIdRef.current++,
+        currency,
+        startX: startX + (Math.random() - 0.5) * 14,
+        startY: startY + (Math.random() - 0.5) * 14,
+        endX,
+        endY,
+        delayMs: i * 70,
+        durationMs: 800,
+      });
+    }
+    setRewardFlights((prev) => [...prev, ...additions]);
+  };
+
+  const removeFlight = (id: number) => {
+    setRewardFlights((prev) => prev.filter((f) => f.id !== id));
   };
 
   const claimDailyBonus = async () => {
@@ -187,6 +216,10 @@ export function LobbyScreen() {
       setDailyBonusError('Sign in to claim daily bonuses.');
       return;
     }
+    // Capture the source element BEFORE the modal re-renders into its
+    // claimed state (which removes the gem icon).
+    const sourceEl = document.querySelector('[data-fly-source="gems"]');
+
     setIsClaimingDailyBonus(true);
     setDailyBonusError(null);
     const { data, error } = await supabase.rpc('claim_daily_bonus');
@@ -195,29 +228,48 @@ export function LobbyScreen() {
       setDailyBonusError(dailyBonusErrorMessage(error.message));
       return;
     }
-    // RPC returns jsonb; we typed it as Json so we coerce here.
     const payload = data as {
       day_claimed?: number;
       reward_coins?: number;
       reward_gems?: number;
       reward_xp?: number;
     } | null;
-    if (payload && typeof payload.day_claimed === 'number') {
-      setJustClaimedBonus({
-        day: payload.day_claimed,
-        coins: payload.reward_coins ?? 0,
-        gems: payload.reward_gems ?? 0,
-        xp: payload.reward_xp ?? 0,
-      });
+    if (!payload || typeof payload.day_claimed !== 'number') return;
+
+    const reward = {
+      day: payload.day_claimed,
+      coins: payload.reward_coins ?? 0,
+      gems: payload.reward_gems ?? 0,
+      xp: payload.reward_xp ?? 0,
+    };
+    setJustClaimedBonus(reward);
+
+    // Spawn the flying tokens before refreshing the wallet so the user
+    // sees the coins / gems travel and *then* land on a bumped balance.
+    if (sourceEl) {
+      if (reward.gems > 0) spawnFlights('gems', sourceEl, 6);
+      if (reward.coins > 0) spawnFlights('coins', sourceEl, 6);
     }
+
+    // Refresh streak state (so canClaim flips to false) and wallet (so
+    // the top-bar counter ticks up around the time the flights land).
     dailyBonus.refetch();
+    window.setTimeout(() => {
+      void refreshWallet();
+    }, 600);
+
+    // Hold the modal open long enough to see the CLAIMED card and the
+    // flight, then auto-dismiss.
+    window.setTimeout(() => {
+      setDailyBonusOpen(false);
+      setJustClaimedBonus(null);
+    }, 1800);
   };
 
   // Auto-popup the daily bonus modal once per lobby session if the player
-  // can claim. autoOpenedDailyBonusRef guards against re-opening if the
-  // player dismisses it without claiming (they can still re-open via the
-  // side card). canClaim flips to false after a successful claim, so we
-  // won't auto-popup again the same day.
+  // can claim. canClaim flips to false after a successful claim, so we
+  // won't auto-popup again the same day. With the close button removed,
+  // the modal is now claim-only — never opens when there's nothing to do.
   useEffect(() => {
     if (autoOpenedDailyBonusRef.current) return;
     if (!user || !dailyBonus.canClaim || dailyBonus.isLoading) return;
@@ -349,7 +401,7 @@ export function LobbyScreen() {
         <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
           <LobbySideOffers
             onOfferClick={(offerId) => {
-              if (offerId === 'daily') openDailyBonus();
+              if (offerId === 'daily' && dailyBonus.canClaim) openDailyBonus();
             }}
           />
 
@@ -431,9 +483,13 @@ export function LobbyScreen() {
           errorMessage={dailyBonusError}
           justClaimed={justClaimedBonus}
           onClaim={claimDailyBonus}
-          onClose={closeDailyBonus}
         />
       ) : null}
+
+      {/* Flying coin / gem tokens rendered above everything else. */}
+      {rewardFlights.map((spec) => (
+        <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
+      ))}
     </main>
   );
 }

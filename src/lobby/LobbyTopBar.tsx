@@ -17,10 +17,12 @@ interface LobbyTopBarProps {
 }
 
 function CurrencyPill({
+  flyTarget,
   label,
   value,
   icon,
 }: {
+  readonly flyTarget: 'coins' | 'gems';
   readonly label: string;
   readonly value: string;
   readonly icon: string;
@@ -28,6 +30,7 @@ function CurrencyPill({
   return (
     <div
       aria-label={`${label}: ${value}`}
+      data-fly-target={flyTarget}
       className="lobby-currency-pill relative flex h-12 min-w-[8.55rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
       <span className="lobby-currency-icon -ml-4 grid h-14 w-14 shrink-0 place-items-center">
@@ -96,12 +99,14 @@ export function LobbyTopBar({
   const currencies = [
     {
       id: 'coins',
+      flyTarget: 'coins',
       label: 'Coins',
       value: formatCompactNumber(wallet?.coins),
       icon: '/lobby/icons/gold-coin.webp',
     },
     {
       id: 'gems',
+      flyTarget: 'gems',
       label: 'Gems',
       value: formatCompactNumber(wallet?.gems),
       icon: '/lobby/icons/gem.webp',

@@ -80,6 +80,10 @@ export interface AuthContextValue {
   signOut(): Promise<void>;
   setDisplayName(name: string): Promise<void>;
   refreshProfile(): Promise<void>;
+  /** Force a fresh fetch of the wallet row. Use after an RPC that mutates
+   *  user_wallets (e.g. claim_daily_bonus, purchase_board_with_gems) so
+   *  the top-bar coin/gem counters reflect the new balance. */
+  refreshWallet(): Promise<void>;
   completeOAuthProfile(): Promise<void>;
 }
 
@@ -181,6 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     walletFetchRef.current = null;
     await fetchProfile(session.user.id);
   }, [session, fetchProfile]);
+
+  const refreshWallet = useCallback(async () => {
+    if (!session?.user) return;
+    walletFetchRef.current = null;
+    await fetchWallet(session.user.id);
+  }, [session, fetchWallet]);
 
   const completeOAuthProfile = useCallback(async () => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
@@ -403,6 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       setDisplayName,
       refreshProfile,
+      refreshWallet,
       completeOAuthProfile,
     }),
     [
@@ -421,6 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       setDisplayName,
       refreshProfile,
+      refreshWallet,
       completeOAuthProfile,
     ]
   );
