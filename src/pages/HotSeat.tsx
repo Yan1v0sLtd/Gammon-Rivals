@@ -146,7 +146,7 @@ export default function HotSeat() {
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
   const boardParam = params.get('board');
-  const selectedTheme = useBoardThemeConfig(boardParam);
+  const { theme: selectedTheme, isLoading: themeLoading } = useBoardThemeConfig(boardParam);
   const alignmentEnabled = params.get('align') === '1';
   const [alignmentLayout, setAlignmentLayout] = useState<ThemeLayout>(() => loadAlignmentLayout());
   const [alignmentDebug, setAlignmentDebug] = useState<AlignmentDebugSelection>({
@@ -289,14 +289,22 @@ export default function HotSeat() {
   // initialising. Alignment-tool route bypasses this gate.
   const [boardReady, setBoardReady] = useState(false);
   const handleBoardReady = useCallback(() => setBoardReady(true), []);
-  // Safety net: if Pixi init errors or stalls, don't trap the user on
-  // the loader forever. Reveal after 6s regardless — they'll see
-  // whatever the page rendered, which beats an indefinite spinner.
+  // We defer mounting BoardCanvas until the theme has settled
+  // (Supabase has either returned a remote config or confirmed there
+  // isn't one). Mounting earlier means Pixi initialises with the
+  // fallback theme and has to destroy + re-init when the remote
+  // arrives — which briefly flashes an empty board.
+  const canvasMountAllowed = !themeLoading || alignmentEnabled;
+  // Safety net: if Pixi init errors or stalls AFTER we've allowed the
+  // canvas to mount, don't trap the user on the loader forever.
+  // Reveal after 6s regardless — they'll see whatever the page
+  // rendered, which beats an indefinite spinner.
   useEffect(() => {
     if (boardReady) return;
+    if (!canvasMountAllowed) return;
     const id = window.setTimeout(() => setBoardReady(true), 6000);
     return () => window.clearTimeout(id);
-  }, [boardReady]);
+  }, [boardReady, canvasMountAllowed]);
   const gameReady = assetsReady && (boardReady || alignmentEnabled);
 
   // Cover the screen with the overlay from the moment we mount, even on
@@ -518,21 +526,23 @@ export default function HotSeat() {
         ) : null
       }
     >
-      <BoardCanvas
-        state={game.board}
-        theme={selectedTheme}
-        layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
-        selection={{
-          selectedFrom: !alignmentEnabled && humanCanInteract ? game.selectedFrom : null,
-          validDestinations: !alignmentEnabled && humanCanInteract ? game.validDestinations : [],
-          legalOrigins: !alignmentEnabled && humanCanInteract ? game.legalOrigins : [],
-          opponentOrigins: alignmentEnabled ? [] : game.opponentPreviewOrigins,
-          opponentDestinations: alignmentEnabled ? [] : game.opponentPreviewDestinations,
-          alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
-        }}
-        onPointClick={alignmentEnabled ? undefined : handlePointClick}
-        onReady={handleBoardReady}
-      />
+      {canvasMountAllowed ? (
+        <BoardCanvas
+          state={game.board}
+          theme={selectedTheme}
+          layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
+          selection={{
+            selectedFrom: !alignmentEnabled && humanCanInteract ? game.selectedFrom : null,
+            validDestinations: !alignmentEnabled && humanCanInteract ? game.validDestinations : [],
+            legalOrigins: !alignmentEnabled && humanCanInteract ? game.legalOrigins : [],
+            opponentOrigins: alignmentEnabled ? [] : game.opponentPreviewOrigins,
+            opponentDestinations: alignmentEnabled ? [] : game.opponentPreviewDestinations,
+            alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
+          }}
+          onPointClick={alignmentEnabled ? undefined : handlePointClick}
+          onReady={handleBoardReady}
+        />
+      ) : null}
       <DiceTray
         roll={game.roll}
         remaining={game.remaining}

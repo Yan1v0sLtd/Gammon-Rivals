@@ -173,15 +173,33 @@ export function themeFromBoardConfig(config: BoardThemeConfig): Theme {
   };
 }
 
-export function useBoardThemeConfig(boardId: string | null | undefined): Theme {
+export interface BoardThemeConfigResult {
+  readonly theme: Theme;
+  /** True while the Supabase fetch for this board's remote config is
+   *  in flight. Callers that mount expensive renderers (e.g. the Pixi
+   *  board) should wait for `false` before mounting — otherwise the
+   *  renderer initialises with the fallback theme, then has to tear
+   *  itself down and re-init when the remote theme arrives, which
+   *  flashes an empty board area during the gap. */
+  readonly isLoading: boolean;
+}
+
+export function useBoardThemeConfig(boardId: string | null | undefined): BoardThemeConfigResult {
   const fallbackTheme = useMemo(() => getBoardTheme(boardId), [boardId]);
   const [remoteTheme, setRemoteTheme] = useState<{ id: string; theme: Theme } | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(
+    () => isSupabaseConfigured && Boolean(boardId)
+  );
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!isSupabaseConfigured || !boardId) return;
+    if (!isSupabaseConfigured || !boardId) {
+      setIsLoading(false);
+      return;
+    }
 
+    setIsLoading(true);
     void supabase
       .from('board_theme_configs')
       .select('*')
@@ -189,7 +207,9 @@ export function useBoardThemeConfig(boardId: string | null | undefined): Theme {
       .eq('is_enabled', true)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (cancelled || error || !data) return;
+        if (cancelled) return;
+        setIsLoading(false);
+        if (error || !data) return;
         setRemoteTheme({ id: boardId, theme: themeFromBoardConfig(data) });
       });
 
@@ -198,6 +218,7 @@ export function useBoardThemeConfig(boardId: string | null | undefined): Theme {
     };
   }, [boardId]);
 
-  if (remoteTheme && remoteTheme.id === boardId) return remoteTheme.theme;
-  return fallbackTheme;
+  const theme =
+    remoteTheme && remoteTheme.id === boardId ? remoteTheme.theme : fallbackTheme;
+  return { theme, isLoading };
 }
