@@ -100,10 +100,10 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-[5.5rem] w-[5.5rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.5)]"
+                className="h-[4.4rem] w-[4.4rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.5)]"
                 draggable={false}
               />
-              <div className="font-display text-[2.5rem] font-black leading-none text-[#3a1f08]">
+              <div className="font-display text-[2rem] font-black leading-none text-[#3a1f08]">
                 {gems.toLocaleString()}
               </div>
             </div>
@@ -188,10 +188,10 @@ function DayCard({
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-[5rem] w-[5rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.45)]"
+            className="h-[4rem] w-[4rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.45)]"
             draggable={false}
           />
-          <div className="font-display text-[2.2rem] font-black leading-none text-[#3a1f08]">
+          <div className="font-display text-[1.75rem] font-black leading-none text-[#3a1f08]">
             {gems.toLocaleString()}
           </div>
         </div>

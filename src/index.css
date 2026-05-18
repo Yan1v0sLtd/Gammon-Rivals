@@ -7301,14 +7301,14 @@ html, body, #root {
   animation: daily-bonus-spin 3s linear infinite;
 }
 
-/* Blurred glow underneath that also rotates, for the shimmer feel from
-   the reference's ::after layer. Sits behind the card via z-index: -1; the
-   modal already establishes a stacking context so the negative z-index is
-   confined to the card. */
+/* Subtle blurred glow underneath that also rotates, for the shimmer
+   feel from the reference's ::after layer. Tight inset + small blur so
+   the halo stays right around the card and doesn't visually leak past
+   the modal's frame on small viewports. */
 .daily-bonus-active-frame::after {
   content: '';
   position: absolute;
-  inset: -10px;
+  inset: -2px;
   border-radius: inherit;
   background-image: linear-gradient(
     var(--daily-bonus-rotate),
@@ -7316,8 +7316,8 @@ html, body, #root {
     #f59e0b 50%,
     #b45309 100%
   );
-  filter: blur(18px);
-  opacity: 0.55;
+  filter: blur(6px);
+  opacity: 0.45;
   z-index: -1;
   animation: daily-bonus-spin 3s linear infinite;
 }
