@@ -200,7 +200,7 @@ function DayCard({
           {/* Header: ✦ DAY N ✦ */}
           <div className="flex items-center gap-2">
             <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
-            <span className="whitespace-nowrap font-display text-[clamp(0.7rem,1.5vw,1.05rem)] font-black uppercase tracking-[0.14em] text-[#3a1f08]">
+            <span className="whitespace-nowrap font-display text-[clamp(0.88rem,1.88vw,1.31rem)] font-black uppercase tracking-[0.14em] text-[#3a1f08]">
               Day&nbsp;{day}
             </span>
             <span className="text-[clamp(0.55rem,1.1vw,0.85rem)] text-amber-600/85">✦</span>
@@ -219,13 +219,13 @@ function DayCard({
          *  Active cards host the Claim button here; locked / claimed
          *  cards leave it visually empty so every box has the same
          *  two-tone "reward zone + action zone" footprint. */}
-        <div className="flex min-h-[clamp(2rem,3.5vw,2.75rem)] items-center justify-center border-t border-amber-300/50 bg-amber-200/35 px-3 py-1.5">
+        <div className="flex min-h-[clamp(3rem,5vw,4.25rem)] items-center justify-center border-t border-amber-300/50 bg-amber-200/35 px-3 py-2">
           {isActive ? (
             <button
               type="button"
               disabled={isClaiming}
               onClick={onClaim}
-              className="whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1 font-display text-[clamp(0.65rem,1.3vw,1rem)] font-black uppercase tracking-[0.12em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-8 py-2 font-display text-[clamp(1.3rem,2.6vw,2rem)] font-black uppercase tracking-[0.12em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isClaiming ? '…' : 'Claim'}
             </button>
@@ -263,7 +263,7 @@ export function DailyBonusModal({
        * Title and cards now define the modal's height; no background
        * image, no aspect-ratio constraint.
        */}
-      <div className="relative w-full max-w-5xl origin-center scale-[0.49] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.64]">
+      <div className="relative w-full max-w-5xl origin-center scale-[0.56] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]">
         <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
           <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] px-[clamp(1rem,3vw,2.5rem)] pb-[clamp(1rem,3vw,2rem)] pt-[clamp(1rem,3vw,2rem)]">
             {/* Top + bottom decorative lozenges */}
@@ -279,13 +279,13 @@ export function DailyBonusModal({
             <div className="flex items-center justify-center gap-4">
               <span className="text-lg text-amber-500/80">◆</span>
               <span className="h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-amber-600/80" />
-              <h2 className="whitespace-nowrap bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-[clamp(1.75rem,5.5vw,3.75rem)] font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)]">
+              <h2 className="whitespace-nowrap bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-[clamp(2rem,6.3vw,4.3rem)] font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)]">
                 Daily Bonus
               </h2>
               <span className="h-px w-12 bg-gradient-to-l from-transparent via-amber-500/70 to-amber-600/80" />
               <span className="text-lg text-amber-500/80">◆</span>
             </div>
-            <div className="mt-2 flex items-center justify-center gap-2 text-[clamp(0.75rem,1.7vw,1.25rem)] font-bold text-amber-900/80">
+            <div className="mt-2 flex items-center justify-center gap-2 text-[clamp(0.86rem,1.95vw,1.44rem)] font-bold text-amber-900/80">
               <span className="text-amber-500/80">✦</span>
               <span className="whitespace-nowrap">Come back every day to claim more rewards!</span>
               <span className="text-amber-500/80">✦</span>
