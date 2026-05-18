@@ -84,10 +84,25 @@ export default function BoardCanvas({
       rendererRef.current = renderer;
       renderLatest();
 
-      // Pixi has now drawn the board with the loaded textures. Notify
-      // the parent so it can release the loading overlay on a fully
-      // composed surface (not just on HTML-image readiness).
-      onReadyRef.current?.();
+      // renderer.render() only updates Pixi's scene graph; the actual
+      // GPU draw happens on the next ticker tick (rAF). If we fire
+      // onReady immediately, the overlay can start fading on a canvas
+      // that's still blank, briefly exposing the underlying layout.
+      // Force a synchronous render so the canvas is composited before
+      // we signal ready. Wrapped in try because in some pixi build
+      // variants the renderer.render shape differs slightly; the
+      // double-rAF fallback below covers that.
+      try {
+        app.renderer.render({ container: app.stage });
+      } catch {
+        // ignore — fall through to the rAF wait below
+      }
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          onReadyRef.current?.();
+        });
+      });
 
       resizeObserver = new ResizeObserver(renderLatest);
       resizeObserver.observe(container);

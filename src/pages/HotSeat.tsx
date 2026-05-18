@@ -436,8 +436,15 @@ export default function HotSeat() {
   const opponentLevel = aiConfig ? 40 : 23;
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
+  // Only hand a real background URL to BoardLayout once the theme has
+  // settled AND the image is preloaded. Before that we'd be passing the
+  // fallback (premium green) URL, which the loader overlay covers — but
+  // if the overlay's fade timing is ever off, an <img src> swap from
+  // fallback → remote leaks through as a flash of the wrong board art.
   const gameplayBackground =
-    selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
+    canvasMountAllowed && assetsReady
+      ? selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage
+      : undefined;
 
   // Note: no early-return loading gate here. The full JSX (including
   // BoardCanvas) renders behind the route-spanning overlay so Pixi can
