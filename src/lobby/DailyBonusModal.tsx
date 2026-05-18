@@ -74,7 +74,7 @@ function DayCard({
           </div>
         ) : null}
         <div
-          className={`daily-bonus-active-frame relative rounded-2xl p-[3px] shadow-[0_14px_22px_rgba(50,25,8,0.45)] ${
+          className={`daily-bonus-active-frame relative rounded-2xl p-[3px] shadow-[0_14px_16px_-4px_rgba(120,53,15,0.55)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
@@ -94,7 +94,7 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-[5.5rem] w-[5.5rem] select-none object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
+                className="h-[5.5rem] w-[5.5rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.5)]"
                 draggable={false}
               />
               <div className="font-display text-[2.5rem] font-black leading-none text-[#3a1f08]">
@@ -127,7 +127,7 @@ function DayCard({
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55),0_14px_22px_rgba(50,25,8,0.45)] ${
+          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55),0_14px_16px_-4px_rgba(120,53,15,0.55)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
@@ -169,7 +169,7 @@ function DayCard({
         </div>
       ) : null}
       <div
-        className={`relative flex flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-4 shadow-[0_14px_22px_rgba(50,25,8,0.40),0_5px_10px_rgba(50,25,8,0.25)] ${cardHeight} ${
+        className={`relative flex flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-4 shadow-[0_14px_16px_-4px_rgba(120,53,15,0.5)] ${cardHeight} ${
           isMilestone ? 'mt-2' : ''
         }`}
       >
@@ -182,7 +182,7 @@ function DayCard({
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-[5rem] w-[5rem] select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
+            className="h-[5rem] w-[5rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.45)]"
             draggable={false}
           />
           <div className="font-display text-[2.2rem] font-black leading-none text-[#3a1f08]">
