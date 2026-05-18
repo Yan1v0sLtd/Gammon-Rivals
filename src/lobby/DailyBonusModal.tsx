@@ -223,7 +223,7 @@ export function DailyBonusModal({
        *     small; .png also works — just update the URL below.
        */}
       <div
-        className="relative w-full max-w-4xl bg-no-repeat px-[5.5%] pb-[7%] pt-[6.5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+        className="relative w-full max-w-6xl bg-no-repeat px-[5%] pb-[6%] pt-[6%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
@@ -246,7 +246,7 @@ export function DailyBonusModal({
         </div>
 
         {/* 7 day cards. items-end so Day 7's extra height pokes up. */}
-        <div className="mt-6 grid grid-cols-7 items-end gap-2">
+        <div className="mt-6 grid grid-cols-7 items-end gap-3">
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const cfg = byDay.get(day);
             const isActive = day === upcomingDay && canClaim && !justClaimed;
