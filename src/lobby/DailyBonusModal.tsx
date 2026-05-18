@@ -59,7 +59,13 @@ function DayCard({
   // Day 7 (milestone) is slightly taller so its crown can sit in a
   // notch above; all other cards align to the bottom via the grid's
   // items-end so the milestone visually sticks up.
-  const cardHeight = isMilestone ? 'min-h-[29rem]' : 'min-h-[26rem]';
+  //
+  // Heights are clamped via min(rem, vh) so short viewports (phone
+  // landscape ~430px tall) don't blow up the modal — on those, the
+  // vh limit binds and the cards shrink proportionally.
+  const cardHeight = isMilestone
+    ? 'min-h-[min(29rem,55vh)]'
+    : 'min-h-[min(26rem,48vh)]';
 
   // ACTIVE: claimable now. Animated rotating gold frame (spins via
   // @property --daily-bonus-rotate, defined in index.css) + tab +
@@ -243,7 +249,7 @@ export function DailyBonusModal({
        * Asset: /public/lobby/daily-bonus/frame.webp
        */}
       <div
-        className="relative flex w-full max-w-6xl origin-center scale-[0.8] aspect-[1488/983] flex-col bg-no-repeat px-[3.5%] pb-[5%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+        className="relative flex w-full max-w-6xl max-h-[95vh] origin-center scale-[0.8] aspect-[1488/983] flex-col bg-no-repeat px-[3.5%] pb-[5%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
