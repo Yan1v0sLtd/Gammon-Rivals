@@ -1,11 +1,15 @@
 import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
+import type { BoardOwnershipState } from './useUserBoardInventory';
 
 interface LobbyBoardCarouselProps {
   readonly boards: readonly LobbyBoard[];
   readonly selectedId: LobbyBoardId;
   readonly onSelectedIdChange: (id: LobbyBoardId) => void;
   readonly onPlay: () => void;
+  readonly getBoardState: (board: LobbyBoard) => BoardOwnershipState;
+  readonly onLockedTap: (board: LobbyBoard) => void;
+  readonly onPurchaseTap: (board: LobbyBoard) => void;
 }
 
 export function LobbyBoardCarousel({
@@ -13,6 +17,9 @@ export function LobbyBoardCarousel({
   selectedId,
   onSelectedIdChange,
   onPlay,
+  getBoardState,
+  onLockedTap,
+  onPurchaseTap,
 }: LobbyBoardCarouselProps) {
   const [motion, setMotion] = useState<'next' | 'previous'>('next');
   const [motionKey, setMotionKey] = useState(0);
@@ -113,11 +120,16 @@ export function LobbyBoardCarousel({
         onPointerUp={handlePointerUp}
       >
         <div className="absolute inset-0 overflow-visible">
-          {visibleBoards.map(({ board, slot }) => (
+          {visibleBoards.map(({ board, slot }) => {
+            const state = getBoardState(board);
+            const showLock = state === 'level-locked';
+            const showPill = state === 'level-locked' || state === 'purchasable';
+            return (
             <div
               key={`${slot}-${board.id}-${motionKey}`}
               data-motion={motion}
               data-slot={slot}
+              data-state={state}
               className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing"
             >
               <img
@@ -126,38 +138,63 @@ export function LobbyBoardCarousel({
                 className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
                 draggable={false}
               />
-              {/* Lock icon roughly centred over the board image,
-                  nudged 5 px upward. 10 % smaller than the previous
-                  11 %. */}
-              <img
-                src="/lobby/carousel/lock.webp"
-                alt=""
-                className="lobby-carousel-board-lock pointer-events-none absolute left-1/2 top-[calc(50%-5px)] w-[10%] -translate-x-1/2 -translate-y-1/2 select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
-                draggable={false}
-              />
-              {/* Black pill sitting near the bottom of the board, mostly
-                  on the board with just a sliver extending below onto
-                  the podium. Width is 40 % of the board. Lifted 30 px
-                  off the board's bottom edge per the latest request. */}
-              <img
-                src="/lobby/carousel/pill.webp"
-                alt=""
-                className="lobby-carousel-board-pill pointer-events-none absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 select-none"
-                draggable={false}
-              />
-              {/* Gem icon inside the pill on the left side. 10 % smaller
-                  than the previous 8 %, and lifted 6 px relative to the
-                  pill so its centre lines up vertically with the pill's
-                  centre (the pill is taller than the gem, so sharing the
-                  pill's bottom anchor left the gem sitting too low). */}
-              <img
-                src="/lobby/carousel/gem.webp"
-                alt=""
-                className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[36px] left-[36%] w-[7.2%] -translate-x-1/2 translate-y-1/4 select-none"
-                draggable={false}
-              />
+              {showLock ? (
+                <button
+                  type="button"
+                  aria-label={`${board.name} locked`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onLockedTap(board);
+                  }}
+                  className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] w-[10%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
+                >
+                  <img
+                    src="/lobby/carousel/lock.webp"
+                    alt=""
+                    className="lobby-carousel-board-lock h-full w-full select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
+                    draggable={false}
+                  />
+                </button>
+              ) : null}
+              {showPill ? (
+                <button
+                  type="button"
+                  aria-label={
+                    state === 'level-locked'
+                      ? `${board.name} requires level ${board.unlockLevel}`
+                      : `Unlock ${board.name} for ${board.priceGems} gems`
+                  }
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (state === 'level-locked') onLockedTap(board);
+                    else onPurchaseTap(board);
+                  }}
+                  className="lobby-carousel-board-pill-button absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
+                >
+                  <img
+                    src="/lobby/carousel/pill.webp"
+                    alt=""
+                    className="lobby-carousel-board-pill h-full w-full select-none"
+                    draggable={false}
+                  />
+                  <img
+                    src="/lobby/carousel/gem.webp"
+                    alt=""
+                    className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[6px] left-[15%] w-[18%] select-none"
+                    draggable={false}
+                  />
+                  {board.priceGems > 0 ? (
+                    <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[58%] -translate-x-1/2 select-none font-display text-[clamp(0.7rem,1.6vw,1rem)] font-black tracking-[0.04em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
+                      {board.priceGems.toLocaleString()}
+                    </span>
+                  ) : null}
+                </button>
+              ) : null}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <img

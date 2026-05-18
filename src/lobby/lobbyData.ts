@@ -11,6 +11,8 @@ export interface LobbyBoard {
   readonly accent: string;
   readonly background: string;
   readonly backgroundTone: string;
+  readonly unlockLevel: number;
+  readonly priceGems: number;
 }
 
 function isObject(value: Json): value is Record<string, Json> {
@@ -42,6 +44,8 @@ export function lobbyBoardFromConfig(config: BoardThemeConfig): LobbyBoard {
     accent,
     background: normalizePublicAssetPath(config.lobby_background_image) ?? '/lobby/backgrounds/classic-green.webp',
     backgroundTone: metadataText(config.metadata, 'backgroundTone') ?? toneForAccent(accent),
+    unlockLevel: config.unlock_level,
+    priceGems: config.price_gems ?? 0,
   };
 }
 

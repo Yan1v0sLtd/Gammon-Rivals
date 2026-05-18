@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { createOnlineMatch } from '../lib/persistence';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { BoardLockTooltip } from './BoardLockTooltip';
+import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
@@ -11,6 +13,7 @@ import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import { useLobbyBoards } from './useLobbyBoards';
+import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -45,9 +48,73 @@ export function LobbyScreen() {
   const navigate = useNavigate();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
   const boards = useLobbyBoards();
+  const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
   const [creatingOnline, setCreatingOnline] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [lockedTooltipFor, setLockedTooltipFor] = useState<LobbyBoard | null>(null);
+  const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [purchaseError, setPurchaseError] = useState<string | null>(null);
+
+  const boardStateOf = (board: LobbyBoard) =>
+    computeBoardState({
+      boardId: board.id,
+      unlockLevel: board.unlockLevel,
+      priceGems: board.priceGems,
+      ownedIds,
+      playerLevel: progression.level,
+    });
+
+  const handleLockedTap = (board: LobbyBoard) => {
+    setLockedTooltipFor(board);
+  };
+
+  const handlePurchaseTap = (board: LobbyBoard) => {
+    setPurchaseError(null);
+    setPurchaseTarget(board);
+  };
+
+  const purchaseErrorMessage = (code: string, board: LobbyBoard): string => {
+    switch (code) {
+      case 'insufficient_gems':
+        return 'Not enough gems.';
+      case 'level_too_low':
+        return `Reach level ${board.unlockLevel} to unlock.`;
+      case 'already_owned':
+        return 'You already own this board.';
+      case 'board_not_purchasable':
+        return 'This board is not available for purchase.';
+      case 'board_disabled':
+      case 'board_not_found':
+        return 'Board unavailable.';
+      case 'not_authenticated':
+        return 'Sign in to purchase boards.';
+      default:
+        return code;
+    }
+  };
+
+  const confirmPurchase = async () => {
+    if (!purchaseTarget || isPurchasing) return;
+    if (!isSupabaseConfigured || !user) {
+      setPurchaseError('Sign in to purchase boards.');
+      return;
+    }
+    setIsPurchasing(true);
+    setPurchaseError(null);
+    const board = purchaseTarget;
+    const { error } = await supabase.rpc('purchase_board_with_gems', {
+      target_board_id: board.id,
+    });
+    setIsPurchasing(false);
+    if (error) {
+      setPurchaseError(purchaseErrorMessage(error.message, board));
+      return;
+    }
+    setPurchaseTarget(null);
+    refetchInventory();
+  };
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
     ? selectedBoardId
     : (boards[0]?.id ?? '');
@@ -71,6 +138,18 @@ export function LobbyScreen() {
   }, [selectedBoard]);
 
   const startMatch = (opponent: OpponentChoice, target = 7) => {
+    if (selectedBoard) {
+      const state = boardStateOf(selectedBoard);
+      if (state === 'level-locked') {
+        setLockedTooltipFor(selectedBoard);
+        return;
+      }
+      if (state === 'purchasable') {
+        setPurchaseError(null);
+        setPurchaseTarget(selectedBoard);
+        return;
+      }
+    }
     const params = new URLSearchParams();
     params.set('opp', opponent);
     params.set('target', String(target));
@@ -127,6 +206,9 @@ export function LobbyScreen() {
               selectedId={effectiveSelectedBoardId}
               onSelectedIdChange={setSelectedBoardId}
               onPlay={() => startMatch('medium')}
+              getBoardState={boardStateOf}
+              onLockedTap={handleLockedTap}
+              onPurchaseTap={handlePurchaseTap}
             />
           </div>
 
@@ -163,6 +245,29 @@ export function LobbyScreen() {
 
         <LobbyBottomNav />
       </div>
+
+      {lockedTooltipFor ? (
+        <BoardLockTooltip
+          key={`tooltip-${lockedTooltipFor.id}`}
+          requiredLevel={lockedTooltipFor.unlockLevel}
+          onDismiss={() => setLockedTooltipFor(null)}
+        />
+      ) : null}
+
+      {purchaseTarget ? (
+        <BoardPurchaseModal
+          boardName={purchaseTarget.name}
+          priceGems={purchaseTarget.priceGems}
+          isPurchasing={isPurchasing}
+          errorMessage={purchaseError}
+          onConfirm={confirmPurchase}
+          onCancel={() => {
+            if (isPurchasing) return;
+            setPurchaseTarget(null);
+            setPurchaseError(null);
+          }}
+        />
+      ) : null}
     </main>
   );
 }

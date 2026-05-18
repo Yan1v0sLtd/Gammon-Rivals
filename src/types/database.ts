@@ -323,6 +323,7 @@ export type Database = {
           holder_image: string | null;
           unlock_level: number;
           price_coins: number;
+          price_gems: number;
           is_enabled: boolean;
           is_featured: boolean;
           sort_order: number;
@@ -344,6 +345,7 @@ export type Database = {
           holder_image?: string | null;
           unlock_level?: number;
           price_coins?: number;
+          price_gems?: number;
           is_enabled?: boolean;
           is_featured?: boolean;
           sort_order?: number;
@@ -365,6 +367,7 @@ export type Database = {
           holder_image?: string | null;
           unlock_level?: number;
           price_coins?: number;
+          price_gems?: number;
           is_enabled?: boolean;
           is_featured?: boolean;
           sort_order?: number;
@@ -704,6 +707,10 @@ export type Database = {
           delta_amount: number;
           adjustment_reason: string;
         };
+        Returns: Database['public']['Tables']['user_wallets']['Row'];
+      };
+      purchase_board_with_gems: {
+        Args: { target_board_id: string };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
       get_my_admin_role: {

@@ -102,6 +102,7 @@ type BoardDraft = {
   holder_image: string;
   unlock_level: string;
   price_coins: string;
+  price_gems: string;
   is_enabled: boolean;
   is_featured: boolean;
   sort_order: string;
@@ -562,6 +563,7 @@ function boardToDraft(row?: BoardThemeConfig): BoardDraft {
     holder_image: row?.holder_image ?? '',
     unlock_level: row?.unlock_level.toString() ?? '1',
     price_coins: row?.price_coins.toString() ?? '0',
+    price_gems: row?.price_gems?.toString() ?? '0',
     is_enabled: row?.is_enabled ?? true,
     is_featured: row?.is_featured ?? false,
     sort_order: row?.sort_order.toString() ?? '0',
@@ -1218,6 +1220,7 @@ export default function Admin() {
         holder_image: emptyToNull(boardDraft.holder_image),
         unlock_level: requiredNumber(boardDraft.unlock_level, 'Unlock level'),
         price_coins: requiredNumber(boardDraft.price_coins, 'Price coins'),
+        price_gems: requiredNumber(boardDraft.price_gems, 'Gems cost'),
         is_enabled: boardDraft.is_enabled,
         is_featured: boardDraft.is_featured,
         sort_order: requiredNumber(boardDraft.sort_order, 'Sort order'),
@@ -2001,14 +2004,18 @@ export default function Admin() {
                             </button>
                           </div>
                         </div>
-                        <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-white/55">
+                        <div className="mt-3 grid grid-cols-4 gap-2 text-xs text-white/55">
                           <div className="rounded-lg bg-black/18 p-2">
                             <div className="text-white/35">Level</div>
                             <div className="font-bold text-white">{row.unlock_level}</div>
                           </div>
                           <div className="rounded-lg bg-black/18 p-2">
-                            <div className="text-white/35">Price</div>
+                            <div className="text-white/35">Coins</div>
                             <div className="font-bold text-white">{formatNumber(row.price_coins)}</div>
+                          </div>
+                          <div className="rounded-lg bg-black/18 p-2">
+                            <div className="text-white/35">Gems</div>
+                            <div className="font-bold text-white">{formatNumber(row.price_gems ?? 0)}</div>
                           </div>
                           <div className="rounded-lg bg-black/18 p-2">
                             <div className="text-white/35">Sort</div>
@@ -2060,6 +2067,7 @@ export default function Admin() {
                       <Field label="Display name" value={boardDraft.display_name} onChange={(display_name) => setBoardDraft((d) => ({ ...d, display_name }))} />
                       <Field label="Unlock level" value={boardDraft.unlock_level} onChange={(unlock_level) => setBoardDraft((d) => ({ ...d, unlock_level }))} />
                       <Field label="Price coins" value={boardDraft.price_coins} onChange={(price_coins) => setBoardDraft((d) => ({ ...d, price_coins }))} />
+                      <Field label="Gems cost" value={boardDraft.price_gems} onChange={(price_gems) => setBoardDraft((d) => ({ ...d, price_gems }))} />
                       <Field label="Sort order" value={boardDraft.sort_order} onChange={(sort_order) => setBoardDraft((d) => ({ ...d, sort_order }))} />
                     </div>
                     <div className="mt-3 space-y-3">
