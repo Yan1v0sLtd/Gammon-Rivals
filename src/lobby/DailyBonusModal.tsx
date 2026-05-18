@@ -63,7 +63,7 @@ function DayCard({
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.65rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
@@ -76,7 +76,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-2 pt-6 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[12px] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -88,10 +88,10 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-[3.3rem] w-[3.3rem] select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
+                className="h-[3.63rem] w-[3.63rem] select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
                 draggable={false}
               />
-              <div className="font-display text-[1.65rem] font-black text-amber-950">
+              <div className="font-display text-[1.82rem] font-black text-[#3a1f08]">
                 {gems.toLocaleString()}
               </div>
             </div>
@@ -100,7 +100,7 @@ function DayCard({
               type="button"
               disabled={isClaiming}
               onClick={onClaim}
-              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1.5 font-display text-[0.825rem] font-black uppercase tracking-[0.14em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1.5 font-display text-[0.91rem] font-black uppercase tracking-[0.14em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isClaiming ? '…' : 'Claim'}
             </button>
@@ -116,7 +116,7 @@ function DayCard({
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.65rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
@@ -129,7 +129,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-2 pt-6 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[12px] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -138,14 +138,14 @@ function DayCard({
 
             <div className="flex flex-1 flex-col items-center justify-center gap-1">
               {/* White circle with green check */}
-              <div className="grid h-[3.85rem] w-[3.85rem] place-items-center rounded-full border-2 border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
-                <svg viewBox="0 0 24 24" className="h-[2.2rem] w-[2.2rem] stroke-emerald-600" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="grid h-[4.24rem] w-[4.24rem] place-items-center rounded-full border-2 border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
+                <svg viewBox="0 0 24 24" className="h-[2.42rem] w-[2.42rem] stroke-emerald-600" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="4 12 10 18 20 6" />
                 </svg>
               </div>
             </div>
 
-            <div className="mt-2 whitespace-nowrap text-center font-display text-[0.825rem] font-black uppercase tracking-[0.14em] text-emerald-700">
+            <div className="mt-2 whitespace-nowrap text-center font-display text-[0.91rem] font-black uppercase tracking-[0.14em] text-emerald-700">
               Claimed
             </div>
           </div>
@@ -158,7 +158,7 @@ function DayCard({
   return (
     <div className="relative flex flex-col">
       {isMilestone ? (
-        <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-2xl opacity-60 drop-shadow-[0_2px_0_rgba(120,53,15,0.3)]">
+        <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] opacity-90 drop-shadow-[0_2px_0_rgba(120,53,15,0.3)]">
           👑
         </div>
       ) : null}
@@ -167,25 +167,25 @@ function DayCard({
           isMilestone ? 'mt-2' : ''
         }`}
       >
-        <div className="whitespace-nowrap text-center font-display text-[12px] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+        <div className="whitespace-nowrap text-center font-display text-[13px] font-bold uppercase tracking-[0.14em] text-[#3a1f08]">
           Day&nbsp;{day}
         </div>
         <div className="mx-auto mt-1 h-px w-11 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-1 opacity-65">
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 opacity-90">
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-11 w-11 select-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
+            className="h-12 w-12 select-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
             draggable={false}
           />
-          <div className="font-display text-[1.24rem] font-black text-amber-950">
+          <div className="font-display text-[1.36rem] font-black text-[#3a1f08]">
             {gems.toLocaleString()}
           </div>
         </div>
 
         <div className="-mx-2 mt-1 border-t border-amber-200/70 bg-amber-50/40 px-2 py-2">
-          <div className="text-center text-base text-amber-900/45">🔒</div>
+          <div className="text-center text-lg text-[#3a1f08]/70">🔒</div>
         </div>
       </div>
     </div>
@@ -213,17 +213,14 @@ export function DailyBonusModal({
        * Outer container uses the gold frame as a background image. The
        * image stretches to 100 % of the container in both axes, so it
        * resizes on every viewport while preserving its corner and edge
-       * ornaments (the asset was authored as a thin gold frame so slight
-       * non-uniform scaling is visually fine). The cards inside sit on
-       * top, centred by the grid, so they keep their position regardless
-       * of how the frame stretches.
+       * ornaments. The whole modal is then scaled down 20 % via the
+       * scale-[0.8] wrapper so it occupies less screen real estate
+       * without changing internal proportions.
        *
        * Asset: /public/lobby/daily-bonus/frame.webp
-       *   - Drop the gold-frame image at this path. WEBP keeps the bundle
-       *     small; .png also works — just update the URL below.
        */}
       <div
-        className="relative w-full max-w-6xl bg-no-repeat px-[5%] pb-[6%] pt-[6%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+        className="relative w-full max-w-6xl origin-center scale-[0.8] bg-no-repeat px-[5%] pb-[6%] pt-[6%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
