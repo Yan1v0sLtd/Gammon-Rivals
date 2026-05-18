@@ -400,6 +400,7 @@ export function LobbyScreen() {
           <LobbySideOffers
             onOfferClick={(offerId) => {
               if (offerId === 'daily' && dailyBonus.canClaim) openDailyBonus();
+              else if (offerId === 'coins') navigate('/shop');
             }}
           />
 

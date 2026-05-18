@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Avatar from '../components/Avatar';
 import { formatCompactNumber } from '../lib/format';
@@ -21,11 +21,13 @@ function CurrencyPill({
   label,
   value,
   icon,
+  onAdd,
 }: {
   readonly flyTarget: 'coins' | 'gems';
   readonly label: string;
   readonly value: string;
   readonly icon: string;
+  readonly onAdd: () => void;
 }) {
   return (
     <div
@@ -46,8 +48,9 @@ function CurrencyPill({
       </span>
       <button
         type="button"
-        aria-label={`Add ${label}`}
-        className="lobby-currency-add relative mr-1 grid h-10 w-10 shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710]"
+        onClick={onAdd}
+        aria-label={`Get more ${label}`}
+        className="lobby-currency-add relative mr-1 grid h-10 w-10 shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
       >
         <span className="absolute left-1/2 top-1/2 h-6 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
         <span className="absolute left-1/2 top-1/2 h-1.5 w-6 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
@@ -94,8 +97,10 @@ export function LobbyTopBar({
   isGuest,
   onLinkGoogle,
 }: LobbyTopBarProps) {
+  const navigate = useNavigate();
   const [linking, setLinking] = useState(false);
   const name = profile?.display_name ?? 'Player';
+  const openShop = () => navigate('/shop');
   const currencies = [
     {
       id: 'coins',
@@ -180,7 +185,7 @@ export function LobbyTopBar({
       <div className="lobby-topbar-actions flex flex-wrap items-start justify-end gap-3">
         <div className="lobby-currency-strip flex flex-wrap justify-end gap-3">
           {currencies.map((currency) => (
-            <CurrencyPill key={currency.id} {...currency} />
+            <CurrencyPill key={currency.id} {...currency} onAdd={openShop} />
           ))}
         </div>
         <nav aria-label="Lobby shortcuts" className="hidden gap-4 lg:flex">
