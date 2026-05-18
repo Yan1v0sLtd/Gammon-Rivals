@@ -263,7 +263,7 @@ export function DailyBonusModal({
        * Title and cards now define the modal's height; no background
        * image, no aspect-ratio constraint.
        */}
-      <div className="relative w-full max-w-5xl origin-center scale-[0.704] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.64]">
+      <div className="relative w-full max-w-5xl origin-center scale-[0.49] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.64]">
         <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
           <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] px-[clamp(1rem,3vw,2.5rem)] pb-[clamp(1rem,3vw,2rem)] pt-[clamp(1rem,3vw,2rem)]">
             {/* Top + bottom decorative lozenges */}
@@ -275,12 +275,6 @@ export function DailyBonusModal({
               aria-hidden="true"
               className="absolute -bottom-[12px] left-1/2 z-20 h-6 w-6 -translate-x-1/2 rotate-45 rounded-[3px] bg-gradient-to-br from-[#fef08a] via-[#f59e0b] to-[#7c2d12] shadow-[0_3px_8px_rgba(120,53,15,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
             />
-            {/* Corner accents */}
-            <CornerAccent className="left-2 top-2" />
-            <CornerAccent className="right-2 top-2 -scale-x-100" />
-            <CornerAccent className="left-2 bottom-2 -scale-y-100" />
-            <CornerAccent className="right-2 bottom-2 -scale-100" />
-
             {/* Title */}
             <div className="flex items-center justify-center gap-4">
               <span className="text-lg text-amber-500/80">◆</span>
@@ -332,14 +326,3 @@ export function DailyBonusModal({
   );
 }
 
-function CornerAccent({ className }: { readonly className: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute z-10 h-7 w-7 ${className}`}
-    >
-      <span className="absolute left-0 top-0 h-[2px] w-7 rounded-full bg-gradient-to-r from-[#92400e] via-[#d97706] to-transparent" />
-      <span className="absolute left-0 top-0 h-7 w-[2px] rounded-full bg-gradient-to-b from-[#92400e] via-[#d97706] to-transparent" />
-    </span>
-  );
-}
