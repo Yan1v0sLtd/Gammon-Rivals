@@ -56,24 +56,22 @@ function DayCard({
   isClaiming,
   onClaim,
 }: DayCardProps) {
-  const cardHeight = isMilestone ? 'min-h-[17.6rem]' : 'min-h-[16rem]';
-
   // ACTIVE: claimable now. Gold frame + tab + Claim button.
   if (isActive) {
     return (
-      <div className="relative flex flex-col">
+      <div className="relative flex h-full flex-col">
         {isMilestone ? (
           <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
+          className={`relative flex-1 rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
           <div
-            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-2 pt-6 ${cardHeight}`}
+            className="relative flex h-full flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-2 pt-6"
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
               <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[12px] font-black uppercase tracking-[0.14em] text-white shadow-md">
@@ -114,19 +112,19 @@ function DayCard({
   // gem is replaced by a green check, 'CLAIMED' label replaces the button.
   if (isClaimed) {
     return (
-      <div className="relative flex flex-col">
+      <div className="relative flex h-full flex-col">
         {isMilestone ? (
           <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
+          className={`relative flex-1 rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
           <div
-            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-2 pt-6 ${cardHeight}`}
+            className="relative flex h-full flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-2 pt-6"
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
               <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[12px] font-black uppercase tracking-[0.14em] text-white shadow-md">
@@ -156,14 +154,14 @@ function DayCard({
 
   // LOCKED / future / past day — neutral cream card with lock at bottom.
   return (
-    <div className="relative flex flex-col">
+    <div className="relative flex h-full flex-col">
       {isMilestone ? (
         <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.82rem] opacity-90 drop-shadow-[0_2px_0_rgba(120,53,15,0.3)]">
           👑
         </div>
       ) : null}
       <div
-        className={`relative flex flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-3 shadow-[0_8px_14px_rgba(120,53,15,0.18),0_2px_4px_rgba(120,53,15,0.12)] ${cardHeight} ${
+        className={`relative flex flex-1 flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-3 shadow-[0_8px_14px_rgba(120,53,15,0.18),0_2px_4px_rgba(120,53,15,0.12)] ${
           isMilestone ? 'mt-2' : ''
         }`}
       >
@@ -220,7 +218,7 @@ export function DailyBonusModal({
        * Asset: /public/lobby/daily-bonus/frame.webp
        */}
       <div
-        className="relative w-full max-w-6xl origin-center scale-[0.8] bg-no-repeat px-[5%] pb-[6%] pt-[6%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+        className="relative flex w-full max-w-6xl origin-center scale-[0.8] aspect-[1488/983] flex-col bg-no-repeat px-[5%] pb-[6%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
@@ -242,8 +240,11 @@ export function DailyBonusModal({
           <span className="text-amber-500/80">✦</span>
         </div>
 
-        {/* 7 day cards. items-end so Day 7's extra height pokes up. */}
-        <div className="mt-6 grid grid-cols-7 items-end gap-3">
+        {/* 7 day cards. items-stretch so they fill the remaining
+         *  vertical space inside the frame. flex-1 makes the grid
+         *  consume whatever the title/subtitle didn't, so the cards
+         *  scale with the frame's aspect ratio. */}
+        <div className="mt-6 grid flex-1 grid-cols-7 items-stretch gap-3">
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const cfg = byDay.get(day);
             const isActive = day === upcomingDay && canClaim && !justClaimed;
