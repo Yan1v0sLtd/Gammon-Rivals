@@ -559,7 +559,7 @@ export function LobbyBoardCarousel({
                       draggable={false}
                     />
                     {board.priceGems > 0 ? (
-                      <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[58%] -translate-x-1/2 select-none font-display text-[clamp(0.7rem,1.6vw,1rem)] font-black tracking-[0.04em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
+                      <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[66%] -translate-x-1/2 select-none whitespace-nowrap font-display text-[clamp(1rem,2.3vw,1.5rem)] font-black leading-none tracking-[0.04em] text-white tabular-nums drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
                         {board.priceGems.toLocaleString()}
                       </span>
                     ) : null}
