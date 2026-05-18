@@ -56,14 +56,14 @@ function DayCard({
   isClaiming,
   onClaim,
 }: DayCardProps) {
-  const cardHeight = isMilestone ? 'min-h-[16rem]' : 'min-h-[14.5rem]';
+  const cardHeight = isMilestone ? 'min-h-[17.6rem]' : 'min-h-[16rem]';
 
   // ACTIVE: claimable now. Gold frame + tab + Claim button.
   if (isActive) {
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-2xl drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.65rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
@@ -76,7 +76,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-2 pt-6 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -88,10 +88,10 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-12 w-12 select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
+                className="h-[3.3rem] w-[3.3rem] select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
                 draggable={false}
               />
-              <div className="font-display text-2xl font-black text-amber-950">
+              <div className="font-display text-[1.65rem] font-black text-amber-950">
                 {gems.toLocaleString()}
               </div>
             </div>
@@ -100,7 +100,7 @@ function DayCard({
               type="button"
               disabled={isClaiming}
               onClick={onClaim}
-              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1.5 font-display text-xs font-black uppercase tracking-[0.14em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1.5 font-display text-[0.825rem] font-black uppercase tracking-[0.14em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isClaiming ? '…' : 'Claim'}
             </button>
@@ -116,7 +116,7 @@ function DayCard({
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-2xl drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[1.65rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
@@ -129,7 +129,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-2 pt-6 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-3 py-1 font-display text-[11px] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -138,14 +138,14 @@ function DayCard({
 
             <div className="flex flex-1 flex-col items-center justify-center gap-1">
               {/* White circle with green check */}
-              <div className="grid h-14 w-14 place-items-center rounded-full border-2 border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
-                <svg viewBox="0 0 24 24" className="h-8 w-8 stroke-emerald-600" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <div className="grid h-[3.85rem] w-[3.85rem] place-items-center rounded-full border-2 border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
+                <svg viewBox="0 0 24 24" className="h-[2.2rem] w-[2.2rem] stroke-emerald-600" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polyline points="4 12 10 18 20 6" />
                 </svg>
               </div>
             </div>
 
-            <div className="mt-2 whitespace-nowrap text-center font-display text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+            <div className="mt-2 whitespace-nowrap text-center font-display text-[0.825rem] font-black uppercase tracking-[0.14em] text-emerald-700">
               Claimed
             </div>
           </div>
@@ -167,25 +167,25 @@ function DayCard({
           isMilestone ? 'mt-2' : ''
         }`}
       >
-        <div className="whitespace-nowrap text-center font-display text-[11px] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+        <div className="whitespace-nowrap text-center font-display text-[12px] font-bold uppercase tracking-[0.14em] text-amber-900/70">
           Day&nbsp;{day}
         </div>
-        <div className="mx-auto mt-1 h-px w-10 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
+        <div className="mx-auto mt-1 h-px w-11 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
 
         <div className="flex flex-1 flex-col items-center justify-center gap-1 opacity-65">
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-10 w-10 select-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
+            className="h-11 w-11 select-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
             draggable={false}
           />
-          <div className="font-display text-lg font-black text-amber-950">
+          <div className="font-display text-[1.24rem] font-black text-amber-950">
             {gems.toLocaleString()}
           </div>
         </div>
 
         <div className="-mx-2 mt-1 border-t border-amber-200/70 bg-amber-50/40 px-2 py-2">
-          <div className="text-center text-amber-900/45">🔒</div>
+          <div className="text-center text-base text-amber-900/45">🔒</div>
         </div>
       </div>
     </div>
@@ -233,13 +233,13 @@ export function DailyBonusModal({
         <div className="flex items-center justify-center gap-4">
           <span className="text-lg text-amber-500/80">◆</span>
           <span className="h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-amber-600/80" />
-          <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] md:text-4xl">
+          <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-[2.25rem] font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] md:text-[2.7rem]">
             Daily Bonus
           </h2>
           <span className="h-px w-12 bg-gradient-to-l from-transparent via-amber-500/70 to-amber-600/80" />
           <span className="text-lg text-amber-500/80">◆</span>
         </div>
-        <div className="mt-1 flex items-center justify-center gap-2 text-xs font-bold text-amber-900/65">
+        <div className="mt-1 flex items-center justify-center gap-2 text-[0.9375rem] font-bold text-amber-900/65">
           <span className="text-amber-500/80">✦</span>
           <span>Come back every day to claim more rewards!</span>
           <span className="text-amber-500/80">✦</span>
