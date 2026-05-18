@@ -555,7 +555,7 @@ export function LobbyBoardCarousel({
                     <img
                       src="/lobby/carousel/gem.webp"
                       alt=""
-                      className="pointer-events-none h-[120%] w-auto select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
+                      className="pointer-events-none h-[80%] w-auto select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
                       draggable={false}
                     />
                     {board.priceGems > 0 ? (
