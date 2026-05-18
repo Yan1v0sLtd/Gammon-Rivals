@@ -59,19 +59,19 @@ function DayCard({
   // Day 7 (milestone) is slightly taller so its crown can sit in a
   // notch above; all other cards align to the bottom via the grid's
   // items-end so the milestone visually sticks up.
-  const cardHeight = isMilestone ? 'min-h-[22rem]' : 'min-h-[20rem]';
+  const cardHeight = isMilestone ? 'min-h-[29rem]' : 'min-h-[26rem]';
 
   // ACTIVE: claimable now. Gold frame + tab + Claim button.
   if (isActive) {
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[2.4rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-[2.6rem] left-1/2 z-20 -translate-x-1/2 text-[2.4rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
+          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55),0_14px_22px_rgba(50,25,8,0.45)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
@@ -79,7 +79,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-3 pt-9 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1.1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -91,7 +91,7 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-[5.5rem] w-[5.5rem] select-none drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
+                className="h-[5.5rem] w-[5.5rem] select-none object-contain drop-shadow-[0_3px_4px_rgba(0,0,0,0.18)]"
                 draggable={false}
               />
               <div className="font-display text-[2.5rem] font-black leading-none text-[#3a1f08]">
@@ -119,12 +119,12 @@ function DayCard({
     return (
       <div className="relative flex flex-col">
         {isMilestone ? (
-          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[2.4rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
+          <div className="absolute -top-[2.6rem] left-1/2 z-20 -translate-x-1/2 text-[2.4rem] drop-shadow-[0_2px_0_rgba(120,53,15,0.4)]">
             👑
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55)] ${
+          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55),0_14px_22px_rgba(50,25,8,0.45)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
@@ -132,7 +132,7 @@ function DayCard({
             className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-3 pt-9 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1.1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -161,16 +161,16 @@ function DayCard({
   return (
     <div className="relative flex flex-col">
       {isMilestone ? (
-        <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2 text-[2.4rem] opacity-90 drop-shadow-[0_2px_0_rgba(120,53,15,0.3)]">
+        <div className="absolute -top-[2.6rem] left-1/2 z-20 -translate-x-1/2 text-[2.4rem] opacity-90 drop-shadow-[0_2px_0_rgba(120,53,15,0.3)]">
           👑
         </div>
       ) : null}
       <div
-        className={`relative flex flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-4 shadow-[0_8px_14px_rgba(120,53,15,0.18),0_2px_4px_rgba(120,53,15,0.12)] ${cardHeight} ${
+        className={`relative flex flex-col overflow-hidden rounded-2xl border border-amber-200/70 bg-[#fdf6e3] px-2 pt-4 shadow-[0_14px_22px_rgba(50,25,8,0.40),0_5px_10px_rgba(50,25,8,0.25)] ${cardHeight} ${
           isMilestone ? 'mt-2' : ''
         }`}
       >
-        <div className="whitespace-nowrap text-center font-display text-[1rem] font-bold uppercase tracking-[0.14em] text-[#3a1f08]">
+        <div className="whitespace-nowrap text-center font-display text-[1.1rem] font-bold uppercase tracking-[0.14em] text-[#3a1f08]">
           Day&nbsp;{day}
         </div>
         <div className="mx-auto mt-1 h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
@@ -179,7 +179,7 @@ function DayCard({
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-[5rem] w-[5rem] select-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
+            className="h-[5rem] w-[5rem] select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.12)]"
             draggable={false}
           />
           <div className="font-display text-[2.2rem] font-black leading-none text-[#3a1f08]">
