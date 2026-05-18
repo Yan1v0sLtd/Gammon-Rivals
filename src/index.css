@@ -7264,3 +7264,60 @@ html, body, #root {
     right: 9.2%;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Daily Bonus — active day card animated gold frame
+   ---------------------------------------------------------------------------
+   When the player can claim today's bonus, the active day's frame spins a
+   gold conic-ish gradient via an animatable CSS custom property
+   (CSS Houdini @property), plus a soft blurred glow underneath. Browsers
+   without @property support (older Firefox) fall back to the static initial
+   value — same visual as before, just no rotation.
+*/
+
+@property --daily-bonus-rotate {
+  syntax: "<angle>";
+  initial-value: 132deg;
+  inherits: false;
+}
+
+@keyframes daily-bonus-spin {
+  to {
+    --daily-bonus-rotate: 492deg; /* 132 + 360, full revolution */
+  }
+}
+
+.daily-bonus-active-frame {
+  background-image: linear-gradient(
+    var(--daily-bonus-rotate),
+    #fef3c7 0%,
+    #fcd34d 18%,
+    #fde047 36%,
+    #d97706 52%,
+    #b45309 68%,
+    #fcd34d 84%,
+    #fef3c7 100%
+  );
+  animation: daily-bonus-spin 3s linear infinite;
+}
+
+/* Blurred glow underneath that also rotates, for the shimmer feel from
+   the reference's ::after layer. Sits behind the card via z-index: -1; the
+   modal already establishes a stacking context so the negative z-index is
+   confined to the card. */
+.daily-bonus-active-frame::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    var(--daily-bonus-rotate),
+    #fcd34d 0%,
+    #f59e0b 50%,
+    #b45309 100%
+  );
+  filter: blur(18px);
+  opacity: 0.55;
+  z-index: -1;
+  animation: daily-bonus-spin 3s linear infinite;
+}

@@ -61,7 +61,10 @@ function DayCard({
   // items-end so the milestone visually sticks up.
   const cardHeight = isMilestone ? 'min-h-[29rem]' : 'min-h-[26rem]';
 
-  // ACTIVE: claimable now. Gold frame + tab + Claim button.
+  // ACTIVE: claimable now. Animated rotating gold frame (spins via
+  // @property --daily-bonus-rotate, defined in index.css) + tab +
+  // Claim button. The .daily-bonus-active-frame class drives both the
+  // rotating gradient background and the ::after blurred glow.
   if (isActive) {
     return (
       <div className="relative flex flex-col">
@@ -71,7 +74,7 @@ function DayCard({
           </div>
         ) : null}
         <div
-          className={`relative rounded-2xl bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px] shadow-[0_0_20px_rgba(252,180,40,0.55),0_14px_22px_rgba(50,25,8,0.45)] ${
+          className={`daily-bonus-active-frame relative rounded-2xl p-[3px] shadow-[0_14px_22px_rgba(50,25,8,0.45)] ${
             isMilestone ? 'mt-2' : ''
           }`}
         >
