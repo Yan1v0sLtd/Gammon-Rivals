@@ -1,12 +1,17 @@
 import { lobbyOffers } from './lobbyData';
 
-export function LobbySideOffers() {
+interface LobbySideOffersProps {
+  readonly onOfferClick?: (offerId: string) => void;
+}
+
+export function LobbySideOffers({ onOfferClick }: LobbySideOffersProps = {}) {
   return (
     <aside className="lobby-offers flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
       {lobbyOffers.map((offer) => (
         <button
           key={offer.id}
           type="button"
+          onClick={() => onOfferClick?.(offer.id)}
           style={offer.image ? { aspectRatio: offer.aspectRatio } : undefined}
           className={`lobby-offer-card relative flex min-h-[6.7rem] min-w-[13rem] flex-1 items-center gap-3 overflow-hidden text-left transition hover:brightness-110 active:translate-y-1 ${
             offer.image

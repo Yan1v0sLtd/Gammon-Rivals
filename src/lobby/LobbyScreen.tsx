@@ -8,12 +8,14 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
+import { DailyBonusModal } from './DailyBonusModal';
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
+import { useDailyBonus } from './useDailyBonus';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
 
@@ -83,6 +85,17 @@ export function LobbyScreen() {
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const dailyBonus = useDailyBonus();
+  const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
+  const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
+  const [justClaimedBonus, setJustClaimedBonus] = useState<{
+    day: number;
+    coins: number;
+    gems: number;
+    xp: number;
+  } | null>(null);
+  const autoOpenedDailyBonusRef = useRef(false);
 
   const boardStateOf = (board: LobbyBoard) =>
     computeBoardState({
@@ -142,6 +155,76 @@ export function LobbyScreen() {
     setPurchaseTarget(null);
     refetchInventory();
   };
+
+  const dailyBonusErrorMessage = (code: string): string => {
+    switch (code) {
+      case 'already_claimed':
+        return "You've already claimed today's bonus.";
+      case 'not_authenticated':
+        return 'Sign in to claim daily bonuses.';
+      default:
+        // config_missing_for_day_N and anything else: surface the raw code.
+        return code;
+    }
+  };
+
+  const openDailyBonus = () => {
+    setDailyBonusError(null);
+    setJustClaimedBonus(null);
+    setDailyBonusOpen(true);
+  };
+
+  const closeDailyBonus = () => {
+    if (isClaimingDailyBonus) return;
+    setDailyBonusOpen(false);
+    setDailyBonusError(null);
+    setJustClaimedBonus(null);
+  };
+
+  const claimDailyBonus = async () => {
+    if (isClaimingDailyBonus) return;
+    if (!isSupabaseConfigured || !user) {
+      setDailyBonusError('Sign in to claim daily bonuses.');
+      return;
+    }
+    setIsClaimingDailyBonus(true);
+    setDailyBonusError(null);
+    const { data, error } = await supabase.rpc('claim_daily_bonus');
+    setIsClaimingDailyBonus(false);
+    if (error) {
+      setDailyBonusError(dailyBonusErrorMessage(error.message));
+      return;
+    }
+    // RPC returns jsonb; we typed it as Json so we coerce here.
+    const payload = data as {
+      day_claimed?: number;
+      reward_coins?: number;
+      reward_gems?: number;
+      reward_xp?: number;
+    } | null;
+    if (payload && typeof payload.day_claimed === 'number') {
+      setJustClaimedBonus({
+        day: payload.day_claimed,
+        coins: payload.reward_coins ?? 0,
+        gems: payload.reward_gems ?? 0,
+        xp: payload.reward_xp ?? 0,
+      });
+    }
+    dailyBonus.refetch();
+  };
+
+  // Auto-popup the daily bonus modal once per lobby session if the player
+  // can claim. autoOpenedDailyBonusRef guards against re-opening if the
+  // player dismisses it without claiming (they can still re-open via the
+  // side card). canClaim flips to false after a successful claim, so we
+  // won't auto-popup again the same day.
+  useEffect(() => {
+    if (autoOpenedDailyBonusRef.current) return;
+    if (!user || !dailyBonus.canClaim || dailyBonus.isLoading) return;
+    if (dailyBonus.configs.length === 0) return;
+    autoOpenedDailyBonusRef.current = true;
+    setDailyBonusOpen(true);
+  }, [user, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length]);
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
     ? selectedBoardId
     : (boards[0]?.id ?? '');
@@ -264,7 +347,11 @@ export function LobbyScreen() {
         />
 
         <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
-          <LobbySideOffers />
+          <LobbySideOffers
+            onOfferClick={(offerId) => {
+              if (offerId === 'daily') openDailyBonus();
+            }}
+          />
 
           <div className="lobby-board-region min-w-0">
             <LobbyBoardCarousel
@@ -332,6 +419,19 @@ export function LobbyScreen() {
             setPurchaseTarget(null);
             setPurchaseError(null);
           }}
+        />
+      ) : null}
+
+      {dailyBonusOpen ? (
+        <DailyBonusModal
+          configs={dailyBonus.configs}
+          upcomingDay={dailyBonus.upcomingDay}
+          canClaim={dailyBonus.canClaim}
+          isClaiming={isClaimingDailyBonus}
+          errorMessage={dailyBonusError}
+          justClaimed={justClaimedBonus}
+          onClaim={claimDailyBonus}
+          onClose={closeDailyBonus}
         />
       ) : null}
     </main>

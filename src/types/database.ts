@@ -776,6 +776,10 @@ export type Database = {
         Args: { target_board_id: string };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
+      claim_daily_bonus: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       get_my_admin_role: {
         Args: Record<string, never>;
         Returns: 'owner' | 'admin' | 'support' | 'viewer' | null;

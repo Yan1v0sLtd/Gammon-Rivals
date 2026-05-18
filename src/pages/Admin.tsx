@@ -13,6 +13,7 @@ type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
 type AdminEmailRoleRow = Database['public']['Tables']['admin_email_allowlist']['Row'];
 type AdminRole = AdminRoleRow['role'];
 type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
+type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
 type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
 type AuditEntry = Database['public']['Tables']['admin_audit_log']['Row'];
@@ -36,6 +37,7 @@ type Section =
   | 'Dashboard'
   | 'Users'
   | 'Level System'
+  | 'Daily Bonus'
   | 'Tables / Rooms'
   | 'Board Themes'
   | 'Shop'
@@ -71,6 +73,14 @@ type LevelDraft = {
   reward_items: string;
   unlock_rules: string;
   is_enabled: boolean;
+};
+
+type DailyBonusDraft = {
+  day: string;
+  reward_coins: string;
+  reward_gems: string;
+  reward_xp: string;
+  reward_items: string;
 };
 
 type TableDraft = {
@@ -133,6 +143,7 @@ const sections: readonly Section[] = [
   'Dashboard',
   'Users',
   'Level System',
+  'Daily Bonus',
   'Tables / Rooms',
   'Board Themes',
   'Shop',
@@ -531,6 +542,16 @@ function levelToDraft(row?: LevelConfig): LevelDraft {
   };
 }
 
+function dailyBonusToDraft(row?: DailyBonusConfig): DailyBonusDraft {
+  return {
+    day: row?.day.toString() ?? '1',
+    reward_coins: row?.reward_coins.toString() ?? '0',
+    reward_gems: row?.reward_gems.toString() ?? '0',
+    reward_xp: row?.reward_xp.toString() ?? '0',
+    reward_items: jsonToString(row?.reward_items, '[]'),
+  };
+}
+
 function tableToDraft(row?: TableConfig): TableDraft {
   return {
     id: row?.id ?? '',
@@ -609,6 +630,7 @@ export default function Admin() {
   const [profileDraft, setProfileDraft] = useState({ level: '1', xp: '0', rating: '1500', admin_note: '', suspension_reason: '' });
   const [walletDraft, setWalletDraft] = useState({ currency: 'coins', amount: '', reason: '' });
   const [levels, setLevels] = useState<LevelConfig[]>([]);
+  const [dailyBonusConfigs, setDailyBonusConfigs] = useState<DailyBonusConfig[]>([]);
   const [tables, setTables] = useState<TableConfig[]>([]);
   const [boards, setBoards] = useState<BoardThemeConfig[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
@@ -622,6 +644,7 @@ export default function Admin() {
     note: 'Initial owner email',
   });
   const [levelDraft, setLevelDraft] = useState<LevelDraft>(() => levelToDraft());
+  const [dailyBonusDraft, setDailyBonusDraft] = useState<DailyBonusDraft>(() => dailyBonusToDraft());
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft());
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft());
   const [boardEditorOpen, setBoardEditorOpen] = useState(false);
@@ -801,6 +824,7 @@ export default function Admin() {
         activeMatchCount,
         profilesResult,
         levelResult,
+        dailyBonusResult,
         tableResult,
         boardResult,
         shopResult,
@@ -821,6 +845,7 @@ export default function Admin() {
           .order('created_at', { ascending: false })
           .limit(120),
         supabase.from('level_configs').select('*').order('level', { ascending: true }),
+        supabase.from('daily_bonus_configs').select('*').order('day', { ascending: true }),
         supabase.from('table_configs').select('*').order('sort_order', { ascending: true }),
         supabase.from('board_theme_configs').select('*').order('sort_order', { ascending: true }),
         supabase.from('shop_items').select('*').order('sort_order', { ascending: true }),
@@ -836,6 +861,7 @@ export default function Admin() {
         activeMatchCount.error ??
         profilesResult.error ??
         levelResult.error ??
+        dailyBonusResult.error ??
         tableResult.error ??
         boardResult.error ??
         shopResult.error ??
@@ -860,6 +886,7 @@ export default function Admin() {
         return new Set([...current].filter((id) => visibleIds.has(id)));
       });
       setLevels(levelResult.data ?? []);
+      setDailyBonusConfigs(dailyBonusResult.data ?? []);
       setTables(tableResult.data ?? []);
       setBoards(boardResult.data ?? []);
       setShopItems(shopResult.data ?? []);
@@ -1158,6 +1185,33 @@ export default function Admin() {
         throw error;
       }
       setLevelDraft(levelToDraft());
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveDailyBonus() {
+    if (!canManage) return;
+    setSavingKey('daily-bonus');
+    setDataError(null);
+    try {
+      const day = requiredNumber(dailyBonusDraft.day, 'Day');
+      if (day < 1 || day > 7) throw new Error('Day must be between 1 and 7.');
+      const payload: Database['public']['Tables']['daily_bonus_configs']['Insert'] = {
+        day,
+        reward_coins: requiredNumber(dailyBonusDraft.reward_coins, 'Reward coins'),
+        reward_gems: requiredNumber(dailyBonusDraft.reward_gems, 'Reward gems'),
+        reward_xp: requiredNumber(dailyBonusDraft.reward_xp, 'Reward XP'),
+        reward_items: parseJson(dailyBonusDraft.reward_items, 'Reward items', 'array'),
+        updated_by: user?.id ?? null,
+      };
+      const { error } = await supabase
+        .from('daily_bonus_configs')
+        .upsert(payload, { onConflict: 'day' });
+      if (error) throw error;
       await loadAdminData();
     } catch (err) {
       setError(err);
@@ -1881,6 +1935,69 @@ export default function Admin() {
                   <div className="flex gap-2">
                     <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
                     <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'Daily Bonus' && (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+              <ConfigTable
+                title="Daily bonus (7 days)"
+                rows={dailyBonusConfigs.map((row) => [
+                  `Day ${row.day}`,
+                  `${formatNumber(row.reward_coins)} coins`,
+                  `${formatNumber(row.reward_gems)} gems`,
+                  `${formatNumber(row.reward_xp)} XP`,
+                ])}
+                onRowClick={(index) => setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))}
+              />
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <h2 className="text-lg font-black">Edit daily bonus</h2>
+                <p className="mt-1 text-xs text-white/55">
+                  Day 1–7 of the rotating weekly cycle. Streak resets to day 1
+                  if a player misses a day (ET calendar). After day 7 the cycle
+                  loops back to day 1.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field
+                    label="Day (1–7)"
+                    value={dailyBonusDraft.day}
+                    onChange={(day) => setDailyBonusDraft((d) => ({ ...d, day }))}
+                  />
+                  <Field
+                    label="Reward coins"
+                    value={dailyBonusDraft.reward_coins}
+                    onChange={(reward_coins) => setDailyBonusDraft((d) => ({ ...d, reward_coins }))}
+                  />
+                  <Field
+                    label="Reward gems"
+                    value={dailyBonusDraft.reward_gems}
+                    onChange={(reward_gems) => setDailyBonusDraft((d) => ({ ...d, reward_gems }))}
+                  />
+                  <Field
+                    label="Reward XP"
+                    value={dailyBonusDraft.reward_xp}
+                    onChange={(reward_xp) => setDailyBonusDraft((d) => ({ ...d, reward_xp }))}
+                  />
+                </div>
+                <div className="mt-3 space-y-3">
+                  <TextArea
+                    label="Reward items JSON array"
+                    value={dailyBonusDraft.reward_items}
+                    onChange={(reward_items) => setDailyBonusDraft((d) => ({ ...d, reward_items }))}
+                  />
+                  <div className="flex gap-2">
+                    <PrimaryButton
+                      onClick={() => void saveDailyBonus()}
+                      disabled={!canManage || savingKey === 'daily-bonus'}
+                    >
+                      Save day
+                    </PrimaryButton>
+                    <SecondaryButton onClick={() => setDailyBonusDraft(dailyBonusToDraft())}>
+                      Reset form
+                    </SecondaryButton>
                   </div>
                 </div>
               </div>
