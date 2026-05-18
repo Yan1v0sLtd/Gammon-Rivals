@@ -1,4 +1,12 @@
-import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from 'react';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import type { BoardOwnershipState } from './useUserBoardInventory';
 
@@ -12,6 +20,149 @@ interface LobbyBoardCarouselProps {
   readonly onPurchaseTap: (board: LobbyBoard) => void;
 }
 
+// A tap is a pointer event that travels less than this distance, total.
+// Anything beyond gets treated as a drag.
+const TAP_MAX_DISTANCE_PX = 8;
+
+// Velocity is averaged across pointer-move samples within this window.
+const VELOCITY_WINDOW_MS = 110;
+
+// Default snap-back duration; scaled down for faster flicks.
+const SNAP_DURATION_MS = 320;
+const SNAP_MIN_DURATION_MS = 170;
+
+// How far (in slot-units) the user has to drag, or how fast (slot-units/ms)
+// they have to flick, to commit to the next/previous board on release.
+const COMMIT_THRESHOLD_FRACTION = 0.18;
+const COMMIT_THRESHOLD_VELOCITY = 0.0018;
+
+// How many slots out from center we render. Beyond this, boards are dropped
+// from the DOM. 2 gives the "next-next" peek that the original keyframes
+// produced when transitioning.
+const RENDER_RADIUS = 2;
+
+// Fallback layout (matches the base .lobby-carousel-board CSS vars). Used
+// before we've measured the actual values from CSS, and as a safety net if
+// a custom property comes back as NaN.
+interface Layout {
+  readonly slotX: number;
+  readonly slotScale: number;
+  readonly slotRot: number;
+  readonly farX: number;
+  readonly farScale: number;
+  readonly farRot: number;
+}
+
+const DEFAULT_LAYOUT: Layout = {
+  slotX: 34,
+  slotScale: 0.82,
+  slotRot: 6,
+  farX: 70,
+  farScale: 0.72,
+  farRot: 8,
+};
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function modulo(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
+
+// Translate / scale / rotate for a board at signed continuous distance `d`
+// from the centered slot. d=0 → centered; d=±1 → side slot; d=±2 → off-stage
+// "incoming" position. Values between are linearly interpolated so dragging
+// looks smooth at any sub-slot offset.
+function boardTransform(d: number, layout: Layout): CSSProperties {
+  const abs = Math.abs(d);
+  const sign = abs === 0 ? 0 : Math.sign(d);
+
+  const tx =
+    abs <= 1
+      ? lerp(0, layout.slotX, abs) * sign
+      : lerp(layout.slotX, layout.farX, clamp(abs - 1, 0, 1)) * sign;
+
+  const scale =
+    abs <= 1
+      ? lerp(1, layout.slotScale, abs)
+      : lerp(layout.slotScale, layout.farScale, clamp(abs - 1, 0, 1));
+
+  const rotMag =
+    abs <= 1
+      ? lerp(0, layout.slotRot, abs)
+      : lerp(layout.slotRot, layout.farRot, clamp(abs - 1, 0, 1));
+  const rot = rotMag * sign;
+
+  // Fade boards out past the side slot so the "incoming" board ghosts in
+  // rather than popping. Past RENDER_RADIUS we drop it entirely.
+  const opacity =
+    abs >= RENDER_RADIUS
+      ? 0
+      : abs > 1
+      ? lerp(1, 0.5, clamp(abs - 1, 0, 1))
+      : 1;
+
+  // Stack so the centered board is on top, side boards behind, far behind.
+  const zIndex = Math.max(0, Math.round(30 - abs * 10));
+
+  return {
+    transform: `translateX(-50%) translateX(${tx}%) scale(${scale}) rotate(${rot}deg)`,
+    zIndex,
+    opacity,
+  };
+}
+
+function readLayoutFromSample(sample: HTMLElement | null): Layout {
+  if (!sample) return DEFAULT_LAYOUT;
+  const cs = getComputedStyle(sample);
+  const pick = (name: string, fallback: number): number => {
+    const raw = cs.getPropertyValue(name).trim();
+    if (!raw) return fallback;
+    const parsed = parseFloat(raw);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  // CSS stores prev/next rotations as signed values; we want magnitudes
+  // (`Math.abs`) since the sign comes from `d` at render time.
+  return {
+    slotX: Math.abs(pick('--lobby-next-x', DEFAULT_LAYOUT.slotX)),
+    slotScale: pick('--lobby-side-scale', DEFAULT_LAYOUT.slotScale),
+    slotRot: Math.abs(pick('--lobby-next-rotation', DEFAULT_LAYOUT.slotRot)),
+    farX: Math.abs(pick('--lobby-incoming-next-x', DEFAULT_LAYOUT.farX)),
+    farScale: pick('--lobby-incoming-scale', DEFAULT_LAYOUT.farScale),
+    farRot: Math.abs(pick('--lobby-incoming-next-rotation', DEFAULT_LAYOUT.farRot)),
+  };
+}
+
+function layoutsEqual(a: Layout, b: Layout): boolean {
+  return (
+    a.slotX === b.slotX &&
+    a.slotScale === b.slotScale &&
+    a.slotRot === b.slotRot &&
+    a.farX === b.farX &&
+    a.farScale === b.farScale &&
+    a.farRot === b.farRot
+  );
+}
+
+interface DragState {
+  pointerId: number;
+  startX: number;
+  startTime: number;
+  startPosition: number;
+  samples: { t: number; x: number }[];
+  moved: boolean;
+  tappedSignedIdx: number | null;
+}
+
 export function LobbyBoardCarousel({
   boards,
   selectedId,
@@ -21,21 +172,283 @@ export function LobbyBoardCarousel({
   onLockedTap,
   onPurchaseTap,
 }: LobbyBoardCarouselProps) {
-  const [motion, setMotion] = useState<'next' | 'previous'>('next');
-  const [motionKey, setMotionKey] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartX = useRef<number | null>(null);
-  const dragPointerId = useRef<number | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
 
-  // Render an empty placeholder until the lobby has at least one board
-  // to show (e.g., while the Back Office query is still resolving, or
-  // when no boards are enabled there). Returning early avoids touching
-  // boards[0] / boards.length math on an empty array.
+  // Continuous carousel position. round(position) mod boards.length is the
+  // currently centered board; fractional part is drag/animation offset.
+  const initialPosition = (() => {
+    const idx = boards.findIndex((b) => b.id === selectedId);
+    return idx >= 0 ? idx : 0;
+  })();
+  const [position, setPositionState] = useState(initialPosition);
+  const positionRef = useRef(position);
+  const setPosition = useCallback((value: number) => {
+    positionRef.current = value;
+    setPositionState(value);
+  }, []);
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<DragState | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  // True while an external selectedId change is being animated. Suppresses
+  // mid-animation notifications back to the parent (which would otherwise
+  // briefly report an id we're animating through, not toward).
+  const externalAnimRef = useRef(false);
+
+  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
+
+  // ----- Animation control -----
+
+  const cancelAnimation = useCallback(() => {
+    if (animFrameRef.current !== null) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
+  // Animate `position` from current value to `target` over `duration` ms.
+  // The optional `notifyOnLand` flag controls whether the parent is told
+  // about the new selection when the animation lands. External-source
+  // animations (driven by selectedId prop changes) pass `false` to avoid
+  // echoing the same value back.
+  const animateTo = useCallback(
+    (target: number, duration: number, notifyOnLand: boolean) => {
+      cancelAnimation();
+      const from = positionRef.current;
+      if (Math.abs(target - from) < 0.001 || duration <= 0) {
+        setPosition(target);
+        if (notifyOnLand) {
+          // notify happens via the integer-landed effect below
+        }
+        return;
+      }
+      externalAnimRef.current = !notifyOnLand;
+      const start = performance.now();
+      const tick = (now: number) => {
+        const t = clamp((now - start) / duration, 0, 1);
+        const eased = easeOutCubic(t);
+        const value = from + (target - from) * eased;
+        if (t < 1) {
+          setPosition(value);
+          animFrameRef.current = requestAnimationFrame(tick);
+        } else {
+          animFrameRef.current = null;
+          setPosition(target);
+          externalAnimRef.current = false;
+        }
+      };
+      animFrameRef.current = requestAnimationFrame(tick);
+    },
+    [cancelAnimation, setPosition]
+  );
+
+  useEffect(() => () => cancelAnimation(), [cancelAnimation]);
+
+  // ----- CSS-var layout sync -----
+  //
+  // The slot positions / scales / rotations live in responsive CSS rules on
+  // .lobby-carousel-board. We mirror them into state so the JS-driven
+  // transforms match the breakpoint that's currently active.
+  useLayoutEffect(() => {
+    const node = viewportRef.current;
+    if (!node) return;
+    const measure = () => {
+      const sample = node.querySelector<HTMLElement>('.lobby-carousel-board');
+      const next = readLayoutFromSample(sample);
+      setLayout((prev) => (layoutsEqual(prev, next) ? prev : next));
+    };
+    measure();
+    const obs = new ResizeObserver(measure);
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [boards.length]);
+
+  // ----- Parent <-> position sync -----
+
+  const lastNotifiedRef = useRef<LobbyBoardId>(selectedId);
+
+  // When parent flips selectedId externally (e.g. URL nav), animate the
+  // carousel to that board along the shortest path around the loop.
+  useEffect(() => {
+    if (boards.length === 0) return;
+    const idx = boards.findIndex((b) => b.id === selectedId);
+    if (idx < 0) return;
+    if (selectedId === lastNotifiedRef.current) return;
+    lastNotifiedRef.current = selectedId;
+    if (dragRef.current) return; // user is mid-drag; their pointer wins.
+    const len = boards.length;
+    const candidates = [idx, idx - len, idx + len];
+    const current = positionRef.current;
+    const target = candidates.reduce(
+      (best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best),
+      candidates[0]!
+    );
+    if (Math.abs(target - current) < 0.001) return;
+    animateTo(target, SNAP_DURATION_MS, false);
+  }, [selectedId, boards, animateTo]);
+
+  // When position lands on a new integer slot, tell the parent. Skipped
+  // during external animations (otherwise we'd echo the same id back).
+  useEffect(() => {
+    if (boards.length === 0) return;
+    if (externalAnimRef.current) return;
+    // Only notify when we're settled near an integer (drag at rest, or
+    // animation finished). Avoids flapping through ids during a multi-slot
+    // tween.
+    const distanceToInteger = Math.abs(position - Math.round(position));
+    if (distanceToInteger > 0.001) return;
+    const idx = modulo(Math.round(position), boards.length);
+    const id = boards[idx]!.id;
+    if (id === lastNotifiedRef.current) return;
+    lastNotifiedRef.current = id;
+    onSelectedIdChange(id);
+  }, [position, boards, onSelectedIdChange]);
+
+  // ----- Pointer handlers -----
+
+  const slotWidthPx = useCallback((): number => {
+    const node = viewportRef.current;
+    if (!node) return 1;
+    // One "slot" of carousel travel = the distance each board has to
+    // translate to slide from one slot into the next. The CSS expresses
+    // that translation as `translateX(slotX%)` of the BOARD's width — not
+    // the viewport's — so a 1:1 finger-to-board-movement ratio requires
+    // dividing finger pixels by the board's natural (untransformed) width
+    // times slotX/100. offsetWidth ignores transform: scale().
+    const sample = node.querySelector<HTMLElement>('.lobby-carousel-board');
+    const boardWidthPx = sample?.offsetWidth ?? node.clientWidth * 0.6;
+    return Math.max(40, (boardWidthPx * layout.slotX) / 100);
+  }, [layout.slotX]);
+
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    cancelAnimation();
+    const target = event.target as HTMLElement | null;
+    const slotEl = target?.closest<HTMLElement>('[data-board-signed-idx]');
+    const tappedSignedIdx = slotEl
+      ? parseInt(slotEl.dataset.boardSignedIdx ?? '', 10)
+      : null;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startTime: performance.now(),
+      startPosition: positionRef.current,
+      samples: [{ t: performance.now(), x: event.clientX }],
+      moved: false,
+      tappedSignedIdx: Number.isFinite(tappedSignedIdx) ? tappedSignedIdx : null,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    const now = performance.now();
+    drag.samples.push({ t: now, x: event.clientX });
+    while (drag.samples.length > 2 && now - drag.samples[0]!.t > VELOCITY_WINDOW_MS) {
+      drag.samples.shift();
+    }
+    if (!drag.moved && Math.abs(dx) > TAP_MAX_DISTANCE_PX) {
+      drag.moved = true;
+      setIsDragging(true);
+    }
+    if (drag.moved) {
+      // Swiping left (dx < 0) advances the carousel forward (position +).
+      const delta = -dx / slotWidthPx();
+      setPosition(drag.startPosition + delta);
+    }
+  };
+
+  const handlePointerEnd = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsDragging(false);
+
+    // Tap path: the pointer barely moved. If they tapped a side board,
+    // animate that board into the center; if they tapped the centered
+    // board or empty space, do nothing.
+    if (!drag.moved) {
+      if (
+        drag.tappedSignedIdx !== null &&
+        drag.tappedSignedIdx !== Math.round(positionRef.current)
+      ) {
+        animateTo(drag.tappedSignedIdx, SNAP_DURATION_MS, true);
+      }
+      return;
+    }
+
+    // Drag path: decide whether to commit to a neighbouring slot or snap
+    // back, based on both how far they dragged AND how fast they were
+    // moving at release.
+    const samples = drag.samples;
+    let vxPxPerMs = 0;
+    if (samples.length >= 2) {
+      const first = samples[0]!;
+      const last = samples[samples.length - 1]!;
+      const dt = last.t - first.t;
+      if (dt > 0) vxPxPerMs = (last.x - first.x) / dt;
+    }
+    const vSlotsPerMs = -vxPxPerMs / slotWidthPx();
+
+    const draggedSlots = positionRef.current - drag.startPosition;
+    let target: number;
+    if (
+      Math.abs(draggedSlots) >= COMMIT_THRESHOLD_FRACTION ||
+      Math.abs(vSlotsPerMs) >= COMMIT_THRESHOLD_VELOCITY
+    ) {
+      // Step exactly one slot in whichever direction wins (drag or flick).
+      // Limiting to one prevents a single hard flick from skipping past
+      // several boards, which feels uncontrollable.
+      const direction = Math.sign(draggedSlots || vSlotsPerMs) || 1;
+      target = Math.round(drag.startPosition) + direction;
+    } else {
+      target = Math.round(drag.startPosition);
+    }
+
+    // Velocity-aware duration: a fast flick finishes the remaining travel
+    // in less time, so the motion feels continuous with the user's hand
+    // rather than bouncing through a fixed-length animation.
+    const remaining = Math.abs(target - positionRef.current);
+    const baseDuration = SNAP_DURATION_MS * clamp(remaining, 0.4, 1);
+    const speedFactor = clamp(Math.abs(vSlotsPerMs) * 220, 0, 1);
+    const duration = Math.max(SNAP_MIN_DURATION_MS, baseDuration * (1 - 0.55 * speedFactor));
+    animateTo(target, duration, true);
+  };
+
+  // ----- Arrow / dot navigation -----
+
+  const animateByOffset = (delta: -1 | 1) => {
+    cancelAnimation();
+    animateTo(Math.round(positionRef.current) + delta, SNAP_DURATION_MS, true);
+  };
+
+  const animateToBoardIdx = (idx: number) => {
+    if (boards.length === 0) return;
+    const len = boards.length;
+    const candidates = [idx, idx - len, idx + len];
+    const current = positionRef.current;
+    const target = candidates.reduce(
+      (best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best),
+      candidates[0]!
+    );
+    cancelAnimation();
+    animateTo(target, SNAP_DURATION_MS, true);
+  };
+
+  // ----- Render -----
+
+  // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
     return (
       <section className="lobby-carousel-section relative mx-auto flex w-full max-w-[64rem] items-center justify-center overflow-visible">
-        <div className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]">
+        <div
+          ref={viewportRef}
+          className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
+        >
           <p className="px-6 text-center text-sm font-bold uppercase tracking-[0.18em]">
             Loading boards…
           </p>
@@ -44,155 +457,119 @@ export function LobbyBoardCarousel({
     );
   }
 
-  const selectedIndex = boards.findIndex((board) => board.id === selectedId);
-  const safeIndex = selectedIndex >= 0 ? selectedIndex : 0;
-  const selected = boards[safeIndex]!;
-  const previous = boards[(safeIndex - 1 + boards.length) % boards.length]!;
-  const next = boards[(safeIndex + 1) % boards.length]!;
+  // Build the list of rendered boards (signed index, distance from center).
+  // We anchor on floor(position) so the leading edge of the drag always has
+  // a "next" board to peek at. RENDER_RADIUS + 1 on the upper bound makes
+  // sure that peek board exists when we're partway between slots.
+  const baseIdx = Math.floor(position);
+  type RenderedBoard = { board: LobbyBoard; signedIdx: number; d: number; key: string };
+  const rendered: RenderedBoard[] = [];
+  for (let off = -RENDER_RADIUS; off <= RENDER_RADIUS + 1; off++) {
+    const signedIdx = baseIdx + off;
+    const d = signedIdx - position;
+    if (Math.abs(d) > RENDER_RADIUS + 0.05) continue;
+    const wrappedIdx = modulo(signedIdx, boards.length);
+    rendered.push({
+      board: boards[wrappedIdx]!,
+      signedIdx,
+      d,
+      // Lap-stable key: stays the same across re-renders for the same
+      // logical board at the same loop iteration, so React reuses the
+      // DOM node and the image doesn't flicker as the carousel scrolls.
+      key: `${wrappedIdx}@${Math.floor(signedIdx / Math.max(1, boards.length))}`,
+    });
+  }
 
-  const selectIndex = (nextIndex: number) => {
-    if (nextIndex === safeIndex) return;
-    const clockwiseDistance = (nextIndex - safeIndex + boards.length) % boards.length;
-    setMotion(clockwiseDistance <= boards.length / 2 ? 'next' : 'previous');
-    setMotionKey((value) => value + 1);
-    onSelectedIdChange(boards[nextIndex]!.id);
-  };
-
-  const move = (direction: -1 | 1) => {
-    setMotion(direction > 0 ? 'next' : 'previous');
-    setMotionKey((value) => value + 1);
-    onSelectedIdChange(boards[(safeIndex + direction + boards.length) % boards.length]!.id);
-  };
-
-  const resetDrag = () => {
-    dragStartX.current = null;
-    dragPointerId.current = null;
-    setDragOffset(0);
-    setIsDragging(false);
-  };
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    dragStartX.current = event.clientX;
-    dragPointerId.current = event.pointerId;
-    setDragOffset(0);
-    setIsDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (dragStartX.current === null) return;
-    const delta = event.clientX - dragStartX.current;
-    setDragOffset(Math.max(-170, Math.min(170, delta)));
-  };
-
-  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (dragStartX.current === null) return;
-    const delta = event.clientX - dragStartX.current;
-    if (
-      dragPointerId.current !== null &&
-      event.currentTarget.hasPointerCapture(dragPointerId.current)
-    ) {
-      event.currentTarget.releasePointerCapture(dragPointerId.current);
-    }
-    resetDrag();
-    if (Math.abs(delta) < 42) return;
-    move(delta < 0 ? 1 : -1);
-  };
-
-  const visibleBoards = [
-    { board: previous, slot: 'previous' },
-    { board: selected, slot: 'selected' },
-    { board: next, slot: 'next' },
-  ] as const;
-  const carouselDragStyle = { '--drag-x': `${dragOffset}px` } as CSSProperties;
+  const selectedBoardIdx = modulo(Math.round(position), boards.length);
+  const selected = boards[selectedBoardIdx]!;
 
   return (
     <section className="lobby-carousel-section relative mx-auto w-full max-w-[64rem] overflow-visible">
       <div
+        ref={viewportRef}
         className="lobby-carousel-viewport relative aspect-[1.05/1] min-h-[25rem] touch-pan-y overflow-visible sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
         data-dragging={isDragging ? 'true' : 'false'}
-        style={carouselDragStyle}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerCancel={() => {
-          resetDrag();
-        }}
-        onPointerUp={handlePointerUp}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
       >
         <div className="absolute inset-0 overflow-visible">
-          {visibleBoards.map(({ board, slot }) => {
+          {rendered.map(({ board, signedIdx, d, key }) => {
             const state = getBoardState(board);
             const showLock = state === 'level-locked';
             const showPill = state === 'level-locked' || state === 'purchasable';
+            const isCenter = Math.abs(d) < 0.5;
+            const style = boardTransform(d, layout);
             return (
-            <div
-              key={`${slot}-${board.id}-${motionKey}`}
-              data-motion={motion}
-              data-slot={slot}
-              data-state={state}
-              className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing"
-            >
-              <img
-                src={board.image}
-                alt={slot === 'selected' ? `${board.name} board preview` : ''}
-                className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
-                draggable={false}
-              />
-              {showLock ? (
-                <button
-                  type="button"
-                  aria-label={`${board.name} locked`}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onLockedTap(board);
-                  }}
-                  className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] w-[10%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
-                >
-                  <img
-                    src="/lobby/carousel/lock.webp"
-                    alt=""
-                    className="lobby-carousel-board-lock h-full w-full select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
-                    draggable={false}
-                  />
-                </button>
-              ) : null}
-              {showPill ? (
-                <button
-                  type="button"
-                  aria-label={
-                    state === 'level-locked'
-                      ? `${board.name} requires level ${board.unlockLevel}`
-                      : `Unlock ${board.name} for ${board.priceGems} gems`
-                  }
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (state === 'level-locked') onLockedTap(board);
-                    else onPurchaseTap(board);
-                  }}
-                  className="lobby-carousel-board-pill-button absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
-                >
-                  <img
-                    src="/lobby/carousel/pill.webp"
-                    alt=""
-                    className="lobby-carousel-board-pill h-full w-full select-none"
-                    draggable={false}
-                  />
-                  <img
-                    src="/lobby/carousel/gem.webp"
-                    alt=""
-                    className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[6px] left-[15%] w-[18%] select-none"
-                    draggable={false}
-                  />
-                  {board.priceGems > 0 ? (
-                    <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[58%] -translate-x-1/2 select-none font-display text-[clamp(0.7rem,1.6vw,1rem)] font-black tracking-[0.04em] text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
-                      {board.priceGems.toLocaleString()}
-                    </span>
-                  ) : null}
-                </button>
-              ) : null}
-            </div>
+              <div
+                key={key}
+                data-board-signed-idx={signedIdx}
+                data-state={state}
+                className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing"
+                style={style}
+              >
+                <img
+                  src={board.image}
+                  alt={isCenter ? `${board.name} board preview` : ''}
+                  className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
+                  draggable={false}
+                />
+                {showLock ? (
+                  <button
+                    type="button"
+                    aria-label={`${board.name} locked`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onLockedTap(board);
+                    }}
+                    className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] w-[10%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
+                  >
+                    <img
+                      src="/lobby/carousel/lock.webp"
+                      alt=""
+                      className="lobby-carousel-board-lock h-full w-full select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
+                      draggable={false}
+                    />
+                  </button>
+                ) : null}
+                {showPill ? (
+                  <button
+                    type="button"
+                    aria-label={
+                      state === 'level-locked'
+                        ? `${board.name} requires level ${board.unlockLevel}`
+                        : `Unlock ${board.name} for ${board.priceGems} gems`
+                    }
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (state === 'level-locked') onLockedTap(board);
+                      else onPurchaseTap(board);
+                    }}
+                    className="lobby-carousel-board-pill-button absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
+                  >
+                    <img
+                      src="/lobby/carousel/pill.webp"
+                      alt=""
+                      className="lobby-carousel-board-pill h-full w-full select-none"
+                      draggable={false}
+                    />
+                    <img
+                      src="/lobby/carousel/gem.webp"
+                      alt=""
+                      className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[6px] left-[15%] w-[18%] select-none"
+                      draggable={false}
+                    />
+                    {board.priceGems > 0 ? (
+                      <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[66%] -translate-x-1/2 select-none whitespace-nowrap font-display text-[clamp(1rem,2.3vw,1.5rem)] font-black leading-none tracking-[0.04em] text-white tabular-nums drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
+                        {board.priceGems.toLocaleString()}
+                      </span>
+                    ) : null}
+                  </button>
+                ) : null}
+              </div>
             );
           })}
         </div>
@@ -213,7 +590,7 @@ export function LobbyBoardCarousel({
         <button
           type="button"
           aria-label="Previous board"
-          onClick={() => move(-1)}
+          onClick={() => animateByOffset(-1)}
           onPointerDown={(event) => event.stopPropagation()}
           className="absolute left-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-[radial-gradient(circle_at_38%_28%,#333942,#151820_70%)] text-4xl font-black leading-none text-[#ffd16f] shadow-[0_8px_14px_rgba(0,0,0,0.48),inset_0_2px_0_rgba(255,255,255,0.20),inset_0_-5px_0_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,216,116,0.18)] transition hover:scale-105 hover:brightness-110 active:scale-95"
         >
@@ -222,7 +599,7 @@ export function LobbyBoardCarousel({
         <button
           type="button"
           aria-label="Next board"
-          onClick={() => move(1)}
+          onClick={() => animateByOffset(1)}
           onPointerDown={(event) => event.stopPropagation()}
           className="absolute right-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-[radial-gradient(circle_at_38%_28%,#333942,#151820_70%)] text-4xl font-black leading-none text-[#ffd16f] shadow-[0_8px_14px_rgba(0,0,0,0.48),inset_0_2px_0_rgba(255,255,255,0.20),inset_0_-5px_0_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,216,116,0.18)] transition hover:scale-105 hover:brightness-110 active:scale-95"
         >
@@ -239,13 +616,14 @@ export function LobbyBoardCarousel({
         </button>
 
         <div className="absolute bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center gap-4">
-          {boards.map((board) => (
+          {boards.map((board, idx) => (
             <button
               key={board.id}
               type="button"
               aria-label={`Select ${board.name}`}
               aria-pressed={selected.id === board.id}
-              onClick={() => selectIndex(boards.indexOf(board))}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => animateToBoardIdx(idx)}
               className={`h-4 w-4 rounded-full border border-white/80 transition ${
                 selected.id === board.id
                   ? 'scale-125 bg-[#ffd35d] shadow-[0_0_8px_rgba(255,211,93,0.72)]'
