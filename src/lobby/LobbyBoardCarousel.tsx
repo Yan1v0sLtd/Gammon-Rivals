@@ -33,7 +33,7 @@ const SNAP_MIN_DURATION_MS = 170;
 
 // How far (in slot-units) the user has to drag, or how fast (slot-units/ms)
 // they have to flick, to commit to the next/previous board on release.
-const COMMIT_THRESHOLD_FRACTION = 0.32;
+const COMMIT_THRESHOLD_FRACTION = 0.18;
 const COMMIT_THRESHOLD_VELOCITY = 0.0018;
 
 // How many slots out from center we render. Beyond this, boards are dropped
@@ -309,11 +309,15 @@ export function LobbyBoardCarousel({
   const slotWidthPx = useCallback((): number => {
     const node = viewportRef.current;
     if (!node) return 1;
-    // One "slot" of carousel travel = the horizontal distance between the
-    // centered slot and a side slot. CSS expresses this as a percent
-    // (layout.slotX) of the viewport width. Below ~80px we treat it as a
-    // tiny floor to avoid divide-by-zero in degenerate layouts.
-    return Math.max(80, (node.clientWidth * layout.slotX) / 100);
+    // One "slot" of carousel travel = the distance each board has to
+    // translate to slide from one slot into the next. The CSS expresses
+    // that translation as `translateX(slotX%)` of the BOARD's width — not
+    // the viewport's — so a 1:1 finger-to-board-movement ratio requires
+    // dividing finger pixels by the board's natural (untransformed) width
+    // times slotX/100. offsetWidth ignores transform: scale().
+    const sample = node.querySelector<HTMLElement>('.lobby-carousel-board');
+    const boardWidthPx = sample?.offsetWidth ?? node.clientWidth * 0.6;
+    return Math.max(40, (boardWidthPx * layout.slotX) / 100);
   }, [layout.slotX]);
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
