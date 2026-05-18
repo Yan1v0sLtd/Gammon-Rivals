@@ -40,9 +40,15 @@ export function useImagePreloader(
   const startedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    let cancelled = false;
+    // Don't gate markLoaded on a `cancelled` flag: when the URL set
+    // grows (e.g. board data arrives mid-flight and adds per-board image
+    // URLs), this effect re-runs, the previous closure's cleanup sets
+    // its own `cancelled` to true, and any onload from images that were
+    // started by the prior run gets silently dropped — so loaded count
+    // stalls below total and assetsReady never flips. React 18 already
+    // makes setState-after-unmount safe; startedRef prevents duplicate
+    // loads. So we just always record the load against the shared set.
     const markLoaded = (url: string) => {
-      if (cancelled) return;
       setLoadedSet((prev) => {
         if (prev.has(url)) return prev;
         const next = new Set(prev);
@@ -60,9 +66,6 @@ export function useImagePreloader(
       img.onerror = () => markLoaded(url);
       img.src = url;
     }
-    return () => {
-      cancelled = true;
-    };
     // cleaned is recomputed from useMemo; depend on the stable key so we
     // don't re-run on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
