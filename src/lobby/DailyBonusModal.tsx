@@ -263,7 +263,7 @@ export function DailyBonusModal({
        * Title and cards now define the modal's height; no background
        * image, no aspect-ratio constraint.
        */}
-      <div className="relative w-full max-w-5xl origin-center scale-[0.56] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]">
+      <div className="relative w-full max-w-5xl origin-center scale-[0.45] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]">
         <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
           <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] px-[clamp(1rem,3vw,2.5rem)] pb-[clamp(1rem,3vw,2rem)] pt-[clamp(1rem,3vw,2rem)]">
             {/* Top + bottom decorative lozenges */}
