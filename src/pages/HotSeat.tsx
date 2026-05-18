@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
 import CubeOfferDecision from '../components/CubeOfferDecision';
 import EndOfGameModal from '../components/EndOfGameModal';
-import { LoadingScreen } from '../components/LoadingScreen';
 import MatchHeader from '../components/MatchHeader';
 import BoardLayout from '../components/BoardLayout';
 import ActionButtons from '../components/ActionButtons';
@@ -284,27 +283,47 @@ export default function HotSeat() {
     return list;
   }, [selectedTheme]);
   const { ready: assetsReady } = useImagePreloader(assetUrls);
-  const [gameShown, setGameShown] = useState(false);
+  // BoardCanvas reports back when Pixi has actually drawn the first
+  // frame. The loader overlay can only fade once that's true — fading
+  // earlier reveals an empty board area while WebGL is still
+  // initialising. Alignment-tool route bypasses this gate.
+  const [boardReady, setBoardReady] = useState(false);
+  const handleBoardReady = useCallback(() => setBoardReady(true), []);
+  // Safety net: if Pixi init errors or stalls, don't trap the user on
+  // the loader forever. Reveal after 6s regardless — they'll see
+  // whatever the page rendered, which beats an indefinite spinner.
   useEffect(() => {
-    if (assetsReady) setGameShown(true);
-  }, [assetsReady]);
+    if (boardReady) return;
+    const id = window.setTimeout(() => setBoardReady(true), 6000);
+    return () => window.clearTimeout(id);
+  }, [boardReady]);
+  const gameReady = assetsReady && (boardReady || alignmentEnabled);
 
-  // Hand-off to the route-spanning overlay: once we're fully composed,
-  // fade it out so the new screen reveals smoothly underneath. No-op
-  // on direct/initial loads (overlay was never up).
+  // Cover the screen with the overlay from the moment we mount, even on
+  // a direct/cold load to /hotseat. useLayoutEffect runs before paint
+  // so the overlay is composited in the same frame as the route's
+  // first DOM commit — no flash of half-painted gameplay.
+  useLayoutEffect(() => {
+    if (alignmentEnabled) return;
+    showOverlay();
+  }, [alignmentEnabled, showOverlay]);
+
+  // Once HTML images are cached AND Pixi has painted its first frame,
+  // fade the overlay out to reveal the fully composed game screen.
   useEffect(() => {
-    if (gameShown) hideOverlay();
-  }, [gameShown, hideOverlay]);
+    if (gameReady) hideOverlay();
+  }, [gameReady, hideOverlay]);
 
   // ---- Auto-roll preference ----
   const [autoRollOn, setAutoRollOn] = useAutoRoll();
   const humanCanInteract = !game.isAITurn && !game.isAIThinking;
   const playerCanRoll =
     game.roll === null && !game.lastGameResult && !game.matchOver && humanCanInteract;
-  // Suppress auto-roll until the gameplay UI is visible — otherwise dice
-  // fly in the background while the loading screen is up and the player
-  // sees the dice already settled when the board appears.
-  useAutoRollEffect(autoRollOn && gameShown, playerCanRoll, game.rollDice);
+  // Suppress auto-roll until the gameplay UI is fully revealed —
+  // otherwise dice fly in the background while the loading screen is
+  // up and the player sees the dice already settled when the board
+  // appears.
+  useAutoRollEffect(autoRollOn && gameReady, playerCanRoll, game.rollDice);
 
   // ---- Game UI ----
   const handlePointClick = (pos: Position) => {
@@ -412,9 +431,10 @@ export default function HotSeat() {
   const gameplayBackground =
     selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
 
-  // Alignment tool needs immediate render (dev-only nudging UI), so it
-  // bypasses the asset gate.
-  if (!gameShown && !alignmentEnabled) return <LoadingScreen />;
+  // Note: no early-return loading gate here. The full JSX (including
+  // BoardCanvas) renders behind the route-spanning overlay so Pixi can
+  // initialise while the loader is up, and onReady can fire to release
+  // the overlay on a fully composed screen.
 
   return (
     <BoardLayout
@@ -511,6 +531,7 @@ export default function HotSeat() {
           alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
         }}
         onPointClick={alignmentEnabled ? undefined : handlePointClick}
+        onReady={handleBoardReady}
       />
       <DiceTray
         roll={game.roll}

@@ -10,6 +10,11 @@ interface Props {
   layoutOverride?: ThemeLayout;
   selection?: RenderSelection;
   onPointClick?: (pos: Position) => void;
+  /** Fires once Pixi has finished initialising and the first board
+   *  frame has been rendered. Lets the surrounding route hold its
+   *  loader overlay open until the WebGL surface is actually painted,
+   *  instead of fading on HTML-image readiness alone. */
+  onReady?: () => void;
 }
 
 export default function BoardCanvas({
@@ -18,6 +23,7 @@ export default function BoardCanvas({
   layoutOverride,
   selection,
   onPointClick,
+  onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const appRef = useRef<Application | null>(null);
@@ -27,6 +33,12 @@ export default function BoardCanvas({
   const selectionRef = useRef(selection);
   const clickRef = useRef(onPointClick);
   const layoutOverrideRef = useRef(layoutOverride);
+  // Held in a ref so the init effect (theme-keyed) doesn't have to
+  // re-run just because the parent passed a new onReady identity.
+  const onReadyRef = useRef(onReady);
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -71,6 +83,11 @@ export default function BoardCanvas({
       renderer.setOnPointClick((pos) => clickRef.current?.(pos));
       rendererRef.current = renderer;
       renderLatest();
+
+      // Pixi has now drawn the board with the loaded textures. Notify
+      // the parent so it can release the loading overlay on a fully
+      // composed surface (not just on HTML-image readiness).
+      onReadyRef.current?.();
 
       resizeObserver = new ResizeObserver(renderLatest);
       resizeObserver.observe(container);

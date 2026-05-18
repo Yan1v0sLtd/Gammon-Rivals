@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
-import { LoadingScreen } from '../components/LoadingScreen';
 import { useAuth } from '../lib/auth';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { createOnlineMatch } from '../lib/persistence';
@@ -222,19 +221,25 @@ export function LobbyScreen() {
     return list;
   }, [boards]);
   const { ready: assetsReady } = useImagePreloader(assetUrls);
-  const [lobbyShown, setLobbyShown] = useState(false);
-  useEffect(() => {
-    if (!boardsLoading && assetsReady) setLobbyShown(true);
-  }, [boardsLoading, assetsReady]);
+  const lobbyReady = assetsReady && !boardsLoading;
 
-  // Once the lobby is fully composed, fade the navigation overlay out.
-  // No-op when the overlay was never up (initial app load with the
-  // route's own gate handling the wait).
-  useEffect(() => {
-    if (lobbyShown) hideOverlay();
-  }, [lobbyShown, hideOverlay]);
+  // Cover the screen with the overlay from the moment we mount, even
+  // on a cold load. useLayoutEffect runs before paint so the overlay
+  // is composited in the same frame as the route's first DOM commit.
+  useLayoutEffect(() => {
+    showOverlay();
+  }, [showOverlay]);
 
-  if (!lobbyShown) return <LoadingScreen />;
+  // Once Supabase has returned and every image has loaded, fade the
+  // overlay out to reveal the fully composed lobby underneath.
+  useEffect(() => {
+    if (lobbyReady) hideOverlay();
+  }, [lobbyReady, hideOverlay]);
+
+  // Note: no early-return loading gate here. The full lobby JSX renders
+  // behind the route-spanning overlay so any internal layout work
+  // settles while the loader is up — the overlay fades on lobbyReady to
+  // reveal a stable, fully painted view.
 
   return (
     <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
