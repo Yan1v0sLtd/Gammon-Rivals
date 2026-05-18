@@ -85,10 +85,10 @@ function DayCard({
           }`}
         >
           <div
-            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-2 pb-3 pt-9 ${cardHeight}`}
+            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffaf0] to-[#fdedc7] px-1.5 pb-3 pt-9 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1.1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[clamp(0.7rem,1.6vw,1.1rem)] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -100,10 +100,10 @@ function DayCard({
                 src="/lobby/carousel/gem.webp"
                 alt=""
                 data-fly-source="gems"
-                className="h-[4.4rem] w-[4.4rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.5)]"
+                className="h-[clamp(2.5rem,6vw,4.4rem)] w-[clamp(2.5rem,6vw,4.4rem)] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.5)]"
                 draggable={false}
               />
-              <div className="font-display text-[2rem] font-black leading-none text-[#3a1f08]">
+              <div className="font-display text-[clamp(1.25rem,2.8vw,2rem)] font-black leading-none text-[#3a1f08]">
                 {gems.toLocaleString()}
               </div>
             </div>
@@ -112,7 +112,7 @@ function DayCard({
               type="button"
               disabled={isClaiming}
               onClick={onClaim}
-              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-2 font-display text-[1.2rem] font-black uppercase tracking-[0.14em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-2 font-display text-[clamp(0.6rem,1.3vw,1.2rem)] font-black uppercase tracking-[0.12em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isClaiming ? '…' : 'Claim'}
             </button>
@@ -138,10 +138,10 @@ function DayCard({
           }`}
         >
           <div
-            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-2 pb-3 pt-9 ${cardHeight}`}
+            className={`relative flex flex-col overflow-hidden rounded-[13px] bg-gradient-to-b from-[#fffdf3] to-[#fcf1cb] px-1.5 pb-3 pt-9 ${cardHeight}`}
           >
             <div className="absolute -top-[1px] left-1/2 z-10 -translate-x-1/2">
-              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[1.1rem] font-black uppercase tracking-[0.14em] text-white shadow-md">
+              <div className="whitespace-nowrap rounded-b-md border-x border-b border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-4 py-1.5 font-display text-[clamp(0.7rem,1.6vw,1.1rem)] font-black uppercase tracking-[0.14em] text-white shadow-md">
                 Day&nbsp;{day}
               </div>
             </div>
@@ -179,7 +179,7 @@ function DayCard({
           isMilestone ? 'mt-2' : ''
         }`}
       >
-        <div className="whitespace-nowrap text-center font-display text-[1.1rem] font-bold uppercase tracking-[0.14em] text-[#3a1f08]">
+        <div className="whitespace-nowrap text-center font-display text-[clamp(0.7rem,1.6vw,1.1rem)] font-bold uppercase tracking-[0.14em] text-[#3a1f08]">
           Day&nbsp;{day}
         </div>
         <div className="mx-auto mt-1 h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent" />
@@ -188,10 +188,10 @@ function DayCard({
           <img
             src="/lobby/carousel/gem.webp"
             alt=""
-            className="h-[4rem] w-[4rem] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.45)]"
+            className="h-[clamp(2.25rem,5.4vw,4rem)] w-[clamp(2.25rem,5.4vw,4rem)] select-none object-contain drop-shadow-[0_8px_6px_rgba(80,40,15,0.45)]"
             draggable={false}
           />
-          <div className="font-display text-[1.75rem] font-black leading-none text-[#3a1f08]">
+          <div className="font-display text-[clamp(1.1rem,2.5vw,1.75rem)] font-black leading-none text-[#3a1f08]">
             {gems.toLocaleString()}
           </div>
         </div>
@@ -249,25 +249,30 @@ export function DailyBonusModal({
        * Asset: /public/lobby/daily-bonus/frame.webp
        */}
       <div
-        className="relative flex w-full max-w-6xl max-h-[95vh] origin-center scale-[0.8] aspect-[1488/983] flex-col bg-no-repeat px-[3.5%] pb-[5%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
+        className="relative flex w-full origin-center scale-[0.8] aspect-[1488/983] flex-col bg-no-repeat px-[3.5%] pb-[5%] pt-[5%] drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
         style={{
           backgroundImage: "url('/lobby/daily-bonus/frame.webp')",
           backgroundSize: '100% 100%',
+          // Cap the width so that (width / aspect) always fits within 95vh.
+          // On tall viewports max-w-6xl (72rem) binds; on short / landscape
+          // phones the calc(95vh*1.514) term binds and forces the modal to
+          // shrink proportionally so the cards stay inside the frame.
+          maxWidth: 'min(72rem, calc(95vh * 1.514))',
         }}
       >
         {/* Title with gold gradient + decorative ornaments */}
         <div className="flex items-center justify-center gap-4">
           <span className="text-lg text-amber-500/80">◆</span>
           <span className="h-px w-12 bg-gradient-to-r from-transparent via-amber-500/70 to-amber-600/80" />
-          <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-[3.25rem] font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] md:text-[3.75rem]">
+          <h2 className="whitespace-nowrap bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-[clamp(1.75rem,5.5vw,3.75rem)] font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)]">
             Daily Bonus
           </h2>
           <span className="h-px w-12 bg-gradient-to-l from-transparent via-amber-500/70 to-amber-600/80" />
           <span className="text-lg text-amber-500/80">◆</span>
         </div>
-        <div className="mt-2 flex items-center justify-center gap-2 text-[1.25rem] font-bold text-amber-900/75">
+        <div className="mt-2 flex items-center justify-center gap-2 text-[clamp(0.75rem,1.7vw,1.25rem)] font-bold text-amber-900/75">
           <span className="text-amber-500/80">✦</span>
-          <span>Come back every day to claim more rewards!</span>
+          <span className="whitespace-nowrap">Come back every day to claim more rewards!</span>
           <span className="text-amber-500/80">✦</span>
         </div>
 
