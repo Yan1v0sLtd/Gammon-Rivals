@@ -223,6 +223,21 @@ export function LobbyBoardCarousel({
         return;
       }
       externalAnimRef.current = !notifyOnLand;
+
+      // Eagerly notify the parent about the destination *at the start* of
+      // the slide, so the lobby background can fade in parallel with the
+      // carousel animation instead of waiting for it to land. The
+      // integer-landed effect below guards on lastNotifiedRef, so it
+      // won't double-fire when the slide actually finishes.
+      if (notifyOnLand && boards.length > 0) {
+        const targetIdx = modulo(Math.round(target), boards.length);
+        const targetId = boards[targetIdx]!.id;
+        if (targetId !== lastNotifiedRef.current) {
+          lastNotifiedRef.current = targetId;
+          onSelectedIdChange(targetId);
+        }
+      }
+
       const start = performance.now();
       const tick = (now: number) => {
         const t = clamp((now - start) / duration, 0, 1);
@@ -239,7 +254,7 @@ export function LobbyBoardCarousel({
       };
       animFrameRef.current = requestAnimationFrame(tick);
     },
-    [cancelAnimation, setPosition]
+    [cancelAnimation, setPosition, boards, onSelectedIdChange]
   );
 
   useEffect(() => () => cancelAnimation(), [cancelAnimation]);
