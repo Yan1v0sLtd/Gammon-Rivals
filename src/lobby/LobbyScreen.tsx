@@ -25,8 +25,6 @@ import { computeBoardState, useUserBoardInventory } from './useUserBoardInventor
 // (backgrounds, previews) is added dynamically once Supabase resolves.
 const LOBBY_STATIC_ASSETS: readonly string[] = [
   '/lobby/carousel/gem.webp',
-  '/lobby/carousel/lock.webp',
-  '/lobby/carousel/pill.webp',
   '/lobby/holders/royal-holder.webp',
   '/lobby/icons/friends.webp',
   '/lobby/icons/gem.webp',

@@ -524,14 +524,16 @@ export function LobbyBoardCarousel({
                       event.stopPropagation();
                       onLockedTap(board);
                     }}
-                    className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] w-[10%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer border-0 bg-transparent p-0"
+                    className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] grid w-[12%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-[3px] border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] p-0 shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,212,135,0.22)]"
                   >
-                    <img
-                      src="/lobby/carousel/lock.webp"
-                      alt=""
-                      className="lobby-carousel-board-lock h-full w-full select-none drop-shadow-[0_10px_18px_rgba(0,0,0,0.55)]"
-                      draggable={false}
-                    />
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-[55%] w-[55%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]"
+                      fill="#f6d770"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 1.5a5 5 0 0 0-5 5V10H6.5A2.5 2.5 0 0 0 4 12.5v8A2.5 2.5 0 0 0 6.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 10H17V6.5a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3V10H9V6.5a3 3 0 0 1 3-3zm0 11a2 2 0 0 1 .8 3.83V20.5a.8.8 0 0 1-1.6 0v-2.17A2 2 0 0 1 12 14.5z" />
+                    </svg>
                   </button>
                 ) : null}
                 {showPill ? (
@@ -548,22 +550,16 @@ export function LobbyBoardCarousel({
                       if (state === 'level-locked') onLockedTap(board);
                       else onPurchaseTap(board);
                     }}
-                    className="lobby-carousel-board-pill-button absolute bottom-[30px] left-1/2 w-[40%] -translate-x-1/2 translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
+                    className="lobby-carousel-board-pill-button absolute bottom-[10px] left-1/2 flex h-[16%] w-[44%] -translate-x-1/2 cursor-pointer items-center justify-center gap-[8%] rounded-full border-[2px] border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] px-[6%] shadow-[0_4px_8px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,212,135,0.18)]"
                   >
-                    <img
-                      src="/lobby/carousel/pill.webp"
-                      alt=""
-                      className="lobby-carousel-board-pill h-full w-full select-none"
-                      draggable={false}
-                    />
                     <img
                       src="/lobby/carousel/gem.webp"
                       alt=""
-                      className="lobby-carousel-board-pill-gem pointer-events-none absolute bottom-[6px] left-[15%] w-[18%] select-none"
+                      className="pointer-events-none h-[120%] w-auto select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
                       draggable={false}
                     />
                     {board.priceGems > 0 ? (
-                      <span className="lobby-carousel-board-pill-price pointer-events-none absolute bottom-[6px] left-[66%] -translate-x-1/2 select-none whitespace-nowrap font-display text-[clamp(1rem,2.3vw,1.5rem)] font-black leading-none tracking-[0.04em] text-white tabular-nums drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
+                      <span className="pointer-events-none select-none whitespace-nowrap font-display text-[clamp(0.9rem,2.1vw,1.4rem)] font-black leading-none tracking-[0.04em] text-white tabular-nums drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
                         {board.priceGems.toLocaleString()}
                       </span>
                     ) : null}
@@ -592,18 +588,40 @@ export function LobbyBoardCarousel({
           aria-label="Previous board"
           onClick={() => animateByOffset(-1)}
           onPointerDown={(event) => event.stopPropagation()}
-          className="absolute left-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-[radial-gradient(circle_at_38%_28%,#333942,#151820_70%)] text-4xl font-black leading-none text-[#ffd16f] shadow-[0_8px_14px_rgba(0,0,0,0.48),inset_0_2px_0_rgba(255,255,255,0.20),inset_0_-5px_0_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,216,116,0.18)] transition hover:scale-105 hover:brightness-110 active:scale-95"
+          className="absolute left-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-gradient-to-b from-[#2f3540] via-[#1a1f2a] to-[#0a0e16] text-[#ffd16f] shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_2px_0_rgba(255,255,255,0.22),inset_0_-5px_0_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,216,116,0.28)] transition hover:scale-105 hover:brightness-110 active:scale-95"
         >
-          <span className="-mt-1">‹</span>
+          <svg
+            viewBox="0 0 24 24"
+            className="h-7 w-7 -translate-x-[1px] drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="15 5 8 12 15 19" />
+          </svg>
         </button>
         <button
           type="button"
           aria-label="Next board"
           onClick={() => animateByOffset(1)}
           onPointerDown={(event) => event.stopPropagation()}
-          className="absolute right-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-[radial-gradient(circle_at_38%_28%,#333942,#151820_70%)] text-4xl font-black leading-none text-[#ffd16f] shadow-[0_8px_14px_rgba(0,0,0,0.48),inset_0_2px_0_rgba(255,255,255,0.20),inset_0_-5px_0_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,216,116,0.18)] transition hover:scale-105 hover:brightness-110 active:scale-95"
+          className="absolute right-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-gradient-to-b from-[#2f3540] via-[#1a1f2a] to-[#0a0e16] text-[#ffd16f] shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_2px_0_rgba(255,255,255,0.22),inset_0_-5px_0_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,216,116,0.28)] transition hover:scale-105 hover:brightness-110 active:scale-95"
         >
-          <span className="-mt-1">›</span>
+          <svg
+            viewBox="0 0 24 24"
+            className="h-7 w-7 translate-x-[1px] drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="9 5 16 12 9 19" />
+          </svg>
         </button>
 
         <button
