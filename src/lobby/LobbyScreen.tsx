@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
+import { LoadingScreen } from '../components/LoadingScreen';
 import { useAuth } from '../lib/auth';
 import { createOnlineMatch } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { LobbyActionCard } from './LobbyActionCard';
@@ -14,6 +16,30 @@ import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
+
+// Static lobby assets — referenced unconditionally by sub-components,
+// so they're always part of the first-paint preload. Per-board imagery
+// (backgrounds, previews) is added dynamically once Supabase resolves.
+const LOBBY_STATIC_ASSETS: readonly string[] = [
+  '/lobby/carousel/gem.webp',
+  '/lobby/carousel/lock.webp',
+  '/lobby/carousel/pill.webp',
+  '/lobby/holders/royal-holder.webp',
+  '/lobby/icons/friends.webp',
+  '/lobby/icons/gem.webp',
+  '/lobby/icons/gold-coin.webp',
+  '/lobby/icons/online-players.webp',
+  '/lobby/icons/rewards-gift.webp',
+  '/lobby/icons/settings-gear.webp',
+  '/lobby/icons/trophy.webp',
+  '/lobby/cards/coins-offer.webp',
+  '/lobby/cards/daily-bonus.webp',
+  '/lobby/nav/events.webp',
+  '/lobby/nav/missions.webp',
+  '/lobby/nav/nav-bg.webp',
+  '/lobby/nav/tournaments.webp',
+  '/lobby/nav/vip-club.webp',
+];
 
 type OpponentChoice = 'hotseat' | AILevel;
 
@@ -47,7 +73,7 @@ function LobbyBackgroundLayer({
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity } = useAuth();
-  const boards = useLobbyBoards();
+  const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
   const [creatingOnline, setCreatingOnline] = useState(false);
@@ -174,6 +200,27 @@ export function LobbyScreen() {
       setCreatingOnline(false);
     }
   };
+
+  // ---- Asset preload gate ----
+  // Don't paint the lobby until the boards data is resolved AND every
+  // image (statics + per-board previews/backgrounds) has loaded. Latch
+  // the gate open after first success so a late-arriving board (e.g. a
+  // new theme added in Back Office) doesn't re-hide the screen.
+  const assetUrls = useMemo<readonly string[]>(() => {
+    const list: string[] = [...LOBBY_STATIC_ASSETS];
+    for (const board of boards) {
+      if (board.image) list.push(board.image);
+      if (board.background) list.push(board.background);
+    }
+    return list;
+  }, [boards]);
+  const { ready: assetsReady } = useImagePreloader(assetUrls);
+  const [lobbyShown, setLobbyShown] = useState(false);
+  useEffect(() => {
+    if (!boardsLoading && assetsReady) setLobbyShown(true);
+  }, [boardsLoading, assetsReady]);
+
+  if (!lobbyShown) return <LoadingScreen />;
 
   return (
     <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">

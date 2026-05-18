@@ -4,6 +4,7 @@ import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
 import CubeOfferDecision from '../components/CubeOfferDecision';
 import EndOfGameModal from '../components/EndOfGameModal';
+import { LoadingScreen } from '../components/LoadingScreen';
 import MatchHeader from '../components/MatchHeader';
 import BoardLayout from '../components/BoardLayout';
 import ActionButtons from '../components/ActionButtons';
@@ -26,6 +27,28 @@ import {
   type PlayerIdentity,
 } from '../lib/identity';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
+import { useImagePreloader } from '../lib/useImagePreloader';
+
+// Static gameplay chrome — header art, action-button icons, etc. — that
+// every match shares regardless of board theme. Pre-fetched so the
+// game-screen renders fully composed.
+const GAMEPLAY_STATIC_ASSETS: readonly string[] = [
+  '/gameplay/premium-purple/auto.webp',
+  '/gameplay/premium-purple/cube.webp',
+  '/gameplay/premium-purple/double.webp',
+  '/gameplay/premium-purple/end-turn-square.webp',
+  '/gameplay/premium-purple/header.webp',
+  '/gameplay/premium-purple/left-player.webp',
+  '/gameplay/premium-purple/left-timer.webp',
+  '/gameplay/premium-purple/player-stats.webp',
+  '/gameplay/premium-purple/right-player.webp',
+  '/gameplay/premium-purple/right-timer.webp',
+  '/gameplay/premium-purple/roll.webp',
+  '/gameplay/premium-purple/settings.webp',
+  '/gameplay/premium-purple/stats.webp',
+  '/gameplay/premium-purple/undo-square.webp',
+  '/gameplay/premium-purple/undo.webp',
+];
 
 function parseOpponent(raw: string | null): AIConfig | null {
   if (!raw || raw === 'hotseat') return null;
@@ -238,12 +261,41 @@ export default function HotSeat() {
     });
   }, [matchId, game.matchOver, game.match]);
 
+  // ---- Asset preload gate ----
+  // Statics + the selected theme's HTML backgrounds and Pixi textures.
+  // Loading them via <img> warms the browser cache so BoardCanvas's
+  // internal Pixi loader hits cache and the board paints with the rest
+  // of the chrome instead of popping in after the surround. Declared
+  // here (rather than just before the return) so dependent effects like
+  // auto-roll can be gated on the same `gameShown` flag.
+  const assetUrls = useMemo<readonly string[]>(() => {
+    const list: string[] = [...GAMEPLAY_STATIC_ASSETS];
+    if (selectedTheme.backgroundImage) list.push(selectedTheme.backgroundImage);
+    if (selectedTheme.gameplayBackgroundImage) {
+      list.push(selectedTheme.gameplayBackgroundImage);
+    }
+    if (selectedTheme.assets) {
+      for (const value of Object.values(selectedTheme.assets)) {
+        if (typeof value === 'string' && value.length > 0) list.push(value);
+      }
+    }
+    return list;
+  }, [selectedTheme]);
+  const { ready: assetsReady } = useImagePreloader(assetUrls);
+  const [gameShown, setGameShown] = useState(false);
+  useEffect(() => {
+    if (assetsReady) setGameShown(true);
+  }, [assetsReady]);
+
   // ---- Auto-roll preference ----
   const [autoRollOn, setAutoRollOn] = useAutoRoll();
   const humanCanInteract = !game.isAITurn && !game.isAIThinking;
   const playerCanRoll =
     game.roll === null && !game.lastGameResult && !game.matchOver && humanCanInteract;
-  useAutoRollEffect(autoRollOn, playerCanRoll, game.rollDice);
+  // Suppress auto-roll until the gameplay UI is visible — otherwise dice
+  // fly in the background while the loading screen is up and the player
+  // sees the dice already settled when the board appears.
+  useAutoRollEffect(autoRollOn && gameShown, playerCanRoll, game.rollDice);
 
   // ---- Game UI ----
   const handlePointClick = (pos: Position) => {
@@ -350,6 +402,10 @@ export default function HotSeat() {
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
   const gameplayBackground =
     selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
+
+  // Alignment tool needs immediate render (dev-only nudging UI), so it
+  // bypasses the asset gate.
+  if (!gameShown && !alignmentEnabled) return <LoadingScreen />;
 
   return (
     <BoardLayout
