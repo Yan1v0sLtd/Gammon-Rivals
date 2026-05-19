@@ -39,6 +39,7 @@ type Section =
   | 'Level System'
   | 'Daily Bonus'
   | 'Tables / Rooms'
+  | 'Difficulties'
   | 'Board Themes'
   | 'Shop'
   | 'Admin Access';
@@ -85,6 +86,7 @@ type DailyBonusDraft = {
 
 type TableDraft = {
   id: string;
+  kind: 'standard' | 'difficulty';
   display_name: string;
   description: string;
   entry_fee_coins: string;
@@ -95,6 +97,10 @@ type TableDraft = {
   allow_online: boolean;
   is_enabled: boolean;
   sort_order: string;
+  xp_multiplier_pct: string;
+  base_xp_win: string;
+  turn_seconds: string;
+  accent_color: string;
   metadata: string;
 };
 
@@ -145,10 +151,16 @@ const sections: readonly Section[] = [
   'Level System',
   'Daily Bonus',
   'Tables / Rooms',
+  'Difficulties',
   'Board Themes',
   'Shop',
   'Admin Access',
 ];
+
+/** Accent slugs the DifficultyModal recognises. The BO dropdown is
+ *  scoped to these so an operator can't accidentally set an unknown
+ *  slug and ship a card with no colour. */
+const difficultyAccentColors: readonly string[] = ['green', 'blue', 'purple', 'red', 'gold'];
 
 const shopKinds: readonly ShopKind[] = [
   'coin_pack',
@@ -552,19 +564,24 @@ function dailyBonusToDraft(row?: DailyBonusConfig): DailyBonusDraft {
   };
 }
 
-function tableToDraft(row?: TableConfig): TableDraft {
+function tableToDraft(row?: TableConfig, defaultKind: 'standard' | 'difficulty' = 'standard'): TableDraft {
   return {
     id: row?.id ?? '',
+    kind: row?.kind ?? defaultKind,
     display_name: row?.display_name ?? '',
     description: row?.description ?? '',
     entry_fee_coins: row?.entry_fee_coins.toString() ?? '0',
     prize_coins: row?.prize_coins.toString() ?? '0',
     required_level: row?.required_level.toString() ?? '1',
     match_target: row?.match_target.toString() ?? '7',
-    allow_ai: row?.allow_ai ?? false,
+    allow_ai: row?.allow_ai ?? (defaultKind === 'difficulty'),
     allow_online: row?.allow_online ?? true,
     is_enabled: row?.is_enabled ?? true,
     sort_order: row?.sort_order.toString() ?? '0',
+    xp_multiplier_pct: row?.xp_multiplier_pct.toString() ?? '100',
+    base_xp_win: row?.base_xp_win.toString() ?? '0',
+    turn_seconds: row?.turn_seconds.toString() ?? '45',
+    accent_color: row?.accent_color ?? 'gold',
     metadata: jsonToString(row?.metadata, '{}'),
   };
 }
@@ -1225,8 +1242,17 @@ export default function Admin() {
     setSavingKey('table');
     setDataError(null);
     try {
+      const xpMult = requiredNumber(tableDraft.xp_multiplier_pct, 'XP multiplier');
+      if (xpMult < 0 || xpMult > 10000) {
+        throw new Error('XP multiplier must be between 0 and 10000.');
+      }
+      const turnSec = requiredNumber(tableDraft.turn_seconds, 'Turn seconds');
+      if (turnSec < 5 || turnSec > 600) {
+        throw new Error('Turn seconds must be between 5 and 600.');
+      }
       const payload: Database['public']['Tables']['table_configs']['Insert'] = {
         id: tableDraft.id.trim(),
+        kind: tableDraft.kind,
         display_name: tableDraft.display_name.trim(),
         description: tableDraft.description.trim(),
         entry_fee_coins: requiredNumber(tableDraft.entry_fee_coins, 'Entry fee'),
@@ -1237,6 +1263,10 @@ export default function Admin() {
         allow_online: tableDraft.allow_online,
         is_enabled: tableDraft.is_enabled,
         sort_order: requiredNumber(tableDraft.sort_order, 'Sort order'),
+        xp_multiplier_pct: xpMult,
+        base_xp_win: requiredNumber(tableDraft.base_xp_win, 'Base XP'),
+        turn_seconds: turnSec,
+        accent_color: tableDraft.accent_color.trim() || 'gold',
         metadata: parseJson(tableDraft.metadata, 'Metadata', 'object'),
         updated_by: user?.id ?? null,
       };
@@ -2006,12 +2036,18 @@ export default function Admin() {
 
           {activeSection === 'Tables / Rooms' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
-              <ConfigTable title="Rooms" rows={tables.map((row) => [
+              {/* Filters to kind='standard' — the five difficulty tiers
+                * live in the dedicated "Difficulties" section to keep
+                * the two surfaces independent. */}
+              <ConfigTable title="Rooms" rows={tables.filter((row) => row.kind !== 'difficulty').map((row) => [
                 row.display_name,
                 `${formatNumber(row.entry_fee_coins)} entry`,
                 `Prize ${formatNumber(row.prize_coins)}`,
                 row.is_enabled ? 'Enabled' : 'Disabled',
-              ])} onRowClick={(index) => setTableDraft(tableToDraft(tables[index]))} />
+              ])} onRowClick={(index) => {
+                const standardRows = tables.filter((row) => row.kind !== 'difficulty');
+                setTableDraft(tableToDraft(standardRows[index]));
+              }} />
               <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
                 <h2 className="text-lg font-black">Edit room</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3">
@@ -2034,6 +2070,70 @@ export default function Admin() {
                   <div className="flex gap-2">
                     <PrimaryButton onClick={() => void saveTable()} disabled={!canManage || savingKey === 'table'}>Save room</PrimaryButton>
                     <SecondaryButton onClick={() => setTableDraft(tableToDraft())}>New</SecondaryButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'Difficulties' && (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
+              {/* Difficulty-tier table. These rows surface in the
+                * lobby's "Select Room Difficulty" modal (filtered by
+                * kind='difficulty' + is_enabled). XP boost % drives
+                * both the card display and the actual XP grant at
+                * match end via finish_match(). */}
+              <ConfigTable
+                title="Difficulty tiers"
+                rows={tables.filter((row) => row.kind === 'difficulty').map((row) => [
+                  row.display_name,
+                  `${row.xp_multiplier_pct}% XP`,
+                  `${formatNumber(row.entry_fee_coins)} entry`,
+                  `${row.turn_seconds}s/turn`,
+                  row.is_enabled ? 'Enabled' : 'Disabled',
+                ])}
+                onRowClick={(index) => {
+                  const diffRows = tables.filter((row) => row.kind === 'difficulty');
+                  setTableDraft(tableToDraft(diffRows[index], 'difficulty'));
+                }}
+              />
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <h2 className="text-lg font-black">Edit difficulty</h2>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field label="Tier id" value={tableDraft.id} onChange={(id) => setTableDraft((d) => ({ ...d, id }))} />
+                  <Field label="Display name" value={tableDraft.display_name} onChange={(display_name) => setTableDraft((d) => ({ ...d, display_name }))} />
+                  <Field label="Entry fee (coins)" value={tableDraft.entry_fee_coins} onChange={(entry_fee_coins) => setTableDraft((d) => ({ ...d, entry_fee_coins }))} />
+                  <Field label="Prize coins (on win)" value={tableDraft.prize_coins} onChange={(prize_coins) => setTableDraft((d) => ({ ...d, prize_coins }))} />
+                  <Field label="XP boost (%)" value={tableDraft.xp_multiplier_pct} onChange={(xp_multiplier_pct) => setTableDraft((d) => ({ ...d, xp_multiplier_pct }))} />
+                  <Field label="Base XP on win" value={tableDraft.base_xp_win} onChange={(base_xp_win) => setTableDraft((d) => ({ ...d, base_xp_win }))} />
+                  <Field label="Turn seconds" value={tableDraft.turn_seconds} onChange={(turn_seconds) => setTableDraft((d) => ({ ...d, turn_seconds }))} />
+                  <Field label="Required level" value={tableDraft.required_level} onChange={(required_level) => setTableDraft((d) => ({ ...d, required_level }))} />
+                  <Field label="Match target" value={tableDraft.match_target} onChange={(match_target) => setTableDraft((d) => ({ ...d, match_target }))} />
+                  <Field label="Sort order" value={tableDraft.sort_order} onChange={(sort_order) => setTableDraft((d) => ({ ...d, sort_order }))} />
+                </div>
+                <div className="mt-3 space-y-3">
+                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                    Accent color
+                    <select
+                      value={tableDraft.accent_color}
+                      onChange={(event) => setTableDraft((d) => ({ ...d, accent_color: event.target.value }))}
+                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+                    >
+                      {difficultyAccentColors.map((slug) => (
+                        <option key={slug} value={slug}>{slug}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <Field label="Description" value={tableDraft.description} onChange={(description) => setTableDraft((d) => ({ ...d, description }))} />
+                  <TextArea label="Metadata JSON object" value={tableDraft.metadata} onChange={(metadata) => setTableDraft((d) => ({ ...d, metadata }))} />
+                  <div className="grid grid-cols-3 gap-2">
+                    <Toggle label="AI" checked={tableDraft.allow_ai} onChange={(allow_ai) => setTableDraft((d) => ({ ...d, allow_ai }))} />
+                    <Toggle label="Online" checked={tableDraft.allow_online} onChange={(allow_online) => setTableDraft((d) => ({ ...d, allow_online }))} />
+                    <Toggle label="Enabled" checked={tableDraft.is_enabled} onChange={(is_enabled) => setTableDraft((d) => ({ ...d, is_enabled }))} />
+                  </div>
+                  <div className="flex gap-2">
+                    <PrimaryButton onClick={() => void saveTable()} disabled={!canManage || savingKey === 'table'}>Save tier</PrimaryButton>
+                    <SecondaryButton onClick={() => setTableDraft(tableToDraft(undefined, 'difficulty'))}>New</SecondaryButton>
                   </div>
                 </div>
               </div>
