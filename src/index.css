@@ -6889,10 +6889,11 @@ html, body, #root {
    tracks content height (58.6%) but the avatar stage is sized via
    width-based aspect-ratio — so on taller viewports the slot would
    stretch but the avatar would stay put, leaving the stats stranded
-   below the avatar instead of moving together with it. */
+   below the avatar instead of moving together with it.
+   Width bumped from 18.7% → 20.6% per user feedback (10% bigger). */
 .game-side-slot {
   top: 15.3%;
-  width: 18.7%;
+  width: 20.6%;
   height: auto;
   aspect-ratio: 174 / 252;
 }
@@ -6907,10 +6908,11 @@ html, body, #root {
 
 /* Phone-landscape override: shrink slot width and push to screen edge so
    the enlarged board column has room. Has to live AFTER the global
-   .game-side-slot{ width:18.7% } rule above to win on source order. */
+   .game-side-slot{ width:20.6% } rule above to win on source order.
+   Bumped 16% → 17.6% to track the same 10% increase. */
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
   .game-side-slot {
-    width: 16%;
+    width: 17.6%;
   }
 
   .game-side-slot--left {
@@ -7024,13 +7026,17 @@ html, body, #root {
  * stroke around the path — `box-shadow: 0 0 0 2px` follows the
  * border-box rectangle, not the clip-path, so it wouldn't paint a
  * hex-shaped rim. */
+/* Hex sizes shrunk ~25 % per user feedback (was 1.85-2.7rem wide /
+ * 0.72-1.35rem font). Clamp ranges intentionally narrow (~20 % spread
+ * floor→ceiling) so the hex reads at the same proportion across web /
+ * tablet / mobile. */
 .game-level-shield {
   position: absolute;
   z-index: 5;
   display: grid;
   place-items: center;
-  width: clamp(1.85rem, 2.4vw, 2.7rem);
-  height: clamp(2.1rem, 2.75vw, 3.1rem);
+  width: clamp(1.35rem, 1.7vw, 1.95rem);
+  height: clamp(1.55rem, 1.95vw, 2.25rem);
   aspect-ratio: auto;
   min-width: 0;
   padding: 0;
@@ -7040,7 +7046,7 @@ html, body, #root {
   border-radius: 0;
   box-shadow: none;
   color: #ffe083;
-  font-size: clamp(0.72rem, 1.18vw, 1.35rem);
+  font-size: clamp(0.55rem, 0.85vw, 0.95rem);
   font-weight: 950;
   line-height: 1;
   text-align: center;
@@ -7088,12 +7094,21 @@ html, body, #root {
    7 % top inset (the avatar centre sits ~9 % above the player-top
    midline, so we shift the identity column to match). align-content
    keeps the lines vertically centred within the identity box. */
+/* Identity column. `min-width: 0` is the magic bit: without it, a
+ * flex/grid item's intrinsic min-width is its content size, so a long
+ * "MEDIUM" / "$22.7K" / a multi-digit coin amount would expand the
+ * column past its 44 % box on narrow viewports and the text would
+ * spill past the painted card's right edge. Combined with
+ * overflow:hidden on the descendants, anything too wide gets
+ * ellipsised instead of escaping the frame. */
 .game-player-identity {
   top: -9%;
   height: 100%;
   width: 44%;
+  min-width: 0;
   align-content: center;
   gap: 5.5%;
+  overflow: hidden;
 }
 
 .game-player-panel--left .game-player-identity {
@@ -7104,14 +7119,30 @@ html, body, #root {
   right: 52%;
 }
 
+/* Tighter clamp ranges across all identity text so the panel reads at
+ * the same proportion regardless of viewport. Old ranges varied 60-70 %
+ * between floor and ceiling; new ones vary ~20 %. */
 .game-player-identity h2 {
-  font-size: clamp(0.82rem, 1.32vw, 1.34rem);
+  font-size: clamp(0.95rem, 1.1vw, 1.2rem);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-player-line {
   gap: 0.48em;
-  font-size: clamp(0.58rem, 1vw, 0.98rem);
+  font-size: clamp(0.7rem, 0.85vw, 0.9rem);
   line-height: 1.05;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.game-player-line > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-meta-icon,
