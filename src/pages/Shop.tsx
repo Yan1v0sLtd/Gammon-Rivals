@@ -312,7 +312,15 @@ function TopOfferCard({ offer, onBuy }: { offer: TopOffer; onBuy: () => void }) 
 // Daily Deal card (gem-priced)
 // -----------------------------------------------------------------------------
 
-function DailyDealCard({ deal, onBuy }: { deal: DailyDeal; onBuy: () => void }) {
+function DailyDealCard({
+  deal,
+  isBusy,
+  onBuy,
+}: {
+  deal: DailyDeal;
+  isBusy: boolean;
+  onBuy: () => void;
+}) {
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-amber-300/40 bg-[#fdf6e3]/80 px-2 py-2 shadow-[0_6px_10px_-3px_rgba(120,53,15,0.4)]">
       <div className="whitespace-nowrap text-center font-display text-xs font-bold uppercase tracking-wide text-amber-900/80">
@@ -328,7 +336,8 @@ function DailyDealCard({ deal, onBuy }: { deal: DailyDeal; onBuy: () => void }) 
       <button
         type="button"
         onClick={onBuy}
-        className="mt-1 flex items-center justify-center gap-1 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1 font-display text-sm font-black text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
+        disabled={isBusy}
+        className="mt-1 flex items-center justify-center gap-1 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1 font-display text-sm font-black text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
       >
         <GemIcon className="h-4 w-4" />
         <span className="tabular-nums">{deal.priceGems}</span>
@@ -485,10 +494,14 @@ function ShopSidebar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
 
 function FeaturedView({
   items,
+  busyDealId,
   onStubbedBuy,
+  onBuyDailyDeal,
 }: {
   items: MappedItems;
+  busyDealId: string | null;
   onStubbedBuy: (label: string) => void;
+  onBuyDailyDeal: (deal: DailyDeal) => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -529,7 +542,12 @@ function FeaturedView({
           </div>
           <div className="grid grid-cols-4 gap-2">
             {items.dailyDeals.map((deal) => (
-              <DailyDealCard key={deal.id} deal={deal} onBuy={() => onStubbedBuy(`${deal.priceGems} gem purchase`)} />
+              <DailyDealCard
+                key={deal.id}
+                deal={deal}
+                isBusy={busyDealId === deal.id}
+                onBuy={() => onBuyDailyDeal(deal)}
+              />
             ))}
           </div>
         </div>
@@ -558,11 +576,18 @@ function FeaturedView({
 const PANEL_DESIGN_W = 1280;
 const PANEL_DESIGN_H = 640;
 
+type ToastKind = 'info' | 'success' | 'error';
+interface Toast {
+  readonly kind: ToastKind;
+  readonly text: string;
+}
+
 export default function Shop() {
   const navigate = useNavigate();
-  const { wallet } = useAuth();
+  const { wallet, refreshWallet } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('featured');
-  const [stubMessage, setStubMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
+  const [busyDealId, setBusyDealId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [items, setItems] = useState<MappedItems>({
     topOffers: [],
@@ -610,9 +635,51 @@ export default function Shop() {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  const showToast = (kind: ToastKind, text: string, ms = 2400) => {
+    setToast({ kind, text });
+    window.setTimeout(() => setToast(null), ms);
+  };
+
   const onStubbedBuy = (label: string) => {
-    setStubMessage(label);
-    window.setTimeout(() => setStubMessage(null), 2200);
+    showToast('info', `${label} — coming soon`);
+  };
+
+  // Real purchase path for gem-priced daily deals. The RPC validates
+  // grants up front (raises `unsupported_grant:<key>` for daily deals
+  // we haven't built infra for yet, e.g. xp-boost / lucky-dice), debits
+  // gems atomically, and dispatches grants to user_wallets +
+  // user_board_inventory. On success refreshWallet() pulls the new
+  // balance into the auth context so the top-bar pills update.
+  const onBuyDailyDeal = async (deal: DailyDeal) => {
+    if (busyDealId !== null) return;
+    if (!wallet) {
+      showToast('error', 'Sign in to make purchases');
+      return;
+    }
+    if (wallet.gems < deal.priceGems) {
+      showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
+      return;
+    }
+    setBusyDealId(deal.id);
+    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: deal.id });
+    setBusyDealId(null);
+    if (error) {
+      const msg = error.message ?? '';
+      if (msg.includes('unsupported_grant')) {
+        showToast('info', `${deal.title} — coming soon`);
+      } else if (msg.includes('insufficient_gems')) {
+        // Stale client wallet — server saw less than we thought.
+        showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
+        void refreshWallet();
+      } else if (msg.includes('already_owned_board')) {
+        showToast('info', 'You already own that board.');
+      } else {
+        showToast('error', 'Purchase failed. Try again.');
+      }
+      return;
+    }
+    await refreshWallet();
+    showToast('success', `Got ${deal.title}!`);
   };
 
   return (
@@ -646,7 +713,12 @@ export default function Shop() {
 
               <div className="min-w-0 flex-1 rounded-tl-2xl bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] p-4">
                 {activeTab === 'featured' ? (
-                  <FeaturedView items={items} onStubbedBuy={onStubbedBuy} />
+                  <FeaturedView
+                    items={items}
+                    busyDealId={busyDealId}
+                    onStubbedBuy={onStubbedBuy}
+                    onBuyDailyDeal={onBuyDailyDeal}
+                  />
                 ) : (
                   <div className="grid place-items-center py-12 text-amber-900/60 font-display text-sm font-bold uppercase tracking-widest">
                     {activeTab} — coming soon
@@ -658,10 +730,19 @@ export default function Shop() {
         </div>
       </div>
 
-      {/* Stubbed-buy toast */}
-      {stubMessage ? (
-        <div className="pointer-events-none fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-lg border border-amber-700/60 bg-gradient-to-b from-amber-100 to-amber-300 px-4 py-2 font-bold text-amber-950 shadow-2xl">
-          {stubMessage} — coming soon
+      {/* Toast — info (amber), success (emerald), error (rose) */}
+      {toast ? (
+        <div
+          className={
+            'pointer-events-none fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-lg px-4 py-2 font-bold shadow-2xl ' +
+            (toast.kind === 'success'
+              ? 'border border-emerald-700/60 bg-gradient-to-b from-emerald-100 to-emerald-300 text-emerald-950'
+              : toast.kind === 'error'
+                ? 'border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 text-rose-950'
+                : 'border border-amber-700/60 bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950')
+          }
+        >
+          {toast.text}
         </div>
       ) : null}
     </main>
