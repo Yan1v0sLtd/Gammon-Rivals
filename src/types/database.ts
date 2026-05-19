@@ -840,6 +840,16 @@ export type Database = {
         Args: { p_table_config_id: string; p_match_mode?: string };
         Returns: Json;
       };
+      finish_match: {
+        Args: {
+          p_match_id: string;
+          p_white_score: number;
+          p_black_score: number;
+          p_winner: string | null;
+          p_crawford_game_number?: number | null;
+        };
+        Returns: Json;
+      };
       get_my_admin_role: {
         Args: Record<string, never>;
         Returns: 'owner' | 'admin' | 'support' | 'viewer' | null;

@@ -20,7 +20,14 @@ import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
-import { createMatch, finishMatch, modeFromAi, saveGame } from '../lib/persistence';
+import {
+  createMatch,
+  finishMatch,
+  finishMatchRpc,
+  modeFromAi,
+  saveGame,
+  type FinishMatchRewardResult,
+} from '../lib/persistence';
 import {
   makeAIIdentity,
   makeGuestIdentity,
@@ -151,7 +158,15 @@ export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
-  const { user, profile, wallet, progression, isLoading: authLoading } = useAuth();
+  const {
+    user,
+    profile,
+    wallet,
+    progression,
+    isLoading: authLoading,
+    refreshProfile,
+    refreshWallet,
+  } = useAuth();
 
   const opp = params.get('opp');
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
@@ -268,6 +283,11 @@ export default function HotSeat() {
     });
   }, [matchId, game.lastGameResult, game.match, game.matchOver, game.turnLog]);
 
+  // Rewards (XP + coins) granted by the server-side finish_match RPC.
+  // Captured here so a future end-of-game modal can show "+50 XP / +200
+  // coins"; for now we just refresh auth state so the lobby's top bar
+  // is correct when the user navigates home.
+  const [matchReward, setMatchReward] = useState<FinishMatchRewardResult | null>(null);
   useEffect(() => {
     if (!matchId) return;
     if (!game.matchOver) return;
@@ -275,16 +295,39 @@ export default function HotSeat() {
     persistedMatchOverRef.current = true;
     const winner = game.match.winner;
     if (!winner) return;
-    finishMatch({
-      matchId,
-      whiteScore: game.match.score.white,
-      blackScore: game.match.score.black,
-      winner,
-      crawfordGameNumber: game.match.crawfordGameNumber,
-    }).catch((err) => {
-      console.warn('finishMatch failed', err);
-    });
-  }, [matchId, game.matchOver, game.match]);
+    // presetMatchId being set means the match was created by enter_room
+    // and (if won) is eligible for XP/coin rewards. Route through the
+    // RPC so the server can validate ownership + award atomically.
+    // Other matches (legacy ?opp=... / online) keep using the plain
+    // UPDATE in finishMatch().
+    if (presetMatchId) {
+      void finishMatchRpc({
+        matchId,
+        whiteScore: game.match.score.white,
+        blackScore: game.match.score.black,
+        winner,
+        crawfordGameNumber: game.match.crawfordGameNumber,
+      })
+        .then((reward) => {
+          setMatchReward(reward);
+          void refreshWallet();
+          void refreshProfile();
+        })
+        .catch((err) => {
+          console.warn('finishMatch RPC failed', err);
+        });
+    } else {
+      finishMatch({
+        matchId,
+        whiteScore: game.match.score.white,
+        blackScore: game.match.score.black,
+        winner,
+        crawfordGameNumber: game.match.crawfordGameNumber,
+      }).catch((err) => {
+        console.warn('finishMatch failed', err);
+      });
+    }
+  }, [matchId, game.matchOver, game.match, presetMatchId, refreshProfile, refreshWallet]);
 
   // ---- Asset preload gate ----
   // Statics + the selected theme's HTML backgrounds and Pixi textures.
@@ -549,6 +592,15 @@ export default function HotSeat() {
             result={game.lastGameResult!}
             match={game.match}
             matchOver={game.matchOver}
+            reward={
+              matchReward
+                ? {
+                    xpAwarded: matchReward.xpAwarded,
+                    xpMultiplier: matchReward.xpMultiplier,
+                    coinsAwarded: matchReward.coinsAwarded,
+                  }
+                : null
+            }
             onNextGame={game.nextGame}
             onNewMatch={() => {
               showOverlay();

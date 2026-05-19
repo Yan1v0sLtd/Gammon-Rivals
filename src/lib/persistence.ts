@@ -214,6 +214,12 @@ export interface FinishMatchArgs {
   crawfordGameNumber: number | null;
 }
 
+/**
+ * Legacy plain UPDATE — kept for online matches in /play/:id where the
+ * owner-side bookkeeping is different and rewards aren't yet wired.
+ * Difficulty-room matches go through finishMatchRpc() below instead so
+ * the server can validate ownership + grant XP/coins atomically.
+ */
 export async function finishMatch(args: FinishMatchArgs): Promise<void> {
   const { error } = await supabase
     .from('matches')
@@ -226,6 +232,58 @@ export async function finishMatch(args: FinishMatchArgs): Promise<void> {
     })
     .eq('id', args.matchId);
   if (error) throw error;
+}
+
+/**
+ * Response from the finish_match RPC. xp_awarded / coins_awarded are 0
+ * when the match wasn't a difficulty-room match or the caller didn't
+ * win — the UI uses these to decide whether to show a reward popup at
+ * end-of-match.
+ */
+export interface FinishMatchRewardResult {
+  matchId: string;
+  ownerWon: boolean;
+  xpAwarded: number;
+  xpMultiplier: number;
+  coinsAwarded: number;
+  wallet: { coins: number; gems: number };
+  profile: { xp: number; level: number };
+}
+
+/**
+ * Server-side match completion + reward grant. Called instead of the
+ * legacy plain UPDATE when we want the rewards (and the audit trail)
+ * to be honest. Idempotent on the server: a second call against an
+ * already-finished match raises `match_already_finished` rather than
+ * double-paying.
+ */
+export async function finishMatchRpc(args: FinishMatchArgs): Promise<FinishMatchRewardResult> {
+  const { data, error } = await supabase.rpc('finish_match', {
+    p_match_id: args.matchId,
+    p_white_score: args.whiteScore,
+    p_black_score: args.blackScore,
+    p_winner: args.winner,
+    p_crawford_game_number: args.crawfordGameNumber,
+  });
+  if (error) throw error;
+  const payload = data as {
+    match_id: string;
+    owner_won: boolean;
+    xp_awarded: number;
+    xp_multiplier: number;
+    coins_awarded: number;
+    wallet: { coins: number; gems: number };
+    profile: { xp: number; level: number };
+  };
+  return {
+    matchId: payload.match_id,
+    ownerWon: payload.owner_won,
+    xpAwarded: payload.xp_awarded,
+    xpMultiplier: payload.xp_multiplier,
+    coinsAwarded: payload.coins_awarded,
+    wallet: payload.wallet,
+    profile: payload.profile,
+  };
 }
 
 export async function updateMatchScore(
