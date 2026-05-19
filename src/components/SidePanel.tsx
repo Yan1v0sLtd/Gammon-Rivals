@@ -65,10 +65,6 @@ export default function SidePanel({
       ? { left: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' }
       : { right: hudOffset, top: avatarSize / 2, transform: 'translateY(-50%)' };
   const displayName = firstNameOnly(identity?.name);
-  const playerArt =
-    side === 'left'
-      ? '/gameplay/premium-purple/left-player.webp'
-      : '/gameplay/premium-purple/right-player.webp';
 
   if (!compact) {
     return (
@@ -78,15 +74,10 @@ export default function SidePanel({
         }`}
       >
         <section className="game-player-card">
-          <img
-            src={playerArt}
-            alt=""
-            className="game-player-frame-art"
-            draggable={false}
-          />
           <div className="game-player-card-glow" />
           <div className="game-player-top">
             <div className="game-avatar-stage">
+              <div className="game-avatar-ring" aria-hidden="true" />
               <div className="game-avatar-clip">
                 <Avatar
                   seed={identity?.avatarSeed ?? 'placeholder'}

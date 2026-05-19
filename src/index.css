@@ -5713,39 +5713,45 @@ html, body, #root {
   max-width: none;
 }
 
+/* CSS-painted card frame — replaces left-player.webp / right-player.webp.
+ * Keeps the absolute positioning and percentage-based child layout the
+ * image mode established (so the avatar / hexagon / identity slots still
+ * land exactly where they did over the painted asset), but draws the
+ * box, gold rim, and side accent in CSS so it scales without resolution
+ * artefacts. */
 .game-player-card {
   position: absolute;
   inset: 0;
   display: block;
   padding: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  overflow: hidden;
+  border: 1px solid rgba(214, 157, 49, 0.54);
+  border-radius: clamp(1rem, 1.5vw, 1.5rem);
+  background:
+    radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+    linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow:
+    inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+}
+
+.game-player-panel--left .game-player-card {
+  border-left: 0.18rem solid rgba(193, 78, 255, 0.82);
+}
+
+.game-player-panel--right .game-player-card {
+  border-right: 0.18rem solid rgba(31, 181, 255, 0.82);
 }
 
 .game-player-card-glow {
   display: none;
 }
 
+/* The .webp frame art is no longer rendered, but keep the rule scoped
+ * to a hard `display: none` so older builds / cached HTML can't surface
+ * it during transitions. */
 .game-player-frame-art {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: 39%;
-  object-fit: contain;
-  pointer-events: none;
-  user-select: none;
-  filter: drop-shadow(0 0.35rem 0.7rem rgba(0, 0, 0, 0.48));
-}
-
-.game-player-panel--left .game-player-frame-art {
-  left: 0;
-}
-
-.game-player-panel--right .game-player-frame-art {
-  right: 0;
+  display: none;
 }
 
 .game-player-neon-rail {
@@ -6334,8 +6340,32 @@ html, body, #root {
   border-radius: 50%;
 }
 
+/* Neon halo behind the avatar. Painted in CSS so the ring scales with
+ * the avatar slot and stays sharp at any resolution. Purple on the
+ * left, blue on the right — matches the side-accent border on the
+ * card. Pointer-events off so it never intercepts taps on the avatar
+ * underneath. */
 .game-avatar-ring {
-  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
+  border: 0.18rem solid rgba(195, 76, 255, 0.95);
+  background:
+    radial-gradient(circle at center, transparent 58%, rgba(38, 14, 64, 0.45) 70%, transparent 80%);
+  box-shadow:
+    0 0 1.1rem 0.15rem rgba(196, 76, 255, 0.6),
+    0 0 2rem 0.4rem rgba(196, 76, 255, 0.3),
+    inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.game-player-panel--right .game-avatar-ring {
+  border-color: rgba(51, 178, 255, 0.95);
+  box-shadow:
+    0 0 1.1rem 0.15rem rgba(51, 178, 255, 0.65),
+    0 0 2rem 0.4rem rgba(51, 178, 255, 0.3),
+    inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
 }
 
 .game-avatar-image {
