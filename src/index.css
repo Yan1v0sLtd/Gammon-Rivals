@@ -5714,33 +5714,21 @@ html, body, #root {
 }
 
 /* CSS-painted card frame — replaces left-player.webp / right-player.webp.
- * Keeps the absolute positioning and percentage-based child layout the
- * image mode established (so the avatar / hexagon / identity slots still
- * land exactly where they did over the painted asset), but draws the
- * box, gold rim, and side accent in CSS so it scales without resolution
- * artefacts. */
+ * The actual painted box lives on .game-player-top (the avatar +
+ * identity row) — see further down. `.game-player-card` stays as a
+ * transparent positioning container so the absolutely-positioned
+ * children (game-player-top, game-stat-list, timer bar) can still
+ * compute their percentage offsets relative to it. */
 .game-player-card {
   position: absolute;
   inset: 0;
   display: block;
   padding: 0;
-  overflow: hidden;
-  border: 1px solid rgba(214, 157, 49, 0.54);
-  border-radius: clamp(1rem, 1.5vw, 1.5rem);
-  background:
-    radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
-    linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
-  box-shadow:
-    inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
-    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
-}
-
-.game-player-panel--left .game-player-card {
-  border-left: 0.18rem solid rgba(193, 78, 255, 0.82);
-}
-
-.game-player-panel--right .game-player-card {
-  border-right: 0.18rem solid rgba(31, 181, 255, 0.82);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .game-player-card-glow {
@@ -6945,10 +6933,30 @@ html, body, #root {
   object-fit: contain;
 }
 
+/* This is the painted box the player sees. Confined to the avatar +
+ * identity row only — the Pip / Score / Doubles strip and the timer
+ * sit OUTSIDE the painted box, directly on the gameplay background.
+ * Matches the reference mockup. */
 .game-player-top {
   inset-inline: 4%;
   top: 4.2%;
   height: 31.8%;
+  border: 1px solid rgba(214, 157, 49, 0.54);
+  border-radius: clamp(1rem, 1.5vw, 1.5rem);
+  background:
+    radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+    linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow:
+    inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+}
+
+.game-player-panel--left .game-player-top {
+  border-left: 0.18rem solid rgba(193, 78, 255, 0.82);
+}
+
+.game-player-panel--right .game-player-top {
+  border-right: 0.18rem solid rgba(31, 181, 255, 0.82);
 }
 
 /* The avatar stage matches the gold/purple ring baked into the panel
@@ -7008,21 +7016,31 @@ html, body, #root {
    (left-player.webp / right-player.webp). We don't draw our own hex —
    we just position the level number to overlay the existing hexagon
    in the art at the correct panel-coordinate location. */
+/* Hex paint comes from CSS now. Strategy:
+ *   .game-level-shield is the OUTER gold hex (background + clip-path).
+ *   ::before is the INNER dark hex (slightly inset, same clip-path).
+ *   The "level" text sits on top, centred by the grid layout.
+ * Using two stacked clipped hexes is the simplest way to get a clean
+ * stroke around the path — `box-shadow: 0 0 0 2px` follows the
+ * border-box rectangle, not the clip-path, so it wouldn't paint a
+ * hex-shaped rim. */
 .game-level-shield {
   position: absolute;
   z-index: 5;
-  width: auto;
-  height: auto;
+  display: grid;
+  place-items: center;
+  width: clamp(1.85rem, 2.4vw, 2.7rem);
+  height: clamp(2.1rem, 2.75vw, 3.1rem);
   aspect-ratio: auto;
   min-width: 0;
   padding: 0;
-  background: transparent !important;
-  clip-path: none !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  background: linear-gradient(180deg, #f5d27a 0%, #d5a338 55%, #b8861d 100%);
+  clip-path: polygon(50% 0, 93% 16%, 85% 76%, 50% 100%, 15% 76%, 7% 16%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   color: #ffe083;
-  font-size: clamp(0.6rem, 1.15vw, 1.1rem);
+  font-size: clamp(0.72rem, 1.18vw, 1.35rem);
   font-weight: 950;
   line-height: 1;
   text-align: center;
@@ -7030,15 +7048,18 @@ html, body, #root {
     0 0.08em 0.1em rgba(0, 0, 0, 0.85),
     0 0 0.35em rgba(255, 208, 76, 0.32);
   isolation: auto;
-  display: inline-block;
   pointer-events: none;
 }
 
 .game-level-shield::before {
-  content: none !important;
-  display: none !important;
-  background: transparent !important;
-  clip-path: none !important;
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 9%;
+  z-index: -1;
+  background: linear-gradient(180deg, #273246, #080d18);
+  clip-path: polygon(50% 0, 93% 16%, 85% 76%, 50% 100%, 15% 76%, 7% 16%);
+  pointer-events: none;
 }
 
 /* The hexagon sits ~21% slot-w / ~25% slot-h offset from the stage
