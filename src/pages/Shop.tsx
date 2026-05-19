@@ -15,15 +15,25 @@ import type { Database, Json } from '../types/database';
 type HeadlineKind = 'gems' | 'coins' | 'xp-boost' | 'lucky-dice';
 type BonusKind = 'gems' | 'coins' | 'chest';
 type Ribbon = 'best-value' | 'popular' | null;
+type ShopKind = 'coin_pack' | 'gem_pack' | 'board_theme' | 'cosmetic' | 'bundle' | 'special_offer';
 
 interface TopOffer {
   readonly id: string;
+  /** Original shop_items.kind, used for sidebar-tab filtering. */
+  readonly kind: ShopKind;
   readonly ribbon: Ribbon;
   readonly headlineLabel: string; // e.g., "10,000" — bold value
   readonly headlineKind: HeadlineKind;
   readonly headlineSubLabel?: string; // e.g., "7 Days"
   readonly bonuses: ReadonlyArray<{ kind: BonusKind; amount: number }>;
-  readonly priceUsd: number;
+  /**
+   * Exactly one of priceUsd / priceGems is set. USD items render a
+   * dollar button and go through the stubbed buy flow; gem items
+   * render a gem button and go through the live purchase_shop_item
+   * RPC.
+   */
+  readonly priceUsd: number | null;
+  readonly priceGems: number | null;
 }
 
 interface DailyDeal {
@@ -71,39 +81,72 @@ interface MappedItems {
   readonly topOffers: readonly TopOffer[];
   readonly dailyDeals: readonly DailyDeal[];
   readonly monthlyPass: MonthlyPass | null;
+  /**
+   * Flat list of every enabled, presentable item — used by the
+   * sidebar tabs to filter by `kind` independent of placement.
+   * Daily-deal and top-offer items both appear here too so the
+   * GEMS / COINS / OFFERS tabs show the full catalogue of that
+   * category.
+   */
+  readonly allOffers: readonly TopOffer[];
+}
+
+/** Best-effort default for headline.kind when the seed doesn't specify it. */
+function defaultHeadlineKind(row: ShopItemRow): HeadlineKind {
+  if (row.kind === 'coin_pack') return 'coins';
+  return 'gems';
+}
+
+function rowToTopOffer(row: ShopItemRow): TopOffer | null {
+  const pres = getPresentation(row.contents);
+  const headline = pres?.headline ?? {};
+  const priceUsd = row.price_cents !== null ? row.price_cents / 100 : null;
+  const priceGems = row.price_gems;
+  if (priceUsd === null && priceGems === null) return null; // not purchasable
+  return {
+    id: row.id,
+    kind: row.kind as ShopKind,
+    ribbon: pres?.ribbon ?? null,
+    headlineKind: headline.kind ?? defaultHeadlineKind(row),
+    headlineLabel: headline.label ?? row.display_name,
+    headlineSubLabel: headline.subLabel,
+    bonuses: pres?.bonuses ?? [],
+    priceUsd,
+    priceGems,
+  };
 }
 
 function mapShopItems(rows: readonly ShopItemRow[]): MappedItems {
   const topOffers: TopOffer[] = [];
   const dailyDeals: DailyDeal[] = [];
+  const allOffers: TopOffer[] = [];
   let monthlyPass: MonthlyPass | null = null;
 
   for (const row of rows) {
     if (!row.is_enabled) continue;
     const pres = getPresentation(row.contents);
-    if (!pres) continue;
 
-    if (pres.placement === 'top_offer' && row.price_cents !== null) {
-      const headline = pres.headline ?? {};
-      topOffers.push({
-        id: row.id,
-        ribbon: pres.ribbon ?? null,
-        headlineKind: headline.kind ?? 'gems',
-        headlineLabel: headline.label ?? row.display_name,
-        headlineSubLabel: headline.subLabel,
-        bonuses: pres.bonuses ?? [],
-        priceUsd: row.price_cents / 100,
-      });
-    } else if (pres.placement === 'daily_deal' && row.price_gems !== null) {
+    // Build the unified TopOffer record up-front; we'll route it into
+    // the right featured slot AND/OR allOffers.
+    const offer = rowToTopOffer(row);
+    if (offer) allOffers.push(offer);
+
+    if (pres?.placement === 'top_offer' && row.price_cents !== null && offer) {
+      topOffers.push(offer);
+    } else if (pres?.placement === 'daily_deal' && row.price_gems !== null) {
       const headline = pres.headline ?? {};
       dailyDeals.push({
         id: row.id,
         title: row.display_name,
-        kind: headline.kind ?? 'gems',
+        kind: headline.kind ?? defaultHeadlineKind(row),
         amount: headline.label ?? '',
         priceGems: row.price_gems,
       });
-    } else if (pres.placement === 'monthly_pass' && row.price_cents !== null && monthlyPass === null) {
+    } else if (
+      pres?.placement === 'monthly_pass' &&
+      row.price_cents !== null &&
+      monthlyPass === null
+    ) {
       monthlyPass = {
         id: row.id,
         title: row.display_name,
@@ -113,7 +156,23 @@ function mapShopItems(rows: readonly ShopItemRow[]): MappedItems {
     }
   }
 
-  return { topOffers, dailyDeals, monthlyPass };
+  return { topOffers, dailyDeals, monthlyPass, allOffers };
+}
+
+/** Maps a tab id to the set of shop_items.kind values it should display. */
+function kindsForTab(tab: TabId): readonly ShopKind[] {
+  switch (tab) {
+    case 'gems':
+      return ['gem_pack'];
+    case 'coins':
+      return ['coin_pack'];
+    case 'items':
+      return ['cosmetic', 'board_theme'];
+    case 'offers':
+      return ['special_offer', 'bundle'];
+    default:
+      return [];
+  }
 }
 
 type TabId = 'featured' | 'gems' | 'coins' | 'items' | 'offers';
@@ -241,7 +300,16 @@ function DiceIcon({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 // Top Offer card (real-money packages)
 // -----------------------------------------------------------------------------
 
-function TopOfferCard({ offer, onBuy }: { offer: TopOffer; onBuy: () => void }) {
+function TopOfferCard({
+  offer,
+  isBusy = false,
+  onBuy,
+}: {
+  offer: TopOffer;
+  isBusy?: boolean;
+  onBuy: () => void;
+}) {
+  const isGemPriced = offer.priceGems !== null && offer.priceUsd === null;
   return (
     <div className="relative flex flex-col overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-b from-[#fdf6e3] to-[#f0e1b8] p-3 shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]">
       {offer.ribbon ? (
@@ -258,8 +326,13 @@ function TopOfferCard({ offer, onBuy }: { offer: TopOffer; onBuy: () => void }) 
         </div>
       ) : null}
 
-      {/* Hero icon */}
-      <div className="flex h-24 items-center justify-center">
+      {/* Hero icon. data-fly-source anchors the reward-flight on a
+       *  successful gem-priced buy. Safe to set unconditionally —
+       *  USD-priced items never spawn a flight. */}
+      <div
+        className="flex h-24 items-center justify-center"
+        data-fly-source={offer.id}
+      >
         {offer.headlineKind === 'gems' && <GemIcon className="h-20 w-20" />}
         {offer.headlineKind === 'coins' && <CoinIcon className="h-20 w-20" />}
         {offer.headlineKind === 'xp-boost' && <XpBadge size="lg" />}
@@ -297,13 +370,21 @@ function TopOfferCard({ offer, onBuy }: { offer: TopOffer; onBuy: () => void }) 
         ))}
       </div>
 
-      {/* Buy button */}
+      {/* Buy button — USD or gem-priced */}
       <button
         type="button"
         onClick={onBuy}
-        className="mt-3 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-2 font-display text-base font-black tabular-nums text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
+        disabled={isBusy}
+        className="mt-3 flex items-center justify-center gap-1.5 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-2 font-display text-base font-black tabular-nums text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
       >
-        ${offer.priceUsd.toFixed(2)}
+        {isGemPriced ? (
+          <>
+            <GemIcon className="h-5 w-5" />
+            <span>{offer.priceGems!.toLocaleString()}</span>
+          </>
+        ) : (
+          <span>${offer.priceUsd!.toFixed(2)}</span>
+        )}
       </button>
     </div>
   );
@@ -532,7 +613,7 @@ function FeaturedView({
             <TopOfferCard
               key={offer.id}
               offer={offer}
-              onBuy={() => onStubbedBuy(`$${offer.priceUsd.toFixed(2)} purchase`)}
+              onBuy={() => onStubbedBuy(`$${(offer.priceUsd ?? 0).toFixed(2)} purchase`)}
             />
           ))}
         </div>
@@ -578,6 +659,56 @@ function FeaturedView({
 }
 
 // -----------------------------------------------------------------------------
+// Tab grid view — used by GEMS / COINS / ITEMS / OFFERS sidebar entries
+// -----------------------------------------------------------------------------
+
+function TabGridView({
+  tab,
+  offers,
+  busyOfferId,
+  onBuyUsdOffer,
+  onBuyGemOffer,
+}: {
+  tab: TabId;
+  offers: readonly TopOffer[];
+  busyOfferId: string | null;
+  onBuyUsdOffer: (offer: TopOffer) => void;
+  onBuyGemOffer: (offer: TopOffer) => void;
+}) {
+  const kinds = kindsForTab(tab);
+  const filtered = offers.filter((o) => kinds.includes(o.kind));
+
+  if (filtered.length === 0) {
+    return (
+      <div className="grid place-items-center py-12 text-center text-amber-900/60">
+        <div className="font-display text-base font-bold uppercase tracking-widest">
+          No items in {tab} yet
+        </div>
+        <div className="mt-2 text-sm">
+          Check back soon — operators add new offers here from the Back Office.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-4 gap-3">
+      {filtered.map((offer) => (
+        <TopOfferCard
+          key={offer.id}
+          offer={offer}
+          isBusy={busyOfferId === offer.id}
+          onBuy={() => {
+            if (offer.priceUsd !== null) onBuyUsdOffer(offer);
+            else if (offer.priceGems !== null) onBuyGemOffer(offer);
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Top-level Shop screen
 // -----------------------------------------------------------------------------
 
@@ -604,6 +735,7 @@ export default function Shop() {
     topOffers: [],
     dailyDeals: [],
     monthlyPass: null,
+    allOffers: [],
   });
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
@@ -748,6 +880,59 @@ export default function Shop() {
     showToast('success', `Got ${deal.title}!`);
   };
 
+  // Buy handler for gem-priced offers in the sidebar tabs (GEMS /
+  // COINS / OFFERS that have price_gems set). Shares the RPC + flight
+  // logic with onBuyDailyDeal — kept as a small adapter rather than a
+  // refactor so the existing daily-deal flow stays untouched.
+  const onBuyGemOffer = async (offer: TopOffer) => {
+    if (offer.priceGems === null) return;
+    if (busyDealId !== null) return;
+    if (!user) {
+      showToast('error', 'Sign in to make purchases');
+      return;
+    }
+    if (wallet && wallet.gems < offer.priceGems) {
+      showToast('info', 'Not enough gems — tap a Top Offer to get more.');
+      return;
+    }
+
+    const sourceEl = document.querySelector(`[data-fly-source="${offer.id}"]`);
+
+    setBusyDealId(offer.id);
+    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: offer.id });
+    setBusyDealId(null);
+    if (error) {
+      const msg = error.message ?? '';
+      if (msg.includes('unsupported_grant')) {
+        showToast('info', `${offer.headlineLabel} — coming soon`);
+      } else if (msg.includes('insufficient_gems')) {
+        showToast('info', 'Not enough gems — tap a Top Offer to get more.');
+        void refreshWallet();
+      } else if (msg.includes('already_owned_board')) {
+        showToast('info', 'You already own that board.');
+      } else {
+        showToast('error', 'Purchase failed. Try again.');
+      }
+      return;
+    }
+
+    if (sourceEl && (offer.headlineKind === 'gems' || offer.headlineKind === 'coins')) {
+      spawnFlights(offer.headlineKind, sourceEl, 6);
+    }
+    window.setTimeout(() => {
+      void refreshWallet();
+    }, 600);
+
+    showToast('success', `Got ${offer.headlineLabel}!`);
+  };
+
+  // USD-priced offers across both the Featured row and the tab grids
+  // all go through the stubbed-buy toast for now. Centralised here so
+  // we only need one place to swap in real Stripe later.
+  const onBuyUsdOffer = (offer: TopOffer) => {
+    onStubbedBuy(`$${offer.priceUsd?.toFixed(2) ?? '0.00'} purchase`);
+  };
+
   return (
     <main className="relative flex h-dvh w-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)] text-white">
       {/*
@@ -786,9 +971,13 @@ export default function Shop() {
                     onBuyDailyDeal={onBuyDailyDeal}
                   />
                 ) : (
-                  <div className="grid place-items-center py-12 text-amber-900/60 font-display text-sm font-bold uppercase tracking-widest">
-                    {activeTab} — coming soon
-                  </div>
+                  <TabGridView
+                    tab={activeTab}
+                    offers={items.allOffers}
+                    busyOfferId={busyDealId}
+                    onBuyUsdOffer={onBuyUsdOffer}
+                    onBuyGemOffer={onBuyGemOffer}
+                  />
                 )}
               </div>
             </div>
