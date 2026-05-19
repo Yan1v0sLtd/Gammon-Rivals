@@ -2,102 +2,118 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import type { Database, Json } from '../types/database';
 
 // -----------------------------------------------------------------------------
-// Sample data — Phase 1 layout uses inline content so we can iterate on
-// visuals without round-tripping to the DB. Phase 2 will swap this for
-// supabase.from('shop_items').select() with the same shape.
+// View-layer shapes (consumed by the card components below). The DB row
+// `shop_items` is mapped into these in `mapShopItem` — keeping the cards
+// dumb means we can swap the data source without touching the markup.
 // -----------------------------------------------------------------------------
+
+type HeadlineKind = 'gems' | 'coins' | 'xp-boost' | 'lucky-dice';
+type BonusKind = 'gems' | 'coins' | 'chest';
+type Ribbon = 'best-value' | 'popular' | null;
 
 interface TopOffer {
   readonly id: string;
-  readonly ribbon: 'best-value' | 'popular' | null;
-  readonly icon: string;
+  readonly ribbon: Ribbon;
   readonly headlineLabel: string; // e.g., "10,000" — bold value
-  readonly headlineKind: 'gems' | 'coins' | 'xp-boost' | 'lucky-dice';
-  readonly headlineSubLabel?: string; // e.g., "7 Days" or "Lucky Dice Pack"
-  readonly bonuses: ReadonlyArray<{ kind: 'gems' | 'coins' | 'chest'; amount: number }>;
+  readonly headlineKind: HeadlineKind;
+  readonly headlineSubLabel?: string; // e.g., "7 Days"
+  readonly bonuses: ReadonlyArray<{ kind: BonusKind; amount: number }>;
   readonly priceUsd: number;
 }
-
-const TOP_OFFERS: readonly TopOffer[] = [
-  {
-    id: 'vault-of-gems',
-    ribbon: 'best-value',
-    icon: '/lobby/carousel/gem.webp',
-    headlineLabel: '10,000',
-    headlineKind: 'gems',
-    bonuses: [
-      { kind: 'coins', amount: 50_000 },
-      { kind: 'chest', amount: 10 },
-    ],
-    priceUsd: 99.99,
-  },
-  {
-    id: 'sack-of-gems',
-    ribbon: 'popular',
-    icon: '/lobby/carousel/gem.webp',
-    headlineLabel: '5,000',
-    headlineKind: 'gems',
-    bonuses: [
-      { kind: 'coins', amount: 25_000 },
-      { kind: 'chest', amount: 5 },
-    ],
-    priceUsd: 49.99,
-  },
-  {
-    id: 'bowl-of-gems',
-    ribbon: null,
-    icon: '/lobby/carousel/gem.webp',
-    headlineLabel: '2,500',
-    headlineKind: 'gems',
-    bonuses: [{ kind: 'coins', amount: 10_000 }],
-    priceUsd: 24.99,
-  },
-  {
-    id: 'coin-stack',
-    ribbon: null,
-    icon: '/lobby/icons/gold-coin.webp',
-    headlineLabel: '100,000',
-    headlineKind: 'coins',
-    bonuses: [{ kind: 'gems', amount: 1_000 }],
-    priceUsd: 19.99,
-  },
-  {
-    id: 'xp-boost-7d',
-    ribbon: null,
-    icon: '',
-    headlineLabel: 'XP BOOST (7D)',
-    headlineKind: 'xp-boost',
-    headlineSubLabel: '7 Days',
-    bonuses: [{ kind: 'gems', amount: 500 }],
-    priceUsd: 14.99,
-  },
-  {
-    id: 'lucky-dice',
-    ribbon: null,
-    icon: '',
-    headlineLabel: 'LUCKY DICE PACK',
-    headlineKind: 'lucky-dice',
-    bonuses: [{ kind: 'gems', amount: 300 }],
-    priceUsd: 9.99,
-  },
-];
 
 interface DailyDeal {
   readonly id: string;
   readonly title: string;
-  readonly kind: 'gems' | 'coins' | 'xp-boost' | 'lucky-dice';
+  readonly kind: HeadlineKind;
   readonly amount: string; // display string e.g., "200", "5,000", "3 Days", "x2"
   readonly priceGems: number;
 }
 
-const DAILY_DEALS: readonly DailyDeal[] = [
-  { id: 'dd-gems', title: 'Pile of Gems', kind: 'gems', amount: '200', priceGems: 150 },
-  { id: 'dd-coins', title: 'Stack of Coins', kind: 'coins', amount: '5,000', priceGems: 120 },
-  { id: 'dd-xp', title: 'XP Boost (3d)', kind: 'xp-boost', amount: '3 Days', priceGems: 250 },
-  { id: 'dd-dice', title: 'Lucky Dice', kind: 'lucky-dice', amount: 'x2', priceGems: 200 },
-];
+interface MonthlyPass {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly priceUsd: number;
+}
+
+// -----------------------------------------------------------------------------
+// DB → view mapping. `contents.presentation` controls placement and visual
+// hints; `contents.grants` is consumed by the Buy flow (next PR). Anything
+// the mapper can't make sense of returns null and is skipped at render.
+// -----------------------------------------------------------------------------
+
+type ShopItemRow = Database['public']['Tables']['shop_items']['Row'];
+
+interface ShopItemPresentation {
+  readonly placement?: 'top_offer' | 'daily_deal' | 'monthly_pass';
+  readonly ribbon?: Ribbon;
+  readonly headline?: {
+    readonly kind?: HeadlineKind;
+    readonly label?: string;
+    readonly subLabel?: string;
+  };
+  readonly bonuses?: ReadonlyArray<{ readonly kind: BonusKind; readonly amount: number }>;
+}
+
+function getPresentation(contents: Json): ShopItemPresentation | null {
+  if (contents === null || typeof contents !== 'object' || Array.isArray(contents)) return null;
+  const p = (contents as Record<string, unknown>).presentation;
+  if (p === null || typeof p !== 'object' || Array.isArray(p)) return null;
+  return p as ShopItemPresentation;
+}
+
+interface MappedItems {
+  readonly topOffers: readonly TopOffer[];
+  readonly dailyDeals: readonly DailyDeal[];
+  readonly monthlyPass: MonthlyPass | null;
+}
+
+function mapShopItems(rows: readonly ShopItemRow[]): MappedItems {
+  const topOffers: TopOffer[] = [];
+  const dailyDeals: DailyDeal[] = [];
+  let monthlyPass: MonthlyPass | null = null;
+
+  for (const row of rows) {
+    if (!row.is_enabled) continue;
+    const pres = getPresentation(row.contents);
+    if (!pres) continue;
+
+    if (pres.placement === 'top_offer' && row.price_cents !== null) {
+      const headline = pres.headline ?? {};
+      topOffers.push({
+        id: row.id,
+        ribbon: pres.ribbon ?? null,
+        headlineKind: headline.kind ?? 'gems',
+        headlineLabel: headline.label ?? row.display_name,
+        headlineSubLabel: headline.subLabel,
+        bonuses: pres.bonuses ?? [],
+        priceUsd: row.price_cents / 100,
+      });
+    } else if (pres.placement === 'daily_deal' && row.price_gems !== null) {
+      const headline = pres.headline ?? {};
+      dailyDeals.push({
+        id: row.id,
+        title: row.display_name,
+        kind: headline.kind ?? 'gems',
+        amount: headline.label ?? '',
+        priceGems: row.price_gems,
+      });
+    } else if (pres.placement === 'monthly_pass' && row.price_cents !== null && monthlyPass === null) {
+      monthlyPass = {
+        id: row.id,
+        title: row.display_name,
+        description: row.description,
+        priceUsd: row.price_cents / 100,
+      };
+    }
+  }
+
+  return { topOffers, dailyDeals, monthlyPass };
+}
 
 type TabId = 'featured' | 'gems' | 'coins' | 'items' | 'offers';
 
@@ -325,18 +341,18 @@ function DailyDealCard({ deal, onBuy }: { deal: DailyDeal; onBuy: () => void }) 
 // Monthly Gem Pass banner
 // -----------------------------------------------------------------------------
 
-function MonthlyPassBanner({ onBuy }: { onBuy: () => void }) {
+function MonthlyPassBanner({ pass, onBuy }: { pass: MonthlyPass; onBuy: () => void }) {
   return (
     <div className="relative overflow-hidden rounded-xl border-2 border-violet-700/60 bg-gradient-to-br from-[#3b1361] via-[#2a0e4a] to-[#1c0a36] p-4 shadow-[0_10px_14px_-4px_rgba(20,8,40,0.6)]">
       <div className="flex items-center gap-4">
         <ChestIcon className="h-16 w-16 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="font-display text-lg font-black uppercase tracking-wider text-amber-300 drop-shadow">
-            Monthly Gem Pass
+            {pass.title}
           </div>
           <div className="mt-1 flex items-center gap-2 text-sm font-bold text-amber-100/80">
             <span aria-hidden="true">🗓️</span>
-            <span>Claim 150 gems every day for 30 days!</span>
+            <span>{pass.description}</span>
           </div>
         </div>
         <button
@@ -344,7 +360,7 @@ function MonthlyPassBanner({ onBuy }: { onBuy: () => void }) {
           onClick={onBuy}
           className="shrink-0 rounded-md border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 px-5 py-2 font-display text-base font-black text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
         >
-          $9.99
+          ${pass.priceUsd.toFixed(2)}
         </button>
       </div>
     </div>
@@ -467,7 +483,13 @@ function ShopSidebar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
 // Featured view — assembles the 3 sections
 // -----------------------------------------------------------------------------
 
-function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void }) {
+function FeaturedView({
+  items,
+  onStubbedBuy,
+}: {
+  items: MappedItems;
+  onStubbedBuy: (label: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       {/* Top Offers section */}
@@ -482,7 +504,7 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
           <span className="h-px flex-1 max-w-[6rem] bg-gradient-to-l from-transparent to-amber-500/60" />
         </div>
         <div className="grid grid-cols-6 gap-3">
-          {TOP_OFFERS.map((offer) => (
+          {items.topOffers.map((offer) => (
             <TopOfferCard
               key={offer.id}
               offer={offer}
@@ -506,14 +528,21 @@ function FeaturedView({ onStubbedBuy }: { onStubbedBuy: (label: string) => void 
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {DAILY_DEALS.map((deal) => (
+            {items.dailyDeals.map((deal) => (
               <DailyDealCard key={deal.id} deal={deal} onBuy={() => onStubbedBuy(`${deal.priceGems} gem purchase`)} />
             ))}
           </div>
         </div>
 
         {/* Monthly Pass */}
-        <MonthlyPassBanner onBuy={() => onStubbedBuy('Monthly Gem Pass')} />
+        {items.monthlyPass ? (
+          <MonthlyPassBanner
+            pass={items.monthlyPass}
+            onBuy={() => onStubbedBuy(items.monthlyPass!.title)}
+          />
+        ) : (
+          <div />
+        )}
       </section>
     </div>
   );
@@ -535,6 +564,31 @@ export default function Shop() {
   const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [stubMessage, setStubMessage] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
+  const [items, setItems] = useState<MappedItems>({
+    topOffers: [],
+    dailyDeals: [],
+    monthlyPass: null,
+  });
+
+  // Fetch enabled shop_items once on mount. RLS allows read for everyone,
+  // so guests see the same shop as signed-in players. Ordering by
+  // sort_order lets the Back Office reorder cards without code changes.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let cancelled = false;
+    void supabase
+      .from('shop_items')
+      .select('*')
+      .eq('is_enabled', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled || error || !data) return;
+        setItems(mapShopItems(data));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Compute the scale-to-fit factor on mount and on every resize. CSS
   // `scale(calc(... vw / 1280))` doesn't work because `vw` is a length
@@ -592,7 +646,7 @@ export default function Shop() {
 
               <div className="min-w-0 flex-1 rounded-tl-2xl bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] p-4">
                 {activeTab === 'featured' ? (
-                  <FeaturedView onStubbedBuy={onStubbedBuy} />
+                  <FeaturedView items={items} onStubbedBuy={onStubbedBuy} />
                 ) : (
                   <div className="grid place-items-center py-12 text-amber-900/60 font-display text-sm font-bold uppercase tracking-widest">
                     {activeTab} — coming soon
