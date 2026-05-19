@@ -51,8 +51,13 @@ export default function MatchHeader({
       </div>
 
       <div className="game-match-hud">
-        {/* "MATCH TO N" sits ABOVE the header asset, not inside it. */}
-        <div className="game-match-label">Match to {match.target}</div>
+        {/* "MATCH TO N" sits ABOVE the header asset, not inside it.
+         * Hidden for quick-match (target=1) — every match is a single
+         * game so the framing is just noise. The label comes back as
+         * soon as tournaments use a larger target. */}
+        {match.target > 1 && (
+          <div className="game-match-label">Match to {match.target}</div>
+        )}
 
         {/* The new header art has the rails baked in, so the row just
             contains the pill with the score overlay + turn label. The
