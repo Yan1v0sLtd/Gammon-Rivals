@@ -584,7 +584,7 @@ interface Toast {
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { wallet, refreshWallet } = useAuth();
+  const { user, wallet, refreshWallet } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [toast, setToast] = useState<Toast | null>(null);
   const [busyDealId, setBusyDealId] = useState<string | null>(null);
@@ -652,11 +652,15 @@ export default function Shop() {
   // balance into the auth context so the top-bar pills update.
   const onBuyDailyDeal = async (deal: DailyDeal) => {
     if (busyDealId !== null) return;
-    if (!wallet) {
+    // Auth gate: `user` is the source of truth for "signed in". `wallet`
+    // can be null briefly while the auth context is still fetching the
+    // row, so we don't use it for the gate — only for the optional
+    // client-side affordability shortcut below.
+    if (!user) {
       showToast('error', 'Sign in to make purchases');
       return;
     }
-    if (wallet.gems < deal.priceGems) {
+    if (wallet && wallet.gems < deal.priceGems) {
       showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
       return;
     }
