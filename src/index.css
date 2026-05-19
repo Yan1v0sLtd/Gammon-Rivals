@@ -7120,10 +7120,15 @@ html, body, #root {
 }
 
 /* Tighter clamp ranges across all identity text so the panel reads at
- * the same proportion regardless of viewport. Old ranges varied 60-70 %
- * between floor and ceiling; new ones vary ~20 %. */
+ * the same proportion regardless of viewport — BUT floors lowered after
+ * mobile testing showed even short labels ("Level 40", "MEDIUM") were
+ * truncating to ellipsis. At phone-landscape the identity column ends
+ * up ~70 px wide; with the previous 0.7rem (≈11 px) floor and a 1.42 em
+ * icon + 0.48 em gap, 8-char labels overflowed by ~2 px. Lower floor +
+ * smaller icon footprint gives back enough horizontal room to fit
+ * "Level 40" without truncation while staying readable. */
 .game-player-identity h2 {
-  font-size: clamp(0.95rem, 1.1vw, 1.2rem);
+  font-size: clamp(0.78rem, 1vw, 1.1rem);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -7131,8 +7136,8 @@ html, body, #root {
 }
 
 .game-player-line {
-  gap: 0.48em;
-  font-size: clamp(0.7rem, 0.85vw, 0.9rem);
+  gap: 0.35em;
+  font-size: clamp(0.55rem, 0.78vw, 0.85rem);
   line-height: 1.05;
   min-width: 0;
   overflow: hidden;
@@ -7147,9 +7152,9 @@ html, body, #root {
 
 .game-meta-icon,
 .game-meta-flag {
-  width: 1.42em;
-  height: 1.42em;
-  flex: 0 0 1.42em;
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 1.15em;
 }
 
 .game-meta-icon {
