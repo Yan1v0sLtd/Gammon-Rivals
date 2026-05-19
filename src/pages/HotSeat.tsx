@@ -69,6 +69,15 @@ function parseTarget(raw: string | null): number {
 const ALIGNMENT_STORAGE_KEY = 'gammon-rivals:premium-alignment-layout';
 const DEFAULT_TURN_SECONDS = 45;
 
+/** Clamp the URL-sourced turn timer to the same range the server enforces
+ *  on table_configs.turn_seconds, so a forged `?turn=` query param can't
+ *  trigger a 1-second timeout in the client. */
+function parseTurnSeconds(raw: string | null): number {
+  const n = raw ? parseInt(raw, 10) : NaN;
+  if (!Number.isFinite(n)) return DEFAULT_TURN_SECONDS;
+  return Math.min(600, Math.max(5, n));
+}
+
 function copyRatios(value: readonly number[] | undefined): number[] | undefined {
   return value?.length === 12 ? [...value] : undefined;
 }
@@ -148,6 +157,15 @@ export default function HotSeat() {
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
   const boardParam = params.get('board');
+  /**
+   * When the difficulty modal calls enter_room(), the new match row is
+   * created server-side before navigation. The modal then routes here
+   * with ?matchId=<id>&turn=<seconds>. If those params are present we
+   * reuse the existing match (skip the createMatch call below) and pick
+   * up the per-room turn timer instead of the 45-second default.
+   */
+  const presetMatchId = params.get('matchId');
+  const turnSeconds = useMemo(() => parseTurnSeconds(params.get('turn')), [params]);
   const { theme: selectedTheme, isLoading: themeLoading } = useBoardThemeConfig(boardParam);
   const alignmentEnabled = params.get('align') === '1';
   const [alignmentLayout, setAlignmentLayout] = useState<ThemeLayout>(() => loadAlignmentLayout());
@@ -192,10 +210,14 @@ export default function HotSeat() {
   );
 
   // ---- Persistence ----
-  const [matchId, setMatchId] = useState<string | null>(null);
+  // If the difficulty modal pre-created the match via enter_room, skip
+  // the local createMatch call entirely — the row already exists, the
+  // entry fee was already debited server-side, and we should use that
+  // id for all later writes (saveGame, finishMatch).
+  const [matchId, setMatchId] = useState<string | null>(presetMatchId);
   const persistedGameNumberRef = useRef(0);
   const persistedMatchOverRef = useRef(false);
-  const matchCreatedForUserRef = useRef<string | null>(null);
+  const matchCreatedForUserRef = useRef<string | null>(presetMatchId ? 'preset' : null);
 
   useEffect(() => {
     if (authLoading || !user || matchId) return;
@@ -400,17 +422,17 @@ export default function HotSeat() {
   }, [turnTimerActive]);
 
   const turnElapsedSeconds = turnTimerActive ? (timerNow - turnTimerState.startedAt) / 1000 : 0;
-  const turnSecondsLeft = Math.max(0, Math.ceil(DEFAULT_TURN_SECONDS - turnElapsedSeconds));
+  const turnSecondsLeft = Math.max(0, Math.ceil(turnSeconds - turnElapsedSeconds));
   const turnTimerProgress = Math.max(
     0,
-    Math.min(1, (DEFAULT_TURN_SECONDS - turnElapsedSeconds) / DEFAULT_TURN_SECONDS)
+    Math.min(1, (turnSeconds - turnElapsedSeconds) / turnSeconds)
   );
   const { forfeitTurn } = game;
 
   useEffect(() => {
     if (!turnTimerActive) return;
     if (!humanCanInteract) return;
-    if (turnElapsedSeconds < DEFAULT_TURN_SECONDS) return;
+    if (turnElapsedSeconds < turnSeconds) return;
     const key = `${game.match.gameNumber}:${game.board.turn}`;
     if (timeoutHandledRef.current === key) return;
     timeoutHandledRef.current = key;
@@ -421,6 +443,7 @@ export default function HotSeat() {
     game.match.gameNumber,
     humanCanInteract,
     turnElapsedSeconds,
+    turnSeconds,
     turnTimerActive,
   ]);
 

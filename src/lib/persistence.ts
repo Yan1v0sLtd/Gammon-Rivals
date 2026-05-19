@@ -158,6 +158,54 @@ export async function createMatch(args: CreateMatchArgs): Promise<string> {
   return data.id;
 }
 
+/**
+ * Shape returned by the `enter_room` RPC. The RPC has already debited
+ * the entry fee and inserted the matches row, so the caller just needs
+ * to navigate the user into the gameplay screen with these values.
+ */
+export interface EnterRoomResult {
+  matchId: string;
+  turnSeconds: number;
+  mode: MatchMode;
+  target: number;
+  wallet: { coins: number; gems: number };
+}
+
+/**
+ * Calls the server-side enter_room RPC. The RPC is what makes the
+ * "entry fee deducted on join" semantics atomic: it validates the room,
+ * debits coins, and creates the match in a single transaction. On
+ * error it raises one of: not_authenticated, room_not_found,
+ * room_disabled, unsupported_match_mode, ai_not_allowed, level_too_low,
+ * insufficient_coins. We surface the raw error.message so the caller
+ * (the DifficultyModal) can pattern-match those codes for friendly
+ * toasts.
+ */
+export async function enterRoom(args: {
+  tableConfigId: string;
+  matchMode?: MatchMode;
+}): Promise<EnterRoomResult> {
+  const { data, error } = await supabase.rpc('enter_room', {
+    p_table_config_id: args.tableConfigId,
+    p_match_mode: args.matchMode ?? 'ai-medium',
+  });
+  if (error) throw error;
+  const payload = data as {
+    match_id: string;
+    turn_seconds: number;
+    mode: MatchMode;
+    target: number;
+    wallet: { coins: number; gems: number };
+  };
+  return {
+    matchId: payload.match_id,
+    turnSeconds: payload.turn_seconds,
+    mode: payload.mode,
+    target: payload.target,
+    wallet: payload.wallet,
+  };
+}
+
 export interface FinishMatchArgs {
   matchId: string;
   whiteScore: number;

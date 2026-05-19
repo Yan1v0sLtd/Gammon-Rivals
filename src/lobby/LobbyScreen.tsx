@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
-import { createOnlineMatch } from '../lib/persistence';
+import { createOnlineMatch, enterRoom } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { DailyBonusModal } from './DailyBonusModal';
+import { DifficultyModal, type DifficultySelection } from './DifficultyModal';
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
@@ -82,6 +83,12 @@ export function LobbyScreen() {
   const [onlineError, setOnlineError] = useState<string | null>(null);
   const [lockedTooltipFor, setLockedTooltipFor] = useState<LobbyBoard | null>(null);
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
+  // Difficulty modal state. `enteringRoomId` is the table_config_id
+  // currently being purchased via enter_room — the modal uses it to
+  // disable just the tapped card while the RPC is in flight.
+  const [difficultyOpen, setDifficultyOpen] = useState(false);
+  const [enteringRoomId, setEnteringRoomId] = useState<string | null>(null);
+  const [difficultyError, setDifficultyError] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const dailyBonus = useDailyBonus();
@@ -320,6 +327,69 @@ export function LobbyScreen() {
     navigate(`/hotseat?${params.toString()}`);
   };
 
+  /**
+   * Called when the player picks a difficulty in the modal. The RPC
+   * does all the heavy lifting (validate room, debit coins, create the
+   * match row tagged with table_config_id) and we just route into the
+   * new gameplay screen with the per-room turn timer pre-baked into the
+   * URL. v1: ai-medium opponent for every difficulty room. Online
+   * matchmaking through difficulties comes once the opponent-side
+   * payment story lands.
+   */
+  const handleDifficultySelect = async (selection: DifficultySelection) => {
+    if (enteringRoomId !== null) return;
+    if (!user) {
+      setDifficultyError('Sign in to enter a room.');
+      return;
+    }
+    if (selectedBoard) {
+      const state = boardStateOf(selectedBoard);
+      if (state !== 'owned' && state !== 'free-unlock') {
+        // Defensive: PLAY button shouldn't surface on locked or
+        // gem-priced boards — LobbyBoardCarousel gates on the same
+        // state — but we don't trust client state alone. If something
+        // stale slips through, refuse and toast.
+        setDifficultyError('Unlock this board before entering a room.');
+        return;
+      }
+    }
+
+    setEnteringRoomId(selection.tableConfigId);
+    setDifficultyError(null);
+    try {
+      const result = await enterRoom({
+        tableConfigId: selection.tableConfigId,
+        matchMode: 'ai-medium',
+      });
+      // Wallet was debited server-side; pull the new balance so the
+      // top-bar coins pill reflects the deduction before the route
+      // change settles.
+      void refreshWallet();
+      const params = new URLSearchParams();
+      params.set('opp', 'medium');
+      params.set('target', String(result.target));
+      params.set('board', effectiveSelectedBoardId);
+      params.set('matchId', result.matchId);
+      params.set('turn', String(result.turnSeconds));
+      showOverlay();
+      setDifficultyOpen(false);
+      navigate(`/hotseat?${params.toString()}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('insufficient_coins')) {
+        setDifficultyError('Not enough coins for this room.');
+      } else if (msg.includes('level_too_low')) {
+        setDifficultyError(`You haven't reached the required level for this room.`);
+      } else if (msg.includes('room_disabled')) {
+        setDifficultyError('This room is temporarily unavailable.');
+      } else {
+        setDifficultyError('Could not enter the room. Try again.');
+      }
+    } finally {
+      setEnteringRoomId(null);
+    }
+  };
+
   const startOnline = async () => {
     if (!isSupabaseConfigured) {
       showOverlay();
@@ -409,7 +479,10 @@ export function LobbyScreen() {
               boards={boards}
               selectedId={effectiveSelectedBoardId}
               onSelectedIdChange={setSelectedBoardId}
-              onPlay={() => startMatch('medium')}
+              onPlay={() => {
+                setDifficultyError(null);
+                setDifficultyOpen(true);
+              }}
               getBoardState={boardStateOf}
               onLockedTap={handleLockedTap}
               onPurchaseTap={handlePurchaseTap}
@@ -483,6 +556,24 @@ export function LobbyScreen() {
           justClaimed={justClaimedBonus}
           onClaim={claimDailyBonus}
         />
+      ) : null}
+
+      <DifficultyModal
+        open={difficultyOpen}
+        onClose={() => {
+          if (enteringRoomId !== null) return;
+          setDifficultyOpen(false);
+          setDifficultyError(null);
+        }}
+        onSelect={handleDifficultySelect}
+        walletCoins={wallet?.coins ?? 0}
+        playerLevel={profile?.level ?? 1}
+        busyId={enteringRoomId}
+      />
+      {difficultyError && difficultyOpen ? (
+        <div className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 px-4 py-2 font-bold text-rose-950 shadow-2xl">
+          {difficultyError}
+        </div>
       ) : null}
 
       {/* Flying coin / gem tokens rendered above everything else. */}

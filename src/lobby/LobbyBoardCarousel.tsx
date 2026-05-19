@@ -497,6 +497,16 @@ export function LobbyBoardCarousel({
 
   const selectedBoardIdx = modulo(Math.round(position), boards.length);
   const selected = boards[selectedBoardIdx]!;
+  // Show the inline PLAY button when the board is fully playable for
+  // this user. Two states qualify:
+  //   - 'owned'       — bought (or admin-granted) into inventory
+  //   - 'free-unlock' — level requirement met AND no gem price, so
+  //                     there's nothing to purchase. These play for free.
+  // 'level-locked' shows the padlock; 'purchasable' shows the gem-price
+  // pill. Neither offers PLAY until the user resolves that gate.
+  const selectedBoardState = getBoardState(selected);
+  const showPlayOnBoard =
+    selectedBoardState === 'owned' || selectedBoardState === 'free-unlock';
 
   return (
     <section className="lobby-carousel-section relative mx-auto w-full max-w-[64rem] overflow-visible">
@@ -639,14 +649,23 @@ export function LobbyBoardCarousel({
           </svg>
         </button>
 
-        <button
-          type="button"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={onPlay}
-          className="lobby-play-button absolute bottom-4 left-1/2 z-40 h-14 min-w-56 -translate-x-1/2 px-12 font-display text-2xl font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
-        >
-          Play
-        </button>
+        {/* Inline PLAY button — only on the centered board, only when
+          *  the player fully owns it (level + purchase). Half the size
+          *  of the previous bottom-of-carousel button and sits at the
+          *  visual center of the board so it reads as "tap to enter
+          *  this room" rather than a global play action. Click opens
+          *  the difficulty modal via onPlay(); the parent looks at the
+          *  selected board to decide which room to launch. */}
+        {showPlayOnBoard ? (
+          <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={onPlay}
+            className="lobby-play-button absolute left-1/2 top-[44%] z-40 h-10 min-w-32 -translate-x-1/2 -translate-y-1/2 px-6 font-display text-base font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
+          >
+            Play
+          </button>
+        ) : null}
 
         <div className="absolute bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center gap-4">
           {boards.map((board, idx) => (

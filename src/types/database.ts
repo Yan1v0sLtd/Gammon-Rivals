@@ -95,6 +95,7 @@ export type Database = {
           black_score: number;
           winner: string | null;
           crawford_game_number: number | null;
+          table_config_id: string | null;
           started_at: string;
           finished_at: string | null;
           updated_at: string;
@@ -118,6 +119,7 @@ export type Database = {
           black_score?: number;
           winner?: string | null;
           crawford_game_number?: number | null;
+          table_config_id?: string | null;
           started_at?: string;
           finished_at?: string | null;
           updated_at?: string;
@@ -141,6 +143,7 @@ export type Database = {
           black_score?: number;
           winner?: string | null;
           crawford_game_number?: number | null;
+          table_config_id?: string | null;
           started_at?: string;
           finished_at?: string | null;
           updated_at?: string;
@@ -459,6 +462,7 @@ export type Database = {
       table_configs: {
         Row: {
           id: string;
+          kind: 'standard' | 'difficulty';
           display_name: string;
           description: string;
           entry_fee_coins: number;
@@ -469,6 +473,10 @@ export type Database = {
           allow_online: boolean;
           is_enabled: boolean;
           sort_order: number;
+          xp_multiplier_pct: number;
+          base_xp_win: number;
+          turn_seconds: number;
+          accent_color: string;
           metadata: Json;
           updated_by: string | null;
           created_at: string;
@@ -476,6 +484,7 @@ export type Database = {
         };
         Insert: {
           id: string;
+          kind?: 'standard' | 'difficulty';
           display_name: string;
           description?: string;
           entry_fee_coins?: number;
@@ -486,6 +495,10 @@ export type Database = {
           allow_online?: boolean;
           is_enabled?: boolean;
           sort_order?: number;
+          xp_multiplier_pct?: number;
+          base_xp_win?: number;
+          turn_seconds?: number;
+          accent_color?: string;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -493,6 +506,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          kind?: 'standard' | 'difficulty';
           display_name?: string;
           description?: string;
           entry_fee_coins?: number;
@@ -503,6 +517,10 @@ export type Database = {
           allow_online?: boolean;
           is_enabled?: boolean;
           sort_order?: number;
+          xp_multiplier_pct?: number;
+          base_xp_win?: number;
+          turn_seconds?: number;
+          accent_color?: string;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -817,6 +835,10 @@ export type Database = {
       current_xp_multiplier: {
         Args: { target_profile_id: string };
         Returns: number;
+      };
+      enter_room: {
+        Args: { p_table_config_id: string; p_match_mode?: string };
+        Returns: Json;
       };
       get_my_admin_role: {
         Args: Record<string, never>;
