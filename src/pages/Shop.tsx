@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
 import type { Database, Json } from '../types/database';
 
 // -----------------------------------------------------------------------------
@@ -326,7 +327,10 @@ function DailyDealCard({
       <div className="whitespace-nowrap text-center font-display text-xs font-bold uppercase tracking-wide text-amber-900/80">
         {deal.title}
       </div>
-      <div className="flex h-16 items-center justify-center">
+      {/* data-fly-source: anchor for the reward-flight animation on
+        * successful purchase. Keyed by deal.id so multiple cards on
+        * screen each have their own source coordinates. */}
+      <div className="flex h-16 items-center justify-center" data-fly-source={deal.id}>
         {deal.kind === 'gems' && <GemIcon className="h-12 w-12" />}
         {deal.kind === 'coins' && <CoinIcon className="h-12 w-12" />}
         {deal.kind === 'xp-boost' && <XpBadge size="md" />}
@@ -413,9 +417,13 @@ function ShopTopBar({
         <p className="text-xs font-bold text-amber-900/70 md:text-sm">Get gems, coins and exclusive items!</p>
       </div>
 
-      {/* Wallet pills — fill the centre */}
+      {/* Wallet pills — fill the centre. data-fly-target hooks let the
+       *  reward-flight animation aim at the right pill on purchase. */}
       <div className="ml-auto flex items-center gap-3">
-        <div className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3">
+        <div
+          data-fly-target="gems"
+          className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3"
+        >
           <GemIcon className="h-7 w-7" />
           <span className="ml-2 min-w-[3rem] text-right font-display text-base font-black tabular-nums text-white">
             {formatCompactNumber(gems)}
@@ -428,7 +436,10 @@ function ShopTopBar({
             <span className="text-lg font-black leading-none">+</span>
           </button>
         </div>
-        <div className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3">
+        <div
+          data-fly-target="coins"
+          className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3"
+        >
           <CoinIcon className="h-7 w-7" />
           <span className="ml-2 min-w-[3rem] text-right font-display text-base font-black tabular-nums text-white">
             {formatCompactNumber(coins)}
@@ -594,6 +605,8 @@ export default function Shop() {
     dailyDeals: [],
     monthlyPass: null,
   });
+  const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
+  const nextFlightIdRef = useRef(1);
 
   // Fetch enabled shop_items once on mount. RLS allows read for everyone,
   // so guests see the same shop as signed-in players. Ordering by
@@ -640,6 +653,38 @@ export default function Shop() {
     window.setTimeout(() => setToast(null), ms);
   };
 
+  // Reward-flight orchestration. Same pattern as the Daily Bonus claim
+  // in LobbyScreen: a stream of small icons curves from a source
+  // element to the corresponding wallet pill in the top bar.
+  const spawnFlights = (currency: FlightCurrency, sourceEl: Element, count: number) => {
+    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
+    if (!target) return;
+    const src = sourceEl.getBoundingClientRect();
+    const dst = target.getBoundingClientRect();
+    const startX = src.left + src.width / 2;
+    const startY = src.top + src.height / 2;
+    const endX = dst.left + dst.width / 2;
+    const endY = dst.top + dst.height / 2;
+    const additions: RewardFlightSpec[] = [];
+    for (let i = 0; i < count; i++) {
+      additions.push({
+        id: nextFlightIdRef.current++,
+        currency,
+        startX: startX + (Math.random() - 0.5) * 14,
+        startY: startY + (Math.random() - 0.5) * 14,
+        endX,
+        endY,
+        delayMs: i * 70,
+        durationMs: 800,
+      });
+    }
+    setRewardFlights((prev) => [...prev, ...additions]);
+  };
+
+  const removeFlight = (id: number) => {
+    setRewardFlights((prev) => prev.filter((f) => f.id !== id));
+  };
+
   const onStubbedBuy = (label: string) => {
     showToast('info', `${label} — coming soon`);
   };
@@ -664,6 +709,13 @@ export default function Shop() {
       showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
       return;
     }
+
+    // Snapshot the flight source BEFORE the RPC: the button enters its
+    // disabled/dimmed state while in flight, but the icon stays where
+    // it was, so this lookup is mostly defensive — we want the pre-RPC
+    // bounding box, not a re-rendered one.
+    const sourceEl = document.querySelector(`[data-fly-source="${deal.id}"]`);
+
     setBusyDealId(deal.id);
     const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: deal.id });
     setBusyDealId(null);
@@ -682,7 +734,17 @@ export default function Shop() {
       }
       return;
     }
-    await refreshWallet();
+
+    // Spawn flying tokens toward the matching pill so the player sees
+    // the reward travel, then refresh the wallet around the time the
+    // first tokens land so the pill ticks up mid-flight.
+    if (sourceEl && (deal.kind === 'gems' || deal.kind === 'coins')) {
+      spawnFlights(deal.kind, sourceEl, 6);
+    }
+    window.setTimeout(() => {
+      void refreshWallet();
+    }, 600);
+
     showToast('success', `Got ${deal.title}!`);
   };
 
@@ -733,6 +795,13 @@ export default function Shop() {
           </div>
         </div>
       </div>
+
+      {/* Reward-flight overlay. Rendered as a sibling of the scaled
+       *  wrapper so its `position: fixed` is viewport-relative and not
+       *  scoped to a transformed ancestor. */}
+      {rewardFlights.map((spec) => (
+        <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
+      ))}
 
       {/* Toast — info (amber), success (emerald), error (rose) */}
       {toast ? (
