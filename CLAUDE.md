@@ -16,15 +16,15 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
-| 1 | Pure TS rules engine, board UI in PixiJS, dice physics, hot-seat 2-player, single games | 🟡 Scaffolded — engine stubs + Home/HotSeat routes, no board renderer yet |
-| 2 | Match play, Crawford rule, doubling cube offer/accept/drop | ⬜ |
-| 3 | AI opponent (3 tiers), Web Worker eval | ⬜ |
-| 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | ⬜ |
-| 5 | Online multiplayer — server-authoritative dice, Realtime moves, private invites, reconnect | ⬜ |
-| 6 | Public lobby, ELO matchmaking, spectator mode | ⬜ |
+| 1 | Pure TS rules engine, board UI in PixiJS, dice physics, hot-seat 2-player, single games | 🟢 Done |
+| 2 | Match play, Crawford rule, doubling cube offer/accept/drop | 🟢 Engine + UI done — `src/engine/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
+| 3 | AI opponent (3 tiers), Web Worker eval | 🟡 Mostly done — AI plays online matches as a **fallback** when matchmaking can't find a human opponent. Pure PvP is the primary mode. |
+| 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | 🟢 Auth + guests + profile done; replays / ELO TBD |
+| 5 | Online multiplayer — server-authoritative dice, Realtime moves, private invites, reconnect | 🟢 Done |
+| 6 | Public lobby, ELO matchmaking, spectator mode | 🟡 Matchmaking RPC wired; ELO + spectator TBD |
 | 7 | Variants — Nackgammon, hyper-gammon, acey-deucey | ⬜ |
 
-Don't jump phases. The engine has to be airtight before AI; auth/persistence has to land before online.
+> **Direction update**: the app is primarily a real-time PvP backgammon game. AI matches are the fallback when matchmaking can't pair the player with a human. Phase ordering above reflects the original plan; current focus is on the live PvP experience, the lobby/shop/daily-bonus surface, and gameplay polish (image→CSS conversions).
 
 ---
 

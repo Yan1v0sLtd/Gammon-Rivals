@@ -297,7 +297,7 @@ export function LobbyScreen() {
     return () => window.clearTimeout(clearPrevious);
   }, [selectedBoard]);
 
-  const startMatch = (opponent: OpponentChoice, target = 7) => {
+  const startMatch = (opponent: OpponentChoice, target = 1) => {
     if (selectedBoard) {
       const state = boardStateOf(selectedBoard);
       if (state === 'level-locked') {
@@ -330,7 +330,7 @@ export function LobbyScreen() {
     setCreatingOnline(true);
     setOnlineError(null);
     try {
-      const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 7 });
+      const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 1 });
       showOverlay();
       navigate(`/play/${matchId}?board=${effectiveSelectedBoardId}`);
     } catch (err) {

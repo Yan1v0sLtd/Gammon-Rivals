@@ -29,7 +29,13 @@ import { pickMoveAsync } from '../ai/client';
 import type { AILevel } from '../ai';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
 
-const DEFAULT_TARGET = 7;
+/* Quick-match default: every match is a single 1-point game. The
+ * engine still supports N-point matches with Crawford + the cube (see
+ * src/engine/match.ts and its 32 tests) — that infrastructure stays
+ * around for tournaments. Callers (lobby, online match creation, the
+ * /hotseat?target=N URL param) can still pass a larger target if they
+ * need it. */
+const DEFAULT_TARGET = 1;
 
 const AI_ROLL_DELAY = 500;
 const AI_PER_MOVE_DELAY = 900;

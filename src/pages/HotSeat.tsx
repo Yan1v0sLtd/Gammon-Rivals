@@ -60,7 +60,9 @@ function parseOpponent(raw: string | null): AIConfig | null {
 
 function parseTarget(raw: string | null): number {
   const n = raw ? parseInt(raw, 10) : NaN;
-  if (!Number.isFinite(n) || n < 1) return 7;
+  // Default 1: quick-match (single game). N-point matches still work
+  // when explicitly requested via ?target=N, kept for future tournaments.
+  if (!Number.isFinite(n) || n < 1) return 1;
   return n;
 }
 
