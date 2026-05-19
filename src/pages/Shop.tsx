@@ -726,7 +726,7 @@ interface Toast {
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { user, wallet, refreshWallet } = useAuth();
+  const { user, wallet, refreshWallet, refreshXpBoost } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [toast, setToast] = useState<Toast | null>(null);
   const [busyDealId, setBusyDealId] = useState<string | null>(null);
@@ -877,6 +877,12 @@ export default function Shop() {
       void refreshWallet();
     }, 600);
 
+    // XP-boost grants don't fly anywhere — they just appear as the
+    // top-bar badge once auth re-fetches user_xp_boosts.
+    if (deal.kind === 'xp-boost') {
+      void refreshXpBoost();
+    }
+
     showToast('success', `Got ${deal.title}!`);
   };
 
@@ -922,6 +928,10 @@ export default function Shop() {
     window.setTimeout(() => {
       void refreshWallet();
     }, 600);
+
+    if (offer.headlineKind === 'xp-boost') {
+      void refreshXpBoost();
+    }
 
     showToast('success', `Got ${offer.headlineLabel}!`);
   };

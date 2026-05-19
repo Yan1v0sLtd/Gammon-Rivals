@@ -4,6 +4,7 @@ import Avatar from '../components/Avatar';
 import { formatCompactNumber } from '../lib/format';
 import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
+import { XpBoostBadge } from './XpBoostBadge';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
@@ -167,6 +168,12 @@ export function LobbyTopBar({
               <span className="lobby-profile-progress-text">{progression.progressLabel}</span>
             </div>
           </Link>
+          {/* XP-boost chip. Renders null when no boost is active so it
+            * occupies no space — and it ticks its own countdown so the
+            * rest of the top-bar doesn't re-render every second. */}
+          <div className="mt-2 flex items-center">
+            <XpBoostBadge />
+          </div>
           {isGuest && (
             <button
               type="button"

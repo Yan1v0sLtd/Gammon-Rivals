@@ -756,6 +756,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_xp_boosts: {
+        Row: {
+          id: string;
+          profile_id: string;
+          multiplier: number;
+          expires_at: string;
+          source: 'purchase' | 'admin' | 'daily_bonus' | 'event' | 'test';
+          shop_item_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          multiplier: number;
+          expires_at: string;
+          source?: 'purchase' | 'admin' | 'daily_bonus' | 'event' | 'test';
+          shop_item_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          multiplier?: number;
+          expires_at?: string;
+          source?: 'purchase' | 'admin' | 'daily_bonus' | 'event' | 'test';
+          shop_item_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -783,6 +813,10 @@ export type Database = {
       claim_daily_bonus: {
         Args: Record<string, never>;
         Returns: Json;
+      };
+      current_xp_multiplier: {
+        Args: { target_profile_id: string };
+        Returns: number;
       };
       get_my_admin_role: {
         Args: Record<string, never>;

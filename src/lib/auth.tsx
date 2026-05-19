@@ -17,6 +17,17 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
 type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
 
+/**
+ * Active XP boost summary shown in the lobby + applied by the server.
+ * `multiplier` is the highest across all active boost rows (matches the
+ * SQL helper); `expiresAt` is the matching row's expiry. We don't track
+ * per-row data on the client — the audit trail lives in the DB.
+ */
+export interface ActiveXpBoost {
+  readonly multiplier: number;
+  readonly expiresAt: string;
+}
+
 const missingConfigMessage =
   'Supabase is not configured. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.';
 
@@ -70,6 +81,10 @@ export interface AuthContextValue {
   readonly wallet: UserWallet | null;
   readonly levelConfigs: LevelConfig[];
   readonly progression: ProfileProgression;
+  /** Highest currently-active XP multiplier and its expiry, or null if
+   *  no boost is active. Read by the top-bar badge; refreshed after a
+   *  successful purchase via refreshXpBoost(). */
+  readonly activeXpBoost: ActiveXpBoost | null;
   readonly isLoading: boolean;
   readonly isAnonymous: boolean;
   readonly isGuest: boolean;
@@ -84,6 +99,9 @@ export interface AuthContextValue {
    *  user_wallets (e.g. claim_daily_bonus, purchase_board_with_gems) so
    *  the top-bar coin/gem counters reflect the new balance. */
   refreshWallet(): Promise<void>;
+  /** Re-read user_xp_boosts after a purchase that may have added one.
+   *  Called from Shop.tsx; cheap (single indexed query). */
+  refreshXpBoost(): Promise<void>;
   completeOAuthProfile(): Promise<void>;
 }
 
@@ -94,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [wallet, setWallet] = useState<UserWallet | null>(null);
   const [levelConfigs, setLevelConfigs] = useState<LevelConfig[]>([]);
+  const [activeXpBoost, setActiveXpBoost] = useState<ActiveXpBoost | null>(null);
   const [isLoading, setLoading] = useState(isSupabaseConfigured);
   const profileFetchRef = useRef<string | null>(null);
   const walletFetchRef = useRef<string | null>(null);
@@ -139,6 +158,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setWallet(data);
   }, []);
 
+  // Read the highest-multiplier active boost. Resolved to a plain
+  // {multiplier, expiresAt} so the top-bar badge can render directly
+  // without filtering an array. Empty result -> null so the badge can
+  // do a falsy check.
+  const fetchXpBoost = useCallback(async (userId: string) => {
+    if (!isSupabaseConfigured) return;
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('user_xp_boosts')
+      .select('multiplier, expires_at')
+      .eq('profile_id', userId)
+      .gt('expires_at', nowIso)
+      .order('multiplier', { ascending: false })
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.warn('xp boost fetch error', error);
+      return;
+    }
+    setActiveXpBoost(
+      data ? { multiplier: data.multiplier, expiresAt: data.expires_at } : null
+    );
+  }, []);
+
   const fetchProfile = useCallback(
     async (userId: string) => {
       if (!isSupabaseConfigured) return;
@@ -175,8 +219,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setProfile(data);
       await fetchWallet(userId);
+      await fetchXpBoost(userId);
     },
-    [fetchWallet]
+    [fetchWallet, fetchXpBoost]
   );
 
   const refreshProfile = useCallback(async () => {
@@ -191,6 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     walletFetchRef.current = null;
     await fetchWallet(session.user.id);
   }, [session, fetchWallet]);
+
+  const refreshXpBoost = useCallback(async () => {
+    if (!session?.user) return;
+    await fetchXpBoost(session.user.id);
+  }, [session, fetchXpBoost]);
 
   const completeOAuthProfile = useCallback(async () => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
@@ -302,6 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setProfile(null);
         setWallet(null);
+        setActiveXpBoost(null);
         profileFetchRef.current = null;
         walletFetchRef.current = null;
       }
@@ -403,6 +454,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       wallet,
       levelConfigs,
       progression,
+      activeXpBoost,
       isLoading,
       isAnonymous,
       isGuest,
@@ -414,6 +466,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setDisplayName,
       refreshProfile,
       refreshWallet,
+      refreshXpBoost,
       completeOAuthProfile,
     }),
     [
@@ -422,6 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       wallet,
       levelConfigs,
       progression,
+      activeXpBoost,
       isLoading,
       isAnonymous,
       isGuest,
@@ -433,6 +487,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setDisplayName,
       refreshProfile,
       refreshWallet,
+      refreshXpBoost,
       completeOAuthProfile,
     ]
   );
