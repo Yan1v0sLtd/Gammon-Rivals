@@ -185,7 +185,17 @@ export function useOnlineGame(
         .eq('id', matchId)
         .maybeSingle();
       if (mErr) throw mErr;
-      setMatch(m);
+      // Defer setMatch until AFTER the dependent moves+game fetches
+      // resolve, so the React render that picks up the new match row
+      // ALSO has the matching moves array. The previous version did
+      // setMatch(m) here and then awaited the moves fetch — between
+      // those two state writes, there was a render with the NEW match
+      // (current_turn cleared after endTurn) and the OLD moves (no
+      // new row yet). deriveState saw moves=[] + currentTurn=null and
+      // returned initialBoard(), which made BoardCanvas re-animate
+      // the checker distribution. Bug only manifested visibly after
+      // move 1 — move 2+ briefly showed [all-prior-moves] which
+      // happened to look close enough to the real state.
       if (m?.current_game_id) {
         const [movesRes, gameRes] = await Promise.all([
           supabase
@@ -201,9 +211,12 @@ export function useOnlineGame(
         ]);
         if (movesRes.error) throw movesRes.error;
         if (gameRes.error) throw gameRes.error;
+        // Single React batch: match + moves + game all land together.
+        setMatch(m);
         setMoves(movesRes.data ?? []);
         setCurrentGame(gameRes.data);
       } else {
+        setMatch(m);
         setMoves([]);
         setCurrentGame(null);
       }
@@ -298,11 +311,25 @@ export function useOnlineGame(
   const cubeOwner = (match?.cube_owner ?? null) as Player | null;
   const cubeOffer = (match?.cube_offer ?? null) as Player | null;
 
-  // Dice exposed to UI
-  const roll: DiceRoll | null = currentTurn
-    ? ([currentTurn.dice[0], currentTurn.dice[1]] as DiceRoll)
-    : null;
-  const remaining = (currentTurn?.remaining ?? []) as readonly Die[];
+  // Dice exposed to UI. Memoised so the array reference is stable
+  // across renders when the dice values haven't actually changed —
+  // DiceTray uses this as a useMemo dep, and a fresh-each-render
+  // reference re-computes the trajectory + restarts the throw
+  // animation every paint (the "dice spin forever and never land"
+  // bug). HotSeat's useGame keeps roll in useState so it doesn't
+  // hit this; useOnlineGame derives from currentTurn so we need to
+  // memoise explicitly.
+  const roll = useMemo<DiceRoll | null>(
+    () => (currentTurn ? ([currentTurn.dice[0], currentTurn.dice[1]] as DiceRoll) : null),
+    // Depend on the primitive dice values, not the parent
+    // currentTurn object — a re-derive of currentTurn from match
+    // jsonb produces a new object even when the dice didn't change.
+    [currentTurn?.dice[0], currentTurn?.dice[1], currentTurn?.player]
+  );
+  const remaining = useMemo<readonly Die[]>(
+    () => (currentTurn?.remaining ?? []) as readonly Die[],
+    [currentTurn?.remaining]
+  );
   const opponentPreviewKey =
     currentTurn && !isLocalTurn && currentTurn.remaining.length > 0 && !gameWinner
       ? [
@@ -765,22 +792,42 @@ export function useOnlineGame(
     if (autoConvertedRef.current) return;
     autoConvertedRef.current = true;
     void (async () => {
+      let convertSucceeded = false;
       try {
         await supabase.rpc('replace_opponent_with_ai', {
           p_match_id: matchId,
           p_min_inactive_seconds: Math.floor(inactivityForfeitMs / 1000),
         });
+        convertSucceeded = true;
       } catch (err) {
-        console.warn('replace_opponent_with_ai failed', err);
-        // Even if the mode flip didn't take (race, network), the
-        // finalize call below still resolves the match cleanly.
+        // 'opponent_still_active' means the server saw activity since
+        // our last poll — release the ref so the effect can retry on
+        // the next tick. Other errors (network, missing match) get
+        // surfaced so they're not silently swallowed.
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error('[useOnlineGame] replace_opponent_with_ai failed', msg, err);
+        if (msg.includes('opponent_still_active')) {
+          autoConvertedRef.current = false;
+          return;
+        }
       }
-      const opponentIsOwner = user.id === match.opponent_id;
-      await finalizeMatch({
-        winner: localColor,
-        ownerAbandoned: opponentIsOwner,
-        opponentAbandoned: !opponentIsOwner,
-      });
+      try {
+        const opponentIsOwner = user.id === match.opponent_id;
+        await finalizeMatch({
+          winner: localColor,
+          ownerAbandoned: opponentIsOwner,
+          opponentAbandoned: !opponentIsOwner,
+        });
+      } catch (err) {
+        // Don't latch the autoConvert ref if finalize blew up — the
+        // user might still see the manual claim button and we don't
+        // want to permanently block retries.
+        console.error('[useOnlineGame] finalizeMatch failed during auto-forfeit', err);
+        autoConvertedRef.current = false;
+        if (!convertSucceeded) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      }
     })();
   }, [canClaimByInactivity, matchId, localColor, match, user, finalizeMatch, inactivityForfeitMs]);
 
