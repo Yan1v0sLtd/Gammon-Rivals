@@ -403,6 +403,9 @@ export function LobbyScreen() {
       if (msg.includes('profile_missing')) {
         return 'Profile not ready yet — try again in a moment.';
       }
+      if (msg.includes('stale_client_reload')) {
+        return 'New version available — please refresh the page.';
+      }
       // Final fallback: surface the raw error so we can debug
       // production issues without a re-deploy.
       console.error('[LobbyScreen] enter-room failure', err);
