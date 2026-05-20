@@ -467,6 +467,7 @@ export type Database = {
           description: string;
           entry_fee_coins: number;
           prize_coins: number;
+          prize_coins_loss: number;
           required_level: number;
           match_target: number;
           allow_ai: boolean;
@@ -477,6 +478,8 @@ export type Database = {
           base_xp_win: number;
           turn_seconds: number;
           accent_color: string;
+          ai_level: 'easy' | 'medium' | 'hard';
+          target_rtp_pct: number;
           metadata: Json;
           updated_by: string | null;
           created_at: string;
@@ -489,6 +492,7 @@ export type Database = {
           description?: string;
           entry_fee_coins?: number;
           prize_coins?: number;
+          prize_coins_loss?: number;
           required_level?: number;
           match_target?: number;
           allow_ai?: boolean;
@@ -499,6 +503,8 @@ export type Database = {
           base_xp_win?: number;
           turn_seconds?: number;
           accent_color?: string;
+          ai_level?: 'easy' | 'medium' | 'hard';
+          target_rtp_pct?: number;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -511,6 +517,7 @@ export type Database = {
           description?: string;
           entry_fee_coins?: number;
           prize_coins?: number;
+          prize_coins_loss?: number;
           required_level?: number;
           match_target?: number;
           allow_ai?: boolean;
@@ -521,6 +528,8 @@ export type Database = {
           base_xp_win?: number;
           turn_seconds?: number;
           accent_color?: string;
+          ai_level?: 'easy' | 'medium' | 'hard';
+          target_rtp_pct?: number;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -837,7 +846,7 @@ export type Database = {
         Returns: number;
       };
       enter_room: {
-        Args: { p_table_config_id: string; p_match_mode?: string };
+        Args: { p_table_config_id: string };
         Returns: Json;
       };
       finish_match: {

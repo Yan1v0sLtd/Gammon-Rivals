@@ -359,14 +359,17 @@ export function LobbyScreen() {
     try {
       const result = await enterRoom({
         tableConfigId: selection.tableConfigId,
-        matchMode: 'ai-medium',
       });
       // Wallet was debited server-side; pull the new balance so the
       // top-bar coins pill reflects the deduction before the route
       // change settles.
       void refreshWallet();
+      // The server picked the AI level (tier base + DDA escalator).
+      // Forward it to /hotseat so HotSeat's URL-driven AI parser sees
+      // the right opponent — without this the page would default-load
+      // a different AI than the one stamped on the match row.
       const params = new URLSearchParams();
-      params.set('opp', 'medium');
+      params.set('opp', result.aiLevel);
       params.set('target', String(result.target));
       params.set('board', effectiveSelectedBoardId);
       params.set('matchId', result.matchId);

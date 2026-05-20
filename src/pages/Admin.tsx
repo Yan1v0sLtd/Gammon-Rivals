@@ -91,6 +91,7 @@ type TableDraft = {
   description: string;
   entry_fee_coins: string;
   prize_coins: string;
+  prize_coins_loss: string;
   required_level: string;
   match_target: string;
   allow_ai: boolean;
@@ -101,6 +102,8 @@ type TableDraft = {
   base_xp_win: string;
   turn_seconds: string;
   accent_color: string;
+  ai_level: 'easy' | 'medium' | 'hard';
+  target_rtp_pct: string;
   metadata: string;
 };
 
@@ -572,6 +575,7 @@ function tableToDraft(row?: TableConfig, defaultKind: 'standard' | 'difficulty' 
     description: row?.description ?? '',
     entry_fee_coins: row?.entry_fee_coins.toString() ?? '0',
     prize_coins: row?.prize_coins.toString() ?? '0',
+    prize_coins_loss: row?.prize_coins_loss.toString() ?? '0',
     required_level: row?.required_level.toString() ?? '1',
     match_target: row?.match_target.toString() ?? '7',
     allow_ai: row?.allow_ai ?? (defaultKind === 'difficulty'),
@@ -582,6 +586,8 @@ function tableToDraft(row?: TableConfig, defaultKind: 'standard' | 'difficulty' 
     base_xp_win: row?.base_xp_win.toString() ?? '0',
     turn_seconds: row?.turn_seconds.toString() ?? '45',
     accent_color: row?.accent_color ?? 'gold',
+    ai_level: row?.ai_level ?? 'medium',
+    target_rtp_pct: row?.target_rtp_pct.toString() ?? '90',
     metadata: jsonToString(row?.metadata, '{}'),
   };
 }
@@ -1250,6 +1256,10 @@ export default function Admin() {
       if (turnSec < 5 || turnSec > 600) {
         throw new Error('Turn seconds must be between 5 and 600.');
       }
+      const targetRtp = requiredNumber(tableDraft.target_rtp_pct, 'Target RTP');
+      if (targetRtp < 0 || targetRtp > 200) {
+        throw new Error('Target RTP must be between 0 and 200.');
+      }
       const payload: Database['public']['Tables']['table_configs']['Insert'] = {
         id: tableDraft.id.trim(),
         kind: tableDraft.kind,
@@ -1257,6 +1267,7 @@ export default function Admin() {
         description: tableDraft.description.trim(),
         entry_fee_coins: requiredNumber(tableDraft.entry_fee_coins, 'Entry fee'),
         prize_coins: requiredNumber(tableDraft.prize_coins, 'Prize'),
+        prize_coins_loss: requiredNumber(tableDraft.prize_coins_loss, 'Lose prize'),
         required_level: requiredNumber(tableDraft.required_level, 'Required level'),
         match_target: requiredNumber(tableDraft.match_target, 'Match target'),
         allow_ai: tableDraft.allow_ai,
@@ -1267,6 +1278,8 @@ export default function Admin() {
         base_xp_win: requiredNumber(tableDraft.base_xp_win, 'Base XP'),
         turn_seconds: turnSec,
         accent_color: tableDraft.accent_color.trim() || 'gold',
+        ai_level: tableDraft.ai_level,
+        target_rtp_pct: targetRtp,
         metadata: parseJson(tableDraft.metadata, 'Metadata', 'object'),
         updated_by: user?.id ?? null,
       };
@@ -2088,8 +2101,10 @@ export default function Admin() {
                 rows={tables.filter((row) => row.kind === 'difficulty').map((row) => [
                   row.display_name,
                   `${row.xp_multiplier_pct}% XP`,
-                  `${formatNumber(row.entry_fee_coins)} entry`,
-                  `${row.turn_seconds}s/turn`,
+                  `Fee ${formatNumber(row.entry_fee_coins)}`,
+                  `W ${formatNumber(row.prize_coins)} / L ${formatNumber(row.prize_coins_loss)}`,
+                  `AI ${row.ai_level}`,
+                  `RTP ${row.target_rtp_pct}%`,
                   row.is_enabled ? 'Enabled' : 'Disabled',
                 ])}
                 onRowClick={(index) => {
@@ -2104,6 +2119,8 @@ export default function Admin() {
                   <Field label="Display name" value={tableDraft.display_name} onChange={(display_name) => setTableDraft((d) => ({ ...d, display_name }))} />
                   <Field label="Entry fee (coins)" value={tableDraft.entry_fee_coins} onChange={(entry_fee_coins) => setTableDraft((d) => ({ ...d, entry_fee_coins }))} />
                   <Field label="Prize coins (on win)" value={tableDraft.prize_coins} onChange={(prize_coins) => setTableDraft((d) => ({ ...d, prize_coins }))} />
+                  <Field label="Lose prize (consolation)" value={tableDraft.prize_coins_loss} onChange={(prize_coins_loss) => setTableDraft((d) => ({ ...d, prize_coins_loss }))} />
+                  <Field label="Target RTP (%)" value={tableDraft.target_rtp_pct} onChange={(target_rtp_pct) => setTableDraft((d) => ({ ...d, target_rtp_pct }))} />
                   <Field label="XP boost (%)" value={tableDraft.xp_multiplier_pct} onChange={(xp_multiplier_pct) => setTableDraft((d) => ({ ...d, xp_multiplier_pct }))} />
                   <Field label="Base XP on win" value={tableDraft.base_xp_win} onChange={(base_xp_win) => setTableDraft((d) => ({ ...d, base_xp_win }))} />
                   <Field label="Turn seconds" value={tableDraft.turn_seconds} onChange={(turn_seconds) => setTableDraft((d) => ({ ...d, turn_seconds }))} />
@@ -2112,18 +2129,32 @@ export default function Admin() {
                   <Field label="Sort order" value={tableDraft.sort_order} onChange={(sort_order) => setTableDraft((d) => ({ ...d, sort_order }))} />
                 </div>
                 <div className="mt-3 space-y-3">
-                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                    Accent color
-                    <select
-                      value={tableDraft.accent_color}
-                      onChange={(event) => setTableDraft((d) => ({ ...d, accent_color: event.target.value }))}
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
-                    >
-                      {difficultyAccentColors.map((slug) => (
-                        <option key={slug} value={slug}>{slug}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                      AI strength
+                      <select
+                        value={tableDraft.ai_level}
+                        onChange={(event) => setTableDraft((d) => ({ ...d, ai_level: event.target.value as 'easy' | 'medium' | 'hard' }))}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+                      >
+                        <option value="easy">easy</option>
+                        <option value="medium">medium</option>
+                        <option value="hard">hard</option>
+                      </select>
+                    </label>
+                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                      Accent color
+                      <select
+                        value={tableDraft.accent_color}
+                        onChange={(event) => setTableDraft((d) => ({ ...d, accent_color: event.target.value }))}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+                      >
+                        {difficultyAccentColors.map((slug) => (
+                          <option key={slug} value={slug}>{slug}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                   <Field label="Description" value={tableDraft.description} onChange={(description) => setTableDraft((d) => ({ ...d, description }))} />
                   <TextArea label="Metadata JSON object" value={tableDraft.metadata} onChange={(metadata) => setTableDraft((d) => ({ ...d, metadata }))} />
                   <div className="grid grid-cols-3 gap-2">
