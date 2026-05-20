@@ -60,6 +60,15 @@ export interface UseOnlineGameOptions {
    * to 5 minutes for legacy non-tier matches.
    */
   readonly inactivityForfeitMs?: number;
+  /**
+   * Soft per-turn timer in seconds. Drives the visible countdown bar
+   * and an auto-roll / auto-end-turn nudge when it hits zero. Distinct
+   * from inactivityForfeitMs, which is the hard "you forfeit the
+   * whole match" threshold. Difficulty rooms pass their tier's
+   * turn_seconds here (15 for Beginner, 30 for Pro, etc.). null = no
+   * visible timer (legacy invite matches).
+   */
+  readonly turnSeconds?: number | null;
 }
 
 function decodeMove(s: SubMoveJSON): Move {
@@ -144,6 +153,12 @@ export interface OnlineGameState {
   readonly inCrawfordGame: boolean;
   readonly secondsSinceActivity: number;
   readonly canClaimByInactivity: boolean;
+  /** Soft turn timer ceiling in seconds (null = no visible timer). */
+  readonly turnSecondsTotal: number | null;
+  /** Soft turn timer remaining in seconds (null when total is null). */
+  readonly turnSecondsLeft: number | null;
+  /** Soft turn timer progress 0..1 (null when total is null). */
+  readonly turnProgress: number | null;
 }
 
 export interface OnlineGameActions {
@@ -164,6 +179,7 @@ export function useOnlineGame(
   options: UseOnlineGameOptions = {}
 ): OnlineGameState & OnlineGameActions {
   const inactivityForfeitMs = options.inactivityForfeitMs ?? DEFAULT_inactivityForfeitMs;
+  const turnSecondsTotal = options.turnSeconds ?? null;
   const { user } = useAuth();
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [moves, setMoves] = useState<MoveRow[]>([]);
@@ -417,22 +433,36 @@ export function useOnlineGame(
     (cubeOwner === null || cubeOwner === localColor);
 
   // ---- actions ----
+  // In-flight guard: roll_dice is server-authoritative, and the edge
+  // function returns 400 "turn already in progress" the moment the
+  // first call lands. A double-click, or the auto-roll effect racing a
+  // manual click, used to fire two parallel invocations — the second
+  // would surface as a brief "Edge Function returned a non-2xx status
+  // code" toast. We gate on a ref instead of in state so the close-
+  // together calls in the same render cycle both see the same value.
+  const rollInFlightRef = useRef(false);
   const rollDice = useCallback(async () => {
     if (!matchId) return;
     if (!canRoll) return;
+    if (rollInFlightRef.current) return;
+    rollInFlightRef.current = true;
     setError(null);
-    const { data, error: invErr } = await supabase.functions.invoke('roll_dice', {
-      body: { matchId },
-    });
-    if (invErr) {
-      setError(invErr.message ?? 'roll failed');
-      return;
+    try {
+      const { data, error: invErr } = await supabase.functions.invoke('roll_dice', {
+        body: { matchId },
+      });
+      if (invErr) {
+        setError(invErr.message ?? 'roll failed');
+        return;
+      }
+      if (data && typeof data === 'object' && 'error' in data) {
+        setError(String((data as { error: unknown }).error));
+        return;
+      }
+      void refresh();
+    } finally {
+      rollInFlightRef.current = false;
     }
-    if (data && typeof data === 'object' && 'error' in data) {
-      setError(String((data as { error: unknown }).error));
-      return;
-    }
-    void refresh();
   }, [matchId, canRoll, refresh]);
 
   const selectFrom = useCallback(
@@ -673,29 +703,60 @@ export function useOnlineGame(
     return () => window.clearInterval(id);
   }, []);
 
-  const lastActivityMs = match?.updated_at ? new Date(match.updated_at).getTime() : now;
+  // The reason we don't use match.updated_at directly: at match
+  // creation (or after a player navigates back to a long-running
+  // match), match.updated_at may be much older than "now we care".
+  // The previous version guarded with !!currentGame + !betweenGames to
+  // dodge the false positive, but those guards also locked out the
+  // legitimate cases where the opponent quits BEFORE rolling, or
+  // DURING the between-games pause. We replace them with a per-mount
+  // floor: the inactivity clock starts at max(match.updated_at, when-
+  // this-hook-mounted). Effect: a fresh page load gives the opponent
+  // at least one full threshold window to act, no matter how stale
+  // the row is. Subsequent opponent activity bumps updated_at past
+  // mount-time and resets the clock the same way.
+  const mountedAtRef = useRef(Date.now());
+  const matchUpdatedAtMs = match?.updated_at ? new Date(match.updated_at).getTime() : 0;
+  const lastActivityMs = Math.max(matchUpdatedAtMs, mountedAtRef.current);
 
   const secondsSinceActivity = Math.max(0, Math.floor((now - lastActivityMs) / 1000));
   // canClaimByInactivity decides whether the auto-forfeit / AI takeover
-  // path is allowed. Three guards keep it from firing prematurely:
-  //   - currentGame must exist. At match creation, no game row exists
-  //     yet — match.updated_at is the creation timestamp, so without
-  //     this guard a fresh match would auto-forfeit after one
-  //     inactivityForfeitMs window even though neither player has had
-  //     a chance to roll. (This was the "PvP page goes blank ~30s
-  //     after both players land" bug.)
+  // path is allowed. Two guards remain after the per-mount floor:
   //   - !isLocalTurn means we're the one waiting on the opponent.
   //     The local player can't auto-claim their own inactivity.
-  //   - !betweenGames so the post-game-N pause before game N+1 starts
-  //     doesn't trigger a forfeit.
+  //   - opponent_id must exist (no claim before someone matched in).
+  // We deliberately allow claim during !!currentGame=false (opponent
+  // quits before first roll) and betweenGames (opponent quits during
+  // inter-game pause) — both used to be unrecoverable.
   const canClaimByInactivity =
     !matchFinished &&
     !!match &&
     !!match.opponent_id &&
-    !!currentGame &&
     !isLocalTurn &&
-    !betweenGames &&
     now - lastActivityMs >= inactivityForfeitMs;
+
+  // ---- soft per-turn timer ----
+  // The inactivity-forfeit clock above is the HARD ceiling (60s+,
+  // ends the match). This is the SOFT ceiling per turn — what the
+  // Beginner/Pro/Expert tiers' turn_seconds actually controls. It
+  // shares the same lastActivityMs baseline as the hard timer, so
+  // each action by either side restarts both clocks together.
+  //
+  // We don't auto-pick legal moves when the timer expires (too
+  // aggressive — would yank the player out of a thinking pause), but
+  // we DO auto-roll and auto-end-turn since those are unambiguous
+  // "the player has nothing to decide" cases. If the player has
+  // legal moves remaining when the soft timer expires, they still
+  // have the gap between turnSeconds and inactivityForfeitMs (2x+)
+  // to finish before they actually lose the match.
+  const turnSecondsLeft =
+    turnSecondsTotal === null
+      ? null
+      : Math.max(0, turnSecondsTotal - secondsSinceActivity);
+  const turnProgress =
+    turnSecondsTotal === null || turnSecondsTotal === 0
+      ? null
+      : (turnSecondsLeft ?? 0) / turnSecondsTotal;
 
   /**
    * Finalises the match via the server-side finish_match RPC. The RPC
@@ -704,14 +765,19 @@ export function useOnlineGame(
    * previous version did — meant online matches paid out nothing. We
    * pass the per-side abandonment flags so the abandoner gets a zero
    * payout while still taking the ELO loss.
+   *
+   * Returns a discriminated result so callers (notably the auto-convert
+   * effect) can react to specific failures — match_already_finished
+   * isn't a real error from the caller's perspective, but a network
+   * fault is.
    */
   const finalizeMatch = useCallback(
     async (args: {
       winner: Player;
       ownerAbandoned?: boolean;
       opponentAbandoned?: boolean;
-    }) => {
-      if (!matchId || !match) return;
+    }): Promise<{ ok: true } | { ok: false; alreadyFinished: boolean; message: string }> => {
+      if (!matchId || !match) return { ok: false, alreadyFinished: false, message: 'no match' };
       const winnerColor = args.winner;
       const points = Math.max(
         1,
@@ -744,10 +810,13 @@ export function useOnlineGame(
         p_opponent_abandoned: args.opponentAbandoned ?? false,
       });
       if (rpcErr) {
-        setError(rpcErr.message);
-        return;
+        const msg = rpcErr.message ?? String(rpcErr);
+        const alreadyFinished = msg.includes('match_already_finished');
+        if (!alreadyFinished) setError(msg);
+        return { ok: false, alreadyFinished, message: msg };
       }
       void refresh();
+      return { ok: true };
     },
     [matchId, match, refresh]
   );
@@ -792,44 +861,107 @@ export function useOnlineGame(
     if (autoConvertedRef.current) return;
     autoConvertedRef.current = true;
     void (async () => {
-      let convertSucceeded = false;
-      try {
-        await supabase.rpc('replace_opponent_with_ai', {
-          p_match_id: matchId,
-          p_min_inactive_seconds: Math.floor(inactivityForfeitMs / 1000),
-        });
-        convertSucceeded = true;
-      } catch (err) {
-        // 'opponent_still_active' means the server saw activity since
-        // our last poll — release the ref so the effect can retry on
-        // the next tick. Other errors (network, missing match) get
-        // surfaced so they're not silently swallowed.
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error('[useOnlineGame] replace_opponent_with_ai failed', msg, err);
-        if (msg.includes('opponent_still_active')) {
+      // supabase.rpc resolves to { data, error } — Postgres exceptions
+      // come back via the `error` field, NOT a thrown promise. The
+      // previous try/catch wrapping was effectively a no-op for the
+      // common failure modes (opponent_still_active, race_lost,
+      // not_a_pvp_match, match_already_finished). We now destructure
+      // explicitly and release the latch on the right failure paths so
+      // the user isn't permanently stuck waiting after a transient
+      // server error.
+      const { error: convertErr } = await supabase.rpc('replace_opponent_with_ai', {
+        p_match_id: matchId,
+        p_min_inactive_seconds: Math.floor(inactivityForfeitMs / 1000),
+      });
+      if (convertErr) {
+        const msg = convertErr.message ?? String(convertErr);
+        console.error('[useOnlineGame] replace_opponent_with_ai failed', msg, convertErr);
+        // opponent_still_active: server saw activity since our last
+        // poll. Release so the next tick can retry once the timer
+        // climbs back past the threshold.
+        // race_lost: a concurrent caller won. Realtime will sync our
+        // view to the new mode; release and re-evaluate.
+        // not_a_pvp_match: already converted on a prior cycle.
+        // match_already_finished: someone else closed it — done.
+        if (msg.includes('opponent_still_active') || msg.includes('race_lost')) {
+          autoConvertedRef.current = false;
+          return;
+        }
+        if (msg.includes('match_already_finished') || msg.includes('not_a_pvp_match')) {
+          // Fall through to finalize anyway — the conversion already
+          // happened (or doesn't apply), but we may still need to
+          // close out the match for our side.
+        } else {
+          setError(msg);
           autoConvertedRef.current = false;
           return;
         }
       }
-      try {
-        const opponentIsOwner = user.id === match.opponent_id;
-        await finalizeMatch({
-          winner: localColor,
-          ownerAbandoned: opponentIsOwner,
-          opponentAbandoned: !opponentIsOwner,
-        });
-      } catch (err) {
-        // Don't latch the autoConvert ref if finalize blew up — the
-        // user might still see the manual claim button and we don't
-        // want to permanently block retries.
-        console.error('[useOnlineGame] finalizeMatch failed during auto-forfeit', err);
+
+      // Conversion succeeded (or was already in place); now finalise.
+      const opponentIsOwner = user.id === match.opponent_id;
+      const result = await finalizeMatch({
+        winner: localColor,
+        ownerAbandoned: opponentIsOwner,
+        opponentAbandoned: !opponentIsOwner,
+      });
+      if (!result.ok && !result.alreadyFinished) {
+        // Real failure (network, RLS, server error). setError was
+        // already called inside finalizeMatch. Release the latch so a
+        // manual Claim button or the next tick can retry.
+        console.error('[useOnlineGame] finalizeMatch failed during auto-forfeit', result.message);
         autoConvertedRef.current = false;
-        if (!convertSucceeded) {
-          setError(err instanceof Error ? err.message : String(err));
-        }
       }
     })();
   }, [canClaimByInactivity, matchId, localColor, match, user, finalizeMatch, inactivityForfeitMs]);
+
+  // Soft turn-timer auto-action. When the per-turn timer hits zero on
+  // the LOCAL side, nudge the obvious actions forward so the match
+  // doesn't stall on a player who alt-tabbed:
+  //   - canRoll: auto-roll (player forgot, or is AFK during their
+  //     "your turn to roll" window)
+  //   - canEndTurn: auto-end-turn (no dice remaining, or no legal
+  //     moves — the only remaining action is to acknowledge the turn
+  //     is done)
+  // We DON'T auto-pick legal moves when remaining dice could still be
+  // played — that'd be too aggressive, and the player still has the
+  // gap to inactivityForfeitMs (2x+) before the match actually ends.
+  const autoActionFiredKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (turnSecondsLeft === null) return;
+    if (turnSecondsLeft > 0) return;
+    if (!isLocalTurn) return;
+    if (matchFinished) return;
+    // Build a key from the turn state so we only auto-fire ONCE per
+    // turn boundary. Without this, after auto-roll lands and the next
+    // render still shows turnSecondsLeft=0 briefly (until the refresh
+    // pulls the new dice and bumps lastActivityMs), the effect would
+    // re-fire and try to end an already-rolled turn.
+    const key = [
+      match?.id ?? '',
+      currentGame?.id ?? 'no-game',
+      currentTurn ? `${currentTurn.player}|${currentTurn.dice.join('-')}|${currentTurn.subMoves.length}` : 'no-turn',
+      canRoll ? 'roll' : canEndTurn ? 'end' : 'noop',
+    ].join('::');
+    if (autoActionFiredKeyRef.current === key) return;
+    autoActionFiredKeyRef.current = key;
+    if (canRoll) {
+      void rollDice();
+    } else if (canEndTurn) {
+      void endTurn();
+    }
+  }, [
+    turnSecondsLeft,
+    isLocalTurn,
+    matchFinished,
+    match?.id,
+    currentGame?.id,
+    currentTurn,
+    canRoll,
+    canEndTurn,
+    rollDice,
+    endTurn,
+  ]);
 
   // Resign: end the match immediately, opponent wins remainder.
   const resign = useCallback(async () => {
@@ -874,6 +1006,9 @@ export function useOnlineGame(
     inCrawfordGame,
     secondsSinceActivity,
     canClaimByInactivity,
+    turnSecondsTotal,
+    turnSecondsLeft,
+    turnProgress,
     rollDice,
     selectFrom,
     cancelSelection,

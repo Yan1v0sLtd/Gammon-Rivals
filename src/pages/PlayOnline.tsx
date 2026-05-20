@@ -69,7 +69,10 @@ export default function PlayOnline() {
   const inactivityForfeitMs = turnSecondsParam !== null
     ? Math.max(turnSecondsParam * 3, 60) * 1000
     : undefined;
-  const game = useOnlineGame(matchId, { inactivityForfeitMs });
+  const game = useOnlineGame(matchId, {
+    inactivityForfeitMs,
+    turnSeconds: turnSecondsParam,
+  });
   const boardParam = params.get('board');
   const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
@@ -313,6 +316,14 @@ export default function PlayOnline() {
         stateLabel: opponentProgression.statusLabel,
         coinsLabel: '—',
         isTurn: !isLocalTurn && !showMatchOver,
+        timerProgress:
+          !isLocalTurn && !showMatchOver && !game.betweenGames
+            ? game.turnProgress ?? undefined
+            : undefined,
+        timerSecondsLeft:
+          !isLocalTurn && !showMatchOver && !game.betweenGames
+            ? game.turnSecondsLeft ?? undefined
+            : undefined,
       }}
       self={{
         identity: profileToIdentity(selfProfile),
@@ -322,6 +333,14 @@ export default function PlayOnline() {
         stateLabel: selfProgression.statusLabel,
         coinsLabel: formatCompactNumber(wallet?.coins),
         isTurn: isLocalTurn && !showMatchOver,
+        timerProgress:
+          isLocalTurn && !showMatchOver && !game.betweenGames
+            ? game.turnProgress ?? undefined
+            : undefined,
+        timerSecondsLeft:
+          isLocalTurn && !showMatchOver && !game.betweenGames
+            ? game.turnSecondsLeft ?? undefined
+            : undefined,
       }}
       actionsOverlay={
         showActions ? (
@@ -423,30 +442,64 @@ export default function PlayOnline() {
         settleSide={isRollForSelf ? 'right' : 'left'}
       />
 
-      {/* Inactivity countdown / claim button — sits at top of board. */}
-      {!isSpectator && !game.matchFinished && !game.isLocalTurn && !game.betweenGames && game.secondsSinceActivity >= 60 && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
-          {game.canClaimByInactivity ? (
-            <>
-              <span>Opponent inactive for {Math.floor(game.secondsSinceActivity / 60)}m</span>
-              <button
-                onClick={async () => {
-                  if (!confirm('Claim victory by opponent timeout?')) return;
-                  await game.claimByInactivity();
-                }}
-                className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
-              >
-                Claim victory
-              </button>
-            </>
-          ) : (
-            <span>
-              Opponent thinking · claim in{' '}
-              {Math.max(0, 5 * 60 - game.secondsSinceActivity)}s
-            </span>
-          )}
-        </div>
+      {/* Resign button — top-right of board. Only during active play
+          (not spectator, not finished, not waiting for opponent). The
+          confirm uses window.confirm because the resign flow is a
+          one-off "are you sure" — no need for a styled modal layer
+          when we already have native dialogs for cancel-match. */}
+      {!isSpectator && !game.matchFinished && !waiting && (
+        <button
+          type="button"
+          onClick={async () => {
+            if (!confirm('Resign this match? Your opponent will be credited with the win and you take the rating + payout penalty.')) return;
+            await game.resign();
+          }}
+          className="absolute top-2 right-2 z-20 px-2.5 py-1 rounded bg-black/60 border border-board-felt/20 text-board-felt/70 hover:text-rose-300 hover:border-rose-400/40 text-[11px] uppercase tracking-wider backdrop-blur transition"
+        >
+          Resign
+        </button>
       )}
+
+      {/* Inactivity countdown / claim button — sits at top of board.
+          Shown only when the opponent has been silent for long enough
+          that "they're thinking" is no longer a charitable read. The
+          claim-in countdown reflects the actual inactivityForfeitMs
+          for this room (60s for Beginner, 135s for Pro, etc.) rather
+          than the hardcoded 5-minute default that used to render here
+          and confuse tier players whose actual threshold was way
+          shorter. */}
+      {(() => {
+        const totalForfeitSeconds = Math.floor((inactivityForfeitMs ?? 5 * 60 * 1000) / 1000);
+        // Show the indicator once the player has been waiting at
+        // least half the forfeit threshold, capped at 30s so even
+        // long-threshold rooms surface the indicator promptly.
+        const showThresholdSeconds = Math.min(Math.floor(totalForfeitSeconds / 2), 30);
+        if (isSpectator || game.matchFinished || game.isLocalTurn) return null;
+        if (game.secondsSinceActivity < showThresholdSeconds) return null;
+        const claimInSeconds = Math.max(0, totalForfeitSeconds - game.secondsSinceActivity);
+        return (
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
+            {game.canClaimByInactivity ? (
+              <>
+                <span>Opponent inactive for {game.secondsSinceActivity}s</span>
+                <button
+                  onClick={async () => {
+                    if (!confirm('Claim victory by opponent timeout?')) return;
+                    await game.claimByInactivity();
+                  }}
+                  className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
+                >
+                  Claim victory
+                </button>
+              </>
+            ) : (
+              <span>
+                Opponent thinking · claim in {claimInSeconds}s
+              </span>
+            )}
+          </div>
+        );
+      })()}
     </BoardLayout>
   );
 }
