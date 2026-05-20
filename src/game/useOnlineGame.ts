@@ -649,11 +649,24 @@ export function useOnlineGame(
   const lastActivityMs = match?.updated_at ? new Date(match.updated_at).getTime() : now;
 
   const secondsSinceActivity = Math.max(0, Math.floor((now - lastActivityMs) / 1000));
+  // canClaimByInactivity decides whether the auto-forfeit / AI takeover
+  // path is allowed. Three guards keep it from firing prematurely:
+  //   - currentGame must exist. At match creation, no game row exists
+  //     yet — match.updated_at is the creation timestamp, so without
+  //     this guard a fresh match would auto-forfeit after one
+  //     inactivityForfeitMs window even though neither player has had
+  //     a chance to roll. (This was the "PvP page goes blank ~30s
+  //     after both players land" bug.)
+  //   - !isLocalTurn means we're the one waiting on the opponent.
+  //     The local player can't auto-claim their own inactivity.
+  //   - !betweenGames so the post-game-N pause before game N+1 starts
+  //     doesn't trigger a forfeit.
   const canClaimByInactivity =
     !matchFinished &&
     !!match &&
     !!match.opponent_id &&
-    !isLocalTurn && // we're waiting on opponent
+    !!currentGame &&
+    !isLocalTurn &&
     !betweenGames &&
     now - lastActivityMs >= inactivityForfeitMs;
 

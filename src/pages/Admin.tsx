@@ -868,7 +868,13 @@ export default function Admin() {
     return () => {
       cancelled = true;
     };
-  }, [isLoading, user]);
+    // Dep on user?.id rather than `user` so onAuthStateChange firing
+    // with a fresh-but-equivalent user object (token refresh, tab
+    // visibility resume) doesn't re-run the whole access check + flip
+    // accessState back to 'checking' — which would blank out the BO
+    // until the RPC settles. The check only needs to re-run when the
+    // signed-in admin actually changes.
+  }, [isLoading, user?.id]);
 
   const loadSelectedUser = useCallback(
     async (profileId: string) => {

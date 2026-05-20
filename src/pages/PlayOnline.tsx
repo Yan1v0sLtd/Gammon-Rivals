@@ -52,8 +52,14 @@ export default function PlayOnline() {
     if (!Number.isFinite(n)) return null;
     return Math.min(600, Math.max(5, n));
   })();
+  // Auto-forfeit threshold needs to be lenient enough that a player
+  // who's lining up a checker move doesn't get yanked into a loss.
+  // Pick the larger of "3x the room's turn timer" and a 60s floor.
+  // For Beginner (turn=15s) -> 60s; for Pro (45s) -> 135s; etc.
+  // Pairs with the !!currentGame gate in useOnlineGame so this
+  // doesn't fire at match start before anyone has rolled.
   const inactivityForfeitMs = turnSecondsParam !== null
-    ? (turnSecondsParam + 15) * 1000
+    ? Math.max(turnSecondsParam * 3, 60) * 1000
     : undefined;
   const game = useOnlineGame(matchId, { inactivityForfeitMs });
   const boardParam = params.get('board');
