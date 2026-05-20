@@ -15,6 +15,7 @@ const Lobby = lazy(() => import('./pages/Lobby'));
 const Admin = lazy(() => import('./pages/Admin'));
 const Shop = lazy(() => import('./pages/Shop'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
+const AdminAuthCallback = lazy(() => import('./pages/AdminAuthCallback'));
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/lobby" element={<AuthGate><Lobby /></AuthGate>} />
           <Route path="/shop" element={<AuthGate><Shop /></AuthGate>} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/auth/callback" element={<AdminAuthCallback />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

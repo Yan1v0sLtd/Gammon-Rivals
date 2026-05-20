@@ -1,7 +1,16 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useOnlineUsersWatcher } from '../lib/useOnlineUsersWatcher';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../lib/auth';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+// The BO uses its own independent Supabase session (adminSupabase) so
+// the operator can be signed in as admin here while the game tab is
+// running as a guest or a different account. Aliased to `supabase`
+// + `isSupabaseConfigured` so the rest of the file (30+ call sites)
+// keeps working unchanged.
+import {
+  adminSupabase as supabase,
+  isAdminSupabaseConfigured as isSupabaseConfigured,
+} from '../lib/adminSupabase';
+import { useAdminAuth } from '../lib/adminAuth';
 import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
 import FeltCornersField from '../admin/FeltCornersField';
@@ -685,7 +694,14 @@ function shopToDraft(row?: ShopItem): ShopDraft {
 }
 
 export default function Admin() {
-  const { user, profile, isLoading, signInWithGoogle, linkGoogleIdentity } = useAuth();
+  const adminAuth = useAdminAuth();
+  // Map the admin-auth context into the variables the rest of this
+  // page expects. `linkGoogleIdentity` is no longer needed (the BO
+  // doesn't link Google to a guest — it just signs in fresh).
+  const user = adminAuth.user;
+  const profile = adminAuth.profile;
+  const isLoading = adminAuth.isLoading;
+  const signInWithGoogle = adminAuth.signInWithGoogle;
   const [accessState, setAccessState] = useState<AccessState>(() =>
     isSupabaseConfigured ? 'checking' : 'missing-config'
   );
@@ -719,6 +735,13 @@ export default function Admin() {
   const [rtpPlayerRows, setRtpPlayerRows] = useState<RtpPerPlayerRow[]>([]);
   const [rtpPlayerLoading, setRtpPlayerLoading] = useState(false);
   const [rtpPlayerError, setRtpPlayerError] = useState<string | null>(null);
+
+  // Live online users — subscribes to the shared `online-users`
+  // Realtime presence channel that every authenticated game session
+  // joins via useOnlinePresence (in AuthProvider). Only active while
+  // the operator is on the Users section so the WebSocket isn't kept
+  // open BO-wide.
+  const onlineUsers = useOnlineUsersWatcher(activeSection === 'Users');
   const [adminRoles, setAdminRoles] = useState<AdminRoleRow[]>([]);
   const [adminEmailRoles, setAdminEmailRoles] = useState<AdminEmailRoleRow[]>([]);
   const [roleDraft, setRoleDraft] = useState({ profile_id: '', role: 'viewer' as AdminRole, note: '' });
@@ -1577,14 +1600,11 @@ export default function Admin() {
     setSavingKey('admin-login');
     setDataError(null);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?${new URLSearchParams({
-        next: '/admin',
-      }).toString()}`;
-      if (user?.is_anonymous) {
-        await linkGoogleIdentity({ redirectTo });
-      } else {
-        await signInWithGoogle({ redirectTo });
-      }
+      // adminAuth.signInWithGoogle bakes in the /admin/auth/callback
+      // redirect — no need to compute it here. The BO session lives
+      // in its own storageKey, so the game's session (if any) is
+      // untouched by this flow.
+      await signInWithGoogle();
     } catch (err) {
       setError(err);
       setSavingKey(null);
@@ -1821,6 +1841,40 @@ export default function Admin() {
           {activeSection === 'Users' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
               <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                {/* Live online users widget. The dot pulses to make
+                  * "live" obvious; counts come straight from the
+                  * Realtime presence channel so the moment a player
+                  * closes their tab the WebSocket drops and the
+                  * count ticks down within a few seconds. */}
+                <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="relative grid h-2.5 w-2.5 place-items-center">
+                      <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/70" />
+                      <span className="relative h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/90">
+                      Live online
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="font-display text-2xl font-black tabular-nums text-emerald-100">
+                      {onlineUsers.total}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-200/60">total</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
+                    <span className="font-display text-lg font-black tabular-nums text-emerald-100">
+                      {onlineUsers.registered}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-200/60">registered</span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
+                    <span className="font-display text-lg font-black tabular-nums text-emerald-100">
+                      {onlineUsers.guests}
+                    </span>
+                    <span className="text-xs font-bold text-emerald-200/60">guests</span>
+                  </div>
+                </div>
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h2 className="text-lg font-black">Users</h2>
                   <input

@@ -11,6 +11,7 @@ import {
 import type { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { getProfileProgression, type ProfileProgression } from './progression';
+import { useOnlinePresence } from './useOnlinePresence';
 import type { Database } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -491,6 +492,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       completeOAuthProfile,
     ]
   );
+
+  // Broadcast presence on the shared online-users channel whenever a
+  // profile is loaded. The hook handles join/leave/rejoin on userId
+  // change and tears down on tab close (WebSocket disconnect). The BO
+  // online-users widget subscribes to the same channel to render the
+  // live count.
+  useOnlinePresence({
+    profileId: profile?.id ?? null,
+    isGuest,
+  });
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
