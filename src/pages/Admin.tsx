@@ -40,6 +40,7 @@ type Section =
   | 'Daily Bonus'
   | 'Tables / Rooms'
   | 'Difficulties'
+  | 'RTP Analytics'
   | 'Board Themes'
   | 'Shop'
   | 'Admin Access';
@@ -155,10 +156,44 @@ const sections: readonly Section[] = [
   'Daily Bonus',
   'Tables / Rooms',
   'Difficulties',
+  'RTP Analytics',
   'Board Themes',
   'Shop',
   'Admin Access',
 ];
+
+/**
+ * Time-range presets for the RTP dashboard. `since` is the actual
+ * timestamp (relative to "now" at click time) that we send to the
+ * get_rtp_summary RPC. null = all time.
+ */
+const RTP_RANGES: ReadonlyArray<{ id: string; label: string; hours: number | null }> = [
+  { id: '24h', label: 'Last 24h', hours: 24 },
+  { id: '7d', label: 'Last 7d', hours: 24 * 7 },
+  { id: '30d', label: 'Last 30d', hours: 24 * 30 },
+  { id: 'all', label: 'All time', hours: null },
+];
+
+/**
+ * Shape returned by public.get_rtp_summary. Column names are prefixed
+ * with `out_` server-side to dodge an OUT-parameter / table-column
+ * naming collision in plpgsql — that prefix is what the client sees,
+ * so it's preserved here. See migration 20260604_rtp_summary_rpc.sql.
+ */
+interface RtpRow {
+  out_table_config_id: string;
+  out_display_name: string;
+  out_target_rtp_pct: number;
+  out_matches_played: number;
+  out_matches_won: number;
+  out_actual_win_rate_pct: number | null;
+  out_coins_wagered: number;
+  out_coins_paid_out: number;
+  out_coins_house_net: number;
+  out_actual_rtp_pct: number | null;
+  out_rtp_delta_pct: number | null;
+  out_risk_free_count: number;
+}
 
 /** Accent slugs the DifficultyModal recognises. The BO dropdown is
  *  scoped to these so an operator can't accidentally set an unknown
@@ -658,6 +693,12 @@ export default function Admin() {
   const [boards, setBoards] = useState<BoardThemeConfig[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  // RTP dashboard state — fetched lazily when the section is opened so
+  // we don't pay the aggregation cost on every BO load.
+  const [rtpRange, setRtpRange] = useState<string>('all');
+  const [rtpRows, setRtpRows] = useState<RtpRow[]>([]);
+  const [rtpLoading, setRtpLoading] = useState(false);
+  const [rtpError, setRtpError] = useState<string | null>(null);
   const [adminRoles, setAdminRoles] = useState<AdminRoleRow[]>([]);
   const [adminEmailRoles, setAdminEmailRoles] = useState<AdminEmailRoleRow[]>([]);
   const [roleDraft, setRoleDraft] = useState({ profile_id: '', role: 'viewer' as AdminRole, note: '' });
@@ -968,6 +1009,36 @@ export default function Admin() {
   useEffect(() => {
     queueMicrotask(() => void loadAdminData());
   }, [loadAdminData]);
+
+  // RTP summary fetch — keyed off the picked range. Lives in its own
+  // hook so the rest of the BO doesn't pay for the aggregation when
+  // we're elsewhere.
+  const loadRtpSummary = useCallback(async () => {
+    // No accessState gate — the BO main view only renders when the
+    // admin auth check has resolved, and the section is only reachable
+    // from the sidebar inside that view. Anonymous + non-admin callers
+    // get rejected by the RPC itself (raises not_admin).
+    setRtpLoading(true);
+    setRtpError(null);
+    try {
+      const range = RTP_RANGES.find((r) => r.id === rtpRange);
+      const since = range && range.hours !== null
+        ? new Date(Date.now() - range.hours * 60 * 60 * 1000).toISOString()
+        : null;
+      const { data, error } = await supabase.rpc('get_rtp_summary', { p_since: since });
+      if (error) throw error;
+      setRtpRows((data ?? []) as unknown as RtpRow[]);
+    } catch (err) {
+      setRtpError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRtpLoading(false);
+    }
+  }, [rtpRange]);
+
+  useEffect(() => {
+    if (activeSection !== 'RTP Analytics') return;
+    void loadRtpSummary();
+  }, [activeSection, loadRtpSummary]);
 
   function selectUser(nextUser: AdminUser) {
     setSelectedUserId(nextUser.id);
@@ -2167,6 +2238,140 @@ export default function Admin() {
                     <SecondaryButton onClick={() => setTableDraft(tableToDraft(undefined, 'difficulty'))}>New</SecondaryButton>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'RTP Analytics' && (
+            <div className="space-y-4">
+              {/* Header: range selector + refresh. The summary is
+                * fetched lazily when the section opens (see
+                * loadRtpSummary effect above); changing the range
+                * re-fires the RPC. Numbers are computed server-side
+                * by get_rtp_summary against matches +
+                * wallet_transactions, so this view stays cheap on the
+                * client even when match count grows. */}
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <div>
+                  <h2 className="text-lg font-black">RTP Analytics</h2>
+                  <p className="mt-1 text-sm text-white/50">
+                    Per-tier wagered, paid out, house take, and actual vs target RTP. Drives the
+                    economy tuning loop — re-balance W / L / fee in the Difficulties tab when delta
+                    drifts away from zero.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {RTP_RANGES.map((range) => (
+                    <button
+                      key={range.id}
+                      type="button"
+                      onClick={() => setRtpRange(range.id)}
+                      className={
+                        'rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition ' +
+                        (rtpRange === range.id
+                          ? 'border-amber-300/60 bg-amber-300/15 text-amber-200'
+                          : 'border-white/15 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]')
+                      }
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                  <SecondaryButton onClick={() => void loadRtpSummary()} disabled={rtpLoading}>
+                    {rtpLoading ? 'Loading…' : 'Refresh'}
+                  </SecondaryButton>
+                </div>
+              </div>
+
+              {rtpError ? (
+                <div className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-sm text-rose-100">
+                  {rtpError}
+                </div>
+              ) : null}
+
+              <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.045]">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b border-white/10 bg-white/[0.04] text-left text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/45">
+                    <tr>
+                      <th className="px-3 py-2">Tier</th>
+                      <th className="px-3 py-2 text-right">Matches</th>
+                      <th className="px-3 py-2 text-right">Win rate</th>
+                      <th className="px-3 py-2 text-right">Wagered</th>
+                      <th className="px-3 py-2 text-right">Paid out</th>
+                      <th className="px-3 py-2 text-right">House net</th>
+                      <th className="px-3 py-2 text-right">Target RTP</th>
+                      <th className="px-3 py-2 text-right">Actual RTP</th>
+                      <th className="px-3 py-2 text-right">Delta</th>
+                      <th className="px-3 py-2 text-right">Risk-free</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rtpRows.length === 0 && !rtpLoading ? (
+                      <tr>
+                        <td colSpan={10} className="px-3 py-6 text-center text-white/40">
+                          No difficulty matches in this window yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      rtpRows.map((row) => {
+                        // Delta colouring: green if we're paying out less than target (house
+                        // is doing well), amber if at target, rose if over-paying. Negative
+                        // delta means players are losing more than target — a sign to either
+                        // raise W/L, or wait for the sample to grow if matches < ~50.
+                        const delta = row.out_rtp_delta_pct;
+                        const deltaColor =
+                          delta === null
+                            ? 'text-white/30'
+                            : delta > 3
+                              ? 'text-rose-300'
+                              : delta < -3
+                                ? 'text-emerald-300'
+                                : 'text-amber-200';
+                        return (
+                          <tr key={row.out_table_config_id} className="border-b border-white/5 last:border-b-0">
+                            <td className="px-3 py-2 font-bold text-white/85">{row.out_display_name}</td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                              {formatNumber(row.out_matches_played)}
+                              {row.out_matches_played > 0 ? (
+                                <span className="ml-1 text-white/40">({formatNumber(row.out_matches_won)}W)</span>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                              {row.out_actual_win_rate_pct !== null ? `${row.out_actual_win_rate_pct}%` : '—'}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                              {formatNumber(row.out_coins_wagered)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                              {formatNumber(row.out_coins_paid_out)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                              {formatNumber(row.out_coins_house_net)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                              {row.out_target_rtp_pct}%
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums font-bold text-white/85">
+                              {row.out_actual_rtp_pct !== null ? `${row.out_actual_rtp_pct}%` : '—'}
+                            </td>
+                            <td className={`px-3 py-2 text-right tabular-nums font-bold ${deltaColor}`}>
+                              {delta !== null ? `${delta > 0 ? '+' : ''}${delta}` : '—'}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                              {formatNumber(row.out_risk_free_count)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/50">
+                <strong className="text-white/70">How to read this:</strong> Delta = Actual RTP − Target RTP. Negative means
+                players are losing more than you targeted (house overshooting). Positive means players are winning more (house
+                bleeding). Wait for ~50 matches per tier before re-tuning — anything below that is dice variance, not signal.
+                Risk-free is the count of payouts upgraded to full entry-fee refund under the first-10-matches onboarding rule.
               </div>
             </div>
           )}

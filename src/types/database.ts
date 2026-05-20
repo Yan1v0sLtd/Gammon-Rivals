@@ -859,6 +859,23 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_rtp_summary: {
+        Args: { p_since?: string | null };
+        Returns: ReadonlyArray<{
+          out_table_config_id: string;
+          out_display_name: string;
+          out_target_rtp_pct: number;
+          out_matches_played: number;
+          out_matches_won: number;
+          out_actual_win_rate_pct: number | null;
+          out_coins_wagered: number;
+          out_coins_paid_out: number;
+          out_coins_house_net: number;
+          out_actual_rtp_pct: number | null;
+          out_rtp_delta_pct: number | null;
+          out_risk_free_count: number;
+        }>;
+      };
       get_my_admin_role: {
         Args: Record<string, never>;
         Returns: 'owner' | 'admin' | 'support' | 'viewer' | null;
