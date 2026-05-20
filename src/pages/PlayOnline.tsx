@@ -60,14 +60,15 @@ export default function PlayOnline() {
     if (!Number.isFinite(n)) return null;
     return Math.min(600, Math.max(5, n));
   })();
-  // Auto-forfeit threshold needs to be lenient enough that a player
-  // who's lining up a checker move doesn't get yanked into a loss.
-  // Pick the larger of "3x the room's turn timer" and a 60s floor.
-  // For Beginner (turn=15s) -> 60s; for Pro (45s) -> 135s; etc.
-  // Pairs with the !!currentGame gate in useOnlineGame so this
-  // doesn't fire at match start before anyone has rolled.
+  // Auto-forfeit threshold. The soft per-turn timer now auto-ends a
+  // slow player's turn at turnSecondsParam, so this threshold ONLY
+  // fires when the player has actually closed their tab / lost
+  // connection (no auto-action can run on their side). 30s is
+  // generous enough to absorb a brief network blip but tight enough
+  // that the remaining player isn't stuck waiting minutes for an
+  // obvious abandonment.
   const inactivityForfeitMs = turnSecondsParam !== null
-    ? Math.max(turnSecondsParam * 3, 60) * 1000
+    ? Math.max(turnSecondsParam * 2, 30) * 1000
     : undefined;
   const game = useOnlineGame(matchId, {
     inactivityForfeitMs,
@@ -290,6 +291,37 @@ export default function PlayOnline() {
   const showBetweenGames = game.betweenGames && !game.matchFinished && !!game.currentGame;
   const showMatchOver = game.matchFinished && !!match.winner;
 
+  // "Who starts" intro banner. Backgammon convention used here:
+  // white always rolls first in a new match. We show this for ~3.5s
+  // when both players are paired but no game has started yet, so the
+  // player who's about to roll knows it's on them. Auto-dismisses;
+  // also dismissed the moment the first roll lands (currentGame
+  // becomes truthy).
+  const [introVisible, setIntroVisible] = useState(true);
+  const firstRollerColor: 'white' | 'black' = 'white';
+  const firstRollerName =
+    firstRollerColor === selfColor
+      ? selfName ?? 'You'
+      : oppName ?? 'Opponent';
+  const firstRollerIsLocal = firstRollerColor === selfColor;
+  useEffect(() => {
+    // Only run the intro for a freshly-paired match. If a game has
+    // already been created, the match is in progress and the intro
+    // shouldn't appear.
+    if (!match.opponent_id || game.currentGame) {
+      setIntroVisible(false);
+      return;
+    }
+    setIntroVisible(true);
+    const id = window.setTimeout(() => setIntroVisible(false), 3500);
+    return () => window.clearTimeout(id);
+  }, [match.opponent_id, game.currentGame]);
+  const showIntroBanner =
+    introVisible &&
+    !!match.opponent_id &&
+    !game.currentGame &&
+    !game.matchFinished;
+
   const showActions = role !== 'spectator' && !game.betweenGames && !game.matchFinished && game.cubeOffer === null;
   const gameplayBackground =
     selectedTheme.gameplayBackgroundImage ?? selectedTheme.backgroundImage;
@@ -370,7 +402,23 @@ export default function PlayOnline() {
         ) : null
       }
       centerOverlay={
-        showCubeDecisionCenter ? (
+        showIntroBanner ? (
+          <button
+            type="button"
+            onClick={() => setIntroVisible(false)}
+            className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
+          >
+            <div className="font-display text-2xl uppercase tracking-wider mb-1">
+              {firstRollerIsLocal ? 'You roll first' : `${firstRollerName} rolls first`}
+            </div>
+            <div className="text-sm">
+              {firstRollerIsLocal
+                ? `${selfName ?? 'You'} (${firstRollerColor}) start the match.`
+                : `${firstRollerName} (${firstRollerColor}) starts the match.`}
+            </div>
+            <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
+          </button>
+        ) : showCubeDecisionCenter ? (
           <CubeOfferDecision
             offeredBy={game.cubeOffer!}
             currentValue={game.cubeValue as CubeValue}
@@ -409,18 +457,41 @@ export default function PlayOnline() {
             )}
           </div>
         ) : showMatchOver ? (
-          <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
-            <div className="font-display text-3xl uppercase tracking-wider mb-1">Match over</div>
-            <div className="capitalize text-xl mb-3 font-display">
-              {match.winner} wins {match.white_score}–{match.black_score}
-            </div>
-            <button
-              onClick={() => navigate('/')}
-              className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
-            >
-              Home
-            </button>
-          </div>
+          (() => {
+            // Detect forfeit-by-abandonment. replace_opponent_with_ai
+            // stashes { abandoner_id, converted_at } in
+            // current_turn._abandonment when auto-convert fires. If
+            // that's set, the match ended because someone quit — not
+            // because of a regular bear-off. We surface this so the
+            // remaining player understands why the match ended now.
+            const ct = match.current_turn as { _abandonment?: { abandoner_id?: string } } | null;
+            const abandoner = ct?._abandonment?.abandoner_id ?? null;
+            const localWon = match.winner === game.localColor;
+            const showForfeit = abandoner !== null && localWon;
+            return (
+              <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
+                <div className="font-display text-3xl uppercase tracking-wider mb-1">
+                  {showForfeit ? 'Opponent forfeited' : 'Match over'}
+                </div>
+                <div className="capitalize text-xl mb-3 font-display">
+                  {showForfeit
+                    ? `You win ${match.white_score}–${match.black_score}`
+                    : `${match.winner} wins ${match.white_score}–${match.black_score}`}
+                </div>
+                {showForfeit && (
+                  <div className="text-xs text-amber-900/70 mb-3">
+                    Your opponent disconnected. The win + payout have been credited to you.
+                  </div>
+                )}
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+                >
+                  Home
+                </button>
+              </div>
+            );
+          })()
         ) : null
       }
     >

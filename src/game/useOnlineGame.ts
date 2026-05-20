@@ -567,11 +567,18 @@ export function useOnlineGame(
   // timer auto-action effect can call endTurn at the same moment the
   // user manually clicks End Turn, producing two INSERTs for the same
   // (game_id, ply) and a duplicate-key error on the second.
+  //
+  // Note: we DO NOT check canEndTurn inside this function any more.
+  // canEndTurn is a UI affordance ("show the End Turn button only
+  // when the player has nothing else to do") — it is NOT a
+  // correctness invariant. The soft-turn-timer auto-action calls
+  // endTurn even when legal moves remain so the timer running out
+  // actually advances the match. The player just loses their
+  // unplayed dice — strong incentive to act within the timer.
   const endTurnInFlightRef = useRef(false);
   const endTurn = useCallback(async () => {
     if (!matchId || !match || !currentTurn || !match.current_game_id) return;
     if (!isLocalTurn) return;
-    if (!canEndTurn) return;
     if (endTurnInFlightRef.current) return;
     endTurnInFlightRef.current = true;
     try {
@@ -918,6 +925,13 @@ export function useOnlineGame(
     if (!matchId || !localColor || !match || !user) return;
     if (autoConvertedRef.current) return;
     autoConvertedRef.current = true;
+    console.info('[useOnlineGame] auto-forfeit firing', {
+      matchId,
+      secondsSinceActivity,
+      inactivityForfeitMs,
+      mode: match.mode,
+      localColor,
+    });
     void (async () => {
       // supabase.rpc resolves to { data, error } — Postgres exceptions
       // come back via the `error` field, NOT a thrown promise. The
@@ -958,6 +972,10 @@ export function useOnlineGame(
 
       // Conversion succeeded (or was already in place); now finalise.
       const opponentIsOwner = user.id === match.opponent_id;
+      console.info('[useOnlineGame] auto-forfeit: calling finish_match', {
+        winner: localColor,
+        opponentIsOwner,
+      });
       const result = await finalizeMatch({
         winner: localColor,
         ownerAbandoned: opponentIsOwner,
@@ -969,27 +987,35 @@ export function useOnlineGame(
         // manual Claim button or the next tick can retry.
         console.error('[useOnlineGame] finalizeMatch failed during auto-forfeit', result.message);
         autoConvertedRef.current = false;
+      } else {
+        console.info('[useOnlineGame] auto-forfeit complete', {
+          result,
+        });
       }
     })();
-  }, [canClaimByInactivity, matchId, localColor, match, user, finalizeMatch, inactivityForfeitMs]);
+  }, [canClaimByInactivity, matchId, localColor, match, user, finalizeMatch, inactivityForfeitMs, secondsSinceActivity]);
 
   // Soft turn-timer auto-action. When the per-turn timer hits zero on
-  // the LOCAL side, nudge the obvious actions forward so the match
-  // doesn't stall on a player who alt-tabbed:
+  // the LOCAL side, force the match forward so an AFK player doesn't
+  // stall the game:
   //   - canRoll: auto-roll (player forgot, or is AFK during their
-  //     "your turn to roll" window)
-  //   - canEndTurn: auto-end-turn (no dice remaining, or no legal
-  //     moves — the only remaining action is to acknowledge the turn
-  //     is done)
-  // We DON'T auto-pick legal moves when remaining dice could still be
-  // played — that'd be too aggressive, and the player still has the
-  // gap to inactivityForfeitMs (2x+) before the match actually ends.
+  //     "your turn to roll" window).
+  //   - currentTurn set (already rolled): force-end the turn with
+  //     whatever submoves the player got in. They lose the value of
+  //     unplayed dice — but the match advances. This is the deliberate
+  //     trade for hard turn timers: act within turn_seconds or eat
+  //     the penalty.
+  // We DELIBERATELY skip the canEndTurn check here. canEndTurn only
+  // becomes true when dice are spent or no legal moves remain; in the
+  // "player has legal moves but isn't playing them" case we still
+  // want to force-end.
   const autoActionFiredKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (turnSecondsLeft === null) return;
     if (turnSecondsLeft > 0) return;
     if (!isLocalTurn) return;
     if (matchFinished) return;
+    if (betweenGames) return;
     // Build a key from the turn state so we only auto-fire ONCE per
     // turn boundary. Without this, after auto-roll lands and the next
     // render still shows turnSecondsLeft=0 briefly (until the refresh
@@ -998,25 +1024,29 @@ export function useOnlineGame(
     const key = [
       match?.id ?? '',
       currentGame?.id ?? 'no-game',
-      currentTurn ? `${currentTurn.player}|${currentTurn.dice.join('-')}|${currentTurn.subMoves.length}` : 'no-turn',
-      canRoll ? 'roll' : canEndTurn ? 'end' : 'noop',
+      currentTurn
+        ? `${currentTurn.player}|${currentTurn.dice.join('-')}|${currentTurn.subMoves.length}|${currentTurn.remaining.length}`
+        : 'no-turn',
+      canRoll ? 'roll' : currentTurn ? 'force-end' : 'noop',
     ].join('::');
     if (autoActionFiredKeyRef.current === key) return;
     autoActionFiredKeyRef.current = key;
     if (canRoll) {
       void rollDice();
-    } else if (canEndTurn) {
+    } else if (currentTurn) {
+      // Force-end whatever turn is in progress, even if legal moves
+      // remain. The internal endTurn no longer gates on canEndTurn.
       void endTurn();
     }
   }, [
     turnSecondsLeft,
     isLocalTurn,
     matchFinished,
+    betweenGames,
     match?.id,
     currentGame?.id,
     currentTurn,
     canRoll,
-    canEndTurn,
     rollDice,
     endTurn,
   ]);
