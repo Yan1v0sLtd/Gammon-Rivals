@@ -64,21 +64,35 @@ function createHybridAuthStorage() {
         return readStorage(window.localStorage, key) ?? readStorage(window.sessionStorage, key);
       }
 
+      // sessionStorage is the tab-local source of truth. If we have a
+      // session here it's ours.
       const sessionValue = readStorage(window.sessionStorage, key);
       if (sessionValue !== null) return sessionValue;
 
       const localValue = readStorage(window.localStorage, key);
       if (localValue === null) return null;
 
+      // A guest session in localStorage shouldn't exist with the new
+      // setItem rules. If we find one (legacy data from before the
+      // fix, or some path I haven't audited), nuke it and return null
+      // instead of adopting it as our session. Adopting would re-
+      // create the very cross-tab leak we just plugged: tab A signs
+      // in as guest, tab B reads here, finds the leaked guest in
+      // localStorage, and "switches" to A's user.
       if (classifySupabaseStorageValue(localValue) === 'guest-session') {
-        writeStorage(window.sessionStorage, key, localValue);
         removeStorage(window.localStorage, key);
+        return null;
       }
+      // Persistent sessions in localStorage are intentional — they're
+      // how a Google sign-in survives a browser restart and stays in
+      // sync across tabs.
       return localValue;
     },
     setItem(key: string, value: string): void {
       if (typeof window === 'undefined') return;
       if (isPkceCodeVerifierKey(key)) {
+        // PKCE verifiers need to survive the OAuth round-trip even if
+        // it lands in a new tab, so keep the dual write.
         writeStorage(window.localStorage, key, value);
         writeStorage(window.sessionStorage, key, value);
         return;
@@ -96,8 +110,16 @@ function createHybridAuthStorage() {
         return;
       }
 
+      // Unclassified value (no user yet, or partial state mid-init).
+      // CRITICAL: do NOT touch localStorage here. supabase-js fires a
+      // brief intermediate write before the full user is attached;
+      // that write would otherwise land in localStorage and trigger a
+      // storage event in every other tab, whose supabase listeners
+      // would pick the value up and switch to the new session. Even
+      // though the next classified write cleans it up, the damage is
+      // done — the cross-tab leak the user reported. Keep it confined
+      // to sessionStorage so the leak path doesn't exist.
       writeStorage(window.sessionStorage, key, value);
-      writeStorage(window.localStorage, key, value);
     },
     removeItem(key: string): void {
       if (typeof window === 'undefined') return;
