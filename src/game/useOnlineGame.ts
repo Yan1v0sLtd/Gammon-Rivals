@@ -452,7 +452,54 @@ export function useOnlineGame(
         body: { matchId },
       });
       if (invErr) {
-        setError(invErr.message ?? 'roll failed');
+        // supabase-js wraps non-2xx responses in a FunctionsHttpError
+        // whose .message is the generic "Edge Function returned a
+        // non-2xx status code". The server's actual reason lives in
+        // the response body. Crack it open so we (a) log the real
+        // cause for diagnosis and (b) can silence benign races
+        // instead of flashing a confusing toast to the user.
+        let serverReason: string | null = null;
+        let status: number | null = null;
+        const ctx = (invErr as { context?: Response }).context;
+        if (ctx) {
+          status = ctx.status ?? null;
+          try {
+            const body = await ctx.clone().json();
+            if (body && typeof body === 'object' && 'error' in body) {
+              serverReason = String((body as { error: unknown }).error);
+            }
+          } catch {
+            // Body wasn't JSON; try plain text as a last resort.
+            try {
+              const text = await ctx.clone().text();
+              if (text) serverReason = text;
+            } catch { /* give up */ }
+          }
+        }
+        console.error('[useOnlineGame] roll_dice failed', {
+          status,
+          serverReason,
+          generic: invErr.message,
+        });
+        const detail = serverReason ?? invErr.message ?? 'roll failed';
+        // Benign races we should swallow:
+        //   - "turn already in progress": some other path (auto-roll,
+        //     a concurrent tab, a stale react double-fire) got the
+        //     roll in first. Local state will sync via realtime;
+        //     nothing for us to do.
+        //   - "match finished": opponent claim or our own resign
+        //     landed between our click and the round-trip.
+        // Both surface as a flash to the user under the old code,
+        // even though the server outcome is what we wanted anyway.
+        if (
+          detail.includes('turn already in progress') ||
+          detail.includes('match finished') ||
+          detail.includes('match_already_finished')
+        ) {
+          void refresh();
+          return;
+        }
+        setError(detail);
         return;
       }
       if (data && typeof data === 'object' && 'error' in data) {
@@ -516,10 +563,18 @@ export function useOnlineGame(
     [matchId, match, currentTurn, selectedFrom, isLocalTurn, legal, refresh]
   );
 
+  // In-flight guard mirroring rollDice. Without it, the soft-turn-
+  // timer auto-action effect can call endTurn at the same moment the
+  // user manually clicks End Turn, producing two INSERTs for the same
+  // (game_id, ply) and a duplicate-key error on the second.
+  const endTurnInFlightRef = useRef(false);
   const endTurn = useCallback(async () => {
     if (!matchId || !match || !currentTurn || !match.current_game_id) return;
     if (!isLocalTurn) return;
     if (!canEndTurn) return;
+    if (endTurnInFlightRef.current) return;
+    endTurnInFlightRef.current = true;
+    try {
 
     // Determine ply (count of existing moves)
     const ply = moves.length;
@@ -604,6 +659,9 @@ export function useOnlineGame(
       setError(upErr.message);
     }
     void refresh();
+    } finally {
+      endTurnInFlightRef.current = false;
+    }
   }, [
     matchId,
     match,
