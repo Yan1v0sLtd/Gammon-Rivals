@@ -265,6 +265,24 @@ export interface FinishMatchRewardResult {
  * already-finished match raises `match_already_finished` rather than
  * double-paying.
  */
+/**
+ * Best-effort cleanup of orphan difficulty matches the caller owns.
+ * Called from the lobby on mount so abandoned tabs don't drag the
+ * RTP dashboard sideways. Fires server-side via the
+ * abandon_stale_matches RPC; the matches that are still recent
+ * (within 60min default) are left alone, so a player who closes
+ * the lobby and immediately reopens it doesn't lose an active match.
+ *
+ * Failures are intentionally swallowed by the caller — this is data
+ * hygiene, not a user-facing flow.
+ */
+export async function abandonStaleMatches(): Promise<number> {
+  const { data, error } = await supabase.rpc('abandon_stale_matches', {});
+  if (error) throw error;
+  const payload = data as { abandoned_count: number };
+  return payload?.abandoned_count ?? 0;
+}
+
 export async function finishMatchRpc(args: FinishMatchArgs): Promise<FinishMatchRewardResult> {
   const { data, error } = await supabase.rpc('finish_match', {
     p_match_id: args.matchId,
@@ -317,7 +335,14 @@ export interface SaveGameArgs {
   result: GameResult;
   cubeOwner: 'white' | 'black' | null;
   wasCrawford: boolean;
-  moves: ReadonlyArray<{ player: 'white' | 'black'; dice: readonly number[]; subMoves: readonly Move[] }>;
+  moves: ReadonlyArray<{
+    player: 'white' | 'black';
+    dice: readonly number[];
+    subMoves: readonly Move[];
+    /** Player's think-time on this turn, in ms. Null for AI turns and
+     *  edge cases — we'd rather omit than fabricate. */
+    elapsedMs?: number | null;
+  }>;
 }
 
 /** Insert a finished game and all its turns in two round-trips. */
@@ -353,6 +378,7 @@ export async function saveGame(args: SaveGameArgs): Promise<void> {
       die: mv.die,
       hit: mv.hit,
     })),
+    elapsed_ms: m.elapsedMs ?? null,
   }));
 
   const { error: movesErr } = await supabase.from('moves').insert(rows);

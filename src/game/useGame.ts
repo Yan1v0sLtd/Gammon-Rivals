@@ -56,6 +56,22 @@ export interface TurnRecord {
   readonly player: Player;
   readonly dice: DiceRoll;
   readonly subMoves: readonly Move[];
+  /**
+   * Epoch ms when the turn started (the roll that opened it). Used to
+   * compute elapsedMs at end-of-turn — we don't store the elapsed value
+   * incrementally because the AI may insert intermediate turns and we
+   * only care about the wall-clock distance from roll to submit on the
+   * turn this record is for.
+   */
+  readonly startedAt: number;
+  /**
+   * Player's think-time on this turn, in milliseconds. Populated when
+   * the turn ends (endTurn / forfeitTurn / engineEndTurn auto-fire).
+   * Null until the turn is closed; null for AI turns (their wall-clock
+   * is dominated by think delay, not player decision, and we don't
+   * want that polluting the bot-detection signal).
+   */
+  readonly elapsedMs: number | null;
 }
 
 export interface UseGameOptions {
@@ -137,8 +153,32 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   const [undoSnapshot, setUndoSnapshot] = useState<MoveSnapshot | null>(null);
 
   const startTurnRecord = useCallback((player: Player, dice: DiceRoll) => {
-    setTurnLog((curr) => [...curr, { player, dice, subMoves: [] }]);
+    setTurnLog((curr) => [
+      ...curr,
+      { player, dice, subMoves: [], startedAt: Date.now(), elapsedMs: null },
+    ]);
   }, []);
+
+  /**
+   * Stamps elapsedMs on the latest turn record. Called from endTurn and
+   * forfeitTurn — the two places a turn "closes" from the player's
+   * perspective. AI turns also pass through endTurn, but we skip the
+   * stamping for those so the elapsed_ms column on moves stays
+   * AI-free (their think-time is a different signal entirely).
+   */
+  const closeCurrentTurnTiming = useCallback(() => {
+    setTurnLog((curr) => {
+      if (curr.length === 0) return curr;
+      const last = curr[curr.length - 1]!;
+      if (last.elapsedMs !== null) return curr; // already closed
+      const isAITurn = ai !== null && last.player === ai.player;
+      if (isAITurn) return curr;
+      return [
+        ...curr.slice(0, -1),
+        { ...last, elapsedMs: Math.max(0, Date.now() - last.startedAt) },
+      ];
+    });
+  }, [ai]);
 
   const appendMoveToTurn = useCallback((move: Move) => {
     setTurnLog((curr) => {
@@ -266,6 +306,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
 
   const endTurn = useCallback(() => {
     if (!canEndTurn) return;
+    closeCurrentTurnTiming();
     setBoard(engineEndTurn(board));
     setDiceRoll(null);
     setRemaining([]);
@@ -273,10 +314,11 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setHistory([]);
     setUndoSnapshot(null);
     setAiPreviewReady(false);
-  }, [canEndTurn, board]);
+  }, [canEndTurn, board, closeCurrentTurnTiming]);
 
   const forfeitTurn = useCallback(() => {
     if (gameFrozen || match.cubeOffer !== null) return;
+    closeCurrentTurnTiming();
     setBoard(engineEndTurn(board));
     setDiceRoll(null);
     setRemaining([]);
@@ -284,7 +326,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     setHistory([]);
     setUndoSnapshot(null);
     setAiPreviewReady(false);
-  }, [board, gameFrozen, match.cubeOffer]);
+  }, [board, gameFrozen, match.cubeOffer, closeCurrentTurnTiming]);
 
   const offerDouble = useCallback(() => {
     if (!canOfferDoubleNow) return;

@@ -265,6 +265,9 @@ export default function HotSeat() {
       player: t.player,
       dice: t.dice,
       subMoves: t.subMoves,
+      // null for AI turns and any turn that closed via an edge case
+      // (we'd rather omit than back-fill a fabricated value).
+      elapsedMs: t.elapsedMs,
     }));
 
     const wasCrawford =

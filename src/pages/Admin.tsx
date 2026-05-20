@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -193,6 +193,18 @@ interface RtpRow {
   out_actual_rtp_pct: number | null;
   out_rtp_delta_pct: number | null;
   out_risk_free_count: number;
+}
+
+interface RtpPerPlayerRow {
+  out_profile_id: string;
+  out_display_name: string;
+  out_matches_played: number;
+  out_matches_won: number;
+  out_win_rate_pct: number | null;
+  out_coins_wagered: number;
+  out_coins_paid_out: number;
+  out_coins_house_net: number;
+  out_actual_rtp_pct: number | null;
 }
 
 /** Accent slugs the DifficultyModal recognises. The BO dropdown is
@@ -699,6 +711,14 @@ export default function Admin() {
   const [rtpRows, setRtpRows] = useState<RtpRow[]>([]);
   const [rtpLoading, setRtpLoading] = useState(false);
   const [rtpError, setRtpError] = useState<string | null>(null);
+  // The currently-expanded tier (per-player drill-down). Null = no
+  // tier expanded. Players list is cached per (tier, range) — switching
+  // back to an expanded tier shows last-known data instantly while a
+  // fresh fetch runs in the background.
+  const [rtpExpandedTier, setRtpExpandedTier] = useState<string | null>(null);
+  const [rtpPlayerRows, setRtpPlayerRows] = useState<RtpPerPlayerRow[]>([]);
+  const [rtpPlayerLoading, setRtpPlayerLoading] = useState(false);
+  const [rtpPlayerError, setRtpPlayerError] = useState<string | null>(null);
   const [adminRoles, setAdminRoles] = useState<AdminRoleRow[]>([]);
   const [adminEmailRoles, setAdminEmailRoles] = useState<AdminEmailRoleRow[]>([]);
   const [roleDraft, setRoleDraft] = useState({ profile_id: '', role: 'viewer' as AdminRole, note: '' });
@@ -1039,6 +1059,40 @@ export default function Admin() {
     if (activeSection !== 'RTP Analytics') return;
     void loadRtpSummary();
   }, [activeSection, loadRtpSummary]);
+
+  // Per-player drill-down. Triggered when the user clicks a tier row;
+  // re-fetches when the range changes (so the expanded panel stays in
+  // sync with the tier table above it).
+  const loadRtpPerPlayer = useCallback(
+    async (tierId: string) => {
+      setRtpPlayerLoading(true);
+      setRtpPlayerError(null);
+      try {
+        const range = RTP_RANGES.find((r) => r.id === rtpRange);
+        const since = range && range.hours !== null
+          ? new Date(Date.now() - range.hours * 60 * 60 * 1000).toISOString()
+          : null;
+        const { data, error } = await supabase.rpc('get_rtp_per_player', {
+          p_table_config_id: tierId,
+          p_since: since,
+          p_limit: 50,
+        });
+        if (error) throw error;
+        setRtpPlayerRows((data ?? []) as unknown as RtpPerPlayerRow[]);
+      } catch (err) {
+        setRtpPlayerError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setRtpPlayerLoading(false);
+      }
+    },
+    [rtpRange]
+  );
+
+  useEffect(() => {
+    if (!rtpExpandedTier) return;
+    if (activeSection !== 'RTP Analytics') return;
+    void loadRtpPerPlayer(rtpExpandedTier);
+  }, [activeSection, rtpExpandedTier, loadRtpPerPlayer]);
 
   function selectUser(nextUser: AdminUser) {
     setSelectedUserId(nextUser.id);
@@ -2313,10 +2367,6 @@ export default function Admin() {
                       </tr>
                     ) : (
                       rtpRows.map((row) => {
-                        // Delta colouring: green if we're paying out less than target (house
-                        // is doing well), amber if at target, rose if over-paying. Negative
-                        // delta means players are losing more than target — a sign to either
-                        // raise W/L, or wait for the sample to grow if matches < ~50.
                         const delta = row.out_rtp_delta_pct;
                         const deltaColor =
                           delta === null
@@ -2326,40 +2376,144 @@ export default function Admin() {
                               : delta < -3
                                 ? 'text-emerald-300'
                                 : 'text-amber-200';
+                        const isExpanded = rtpExpandedTier === row.out_table_config_id;
+                        const hasTraffic = row.out_matches_played > 0 || row.out_coins_wagered > 0;
                         return (
-                          <tr key={row.out_table_config_id} className="border-b border-white/5 last:border-b-0">
-                            <td className="px-3 py-2 font-bold text-white/85">{row.out_display_name}</td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                              {formatNumber(row.out_matches_played)}
-                              {row.out_matches_played > 0 ? (
-                                <span className="ml-1 text-white/40">({formatNumber(row.out_matches_won)}W)</span>
-                              ) : null}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                              {row.out_actual_win_rate_pct !== null ? `${row.out_actual_win_rate_pct}%` : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                              {formatNumber(row.out_coins_wagered)}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                              {formatNumber(row.out_coins_paid_out)}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                              {formatNumber(row.out_coins_house_net)}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/55">
-                              {row.out_target_rtp_pct}%
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums font-bold text-white/85">
-                              {row.out_actual_rtp_pct !== null ? `${row.out_actual_rtp_pct}%` : '—'}
-                            </td>
-                            <td className={`px-3 py-2 text-right tabular-nums font-bold ${deltaColor}`}>
-                              {delta !== null ? `${delta > 0 ? '+' : ''}${delta}` : '—'}
-                            </td>
-                            <td className="px-3 py-2 text-right tabular-nums text-white/55">
-                              {formatNumber(row.out_risk_free_count)}
-                            </td>
-                          </tr>
+                          <Fragment key={row.out_table_config_id}>
+                            <tr
+                              className={`border-b border-white/5 last:border-b-0 ${
+                                hasTraffic ? 'cursor-pointer hover:bg-white/[0.03]' : ''
+                              } ${isExpanded ? 'bg-white/[0.04]' : ''}`}
+                              onClick={() => {
+                                if (!hasTraffic) return;
+                                setRtpExpandedTier(isExpanded ? null : row.out_table_config_id);
+                              }}
+                            >
+                              <td className="px-3 py-2 font-bold text-white/85">
+                                <span className="mr-1 inline-block w-3 text-white/40">
+                                  {hasTraffic ? (isExpanded ? '▾' : '▸') : ''}
+                                </span>
+                                {row.out_display_name}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                                {formatNumber(row.out_matches_played)}
+                                {row.out_matches_played > 0 ? (
+                                  <span className="ml-1 text-white/40">({formatNumber(row.out_matches_won)}W)</span>
+                                ) : null}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                                {row.out_actual_win_rate_pct !== null ? `${row.out_actual_win_rate_pct}%` : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                                {formatNumber(row.out_coins_wagered)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                                {formatNumber(row.out_coins_paid_out)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                                {formatNumber(row.out_coins_house_net)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                                {row.out_target_rtp_pct}%
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums font-bold text-white/85">
+                                {row.out_actual_rtp_pct !== null ? `${row.out_actual_rtp_pct}%` : '—'}
+                              </td>
+                              <td className={`px-3 py-2 text-right tabular-nums font-bold ${deltaColor}`}>
+                                {delta !== null ? `${delta > 0 ? '+' : ''}${delta}` : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                                {formatNumber(row.out_risk_free_count)}
+                              </td>
+                            </tr>
+                            {isExpanded ? (
+                              <tr className="border-b border-white/5 bg-black/30">
+                                <td colSpan={10} className="px-3 py-3">
+                                  {rtpPlayerError ? (
+                                    <div className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-xs text-rose-100">
+                                      {rtpPlayerError}
+                                    </div>
+                                  ) : rtpPlayerLoading && rtpPlayerRows.length === 0 ? (
+                                    <div className="px-3 py-4 text-center text-xs text-white/40">Loading players…</div>
+                                  ) : rtpPlayerRows.length === 0 ? (
+                                    <div className="px-3 py-4 text-center text-xs text-white/40">
+                                      No player data in this window.
+                                    </div>
+                                  ) : (
+                                    <table className="min-w-full text-xs">
+                                      <thead className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                                        <tr>
+                                          <th className="px-2 py-1.5 text-left">Player</th>
+                                          <th className="px-2 py-1.5 text-right">Matches</th>
+                                          <th className="px-2 py-1.5 text-right">Win rate</th>
+                                          <th className="px-2 py-1.5 text-right">Wagered</th>
+                                          <th className="px-2 py-1.5 text-right">Paid out</th>
+                                          <th className="px-2 py-1.5 text-right">House net</th>
+                                          <th className="px-2 py-1.5 text-right">RTP</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {rtpPlayerRows.map((pr) => {
+                                          // Per-player RTP colouring is opposite of the
+                                          // tier-level delta: here, high RTP means this
+                                          // specific player is winning more than the tier
+                                          // target — possibly a streaking expert or a bot.
+                                          // Low RTP just means they're unlucky / new.
+                                          const rtp = pr.out_actual_rtp_pct;
+                                          const playerRtpColor =
+                                            rtp === null
+                                              ? 'text-white/40'
+                                              : rtp > 110
+                                                ? 'text-rose-300'
+                                                : rtp > 95
+                                                  ? 'text-amber-200'
+                                                  : 'text-white/70';
+                                          return (
+                                            <tr key={pr.out_profile_id} className="border-t border-white/5">
+                                              <td className="px-2 py-1.5">
+                                                <button
+                                                  type="button"
+                                                  className="text-white/85 hover:text-amber-200"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveSection('Users');
+                                                    setSelectedUserId(pr.out_profile_id);
+                                                  }}
+                                                >
+                                                  {pr.out_display_name}
+                                                </button>
+                                              </td>
+                                              <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                                                {formatNumber(pr.out_matches_played)}
+                                                {pr.out_matches_played > 0 ? (
+                                                  <span className="ml-1 text-white/40">({pr.out_matches_won}W)</span>
+                                                ) : null}
+                                              </td>
+                                              <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                                                {pr.out_win_rate_pct !== null ? `${pr.out_win_rate_pct}%` : '—'}
+                                              </td>
+                                              <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                                                {formatNumber(pr.out_coins_wagered)}
+                                              </td>
+                                              <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                                                {formatNumber(pr.out_coins_paid_out)}
+                                              </td>
+                                              <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                                                {formatNumber(pr.out_coins_house_net)}
+                                              </td>
+                                              <td className={`px-2 py-1.5 text-right tabular-nums font-bold ${playerRtpColor}`}>
+                                                {rtp !== null ? `${rtp}%` : '—'}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                </td>
+                              </tr>
+                            ) : null}
+                          </Fragment>
                         );
                       })
                     )}

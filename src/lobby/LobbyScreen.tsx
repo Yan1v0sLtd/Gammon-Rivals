@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
-import { createOnlineMatch, enterRoom } from '../lib/persistence';
+import { abandonStaleMatches, createOnlineMatch, enterRoom } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
@@ -441,6 +441,30 @@ export function LobbyScreen() {
   useEffect(() => {
     if (lobbyReady) hideOverlay();
   }, [lobbyReady, hideOverlay]);
+
+  // Best-effort cleanup of any difficulty-room matches that were
+  // orphaned in a previous session — closed tab, crash, etc. The RPC
+  // gates by table_config_id IS NOT NULL + started_at older than 60
+  // minutes, so an active match the player just left for a quick
+  // shop run won't be touched. Lobby-load is the right trigger
+  // because it's the natural "back to home base" moment; we refresh
+  // the wallet afterwards so any lose-prize or risk-free refund the
+  // cleanup minted shows up in the top bar.
+  const abandonRanForUserRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    if (!isSupabaseConfigured) return;
+    if (abandonRanForUserRef.current === user.id) return;
+    abandonRanForUserRef.current = user.id;
+    (async () => {
+      try {
+        const count = await abandonStaleMatches();
+        if (count > 0) void refreshWallet();
+      } catch (err) {
+        console.warn('abandonStaleMatches failed', err);
+      }
+    })();
+  }, [user, refreshWallet]);
 
   // Note: no early-return loading gate here. The full lobby JSX renders
   // behind the route-spanning overlay so any internal layout work

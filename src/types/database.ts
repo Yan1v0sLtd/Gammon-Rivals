@@ -203,6 +203,7 @@ export type Database = {
           player: string;
           dice: number[];
           sub_moves: Json;
+          elapsed_ms: number | null;
           created_at: string;
         };
         Insert: {
@@ -212,6 +213,7 @@ export type Database = {
           player: string;
           dice: number[];
           sub_moves: Json;
+          elapsed_ms?: number | null;
           created_at?: string;
         };
         Update: {
@@ -221,6 +223,7 @@ export type Database = {
           player?: string;
           dice?: number[];
           sub_moves?: Json;
+          elapsed_ms?: number | null;
           created_at?: string;
         };
         Relationships: [];
@@ -874,6 +877,28 @@ export type Database = {
           out_actual_rtp_pct: number | null;
           out_rtp_delta_pct: number | null;
           out_risk_free_count: number;
+        }>;
+      };
+      abandon_stale_matches: {
+        Args: { p_max_age_minutes?: number };
+        Returns: Json;
+      };
+      get_rtp_per_player: {
+        Args: {
+          p_table_config_id: string;
+          p_since?: string | null;
+          p_limit?: number;
+        };
+        Returns: ReadonlyArray<{
+          out_profile_id: string;
+          out_display_name: string;
+          out_matches_played: number;
+          out_matches_won: number;
+          out_win_rate_pct: number | null;
+          out_coins_wagered: number;
+          out_coins_paid_out: number;
+          out_coins_house_net: number;
+          out_actual_rtp_pct: number | null;
         }>;
       };
       get_my_admin_role: {
