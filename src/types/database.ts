@@ -18,6 +18,7 @@ export type Database = {
           display_name: string;
           is_guest: boolean;
           rating: number;
+          pvp_rating: number;
           avatar_seed: string;
           avatar_url: string | null;
           level: number;
@@ -38,6 +39,7 @@ export type Database = {
           display_name: string;
           is_guest?: boolean;
           rating?: number;
+          pvp_rating?: number;
           avatar_seed?: string;
           avatar_url?: string | null;
           level?: number;
@@ -58,6 +60,7 @@ export type Database = {
           display_name?: string;
           is_guest?: boolean;
           rating?: number;
+          pvp_rating?: number;
           avatar_seed?: string;
           avatar_url?: string | null;
           level?: number;
@@ -483,6 +486,7 @@ export type Database = {
           accent_color: string;
           ai_level: 'easy' | 'medium' | 'hard';
           target_rtp_pct: number;
+          allow_online_pvp: boolean;
           metadata: Json;
           updated_by: string | null;
           created_at: string;
@@ -508,6 +512,7 @@ export type Database = {
           accent_color?: string;
           ai_level?: 'easy' | 'medium' | 'hard';
           target_rtp_pct?: number;
+          allow_online_pvp?: boolean;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -533,6 +538,7 @@ export type Database = {
           accent_color?: string;
           ai_level?: 'easy' | 'medium' | 'hard';
           target_rtp_pct?: number;
+          allow_online_pvp?: boolean;
           metadata?: Json;
           updated_by?: string | null;
           created_at?: string;
@@ -848,7 +854,11 @@ export type Database = {
         Args: { target_profile_id: string };
         Returns: number;
       };
-      enter_room: {
+      find_match_in_tier: {
+        Args: { p_table_config_id: string; p_rating_band?: number };
+        Returns: Json;
+      };
+      enter_room_ai_fallback: {
         Args: { p_table_config_id: string };
         Returns: Json;
       };
@@ -859,6 +869,8 @@ export type Database = {
           p_black_score: number;
           p_winner: string | null;
           p_crawford_game_number?: number | null;
+          p_owner_abandoned?: boolean;
+          p_opponent_abandoned?: boolean;
         };
         Returns: Json;
       };

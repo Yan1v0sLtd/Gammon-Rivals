@@ -18,14 +18,27 @@ export interface DifficultySelection {
   readonly matchTarget: number;
 }
 
+/**
+ * The matchmaking overlay state, shown while we're polling
+ * find_match_in_tier between PLAY click and either a PvP pair or the
+ * AI fallback firing. `searchingForTier` is the table_config_id we're
+ * currently searching for; null = no overlay.
+ */
+export interface MatchmakingOverlayState {
+  readonly searchingForTier: string | null;
+  readonly tierDisplayName: string;
+  readonly elapsedSeconds: number;
+  readonly maxSeconds: number;
+}
+
 interface DifficultyModalProps {
   readonly open: boolean;
   readonly onClose: () => void;
   /**
    * Called when the user picks a tier they can afford. The parent is
-   * responsible for the enter_room RPC + navigation — keeping that out
-   * of the modal lets the parent show a route-level loading overlay
-   * during the RPC. The modal's only job is presentation + selection.
+   * responsible for the matchmaking flow + navigation — keeping that
+   * out of the modal lets the parent show a route-level loading
+   * overlay during the RPC and the matchmaking poll loop.
    */
   readonly onSelect: (selection: DifficultySelection) => void;
   /**
@@ -36,10 +49,16 @@ interface DifficultyModalProps {
   readonly onGetCoins: () => void;
   /** Wallet coins, drives the Play vs Get-Coins button choice per card. */
   readonly walletCoins: number;
-  /** While the parent's enter_room call is in flight, busyId is the
-   *  table_config_id being purchased so we can show "Entering..." on
+  /** While the parent's matchmaking call is in flight, busyId is the
+   *  table_config_id being processed so we can show "Searching…" on
    *  just that card. */
   readonly busyId: string | null;
+  /** Optional matchmaking overlay — set when actively searching for an
+   *  opponent. Renders a "Finding opponent…" screen over the grid. */
+  readonly matchmaking?: MatchmakingOverlayState;
+  /** Cancel button on the matchmaking overlay — clears the search and
+   *  removes the player from the server-side queue. */
+  readonly onCancelMatchmaking?: () => void;
 }
 
 /**
@@ -224,7 +243,7 @@ function DifficultyCard({ row, affordable, busy, onPlay, onGetCoins }: CardProps
         disabled={busy}
         className="mt-3 rounded-md border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
       >
-        {busy ? 'Entering...' : affordable ? 'Play' : 'Get Coins'}
+        {busy ? 'Searching…' : affordable ? 'Play' : 'Get Coins'}
       </button>
     </div>
   );
@@ -237,6 +256,8 @@ export function DifficultyModal({
   onGetCoins,
   walletCoins,
   busyId,
+  matchmaking,
+  onCancelMatchmaking,
 }: DifficultyModalProps) {
   const [rows, setRows] = useState<readonly TableConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -356,6 +377,49 @@ export function DifficultyModal({
             <span>Time to move is the total time you have for each turn.</span>
           </div>
         </div>
+
+        {/* Matchmaking overlay. Sits over the card grid while the
+          * parent is polling find_match_in_tier. Renders inside the
+          * modal panel so its visual containment matches the search
+          * scope (this tier, this session). Cancel kicks the player
+          * back to the grid + removes them from the server queue. */}
+        {matchmaking?.searchingForTier ? (
+          <div className="absolute inset-0 z-10 grid place-items-center rounded-3xl bg-black/85 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 px-6 text-center">
+              <div className="relative grid h-16 w-16 place-items-center">
+                <span className="absolute inset-0 animate-ping rounded-full border-2 border-emerald-300/40" />
+                <span className="absolute inset-2 animate-pulse rounded-full border-2 border-emerald-400/60" />
+                <span className="relative font-display text-lg font-black text-emerald-200">vs</span>
+              </div>
+              <div>
+                <div className="font-display text-2xl font-black uppercase tracking-[0.18em] text-emerald-200">
+                  Finding opponent
+                </div>
+                <div className="mt-1 text-sm font-bold text-emerald-100/70">
+                  {matchmaking.tierDisplayName} room ·{' '}
+                  {Math.max(0, matchmaking.maxSeconds - matchmaking.elapsedSeconds)}s
+                </div>
+              </div>
+              <div className="h-1 w-48 overflow-hidden rounded-full bg-emerald-900/50">
+                <div
+                  className="h-full bg-emerald-400 transition-[width] duration-200"
+                  style={{
+                    width: `${Math.min(100, (matchmaking.elapsedSeconds / matchmaking.maxSeconds) * 100)}%`,
+                  }}
+                />
+              </div>
+              {onCancelMatchmaking ? (
+                <button
+                  type="button"
+                  onClick={onCancelMatchmaking}
+                  className="mt-2 rounded-md border border-white/15 bg-white/[0.06] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/[0.12]"
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );

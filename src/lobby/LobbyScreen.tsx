@@ -3,13 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
-import { abandonStaleMatches, createOnlineMatch, enterRoom } from '../lib/persistence';
+import {
+  abandonStaleMatches,
+  cancelMatchmakingRpc,
+  createOnlineMatch,
+  enterRoomAiFallback,
+  findMatchInTier,
+} from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { DailyBonusModal } from './DailyBonusModal';
-import { DifficultyModal, type DifficultySelection } from './DifficultyModal';
+import {
+  DifficultyModal,
+  type DifficultySelection,
+  type MatchmakingOverlayState,
+} from './DifficultyModal';
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
@@ -328,14 +338,30 @@ export function LobbyScreen() {
   };
 
   /**
-   * Called when the player picks a difficulty in the modal. The RPC
-   * does all the heavy lifting (validate room, debit coins, create the
-   * match row tagged with table_config_id) and we just route into the
-   * new gameplay screen with the per-room turn timer pre-baked into the
-   * URL. v1: ai-medium opponent for every difficulty room. Online
-   * matchmaking through difficulties comes once the opponent-side
-   * payment story lands.
+   * Matchmaking overlay state. Renders inside the DifficultyModal
+   * while we're polling find_match_in_tier between PLAY click and
+   * either a PvP pair or the AI fallback.
    */
+  const [matchmaking, setMatchmaking] = useState<MatchmakingOverlayState | null>(null);
+  // Cancel flag shared with the running poll loop. We use a ref rather
+  // than reading state inside the loop to avoid stale closures.
+  const cancelMatchmakingRef = useRef(false);
+
+  /**
+   * PvP-first match entry. On PLAY:
+   *   1. Validate board ownership defensively.
+   *   2. Open the matchmaking overlay; loop find_match_in_tier every
+   *      500ms for up to MAX_MATCH_SECONDS.
+   *   3. On a 'matched' status, route into the PvP match. Both
+   *      players land on the same matchId via the server-side row.
+   *   4. On timeout (still 'queued'), cancel matchmaking + call
+   *      enter_room_ai_fallback (which picks AI level from caller's
+   *      pvp_rating with cfg.ai_level as floor) and route to /hotseat.
+   *   5. Errors at any stage close the overlay with a friendly toast.
+   */
+  const MATCHMAKING_MAX_SECONDS = 4;
+  const MATCHMAKING_POLL_MS = 500;
+
   const handleDifficultySelect = async (selection: DifficultySelection) => {
     if (enteringRoomId !== null) return;
     if (!user) {
@@ -345,10 +371,6 @@ export function LobbyScreen() {
     if (selectedBoard) {
       const state = boardStateOf(selectedBoard);
       if (state !== 'owned' && state !== 'free-unlock') {
-        // Defensive: PLAY button shouldn't surface on locked or
-        // gem-priced boards — LobbyBoardCarousel gates on the same
-        // state — but we don't trust client state alone. If something
-        // stale slips through, refuse and toast.
         setDifficultyError('Unlock this board before entering a room.');
         return;
       }
@@ -356,41 +378,108 @@ export function LobbyScreen() {
 
     setEnteringRoomId(selection.tableConfigId);
     setDifficultyError(null);
-    try {
-      const result = await enterRoom({
-        tableConfigId: selection.tableConfigId,
-      });
-      // Wallet was debited server-side; pull the new balance so the
-      // top-bar coins pill reflects the deduction before the route
-      // change settles.
-      void refreshWallet();
-      // The server picked the AI level (tier base + DDA escalator).
-      // Forward it to /hotseat so HotSeat's URL-driven AI parser sees
-      // the right opponent — without this the page would default-load
-      // a different AI than the one stamped on the match row.
+    cancelMatchmakingRef.current = false;
+    const searchStart = Date.now();
+    setMatchmaking({
+      searchingForTier: selection.tableConfigId,
+      tierDisplayName: selection.displayName,
+      elapsedSeconds: 0,
+      maxSeconds: MATCHMAKING_MAX_SECONDS,
+    });
+
+    const friendlyError = (err: unknown): string => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('insufficient_coins')) return 'Not enough coins for this room.';
+      if (msg.includes('room_disabled')) return 'This room is temporarily unavailable.';
+      if (msg.includes('pvp_not_allowed_in_tier')) {
+        return 'PvP isn’t enabled in this room.';
+      }
+      return 'Could not enter the room. Try again.';
+    };
+
+    const routeIntoMatch = (
+      matchId: string,
+      target: number,
+      turnSeconds: number,
+      mode: 'pvp' | string
+    ) => {
       const params = new URLSearchParams();
-      params.set('opp', result.aiLevel);
-      params.set('target', String(result.target));
+      params.set('opp', mode === 'pvp' ? 'pvp' : mode);
+      params.set('target', String(target));
       params.set('board', effectiveSelectedBoardId);
-      params.set('matchId', result.matchId);
-      params.set('turn', String(result.turnSeconds));
+      params.set('matchId', matchId);
+      params.set('turn', String(turnSeconds));
       showOverlay();
       setDifficultyOpen(false);
-      navigate(`/hotseat?${params.toString()}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('insufficient_coins')) {
-        setDifficultyError('Not enough coins for this room.');
-      } else if (msg.includes('level_too_low')) {
-        setDifficultyError(`You haven't reached the required level for this room.`);
-      } else if (msg.includes('room_disabled')) {
-        setDifficultyError('This room is temporarily unavailable.');
-      } else {
-        setDifficultyError('Could not enter the room. Try again.');
+      setMatchmaking(null);
+      // PvP routes to /play/:matchId per the existing online flow;
+      // AI fallbacks continue to /hotseat.
+      navigate(
+        mode === 'pvp'
+          ? `/play/${matchId}?${params.toString()}`
+          : `/hotseat?${params.toString()}`
+      );
+    };
+
+    try {
+      // 1. Poll loop for PvP match.
+      let matched: Awaited<ReturnType<typeof findMatchInTier>> | null = null;
+      while (Date.now() - searchStart < MATCHMAKING_MAX_SECONDS * 1000) {
+        if (cancelMatchmakingRef.current) break;
+        const result = await findMatchInTier({
+          tableConfigId: selection.tableConfigId,
+        });
+        if (result.status === 'matched' && result.matchId) {
+          matched = result;
+          break;
+        }
+        // Tick the overlay counter so the user sees the countdown move.
+        const elapsed = (Date.now() - searchStart) / 1000;
+        setMatchmaking((curr) =>
+          curr
+            ? {
+                ...curr,
+                elapsedSeconds: Math.min(MATCHMAKING_MAX_SECONDS, elapsed),
+              }
+            : curr
+        );
+        await new Promise((resolve) => setTimeout(resolve, MATCHMAKING_POLL_MS));
       }
+
+      if (cancelMatchmakingRef.current) {
+        // User cancelled — clean up the server-side queue entry.
+        await cancelMatchmakingRpc().catch(() => undefined);
+        setMatchmaking(null);
+        return;
+      }
+
+      if (matched && matched.matchId) {
+        void refreshWallet();
+        routeIntoMatch(
+          matched.matchId,
+          matched.target ?? selection.matchTarget,
+          matched.turnSeconds ?? selection.turnSeconds,
+          'pvp'
+        );
+        return;
+      }
+
+      // 2. Timeout — fall back to AI at this tier.
+      await cancelMatchmakingRpc().catch(() => undefined);
+      const fallback = await enterRoomAiFallback({ tableConfigId: selection.tableConfigId });
+      void refreshWallet();
+      routeIntoMatch(fallback.matchId, fallback.target, fallback.turnSeconds, fallback.aiLevel);
+    } catch (err) {
+      setMatchmaking(null);
+      setDifficultyError(friendlyError(err));
+      await cancelMatchmakingRpc().catch(() => undefined);
     } finally {
       setEnteringRoomId(null);
     }
+  };
+
+  const handleCancelMatchmaking = () => {
+    cancelMatchmakingRef.current = true;
   };
 
   const startOnline = async () => {
@@ -516,15 +605,11 @@ export function LobbyScreen() {
             />
           </div>
 
-          <aside className="lobby-action-stack grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
-            <LobbyActionCard
-              title={creatingOnline ? 'Creating' : 'Play Online'}
-              subtitle="Challenge players around the world"
-              tone="blue"
-              iconSrc="/lobby/icons/online-players.webp"
-              onClick={startOnline}
-              disabled={creatingOnline || (isSupabaseConfigured && !user)}
-            />
+          <aside className="lobby-action-stack grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            {/* "Play Online" was removed — every PLAY in the
+              * carousel now starts as PvP matchmaking, falling back
+              * to AI after 4 seconds. The separate "challenge anyone"
+              * surface is no longer needed. */}
             <LobbyActionCard
               title="Play Friends"
               subtitle="Two players on this device"
@@ -540,7 +625,7 @@ export function LobbyScreen() {
               onClick={() => startMatch('medium')}
             />
             {onlineError ? (
-              <div className="rounded-md border border-rose-300/30 bg-rose-950/55 px-3 py-2 text-xs text-rose-100 sm:col-span-3 xl:col-span-1">
+              <div className="rounded-md border border-rose-300/30 bg-rose-950/55 px-3 py-2 text-xs text-rose-100 sm:col-span-2 xl:col-span-1">
                 {onlineError}
               </div>
             ) : null}
@@ -594,9 +679,6 @@ export function LobbyScreen() {
         }}
         onSelect={handleDifficultySelect}
         onGetCoins={() => {
-          // Tier card's button when affordable=false. Close the modal
-          // and route to /shop — buying coins is a single intent, no
-          // confirmation step needed.
           setDifficultyOpen(false);
           setDifficultyError(null);
           showOverlay();
@@ -604,6 +686,8 @@ export function LobbyScreen() {
         }}
         walletCoins={wallet?.coins ?? 0}
         busyId={enteringRoomId}
+        matchmaking={matchmaking ?? undefined}
+        onCancelMatchmaking={handleCancelMatchmaking}
       />
       {difficultyError && difficultyOpen ? (
         <div className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 px-4 py-2 font-bold text-rose-950 shadow-2xl">

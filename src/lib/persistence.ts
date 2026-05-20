@@ -159,11 +159,80 @@ export async function createMatch(args: CreateMatchArgs): Promise<string> {
 }
 
 /**
- * Shape returned by the `enter_room` RPC. The RPC has already debited
- * the entry fee and inserted the matches row, so the caller just needs
- * to navigate the user into the gameplay screen with these values.
- * `aiLevel` reflects any win-streak escalation — the actual difficulty
- * the player will face, which may differ from the tier's base level.
+ * Result of a tier matchmaking poll. The server is the source of truth
+ * for status — either matched (with a match_id ready to navigate into)
+ * or still queued. The client polls every ~500ms; after ~4 seconds of
+ * "queued" results the client falls back to enterRoomAiFallback().
+ */
+export interface FindMatchResult {
+  status: 'matched' | 'queued';
+  /** Set when status='matched'. */
+  matchId?: string;
+  /** Set when status='matched'. The PvP opponent's profile id + rating. */
+  opponentId?: string;
+  opponentRating?: number;
+  /** Caller's own pvp_rating snapshot — useful for the "looking for
+   *  opponents around X" overlay copy. */
+  rating: number;
+  turnSeconds?: number;
+  target?: number;
+  /** Post-debit wallet (only present on matched). */
+  wallet?: { coins: number; gems: number };
+}
+
+/**
+ * Polls the PvP matchmaker for the given tier. The RPC enqueues the
+ * caller (idempotent), tries to find a partner within +/- 200 ELO,
+ * and on a successful pair atomically debits both entry fees +
+ * creates the matches row. Until that happens the caller stays in the
+ * queue and the RPC returns status='queued' — call again after a short
+ * delay. Raises: not_authenticated, room_not_found, room_disabled,
+ * pvp_not_allowed_in_tier, insufficient_coins.
+ */
+export async function findMatchInTier(args: {
+  tableConfigId: string;
+  ratingBand?: number;
+}): Promise<FindMatchResult> {
+  const { data, error } = await supabase.rpc('find_match_in_tier', {
+    p_table_config_id: args.tableConfigId,
+    p_rating_band: args.ratingBand ?? 200,
+  });
+  if (error) throw error;
+  const payload = data as {
+    status: 'matched' | 'queued';
+    match_id?: string;
+    opponent_id?: string;
+    opponent_rating?: number;
+    rating: number;
+    turn_seconds?: number;
+    target?: number;
+    wallet?: { coins: number; gems: number };
+  };
+  return {
+    status: payload.status,
+    matchId: payload.match_id,
+    opponentId: payload.opponent_id,
+    opponentRating: payload.opponent_rating,
+    rating: payload.rating,
+    turnSeconds: payload.turn_seconds,
+    target: payload.target,
+    wallet: payload.wallet,
+  };
+}
+
+/**
+ * Cancel matchmaking — removes the caller from the queue. Idempotent;
+ * a no-op if they aren't queued.
+ */
+export async function cancelMatchmakingRpc(): Promise<void> {
+  await supabase.rpc('cancel_matchmaking');
+}
+
+/**
+ * AI fallback path called after the matchmaking timeout. Picks AI
+ * strength from caller's pvp_rating with cfg.ai_level as the floor,
+ * debits the entry fee, creates the match. Same payload shape as the
+ * old enter_room result.
  */
 export interface EnterRoomResult {
   matchId: string;
@@ -175,22 +244,10 @@ export interface EnterRoomResult {
   wallet: { coins: number; gems: number };
 }
 
-/**
- * Calls the server-side enter_room RPC. The RPC is what makes the
- * "entry fee deducted on join" semantics atomic: it validates the
- * room, applies the win-streak DDA escalator, debits coins, and
- * creates the match in a single transaction. The AI level is no
- * longer a client choice — the server reads it from
- * table_configs.ai_level and may escalate it for a streaking player.
- * On error it raises one of: not_authenticated, room_not_found,
- * room_disabled, ai_not_allowed, insufficient_coins. We surface the
- * raw error.message so the caller (the DifficultyModal) can
- * pattern-match those codes for friendly toasts.
- */
-export async function enterRoom(args: {
+export async function enterRoomAiFallback(args: {
   tableConfigId: string;
 }): Promise<EnterRoomResult> {
-  const { data, error } = await supabase.rpc('enter_room', {
+  const { data, error } = await supabase.rpc('enter_room_ai_fallback', {
     p_table_config_id: args.tableConfigId,
   });
   if (error) throw error;
@@ -251,9 +308,14 @@ export async function finishMatch(args: FinishMatchArgs): Promise<void> {
 export interface FinishMatchRewardResult {
   matchId: string;
   ownerWon: boolean;
+  /** True when the match had both human owner and opponent. */
+  isPvp: boolean;
   xpAwarded: number;
   xpMultiplier: number;
   coinsAwarded: number;
+  /** Post-update PvP ELO ratings for both sides. Null for AI rows. */
+  ownerRating: number | null;
+  opponentRating: number | null;
   wallet: { coins: number; gems: number };
   profile: { xp: number; level: number };
 }
@@ -283,30 +345,43 @@ export async function abandonStaleMatches(): Promise<number> {
   return payload?.abandoned_count ?? 0;
 }
 
-export async function finishMatchRpc(args: FinishMatchArgs): Promise<FinishMatchRewardResult> {
+export async function finishMatchRpc(args: FinishMatchArgs & {
+  /** Set true when finalising a forfeit-on-timeout for the owner.
+   *  Zero payout for them; ELO still moves. */
+  ownerAbandoned?: boolean;
+  opponentAbandoned?: boolean;
+}): Promise<FinishMatchRewardResult> {
   const { data, error } = await supabase.rpc('finish_match', {
     p_match_id: args.matchId,
     p_white_score: args.whiteScore,
     p_black_score: args.blackScore,
     p_winner: args.winner,
     p_crawford_game_number: args.crawfordGameNumber,
+    p_owner_abandoned: args.ownerAbandoned ?? false,
+    p_opponent_abandoned: args.opponentAbandoned ?? false,
   });
   if (error) throw error;
   const payload = data as {
     match_id: string;
     owner_won: boolean;
+    is_pvp: boolean;
     xp_awarded: number;
     xp_multiplier: number;
     coins_awarded: number;
+    owner_rating: number | null;
+    opponent_rating: number | null;
     wallet: { coins: number; gems: number };
     profile: { xp: number; level: number };
   };
   return {
     matchId: payload.match_id,
     ownerWon: payload.owner_won,
+    isPvp: payload.is_pvp,
     xpAwarded: payload.xp_awarded,
     xpMultiplier: payload.xp_multiplier,
     coinsAwarded: payload.coins_awarded,
+    ownerRating: payload.owner_rating,
+    opponentRating: payload.opponent_rating,
     wallet: payload.wallet,
     profile: payload.profile,
   };
