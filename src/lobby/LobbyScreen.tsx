@@ -6,7 +6,6 @@ import { useNavigationOverlay } from '../lib/navigationOverlay';
 import {
   abandonStaleMatches,
   cancelMatchmakingRpc,
-  createOnlineMatch,
   enterRoomAiFallback,
   findMatchInTier,
 } from '../lib/persistence';
@@ -89,8 +88,12 @@ export function LobbyScreen() {
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
-  const [creatingOnline, setCreatingOnline] = useState(false);
-  const [onlineError, setOnlineError] = useState<string | null>(null);
+  // startOnline / creatingOnline / onlineError were removed alongside
+  // the "Play Online" side card. Every match now flows through
+  // handleDifficultySelect (PvP-first → AI fallback), so the legacy
+  // public-lobby online-create path is no longer reachable from this
+  // surface. createOnlineMatch is still exported from persistence for
+  // invite-code flows and the back-office.
   const [lockedTooltipFor, setLockedTooltipFor] = useState<LobbyBoard | null>(null);
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
   // Difficulty modal state. `enteringRoomId` is the table_config_id
@@ -491,26 +494,6 @@ export function LobbyScreen() {
     cancelMatchmakingRef.current = true;
   };
 
-  const startOnline = async () => {
-    if (!isSupabaseConfigured) {
-      showOverlay();
-      navigate('/lobby');
-      return;
-    }
-    if (!user || creatingOnline) return;
-    setCreatingOnline(true);
-    setOnlineError(null);
-    try {
-      const { matchId } = await createOnlineMatch({ ownerId: user.id, target: 1 });
-      showOverlay();
-      navigate(`/play/${matchId}?board=${effectiveSelectedBoardId}`);
-    } catch (err) {
-      setOnlineError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setCreatingOnline(false);
-    }
-  };
-
   // ---- Asset preload gate ----
   // Don't paint the lobby until the boards data is resolved AND every
   // image (statics + per-board previews/backgrounds) has loaded. Latch
@@ -633,11 +616,6 @@ export function LobbyScreen() {
               iconSrc="/lobby/icons/trophy.webp"
               onClick={() => startMatch('medium')}
             />
-            {onlineError ? (
-              <div className="rounded-md border border-rose-300/30 bg-rose-950/55 px-3 py-2 text-xs text-rose-100 sm:col-span-2 xl:col-span-1">
-                {onlineError}
-              </div>
-            ) : null}
           </aside>
         </div>
 
