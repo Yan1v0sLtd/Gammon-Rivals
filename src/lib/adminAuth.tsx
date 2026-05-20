@@ -68,12 +68,21 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAdminSupabaseConfigured) return;
     let cancelled = false;
+    // Remember the last userId we fetched profile/role for so token
+    // refreshes (which fire onAuthStateChange with a fresh session
+    // object but the same user) don't trigger a noisy refetch.
+    // Without this guard, every TOKEN_REFRESHED event re-ran
+    // fetchProfileAndRole, causing extra renders downstream that
+    // could chain into Admin.tsx flipping back to its access-check
+    // placeholder.
+    let lastFetchedUserId: string | null = null;
     (async () => {
       const { data } = await adminSupabase.auth.getSession();
       if (cancelled) return;
       setSession(data.session);
       if (data.session?.user) {
         await fetchProfileAndRole(data.session.user.id);
+        lastFetchedUserId = data.session.user.id;
       }
       if (cancelled) return;
       setLoading(false);
@@ -81,9 +90,12 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = adminSupabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (s?.user) {
-        void fetchProfileAndRole(s.user.id);
-      } else {
+      const nextUserId = s?.user?.id ?? null;
+      if (nextUserId && nextUserId !== lastFetchedUserId) {
+        lastFetchedUserId = nextUserId;
+        void fetchProfileAndRole(nextUserId);
+      } else if (!nextUserId) {
+        lastFetchedUserId = null;
         setProfile(null);
         setRole(null);
       }

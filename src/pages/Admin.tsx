@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOnlineUsersWatcher } from '../lib/useOnlineUsersWatcher';
 import { Link } from 'react-router-dom';
 // The BO uses its own independent Supabase session (adminSupabase) so
@@ -796,6 +796,16 @@ export default function Admin() {
     if (successMessage) setBoardMessage(successMessage);
   }
 
+  // Once we've verified the signed-in admin's access once, we don't
+  // want to blank the page back to a "Checking access" placeholder on
+  // every transient re-run of this effect — token refreshes, tab
+  // visibility resumes, etc. The ref records the userId we last
+  // verified for. If the effect re-fires with the same userId, we
+  // silently skip the work and keep the existing 'allowed' UI on
+  // screen. Only a different user (sign-out, switch account) or the
+  // first verification ever shows the placeholder.
+  const verifiedAccessForUserRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!isSupabaseConfigured) {
       queueMicrotask(() => {
@@ -806,12 +816,20 @@ export default function Admin() {
     }
     if (isLoading) return;
     if (!user) {
+      verifiedAccessForUserRef.current = null;
       queueMicrotask(() => {
         setAccessState('denied');
         setRole(null);
       });
       return;
     }
+
+    // Already verified for this same user — skip the noisy re-check.
+    // The effect can re-fire on rare hook-dep churn even with the
+    // user?.id dep guard (e.g. when React StrictMode double-invokes
+    // in dev, or when adminAuth's value useMemo recomputes around a
+    // token refresh). Keep the BO content visible.
+    if (verifiedAccessForUserRef.current === user.id) return;
 
     let cancelled = false;
     (async () => {
@@ -861,6 +879,7 @@ export default function Admin() {
         return;
       }
 
+      verifiedAccessForUserRef.current = user.id;
       setRole(adminRole);
       setAccessState('allowed');
     })();
@@ -868,12 +887,6 @@ export default function Admin() {
     return () => {
       cancelled = true;
     };
-    // Dep on user?.id rather than `user` so onAuthStateChange firing
-    // with a fresh-but-equivalent user object (token refresh, tab
-    // visibility resume) doesn't re-run the whole access check + flip
-    // accessState back to 'checking' — which would blank out the BO
-    // until the RPC settles. The check only needs to re-run when the
-    // signed-in admin actually changes.
   }, [isLoading, user?.id]);
 
   const loadSelectedUser = useCallback(
