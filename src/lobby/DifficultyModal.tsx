@@ -22,19 +22,23 @@ interface DifficultyModalProps {
   readonly open: boolean;
   readonly onClose: () => void;
   /**
-   * Called when the user picks a tier. The parent is responsible for
-   * calling the enter_room RPC and navigating — keeping that out of the
-   * modal lets the parent show a route-level loading overlay during the
-   * RPC. The modal's only job is presentation + selection.
+   * Called when the user picks a tier they can afford. The parent is
+   * responsible for the enter_room RPC + navigation — keeping that out
+   * of the modal lets the parent show a route-level loading overlay
+   * during the RPC. The modal's only job is presentation + selection.
    */
   readonly onSelect: (selection: DifficultySelection) => void;
-  /** Wallet coins, shown on each card so the player can see whether
-   *  they can afford the entry fee before tapping SELECT. */
+  /**
+   * Called when the user taps "Get Coins" on a tier they can't afford.
+   * The parent closes the modal + navigates to the shop. Centralising
+   * the navigation here means the modal doesn't need router context.
+   */
+  readonly onGetCoins: () => void;
+  /** Wallet coins, drives the Play vs Get-Coins button choice per card. */
   readonly walletCoins: number;
-  /** Used to dim cards the player isn't high enough level for. */
-  readonly playerLevel: number;
   /** While the parent's enter_room call is in flight, busyId is the
-   *  table_config_id being purchased so we can disable just that card. */
+   *  table_config_id being purchased so we can show "Entering..." on
+   *  just that card. */
   readonly busyId: string | null;
 }
 
@@ -159,24 +163,21 @@ function ClockBadge() {
 interface CardProps {
   readonly row: TableConfigRow;
   readonly affordable: boolean;
-  readonly levelMet: boolean;
   readonly busy: boolean;
-  readonly onSelect: () => void;
+  readonly onPlay: () => void;
+  readonly onGetCoins: () => void;
 }
 
-function DifficultyCard({ row, affordable, levelMet, busy, onSelect }: CardProps) {
+function DifficultyCard({ row, affordable, busy, onPlay, onGetCoins }: CardProps) {
   const palette = accent(row.accent_color);
-  const disabledReason = !levelMet
-    ? `Reach level ${row.required_level} to unlock`
-    : !affordable
-      ? 'Not enough coins'
-      : null;
-  const disabled = disabledReason !== null || busy;
+  // Tiers are never level-gated in the modal — the only thing that
+  // changes is the CTA. Affordable -> "Play" (enter the room).
+  // Unaffordable -> "Get Coins" (route to shop). Both buttons share
+  // the same emerald gradient per the product call ("all buttons
+  // green") so the row reads as a consistent action surface.
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border-2 ${palette.frame} bg-gradient-to-b from-[#231a16]/95 to-[#0d0805]/95 p-3 ${
-        disabled ? 'opacity-60 saturate-50' : palette.glow
-      }`}
+      className={`relative flex flex-col rounded-2xl border-2 ${palette.frame} bg-gradient-to-b from-[#231a16]/95 to-[#0d0805]/95 p-3 ${palette.glow}`}
     >
       <h3
         className={`text-center font-display text-base font-black uppercase tracking-[0.18em] ${palette.headerText}`}
@@ -190,7 +191,7 @@ function DifficultyCard({ row, affordable, levelMet, busy, onSelect }: CardProps
           <XpHexBadge accentSlug={row.accent_color} />
           <div className="min-w-0 flex-1">
             <div className="text-[0.55rem] font-bold uppercase tracking-wider text-amber-900/70">XP Boost</div>
-            <div className={`font-display text-base font-black tabular-nums ${palette.chipText}`}>
+            <div className="font-display text-base font-black tabular-nums text-amber-900">
               {row.xp_multiplier_pct}%
             </div>
           </div>
@@ -210,7 +211,7 @@ function DifficultyCard({ row, affordable, levelMet, busy, onSelect }: CardProps
           <ClockBadge />
           <div className="min-w-0 flex-1">
             <div className="text-[0.55rem] font-bold uppercase tracking-wider text-amber-900/70">Time to Move</div>
-            <div className={`font-display text-base font-black tabular-nums ${palette.chipText}`}>
+            <div className="font-display text-base font-black tabular-nums text-amber-900">
               {formatSeconds(row.turn_seconds)}
             </div>
           </div>
@@ -219,12 +220,11 @@ function DifficultyCard({ row, affordable, levelMet, busy, onSelect }: CardProps
 
       <button
         type="button"
-        onClick={onSelect}
-        disabled={disabled}
-        title={disabledReason ?? undefined}
-        className={`mt-3 rounded-md border bg-gradient-to-b ${palette.button} py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:translate-y-0`}
+        onClick={affordable ? onPlay : onGetCoins}
+        disabled={busy}
+        className="mt-3 rounded-md border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
       >
-        {busy ? 'Entering...' : 'Select'}
+        {busy ? 'Entering...' : affordable ? 'Play' : 'Get Coins'}
       </button>
     </div>
   );
@@ -234,8 +234,8 @@ export function DifficultyModal({
   open,
   onClose,
   onSelect,
+  onGetCoins,
   walletCoins,
-  playerLevel,
   busyId,
 }: DifficultyModalProps) {
   const [rows, setRows] = useState<readonly TableConfigRow[]>([]);
@@ -293,10 +293,11 @@ export function DifficultyModal({
         className="relative w-[min(96vw,72rem)] max-h-[92vh] overflow-y-auto rounded-3xl border-2 border-[#c89a47] bg-gradient-to-b from-[#1d1612] via-[#0f0a08] to-[#070403] p-5 shadow-[0_30px_60px_rgba(0,0,0,0.7)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Header. Subtitle was dropped — the card grid speaks for
+          * itself once you see the XP%, fee, and timer rows. */}
         <div className="relative mb-4 flex items-center justify-center">
           <h2 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.22em] text-transparent md:text-4xl">
-            Select Room Difficulty
+            Select a Room
           </h2>
           <button
             type="button"
@@ -310,9 +311,6 @@ export function DifficultyModal({
             </svg>
           </button>
         </div>
-        <p className="-mt-2 mb-4 text-center text-sm font-bold text-amber-200/75">
-          Choose your challenge and enter the arena
-        </p>
 
         {error ? (
           <div className="grid place-items-center py-12 text-amber-200/80">{error}</div>
@@ -329,9 +327,8 @@ export function DifficultyModal({
                 key={row.id}
                 row={row}
                 affordable={walletCoins >= row.entry_fee_coins}
-                levelMet={playerLevel >= row.required_level}
                 busy={busyId === row.id}
-                onSelect={() =>
+                onPlay={() =>
                   onSelect({
                     tableConfigId: row.id,
                     displayName: row.display_name,
@@ -340,20 +337,19 @@ export function DifficultyModal({
                     matchTarget: row.match_target,
                   })
                 }
+                onGetCoins={onGetCoins}
               />
             ))}
           </div>
         )}
 
-        {/* Footer legend */}
-        <div className="mt-5 grid gap-2 rounded-xl border border-amber-300/30 bg-[#1a1208]/70 p-3 text-xs font-bold text-amber-100/80 md:grid-cols-3">
+        {/* Footer legend. The "entry fee deducted on join" item was
+          * dropped — the entry-fee row on each card is already
+          * labelled and self-explanatory. */}
+        <div className="mt-5 grid gap-2 rounded-xl border border-amber-300/30 bg-[#1a1208]/70 p-3 text-xs font-bold text-amber-100/80 md:grid-cols-2">
           <div className="flex items-center gap-2">
             <XpHexBadge accentSlug="purple" />
             <span>Higher difficulty grants more XP for your victories.</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <StarBadge />
-            <span>Entry fee is deducted from your balance when you join the room.</span>
           </div>
           <div className="flex items-center gap-2">
             <ClockBadge />

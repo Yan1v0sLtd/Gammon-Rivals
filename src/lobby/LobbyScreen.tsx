@@ -566,8 +566,16 @@ export function LobbyScreen() {
           setDifficultyError(null);
         }}
         onSelect={handleDifficultySelect}
+        onGetCoins={() => {
+          // Tier card's button when affordable=false. Close the modal
+          // and route to /shop — buying coins is a single intent, no
+          // confirmation step needed.
+          setDifficultyOpen(false);
+          setDifficultyError(null);
+          showOverlay();
+          navigate('/shop');
+        }}
         walletCoins={wallet?.coins ?? 0}
-        playerLevel={profile?.level ?? 1}
         busyId={enteringRoomId}
       />
       {difficultyError && difficultyOpen ? (
