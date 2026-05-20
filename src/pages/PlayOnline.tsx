@@ -8,6 +8,7 @@ import ActionButtons from '../components/ActionButtons';
 import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
+import { useNavigationOverlay } from '../lib/navigationOverlay';
 import { supabase } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
 import { getProfileProgression } from '../lib/progression';
@@ -38,6 +39,13 @@ export default function PlayOnline() {
     isLoading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
+  // The lobby's matchmaking flow calls showOverlay() right before
+  // routing here (so the overlay covers the route swap). PlayOnline
+  // is the destination, so it owns the hide call. We fire it once the
+  // online game's first state load resolves — whether the match was
+  // found or returned an error, the overlay should stop showing
+  // "Loading…" so the user can interact (or see the error).
+  const { hide: hideOverlay } = useNavigationOverlay();
   /**
    * Difficulty rooms set ?turn=<seconds> when they route into here so
    * the inactivity-forfeit threshold scales with the room's per-turn
@@ -125,6 +133,17 @@ export default function PlayOnline() {
   useAutoRollEffect(autoRollOn, game.canRoll && !game.betweenGames, () => {
     void game.rollDice();
   });
+
+  // Dismiss the route-spanning loader once the online game's first
+  // load resolves (match + game state). Without this the lobby's
+  // matchmaking showOverlay() never fades — the player sits on the
+  // "Loading" branding indefinitely after a successful pair-up.
+  // Fires on both the success path (game ready) and the error path
+  // (so the error UI is visible).
+  const overlayReady = !authLoading && (!game.loading || game.error !== null);
+  useEffect(() => {
+    if (overlayReady) hideOverlay();
+  }, [overlayReady, hideOverlay]);
 
   if (authLoading || game.loading) {
     return (
