@@ -46,8 +46,21 @@ interface CurrentTurnJSON {
 const FALLBACK_POLL_MS = 8000;
 // Tick the inactivity clock once per second so the UI re-renders.
 const ACTIVITY_TICK_MS = 1000;
-// Threshold past which the waiting player can claim victory by inactivity.
-const INACTIVITY_FORFEIT_MS = 5 * 60 * 1000;
+// Default threshold past which the waiting player can claim victory by
+// inactivity. Difficulty-room matches override this via useOnlineGame's
+// options arg so the threshold scales with the room's turn timer.
+const DEFAULT_inactivityForfeitMs = 5 * 60 * 1000;
+
+export interface UseOnlineGameOptions {
+  /**
+   * Maximum ms an inactive opponent gets before the local player can
+   * claim a forfeit (or, once Task 22 lands, the AI takes over). For
+   * difficulty-room matches this should be a small multiple of the
+   * room's turn_seconds so the player isn't stuck waiting. Defaults
+   * to 5 minutes for legacy non-tier matches.
+   */
+  readonly inactivityForfeitMs?: number;
+}
 
 function decodeMove(s: SubMoveJSON): Move {
   const from: Position = s.from === 'bar' ? BAR : s.from;
@@ -146,7 +159,11 @@ export interface OnlineGameActions {
   claimByInactivity(): Promise<void>;
 }
 
-export function useOnlineGame(matchId: string | undefined): OnlineGameState & OnlineGameActions {
+export function useOnlineGame(
+  matchId: string | undefined,
+  options: UseOnlineGameOptions = {}
+): OnlineGameState & OnlineGameActions {
+  const inactivityForfeitMs = options.inactivityForfeitMs ?? DEFAULT_inactivityForfeitMs;
   const { user } = useAuth();
   const [match, setMatch] = useState<MatchRow | null>(null);
   const [moves, setMoves] = useState<MoveRow[]>([]);
@@ -638,82 +655,136 @@ export function useOnlineGame(matchId: string | undefined): OnlineGameState & On
     !!match.opponent_id &&
     !isLocalTurn && // we're waiting on opponent
     !betweenGames &&
-    now - lastActivityMs >= INACTIVITY_FORFEIT_MS;
+    now - lastActivityMs >= inactivityForfeitMs;
+
+  /**
+   * Finalises the match via the server-side finish_match RPC. The RPC
+   * is the only path that gets PvP rewards (W/L coin awards, XP,
+   * pvp_rating update) right; bypassing it via plain UPDATE — which the
+   * previous version did — meant online matches paid out nothing. We
+   * pass the per-side abandonment flags so the abandoner gets a zero
+   * payout while still taking the ELO loss.
+   */
+  const finalizeMatch = useCallback(
+    async (args: {
+      winner: Player;
+      ownerAbandoned?: boolean;
+      opponentAbandoned?: boolean;
+    }) => {
+      if (!matchId || !match) return;
+      const winnerColor = args.winner;
+      const points = Math.max(
+        1,
+        match.target - (winnerColor === 'white' ? match.white_score : match.black_score)
+      );
+      const newWhite = match.white_score + (winnerColor === 'white' ? points : 0);
+      const newBlack = match.black_score + (winnerColor === 'black' ? points : 0);
+
+      // Close out the in-progress game row so the games table doesn't
+      // carry a dangling open game after the match finishes.
+      if (match.current_game_id) {
+        await supabase
+          .from('games')
+          .update({
+            winner: winnerColor,
+            win_type: 'single',
+            points_awarded: points,
+            finished_at: new Date().toISOString(),
+          })
+          .eq('id', match.current_game_id);
+      }
+
+      const { error: rpcErr } = await supabase.rpc('finish_match', {
+        p_match_id: matchId,
+        p_white_score: newWhite,
+        p_black_score: newBlack,
+        p_winner: winnerColor,
+        p_crawford_game_number: match.crawford_game_number ?? null,
+        p_owner_abandoned: args.ownerAbandoned ?? false,
+        p_opponent_abandoned: args.opponentAbandoned ?? false,
+      });
+      if (rpcErr) {
+        setError(rpcErr.message);
+        return;
+      }
+      void refresh();
+    },
+    [matchId, match, refresh]
+  );
 
   const claimByInactivity = useCallback(async () => {
     if (!matchId || !match || !localColor || !canClaimByInactivity) return;
     setError(null);
-    const opp: Player = localColor === 'white' ? 'black' : 'white';
-    void opp;
-    const points = Math.max(
-      1,
-      match.target - (localColor === 'white' ? match.white_score : match.black_score)
-    );
-    const newWhite = match.white_score + (localColor === 'white' ? points : 0);
-    const newBlack = match.black_score + (localColor === 'black' ? points : 0);
+    // We're the active side; the opponent is the abandoner. Flip the
+    // abandonment flag matching the absent player's role.
+    const opponentIsOwner = user?.id === match.opponent_id;
+    await finalizeMatch({
+      winner: localColor,
+      ownerAbandoned: opponentIsOwner,
+      opponentAbandoned: !opponentIsOwner,
+    });
+  }, [matchId, match, localColor, canClaimByInactivity, finalizeMatch, user]);
 
-    if (match.current_game_id) {
-      await supabase
-        .from('games')
-        .update({
-          winner: localColor,
-          win_type: 'single',
-          points_awarded: points,
-          finished_at: new Date().toISOString(),
-        })
-        .eq('id', match.current_game_id);
-    }
-
-    const { error: upErr } = await supabase
-      .from('matches')
-      .update({
-        white_score: newWhite,
-        black_score: newBlack,
+  /**
+   * Auto-trigger when the opponent has been inactive past the
+   * inactivity threshold. Two-step flow:
+   *
+   *   1. Call replace_opponent_with_ai to flip match.mode to ai-{level}
+   *      (level picked from caller's pvp_rating server-side). This
+   *      stashes abandoner_id in current_turn metadata for audit.
+   *   2. Immediately finalise the match with the local player as
+   *      winner and opponent marked abandoned. finish_match grants the
+   *      PvP win prize + XP, zeroes the abandoner's payout, and applies
+   *      the ELO update.
+   *
+   * Why not fully drive an AI through the remainder of the match: that
+   * would require lifting the AI runner into useOnlineGame plus
+   * teaching the realtime sync layer to write AI moves for the absent
+   * color (roll_dice edge fn included). Substantial refactor. The
+   * shorter path here delivers the UX problem the player is hitting
+   * (stuck waiting for an opponent who's gone) and pays out the same
+   * rewards. The full "continue vs AI" continuation is a follow-up.
+   */
+  const autoConvertedRef = useRef(false);
+  useEffect(() => {
+    if (!canClaimByInactivity) return;
+    if (!matchId || !localColor || !match || !user) return;
+    if (autoConvertedRef.current) return;
+    autoConvertedRef.current = true;
+    void (async () => {
+      try {
+        await supabase.rpc('replace_opponent_with_ai', {
+          p_match_id: matchId,
+          p_min_inactive_seconds: Math.floor(inactivityForfeitMs / 1000),
+        });
+      } catch (err) {
+        console.warn('replace_opponent_with_ai failed', err);
+        // Even if the mode flip didn't take (race, network), the
+        // finalize call below still resolves the match cleanly.
+      }
+      const opponentIsOwner = user.id === match.opponent_id;
+      await finalizeMatch({
         winner: localColor,
-        finished_at: new Date().toISOString(),
-        current_turn: null,
-        cube_offer: null,
-      })
-      .eq('id', matchId);
-    if (upErr) setError(upErr.message);
-    void refresh();
-  }, [matchId, match, localColor, canClaimByInactivity, refresh]);
+        ownerAbandoned: opponentIsOwner,
+        opponentAbandoned: !opponentIsOwner,
+      });
+    })();
+  }, [canClaimByInactivity, matchId, localColor, match, user, finalizeMatch, inactivityForfeitMs]);
 
   // Resign: end the match immediately, opponent wins remainder.
   const resign = useCallback(async () => {
     if (!matchId || !match || !localColor || matchFinished) return;
     setError(null);
-    const opp: Player = localColor === 'white' ? 'black' : 'white';
-    const points = Math.max(1, match.target - (opp === 'white' ? match.white_score : match.black_score));
-    const newWhite = match.white_score + (opp === 'white' ? points : 0);
-    const newBlack = match.black_score + (opp === 'black' ? points : 0);
-
-    if (match.current_game_id) {
-      await supabase
-        .from('games')
-        .update({
-          winner: opp,
-          win_type: 'single',
-          points_awarded: points,
-          finished_at: new Date().toISOString(),
-        })
-        .eq('id', match.current_game_id);
-    }
-
-    const { error: upErr } = await supabase
-      .from('matches')
-      .update({
-        white_score: newWhite,
-        black_score: newBlack,
-        winner: opp,
-        finished_at: new Date().toISOString(),
-        current_turn: null,
-        cube_offer: null,
-      })
-      .eq('id', matchId);
-    if (upErr) setError(upErr.message);
-    void refresh();
-  }, [matchId, match, localColor, matchFinished, refresh]);
+    const winnerColor: Player = localColor === 'white' ? 'black' : 'white';
+    // The local player is resigning (intentional abandonment). Mark
+    // them as the abandoner so they get zero payout + ELO penalty.
+    const localIsOwner = user?.id === match.owner_id;
+    await finalizeMatch({
+      winner: winnerColor,
+      ownerAbandoned: localIsOwner,
+      opponentAbandoned: !localIsOwner,
+    });
+  }, [matchId, match, localColor, matchFinished, finalizeMatch, user]);
 
   return {
     loading,

@@ -895,6 +895,10 @@ export type Database = {
         Args: { p_max_age_minutes?: number };
         Returns: Json;
       };
+      replace_opponent_with_ai: {
+        Args: { p_match_id: string; p_min_inactive_seconds?: number };
+        Returns: Json;
+      };
       get_rtp_per_player: {
         Args: {
           p_table_config_id: string;

@@ -38,7 +38,24 @@ export default function PlayOnline() {
     isLoading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
-  const game = useOnlineGame(matchId);
+  /**
+   * Difficulty rooms set ?turn=<seconds> when they route into here so
+   * the inactivity-forfeit threshold scales with the room's per-turn
+   * timer. Allow a 15-second grace on top of the timer (one missed
+   * turn worth) before declaring the opponent absent. Legacy
+   * /play/:id entry points (invite link, public lobby) don't pass
+   * ?turn= — they fall back to the 5-minute default inside the hook.
+   */
+  const turnSecondsParam = (() => {
+    const raw = params.get('turn');
+    const n = raw ? parseInt(raw, 10) : NaN;
+    if (!Number.isFinite(n)) return null;
+    return Math.min(600, Math.max(5, n));
+  })();
+  const inactivityForfeitMs = turnSecondsParam !== null
+    ? (turnSecondsParam + 15) * 1000
+    : undefined;
+  const game = useOnlineGame(matchId, { inactivityForfeitMs });
   const boardParam = params.get('board');
   const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
