@@ -394,7 +394,16 @@ export function LobbyScreen() {
       if (msg.includes('pvp_not_allowed_in_tier')) {
         return 'PvP isn’t enabled in this room.';
       }
-      return 'Could not enter the room. Try again.';
+      if (msg.includes('ai_not_allowed')) return 'AI play is disabled in this room.';
+      if (msg.includes('room_not_found')) return 'Room not found — try refreshing.';
+      if (msg.includes('not_authenticated')) return 'Sign in to enter a room.';
+      if (msg.includes('profile_missing')) {
+        return 'Profile not ready yet — try again in a moment.';
+      }
+      // Final fallback: surface the raw error so we can debug
+      // production issues without a re-deploy.
+      console.error('[LobbyScreen] enter-room failure', err);
+      return msg ? `Could not enter the room: ${msg}` : 'Could not enter the room. Try again.';
     };
 
     const routeIntoMatch = (
@@ -679,9 +688,13 @@ export function LobbyScreen() {
         }}
         onSelect={handleDifficultySelect}
         onGetCoins={() => {
+          // No showOverlay() here — /shop renders instantly and doesn't
+          // hide the route overlay on mount, which would trap the user
+          // on a permanent loading screen. The lobby's own background
+          // is still on-screen until the route swap so the transition
+          // doesn't look ungated.
           setDifficultyOpen(false);
           setDifficultyError(null);
-          showOverlay();
           navigate('/shop');
         }}
         walletCoins={wallet?.coins ?? 0}
