@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
+import { extractErrorMessage } from '../lib/errors';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
 import {
   abandonStaleMatches,
@@ -411,7 +412,11 @@ export function LobbyScreen() {
     });
 
     const friendlyError = (err: unknown): string => {
-      const msg = err instanceof Error ? err.message : String(err);
+      // extractErrorMessage handles both JS Error instances AND the
+      // plain-object PostgrestError shape Supabase RPCs reject with —
+      // the previous `String(err)` fallback rendered the latter as
+      // the useless literal "[object Object]".
+      const msg = extractErrorMessage(err);
       if (msg.includes('insufficient_coins')) return 'Not enough coins for this room.';
       if (msg.includes('level_too_low')) {
         return 'This room is locked at your current level.';
