@@ -163,9 +163,21 @@ export function LobbyTopBar({
                 <span
                   className="lobby-profile-progress-fill"
                   style={{ width: `${progression.progressPercent}%` }}
-                />
+                >
+                  {/* Bubble layer — purely decorative, lives ON the
+                      filled portion only because it's inside .fill.
+                      CSS handles the animation loop. */}
+                  <span className="lobby-profile-progress-bubbles" aria-hidden="true" />
+                </span>
+                {/* Percent text floats centred over the whole bar
+                    (not the fill) so it reads the same regardless
+                    of how full the bar is. White with a dark
+                    stroke + drop-shadow for legibility on either
+                    side of the fill edge. */}
+                <span className="lobby-profile-progress-label">
+                  {progression.progressLabel}
+                </span>
               </span>
-              <span className="lobby-profile-progress-text">{progression.progressLabel}</span>
             </div>
           </Link>
           {/* XP-boost chip. Renders null when no boost is active so it

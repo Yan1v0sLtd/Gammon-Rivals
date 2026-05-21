@@ -54,15 +54,36 @@ html, body, #root {
   bottom: -0.08rem;
   display: grid;
   width: clamp(2.1rem, 3.25vw, 2.7rem);
-  height: clamp(2.55rem, 3.9vw, 3.3rem);
+  /* Pointy-top hexagon mathematically — height = width * (2 / sqrt(3))
+     ≈ 1.155 — but we use the flat-top variant (rotated 30°), so the
+     ratio inverts: height = width * 0.866. Match the XP badge in the
+     daily bonus modal (flat top + bottom, pointy sides). */
+  height: clamp(1.82rem, 2.81vw, 2.34rem);
   place-items: center;
-  clip-path: polygon(50% 0, 94% 18%, 86% 78%, 50% 100%, 14% 78%, 6% 18%);
-  background:
-    linear-gradient(180deg, rgba(255, 246, 173, 0.95), rgba(223, 167, 45, 0.95) 26%, #131936 27%, #14163b 100%);
-  color: #fff6c7;
+  /* Flat-top hexagon. Outer rim is the element's background; the
+     inner core is painted via the ::before pseudo. */
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(180deg, #fcd34d 0%, #b45309 100%);
+  color: white;
   font: 900 clamp(1rem, 1.7vw, 1.32rem) / 1 "Segoe UI", sans-serif;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
-  box-shadow: 0 0.25rem 0.7rem rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.55),
+    0 0 0.32rem rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0.25rem 0.7rem rgba(0, 0, 0, 0.55);
+}
+
+.lobby-profile-level-shield::before {
+  content: '';
+  position: absolute;
+  inset: 11%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(180deg, #a855f7 0%, #581c87 100%);
+  z-index: 0;
+}
+
+.lobby-profile-level-shield > * {
+  position: relative;
+  z-index: 1;
 }
 
 .lobby-profile-copy {
@@ -114,9 +135,10 @@ html, body, #root {
 }
 
 .lobby-profile-progress {
+  position: relative;
   display: block;
   width: clamp(6.4rem, 13vw, 11rem);
-  height: 1rem;
+  height: 1.35rem;
   overflow: hidden;
   border: 2px solid rgba(3, 9, 20, 0.72);
   border-radius: 9999px;
@@ -127,21 +149,107 @@ html, body, #root {
 }
 
 .lobby-profile-progress-fill {
+  position: relative;
   display: block;
   height: 100%;
+  overflow: hidden;
   border-radius: inherit;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.62), transparent 36%),
-    linear-gradient(90deg, #ff9d1f, #ffe166);
-  box-shadow: 0 0 0.75rem rgba(255, 198, 45, 0.85);
+    /* A subtle horizontal sweep that rides on top of the bubble layer
+       to keep the bar reading as a single liquid surface. */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 36%),
+    linear-gradient(90deg, #ff5d1f 0%, #ff9d1f 35%, #ffd040 70%, #ffe166 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 200, 0.45),
+    0 0 0.85rem rgba(255, 165, 45, 0.85);
 }
 
-.lobby-profile-progress-text {
-  min-width: 2.7rem;
-  color: white;
-  font: 900 0.9rem / 1 "Segoe UI", sans-serif;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.54);
+/* Lava bubbles. A grid of radial-gradients (the "bubbles") drifts
+   upward + slightly horizontally over a long loop. We layer two
+   different bubble patterns at different speeds so the motion never
+   reads as a single repeating tile. Both are clipped to the fill's
+   width (because they live INSIDE .progress-fill), so the effect
+   only paints on the filled portion of the bar. */
+.lobby-profile-progress-bubbles {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.92;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(circle at 12% 80%, rgba(255, 255, 255, 0.7) 0 14%, transparent 16%),
+    radial-gradient(circle at 38% 65%, rgba(255, 255, 255, 0.55) 0 11%, transparent 13%),
+    radial-gradient(circle at 62% 90%, rgba(255, 245, 200, 0.6) 0 9%, transparent 11%),
+    radial-gradient(circle at 78% 70%, rgba(255, 255, 255, 0.5) 0 13%, transparent 15%),
+    radial-gradient(circle at 88% 95%, rgba(255, 245, 200, 0.7) 0 10%, transparent 12%);
+  background-size:
+    220% 220%,
+    180% 180%,
+    260% 260%,
+    160% 160%,
+    200% 200%;
+  background-repeat: repeat;
+  animation: lobby-progress-bubbles 4.2s linear infinite;
 }
+
+.lobby-profile-progress-bubbles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* A second, faster layer using warmer ember dots. The two layers
+     together hit the "lava simmer" feel: one slow, big, milky; one
+     fast, smaller, golden. */
+  background-image:
+    radial-gradient(circle at 22% 88%, rgba(255, 220, 120, 0.85) 0 7%, transparent 9%),
+    radial-gradient(circle at 52% 75%, rgba(255, 200, 80, 0.7) 0 6%, transparent 8%),
+    radial-gradient(circle at 72% 92%, rgba(255, 235, 150, 0.9) 0 7%, transparent 9%),
+    radial-gradient(circle at 92% 78%, rgba(255, 205, 90, 0.8) 0 6%, transparent 8%);
+  background-size:
+    140% 140%,
+    160% 160%,
+    150% 150%,
+    180% 180%;
+  background-repeat: repeat;
+  animation: lobby-progress-bubbles-fast 2.4s linear infinite;
+}
+
+@keyframes lobby-progress-bubbles {
+  0% { background-position: 0% 100%, 50% 100%, 25% 100%, 75% 100%, 10% 100%; }
+  100% { background-position: 0% 0%, 50% 0%, 25% 0%, 75% 0%, 10% 0%; }
+}
+
+@keyframes lobby-progress-bubbles-fast {
+  0% { background-position: 0% 100%, 25% 100%, 50% 100%, 75% 100%; }
+  100% { background-position: 0% 0%, 25% 0%, 50% 0%, 75% 0%; }
+}
+
+.lobby-profile-progress-label {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: white;
+  font: 900 0.72rem / 1 "Segoe UI", sans-serif;
+  /* Black stroke (4-direction shadow trick) + soft drop-shadow so
+     the percentage reads on the dark empty portion AND the bright
+     lava portion of the bar without needing to know the fill
+     percentage. */
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.8),
+    -1px 0 0 rgba(0, 0, 0, 0.85),
+    1px 0 0 rgba(0, 0, 0, 0.85),
+    0 -1px 0 rgba(0, 0, 0, 0.85),
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.02em;
+  z-index: 2;
+}
+
+/* Legacy progress-text class still referenced by responsive
+   overrides further down; kept as a no-op safety so we don't break
+   anything that doesn't get re-styled. */
+.lobby-profile-progress-text { display: none; }
 
 .lobby-background-layer {
   pointer-events: none;
@@ -384,8 +492,9 @@ html, body, #root {
   }
 
   .lobby-profile-level-shield {
+    /* Flat-top hexagon — height = width * 0.866. */
     width: 1.34rem;
-    height: 1.62rem;
+    height: 1.16rem;
     font-size: 0.64rem;
   }
 
@@ -415,11 +524,18 @@ html, body, #root {
 
   .lobby-profile-progress {
     width: 4.7rem;
-    height: 0.54rem;
+    height: 0.78rem;
     border-width: 1px;
   }
 
   .lobby-profile-progress-text {
+    display: none;
+  }
+
+  /* On the smallest compact breakpoint the bar is only ~0.78rem
+     tall — the in-bar percentage label would be unreadable, so
+     hide it. The bar's lava animation still plays. */
+  .lobby-profile-progress-label {
     display: none;
   }
 
@@ -830,10 +946,13 @@ html, body, #root {
   }
 
   .lobby-profile-level-shield {
+    /* Flat-top hexagon — height = width * 0.866. Was width:50,
+       height:60 (a taller shield shape); the hex's natural aspect
+       ratio is shorter than it is wide. */
     right: calc(-13 * var(--lobby-u));
     bottom: calc(-15 * var(--lobby-u));
-    width: calc(50 * var(--lobby-u));
-    height: calc(60 * var(--lobby-u));
+    width: calc(56 * var(--lobby-u));
+    height: calc(48 * var(--lobby-u));
     font-size: calc(24 * var(--lobby-u));
   }
 
@@ -940,19 +1059,17 @@ html, body, #root {
     border-width: calc(3 * var(--lobby-u));
   }
 
-  .lobby-profile-progress-text {
-    /* Shifted left to match the shorter level bar (was anchored to
-       the wider 280 lobby-u bar at left:231 — pulled in to 175 to
-     sit just past the new 160-wide bar's right edge). */
-    position: absolute;
-    left: calc(175 * var(--lobby-u));
-    top: calc(119 * var(--lobby-u));
-    display: block;
-    min-width: calc(48 * var(--lobby-u));
-    color: white;
+  /* In-bar percent label scaled for the lobby-u (large desktop)
+     breakpoint. The progress bar at this breakpoint is 34 lobby-u
+     tall — plenty of room for a 17 lobby-u label. */
+  .lobby-profile-progress-label {
     font-size: calc(17 * var(--lobby-u));
-    text-align: right;
+    letter-spacing: 0;
   }
+
+  /* Legacy class (no longer in markup) — keep the override as a
+     no-op so older mounted DOMs don't show it. */
+  .lobby-profile-progress-text { display: none; }
 
   .lobby-profile-copy > button {
     display: none;
