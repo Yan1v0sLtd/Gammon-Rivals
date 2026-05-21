@@ -409,6 +409,9 @@ export function LobbyScreen() {
     const friendlyError = (err: unknown): string => {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('insufficient_coins')) return 'Not enough coins for this room.';
+      if (msg.includes('level_too_low')) {
+        return 'This room is locked at your current level.';
+      }
       if (msg.includes('room_disabled')) return 'This room is temporarily unavailable.';
       if (msg.includes('pvp_not_allowed_in_tier')) {
         return 'PvP isn’t enabled in this room.';
@@ -696,6 +699,7 @@ export function LobbyScreen() {
           navigate('/shop');
         }}
         walletCoins={wallet?.coins ?? 0}
+        playerLevel={progression.level}
         busyId={enteringRoomId}
         matchmaking={matchmaking ?? undefined}
         onCancelMatchmaking={handleCancelMatchmaking}

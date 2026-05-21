@@ -49,6 +49,11 @@ interface DifficultyModalProps {
   readonly onGetCoins: () => void;
   /** Wallet coins, drives the Play vs Get-Coins button choice per card. */
   readonly walletCoins: number;
+  /** Player progression level. Tiers with `required_level` above this
+   *  render a gray "Unlocks at Level N" button instead of Play /
+   *  Get Coins. The server enforces the same gate; this is the UX
+   *  surface. */
+  readonly playerLevel: number;
   /** While the parent's matchmaking call is in flight, busyId is the
    *  table_config_id being processed so we can show "Searching…" on
    *  just that card. */
@@ -182,18 +187,20 @@ function ClockBadge() {
 interface CardProps {
   readonly row: TableConfigRow;
   readonly affordable: boolean;
+  readonly levelLocked: boolean;
   readonly busy: boolean;
   readonly onPlay: () => void;
   readonly onGetCoins: () => void;
 }
 
-function DifficultyCard({ row, affordable, busy, onPlay, onGetCoins }: CardProps) {
+function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins }: CardProps) {
   const palette = accent(row.accent_color);
-  // Tiers are never level-gated in the modal — the only thing that
-  // changes is the CTA. Affordable -> "Play" (enter the room).
-  // Unaffordable -> "Get Coins" (route to shop). Both buttons share
-  // the same emerald gradient per the product call ("all buttons
-  // green") so the row reads as a consistent action surface.
+  // Three CTA states, in priority order:
+  //   1. Level-gated  → gray "Unlocks at Level N" (disabled). Wins
+  //      over the coins check so a level-1 player sees the level
+  //      message, not "Get Coins". Server enforces the same order.
+  //   2. Affordable   → green "Play".
+  //   3. Unaffordable → orange "Get Coins" (route to shop).
   return (
     <div
       className={`relative flex flex-col rounded-2xl border-2 ${palette.frame} bg-gradient-to-b from-[#231a16]/95 to-[#0d0805]/95 p-3 ${palette.glow}`}
@@ -239,21 +246,30 @@ function DifficultyCard({ row, affordable, busy, onPlay, onGetCoins }: CardProps
 
       <button
         type="button"
-        onClick={affordable ? onPlay : onGetCoins}
-        disabled={busy}
+        onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
+        disabled={busy || levelLocked}
         className={
-          'mt-3 rounded-md py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0 ' +
-          (affordable
-            ? 'border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700'
-            : // "Get Coins" gets an orange palette so it reads as a
-              // separate-from-Play CTA — a nudge toward the shop, not
-              // a normal positive action. Same affordances (gradient,
-              // border, hover) so the visual weight matches the
-              // affordable variant.
-              'border border-amber-900/60 bg-gradient-to-b from-amber-400 to-orange-600')
+          'mt-3 rounded-md py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 ' +
+          (levelLocked
+            ? // Locked tier: gray gradient, no hover, cursor-not-
+              // allowed. The disabled attribute also blocks click,
+              // but the styling makes the state immediately legible.
+              'border border-slate-700/70 bg-gradient-to-b from-slate-500 to-slate-700 cursor-not-allowed opacity-90'
+            : affordable
+              ? 'border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 hover:brightness-110 disabled:cursor-wait disabled:opacity-60'
+              : // "Get Coins" gets an orange palette so it reads as a
+                // separate-from-Play CTA — a nudge toward the shop, not
+                // a normal positive action.
+                'border border-amber-900/60 bg-gradient-to-b from-amber-400 to-orange-600 hover:brightness-110 disabled:cursor-wait disabled:opacity-60')
         }
       >
-        {busy ? 'Searching…' : affordable ? 'Play' : 'Get Coins'}
+        {levelLocked
+          ? `Unlocks at Lv ${row.required_level}`
+          : busy
+            ? 'Searching…'
+            : affordable
+              ? 'Play'
+              : 'Get Coins'}
       </button>
     </div>
   );
@@ -265,6 +281,7 @@ export function DifficultyModal({
   onSelect,
   onGetCoins,
   walletCoins,
+  playerLevel,
   busyId,
   matchmaking,
   onCancelMatchmaking,
@@ -358,6 +375,7 @@ export function DifficultyModal({
                 key={row.id}
                 row={row}
                 affordable={walletCoins >= row.entry_fee_coins}
+                levelLocked={playerLevel < row.required_level}
                 busy={busyId === row.id}
                 onPlay={() =>
                   onSelect({
