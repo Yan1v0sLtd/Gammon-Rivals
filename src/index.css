@@ -54,14 +54,19 @@ html, body, #root {
   bottom: -0.08rem;
   display: grid;
   width: clamp(2.1rem, 3.25vw, 2.7rem);
-  /* Pointy-top hexagon mathematically — height = width * (2 / sqrt(3))
-     ≈ 1.155 — but we use the flat-top variant (rotated 30°), so the
-     ratio inverts: height = width * 0.866. Match the XP badge in the
-     daily bonus modal (flat top + bottom, pointy sides). */
-  height: clamp(1.82rem, 2.81vw, 2.34rem);
+  /* Pointy-top hexagon — vertices at 12 and 6 o'clock, flat sides
+     left and right. For a regular pointy-top hex, height = width
+     × (2 / √3) ≈ 1.155 × width. The previous ratio (0.866) was
+     for the FLAT-top variant and squashed the apex points
+     horizontally, making the shield read as stretched.
+
+     Matches the DailyBonus modal's XP hex (which is also
+     pointy-top, drawn directly as an SVG polygon). */
+  height: clamp(2.43rem, 3.76vw, 3.12rem);
   place-items: center;
-  /* Flat-top hexagon. Outer rim is the element's background; the
-     inner core is painted via the ::before pseudo. */
+  /* Pointy-top hexagon clip-path: vertex / flat / vertex / flat
+     going around clockwise from 12 o'clock. The outer rim is the
+     element's background; the inner core is painted via ::before. */
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   background: linear-gradient(180deg, #fcd34d 0%, #b45309 100%);
   color: white;
@@ -622,9 +627,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-profile-level-shield {
-    /* Flat-top hexagon — height = width * 0.866. */
+    /* Pointy-top hexagon — height = width × 1.155. */
     width: 1.34rem;
-    height: 1.16rem;
+    height: 1.55rem;
     font-size: 0.64rem;
   }
 
@@ -1076,13 +1081,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-profile-level-shield {
-    /* Flat-top hexagon — height = width * 0.866. Was width:50,
-       height:60 (a taller shield shape); the hex's natural aspect
-       ratio is shorter than it is wide. */
+    /* Pointy-top hexagon — height = width × 1.155 (the clip-path
+       puts vertices at top + bottom, flat sides left + right, so
+       the natural aspect ratio is taller than wide). */
     right: calc(-13 * var(--lobby-u));
     bottom: calc(-15 * var(--lobby-u));
     width: calc(56 * var(--lobby-u));
-    height: calc(48 * var(--lobby-u));
+    height: calc(65 * var(--lobby-u));
     font-size: calc(24 * var(--lobby-u));
   }
 

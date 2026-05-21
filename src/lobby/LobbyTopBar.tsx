@@ -142,7 +142,12 @@ export function LobbyTopBar({
               />
             </div>
             <div className="lobby-profile-level-shield" data-fly-target="xp">
-              {progression.level}
+              {/* Span wrapper so the .lobby-profile-level-shield > *
+                  rule (z-index: 1) can lift the digit above the
+                  ::before pseudo painting the purple inner core. A
+                  bare text node would lose the stacking battle and
+                  render hidden under the purple fill. */}
+              <span>{progression.level}</span>
             </div>
           </Link>
         </div>
@@ -152,7 +157,10 @@ export function LobbyTopBar({
               <div className="truncate font-display text-[clamp(1.45rem,2.2vw,2.25rem)] font-black leading-none text-white drop-shadow-[0_3px_0_rgba(0,0,0,0.44)]">
                 {name}
               </div>
-              <span className="lobby-profile-edit" aria-hidden="true" />
+              {/* Pen / "edit name" affordance removed — names are
+                  fixed at signup. The .lobby-profile-edit CSS
+                  rules in index.css still exist for now but no
+                  element references them. */}
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className="lobby-rank-badge">
