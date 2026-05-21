@@ -385,14 +385,25 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
 
                   {/* Slot content pivots. Each pivot is a 0×0 anchor at
                    *  the disc centre rotated by `i × SLOT_ANGLE`. The
-                   *  content inside is positioned at a fixed pixel
-                   *  offset (computed off --wheel-d) above the pivot,
-                   *  which puts it on the wedge halfway between centre
-                   *  and rim. The whole pivot rotates with the disc so
-                   *  icons + label naturally follow the spin. */}
+                   *  content stack hangs from a point near the rim and
+                   *  reads radially inward: primary-icon → primary-
+                   *  amount → (combo) secondary-icon → secondary-amount.
+                   *  Stacking radially (not tangentially) keeps every
+                   *  amount upright relative to its wedge, instead of
+                   *  warping the label around the wheel circumference. */}
                   {slots.map((slot, i) => {
                     const isWinning =
                       phase === 'celebrating' && spinResult?.slot_index === i;
+                    const hasSecondary = !!slot.secondary_reward;
+                    // Combo slots squeeze two icon+amount pairs into the
+                    // same wedge; shrink both icon and text so they fit
+                    // without clipping at the divider lines.
+                    const iconSize = hasSecondary
+                      ? 'calc(var(--wheel-d) * 0.08)'
+                      : 'calc(var(--wheel-d) * 0.11)';
+                    const amountSize = hasSecondary
+                      ? 'calc(var(--wheel-d) * 0.045)'
+                      : 'calc(var(--wheel-d) * 0.06)';
                     return (
                       <div
                         key={`slot-${i}`}
@@ -406,53 +417,49 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                         }}
                       >
                         <div
-                          className="absolute flex flex-col items-center justify-start"
+                          className="absolute flex flex-col items-center"
                           style={{
-                            top: 'calc(var(--wheel-d) * -0.38)',
+                            top: 'calc(var(--wheel-d) * -0.43)',
                             left: '50%',
                             transform: 'translateX(-50%)',
                             width: 'calc(var(--wheel-d) * 0.22)',
+                            gap: 'calc(var(--wheel-d) * 0.005)',
                             color: 'white',
                             fontFamily: 'system-ui, sans-serif',
                             fontWeight: 900,
-                            fontSize: 'calc(var(--wheel-d) * 0.045)',
-                            lineHeight: 1.05,
+                            lineHeight: 1,
                             textShadow:
-                              '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 3px rgba(0,0,0,0.6)',
+                              '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 3px rgba(0,0,0,0.65)',
                             filter: isWinning
-                              ? 'drop-shadow(0 0 8px #fef08a)'
+                              ? 'drop-shadow(0 0 10px #fef08a)'
                               : undefined,
                           }}
                         >
-                          {/* Icon row — primary, optionally + secondary
-                           *  side by side. */}
+                          {/* Primary reward — icon then amount, stacked. */}
+                          <div style={{ width: iconSize, height: iconSize }}>
+                            <RewardIcon
+                              type={slot.primary_reward.type}
+                              iconUrl={slot.primary_reward.icon_url}
+                            />
+                          </div>
                           <div
-                            className="flex items-center justify-center gap-1"
                             style={{
-                              width: '100%',
-                              height: 'calc(var(--wheel-d) * 0.13)',
+                              fontSize: amountSize,
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            <div
-                              style={{
-                                width: slot.secondary_reward
-                                  ? 'calc(var(--wheel-d) * 0.085)'
-                                  : 'calc(var(--wheel-d) * 0.115)',
-                                height: slot.secondary_reward
-                                  ? 'calc(var(--wheel-d) * 0.085)'
-                                  : 'calc(var(--wheel-d) * 0.115)',
-                              }}
-                            >
-                              <RewardIcon
-                                type={slot.primary_reward.type}
-                                iconUrl={slot.primary_reward.icon_url}
-                              />
-                            </div>
-                            {slot.secondary_reward ? (
+                            {shortAmount(slot.primary_reward.amount)}
+                          </div>
+
+                          {/* Secondary reward (combo slots) — same pattern,
+                           *  one tier deeper toward the wheel centre. */}
+                          {hasSecondary && slot.secondary_reward ? (
+                            <>
                               <div
                                 style={{
-                                  width: 'calc(var(--wheel-d) * 0.075)',
-                                  height: 'calc(var(--wheel-d) * 0.075)',
+                                  width: iconSize,
+                                  height: iconSize,
+                                  marginTop: 'calc(var(--wheel-d) * 0.005)',
                                 }}
                               >
                                 <RewardIcon
@@ -460,15 +467,16 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                                   iconUrl={slot.secondary_reward.icon_url}
                                 />
                               </div>
-                            ) : null}
-                          </div>
-                          <div
-                            className="mt-0.5 text-center"
-                            style={{ whiteSpace: 'nowrap' }}
-                          >
-                            {slot.label ??
-                              `${shortAmount(slot.primary_reward.amount)}`}
-                          </div>
+                              <div
+                                style={{
+                                  fontSize: amountSize,
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {shortAmount(slot.secondary_reward.amount)}
+                              </div>
+                            </>
+                          ) : null}
                         </div>
                       </div>
                     );
