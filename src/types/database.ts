@@ -899,6 +899,21 @@ export type Database = {
         Args: { p_match_id: string; p_min_inactive_seconds?: number };
         Returns: Json;
       };
+      finish_turn: {
+        Args: {
+          p_match_id: string;
+          p_game_winner?: 'white' | 'black' | null;
+          p_game_win_type?: 'single' | 'gammon' | 'backgammon' | null;
+          p_game_points?: number | null;
+          p_game_dropped_double?: boolean;
+          p_new_white_score?: number | null;
+          p_new_black_score?: number | null;
+          p_match_winner?: 'white' | 'black' | null;
+          p_crawford_game_number?: number | null;
+          p_elapsed_ms?: number | null;
+        };
+        Returns: Json;
+      };
       get_rtp_per_player: {
         Args: {
           p_table_config_id: string;

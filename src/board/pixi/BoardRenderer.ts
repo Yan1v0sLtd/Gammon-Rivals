@@ -1077,6 +1077,7 @@ export class BoardRenderer {
     const {
       width,
       height,
+      railWidth,
       barX,
       barWidth,
       checkerRadius,
