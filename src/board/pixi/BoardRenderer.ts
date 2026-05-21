@@ -10,6 +10,7 @@ import {
 import { BAR, OFF } from '../../engine/types';
 import type { BoardState, Player, Position } from '../../engine/types';
 import { checkerCenter, computeLayout, pointCoords, type Layout } from '../coordinates';
+import { computeHitRects } from '../hit-areas';
 import type { LoadedTheme, ThemeAssetKey, ThemeColors, ThemeLayout } from '../theme';
 
 export interface RenderSelection {
@@ -1074,129 +1075,27 @@ export class BoardRenderer {
   // ---------- Hit areas ----------
 
   private drawHitAreas(state: BoardState) {
-    const {
-      width,
-      height,
-      railWidth,
-      barX,
-      barWidth,
-      checkerRadius,
-      blackOffTrayX,
-      blackOffTrayTop,
-      blackOffTrayHeight,
-      whiteOffTrayX,
-      whiteOffTrayTop,
-      whiteOffTrayHeight,
-    } = this.layout;
     const cb = this.onPointClick;
     if (!cb) return;
     void state;
 
-    // Build per-row hit rects whose horizontal span fills the gap to the
-    // neighboring point's center (capped at the bar / rail edges). On themes
-    // with custom pointCenterXs (e.g. premium-purple) the per-point hit
-    // rectangle would otherwise be narrower than the inter-center spacing,
-    // leaving dead zones between adjacent points where taps fell through.
-    const leftRail = railWidth;
-    const rightRail = width - railWidth;
-    const barLeft = barX;
-    const barRight = barX + barWidth;
-
-    const addRow = (isBottom: boolean) => {
-      const pointWidth = isBottom ? this.layout.bottomPointWidth : this.layout.topPointWidth;
-      const xs: number[] = [];
-      for (let c = 0; c < 12; c++) {
-        const idx = isBottom ? 12 + c : 11 - c;
-        xs.push(pointCoords(this.layout, idx).x);
-      }
-      const y = isBottom ? height / 2 : 0;
-      const h = height / 2;
-      // Make sure each rect is at least as wide as the visible checker so
-      // taps on the green destination ring always register.
-      const minHalf = Math.max(pointWidth, checkerRadius * 2) / 2;
-      for (let c = 0; c < 12; c++) {
-        const idx = isBottom ? 12 + c : 11 - c;
-        const center = xs[c]!;
-        let left: number;
-        let right: number;
-        if (c <= 5) {
-          left = c === 0 ? leftRail : (xs[c - 1]! + center) / 2;
-          right = c === 5 ? barLeft : (center + xs[c + 1]!) / 2;
-        } else {
-          left = c === 6 ? barRight : (xs[c - 1]! + center) / 2;
-          right = c === 11 ? rightRail : (center + xs[c + 1]!) / 2;
-        }
-        left = Math.min(left, center - minHalf);
-        right = Math.max(right, center + minHalf);
-        const hit = new Graphics();
-        hit.rect(left, y, right - left, h).fill({ color: 0xffffff, alpha: 0.001 });
-        hit.eventMode = 'static';
-        hit.cursor = 'pointer';
-        hit.on('pointerdown', () => cb(idx));
-        this.root.addChild(hit);
-      }
-    };
-    addRow(false);
-    addRow(true);
-
-    const barHit = new Graphics();
-    barHit.rect(barX, 0, barWidth, height).fill({ color: 0xffffff, alpha: 0.001 });
-    barHit.eventMode = 'static';
-    barHit.cursor = 'pointer';
-    barHit.on('pointerdown', () => cb(BAR));
-    this.root.addChild(barHit);
-
-    // OFF hit areas. The previous version was one rectangle covering
-    // the entire right rail (`[width - railWidth, width] × [0, height]`).
-    // On themes that put the rightmost point centers inside the rail
-    // (premium puts them at ~83% of width while railWidth starts at
-    // ~79.5%), this rectangle intercepted clicks on the rightmost
-    // points — the move silently failed because OFF wasn't a valid
-    // destination. Tighten the hit areas to the actual bear-off tray
-    // rectangles published by the theme so they only catch clicks on
-    // the trays, not on points.
-    //
-    // Two trays (black up top, white at bottom) get their own hit
-    // areas so a click outside both passes through to the point under
-    // it.
-    const trayPadding = Math.max(checkerRadius, 4); // expand slightly
-                                                     // beyond the tray
-                                                     // graphic so the
-                                                     // edge of the
-                                                     // checker is still
-                                                     // clickable
-    const blackTrayLeft = blackOffTrayX - trayPadding;
-    const blackTrayRight = width;
-    const whiteTrayLeft = whiteOffTrayX - trayPadding;
-    const whiteTrayRight = width;
-
-    const blackOffHit = new Graphics();
-    blackOffHit
-      .rect(
-        blackTrayLeft,
-        Math.max(0, blackOffTrayTop - trayPadding),
-        blackTrayRight - blackTrayLeft,
-        blackOffTrayHeight + trayPadding * 2,
-      )
-      .fill({ color: 0xffffff, alpha: 0.001 });
-    blackOffHit.eventMode = 'static';
-    blackOffHit.cursor = 'pointer';
-    blackOffHit.on('pointerdown', () => cb(OFF));
-    this.root.addChild(blackOffHit);
-
-    const whiteOffHit = new Graphics();
-    whiteOffHit
-      .rect(
-        whiteTrayLeft,
-        Math.max(0, whiteOffTrayTop - trayPadding),
-        whiteTrayRight - whiteTrayLeft,
-        whiteOffTrayHeight + trayPadding * 2,
-      )
-      .fill({ color: 0xffffff, alpha: 0.001 });
-    whiteOffHit.eventMode = 'static';
-    whiteOffHit.cursor = 'pointer';
-    whiteOffHit.on('pointerdown', () => cb(OFF));
-    this.root.addChild(whiteOffHit);
+    // All hit-area math lives in src/board/hit-areas.ts so the same
+    // function powers the Pixi renderer AND the test suite that
+    // simulates every point on every theme. If you're tempted to
+    // tweak this loop, edit the pure function instead so the tests
+    // catch regressions.
+    const rects = computeHitRects(this.layout);
+    for (const rect of rects) {
+      const g = new Graphics();
+      g
+        .rect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+        .fill({ color: 0xffffff, alpha: 0.001 });
+      g.eventMode = 'static';
+      g.cursor = 'pointer';
+      const target = rect.target;
+      g.on('pointerdown', () => cb(target));
+      this.root.addChild(g);
+    }
   }
 
   destroy() {
