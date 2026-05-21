@@ -661,7 +661,7 @@ export function LobbyBoardCarousel({
             type="button"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={onPlay}
-            className="lobby-play-button absolute left-1/2 top-[44%] z-40 h-10 min-w-32 -translate-x-1/2 -translate-y-1/2 px-6 font-display text-base font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
+            className="lobby-play-button absolute left-1/2 top-[44%] z-40 h-5 min-w-16 -translate-x-1/2 -translate-y-1/2 px-3 font-display text-xs font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
           >
             Play
           </button>

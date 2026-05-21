@@ -30,13 +30,17 @@ function CurrencyPill({
   readonly icon: string;
   readonly onAdd: () => void;
 }) {
+  // Sizes here are 80% of the previous values across the board —
+  // every rem-based dimension was multiplied by 0.8 so the pill
+  // visually shrinks AND its layout footprint shrinks with it
+  // (vs. a CSS transform: scale which would leave dead space).
   return (
     <div
       aria-label={`${label}: ${value ?? 0}`}
       data-fly-target={flyTarget}
-      className="lobby-currency-pill relative flex h-12 min-w-[8.55rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+      className="lobby-currency-pill relative flex h-[2.4rem] min-w-[6.84rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
-      <span className="lobby-currency-icon -ml-4 grid h-14 w-14 shrink-0 place-items-center">
+      <span className="lobby-currency-icon -ml-[0.8rem] grid h-[2.8rem] w-[2.8rem] shrink-0 place-items-center">
         <img
           src={icon}
           alt=""
@@ -44,17 +48,17 @@ function CurrencyPill({
           draggable={false}
         />
       </span>
-      <span className="lobby-currency-value -ml-2 flex h-[2.55rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-4 text-center font-display text-xl font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+      <span className="lobby-currency-value -ml-[0.4rem] flex h-[2.04rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.8rem] text-center font-display text-base font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
         <RollingNumber value={value} />
       </span>
       <button
         type="button"
         onClick={onAdd}
         aria-label={`Get more ${label}`}
-        className="lobby-currency-add relative mr-1 grid h-10 w-10 shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
+        className="lobby-currency-add relative mr-[0.2rem] grid h-[2rem] w-[2rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
       >
-        <span className="absolute left-1/2 top-1/2 h-6 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
-        <span className="absolute left-1/2 top-1/2 h-1.5 w-6 -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
+        <span className="absolute left-1/2 top-1/2 h-[1.2rem] w-[0.3rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
+        <span className="absolute left-1/2 top-1/2 h-[0.3rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
       </button>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
@@ -98,6 +98,12 @@ export function LobbyScreen() {
   // surface. createOnlineMatch is still exported from persistence for
   // invite-code flows and the back-office.
   const [lockedTooltipFor, setLockedTooltipFor] = useState<LobbyBoard | null>(null);
+  // Stable handler for BoardLockTooltip's onDismiss. The tooltip
+  // lists onDismiss in its setTimeout effect's dep array, so an
+  // inline closure (new identity every parent render) would cancel
+  // the running 3-second timer on each re-render and the tooltip
+  // would never auto-dismiss.
+  const dismissLockedTooltip = useCallback(() => setLockedTooltipFor(null), []);
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
   // Difficulty modal state. `enteringRoomId` is the table_config_id
   // currently being purchased via enter_room — the modal uses it to
@@ -666,7 +672,7 @@ export function LobbyScreen() {
         <BoardLockTooltip
           key={`tooltip-${lockedTooltipFor.id}`}
           requiredLevel={lockedTooltipFor.unlockLevel}
-          onDismiss={() => setLockedTooltipFor(null)}
+          onDismiss={dismissLockedTooltip}
         />
       ) : null}
 

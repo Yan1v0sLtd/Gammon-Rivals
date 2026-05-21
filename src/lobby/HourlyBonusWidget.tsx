@@ -38,7 +38,7 @@ export function HourlyBonusWidget({ result, onClaim }: Props) {
           pill when ready (better discoverability on touch). */}
       <button
         type="button"
-        className="lobby-hourly-bonus-image"
+        className={`lobby-hourly-bonus-image ${pillKind === 'ready' ? 'is-ready' : ''}`}
         onClick={pillKind === 'ready' ? onClaim : undefined}
         disabled={pillKind !== 'ready'}
         aria-label={

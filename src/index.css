@@ -507,6 +507,30 @@ html, body, #root {
     drop-shadow(0 0 0.9rem rgba(255, 196, 78, 0.55));
 }
 
+/* When the bonus is claimable, pulse a warm gold halo around the
+   widget so it draws the player's eye from across the lobby. The
+   .is-ready class is applied by the HourlyBonusWidget JSX whenever
+   pillKind === 'ready'; cooldown / unavailable states get no halo
+   so the navigator only glows when there's actually something to
+   collect. */
+.lobby-hourly-bonus-image.is-ready img {
+  animation: lobby-hourly-bonus-halo 1.6s ease-in-out infinite;
+}
+
+@keyframes lobby-hourly-bonus-halo {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
+      drop-shadow(0 0 0.5rem rgba(255, 196, 78, 0.55));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
+      drop-shadow(0 0 1.2rem rgba(255, 215, 100, 0.95))
+      drop-shadow(0 0 1.8rem rgba(255, 173, 60, 0.55));
+  }
+}
+
 .lobby-hourly-bonus-image:not(:disabled):active {
   transform: translateY(1px);
 }
@@ -866,11 +890,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-play-button {
+    /* Halved from the previous sizing — the CTA was visually
+       dominating the board centre. */
     bottom: 2rem;
-    height: 2.15rem;
-    min-width: 9.4rem;
-    padding: 0 1.8rem;
-    font-size: 1.08rem;
+    height: 1.08rem;
+    min-width: 4.7rem;
+    padding: 0 0.9rem;
+    font-size: 0.54rem;
   }
 
   .lobby-carousel-viewport > div[class*='bottom-24'] {
@@ -1487,21 +1513,23 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-play-button {
-    /* Lowered a total of 50 px to follow the dropped podium and
-       sit on the wooden deck below the carved front. */
+    /* Halved from 80×350 — previously dominating the board centre.
+       The vertical offset is left as-is (still sits on the wooden
+       deck below the carved front); only the button's intrinsic
+       size shrinks. */
     bottom: calc(-35 * var(--lobby-u) - 50px);
-    height: calc(80 * var(--lobby-u));
-    min-width: calc(350 * var(--lobby-u));
-    padding: 0 calc(42 * var(--lobby-u));
-    border-width: calc(4 * var(--lobby-u));
-    font-size: calc(54 * var(--lobby-u));
+    height: calc(40 * var(--lobby-u));
+    min-width: calc(175 * var(--lobby-u));
+    padding: 0 calc(21 * var(--lobby-u));
+    border-width: calc(2 * var(--lobby-u));
+    font-size: calc(27 * var(--lobby-u));
     letter-spacing: 0.16em;
     box-shadow:
-      0 calc(6 * var(--lobby-u)) 0 #06450a,
-      0 calc(15 * var(--lobby-u)) calc(22 * var(--lobby-u)) rgba(0, 0, 0, 0.4),
-      inset 0 calc(2 * var(--lobby-u)) 0 rgba(255, 255, 255, 0.74),
-      inset 0 calc(-5 * var(--lobby-u)) 0 rgba(0, 78, 5, 0.34),
-      0 0 0 calc(2 * var(--lobby-u)) rgba(7, 27, 11, 0.85);
+      0 calc(3 * var(--lobby-u)) 0 #06450a,
+      0 calc(8 * var(--lobby-u)) calc(11 * var(--lobby-u)) rgba(0, 0, 0, 0.4),
+      inset 0 calc(1 * var(--lobby-u)) 0 rgba(255, 255, 255, 0.74),
+      inset 0 calc(-3 * var(--lobby-u)) 0 rgba(0, 78, 5, 0.34),
+      0 0 0 calc(1 * var(--lobby-u)) rgba(7, 27, 11, 0.85);
   }
 
   .lobby-carousel-viewport > div[class*='bottom-24'] {
