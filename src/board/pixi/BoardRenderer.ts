@@ -1074,7 +1074,19 @@ export class BoardRenderer {
   // ---------- Hit areas ----------
 
   private drawHitAreas(state: BoardState) {
-    const { width, height, railWidth, barX, barWidth, checkerRadius } = this.layout;
+    const {
+      width,
+      height,
+      barX,
+      barWidth,
+      checkerRadius,
+      blackOffTrayX,
+      blackOffTrayTop,
+      blackOffTrayHeight,
+      whiteOffTrayX,
+      whiteOffTrayTop,
+      whiteOffTrayHeight,
+    } = this.layout;
     const cb = this.onPointClick;
     if (!cb) return;
     void state;
@@ -1133,14 +1145,57 @@ export class BoardRenderer {
     barHit.on('pointerdown', () => cb(BAR));
     this.root.addChild(barHit);
 
-    const offHit = new Graphics();
-    offHit
-      .rect(width - railWidth, 0, railWidth, height)
+    // OFF hit areas. The previous version was one rectangle covering
+    // the entire right rail (`[width - railWidth, width] × [0, height]`).
+    // On themes that put the rightmost point centers inside the rail
+    // (premium puts them at ~83% of width while railWidth starts at
+    // ~79.5%), this rectangle intercepted clicks on the rightmost
+    // points — the move silently failed because OFF wasn't a valid
+    // destination. Tighten the hit areas to the actual bear-off tray
+    // rectangles published by the theme so they only catch clicks on
+    // the trays, not on points.
+    //
+    // Two trays (black up top, white at bottom) get their own hit
+    // areas so a click outside both passes through to the point under
+    // it.
+    const trayPadding = Math.max(checkerRadius, 4); // expand slightly
+                                                     // beyond the tray
+                                                     // graphic so the
+                                                     // edge of the
+                                                     // checker is still
+                                                     // clickable
+    const blackTrayLeft = blackOffTrayX - trayPadding;
+    const blackTrayRight = width;
+    const whiteTrayLeft = whiteOffTrayX - trayPadding;
+    const whiteTrayRight = width;
+
+    const blackOffHit = new Graphics();
+    blackOffHit
+      .rect(
+        blackTrayLeft,
+        Math.max(0, blackOffTrayTop - trayPadding),
+        blackTrayRight - blackTrayLeft,
+        blackOffTrayHeight + trayPadding * 2,
+      )
       .fill({ color: 0xffffff, alpha: 0.001 });
-    offHit.eventMode = 'static';
-    offHit.cursor = 'pointer';
-    offHit.on('pointerdown', () => cb(OFF));
-    this.root.addChild(offHit);
+    blackOffHit.eventMode = 'static';
+    blackOffHit.cursor = 'pointer';
+    blackOffHit.on('pointerdown', () => cb(OFF));
+    this.root.addChild(blackOffHit);
+
+    const whiteOffHit = new Graphics();
+    whiteOffHit
+      .rect(
+        whiteTrayLeft,
+        Math.max(0, whiteOffTrayTop - trayPadding),
+        whiteTrayRight - whiteTrayLeft,
+        whiteOffTrayHeight + trayPadding * 2,
+      )
+      .fill({ color: 0xffffff, alpha: 0.001 });
+    whiteOffHit.eventMode = 'static';
+    whiteOffHit.cursor = 'pointer';
+    whiteOffHit.on('pointerdown', () => cb(OFF));
+    this.root.addChild(whiteOffHit);
   }
 
   destroy() {
