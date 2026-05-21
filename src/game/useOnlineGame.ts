@@ -218,9 +218,22 @@ export function useOnlineGame(
   const [lastLocalActivityMs, setLastLocalActivityMs] = useState(() => Date.now());
   const [lastOpponentActivityMs, setLastOpponentActivityMs] = useState(() => Date.now());
 
+  // Optimistic-update / refresh coordination. Declared here for the
+  // same use-before-declare reason — refresh() reads these.
+  const selectInFlightRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
+
   const refresh = useCallback(async () => {
     if (!matchId) return;
     if (fetchInFlight.current) return;
+    // Defer while a local optimistic write (selectTo) is mid-flight.
+    // A refresh during that window would read pre-write state and
+    // clobber our optimistic setMatch. The selectTo's finally block
+    // will re-fire this refresh once the DB UPDATE confirms.
+    if (selectInFlightRef.current) {
+      pendingRefreshRef.current = true;
+      return;
+    }
     fetchInFlight.current = true;
     try {
       const { data: m, error: mErr } = await supabase
@@ -598,6 +611,10 @@ export function useOnlineGame(
 
   const cancelSelection = useCallback(() => setSelectedFrom(null), []);
 
+  // selectInFlightRef + pendingRefreshRef are declared up top
+  // (alongside the other activity refs) so refresh() can read them.
+  // The selectTo callback sets selectInFlightRef during its DB write
+  // window so the fallback poll doesn't clobber the optimistic state.
   const selectTo = useCallback(
     async (pos: Position) => {
       if (!matchId || !match || !currentTurn || selectedFrom === null) return;
@@ -621,16 +638,26 @@ export function useOnlineGame(
       };
 
       // Optimistic local update
+      selectInFlightRef.current = true;
       setMatch({ ...match, current_turn: updated as unknown as MatchRow['current_turn'] });
       setSelectedFrom(null);
 
-      const { error: upErr } = await supabase
-        .from('matches')
-        .update({ current_turn: updated as unknown as Database['public']['Tables']['matches']['Update']['current_turn'] })
-        .eq('id', matchId);
-      if (upErr) {
-        setError(upErr.message);
-        void refresh();
+      try {
+        const { error: upErr } = await supabase
+          .from('matches')
+          .update({ current_turn: updated as unknown as Database['public']['Tables']['matches']['Update']['current_turn'] })
+          .eq('id', matchId);
+        if (upErr) {
+          setError(upErr.message);
+          // Fall through to the finally so the in-flight ref clears
+          // and the deferred refresh (if any) fires to re-sync.
+        }
+      } finally {
+        selectInFlightRef.current = false;
+        if (pendingRefreshRef.current) {
+          pendingRefreshRef.current = false;
+          void refresh();
+        }
       }
     },
     [matchId, match, currentTurn, selectedFrom, isLocalTurn, legal, refresh]
@@ -656,90 +683,92 @@ export function useOnlineGame(
     endTurnInFlightRef.current = true;
     setLastLocalActivityMs(Date.now());
     try {
+      // Compute the post-turn result client-side, then hand all the
+      // derived fields to finish_turn so it can persist them in one
+      // atomic transaction. This used to be three separate DB calls
+      // (INSERT moves, optional UPDATE games, UPDATE matches.
+      // current_turn=null) and the opponent could refresh between any
+      // two of them and see an inconsistent state — the moves row
+      // already inserted while match.current_turn still held the same
+      // submoves, leading to double-application of the submoves in
+      // deriveState and a thrown "no checker at point X" from
+      // applyMove. The single-RPC path makes the intermediate state
+      // unobservable.
+      const winnerNow = engineWinner(derived.board);
+      let gameWinner: Player | null = null;
+      let gameWinType: 'single' | 'gammon' | 'backgammon' | null = null;
+      let gamePoints: number | null = null;
+      let newWhite = match.white_score;
+      let newBlack = match.black_score;
+      let matchWinner: Player | null = null;
+      let newCrawford = match.crawford_game_number;
 
-    // Determine ply (count of existing moves)
-    const ply = moves.length;
+      if (winnerNow) {
+        const result = computeBearOffResult(
+          {
+            target: match.target,
+            score: { white: match.white_score, black: match.black_score },
+            gameNumber: 1,
+            crawfordGameNumber: null,
+            cube: { value: cubeValue, owner: cubeOwner },
+            cubeOffer: null,
+            winner: null,
+          },
+          derived.board,
+          winnerNow
+        );
+        gameWinner = result.winner;
+        gameWinType = result.winType;
+        gamePoints = result.points;
+        newWhite = match.white_score + (result.winner === 'white' ? result.points : 0);
+        newBlack = match.black_score + (result.winner === 'black' ? result.points : 0);
+        const matchOver = newWhite >= match.target || newBlack >= match.target;
 
-    // Insert moves row
-    const { error: insErr } = await supabase.from('moves').insert({
-      game_id: match.current_game_id,
-      ply,
-      player: currentTurn.player,
-      dice: [currentTurn.dice[0], currentTurn.dice[1]],
-      sub_moves: currentTurn.subMoves as unknown as Database['public']['Tables']['moves']['Insert']['sub_moves'],
-    });
-    if (insErr) {
-      setError(insErr.message);
-      return;
-    }
+        const oldMax = Math.max(match.white_score, match.black_score);
+        const newMax = Math.max(newWhite, newBlack);
+        newCrawford =
+          match.crawford_game_number === null &&
+          oldMax < match.target - 1 &&
+          newMax === match.target - 1
+            ? (currentGame?.game_number ?? 0) + 1
+            : match.crawford_game_number;
 
-    // Check for game end
-    const winnerNow = engineWinner(derived.board);
-    let matchUpdate: Database['public']['Tables']['matches']['Update'] = { current_turn: null };
+        if (matchOver) matchWinner = result.winner;
+      }
 
-    if (winnerNow) {
-      const result = computeBearOffResult(
-        {
-          target: match.target,
-          score: { white: match.white_score, black: match.black_score },
-          gameNumber: 1,
-          crawfordGameNumber: null,
-          cube: { value: cubeValue, owner: cubeOwner },
-          cubeOffer: null,
-          winner: null,
-        },
-        derived.board,
-        winnerNow
-      );
-
-      // Mark game finished
-      await supabase
-        .from('games')
-        .update({
-          winner: result.winner,
-          win_type: result.winType,
-          cube_value: cubeValue,
-          cube_owner: cubeOwner,
-          points_awarded: result.points,
-          finished_at: new Date().toISOString(),
-        })
-        .eq('id', match.current_game_id);
-
-      const newWhite =
-        match.white_score + (result.winner === 'white' ? result.points : 0);
-      const newBlack =
-        match.black_score + (result.winner === 'black' ? result.points : 0);
-      const matchOver = newWhite >= match.target || newBlack >= match.target;
-
-      // Crawford detection: first time a player reaches target-1, the next game is Crawford.
-      const oldMax = Math.max(match.white_score, match.black_score);
-      const newMax = Math.max(newWhite, newBlack);
-      const newCrawford =
-        match.crawford_game_number === null && oldMax < match.target - 1 && newMax === match.target - 1
-          ? (currentGame?.game_number ?? 0) + 1
-          : match.crawford_game_number;
-
-      // Keep current_game_id pointing at the just-finished game so both
-      // clients can show a "game over" banner. The edge function on the
-      // next roll detects this and lazy-creates the next game.
-      matchUpdate = {
-        current_turn: null,
-        white_score: newWhite,
-        black_score: newBlack,
-        crawford_game_number: matchOver ? match.crawford_game_number : newCrawford,
-        winner: matchOver ? result.winner : null,
-        finished_at: matchOver ? new Date().toISOString() : null,
-      };
-    }
-
-    const { error: upErr } = await supabase
-      .from('matches')
-      .update(matchUpdate)
-      .eq('id', matchId);
-    if (upErr) {
-      setError(upErr.message);
-    }
-    void refresh();
+      const { error: rpcErr } = await supabase.rpc('finish_turn', {
+        p_match_id: matchId,
+        p_game_winner: gameWinner,
+        p_game_win_type: gameWinType,
+        p_game_points: gamePoints,
+        p_game_dropped_double: false,
+        p_new_white_score: newWhite,
+        p_new_black_score: newBlack,
+        p_match_winner: matchWinner,
+        p_crawford_game_number: newCrawford,
+      });
+      if (rpcErr) {
+        const msg = rpcErr.message ?? String(rpcErr);
+        // Benign races we can silently absorb:
+        //   - "no_turn_in_progress": some other path already cleared
+        //     current_turn (e.g., realtime delivered a sibling write).
+        //   - "match_already_finished" / "not_your_turn": the server
+        //     view advanced past us between our click and the RPC
+        //     round-trip.
+        // For all of these, a refresh will sync the local state.
+        if (
+          msg.includes('no_turn_in_progress') ||
+          msg.includes('match_already_finished') ||
+          msg.includes('not_your_turn')
+        ) {
+          void refresh();
+          return;
+        }
+        console.error('[useOnlineGame] finish_turn failed', msg, rpcErr);
+        setError(msg);
+        return;
+      }
+      void refresh();
     } finally {
       endTurnInFlightRef.current = false;
     }
@@ -748,8 +777,6 @@ export function useOnlineGame(
     match,
     currentTurn,
     isLocalTurn,
-    canEndTurn,
-    moves.length,
     derived.board,
     cubeValue,
     cubeOwner,
