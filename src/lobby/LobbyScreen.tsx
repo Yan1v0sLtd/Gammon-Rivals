@@ -23,6 +23,7 @@ import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { useWheelState } from './useWheelState';
+import { WheelModal } from './WheelModal';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
@@ -107,6 +108,7 @@ export function LobbyScreen() {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const dailyBonus = useDailyBonus();
   const wheel = useWheelState('main');
+  const [wheelModalOpen, setWheelModalOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
@@ -646,10 +648,11 @@ export function LobbyScreen() {
         <LobbyBottomNav
           wheel={wheel}
           onClaimWheel={() => {
-            // Phase 3 will open the wheel modal here. For now, no-op
-            // (the button still gates by canSpin; clicking just does
-            // nothing until the modal is wired in).
-            // TODO(phase 3): setWheelModalOpen(true)
+            // Open the wheel modal only when the cooldown has actually
+            // elapsed. The lobby pill already gates by canSpin, but
+            // double-check here so a stale click during a re-fetch
+            // doesn't open the modal in the wrong state.
+            if (wheel.canSpin) setWheelModalOpen(true);
           }}
         />
       </div>
@@ -673,6 +676,21 @@ export function LobbyScreen() {
             if (isPurchasing) return;
             setPurchaseTarget(null);
             setPurchaseError(null);
+          }}
+        />
+      ) : null}
+
+      {wheelModalOpen ? (
+        <WheelModal
+          wheel={wheel}
+          onClose={() => setWheelModalOpen(false)}
+          onSpinComplete={() => {
+            // Server credited the wallet inside spin_wheel; refresh
+            // the local wallet so the top-bar RollingNumber ticks to
+            // the new total, and re-fetch the wheel state so the
+            // lobby pill flips back to its cooldown countdown.
+            void refreshWallet();
+            wheel.refetch();
           }}
         />
       ) : null}
