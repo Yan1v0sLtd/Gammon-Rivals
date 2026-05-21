@@ -82,7 +82,11 @@ html, body, #root {
   position: absolute;
   inset: 11%;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  background: linear-gradient(180deg, #a855f7 0%, #581c87 100%);
+  /* Charcoal-to-black gradient (was purple a855f7→581c87). Still
+     keeps a hint of depth via the slight top→bottom darkening so
+     the hex doesn't look like a flat black blob next to the gold
+     rim. Text on top is white, so contrast is fine. */
+  background: linear-gradient(180deg, #1f2937 0%, #050505 100%);
   z-index: 0;
 }
 
@@ -1243,39 +1247,42 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-currency-strip {
-    /* Horizontally centred on the viewport. The previous
-       left: 700 lobby-u + width: 590 lobby-u placed the strip
-       ~50 px right of centre at the 932 x 430 reference viewport
-       because the lobby-shell width isn't exactly 1990 lobby-u
-       (the original design grid the absolute positions were
-       authored against). Using translateX(-50%) is scale-free. */
+    /* Horizontally centred on the viewport. Sizes here were halved
+       from the original design grid (590×82 → 472×66 etc.) to take
+       20% off the visual footprint per the user's spec — every
+       numeric multiplier on var(--lobby-u) in this block and the
+       four .lobby-currency-* rules below was scaled by 0.8. The
+       earlier Tailwind shrink in LobbyTopBar.tsx was a no-op
+       because THIS block applies at all viewports and overrides
+       utility classes via source order. */
     position: absolute;
     left: 50%;
     top: calc(32 * var(--lobby-u));
     transform: translateX(-50%);
     display: grid;
-    width: calc(590 * var(--lobby-u));
-    height: calc(82 * var(--lobby-u));
+    width: calc(472 * var(--lobby-u));
+    height: calc(66 * var(--lobby-u));
     grid-template-columns: 1fr 1fr;
     gap: 0;
     border: 1px solid rgba(199, 143, 65, 0.78);
-    border-radius: calc(24 * var(--lobby-u));
+    border-radius: calc(19 * var(--lobby-u));
     background:
       linear-gradient(180deg, rgba(18, 22, 33, 0.94), rgba(7, 10, 20, 0.98)),
       radial-gradient(circle at 50% 0, rgba(255, 213, 102, 0.11), transparent 70%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.12),
       inset 0 -1px 0 rgba(255, 205, 80, 0.08),
-      0 calc(8 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
+      0 calc(6 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
   }
 
   .lobby-currency-strip::after {
     content: '';
     position: absolute;
-    left: calc(315 * var(--lobby-u));
-    top: calc(16 * var(--lobby-u));
+    /* 50% of the new 472-unit width — 236. */
+    left: calc(236 * var(--lobby-u));
+    top: calc(13 * var(--lobby-u));
     width: calc(2 * var(--lobby-u));
-    height: calc(50 * var(--lobby-u));
+    height: calc(40 * var(--lobby-u));
     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.16), transparent);
   }
 
@@ -1283,20 +1290,20 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     display: grid;
     min-width: 0;
     height: 100%;
-    grid-template-columns: calc(60 * var(--lobby-u)) minmax(0, 1fr) calc(55 * var(--lobby-u));
+    grid-template-columns: calc(48 * var(--lobby-u)) minmax(0, 1fr) calc(44 * var(--lobby-u));
     align-items: center;
-    gap: calc(12 * var(--lobby-u));
+    gap: calc(10 * var(--lobby-u));
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     backdrop-filter: none;
-    padding: 0 calc(20 * var(--lobby-u)) 0 calc(24 * var(--lobby-u));
+    padding: 0 calc(16 * var(--lobby-u)) 0 calc(19 * var(--lobby-u));
   }
 
   .lobby-currency-icon {
-    width: calc(58 * var(--lobby-u));
-    height: calc(58 * var(--lobby-u));
+    width: calc(46 * var(--lobby-u));
+    height: calc(46 * var(--lobby-u));
     margin-left: 0;
   }
 
@@ -1309,25 +1316,25 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     background: transparent;
     box-shadow: none;
     padding: 0;
-    font-size: calc(32 * var(--lobby-u));
+    font-size: calc(26 * var(--lobby-u));
   }
 
   .lobby-currency-add {
-    width: calc(55 * var(--lobby-u));
-    height: calc(55 * var(--lobby-u));
+    width: calc(44 * var(--lobby-u));
+    height: calc(44 * var(--lobby-u));
     margin-right: 0;
     border: 1px solid rgba(203, 255, 147, 0.42);
-    border-radius: calc(11 * var(--lobby-u));
+    border-radius: calc(9 * var(--lobby-u));
   }
 
   .lobby-currency-add > span:first-child {
-    width: calc(8 * var(--lobby-u));
-    height: calc(32 * var(--lobby-u));
+    width: calc(6 * var(--lobby-u));
+    height: calc(26 * var(--lobby-u));
   }
 
   .lobby-currency-add > span:last-child {
-    width: calc(32 * var(--lobby-u));
-    height: calc(8 * var(--lobby-u));
+    width: calc(26 * var(--lobby-u));
+    height: calc(6 * var(--lobby-u));
   }
 
   .lobby-topbar nav[aria-label='Lobby shortcuts'] {
