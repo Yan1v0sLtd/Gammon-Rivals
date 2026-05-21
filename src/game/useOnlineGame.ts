@@ -284,10 +284,30 @@ export function useOnlineGame(
   }, [matchId, refresh]);
 
   // ---- derive ----
+  // Shape validation matters here: replace_opponent_with_ai (the
+  // auto-forfeit RPC) merges a side-channel _abandonment object into
+  // current_turn so finish_match has an audit trail. If finalize then
+  // races / fails, we can land in a state where current_turn is
+  // `{_abandonment: {...}}` with NO engine fields. The downstream
+  // code (deriveState, the roll/remaining memos, the auto-action
+  // effect's key computation) all assume the engine shape — they
+  // crash on `undefined.length` / `undefined[0]` / `undefined.join`,
+  // taking the whole page blank. Validate the shape and treat a
+  // metadata-only object as "no turn in progress" instead.
   const currentTurn: CurrentTurnJSON | null = useMemo(() => {
     const ct = match?.current_turn as unknown;
     if (!ct || typeof ct !== 'object') return null;
-    return ct as CurrentTurnJSON;
+    const c = ct as Partial<CurrentTurnJSON>;
+    if (
+      (c.player !== 'white' && c.player !== 'black') ||
+      !Array.isArray(c.dice) ||
+      c.dice.length < 2 ||
+      !Array.isArray(c.remaining) ||
+      !Array.isArray(c.subMoves)
+    ) {
+      return null;
+    }
+    return c as CurrentTurnJSON;
   }, [match?.current_turn]);
 
   const derived = useMemo(() => deriveState(moves, currentTurn), [moves, currentTurn]);
