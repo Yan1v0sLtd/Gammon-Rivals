@@ -190,6 +190,15 @@ export function useOnlineGame(
   const [opponentPreviewReadyKey, setOpponentPreviewReadyKey] = useState<string | null>(null);
   const fetchInFlight = useRef(false);
 
+  // Activity timestamps. Declared up here so the action callbacks
+  // (rollDice, selectFrom, selectTo, endTurn) can bump
+  // lastLocalActivityMs without a use-before-declare issue. The
+  // matching effects + derivations live below in the "activity
+  // timers" section.
+  const mountedAtRef = useRef(Date.now());
+  const [lastLocalActivityMs, setLastLocalActivityMs] = useState(() => Date.now());
+  const [lastOpponentActivityMs, setLastOpponentActivityMs] = useState(() => Date.now());
+
   const refresh = useCallback(async () => {
     if (!matchId) return;
     if (fetchInFlight.current) return;
@@ -467,6 +476,7 @@ export function useOnlineGame(
     if (rollInFlightRef.current) return;
     rollInFlightRef.current = true;
     setError(null);
+    setLastLocalActivityMs(Date.now());
     try {
       const { data, error: invErr } = await supabase.functions.invoke('roll_dice', {
         body: { matchId },
@@ -540,6 +550,10 @@ export function useOnlineGame(
         return;
       }
       setSelectedFrom(pos);
+      // Reset the soft turn timer on selection — selectFrom doesn't
+      // write to the DB, so match.updated_at wouldn't otherwise
+      // reflect that the player is actively interacting.
+      setLastLocalActivityMs(Date.now());
     },
     [isLocalTurn, currentTurn, legalOrigins]
   );
@@ -552,6 +566,7 @@ export function useOnlineGame(
       if (!isLocalTurn) return;
       const move = legal.find((m) => m.from === selectedFrom && m.to === pos);
       if (!move) return;
+      setLastLocalActivityMs(Date.now());
 
       // Compute new turn state
       const newSubMoves = [...currentTurn.subMoves, encodeMove(move)];
@@ -601,6 +616,7 @@ export function useOnlineGame(
     if (!isLocalTurn) return;
     if (endTurnInFlightRef.current) return;
     endTurnInFlightRef.current = true;
+    setLastLocalActivityMs(Date.now());
     try {
 
     // Determine ply (count of existing moves)
@@ -781,63 +797,100 @@ export function useOnlineGame(
     void refresh();
   }, [matchId, match, cubeOffer, localColor, cubeValue, cubeOwner, currentGame, refresh]);
 
-  // ---- inactivity timer ----
+  // ---- activity timers ----
+  // Two distinct clocks, tracking two distinct things:
+  //
+  //   lastLocalActivityMs: when did THE LOCAL PLAYER last do
+  //     anything (click a piece, roll, end turn). Drives the soft
+  //     per-turn timer / force-end. Reset by selectFrom too, even
+  //     though selectFrom doesn't write to the DB — otherwise a
+  //     player taking >turn_seconds to click "from -> to" gets
+  //     force-ended mid-action, which feels like "my click didn't
+  //     work" (the moves table got an empty submoves row before
+  //     selectTo's DB write landed).
+  //
+  //   lastOpponentActivityMs: when did THE OPPONENT last do
+  //     anything we can see (a new moves row by their color, or a
+  //     change in current_turn while it's their turn). Drives the
+  //     inactivity-claim. Critically NOT the same as match.updated_
+  //     at — that bumps on OUR own writes too, including auto-roll
+  //     / auto-end-turn. If we used match.updated_at, the remaining
+  //     player's own automated actions would keep resetting the
+  //     claim clock and we'd never auto-win against a quit
+  //     opponent.
+  //
+  // Both have a mount-time floor so a fresh page load doesn't
+  // immediately fire on a stale row.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), ACTIVITY_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
 
-  // The reason we don't use match.updated_at directly: at match
-  // creation (or after a player navigates back to a long-running
-  // match), match.updated_at may be much older than "now we care".
-  // The previous version guarded with !!currentGame + !betweenGames to
-  // dodge the false positive, but those guards also locked out the
-  // legitimate cases where the opponent quits BEFORE rolling, or
-  // DURING the between-games pause. We replace them with a per-mount
-  // floor: the inactivity clock starts at max(match.updated_at, when-
-  // this-hook-mounted). Effect: a fresh page load gives the opponent
-  // at least one full threshold window to act, no matter how stale
-  // the row is. Subsequent opponent activity bumps updated_at past
-  // mount-time and resets the clock the same way.
-  const mountedAtRef = useRef(Date.now());
-  const matchUpdatedAtMs = match?.updated_at ? new Date(match.updated_at).getTime() : 0;
-  const lastActivityMs = Math.max(matchUpdatedAtMs, mountedAtRef.current);
+  // Reset the local clock at the start of each local turn so the
+  // player always gets a fresh turn_seconds window.
+  useEffect(() => {
+    if (isLocalTurn) setLastLocalActivityMs(Date.now());
+  }, [isLocalTurn]);
 
-  const secondsSinceActivity = Math.max(0, Math.floor((now - lastActivityMs) / 1000));
-  // canClaimByInactivity decides whether the auto-forfeit / AI takeover
-  // path is allowed. Two guards remain after the per-mount floor:
-  //   - !isLocalTurn means we're the one waiting on the opponent.
-  //     The local player can't auto-claim their own inactivity.
-  //   - opponent_id must exist (no claim before someone matched in).
-  // We deliberately allow claim during !!currentGame=false (opponent
-  // quits before first roll) and betweenGames (opponent quits during
-  // inter-game pause) — both used to be unrecoverable.
+  // Opponent activity signature: a string that changes ONLY when
+  // the opponent does something visible. Watches:
+  //   - count of moves rows authored by the opposite color
+  //   - if current_turn is owned by the opposite color, the dice
+  //     roll + submoves length + remaining dice length
+  // Local-player actions don't perturb this string.
+  const oppositeColor: Player | null =
+    localColor === 'white' ? 'black' : localColor === 'black' ? 'white' : null;
+  const opponentSignature = useMemo(() => {
+    if (!oppositeColor) return 'no-color';
+    const oppMoveCount = moves.reduce(
+      (n, m) => (m.player === oppositeColor ? n + 1 : n),
+      0
+    );
+    const oppTurnPart =
+      currentTurn && currentTurn.player === oppositeColor
+        ? `${currentTurn.dice.join('-')}:${currentTurn.subMoves.length}:${currentTurn.remaining.length}`
+        : '';
+    return `${oppMoveCount}|${oppTurnPart}`;
+  }, [moves, currentTurn, oppositeColor]);
+  useEffect(() => {
+    setLastOpponentActivityMs(Date.now());
+  }, [opponentSignature]);
+
+  const localClockBaseMs = Math.max(lastLocalActivityMs, mountedAtRef.current);
+  const opponentClockBaseMs = Math.max(lastOpponentActivityMs, mountedAtRef.current);
+
+  const secondsSinceLocalActivity = Math.max(
+    0,
+    Math.floor((now - localClockBaseMs) / 1000)
+  );
+  const secondsSinceOpponentActivity = Math.max(
+    0,
+    Math.floor((now - opponentClockBaseMs) / 1000)
+  );
+
+  // Public-facing inactivity number used by the UI countdown.
+  // It's specifically about waiting on the opponent, so it tracks
+  // opponent activity.
+  const secondsSinceActivity = secondsSinceOpponentActivity;
+
   const canClaimByInactivity =
     !matchFinished &&
     !!match &&
     !!match.opponent_id &&
     !isLocalTurn &&
-    now - lastActivityMs >= inactivityForfeitMs;
+    now - opponentClockBaseMs >= inactivityForfeitMs;
 
   // ---- soft per-turn timer ----
-  // The inactivity-forfeit clock above is the HARD ceiling (60s+,
-  // ends the match). This is the SOFT ceiling per turn — what the
-  // Beginner/Pro/Expert tiers' turn_seconds actually controls. It
-  // shares the same lastActivityMs baseline as the hard timer, so
-  // each action by either side restarts both clocks together.
-  //
-  // We don't auto-pick legal moves when the timer expires (too
-  // aggressive — would yank the player out of a thinking pause), but
-  // we DO auto-roll and auto-end-turn since those are unambiguous
-  // "the player has nothing to decide" cases. If the player has
-  // legal moves remaining when the soft timer expires, they still
-  // have the gap between turnSeconds and inactivityForfeitMs (2x+)
-  // to finish before they actually lose the match.
+  // Driven by lastLocalActivityMs, NOT lastOpponentActivityMs. The
+  // player has turn_seconds from their last interaction (or from
+  // the start of their turn) to act. Each click resets the window.
+  // Force-ends when the window expires AND it's the local turn AND
+  // not between-games.
   const turnSecondsLeft =
     turnSecondsTotal === null
       ? null
-      : Math.max(0, turnSecondsTotal - secondsSinceActivity);
+      : Math.max(0, turnSecondsTotal - secondsSinceLocalActivity);
   const turnProgress =
     turnSecondsTotal === null || turnSecondsTotal === 0
       ? null
