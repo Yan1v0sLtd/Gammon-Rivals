@@ -822,6 +822,108 @@ export type Database = {
         };
         Relationships: [];
       };
+      wheel_configs: {
+        Row: {
+          id: string;
+          display_name: string;
+          cooldown_seconds: number;
+          is_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          display_name: string;
+          cooldown_seconds?: number;
+          is_enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          display_name?: string;
+          cooldown_seconds?: number;
+          is_enabled?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      wheel_slots: {
+        Row: {
+          config_id: string;
+          slot_index: number;
+          primary_reward_type: string;
+          primary_reward_amount: number;
+          primary_reward_icon_url: string | null;
+          secondary_reward_type: string | null;
+          secondary_reward_amount: number | null;
+          secondary_reward_icon_url: string | null;
+          chance_basis_points: number;
+          label: string | null;
+          accent_color: string;
+          is_enabled: boolean;
+        };
+        Insert: {
+          config_id: string;
+          slot_index: number;
+          primary_reward_type: string;
+          primary_reward_amount: number;
+          primary_reward_icon_url?: string | null;
+          secondary_reward_type?: string | null;
+          secondary_reward_amount?: number | null;
+          secondary_reward_icon_url?: string | null;
+          chance_basis_points: number;
+          label?: string | null;
+          accent_color?: string;
+          is_enabled?: boolean;
+        };
+        Update: {
+          config_id?: string;
+          slot_index?: number;
+          primary_reward_type?: string;
+          primary_reward_amount?: number;
+          primary_reward_icon_url?: string | null;
+          secondary_reward_type?: string | null;
+          secondary_reward_amount?: number | null;
+          secondary_reward_icon_url?: string | null;
+          chance_basis_points?: number;
+          label?: string | null;
+          accent_color?: string;
+          is_enabled?: boolean;
+        };
+        Relationships: [];
+      };
+      user_wheel_spins: {
+        Row: {
+          profile_id: string;
+          config_id: string;
+          last_spin_at: string | null;
+          total_spins: number;
+          last_slot_index: number | null;
+          last_reward_coins: number;
+          last_reward_gems: number;
+          last_reward_xp: number;
+        };
+        Insert: {
+          profile_id: string;
+          config_id: string;
+          last_spin_at?: string | null;
+          total_spins?: number;
+          last_slot_index?: number | null;
+          last_reward_coins?: number;
+          last_reward_gems?: number;
+          last_reward_xp?: number;
+        };
+        Update: {
+          last_spin_at?: string | null;
+          total_spins?: number;
+          last_slot_index?: number | null;
+          last_reward_coins?: number;
+          last_reward_gems?: number;
+          last_reward_xp?: number;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -912,6 +1014,14 @@ export type Database = {
           p_crawford_game_number?: number | null;
           p_elapsed_ms?: number | null;
         };
+        Returns: Json;
+      };
+      get_wheel_state: {
+        Args: { p_config_id?: string };
+        Returns: Json;
+      };
+      spin_wheel: {
+        Args: { p_config_id?: string };
         Returns: Json;
       };
       get_rtp_per_player: {
