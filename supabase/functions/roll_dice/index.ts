@@ -47,7 +47,22 @@ Deno.serve(async (req: Request) => {
 
     if (match.mode !== 'online') return json({ error: 'not an online match' }, 400);
     if (match.finished_at) return json({ error: 'match finished' }, 400);
-    if (match.current_turn) return json({ error: 'turn already in progress' }, 400);
+    // current_turn may contain only the _abandonment side-channel
+    // object (written by replace_opponent_with_ai) with NONE of the
+    // engine fields. That's not a real turn — it's audit metadata.
+    // Treat it as "no turn in progress" so the next roll can land
+    // and clobber the metadata cleanly. The previous version's
+    // blanket `if (match.current_turn)` check rejected those rolls
+    // with 400 "turn already in progress", which locked the player
+    // out of their match.
+    if (
+      match.current_turn &&
+      typeof match.current_turn === 'object' &&
+      typeof (match.current_turn as Record<string, unknown>).player === 'string' &&
+      Array.isArray((match.current_turn as Record<string, unknown>).dice)
+    ) {
+      return json({ error: 'turn already in progress' }, 400);
+    }
     if (!match.opponent_id) return json({ error: 'waiting for opponent' }, 400);
 
     let callerColor: 'white' | 'black';
