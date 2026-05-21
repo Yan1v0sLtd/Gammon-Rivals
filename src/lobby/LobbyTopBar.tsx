@@ -1,9 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import Avatar from '../components/Avatar';
-import { formatCompactNumber } from '../lib/format';
 import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
+import { RollingNumber } from './RollingNumber';
 import { XpBoostBadge } from './XpBoostBadge';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -26,13 +26,13 @@ function CurrencyPill({
 }: {
   readonly flyTarget: 'coins' | 'gems';
   readonly label: string;
-  readonly value: string;
+  readonly value: number | null | undefined;
   readonly icon: string;
   readonly onAdd: () => void;
 }) {
   return (
     <div
-      aria-label={`${label}: ${value}`}
+      aria-label={`${label}: ${value ?? 0}`}
       data-fly-target={flyTarget}
       className="lobby-currency-pill relative flex h-12 min-w-[8.55rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
@@ -45,7 +45,7 @@ function CurrencyPill({
         />
       </span>
       <span className="lobby-currency-value -ml-2 flex h-[2.55rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-4 text-center font-display text-xl font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
-        {value}
+        <RollingNumber value={value} />
       </span>
       <button
         type="button"
@@ -107,14 +107,14 @@ export function LobbyTopBar({
       id: 'coins',
       flyTarget: 'coins',
       label: 'Coins',
-      value: formatCompactNumber(wallet?.coins),
+      value: wallet?.coins,
       icon: '/lobby/icons/gold-coin.webp',
     },
     {
       id: 'gems',
       flyTarget: 'gems',
       label: 'Gems',
-      value: formatCompactNumber(wallet?.gems),
+      value: wallet?.gems,
       icon: '/lobby/icons/gem.webp',
     },
   ] as const;

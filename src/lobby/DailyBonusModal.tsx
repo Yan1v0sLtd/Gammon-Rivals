@@ -15,6 +15,11 @@ interface DailyBonusModalProps {
     readonly gems: number;
     readonly xp: number;
   } | null;
+  /** How many days are already claimed in this 7-day cycle (0..7).
+   *  Days 1..N render with the green CLAIMED ribbon. Resets to 0
+   *  when the cycle completes (player finished day 7) or breaks
+   *  (player missed a day). */
+  readonly daysClaimedInCurrentStreak: number;
   readonly onClaim: () => void;
 }
 
@@ -25,6 +30,7 @@ interface DayCardProps {
   readonly xp: number;
   readonly isActive: boolean;
   readonly isClaimed: boolean;
+  readonly isJustClaimed: boolean;
   readonly fullWidth: boolean;
   readonly isClaiming: boolean;
   readonly onClaim: () => void;
@@ -34,14 +40,27 @@ interface DayCardProps {
 /* Reward chips — pure CSS                                                    */
 /* -------------------------------------------------------------------------- */
 
-function GemReward({ amount, size = 'md' }: { amount: number; size?: 'sm' | 'md' }) {
+function GemReward({
+  amount,
+  size = 'md',
+  isFlightSource = false,
+}: {
+  amount: number;
+  size?: 'sm' | 'md';
+  /** Tags this gem icon with `data-fly-source="gems"` so the
+   *  outside-the-modal flight spawner knows which on-screen icon to
+   *  fly from. Only the ACTIVE day passes true — otherwise every day
+   *  card emits the attribute and `querySelector` picks the first
+   *  one (usually Day 2), making coins fly from the wrong card. */
+  isFlightSource?: boolean;
+}) {
   const dim = size === 'sm' ? 'h-[clamp(2rem,4.5vw,3.25rem)] w-[clamp(2rem,4.5vw,3.25rem)]' : 'h-[clamp(2.25rem,5vw,3.75rem)] w-[clamp(2.25rem,5vw,3.75rem)]';
   return (
     <div className="flex items-center gap-2">
       <img
         src="/lobby/carousel/gem.webp"
         alt=""
-        data-fly-source="gems"
+        {...(isFlightSource ? { 'data-fly-source': 'gems' } : {})}
         className={`${dim} select-none object-contain drop-shadow-[0_6px_5px_rgba(80,40,15,0.5)]`}
         draggable={false}
       />
@@ -52,13 +71,13 @@ function GemReward({ amount, size = 'md' }: { amount: number; size?: 'sm' | 'md'
   );
 }
 
-function CoinsReward({ amount }: { amount: number }) {
+function CoinsReward({ amount, isFlightSource = false }: { amount: number; isFlightSource?: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <img
         src="/lobby/icons/gold-coin.webp"
         alt=""
-        data-fly-source="coins"
+        {...(isFlightSource ? { 'data-fly-source': 'coins' } : {})}
         className="h-[clamp(2.25rem,5vw,3.75rem)] w-[clamp(2.25rem,5vw,3.75rem)] select-none object-contain drop-shadow-[0_6px_5px_rgba(80,40,15,0.5)]"
         draggable={false}
       />
@@ -122,6 +141,7 @@ function DayCard({
   xp,
   isActive,
   isClaimed,
+  isJustClaimed,
   fullWidth,
   isClaiming,
   onClaim,
@@ -131,14 +151,20 @@ function DayCard({
   // a combo. For other days, render in priority order — usually the day
   // is configured with exactly one reward type, so this acts as
   // "render whatever's set".
+  // The flight-source flag piggybacks on the ACTIVE card's icons so
+  // the LobbyScreen spawner can use querySelector to find the right
+  // origin point. Without it, every day card stamps the same
+  // attribute and querySelector picks the FIRST one (Day 2 in the
+  // default config), making the reward coins fly from the wrong card.
   const chips: React.ReactNode[] = [];
-  if (gems > 0) chips.push(<GemReward key="g" amount={gems} />);
-  if (coins > 0) chips.push(<CoinsReward key="c" amount={coins} />);
+  if (gems > 0) chips.push(<GemReward key="g" amount={gems} isFlightSource={isActive} />);
+  if (coins > 0) chips.push(<CoinsReward key="c" amount={coins} isFlightSource={isActive} />);
   if (xp > 0) chips.push(<XpReward key="x" amount={xp} />);
   if (chips.length === 0) {
     // empty state — keep height stable
     chips.push(<GemReward key="g0" amount={0} />);
   }
+  void isJustClaimed; // currently unused beyond the parent's prop wiring
 
   // Outer wrapper. For an ACTIVE day we wrap the inner cream surface in
   // a 3-pixel padding outer that hosts the rotating gold border via
@@ -247,6 +273,7 @@ export function DailyBonusModal({
   isClaiming,
   errorMessage,
   justClaimed,
+  daysClaimedInCurrentStreak,
   onClaim,
 }: DailyBonusModalProps) {
   const byDay = new Map(configs.map((c) => [c.day, c]));
@@ -296,7 +323,16 @@ export function DailyBonusModal({
               {[1, 2, 3, 4, 5, 6, 7].map((day) => {
                 const cfg = byDay.get(day);
                 const isActive = day === upcomingDay && canClaim && !justClaimed;
-                const isClaimed = !!justClaimed && day === justClaimed.day;
+                const isJustClaimed = !!justClaimed && day === justClaimed.day;
+                // Show CLAIMED ribbon on every day completed in this
+                // 7-day cycle (1..daysClaimedInCurrentStreak), plus
+                // the just-claimed day even when the userState hasn't
+                // refetched yet. When the cycle resets, this number
+                // drops to 0 and every card returns to the default
+                // (locked) visual.
+                const isClaimed =
+                  isJustClaimed ||
+                  (day <= daysClaimedInCurrentStreak && !isActive);
                 return (
                   <DayCard
                     key={day}
@@ -306,6 +342,7 @@ export function DailyBonusModal({
                     xp={cfg?.reward_xp ?? 0}
                     isActive={isActive}
                     isClaimed={isClaimed}
+                    isJustClaimed={isJustClaimed}
                     fullWidth={day === 7}
                     isClaiming={isClaiming}
                     onClaim={onClaim}

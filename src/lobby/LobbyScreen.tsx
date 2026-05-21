@@ -234,9 +234,17 @@ export function LobbyScreen() {
       setDailyBonusError('Sign in to claim daily bonuses.');
       return;
     }
-    // Capture the source element BEFORE the modal re-renders into its
-    // claimed state (which removes the gem icon).
-    const sourceEl = document.querySelector('[data-fly-source="gems"]');
+    // Capture each currency's source element BEFORE the modal
+    // re-renders into its claimed state (which can move / remove
+    // icons). Both queries scope to the active day card — the
+    // modal now stamps `data-fly-source` only on the active day,
+    // so querySelector returns that card's icon. Each currency
+    // gets its own source so e.g. coins fly from the coin icon and
+    // gems from the gem icon (used to share the gem source, which
+    // was visually wrong on coin-only days like Day 1 / Day 4
+    // anyway since there's no gem icon there).
+    const gemsSourceEl = document.querySelector('[data-fly-source="gems"]');
+    const coinsSourceEl = document.querySelector('[data-fly-source="coins"]');
 
     setIsClaimingDailyBonus(true);
     setDailyBonusError(null);
@@ -264,9 +272,17 @@ export function LobbyScreen() {
 
     // Spawn the flying tokens before refreshing the wallet so the user
     // sees the coins / gems travel and *then* land on a bumped balance.
-    if (sourceEl) {
-      if (reward.gems > 0) spawnFlights('gems', sourceEl, 6);
-      if (reward.coins > 0) spawnFlights('coins', sourceEl, 6);
+    // Each currency uses its OWN source icon when present. Fallback to
+    // the other source if a card was configured with only one icon —
+    // better the flight starts from a nearby card than vanishes
+    // entirely.
+    if (reward.gems > 0) {
+      const src = gemsSourceEl ?? coinsSourceEl;
+      if (src) spawnFlights('gems', src, 6);
+    }
+    if (reward.coins > 0) {
+      const src = coinsSourceEl ?? gemsSourceEl;
+      if (src) spawnFlights('coins', src, 6);
     }
 
     // Refresh streak state (so canClaim flips to false) and wallet (so
@@ -656,6 +672,7 @@ export function LobbyScreen() {
           isClaiming={isClaimingDailyBonus}
           errorMessage={dailyBonusError}
           justClaimed={justClaimedBonus}
+          daysClaimedInCurrentStreak={dailyBonus.daysClaimedInCurrentStreak}
           onClaim={claimDailyBonus}
         />
       ) : null}

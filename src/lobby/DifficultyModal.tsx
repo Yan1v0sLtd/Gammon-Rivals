@@ -241,7 +241,17 @@ function DifficultyCard({ row, affordable, busy, onPlay, onGetCoins }: CardProps
         type="button"
         onClick={affordable ? onPlay : onGetCoins}
         disabled={busy}
-        className="mt-3 rounded-md border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
+        className={
+          'mt-3 rounded-md py-2 font-display text-sm font-black uppercase tracking-[0.18em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0 ' +
+          (affordable
+            ? 'border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700'
+            : // "Get Coins" gets an orange palette so it reads as a
+              // separate-from-Play CTA — a nudge toward the shop, not
+              // a normal positive action. Same affordances (gradient,
+              // border, hover) so the visual weight matches the
+              // affordable variant.
+              'border border-amber-900/60 bg-gradient-to-b from-amber-400 to-orange-600')
+        }
       >
         {busy ? 'Searching…' : affordable ? 'Play' : 'Get Coins'}
       </button>

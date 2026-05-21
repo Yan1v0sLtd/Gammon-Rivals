@@ -15,6 +15,15 @@ export interface DailyBonusState {
   readonly canClaim: boolean;
   /** Which day the player will receive when they next claim (1..7). */
   readonly upcomingDay: number;
+  /**
+   * How many days the player has claimed in the CURRENT 7-day cycle.
+   * 0 when the cycle is fresh (never claimed, or streak just reset).
+   * 1..6 mid-streak. 7 only briefly — right after claiming day 7,
+   * before the row's current_day rolls back to 1 and last_claim_date
+   * stays "today". The modal uses this to render the green "Claimed"
+   * ribbon on every day the player has already completed.
+   */
+  readonly daysClaimedInCurrentStreak: number;
   /** True while the initial fetch is in flight. */
   readonly isLoading: boolean;
   readonly refetch: () => void;
@@ -54,6 +63,36 @@ export function computeUpcomingDay(state: UserDailyBonus | null, today: string):
   return 1;
 }
 
+/**
+ * How many days has the player completed in the CURRENT cycle? Used
+ * by the modal to render the green "Claimed" ribbon on previous-day
+ * cards. Distinguishes between "current_day = 1 because they JUST
+ * completed a 7-day cycle" (returns 7) and "current_day = 1 because
+ * they're starting fresh / a new cycle" (returns 0).
+ */
+export function computeDaysClaimedInCurrentStreak(
+  state: UserDailyBonus | null,
+  today: string,
+): number {
+  if (!state || !state.last_claim_date_et) return 0;
+  if (state.last_claim_date_et === today) {
+    // They claimed today. The day they just received was the OLD
+    // current_day; the server already rolled current_day forward
+    // (or back to 1 if they just finished day 7).
+    return state.current_day === 1 ? 7 : state.current_day - 1;
+  }
+  if (isYesterdayET(state.last_claim_date_et, today)) {
+    // Streak alive. current_day is what they'll claim today;
+    // current_day - 1 are the days already claimed this cycle.
+    // current_day === 1 here means yesterday's claim completed a
+    // cycle and today is the start of a fresh one — 0 days
+    // claimed in this NEW cycle.
+    return state.current_day - 1;
+  }
+  // Gap of 2+ days: streak reset, no days claimed in current cycle.
+  return 0;
+}
+
 export function useDailyBonus(): DailyBonusState {
   const { user } = useAuth();
   const [configs, setConfigs] = useState<readonly DailyBonusConfig[]>([]);
@@ -86,12 +125,17 @@ export function useDailyBonus(): DailyBonusState {
   const today = todayET();
   const canClaim = userState !== null && userState.last_claim_date_et !== today;
   const upcomingDay = useMemo(() => computeUpcomingDay(userState, today), [userState, today]);
+  const daysClaimedInCurrentStreak = useMemo(
+    () => computeDaysClaimedInCurrentStreak(userState, today),
+    [userState, today],
+  );
 
   return {
     configs,
     userState,
     canClaim,
     upcomingDay,
+    daysClaimedInCurrentStreak,
     isLoading,
     refetch: useCallback(() => setRefreshToken((v) => v + 1), []),
   };
