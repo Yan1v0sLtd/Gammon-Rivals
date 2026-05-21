@@ -22,6 +22,7 @@ import {
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
+import { useWheelState } from './useWheelState';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
@@ -105,6 +106,7 @@ export function LobbyScreen() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const dailyBonus = useDailyBonus();
+  const wheel = useWheelState('main');
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
@@ -641,7 +643,15 @@ export function LobbyScreen() {
           </aside>
         </div>
 
-        <LobbyBottomNav />
+        <LobbyBottomNav
+          wheel={wheel}
+          onClaimWheel={() => {
+            // Phase 3 will open the wheel modal here. For now, no-op
+            // (the button still gates by canSpin; clicking just does
+            // nothing until the modal is wired in).
+            // TODO(phase 3): setWheelModalOpen(true)
+          }}
+        />
       </div>
 
       {lockedTooltipFor ? (

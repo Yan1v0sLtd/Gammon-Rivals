@@ -1,19 +1,36 @@
+import { HourlyBonusWidget } from './HourlyBonusWidget';
 import { lobbyNavItems } from './lobbyData';
+import type { WheelStateResult } from './useWheelState';
+
+interface Props {
+  readonly wheel: WheelStateResult;
+  readonly onClaimWheel: () => void;
+}
 
 /**
  * Wood-bar navigator at the bottom of the lobby. The bar itself is a
  * single .webp (`/lobby/nav/nav-bg.webp`) with painted gold dividers
  * already in place. Each of the four side slots renders its own
- * pre-rendered icon+label .webp; the middle slot is intentionally
- * empty for now.
+ * pre-rendered icon+label .webp; the middle slot now hosts the
+ * hourly-bonus wheel widget.
  */
-export function LobbyBottomNav() {
+export function LobbyBottomNav({ wheel, onClaimWheel }: Props) {
   return (
     <nav aria-label="Lobby sections" className="lobby-bottom-nav-shell">
       <div className="lobby-bottom-nav-bar" aria-hidden="true" />
       <div className="lobby-bottom-nav-row">
-        {lobbyNavItems.map((item) =>
-          item.image ? (
+        {lobbyNavItems.map((item) => {
+          if (item.id === 'placeholder') {
+            return (
+              <div
+                key={item.id}
+                className="lobby-bottom-nav-slot lobby-bottom-nav-slot--hourly"
+              >
+                <HourlyBonusWidget result={wheel} onClaim={onClaimWheel} />
+              </div>
+            );
+          }
+          return item.image ? (
             <button
               key={item.id}
               type="button"
@@ -25,8 +42,8 @@ export function LobbyBottomNav() {
             </button>
           ) : (
             <span key={item.id} className="lobby-bottom-nav-slot is-placeholder" aria-hidden="true" />
-          )
-        )}
+          );
+        })}
       </div>
     </nav>
   );
