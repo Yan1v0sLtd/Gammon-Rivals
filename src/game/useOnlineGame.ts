@@ -101,19 +101,38 @@ interface DerivedState {
 
 function deriveState(moves: readonly MoveRow[], currentTurn: CurrentTurnJSON | null): DerivedState {
   let board = initialBoard();
-  // Apply all completed turns
-  for (const moveRow of moves) {
-    const subs = (moveRow.sub_moves as unknown as readonly SubMoveJSON[]) ?? [];
-    for (const sub of subs) {
-      board = applyMove(board, decodeMove(sub));
+  // Apply all completed turns. Each applyMove can throw if the move
+  // row references a from/to that doesn't have the right checker —
+  // a poisoned moves row would otherwise propagate the throw up
+  // through React's render and the RouteErrorBoundary would catch
+  // it. We tighten that here: on a bad move, log diagnostics + reset
+  // to initialBoard for THAT turn segment, so the rest of the match
+  // can still render. The diagnostics tell us exactly which row
+  // and submove poisoned the state next time it happens.
+  try {
+    for (const moveRow of moves) {
+      const subs = (moveRow.sub_moves as unknown as readonly SubMoveJSON[]) ?? [];
+      for (const sub of subs) {
+        board = applyMove(board, decodeMove(sub));
+      }
+      board = engineEndTurn(board);
     }
-    board = engineEndTurn(board);
-  }
-  // Apply in-progress turn's submoves on top, but don't flip turn yet
-  if (currentTurn && currentTurn.subMoves.length > 0) {
-    for (const sub of currentTurn.subMoves) {
-      board = applyMove(board, decodeMove(sub));
+    if (currentTurn && currentTurn.subMoves.length > 0) {
+      for (const sub of currentTurn.subMoves) {
+        board = applyMove(board, decodeMove(sub));
+      }
     }
+  } catch (err) {
+    console.error('[useOnlineGame] deriveState crashed — board state may be inconsistent', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      movesCount: moves.length,
+      lastMoveSub: moves[moves.length - 1]?.sub_moves,
+      currentTurn,
+    });
+    // Surface a recognisable signal so the UI can show "match
+    // state recovery" instead of a silently-broken board.
+    board = initialBoard();
   }
   const whoseTurn: Player = currentTurn
     ? currentTurn.player
@@ -254,8 +273,22 @@ export function useOnlineGame(
     }
   }, [matchId]);
 
+  // Track the current game id in a ref so the moves realtime
+  // listener can filter without re-subscribing every time the game
+  // changes. Without this filter, the listener used to fire on
+  // EVERY moves INSERT in the entire database — a player in match A
+  // would refresh on a move in match B. RLS restricts what they can
+  // *read*, but realtime events still fire on any matching row.
+  const currentGameIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentGameIdRef.current = currentGame?.id ?? match?.current_game_id ?? null;
+  }, [currentGame?.id, match?.current_game_id]);
+
   useEffect(() => {
     if (!matchId) return;
+    // Reset the in-flight guard at mount in case a previous instance
+    // tore down mid-fetch and left it stuck at true.
+    fetchInFlight.current = false;
     queueMicrotask(() => void refresh());
 
     let channel: RealtimeChannel | null = supabase
@@ -269,10 +302,15 @@ export function useOnlineGame(
       )
       .on(
         'postgres_changes',
-        // moves filter requires game_id which we may not have at subscribe time;
-        // RLS already restricts inserts to user's own games, so listen broadly
         { event: 'INSERT', schema: 'public', table: 'moves' },
-        () => {
+        (payload) => {
+          // Filter client-side: only refresh on inserts into the
+          // current game. supabase-js realtime doesn't natively
+          // support a dynamic filter, and re-subscribing every time
+          // the game id changes (between-games) would drop events.
+          const row = payload?.new as { game_id?: string } | undefined;
+          const targetGameId = currentGameIdRef.current;
+          if (!targetGameId || row?.game_id !== targetGameId) return;
           void refresh();
         }
       )
@@ -1089,17 +1127,21 @@ export function useOnlineGame(
     if (!isLocalTurn) return;
     if (matchFinished) return;
     if (betweenGames) return;
-    // Build a key from the turn state so we only auto-fire ONCE per
-    // turn boundary. Without this, after auto-roll lands and the next
-    // render still shows turnSecondsLeft=0 briefly (until the refresh
-    // pulls the new dice and bumps lastActivityMs), the effect would
-    // re-fire and try to end an already-rolled turn.
+    // Build a key from IMMUTABLE turn identity. Earlier versions
+    // included currentTurn.subMoves.length / remaining.length, but
+    // those change every time the player makes a submove — which
+    // resets the latch and lets the auto-action fire again on the
+    // SAME turn after a manual move lands. The right invariant: one
+    // auto-action per (game, dice-roll) tuple, regardless of how
+    // many submoves the player ended up making.
+    const turnIdentity = currentTurn
+      ? `${currentTurn.player}|${currentTurn.dice.join('-')}`
+      : 'no-turn';
     const key = [
       match?.id ?? '',
       currentGame?.id ?? 'no-game',
-      currentTurn
-        ? `${currentTurn.player}|${currentTurn.dice.join('-')}|${currentTurn.subMoves.length}|${currentTurn.remaining.length}`
-        : 'no-turn',
+      moves.length, // every endTurn (real or forced) increments this
+      turnIdentity,
       canRoll ? 'roll' : currentTurn ? 'force-end' : 'noop',
     ].join('::');
     if (autoActionFiredKeyRef.current === key) return;
@@ -1118,6 +1160,7 @@ export function useOnlineGame(
     betweenGames,
     match?.id,
     currentGame?.id,
+    moves.length,
     currentTurn,
     canRoll,
     rollDice,
