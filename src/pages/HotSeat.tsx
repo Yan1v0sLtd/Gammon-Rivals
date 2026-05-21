@@ -33,6 +33,7 @@ import {
   makeGuestIdentity,
   type PlayerIdentity,
 } from '../lib/identity';
+import { generateAIPersona } from '../lib/aiPersona';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
 import { useImagePreloader } from '../lib/useImagePreloader';
 
@@ -504,7 +505,19 @@ export default function HotSeat() {
   const isRollForSelf = game.board.turn === localColor;
   const selfLevel = progression.level;
   const selfCoins = formatCompactNumber(wallet?.coins);
-  const opponentLevel = aiConfig ? 40 : 23;
+  // AI opponent's display level + coin count are derived from the
+  // match id so each AI match looks like a different "player" while
+  // staying deterministic per match (no flicker across re-renders).
+  // Fallback persona for the brief window before matchId resolves —
+  // see lib/aiPersona for the per-tier bands.
+  const aiPersona = useMemo(
+    () => (aiConfig ? generateAIPersona(matchId, aiConfig.level) : null),
+    [aiConfig, matchId]
+  );
+  const opponentLevel = aiPersona ? aiPersona.level : 23;
+  const opponentCoinsLabel = aiPersona
+    ? formatCompactNumber(aiPersona.coins)
+    : '400';
   const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
   // Only hand a real background URL to BoardLayout once the theme has
@@ -543,7 +556,7 @@ export default function HotSeat() {
         doublesLabel,
         level: opponentLevel,
         stateLabel: opponentState,
-        coinsLabel: aiConfig ? '22.7K' : '400',
+        coinsLabel: opponentCoinsLabel,
         isTurn: !isLocalTurn && !showGameEndModal,
         timerProgress: !isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
         timerSecondsLeft: !isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined,
