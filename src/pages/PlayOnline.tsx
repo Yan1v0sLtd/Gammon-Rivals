@@ -149,6 +149,25 @@ export default function PlayOnline() {
     if (overlayReady) hideOverlay();
   }, [overlayReady, hideOverlay]);
 
+  // "Who starts" intro banner state. Declared UP HERE — before any
+  // early returns — because hooks must run in the same order on
+  // every render. Putting useState / useEffect below the
+  // `if (!match || !user) return null` was a rules-of-hooks
+  // violation that crashed the component (blank page) on the
+  // re-render after game state finished loading.
+  const [introVisible, setIntroVisible] = useState(true);
+  const matchOpponentId = game.match?.opponent_id ?? null;
+  const hasCurrentGame = !!game.currentGame;
+  useEffect(() => {
+    if (!matchOpponentId || hasCurrentGame) {
+      setIntroVisible(false);
+      return;
+    }
+    setIntroVisible(true);
+    const id = window.setTimeout(() => setIntroVisible(false), 3500);
+    return () => window.clearTimeout(id);
+  }, [matchOpponentId, hasCurrentGame]);
+
   if (authLoading || game.loading) {
     return (
       <main className="min-h-screen flex items-center justify-center text-board-felt/60">
@@ -292,30 +311,16 @@ export default function PlayOnline() {
   const showMatchOver = game.matchFinished && !!match.winner;
 
   // "Who starts" intro banner. Backgammon convention used here:
-  // white always rolls first in a new match. We show this for ~3.5s
-  // when both players are paired but no game has started yet, so the
-  // player who's about to roll knows it's on them. Auto-dismisses;
-  // also dismissed the moment the first roll lands (currentGame
-  // becomes truthy).
-  const [introVisible, setIntroVisible] = useState(true);
+  // white always rolls first in a new match. The state + effect for
+  // this banner are declared near the top of the component (before
+  // early returns) so the hooks order stays stable — only the
+  // derived display values live here.
   const firstRollerColor: 'white' | 'black' = 'white';
   const firstRollerName =
     firstRollerColor === selfColor
       ? selfName ?? 'You'
       : oppName ?? 'Opponent';
   const firstRollerIsLocal = firstRollerColor === selfColor;
-  useEffect(() => {
-    // Only run the intro for a freshly-paired match. If a game has
-    // already been created, the match is in progress and the intro
-    // shouldn't appear.
-    if (!match.opponent_id || game.currentGame) {
-      setIntroVisible(false);
-      return;
-    }
-    setIntroVisible(true);
-    const id = window.setTimeout(() => setIntroVisible(false), 3500);
-    return () => window.clearTimeout(id);
-  }, [match.opponent_id, game.currentGame]);
   const showIntroBanner =
     introVisible &&
     !!match.opponent_id &&
