@@ -216,14 +216,21 @@ html, body, #root {
   will-change: background-position;
 }
 
+/* Animating background-position-x from a NEGATIVE tile-width up to
+   0 shifts the image origin RIGHTWARD over time, which makes the
+   visible content scroll LEFTWARD relative to the element — wait,
+   no: a specific bubble at image x=10 sits at element x=(image_x +
+   position_x). So as position_x increases from -42 to 0, that
+   bubble moves from element x=-32 (off-screen left) → x=10 (in
+   view). The bubble appears to flow LEFT → RIGHT. */
 @keyframes lobby-progress-flow-slow {
-  0% { background-position: 0 50%, 0 50%, 0 50%; }
-  100% { background-position: -42px 50%, -42px 50%, -42px 50%; }
+  0% { background-position: -42px 50%, -42px 50%, -42px 50%; }
+  100% { background-position: 0 50%, 0 50%, 0 50%; }
 }
 
 @keyframes lobby-progress-flow-fast {
-  0% { background-position: 0 50%, 0 50%; }
-  100% { background-position: -26px 50%, -26px 50%; }
+  0% { background-position: -26px 50%, -26px 50%; }
+  100% { background-position: 0 50%, 0 50%; }
 }
 
 .lobby-profile-progress-label {
