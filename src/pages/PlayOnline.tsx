@@ -518,64 +518,28 @@ export default function PlayOnline() {
         settleSide={isRollForSelf ? 'right' : 'left'}
       />
 
-      {/* Resign button — top-right of board. Only during active play
-          (not spectator, not finished, not waiting for opponent). The
-          confirm uses window.confirm because the resign flow is a
-          one-off "are you sure" — no need for a styled modal layer
-          when we already have native dialogs for cancel-match. */}
-      {!isSpectator && !game.matchFinished && !waiting && (
-        <button
-          type="button"
-          onClick={async () => {
-            if (!confirm('Resign this match? Your opponent will be credited with the win and you take the rating + payout penalty.')) return;
-            await game.resign();
-          }}
-          className="absolute top-2 right-2 z-20 px-2.5 py-1 rounded bg-black/60 border border-board-felt/20 text-board-felt/70 hover:text-rose-300 hover:border-rose-400/40 text-[11px] uppercase tracking-wider backdrop-blur transition"
-        >
-          Resign
-        </button>
+      {/* Manual claim-victory button — shown only once the auto-
+          forfeit conditions have actually fired (presence detected
+          opponent gone OR inactivity threshold elapsed). No more
+          "opponent thinking · claim in Xs" countdown — that intermediate
+          state was confusing and is now redundant: presence detects
+          tab-close / navigation within ~1.5 s and triggers the
+          forfeit automatically, so a manual claim button is only
+          a fallback for cases where presence somehow missed the
+          drop. */}
+      {!isSpectator && !game.matchFinished && game.canClaimByInactivity && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
+          <span>Opponent disconnected</span>
+          <button
+            onClick={async () => {
+              await game.claimByInactivity();
+            }}
+            className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
+          >
+            Claim victory
+          </button>
+        </div>
       )}
-
-      {/* Inactivity countdown / claim button — sits at top of board.
-          Shown only when the opponent has been silent for long enough
-          that "they're thinking" is no longer a charitable read. The
-          claim-in countdown reflects the actual inactivityForfeitMs
-          for this room (60s for Beginner, 135s for Pro, etc.) rather
-          than the hardcoded 5-minute default that used to render here
-          and confuse tier players whose actual threshold was way
-          shorter. */}
-      {(() => {
-        const totalForfeitSeconds = Math.floor((inactivityForfeitMs ?? 5 * 60 * 1000) / 1000);
-        // Show the indicator once the player has been waiting at
-        // least half the forfeit threshold, capped at 30s so even
-        // long-threshold rooms surface the indicator promptly.
-        const showThresholdSeconds = Math.min(Math.floor(totalForfeitSeconds / 2), 30);
-        if (isSpectator || game.matchFinished || game.isLocalTurn) return null;
-        if (game.secondsSinceActivity < showThresholdSeconds) return null;
-        const claimInSeconds = Math.max(0, totalForfeitSeconds - game.secondsSinceActivity);
-        return (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
-            {game.canClaimByInactivity ? (
-              <>
-                <span>Opponent inactive for {game.secondsSinceActivity}s</span>
-                <button
-                  onClick={async () => {
-                    if (!confirm('Claim victory by opponent timeout?')) return;
-                    await game.claimByInactivity();
-                  }}
-                  className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
-                >
-                  Claim victory
-                </button>
-              </>
-            ) : (
-              <span>
-                Opponent thinking · claim in {claimInSeconds}s
-              </span>
-            )}
-          </div>
-        );
-      })()}
     </BoardLayout>
   );
 }

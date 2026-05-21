@@ -18,6 +18,7 @@ import type {
 import { BAR, OFF } from '../engine/types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { useMatchPresence } from '../lib/useMatchPresence';
 import type { Database } from '../types/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
@@ -193,6 +194,16 @@ export interface OnlineGameActions {
   claimByInactivity(): Promise<void>;
 }
 
+// Grace period after the opponent's presence disappears before we
+// trigger a forfeit. Short enough to feel immediate to the remaining
+// player; long enough to absorb a brief refresh / network blip.
+// 1.5s is well under the typical "user is mid-refresh" window
+// (~3-4s on a slow page reload) so a legitimate refresh would still
+// forfeit — but tab-close / navigate-away cases produce the "leave"
+// event roughly instantly, so the visible delay before the
+// match-over overlay is ~1.5s in those cases.
+const PRESENCE_FORFEIT_GRACE_MS = 1500;
+
 export function useOnlineGame(
   matchId: string | undefined,
   options: UseOnlineGameOptions = {}
@@ -208,6 +219,26 @@ export function useOnlineGame(
   const [loading, setLoading] = useState(true);
   const [opponentPreviewReadyKey, setOpponentPreviewReadyKey] = useState<string | null>(null);
   const fetchInFlight = useRef(false);
+
+  // Per-match Realtime presence. When the opponent's tab closes /
+  // navigates away / drops, the leave event fires within ~1s — much
+  // faster than the time-based inactivity threshold which used to
+  // be the only forfeit path.
+  const { opponentOnline, opponentEverOnline } = useMatchPresence(
+    matchId,
+    user?.id ?? null,
+  );
+  const [opponentDisconnectedAt, setOpponentDisconnectedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (opponentOnline === true) {
+      setOpponentDisconnectedAt(null);
+    } else if (opponentOnline === false && opponentEverOnline) {
+      // Only the "online then offline" transition counts as a
+      // disconnect; the initial "not yet online" state shouldn't
+      // trigger a forfeit (opponent may still be loading the page).
+      setOpponentDisconnectedAt((prev) => prev ?? Date.now());
+    }
+  }, [opponentOnline, opponentEverOnline]);
 
   // Activity timestamps. Declared up here so the action callbacks
   // (rollDice, selectFrom, selectTo, endTurn) can bump
@@ -939,12 +970,29 @@ export function useOnlineGame(
   // opponent activity.
   const secondsSinceActivity = secondsSinceOpponentActivity;
 
+  // Two paths to the forfeit:
+  //   1. Time-based inactivity. Conservative fallback — fires when
+  //      the opponent's last visible action was more than the
+  //      room's inactivity threshold ago. Gated on !isLocalTurn so
+  //      we don't auto-forfeit during our own turn.
+  //   2. Presence-based disconnect. Fires the moment the opponent's
+  //      Realtime channel reports them gone (tab closed, navigated
+  //      to /home, network died), plus a small grace period for
+  //      accidental refreshes. NO !isLocalTurn check — if they're
+  //      gone, they're gone regardless of whose turn the engine
+  //      thinks it is.
+  const opponentDisconnectedFor =
+    opponentDisconnectedAt !== null ? now - opponentDisconnectedAt : 0;
+  const canForfeitByDisconnect =
+    opponentDisconnectedAt !== null &&
+    opponentDisconnectedFor >= PRESENCE_FORFEIT_GRACE_MS;
+
   const canClaimByInactivity =
     !matchFinished &&
     !!match &&
     !!match.opponent_id &&
-    !isLocalTurn &&
-    now - opponentClockBaseMs >= inactivityForfeitMs;
+    (canForfeitByDisconnect ||
+      (!isLocalTurn && now - opponentClockBaseMs >= inactivityForfeitMs));
 
   // ---- soft per-turn timer ----
   // Driven by lastLocalActivityMs, NOT lastOpponentActivityMs. The
