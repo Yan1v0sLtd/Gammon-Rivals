@@ -141,7 +141,7 @@ export function LobbyTopBar({
                 ring="none"
               />
             </div>
-            <div className="lobby-profile-level-shield">
+            <div className="lobby-profile-level-shield" data-fly-target="xp">
               {progression.level}
             </div>
           </Link>

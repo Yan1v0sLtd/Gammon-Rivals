@@ -44,9 +44,14 @@ interface Props {
 const SLOT_COUNT = 10;
 const SLOT_ANGLE = 360 / SLOT_COUNT;
 const SLOT_HALF = SLOT_ANGLE / 2;
-const SPIN_FAST_MS = 1200;
-const SPIN_DECEL_MS = 2200;
-const CELEBRATION_MS = 2400;
+/** Single-phase Power4 ease-out spin. Five seconds is long enough
+ *  for anticipation to build, short enough that the player isn't
+ *  bored. Matches the GSAP reference's feel. */
+const SPIN_DURATION_MS = 5000;
+/** How long the modal stays open AFTER the wheel lands and reward
+ *  flights launch. Needs to cover the longest flight delay + flight
+ *  duration so no token vanishes mid-arc when the modal unmounts. */
+const POST_SPIN_HOLD_MS = 1500;
 
 /** Per-accent gradient pair. The first hex shades the conic-gradient
  *  wedge; the second is used for darker rim/glow accents. Unknown
@@ -152,8 +157,37 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
 
   const discRef = useRef<HTMLDivElement | null>(null);
   const wheelCenterRef = useRef<HTMLDivElement | null>(null);
+  const tickerRef = useRef<HTMLDivElement | null>(null);
   const currentRotRef = useRef(0);
   const nextFlightIdRef = useRef(0);
+  const rafIdRef = useRef<number | null>(null);
+
+  /** Tilt the ticker briefly, then snap back. Called from the spin
+   *  rAF loop each time a wedge boundary crosses under the pointer.
+   *  Cancel any in-flight kick before starting a new one so rapid
+   *  early-spin boundaries don't pile up overlapping animations. */
+  const kickTicker = () => {
+    const el = tickerRef.current;
+    if (!el) return;
+    el.getAnimations().forEach((a) => a.cancel());
+    el.animate(
+      [
+        { transform: 'translateX(-50%) rotate(0deg)' },
+        { transform: 'translateX(-50%) rotate(-22deg)', offset: 0.4 },
+        { transform: 'translateX(-50%) rotate(0deg)' },
+      ],
+      { duration: 160, easing: 'ease-out', fill: 'forwards' }
+    );
+  };
+
+  // Stop the rAF loop if the modal unmounts mid-spin. Without this
+  // the loop would call setTransform on an unmounted element until
+  // it completes, which is harmless but wasteful.
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current != null) cancelAnimationFrame(rafIdRef.current);
+    };
+  }, []);
 
   const conicBg = useMemo(() => conicGradientFromSlots(slots), [slots]);
 
@@ -209,45 +243,59 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
     const result = data as unknown as SpinResult;
     setSpinResult(result);
 
-    // Two-phase rotation in a single Web Animation: fast linear
-    // ramp for SPIN_FAST_MS, then ease-out for SPIN_DECEL_MS,
-    // landing the chosen slot centred under the top pointer.
+    // Drive rotation manually via rAF so we can fire ticker kicks
+    // each time a wedge boundary crosses under the top pointer.
+    // Web Animations API would also work, but recovering the
+    // current rotation from a computed transform matrix every frame
+    // (to detect boundary crossings) is more code than the rAF
+    // loop. Easing is Power4 ease-out: 1 − (1−t)⁴ — starts fast,
+    // decelerates dramatically, which matches the GSAP reference.
     const disc = discRef.current;
     if (disc) {
-      const start = currentRotRef.current;
-      const fastDelta = 8 * 360;
-      const fastEnd = start + fastDelta;
-      const finalEnd = fastEnd + targetDelta(result.slot_index);
-      const totalMs = SPIN_FAST_MS + SPIN_DECEL_MS;
-      const splitOffset = SPIN_FAST_MS / totalMs;
-      const anim = disc.animate(
-        [
-          { transform: `rotate(${start}deg)` },
-          {
-            transform: `rotate(${fastEnd}deg)`,
-            offset: splitOffset,
-            easing: 'cubic-bezier(0.4, 0.0, 1, 1)',
-          },
-          {
-            transform: `rotate(${finalEnd}deg)`,
-            easing: 'cubic-bezier(0.17, 0.67, 0.21, 1)',
-          },
-        ],
-        { duration: totalMs, fill: 'forwards' }
-      );
-      try {
-        await anim.finished;
-      } catch {
-        // ignored — modal may have unmounted mid-spin
-      }
-      currentRotRef.current = finalEnd;
+      const startRot = currentRotRef.current;
+      const endRot = startRot + targetDelta(result.slot_index);
+      const startTime = performance.now();
+      // Wedge index just BEFORE the start; new crossings have an
+      // index strictly greater than this. Using Math.floor preserves
+      // sign so we don't mis-fire when startRot is exactly on a
+      // boundary.
+      let lastBoundary = Math.floor(startRot / SLOT_ANGLE);
+
+      await new Promise<void>((resolve) => {
+        const tick = (now: number) => {
+          const elapsed = now - startTime;
+          const t = Math.min(1, elapsed / SPIN_DURATION_MS);
+          const eased = 1 - Math.pow(1 - t, 4);
+          const rot = startRot + (endRot - startRot) * eased;
+          disc.style.transform = `rotate(${rot}deg)`;
+
+          const currentBoundary = Math.floor(rot / SLOT_ANGLE);
+          if (currentBoundary > lastBoundary) {
+            kickTicker();
+            lastBoundary = currentBoundary;
+          }
+
+          if (t < 1) {
+            rafIdRef.current = requestAnimationFrame(tick);
+          } else {
+            currentRotRef.current = endRot;
+            rafIdRef.current = null;
+            resolve();
+          }
+        };
+        rafIdRef.current = requestAnimationFrame(tick);
+      });
     }
 
     setPhase('celebrating');
 
-    // Spawn flying tokens toward the wallet pills. Stagger and
-    // count scale loosely with the reward — bigger wins look more
-    // dramatic without overwhelming the screen.
+    // Tiny pause so the player visually registers the winning
+    // wedge sitting under the pointer before tokens fly out.
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 220));
+
+    // Spawn flying tokens for every credited reward. Count scales
+    // loosely with the amount — bigger wins look more dramatic
+    // without overwhelming the lobby's wallet pills.
     if (result.credited_coins > 0) {
       const count = Math.min(8, Math.max(3, Math.ceil(result.credited_coins / 75)));
       spawnFlights('coins', count);
@@ -256,13 +304,17 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
       const count = Math.min(6, Math.max(2, result.credited_gems));
       spawnFlights('gems', count);
     }
+    if (result.credited_xp > 0) {
+      const count = Math.min(5, Math.max(2, result.credited_xp));
+      spawnFlights('xp', count);
+    }
 
-    // Hold the celebration long enough to read the prize, then
-    // hand back to the lobby for wallet/wheel refetch + close.
+    // Hold open long enough for the slowest-stagger flight to
+    // reach the wallet pill, then refresh + close.
     window.setTimeout(() => {
       onSpinComplete();
       onClose();
-    }, CELEBRATION_MS);
+    }, POST_SPIN_HOLD_MS);
   };
 
   // ESC closes the modal — only when idle so a user can't bail
@@ -324,14 +376,20 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                   } as React.CSSProperties
                 }
               >
-                {/* Top pointer — points DOWN into the wheel */}
+                {/* Top pointer / ticker — points DOWN into the wheel.
+                 *  Pivot is at the WIDE top edge so the kick rotation
+                 *  swings the apex from side to side, exactly like a
+                 *  physical pin getting brushed by passing wedges.
+                 *  Driven by kickTicker() during the spin loop. */}
                 <div
+                  ref={tickerRef}
                   aria-hidden
                   className="absolute z-20"
                   style={{
                     top: '-6%',
                     left: '50%',
                     transform: 'translateX(-50%)',
+                    transformOrigin: '50% 0%',
                     width: 0,
                     height: 0,
                     borderLeft: 'calc(var(--wheel-d) * 0.05) solid transparent',
@@ -504,34 +562,10 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                   }}
                 />
 
-                {/* Celebration prize banner — overlays the wheel centre
-                 *  during the celebration phase. Pulses for emphasis. */}
-                {phase === 'celebrating' && spinResult ? (
-                  <div
-                    className="pointer-events-none absolute inset-0 z-30 grid place-items-center"
-                  >
-                    <div className="animate-pulse rounded-xl border-4 border-amber-200 bg-gradient-to-b from-[#fcd34d] to-[#b45309] px-4 py-2 text-center font-display font-black uppercase tracking-[0.1em] text-white shadow-[0_8px_28px_rgba(0,0,0,0.7)]">
-                      <div className="text-lg sm:text-2xl">
-                        {spinResult.label ?? 'You win!'}
-                      </div>
-                      <div className="mt-1 text-xs sm:text-sm font-bold">
-                        {[
-                          spinResult.credited_coins > 0
-                            ? `+${spinResult.credited_coins} coins`
-                            : null,
-                          spinResult.credited_gems > 0
-                            ? `+${spinResult.credited_gems} gems`
-                            : null,
-                          spinResult.credited_xp > 0
-                            ? `+${spinResult.credited_xp} XP`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+                {/* No celebration overlay here — reward feedback is
+                 *  delivered entirely by the flying-token animation
+                 *  that launches from the wheel centre toward the
+                 *  wallet pills + level shield. */}
               </div>
 
               {/* SPIN CTA. Tap-to-spin on the wheel itself is also
@@ -543,11 +577,7 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                 onClick={handleSpin}
                 className="mt-5 rounded-full border-2 border-amber-900/50 bg-gradient-to-b from-[#fbbf24] to-[#ea580c] px-10 py-2.5 font-display text-2xl font-black uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {phase === 'spinning'
-                  ? 'Spinning…'
-                  : phase === 'celebrating'
-                    ? 'Nice!'
-                    : 'Spin'}
+                {phase === 'idle' ? 'Spin' : 'Spinning…'}
               </button>
 
               {error ? (

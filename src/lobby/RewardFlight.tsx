@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export type FlightCurrency = 'coins' | 'gems';
+export type FlightCurrency = 'coins' | 'gems' | 'xp';
 
 export interface RewardFlightSpec {
   readonly id: number;
@@ -17,10 +17,42 @@ export interface RewardFlightSpec {
   readonly durationMs: number;
 }
 
-const ICONS: Record<FlightCurrency, string> = {
+/** Webp icon URLs per currency. XP has no webp asset — the JSX
+ *  below renders the inline hex SVG instead so the missing file
+ *  doesn't show as a broken-image glyph. */
+const ICONS: Partial<Record<FlightCurrency, string>> = {
   coins: '/lobby/icons/gold-coin.webp',
   gems: '/lobby/carousel/gem.webp',
 };
+
+/** Inline XP hex — matches the DailyBonus + WheelModal styling. */
+function XpHexInline() {
+  return (
+    <svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden>
+      <defs>
+        <linearGradient id="rf-xp-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#581c87" />
+        </linearGradient>
+      </defs>
+      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#fbbf24" />
+      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#rf-xp-fill)" />
+      <text
+        x="50"
+        y="68"
+        textAnchor="middle"
+        fontFamily="system-ui, sans-serif"
+        fontWeight="900"
+        fontSize="34"
+        fill="white"
+        stroke="rgba(0,0,0,0.35)"
+        strokeWidth="1"
+      >
+        XP
+      </text>
+    </svg>
+  );
+}
 
 interface Props {
   readonly spec: RewardFlightSpec;
@@ -109,12 +141,16 @@ export function RewardFlight({ spec, onLanded }: Props) {
         transform: 'translate(-50%, -50%)',
       }}
     >
-      <img
-        src={ICONS[spec.currency]}
-        alt=""
-        className="h-full w-full"
-        draggable={false}
-      />
+      {spec.currency === 'xp' ? (
+        <XpHexInline />
+      ) : (
+        <img
+          src={ICONS[spec.currency]}
+          alt=""
+          className="h-full w-full"
+          draggable={false}
+        />
+      )}
     </div>
   );
 }
