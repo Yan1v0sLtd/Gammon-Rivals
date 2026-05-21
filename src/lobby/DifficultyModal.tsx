@@ -44,78 +44,80 @@ interface DifficultyModalProps {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Per-tier accent palettes                                                   */
+/* Per-tier accent palette                                                    */
 /*                                                                            */
-/* Each accent slug (stored on table_configs.accent_color so a new tier can   */
-/* pick its colour without a code change) maps to a full visual palette:      */
-/*   - title  → hex used for the tier display name                            */
-/*   - value  → hex used for the stat numbers                                 */
-/*   - btnTop / btnBot → gradient stops for the SELECT button                 */
-/*   - heroGrad → fallback gradient when no /lobby/difficulties/{id}.webp     */
-/*                hero image is provided yet                                  */
-/*   - shadow → ambient glow under the card                                   */
+/* Inspired by the Clash-of-Clans-style "unit card" the user referenced:      */
+/* white card body, tier-coloured name + stats strip + SELECT footer.         */
+/*                                                                            */
+/*   title       → small caps label above the tier name, in tier colour      */
+/*   stat        → solid background of the 3-stats bottom strip               */
+/*   statBorder  → vertical divider between stat columns (slightly darker)    */
+/*   select      → SELECT-button gradient (darker than `stat` so the strip    */
+/*                 reads as primary info and SELECT reads as the CTA)         */
+/*   heroGrad    → fallback gradient when the per-tier .webp isn't present    */
+/*   halo        → ambient glow under the card                                */
 /* -------------------------------------------------------------------------- */
 
 interface TierPalette {
   title: string;
-  value: string;
-  btnTop: string;
-  btnBot: string;
-  btnBorder: string;
+  stat: string;
+  statBorder: string;
+  selectTop: string;
+  selectBot: string;
   heroGrad: string;
-  shadow: string;
+  halo: string;
 }
 
 const PALETTES: Record<string, TierPalette> = {
   green: {
-    title: '#4ade80',
-    value: '#4ade80',
-    btnTop: '#22c55e',
-    btnBot: '#14532d',
-    btnBorder: 'rgba(187,247,208,0.9)',
+    title: '#16a34a',
+    stat: '#22c55e',
+    statBorder: '#16a34a',
+    selectTop: '#16a34a',
+    selectBot: '#14532d',
     heroGrad:
-      'linear-gradient(180deg, rgba(8,30,17,0.0) 0%, rgba(4,16,10,0.65) 100%), radial-gradient(circle at 50% 30%, #1f6b3a 0%, #082514 70%)',
-    shadow: '0 0 28px -8px rgba(34,197,94,0.55)',
+      'radial-gradient(circle at 50% 35%, #1f6b3a 0%, #082514 70%)',
+    halo: '0 0 28px -8px rgba(34,197,94,0.55)',
   },
   blue: {
-    title: '#60a5fa',
-    value: '#60a5fa',
-    btnTop: '#3b82f6',
-    btnBot: '#1e3a8a',
-    btnBorder: 'rgba(191,219,254,0.9)',
+    title: '#2563eb',
+    stat: '#3b82f6',
+    statBorder: '#1d4ed8',
+    selectTop: '#1d4ed8',
+    selectBot: '#1e3a8a',
     heroGrad:
-      'linear-gradient(180deg, rgba(7,16,33,0.0) 0%, rgba(4,9,20,0.65) 100%), radial-gradient(circle at 50% 30%, #1e3a8a 0%, #0b1530 70%)',
-    shadow: '0 0 28px -8px rgba(59,130,246,0.55)',
+      'radial-gradient(circle at 50% 35%, #1e3a8a 0%, #0b1530 70%)',
+    halo: '0 0 28px -8px rgba(59,130,246,0.55)',
   },
   purple: {
-    title: '#c084fc',
-    value: '#c084fc',
-    btnTop: '#a855f7',
-    btnBot: '#581c87',
-    btnBorder: 'rgba(233,213,255,0.9)',
+    title: '#9333ea',
+    stat: '#a855f7',
+    statBorder: '#7e22ce',
+    selectTop: '#7e22ce',
+    selectBot: '#4c1d95',
     heroGrad:
-      'linear-gradient(180deg, rgba(28,9,42,0.0) 0%, rgba(12,5,22,0.65) 100%), radial-gradient(circle at 50% 30%, #6b21a8 0%, #2b0a4a 70%)',
-    shadow: '0 0 28px -8px rgba(168,85,247,0.55)',
+      'radial-gradient(circle at 50% 35%, #6b21a8 0%, #2b0a4a 70%)',
+    halo: '0 0 28px -8px rgba(168,85,247,0.55)',
   },
   red: {
-    title: '#f87171',
-    value: '#f87171',
-    btnTop: '#ef4444',
-    btnBot: '#7f1d1d',
-    btnBorder: 'rgba(254,202,202,0.9)',
+    title: '#dc2626',
+    stat: '#ef4444',
+    statBorder: '#b91c1c',
+    selectTop: '#b91c1c',
+    selectBot: '#7f1d1d',
     heroGrad:
-      'linear-gradient(180deg, rgba(37,10,12,0.0) 0%, rgba(16,6,8,0.65) 100%), radial-gradient(circle at 50% 30%, #991b1b 0%, #3b0a0a 70%)',
-    shadow: '0 0 28px -8px rgba(239,68,68,0.55)',
+      'radial-gradient(circle at 50% 35%, #991b1b 0%, #3b0a0a 70%)',
+    halo: '0 0 28px -8px rgba(239,68,68,0.55)',
   },
   gold: {
-    title: '#fcd34d',
-    value: '#fcd34d',
-    btnTop: '#fbbf24',
-    btnBot: '#92400e',
-    btnBorder: 'rgba(254,243,199,0.9)',
+    title: '#b45309',
+    stat: '#f59e0b',
+    statBorder: '#b45309',
+    selectTop: '#b45309',
+    selectBot: '#78350f',
     heroGrad:
-      'linear-gradient(180deg, rgba(42,28,8,0.0) 0%, rgba(18,12,4,0.65) 100%), radial-gradient(circle at 50% 30%, #b45309 0%, #2b1a05 70%)',
-    shadow: '0 0 28px -8px rgba(251,191,36,0.55)',
+      'radial-gradient(circle at 50% 35%, #b45309 0%, #2b1a05 70%)',
+    halo: '0 0 28px -8px rgba(251,191,36,0.55)',
   },
 };
 
@@ -123,9 +125,20 @@ function paletteFor(slug: string): TierPalette {
   return PALETTES[slug] ?? PALETTES.gold!;
 }
 
+/* Default headline copy per tier — used when table_configs.description
+ * is empty. Short, evocative, matches the in-image text on the
+ * provided hero artwork. */
+const DEFAULT_HEADLINES: Record<string, string> = {
+  green: 'Good moves, good friends, great games.',
+  blue: 'Strategy. Discipline. Patience. Victory.',
+  purple: 'High stakes. VIP only.',
+  red: 'Elite challengers welcome.',
+  gold: 'Legends are not born — they are made.',
+};
+
 function formatSeconds(s: number): string {
-  if (s < 60) return `${s} Sec`;
-  if (s % 60 === 0) return `${s / 60} Min`;
+  if (s < 60) return `${s}s`;
+  if (s % 60 === 0) return `${s / 60}m`;
   return `${Math.floor(s / 60)}m ${s % 60}s`;
 }
 
@@ -133,211 +146,6 @@ function metadataText(metadata: Json, key: string): string | null {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
   const value = (metadata as Record<string, Json>)[key];
   return typeof value === 'string' ? value : null;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Icon components                                                            */
-/* -------------------------------------------------------------------------- */
-
-/** XP boost stat icon — a 6-sided badge with "XP" text. Tinted by the
- *  active tier so the icon matches the value colour below it. */
-function XpHexBadge({ colour }: { colour: string }) {
-  return (
-    <svg viewBox="0 0 40 44" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
-      <polygon points="20,2 38,12 38,32 20,42 2,32 2,12" fill={colour} opacity="0.95" />
-      <polygon points="20,5 35,13.5 35,30.5 20,39 5,30.5 5,13.5" fill="#0f0a1a" />
-      <text
-        x="20" y="27" textAnchor="middle"
-        fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="13" fill="#fff"
-      >XP</text>
-    </svg>
-  );
-}
-
-/** Entry-fee stat icon — gold coin with star centre. Static gold
- *  across all tiers so it reads as "currency" rather than a
- *  tier-specific decoration. */
-function StarCoinBadge() {
-  return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
-      <defs>
-        <linearGradient id="diff-star-bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fde68a" />
-          <stop offset="50%" stopColor="#fbbf24" />
-          <stop offset="100%" stopColor="#b45309" />
-        </linearGradient>
-      </defs>
-      <circle cx="20" cy="20" r="17" fill="url(#diff-star-bg)" stroke="#5a3413" strokeWidth="2" />
-      <polygon
-        points="20,8 23,16 32,16.8 25,22 27.4,30.5 20,25.6 12.6,30.5 15,22 8,16.8 17,16"
-        fill="#fff8e1"
-        stroke="#7c2d12"
-        strokeWidth="0.6"
-      />
-    </svg>
-  );
-}
-
-/** Time-to-move stat icon — analog clock face. Static gold so the
- *  three legend rows form a consistent visual trio. */
-function ClockBadge() {
-  return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
-      <circle cx="20" cy="20" r="17" fill="#fde68a" stroke="#5a3413" strokeWidth="2" />
-      <circle cx="20" cy="20" r="13" fill="none" stroke="#7c2d12" strokeWidth="0.8" />
-      <line x1="20" y1="20" x2="20" y2="10" stroke="#7c2d12" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="20" y1="20" x2="27" y2="23" stroke="#7c2d12" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="20" cy="20" r="1.5" fill="#7c2d12" />
-    </svg>
-  );
-}
-
-/** Tier crest — small icon on a circular badge sitting at the top of
- *  each card. The symbol varies per tier and visually reinforces the
- *  difficulty's "vibe" (chips for beginner, drink for advanced,
- *  crown for pro, helmet for expert, laurel wreath for grand master).
- *
- *  All five share the same gold rim + dark interior so the strip of
- *  five crests reads as a set. */
-function TierCrest({ accent }: { accent: string }) {
-  const palette = paletteFor(accent);
-  // Symbol path varies per tier. Each is sized to a 24×24 viewBox
-  // so the crests all balance visually.
-  let symbol: React.ReactNode = null;
-  switch (accent) {
-    case 'green':
-      // Stacked poker chips — three flat ovals.
-      symbol = (
-        <g fill="none" stroke={palette.title} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <ellipse cx="12" cy="9" rx="6.5" ry="1.8" fill={palette.title} fillOpacity="0.18" />
-          <ellipse cx="12" cy="13" rx="6.5" ry="1.8" fill={palette.title} fillOpacity="0.18" />
-          <ellipse cx="12" cy="17" rx="6.5" ry="1.8" fill={palette.title} fillOpacity="0.32" />
-        </g>
-      );
-      break;
-    case 'blue':
-      // Two overlapping chips — represents a higher-stakes table.
-      symbol = (
-        <g fill="none" stroke={palette.title} strokeWidth="1.8">
-          <circle cx="9" cy="13" r="5.5" fill={palette.title} fillOpacity="0.25" />
-          <circle cx="15" cy="13" r="5.5" fill={palette.title} fillOpacity="0.4" />
-        </g>
-      );
-      break;
-    case 'purple':
-      // Crown — 3 peaks on a base. The "pro" / featured tier.
-      symbol = (
-        <g fill={palette.title} stroke={palette.title} strokeWidth="0.5" strokeLinejoin="round">
-          <path d="M4 17 L6 8 L9 12 L12 6 L15 12 L18 8 L20 17 Z" />
-          <rect x="4" y="17" width="16" height="2.5" />
-        </g>
-      );
-      break;
-    case 'red':
-      // Knight helmet — simple silhouette.
-      symbol = (
-        <g fill={palette.title} stroke={palette.title} strokeWidth="0.5">
-          <path d="M6 8 Q6 4 12 4 Q18 4 18 8 L18 14 Q18 17 16 18 L16 20 L8 20 L8 18 Q6 17 6 14 Z" fillOpacity="0.85" />
-          <rect x="8" y="10" width="8" height="1.2" fill="#0f0a1a" />
-        </g>
-      );
-      break;
-    case 'gold':
-    default:
-      // Laurel wreath + crown for grand master.
-      symbol = (
-        <g fill={palette.title} stroke={palette.title} strokeWidth="0.5">
-          <path d="M5 18 Q3 13 5 9 Q7 11 8 14 Q7 17 5 18 Z" />
-          <path d="M19 18 Q21 13 19 9 Q17 11 16 14 Q17 17 19 18 Z" />
-          <path d="M7 17 L9 9 L12 13 L15 9 L17 17 Z" />
-        </g>
-      );
-      break;
-  }
-  return (
-    <div
-      className="relative grid h-14 w-14 place-items-center rounded-full border-[3px]"
-      style={{
-        background: 'radial-gradient(circle at 35% 30%, #2b2820 0%, #0a0805 75%)',
-        borderColor: '#d3a04e',
-        boxShadow:
-          'inset 0 1px 0 rgba(255,255,255,0.15), 0 4px 10px rgba(0,0,0,0.55)',
-      }}
-      aria-hidden
-    >
-      <svg viewBox="0 0 24 24" className="h-9 w-9 drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]">
-        {symbol}
-      </svg>
-    </div>
-  );
-}
-
-/** Four-corner gold bracket decoration. Used on the modal frame and
- *  on every SELECT button so the trim reads as a set. Each corner is
- *  a small L-shape drawn with two CSS borders on a fixed-size span.
- *  Pure presentational — `aria-hidden` so screen readers skip the
- *  decoration. */
-function CornerBrackets({
-  size = '0.7rem',
-  thickness = '2px',
-  colour = '#d3a04e',
-  inset = '0.18rem',
-}: {
-  size?: string;
-  thickness?: string;
-  colour?: string;
-  inset?: string;
-}) {
-  const base: React.CSSProperties = {
-    position: 'absolute',
-    width: size,
-    height: size,
-    pointerEvents: 'none',
-  };
-  return (
-    <>
-      <span
-        aria-hidden
-        style={{
-          ...base,
-          top: inset,
-          left: inset,
-          borderTop: `${thickness} solid ${colour}`,
-          borderLeft: `${thickness} solid ${colour}`,
-        }}
-      />
-      <span
-        aria-hidden
-        style={{
-          ...base,
-          top: inset,
-          right: inset,
-          borderTop: `${thickness} solid ${colour}`,
-          borderRight: `${thickness} solid ${colour}`,
-        }}
-      />
-      <span
-        aria-hidden
-        style={{
-          ...base,
-          bottom: inset,
-          left: inset,
-          borderBottom: `${thickness} solid ${colour}`,
-          borderLeft: `${thickness} solid ${colour}`,
-        }}
-      />
-      <span
-        aria-hidden
-        style={{
-          ...base,
-          bottom: inset,
-          right: inset,
-          borderBottom: `${thickness} solid ${colour}`,
-          borderRight: `${thickness} solid ${colour}`,
-        }}
-      />
-    </>
-  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -357,17 +165,31 @@ interface CardProps {
 function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, onGetCoins }: CardProps) {
   const palette = paletteFor(row.accent_color);
   const heroOverride = metadataText(row.metadata, 'heroImage');
-  // The hero panel layers a (potentially missing) per-tier image
-  // OVER the tier gradient. If the .webp file doesn't exist the
-  // browser silently falls through to the gradient — no broken
-  // <img> icon. Operators can override by setting metadata.heroImage
-  // in the BO Difficulties section without redeploying the client.
-  const heroPath = heroOverride ?? `/lobby/difficulties/${row.id}.webp`;
+  // Layer the per-tier image OVER the tier gradient. If the .webp
+  // file is missing, the browser silently drops the image layer and
+  // the gradient shows — no broken-image icon. Operators can swap
+  // images per tier without redeploying by setting
+  // metadata.heroImage in the BO Difficulties section.
+  //
+  // Path convention: strip the `difficulty-` prefix so the seed's
+  // row.id `difficulty-grand-master` resolves to the cleaner asset
+  // path `/lobby/difficulties/grand-master.webp`. Operators
+  // creating custom tiers without that prefix get their bare id
+  // used as-is.
+  const heroSlug = row.id.startsWith('difficulty-')
+    ? row.id.slice('difficulty-'.length)
+    : row.id;
+  const heroPath = heroOverride ?? `/lobby/difficulties/${heroSlug}.webp`;
   const heroStyle: React.CSSProperties = {
     backgroundImage: `url("${heroPath}"), ${palette.heroGrad}`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
   };
+
+  const description =
+    (row.description && row.description.trim().length > 0
+      ? row.description
+      : DEFAULT_HEADLINES[row.accent_color] ?? '');
 
   const buttonDisabled = busy || levelLocked;
   const buttonLabel = levelLocked
@@ -378,126 +200,103 @@ function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, 
         ? 'Select'
         : 'Get Coins';
 
-  // Gray-out the button when level-locked; otherwise honour the tier
-  // palette (so SELECT reads as the tier colour). Get-Coins still
-  // gets the orange palette so it stands apart from a normal SELECT.
-  const buttonBg = levelLocked
+  // Locked / unaffordable states swap the SELECT bar's palette so
+  // the CTA's colour matches its intent (grey = locked, orange =
+  // shop nudge, tier-colour = ready-to-play).
+  const selectBg = levelLocked
     ? 'linear-gradient(180deg, #64748b 0%, #1e293b 100%)'
     : !affordable
-      ? 'linear-gradient(180deg, #fbbf24 0%, #ea580c 100%)'
-      : `linear-gradient(180deg, ${palette.btnTop} 0%, ${palette.btnBot} 100%)`;
+      ? 'linear-gradient(180deg, #ea580c 0%, #7c2d12 100%)'
+      : `linear-gradient(180deg, ${palette.selectTop} 0%, ${palette.selectBot} 100%)`;
 
   return (
     <div
-      className="relative flex flex-col rounded-2xl border-2"
+      className="flex flex-col overflow-hidden rounded-2xl bg-[#fdfaf3]"
       style={{
-        background: 'linear-gradient(180deg, #1a120a 0%, #0a0604 100%)',
-        // Featured (centre) card gets a brighter gold rim + bigger
-        // glow so it draws the eye.
-        borderColor: featured ? '#fcd34d' : '#5a3a14',
+        // Featured tier (middle of the row) gets a brighter halo +
+        // gentle scale lift to signal "this is the spotlight".
         boxShadow: featured
-          ? '0 0 32px -4px rgba(252,211,77,0.6), 0 14px 30px rgba(0,0,0,0.55)'
-          : `${palette.shadow}, 0 14px 30px rgba(0,0,0,0.55)`,
-        // Slight scale on the featured card matches the reference's
-        // "this one is special" lift.
+          ? `0 0 32px -2px rgba(252,211,77,0.7), 0 18px 30px rgba(0,0,0,0.55)`
+          : `${palette.halo}, 0 14px 26px rgba(0,0,0,0.55)`,
         transform: featured ? 'scale(1.04)' : undefined,
         zIndex: featured ? 1 : 0,
       }}
     >
-      {/* Hero panel — image (or gradient fallback) for the top ~55%
-          of the card. Crest sits absolutely on top of this panel so
-          the rest of the card flow stays simple. */}
+      {/* Hero panel — the per-tier room image. Aspect-ratio is
+          locked so all five cards stay perfectly aligned regardless
+          of the source image's intrinsic size. */}
       <div
-        className="relative h-44 w-full overflow-hidden rounded-t-2xl"
-        style={heroStyle}
-      >
-        {/* Crest — sits at the top, half overlapping the rounded
-            top edge of the hero. */}
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-          <TierCrest accent={row.accent_color} />
-        </div>
+        className="w-full"
+        style={{
+          ...heroStyle,
+          aspectRatio: '4 / 3',
+        }}
+        aria-hidden
+      />
 
-        {/* Tier name centred below the crest, on the hero. */}
-        <div className="absolute bottom-3 left-0 right-0 text-center">
-          <div
-            className="inline-block font-display text-xl font-black uppercase tracking-[0.18em] drop-shadow-[0_3px_4px_rgba(0,0,0,0.75)]"
-            style={{ color: palette.title }}
-          >
-            {row.display_name}
-          </div>
-        </div>
-      </div>
-
-      {/* Stats panel — 3 rows separated by hairline dividers. */}
-      <div className="flex flex-1 flex-col gap-2 px-3 pb-3 pt-3">
-        <div className="flex items-center gap-3">
-          <XpHexBadge colour={palette.value} />
-          <div className="min-w-0 flex-1">
-            <div className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/55">XP Boost</div>
-            <div
-              className="font-display text-lg font-black tabular-nums"
-              style={{ color: palette.value }}
-            >
-              {row.xp_multiplier_pct}%
-            </div>
-          </div>
-        </div>
-
-        <div className="h-px bg-white/8" />
-
-        <div className="flex items-center gap-3">
-          <StarCoinBadge />
-          <div className="min-w-0 flex-1">
-            <div className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/55">Entry Fee</div>
-            <div
-              className="font-display text-lg font-black tabular-nums"
-              style={{ color: palette.value }}
-            >
-              {formatCompactNumber(row.entry_fee_coins)}
-            </div>
-          </div>
-        </div>
-
-        <div className="h-px bg-white/8" />
-
-        <div className="flex items-center gap-3">
-          <ClockBadge />
-          <div className="min-w-0 flex-1">
-            <div className="text-[0.6rem] font-bold uppercase tracking-[0.16em] text-white/55">Time to Move</div>
-            <div
-              className="font-display text-lg font-black tabular-nums"
-              style={{ color: palette.value }}
-            >
-              {formatSeconds(row.turn_seconds)}
-            </div>
-          </div>
-        </div>
-
-        {/* SELECT button. Tier-coloured gradient + small gold
-            corner brackets on the four corners to match the
-            reference design. */}
-        <button
-          type="button"
-          onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
-          disabled={buttonDisabled}
-          className="relative mt-3 rounded-md py-2.5 font-display text-base font-black uppercase tracking-[0.22em] text-white shadow-md transition active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0 hover:brightness-110"
-          style={{
-            background: buttonBg,
-            border: `2px solid ${levelLocked ? '#475569' : palette.btnBorder}`,
-            opacity: buttonDisabled && !levelLocked ? 0.65 : 1,
-          }}
+      {/* Title block — tier name in colour over a cream body, with
+          a short headline beneath. Centred to match the reference
+          Clash-card composition. */}
+      <div className="flex flex-col items-center px-4 pt-3 pb-2 text-center">
+        <div
+          className="font-display text-xl font-black uppercase tracking-[0.16em] sm:text-2xl"
+          style={{ color: palette.title }}
         >
-          {/* Gold corner brackets — same idiom as the outer modal
-              frame, repeated here so the SELECT CTA visually echoes
-              the parent. Hidden on the locked / unaffordable states
-              because the gold accent would clash with their grey /
-              orange palette. */}
-          {!levelLocked && affordable ? (
-            <CornerBrackets size="0.55rem" thickness="2px" colour="#fde68a" inset="0.2rem" />
-          ) : null}
-          <span className="relative z-10">{buttonLabel}</span>
-        </button>
+          {row.display_name}
+        </div>
+        <div className="mt-1.5 line-clamp-2 text-[0.72rem] font-bold leading-snug text-stone-600 sm:text-xs">
+          {description}
+        </div>
       </div>
+
+      {/* Stats strip — solid tier colour, 3 equal columns with
+          slightly-darker dividers between them. Values stay BIG and
+          labels small + uppercase, matching the reference. */}
+      <div
+        className="grid grid-cols-3 text-center text-white"
+        style={{ background: palette.stat }}
+      >
+        <div className="px-2 py-3" style={{ borderRight: `1px solid ${palette.statBorder}` }}>
+          <div className="font-display text-base font-black leading-none sm:text-lg">
+            {row.xp_multiplier_pct}%
+          </div>
+          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
+            XP Boost
+          </div>
+        </div>
+        <div className="px-2 py-3" style={{ borderRight: `1px solid ${palette.statBorder}` }}>
+          <div className="font-display text-base font-black leading-none tabular-nums sm:text-lg">
+            {formatCompactNumber(row.entry_fee_coins)}
+          </div>
+          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
+            Entry Fee
+          </div>
+        </div>
+        <div className="px-2 py-3">
+          <div className="font-display text-base font-black leading-none tabular-nums sm:text-lg">
+            {formatSeconds(row.turn_seconds)}
+          </div>
+          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
+            Time to Move
+          </div>
+        </div>
+      </div>
+
+      {/* SELECT footer — darker tier gradient (or grey / orange in
+          the locked / unaffordable cases). Acts as the primary CTA;
+          the rest of the card is information. */}
+      <button
+        type="button"
+        onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
+        disabled={buttonDisabled}
+        className="font-display py-3 text-center text-base font-black uppercase tracking-[0.22em] text-white transition active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0 hover:brightness-110"
+        style={{
+          background: selectBg,
+          opacity: buttonDisabled && !levelLocked ? 0.65 : 1,
+        }}
+      >
+        {buttonLabel}
+      </button>
     </div>
   );
 }
@@ -565,7 +364,7 @@ export function DifficultyModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -583,11 +382,7 @@ export function DifficultyModal({
           padding: 'clamp(1rem, 2vw, 1.75rem)',
         }}
       >
-        {/* Outer-frame corner brackets — same trim as the SELECT
-            buttons so the modal reads as one styled family. */}
-        <CornerBrackets size="1.6rem" thickness="3px" colour="#fcd34d" inset="0.55rem" />
-
-        {/* Header — title + sparkle flourishes + subtitle + close. */}
+        {/* Header */}
         <div className="relative mb-6 flex flex-col items-center text-center">
           <div className="flex items-center gap-4">
             <span className="text-2xl text-amber-300/70">✦</span>
@@ -621,7 +416,7 @@ export function DifficultyModal({
             No difficulties configured yet.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 pt-4 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
+          <div className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
             {rows.map((row, index) => (
               <DifficultyCard
                 key={row.id}
@@ -645,8 +440,10 @@ export function DifficultyModal({
           </div>
         )}
 
-        {/* Footer legend — 3 tips matching the reference's layout
-            (XP / Entry / Time). */}
+        {/* Footer legend — three short tips matching the reference's
+            information density. Cream/dark contrast so the legend
+            visually anchors the dark frame without pulling focus
+            from the bright cards. */}
         <div
           className="mt-6 grid gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 md:grid-cols-3 md:text-sm"
           style={{
@@ -655,22 +452,27 @@ export function DifficultyModal({
           }}
         >
           <div className="flex items-start gap-3">
-            <XpHexBadge colour="#c084fc" />
+            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white" style={{ background: '#a855f7' }}>
+              <strong className="text-[0.6rem]">XP</strong>
+            </span>
             <span>Higher difficulty grants more XP for your victories.</span>
           </div>
           <div className="flex items-start gap-3">
-            <StarCoinBadge />
+            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-amber-900" style={{ background: 'linear-gradient(180deg, #fde68a, #f59e0b)' }}>
+              ★
+            </span>
             <span>Entry fee is deducted from your balance when you join the room.</span>
           </div>
           <div className="flex items-start gap-3">
-            <ClockBadge />
+            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-amber-900 text-base" style={{ background: 'linear-gradient(180deg, #fde68a, #f59e0b)' }}>
+              ⏱
+            </span>
             <span>Time to move is the total time you have for each turn.</span>
           </div>
         </div>
 
-        {/* Matchmaking overlay. Unchanged from the previous design —
-            renders inside the modal panel while the parent polls
-            find_match_in_tier. */}
+        {/* Matchmaking overlay — unchanged. Mounts over the card grid
+            while the parent polls find_match_in_tier. */}
         {matchmaking?.searchingForTier ? (
           <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-black/85 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-4 px-6 text-center">
