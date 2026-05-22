@@ -166,26 +166,12 @@ function ClockIcon() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* SELECT button — chamfered / octagonal shape with gold rim                  */
-/*                                                                            */
-/* Restored the "ornate" CTA shape from the reference design: a flat-top      */
-/* octagon (small triangle clipped at each of the 4 corners) with a thin     */
-/* gold rim hugging the outline. Two stacked clip-pathed divs do the work — */
-/* outer = gold gradient, inner = tier gradient inset by 2 px, so the gold  */
-/* bleeds through as a uniform-thickness border around the inner fill.      */
-/* -------------------------------------------------------------------------- */
-
-const CHAMFER_PCT = '14%';
-const CHAMFER_PCT_INV = `calc(100% - ${CHAMFER_PCT})`;
-const OCTAGON_CLIP = `polygon(
-  ${CHAMFER_PCT} 0,
-  ${CHAMFER_PCT_INV} 0,
-  100% 50%,
-  ${CHAMFER_PCT_INV} 100%,
-  ${CHAMFER_PCT} 100%,
-  0 50%
-)`;
+/* Earlier iterations of this modal experimented with a chamfered /
+ * octagonal SELECT button (gold-rim hex). The user asked to revert
+ * to the original rounded-rect CTA (green Play / orange Get Coins /
+ * grey Unlocks) so the chamfer helper is gone. The tier accent
+ * still drives the title strip + stat values; the button colour is
+ * now status-driven (playable / shop nudge / locked). */
 
 function formatSeconds(s: number): string {
   if (s < 60) return `${s}s`;
@@ -242,17 +228,21 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
     : busy
       ? 'Searching…'
       : affordable
-        ? 'Select'
+        ? 'Play'
         : 'Get Coins';
 
-  // SELECT button palette swaps for locked / unaffordable states.
-  // Active tier keeps its accent gradient; locked goes grey;
-  // unaffordable falls back to the orange "Get Coins" treatment.
-  const innerSelectBg = levelLocked
-    ? 'linear-gradient(180deg, #64748b 0%, #1e293b 100%)'
-    : !affordable
-      ? 'linear-gradient(180deg, #f97316 0%, #7c2d12 100%)'
-      : `linear-gradient(180deg, ${palette.selectTop} 0%, ${palette.selectBot} 100%)`;
+  // CTA palette decides the BUTTON's colour — independent of the
+  // tier accent, so the green / orange / grey treatment reads as
+  // a universal play / shop-nudge / locked signal. (Tier identity
+  // lives in the tier name strip + stat values.)
+  const ctaClass = levelLocked
+    ? 'border border-slate-700/70 bg-gradient-to-b from-slate-500 to-slate-700 cursor-not-allowed opacity-90'
+    : affordable
+      ? 'border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 hover:brightness-110 disabled:cursor-wait disabled:opacity-60'
+      : // "Get Coins" gets the orange palette so it reads as a
+        // separate-from-Play CTA — a nudge toward the shop, not a
+        // normal positive action.
+        'border border-amber-900/60 bg-gradient-to-b from-amber-400 to-orange-600 hover:brightness-110 disabled:cursor-wait disabled:opacity-60';
 
   return (
     <div
@@ -266,6 +256,23 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
         border: '1px solid rgba(211,160,78,0.35)',
       }}
     >
+      {/* Tier name strip — sits above the hero on the dark card
+          background, rendered in the tier accent so the difficulty
+          identity (BEGINNER / ADVANCED / PRO / EXPERT / GRAND
+          MASTER) reads even when the player only glances at the
+          modal. */}
+      <div className="px-3 pt-3 pb-1 text-center">
+        <div
+          className="font-display text-lg font-black uppercase tracking-[0.18em] sm:text-xl"
+          style={{
+            color: palette.title,
+            textShadow: '0 2px 0 rgba(0,0,0,0.55)',
+          }}
+        >
+          {row.display_name}
+        </div>
+      </div>
+
       {/* Hero panel — the per-tier room image. Aspect-ratio is
           locked so all five cards stay perfectly aligned regardless
           of the source image's intrinsic size. */}
@@ -331,46 +338,25 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
         </div>
       </div>
 
-      {/* SELECT button — chamfered hex shape. The outer layer is
-          gold; the inner sits 2px inside with the tier gradient, so
-          the gold bleeds out as a uniform-thickness rim around the
-          octagonal silhouette. Active rendering wraps both layers in
-          a transparent <button> so the click region is the visible
-          shape (not the bounding rect outside the octagon). */}
+      {/* CTA button — restored to the original rounded-rect style.
+          Three states share the same shape but swap palette + label:
+            - green "Play"           → affordable + unlocked
+            - orange "Get Coins"     → unaffordable
+            - grey "Unlocks at Lv N" → level-gated (disabled)
+          The CTA's colour is independent of the tier accent so a
+          player can tell at a glance whether each room is playable
+          without parsing five different greens / blues / etc. */}
       <div className="px-3 pb-3">
         <button
           type="button"
           onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
           disabled={buttonDisabled}
-          aria-label={buttonLabel}
-          className="relative block h-10 w-full transition active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0"
-          style={{
-            opacity: buttonDisabled && !levelLocked ? 0.65 : 1,
-            background: 'transparent',
-          }}
+          className={
+            'block w-full rounded-md py-2 font-display text-base font-black uppercase tracking-[0.18em] text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 ' +
+            ctaClass
+          }
         >
-          {/* Gold rim layer. */}
-          <span
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background: 'linear-gradient(180deg, #fde68a 0%, #b45309 100%)',
-              clipPath: OCTAGON_CLIP,
-            }}
-          />
-          {/* Tier-colour fill layer, inset 2 px so the gold rim
-              reads as a uniform hairline border. */}
-          <span
-            aria-hidden
-            className="absolute inset-[2px]"
-            style={{
-              background: innerSelectBg,
-              clipPath: OCTAGON_CLIP,
-            }}
-          />
-          <span className="relative z-10 inline-flex h-full w-full items-center justify-center font-display text-sm font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]">
-            {buttonLabel}
-          </span>
+          {buttonLabel}
         </button>
       </div>
     </div>
