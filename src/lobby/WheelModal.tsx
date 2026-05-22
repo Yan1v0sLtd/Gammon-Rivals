@@ -339,48 +339,60 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
           cream modal box — the elements sit directly on the page
           overlay, matching the reference design. */}
       <div className="relative flex flex-col items-center">
-        {/* Close button — red orb at top-right, floats outside the
-            title plate so it doesn't crowd the title text. */}
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={phase !== 'idle'}
-          aria-label="Close"
-          className="absolute z-20 grid h-12 w-12 place-items-center rounded-full font-display text-2xl font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-          style={{
-            top: '0.5rem',
-            right: '-0.75rem',
-            background:
-              'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
-            border: '4px solid #ffd35a',
-            textShadow: '0 3px 0 #8b180b',
-            boxShadow:
-              '0 5px 0 #702207, 0 9px 16px rgba(0,0,0,0.45)',
-          }}
-        >
-          ×
-        </button>
+        {/* Title plate + close button. Wrapped in a relative
+            container so the close button can be positioned against
+            the plate's edge (not the bonus-ui stack's edge, which
+            previously placed the X on top of the right "✦"). */}
+        <div className="relative z-10 flex items-center justify-center">
+          {/* Red pill with thick gold border. Width clamped narrower
+              than v1 so the X button sits outside its right edge
+              instead of overlapping the title text. */}
+          <div
+            className="grid place-items-center font-display whitespace-nowrap"
+            style={{
+              width: 'clamp(17rem, 60vmin, 22rem)',
+              height: 'clamp(3rem, 7.5vmin, 3.6rem)',
+              borderRadius: '9999px',
+              background: 'linear-gradient(180deg, #6d0808 0%, #3b0203 100%)',
+              border: '4px solid #f6b52b',
+              boxShadow:
+                '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
+              color: '#ffd76b',
+              // Smaller font + tighter letter-spacing so "✦ HOURLY
+              // BONUS ✦" fits comfortably and the right ✦ stays
+              // visible (the X used to obscure it).
+              fontSize: 'clamp(1rem, 2.6vmin, 1.4rem)',
+              fontWeight: 900,
+              letterSpacing: '0.1em',
+              textShadow: '0 3px 0 #7a3507, 0 0 10px rgba(255,210,80,0.7)',
+            }}
+          >
+            ✦ HOURLY BONUS ✦
+          </div>
 
-        {/* Title plate — red pill with thick gold border, displayed
-            above the wheel like the reference. */}
-        <div
-          className="relative z-10 grid place-items-center font-display"
-          style={{
-            width: 'clamp(20rem, 75vmin, 28rem)',
-            height: 'clamp(3.6rem, 9vmin, 4.4rem)',
-            borderRadius: '9999px',
-            background: 'linear-gradient(180deg, #6d0808 0%, #3b0203 100%)',
-            border: '5px solid #f6b52b',
-            boxShadow:
-              '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
-            color: '#ffd76b',
-            fontSize: 'clamp(1.3rem, 3.6vmin, 1.9rem)',
-            fontWeight: 900,
-            letterSpacing: '0.16em',
-            textShadow: '0 3px 0 #7a3507, 0 0 10px rgba(255,210,80,0.7)',
-          }}
-        >
-          ✦ HOURLY BONUS ✦
+          {/* Close orb — sits just outside the plate's right edge.
+              Smaller than v1 (h-10 vs h-12) so it doesn't dominate
+              the title row. */}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={phase !== 'idle'}
+            aria-label="Close"
+            className="absolute grid h-10 w-10 place-items-center rounded-full font-display text-xl font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{
+              top: '50%',
+              right: '-1.25rem',
+              transform: 'translateY(-50%)',
+              background:
+                'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
+              border: '3px solid #ffd35a',
+              textShadow: '0 2px 0 #8b180b',
+              boxShadow:
+                '0 4px 0 #702207, 0 8px 14px rgba(0,0,0,0.45)',
+            }}
+          >
+            ×
+          </button>
         </div>
 
         {/* Pointer — red diamond/teardrop shape that hangs into the
