@@ -59,65 +59,53 @@ interface DifficultyModalProps {
 /* -------------------------------------------------------------------------- */
 
 interface TierPalette {
+  /** Tier name + stat values use this hex. */
   title: string;
-  stat: string;
-  statBorder: string;
+  /** SELECT-button gradient (top-stop). */
   selectTop: string;
+  /** SELECT-button gradient (bottom-stop). */
   selectBot: string;
+  /** Fallback hero gradient when the per-tier .webp isn't supplied. */
   heroGrad: string;
+  /** Ambient drop-shadow under the card. */
   halo: string;
 }
 
 const PALETTES: Record<string, TierPalette> = {
   green: {
-    title: '#16a34a',
-    stat: '#22c55e',
-    statBorder: '#16a34a',
-    selectTop: '#16a34a',
+    title: '#15803d',
+    selectTop: '#22c55e',
     selectBot: '#14532d',
-    heroGrad:
-      'radial-gradient(circle at 50% 35%, #1f6b3a 0%, #082514 70%)',
-    halo: '0 0 28px -8px rgba(34,197,94,0.55)',
+    heroGrad: 'radial-gradient(circle at 50% 35%, #1f6b3a 0%, #082514 70%)',
+    halo: '0 0 24px -10px rgba(34,197,94,0.45)',
   },
   blue: {
-    title: '#2563eb',
-    stat: '#3b82f6',
-    statBorder: '#1d4ed8',
-    selectTop: '#1d4ed8',
+    title: '#1d4ed8',
+    selectTop: '#3b82f6',
     selectBot: '#1e3a8a',
-    heroGrad:
-      'radial-gradient(circle at 50% 35%, #1e3a8a 0%, #0b1530 70%)',
-    halo: '0 0 28px -8px rgba(59,130,246,0.55)',
+    heroGrad: 'radial-gradient(circle at 50% 35%, #1e3a8a 0%, #0b1530 70%)',
+    halo: '0 0 24px -10px rgba(59,130,246,0.45)',
   },
   purple: {
-    title: '#9333ea',
-    stat: '#a855f7',
-    statBorder: '#7e22ce',
-    selectTop: '#7e22ce',
+    title: '#7e22ce',
+    selectTop: '#a855f7',
     selectBot: '#4c1d95',
-    heroGrad:
-      'radial-gradient(circle at 50% 35%, #6b21a8 0%, #2b0a4a 70%)',
-    halo: '0 0 28px -8px rgba(168,85,247,0.55)',
+    heroGrad: 'radial-gradient(circle at 50% 35%, #6b21a8 0%, #2b0a4a 70%)',
+    halo: '0 0 24px -10px rgba(168,85,247,0.45)',
   },
   red: {
-    title: '#dc2626',
-    stat: '#ef4444',
-    statBorder: '#b91c1c',
-    selectTop: '#b91c1c',
+    title: '#b91c1c',
+    selectTop: '#ef4444',
     selectBot: '#7f1d1d',
-    heroGrad:
-      'radial-gradient(circle at 50% 35%, #991b1b 0%, #3b0a0a 70%)',
-    halo: '0 0 28px -8px rgba(239,68,68,0.55)',
+    heroGrad: 'radial-gradient(circle at 50% 35%, #991b1b 0%, #3b0a0a 70%)',
+    halo: '0 0 24px -10px rgba(239,68,68,0.45)',
   },
   gold: {
     title: '#b45309',
-    stat: '#f59e0b',
-    statBorder: '#b45309',
-    selectTop: '#b45309',
+    selectTop: '#f59e0b',
     selectBot: '#78350f',
-    heroGrad:
-      'radial-gradient(circle at 50% 35%, #b45309 0%, #2b1a05 70%)',
-    halo: '0 0 28px -8px rgba(251,191,36,0.55)',
+    heroGrad: 'radial-gradient(circle at 50% 35%, #b45309 0%, #2b1a05 70%)',
+    halo: '0 0 24px -10px rgba(251,191,36,0.45)',
   },
 };
 
@@ -125,16 +113,79 @@ function paletteFor(slug: string): TierPalette {
   return PALETTES[slug] ?? PALETTES.gold!;
 }
 
-/* Default headline copy per tier — used when table_configs.description
- * is empty. Short, evocative, matches the in-image text on the
- * provided hero artwork. */
-const DEFAULT_HEADLINES: Record<string, string> = {
-  green: 'Good moves, good friends, great games.',
-  blue: 'Strategy. Discipline. Patience. Victory.',
-  purple: 'High stakes. VIP only.',
-  red: 'Elite challengers welcome.',
-  gold: 'Legends are not born — they are made.',
-};
+/* -------------------------------------------------------------------------- */
+/* Stat icons                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/** XP boost icon — same purple-gradient hex used by DailyBonus +
+ *  WheelModal so the XP visual language stays consistent across the
+ *  lobby. Inline SVG (no .webp exists for XP). */
+function XpHexIcon() {
+  return (
+    <svg viewBox="0 0 100 110" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
+      <defs>
+        <linearGradient id="diff-xp-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#7c3aed" />
+          <stop offset="100%" stopColor="#3b0764" />
+        </linearGradient>
+      </defs>
+      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#1e1535" />
+      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#diff-xp-fill)" />
+      <text
+        x="50" y="68" textAnchor="middle"
+        fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34" fill="white"
+      >XP</text>
+    </svg>
+  );
+}
+
+/** Entry-fee icon — the lobby's existing /lobby/icons/gold-coin.webp
+ *  so the modal matches the wallet pill on the top bar. */
+function CoinIcon() {
+  return (
+    <img
+      src="/lobby/icons/gold-coin.webp"
+      alt=""
+      className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]"
+      draggable={false}
+    />
+  );
+}
+
+/** Time-to-move icon — analog clock face. Inline SVG (no clock asset
+ *  exists in the game's icon set). */
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 40 40" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
+      <circle cx="20" cy="20" r="17" fill="#fde68a" stroke="#5a3413" strokeWidth="2" />
+      <circle cx="20" cy="20" r="13" fill="none" stroke="#7c2d12" strokeWidth="0.8" />
+      <line x1="20" y1="20" x2="20" y2="10" stroke="#7c2d12" strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="20" y1="20" x2="27" y2="23" stroke="#7c2d12" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="20" cy="20" r="1.5" fill="#7c2d12" />
+    </svg>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* SELECT button — chamfered / octagonal shape with gold rim                  */
+/*                                                                            */
+/* Restored the "ornate" CTA shape from the reference design: a flat-top      */
+/* octagon (small triangle clipped at each of the 4 corners) with a thin     */
+/* gold rim hugging the outline. Two stacked clip-pathed divs do the work — */
+/* outer = gold gradient, inner = tier gradient inset by 2 px, so the gold  */
+/* bleeds through as a uniform-thickness border around the inner fill.      */
+/* -------------------------------------------------------------------------- */
+
+const CHAMFER_PCT = '14%';
+const CHAMFER_PCT_INV = `calc(100% - ${CHAMFER_PCT})`;
+const OCTAGON_CLIP = `polygon(
+  ${CHAMFER_PCT} 0,
+  ${CHAMFER_PCT_INV} 0,
+  100% 50%,
+  ${CHAMFER_PCT_INV} 100%,
+  ${CHAMFER_PCT} 100%,
+  0 50%
+)`;
 
 function formatSeconds(s: number): string {
   if (s < 60) return `${s}s`;
@@ -157,12 +208,11 @@ interface CardProps {
   readonly affordable: boolean;
   readonly levelLocked: boolean;
   readonly busy: boolean;
-  readonly featured: boolean;
   readonly onPlay: () => void;
   readonly onGetCoins: () => void;
 }
 
-function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, onGetCoins }: CardProps) {
+function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins }: CardProps) {
   const palette = paletteFor(row.accent_color);
   const heroOverride = metadataText(row.metadata, 'heroImage');
   // Layer the per-tier image OVER the tier gradient. If the .webp
@@ -186,11 +236,6 @@ function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, 
     backgroundPosition: 'center',
   };
 
-  const description =
-    (row.description && row.description.trim().length > 0
-      ? row.description
-      : DEFAULT_HEADLINES[row.accent_color] ?? '');
-
   const buttonDisabled = busy || levelLocked;
   const buttonLabel = levelLocked
     ? `Unlocks at Lv ${row.required_level}`
@@ -200,26 +245,25 @@ function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, 
         ? 'Select'
         : 'Get Coins';
 
-  // Locked / unaffordable states swap the SELECT bar's palette so
-  // the CTA's colour matches its intent (grey = locked, orange =
-  // shop nudge, tier-colour = ready-to-play).
-  const selectBg = levelLocked
+  // SELECT button palette swaps for locked / unaffordable states.
+  // Active tier keeps its accent gradient; locked goes grey;
+  // unaffordable falls back to the orange "Get Coins" treatment.
+  const innerSelectBg = levelLocked
     ? 'linear-gradient(180deg, #64748b 0%, #1e293b 100%)'
     : !affordable
-      ? 'linear-gradient(180deg, #ea580c 0%, #7c2d12 100%)'
+      ? 'linear-gradient(180deg, #f97316 0%, #7c2d12 100%)'
       : `linear-gradient(180deg, ${palette.selectTop} 0%, ${palette.selectBot} 100%)`;
 
   return (
     <div
-      className="flex flex-col overflow-hidden rounded-2xl bg-[#fdfaf3]"
+      className="flex flex-col overflow-hidden rounded-2xl bg-[#1a120a]"
       style={{
-        // Featured tier (middle of the row) gets a brighter halo +
-        // gentle scale lift to signal "this is the spotlight".
-        boxShadow: featured
-          ? `0 0 32px -2px rgba(252,211,77,0.7), 0 18px 30px rgba(0,0,0,0.55)`
-          : `${palette.halo}, 0 14px 26px rgba(0,0,0,0.55)`,
-        transform: featured ? 'scale(1.04)' : undefined,
-        zIndex: featured ? 1 : 0,
+        // Per-tier halo glow only — no scale on any card so the
+        // five tiles share one footprint (matches the user's
+        // "make sure it's the same size" feedback on the Pro
+        // card).
+        boxShadow: `${palette.halo}, 0 14px 26px rgba(0,0,0,0.55)`,
+        border: '1px solid rgba(211,160,78,0.35)',
       }}
     >
       {/* Hero panel — the per-tier room image. Aspect-ratio is
@@ -234,69 +278,101 @@ function DifficultyCard({ row, affordable, levelLocked, busy, featured, onPlay, 
         aria-hidden
       />
 
-      {/* Title block — tier name in colour over a cream body, with
-          a short headline beneath. Centred to match the reference
-          Clash-card composition. */}
-      <div className="flex flex-col items-center px-4 pt-3 pb-2 text-center">
-        <div
-          className="font-display text-xl font-black uppercase tracking-[0.16em] sm:text-2xl"
-          style={{ color: palette.title }}
+      {/* Stats panel — cream rounded outer card containing three
+          icon-rows (XP boost / entry fee / time to move). Mirrors
+          the reference screenshot the user shared: each row in its
+          own beige pill, icon on the left, label + value stacked on
+          the right with the value rendered in the tier accent
+          colour. */}
+      <div className="m-3 rounded-xl border border-amber-700/40 bg-[#f4e7c5] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+            <XpHexIcon />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+                XP Boost
+              </div>
+              <div
+                className="font-display text-lg font-black leading-none tabular-nums"
+                style={{ color: palette.title }}
+              >
+                {row.xp_multiplier_pct}%
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+            <CoinIcon />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+                Entry Fee
+              </div>
+              <div
+                className="font-display text-lg font-black leading-none tabular-nums"
+                style={{ color: palette.title }}
+              >
+                {formatCompactNumber(row.entry_fee_coins)}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+            <ClockIcon />
+            <div className="min-w-0 flex-1">
+              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+                Time to Move
+              </div>
+              <div
+                className="font-display text-lg font-black leading-none tabular-nums"
+                style={{ color: palette.title }}
+              >
+                {formatSeconds(row.turn_seconds)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SELECT button — chamfered hex shape. The outer layer is
+          gold; the inner sits 2px inside with the tier gradient, so
+          the gold bleeds out as a uniform-thickness rim around the
+          octagonal silhouette. Active rendering wraps both layers in
+          a transparent <button> so the click region is the visible
+          shape (not the bounding rect outside the octagon). */}
+      <div className="px-3 pb-3">
+        <button
+          type="button"
+          onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
+          disabled={buttonDisabled}
+          aria-label={buttonLabel}
+          className="relative block h-10 w-full transition active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0"
+          style={{
+            opacity: buttonDisabled && !levelLocked ? 0.65 : 1,
+            background: 'transparent',
+          }}
         >
-          {row.display_name}
-        </div>
-        <div className="mt-1.5 line-clamp-2 text-[0.72rem] font-bold leading-snug text-stone-600 sm:text-xs">
-          {description}
-        </div>
+          {/* Gold rim layer. */}
+          <span
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(180deg, #fde68a 0%, #b45309 100%)',
+              clipPath: OCTAGON_CLIP,
+            }}
+          />
+          {/* Tier-colour fill layer, inset 2 px so the gold rim
+              reads as a uniform hairline border. */}
+          <span
+            aria-hidden
+            className="absolute inset-[2px]"
+            style={{
+              background: innerSelectBg,
+              clipPath: OCTAGON_CLIP,
+            }}
+          />
+          <span className="relative z-10 inline-flex h-full w-full items-center justify-center font-display text-sm font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.55)]">
+            {buttonLabel}
+          </span>
+        </button>
       </div>
-
-      {/* Stats strip — solid tier colour, 3 equal columns with
-          slightly-darker dividers between them. Values stay BIG and
-          labels small + uppercase, matching the reference. */}
-      <div
-        className="grid grid-cols-3 text-center text-white"
-        style={{ background: palette.stat }}
-      >
-        <div className="px-2 py-3" style={{ borderRight: `1px solid ${palette.statBorder}` }}>
-          <div className="font-display text-base font-black leading-none sm:text-lg">
-            {row.xp_multiplier_pct}%
-          </div>
-          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
-            XP Boost
-          </div>
-        </div>
-        <div className="px-2 py-3" style={{ borderRight: `1px solid ${palette.statBorder}` }}>
-          <div className="font-display text-base font-black leading-none tabular-nums sm:text-lg">
-            {formatCompactNumber(row.entry_fee_coins)}
-          </div>
-          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
-            Entry Fee
-          </div>
-        </div>
-        <div className="px-2 py-3">
-          <div className="font-display text-base font-black leading-none tabular-nums sm:text-lg">
-            {formatSeconds(row.turn_seconds)}
-          </div>
-          <div className="mt-1 text-[0.55rem] font-bold uppercase tracking-[0.14em] opacity-90 sm:text-[0.6rem]">
-            Time to Move
-          </div>
-        </div>
-      </div>
-
-      {/* SELECT footer — darker tier gradient (or grey / orange in
-          the locked / unaffordable cases). Acts as the primary CTA;
-          the rest of the card is information. */}
-      <button
-        type="button"
-        onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
-        disabled={buttonDisabled}
-        className="font-display py-3 text-center text-base font-black uppercase tracking-[0.22em] text-white transition active:translate-y-px disabled:cursor-not-allowed disabled:active:translate-y-0 hover:brightness-110"
-        style={{
-          background: selectBg,
-          opacity: buttonDisabled && !levelLocked ? 0.65 : 1,
-        }}
-      >
-        {buttonLabel}
-      </button>
     </div>
   );
 }
@@ -357,11 +433,6 @@ export function DifficultyModal({
 
   if (!open) return null;
 
-  // Pick the "featured" card — middle of the visible row when there
-  // are 5 tiers (matches the reference's centred Pro card). For other
-  // counts, no featured card is highlighted.
-  const featuredIndex = rows.length === 5 ? 2 : -1;
-
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-4"
@@ -382,17 +453,14 @@ export function DifficultyModal({
           padding: 'clamp(1rem, 2vw, 1.75rem)',
         }}
       >
-        {/* Header */}
+        {/* Header — title only, subtitle removed per user request. */}
         <div className="relative mb-6 flex flex-col items-center text-center">
           <div className="flex items-center gap-4">
             <span className="text-2xl text-amber-300/70">✦</span>
             <h2 className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.18em] text-transparent md:text-4xl">
-              Select Room Difficulty
+              Select Room
             </h2>
             <span className="text-2xl text-amber-300/70">✦</span>
-          </div>
-          <div className="mt-1 text-sm font-bold text-white/65 md:text-base">
-            Choose your challenge and enter the arena
           </div>
           <button
             type="button"
@@ -417,14 +485,13 @@ export function DifficultyModal({
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
-            {rows.map((row, index) => (
+            {rows.map((row) => (
               <DifficultyCard
                 key={row.id}
                 row={row}
                 affordable={walletCoins >= row.entry_fee_coins}
                 levelLocked={playerLevel < row.required_level}
                 busy={busyId === row.id}
-                featured={index === featuredIndex}
                 onPlay={() =>
                   onSelect({
                     tableConfigId: row.id,
@@ -440,33 +507,22 @@ export function DifficultyModal({
           </div>
         )}
 
-        {/* Footer legend — three short tips matching the reference's
-            information density. Cream/dark contrast so the legend
-            visually anchors the dark frame without pulling focus
-            from the bright cards. */}
+        {/* Footer legend — two short tips. The "entry fee deducted
+            on join" tip was dropped per user request; the entry-fee
+            row on each card is already self-explanatory. */}
         <div
-          className="mt-6 grid gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 md:grid-cols-3 md:text-sm"
+          className="mt-6 grid gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 md:grid-cols-2 md:text-sm"
           style={{
             background: 'linear-gradient(180deg, #14100a 0%, #080604 100%)',
             borderColor: '#5a3a14',
           }}
         >
           <div className="flex items-start gap-3">
-            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-white" style={{ background: '#a855f7' }}>
-              <strong className="text-[0.6rem]">XP</strong>
-            </span>
+            <XpHexIcon />
             <span>Higher difficulty grants more XP for your victories.</span>
           </div>
           <div className="flex items-start gap-3">
-            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-amber-900" style={{ background: 'linear-gradient(180deg, #fde68a, #f59e0b)' }}>
-              ★
-            </span>
-            <span>Entry fee is deducted from your balance when you join the room.</span>
-          </div>
-          <div className="flex items-start gap-3">
-            <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-amber-900 text-base" style={{ background: 'linear-gradient(180deg, #fde68a, #f59e0b)' }}>
-              ⏱
-            </span>
+            <ClockIcon />
             <span>Time to move is the total time you have for each turn.</span>
           </div>
         </div>
