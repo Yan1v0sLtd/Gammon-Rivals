@@ -333,93 +333,165 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
   const wheelDimension = 'clamp(17rem, 65vmin, 24rem)';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
-      <div className="relative w-full max-w-md origin-center scale-[0.9] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-100">
-        <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
-          <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] px-5 pb-6 pt-5">
-            {/* Top decorative lozenge — matches DailyBonus modal */}
-            <div
-              aria-hidden
-              className="absolute -top-[12px] left-1/2 z-20 h-6 w-6 -translate-x-1/2 rotate-45 rounded-[3px] bg-gradient-to-br from-[#fef08a] via-[#f59e0b] to-[#7c2d12] shadow-[0_3px_8px_rgba(120,53,15,0.55),inset_0_1px_0_rgba(255,255,255,0.5)]"
-            />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      {/* Carnival / fortune-wheel stack: title plate, pointer,
+          gold-framed wheel with bulb lights, big SPIN CTA. No more
+          cream modal box — the elements sit directly on the page
+          overlay, matching the reference design. */}
+      <div className="relative flex flex-col items-center">
+        {/* Close button — red orb at top-right, floats outside the
+            title plate so it doesn't crowd the title text. */}
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={phase !== 'idle'}
+          aria-label="Close"
+          className="absolute z-20 grid h-12 w-12 place-items-center rounded-full font-display text-2xl font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+          style={{
+            top: '0.5rem',
+            right: '-0.75rem',
+            background:
+              'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
+            border: '4px solid #ffd35a',
+            textShadow: '0 3px 0 #8b180b',
+            boxShadow:
+              '0 5px 0 #702207, 0 9px 16px rgba(0,0,0,0.45)',
+          }}
+        >
+          ×
+        </button>
 
-            {/* Title row + close button */}
-            <div className="flex items-center justify-between gap-2">
-              <span className="h-8 w-8" aria-hidden />
-              <div className="flex flex-1 items-center justify-center gap-3">
-                <span className="text-lg text-amber-500/80">◆</span>
-                <h2 className="whitespace-nowrap bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.08em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.6)] sm:text-4xl">
-                  Hourly Bonus
-                </h2>
-                <span className="text-lg text-amber-500/80">◆</span>
-              </div>
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={phase !== 'idle'}
-                aria-label="Close"
-                className="grid h-8 w-8 place-items-center rounded-full border border-amber-700/40 bg-amber-100/60 text-xl font-black leading-none text-amber-900 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                ×
-              </button>
-            </div>
+        {/* Title plate — red pill with thick gold border, displayed
+            above the wheel like the reference. */}
+        <div
+          className="relative z-10 grid place-items-center font-display"
+          style={{
+            width: 'clamp(20rem, 75vmin, 28rem)',
+            height: 'clamp(3.6rem, 9vmin, 4.4rem)',
+            borderRadius: '9999px',
+            background: 'linear-gradient(180deg, #6d0808 0%, #3b0203 100%)',
+            border: '5px solid #f6b52b',
+            boxShadow:
+              '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
+            color: '#ffd76b',
+            fontSize: 'clamp(1.3rem, 3.6vmin, 1.9rem)',
+            fontWeight: 900,
+            letterSpacing: '0.16em',
+            textShadow: '0 3px 0 #7a3507, 0 0 10px rgba(255,210,80,0.7)',
+          }}
+        >
+          ✦ HOURLY BONUS ✦
+        </div>
 
-            {/* Wheel stage */}
-            <div className="relative mx-auto mt-4 flex flex-col items-center">
-              <div
-                className="relative"
-                style={
-                  {
-                    width: wheelDimension,
-                    height: wheelDimension,
-                    ['--wheel-d' as never]: wheelDimension,
-                  } as React.CSSProperties
-                }
-              >
-                {/* Top pointer / ticker — points DOWN into the wheel.
-                 *  Pivot is at the WIDE top edge so the kick rotation
-                 *  swings the apex from side to side, exactly like a
-                 *  physical pin getting brushed by passing wedges.
-                 *  Driven by kickTicker() during the spin loop. */}
-                <div
-                  ref={tickerRef}
-                  aria-hidden
-                  className="absolute z-20"
-                  style={{
-                    top: '-6%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    transformOrigin: '50% 0%',
-                    width: 0,
-                    height: 0,
-                    borderLeft: 'calc(var(--wheel-d) * 0.05) solid transparent',
-                    borderRight: 'calc(var(--wheel-d) * 0.05) solid transparent',
-                    borderTop: 'calc(var(--wheel-d) * 0.1) solid #b91c1c',
-                    filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.55))',
-                  }}
-                />
+        {/* Pointer — red diamond/teardrop shape that hangs into the
+            top of the wheel. Pivot anchored at the top so the kick
+            animation swings the apex from side to side. */}
+        <div
+          ref={tickerRef}
+          aria-hidden
+          className="absolute z-10"
+          style={{
+            top: 'clamp(3.2rem, 8.5vmin, 4.2rem)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            transformOrigin: '50% 0%',
+            width: 'clamp(2.6rem, 6vmin, 3.4rem)',
+            height: 'clamp(3.2rem, 7.5vmin, 4.2rem)',
+            background:
+              'radial-gradient(circle at 50% 20%, #ff5858, #a90f17 60%, #5b060a)',
+            clipPath: 'polygon(50% 0%, 88% 35%, 50% 100%, 12% 35%)',
+            filter:
+              'drop-shadow(0 6px 0 #4b0708) drop-shadow(0 8px 8px rgba(0,0,0,0.45))',
+          }}
+        />
 
-                {/* Decorative rim. The spinning disc sits inside this
-                 *  ring; the rim itself does NOT rotate. */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    boxShadow:
-                      '0 0 0 5px #5a3413, 0 0 0 9px #fcd34d, 0 0 0 12px #5a3413, 0 14px 32px rgba(0,0,0,0.55)',
-                  }}
-                />
+        {/* Wheel frame — thick gold ring around the spinning disc.
+            Contains 16 evenly-spaced bulb lights and the disc itself
+            inside its padded interior. */}
+        <div
+          className="relative mt-3"
+          style={
+            {
+              // 1.13× wheel-d gives the gold ring room to breathe
+              // around the spinning disc.
+              width: `calc(${wheelDimension} * 1.13)`,
+              height: `calc(${wheelDimension} * 1.13)`,
+              padding: `calc(${wheelDimension} * 0.045)`,
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle at 35% 25%, #fff4a1 0%, #f8bf31 28%, #c46d0e 60%, #5a2407 100%)',
+              boxShadow:
+                'inset 0 0 0 5px #ffe178, inset 0 0 0 11px #9b4509, 0 14px 22px rgba(0,0,0,0.55), 0 0 30px rgba(255,180,45,0.4)',
+              ['--wheel-d' as never]: wheelDimension,
+            } as React.CSSProperties
+          }
+        >
+          {/* Inner ring decoration — thin gold band hugging the
+              edge of the gold rim (matches the reference's
+              :before ring). Sits above the bulbs so they read as
+              embedded in the rim, not floating on top. */}
+          <div
+            aria-hidden
+            className="absolute rounded-full"
+            style={{
+              inset: 'calc(var(--wheel-d) * 0.018)',
+              border: 'calc(var(--wheel-d) * 0.022) solid rgba(255,229,108,0.9)',
+              boxShadow: 'inset 0 0 0 3px #6b2b06',
+              pointerEvents: 'none',
+              zIndex: 3,
+            }}
+          />
 
-                {/* Spinning disc — conic-gradient + per-slot content */}
-                <div
-                  ref={discRef}
-                  className="absolute inset-0 overflow-hidden rounded-full"
-                  style={{
-                    background: conicBg,
-                    transformOrigin: '50% 50%',
-                    willChange: 'transform',
-                  }}
-                >
+          {/* Bulb lights — 16 evenly-spaced gold dots arranged
+              around the rim. Each one is rotated by i × 22.5° and
+              translated outward so it sits inside the gold ring. */}
+          <div
+            aria-hidden
+            className="absolute rounded-full"
+            style={{
+              inset: 'calc(var(--wheel-d) * 0.018)',
+              zIndex: 4,
+              pointerEvents: 'none',
+            }}
+          >
+            {Array.from({ length: 16 }).map((_, i) => (
+              <span
+                key={`bulb-${i}`}
+                className="absolute"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  width: 'calc(var(--wheel-d) * 0.035)',
+                  height: 'calc(var(--wheel-d) * 0.035)',
+                  marginLeft: 'calc(var(--wheel-d) * -0.0175)',
+                  marginTop: 'calc(var(--wheel-d) * -0.0175)',
+                  borderRadius: '50%',
+                  background:
+                    'radial-gradient(circle, #fff9b0, #ffc52d 60%, #a94b08)',
+                  boxShadow: '0 0 8px #ffd44a',
+                  transform: `rotate(${i * 22.5}deg) translateY(calc(var(--wheel-d) * -0.54))`,
+                  transformOrigin: 'center',
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Spinning disc — conic-gradient + per-slot content.
+              Sits at relative w-full h-full so it fills the
+              wheel-frame's content area (inside the gold ring's
+              padding), not the entire padding-box that would also
+              cover the bulb lights. */}
+          <div
+            ref={discRef}
+            className="relative h-full w-full overflow-hidden rounded-full"
+            style={{
+              background: conicBg,
+              transformOrigin: '50% 50%',
+              willChange: 'transform',
+              boxShadow:
+                'inset 0 0 0 3px #5b2506, inset 0 0 35px rgba(0,0,0,0.32)',
+            }}
+          >
                   {/* Wedge dividers — radial lines from center to rim,
                    *  one per slot boundary. They sit ON TOP of the
                    *  conic gradient and rotate with the disc. */}
@@ -541,53 +613,70 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
                   })}
                 </div>
 
-                {/* Center hub — fixed, does not rotate. Doubles as the
-                 *  visual flight origin for RewardFlight. */}
-                <div
-                  ref={wheelCenterRef}
-                  aria-hidden
-                  className="absolute"
-                  style={{
-                    top: '50%',
-                    left: '50%',
-                    width: 'calc(var(--wheel-d) * 0.18)',
-                    height: 'calc(var(--wheel-d) * 0.18)',
-                    transform: 'translate(-50%, -50%)',
-                    borderRadius: '50%',
-                    background:
-                      'radial-gradient(circle at 35% 35%, #fde68a, #d97706 70%, #7c2d12 100%)',
-                    boxShadow:
-                      'inset 0 2px 4px rgba(255,255,255,0.55), 0 0 0 3px #5a3413, 0 6px 12px rgba(0,0,0,0.6)',
-                    zIndex: 10,
-                  }}
-                />
-
-                {/* No celebration overlay here — reward feedback is
-                 *  delivered entirely by the flying-token animation
-                 *  that launches from the wheel centre toward the
-                 *  wallet pills + level shield. */}
-              </div>
-
-              {/* SPIN CTA. Tap-to-spin on the wheel itself is also
-               *  supported (the disc has no pointer-events disabled),
-               *  but a clear button gives mobile players a big target. */}
-              <button
-                type="button"
-                disabled={!isReady}
-                onClick={handleSpin}
-                className="mt-5 rounded-full border-2 border-amber-900/50 bg-gradient-to-b from-[#fbbf24] to-[#ea580c] px-10 py-2.5 font-display text-2xl font-black uppercase tracking-[0.12em] text-white shadow-[0_8px_18px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {phase === 'idle' ? 'Spin' : 'Spinning…'}
-              </button>
-
-              {error ? (
-                <div className="mt-2 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900">
-                  {error}
-                </div>
-              ) : null}
-            </div>
+          {/* Center hub — gold orb with a star symbol, sitting on
+              top of the wheel. Fixed (does not rotate) so it
+              doubles as the visual flight origin for RewardFlight. */}
+          <div
+            ref={wheelCenterRef}
+            aria-hidden
+            className="absolute grid place-items-center font-display"
+            style={{
+              top: '50%',
+              left: '50%',
+              width: 'calc(var(--wheel-d) * 0.26)',
+              height: 'calc(var(--wheel-d) * 0.26)',
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '50%',
+              background:
+                'radial-gradient(circle at 35% 22%, #fff7a6, #ffc72e 35%, #c96c0c 70%, #5d2305)',
+              border: 'calc(var(--wheel-d) * 0.018) solid #ffd158',
+              boxShadow:
+                '0 6px 0 #713006, 0 10px 18px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.6)',
+              zIndex: 10,
+              color: '#fff08a',
+              fontSize: 'calc(var(--wheel-d) * 0.16)',
+              lineHeight: 1,
+              textShadow: '0 3px 0 #a24a08',
+            }}
+          >
+            ★
           </div>
         </div>
+
+        {/* SPIN CTA — large gold-gradient pill with thick gold
+            border and a 3D drop-shadow that compresses on press.
+            Tap-to-spin on the wheel itself is also supported (the
+            disc has no pointer-events disabled), but the big button
+            is the obvious target on mobile. */}
+        <button
+          type="button"
+          disabled={!isReady}
+          onClick={handleSpin}
+          className="relative z-10 mt-2 font-display transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            width: 'clamp(11rem, 32vmin, 14rem)',
+            height: 'clamp(3.6rem, 9vmin, 4.4rem)',
+            borderRadius: '9999px',
+            border: '6px solid #ffd866',
+            background:
+              'linear-gradient(180deg, #fff070 0%, #ffbd24 35%, #f2730d 72%, #b73808 100%)',
+            color: 'white',
+            fontSize: 'clamp(1.6rem, 4.4vmin, 2.4rem)',
+            fontWeight: 900,
+            letterSpacing: '0.1em',
+            textShadow: '0 4px 0 #8e3308',
+            boxShadow:
+              '0 7px 0 #793006, 0 12px 18px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
+          }}
+        >
+          {phase === 'idle' ? 'SPIN' : 'SPINNING…'}
+        </button>
+
+        {error ? (
+          <div className="mt-3 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900">
+            {error}
+          </div>
+        ) : null}
       </div>
 
       {/* Flying tokens render OUTSIDE the modal frame at z-[60] so they
