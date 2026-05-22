@@ -137,26 +137,29 @@ export function BoardPurchaseModal({
         </button>
 
         {/* Title — ✦ UNLOCK BOARD ✦ with the multi-layer text shadow
-            from the reference (gold-on-cream-on-brown stack). */}
+            from the reference (gold-on-cream-on-brown stack). Sized
+            down + whitespace-nowrap so the title stays on one line
+            even at the narrow modal-width breakpoint (it was
+            wrapping to UNLOCK / BOARD before). */}
         <h2
-          className="relative font-display"
+          className="relative font-display whitespace-nowrap"
           style={{
             zIndex: 2,
             margin: 0,
             marginBottom: 'clamp(0.8rem, 2vmin, 1.2rem)',
-            fontSize: 'clamp(1.6rem, 5.5vmin, 2.5rem)',
+            fontSize: 'clamp(1.2rem, 4.2vmin, 1.9rem)',
             fontWeight: 900,
-            letterSpacing: '0.04em',
+            letterSpacing: '0.03em',
             color: '#ffd45f',
             textShadow:
               '0 2px 0 #fff2a6, 0 4px 0 #9a4708, 0 7px 0 #5d2605, 0 10px 12px rgba(0,0,0,0.45)',
           }}
         >
-          <span style={{ fontSize: '0.65em', margin: '0 0.6rem', color: '#ffdf69' }}>
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>
             ✦
           </span>
           UNLOCK BOARD
-          <span style={{ fontSize: '0.65em', margin: '0 0.6rem', color: '#ffdf69' }}>
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>
             ✦
           </span>
         </h2>
@@ -212,14 +215,16 @@ export function BoardPurchaseModal({
         </div>
 
         {/* Price plate — gold rounded card with the actual gem.webp
-            asset, the price number, and a "GEMS" label hanging below. */}
+            asset + the price number. The hanging "GEMS" badge was
+            removed per user request — the icon already conveys the
+            currency and the prompt text ("100 Gems") spells it out. */}
         <div
           className="relative mx-auto flex items-center justify-center"
           style={{
             zIndex: 2,
             width: 'min(85%, 22rem)',
-            height: 'clamp(5.5rem, 14vmin, 7.5rem)',
-            marginBottom: 'clamp(2rem, 5vmin, 3rem)',
+            height: 'clamp(5rem, 13vmin, 7rem)',
+            marginBottom: 'clamp(1.2rem, 3.5vmin, 1.8rem)',
             borderRadius: '18px',
             background:
               'linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)',
@@ -268,35 +273,6 @@ export function BoardPurchaseModal({
             }}
           >
             {priceGems.toLocaleString()}
-          </span>
-
-          {/* Blue "GEMS" badge hanging off the bottom edge of the plate. */}
-          <span
-            className="absolute font-display"
-            style={{
-              left: '50%',
-              bottom: '-1.05rem',
-              transform: 'translateX(-50%)',
-              minWidth: '8rem',
-              height: 'clamp(1.8rem, 4.6vmin, 2.4rem)',
-              padding: '0 1rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '6px',
-              background:
-                'linear-gradient(#0588d9, #004493 70%, #002d67)',
-              border: '2px solid #e9ad29',
-              color: 'white',
-              fontSize: 'clamp(0.85rem, 2.4vmin, 1.1rem)',
-              fontWeight: 900,
-              letterSpacing: '0.08em',
-              textShadow: '0 2px 0 #002656',
-              boxShadow:
-                '0 4px 0 #693006, inset 0 2px 0 rgba(255,255,255,0.35)',
-            }}
-          >
-            GEMS
           </span>
         </div>
 
@@ -370,29 +346,36 @@ export function BoardPurchaseModal({
           </div>
         ) : null}
 
-        {/* Yes / No buttons. Gold gradient + dark gradient with
-            chunky 3D drop-shadows that compress on press. */}
-        <div className="relative flex justify-center" style={{ zIndex: 2, gap: 'clamp(1.5rem, 5vmin, 3rem)' }}>
+        {/* Yes / No buttons — re-styled to match the green PLAY
+            button on the lobby board carousel (.lobby-play-button in
+            index.css). Yes uses the same green/lime gradient stack,
+            No uses the same shape but a charcoal palette. Pill
+            shape, dual-layer background (top white-sheen overlay +
+            base gradient), thin lime/grey rim, chunky 3D drop-shadow
+            that compresses on press. */}
+        <div
+          className="relative flex justify-center"
+          style={{ zIndex: 2, gap: 'clamp(1.5rem, 5vmin, 3rem)' }}
+        >
           <button
             type="button"
             disabled={isPurchasing}
             onClick={onConfirm}
-            className="font-display transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               width: 'clamp(7rem, 22vmin, 9rem)',
-              height: 'clamp(2.8rem, 7vmin, 3.6rem)',
-              borderRadius: '14px',
-              border: '4px solid #ffd65b',
-              color: 'white',
-              fontSize: 'clamp(1.2rem, 3.6vmin, 1.8rem)',
+              height: 'clamp(2.8rem, 7vmin, 3.4rem)',
+              borderRadius: '9999px',
+              border: '2px solid rgba(224,255,143,0.95)',
+              color: '#132109',
+              fontSize: 'clamp(1.2rem, 3.6vmin, 1.7rem)',
               fontWeight: 900,
               letterSpacing: '0.04em',
-              textShadow:
-                '0 3px 0 rgba(0,0,0,0.45), 0 5px 8px rgba(0,0,0,0.3)',
+              textShadow: '0 1px 0 rgba(255,255,255,0.28)',
               background:
-                'linear-gradient(#fff06c 0%, #ffb31c 34%, #fb7212 62%, #d92f08 100%)',
+                'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
               boxShadow:
-                '0 6px 0 #6b2c06, 0 12px 16px rgba(0,0,0,0.35), inset 0 4px 0 rgba(255,255,255,0.45), inset 0 -5px 0 rgba(0,0,0,0.22)',
+                '0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)',
             }}
           >
             {isPurchasing ? '…' : 'Yes'}
@@ -401,21 +384,21 @@ export function BoardPurchaseModal({
             type="button"
             disabled={isPurchasing}
             onClick={onCancel}
-            className="font-display transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
             style={{
               width: 'clamp(7rem, 22vmin, 9rem)',
-              height: 'clamp(2.8rem, 7vmin, 3.6rem)',
-              borderRadius: '14px',
-              border: '4px solid #ffd65b',
-              color: 'white',
-              fontSize: 'clamp(1.2rem, 3.6vmin, 1.8rem)',
+              height: 'clamp(2.8rem, 7vmin, 3.4rem)',
+              borderRadius: '9999px',
+              border: '2px solid rgba(220,220,220,0.95)',
+              color: '#1a1a1a',
+              fontSize: 'clamp(1.2rem, 3.6vmin, 1.7rem)',
               fontWeight: 900,
               letterSpacing: '0.04em',
-              textShadow:
-                '0 3px 0 rgba(0,0,0,0.45), 0 5px 8px rgba(0,0,0,0.3)',
-              background: 'linear-gradient(#686868 0%, #373737 45%, #171717 100%)',
+              textShadow: '0 1px 0 rgba(255,255,255,0.4)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)',
               boxShadow:
-                '0 6px 0 #6b2c06, 0 12px 16px rgba(0,0,0,0.35), inset 0 4px 0 rgba(255,255,255,0.35), inset 0 -5px 0 rgba(0,0,0,0.4)',
+                '0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)',
             }}
           >
             No
