@@ -260,10 +260,13 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           background, rendered in the tier accent so the difficulty
           identity (BEGINNER / ADVANCED / PRO / EXPERT / GRAND
           MASTER) reads even when the player only glances at the
-          modal. */}
+          modal. whitespace-nowrap + reduced tracking makes the
+          longest expected name ("GRAND MASTER") fit on one line so
+          all five cards share one height — wrapping would push the
+          GRAND MASTER card taller than its neighbours. */}
       <div className="px-3 pt-3 pb-1 text-center">
         <div
-          className="font-display text-lg font-black uppercase tracking-[0.18em] sm:text-xl"
+          className="font-display text-sm font-black uppercase tracking-[0.1em] sm:text-base whitespace-nowrap"
           style={{
             color: palette.title,
             textShadow: '0 2px 0 rgba(0,0,0,0.55)',
