@@ -375,9 +375,12 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             ✦ HOURLY BONUS ✦
           </div>
 
-          {/* Close orb — sits just outside the plate's right edge.
-              Smaller than v1 (h-10 vs h-12) so it doesn't dominate
-              the title row. */}
+          {/* Close orb — sits fully outside the plate's right edge.
+              right:-2.75rem (vs v1 -1.25rem) pushes the orb's left
+              edge past the pill's right edge so the X no longer
+              overlaps the right ✦ glyph. Translating outside the
+              flex container is OK because the outer modal has
+              p-4 — there's room. */}
           <button
             type="button"
             onClick={onClose}
@@ -386,7 +389,7 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             className="absolute grid h-10 w-10 place-items-center rounded-full font-display text-xl font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               top: '50%',
-              right: '-1.25rem',
+              right: '-2.75rem',
               transform: 'translateY(-50%)',
               background:
                 'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
@@ -400,69 +403,15 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
           </button>
         </div>
 
-        {/* Pointer — red teardrop/drop shape that hangs into the top
-            of the wheel. SVG-based so we can draw a true drop with
-            curved shoulders and a sharp apex (the diamond clipPath
-            we used in v1 read as a kite, not a pointer). Pivot
-            anchored at the top so kickTicker swings the apex from
-            side to side without translating it. The inner light
-            "pin" is the same highlight the reference shows — sells
-            the drop-of-paint look. */}
-        <div
-          ref={tickerRef}
-          aria-hidden
-          className="absolute z-10"
-          style={{
-            top: 'clamp(3.2rem, 8.5vmin, 4.2rem)',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            transformOrigin: '50% 0%',
-            width: 'clamp(2.6rem, 6vmin, 3.4rem)',
-            height: 'clamp(3.4rem, 8vmin, 4.6rem)',
-            filter:
-              'drop-shadow(0 6px 0 #4b0708) drop-shadow(0 8px 8px rgba(0,0,0,0.45))',
-          }}
-        >
-          <svg
-            viewBox="0 0 100 130"
-            width="100%"
-            height="100%"
-            preserveAspectRatio="none"
-            aria-hidden
-          >
-            <defs>
-              <radialGradient id="wm-drop-fill" cx="0.5" cy="0.25" r="0.7">
-                <stop offset="0%" stopColor="#ff7a7a" />
-                <stop offset="55%" stopColor="#cf1a20" />
-                <stop offset="100%" stopColor="#5b060a" />
-              </radialGradient>
-              <radialGradient id="wm-drop-pin" cx="0.5" cy="0.4" r="0.5">
-                <stop offset="0%" stopColor="#ffe9c7" />
-                <stop offset="100%" stopColor="#f1a78c" />
-              </radialGradient>
-            </defs>
-            {/* Classic drop shape: rounded top, tapered apex at the
-                bottom. Coordinates are tuned so the visual centre of
-                gravity sits ~30% from the top, matching the GSAP
-                reference's pointer. */}
-            <path
-              d="M50,128 C18,98 6,68 14,42 C22,18 38,4 50,4 C62,4 78,18 86,42 C94,68 82,98 50,128 Z"
-              fill="url(#wm-drop-fill)"
-              stroke="#3b0306"
-              strokeWidth="3"
-              strokeLinejoin="round"
-            />
-            {/* Inner pin — small bright oval that catches the eye and
-                reads as a highlight on the drop. */}
-            <ellipse cx="50" cy="38" rx="13" ry="11" fill="url(#wm-drop-pin)" />
-          </svg>
-        </div>
-
         {/* Wheel frame — thick gold ring around the spinning disc.
-            Contains 16 evenly-spaced bulb lights and the disc itself
-            inside its padded interior. */}
+            Houses the tick-marked rim, the spinning disc, the center
+            hub, AND the red teardrop pointer (positioned absolute
+            with negative top so its bulb sits above the rim and only
+            the apex pierces the disc). mt-14 gives the pointer's
+            bulb room to sit above the rim without crowding the
+            title pill. */}
         <div
-          className="relative mt-3"
+          className="relative mt-14"
           style={
             {
               // 1.13× wheel-d gives the gold ring room to breathe
@@ -479,6 +428,81 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             } as React.CSSProperties
           }
         >
+          {/* Pointer — red balloon-shaped teardrop that hangs above
+              the wheel with only its narrow apex piercing into the
+              disc. Positioned in wheel-d units so the bulb scales
+              with the wheel; the negative top pulls the bulb above
+              the gold frame, and the apex sits ~7% into the disc so
+              it visually "lands" on the slot below. Pivot at apex
+              (transformOrigin 50% 100%) — the bulb sways when
+              kickTicker fires, matching the GSAP reference where
+              the heavy end swings while the contact point stays
+              fixed on the rim. */}
+          <div
+            ref={tickerRef}
+            aria-hidden
+            className="absolute"
+            style={{
+              top: 'calc(var(--wheel-d) * -0.20)',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              transformOrigin: '50% 100%',
+              width: 'calc(var(--wheel-d) * 0.17)',
+              height: 'calc(var(--wheel-d) * 0.28)',
+              zIndex: 20,
+              filter:
+                'drop-shadow(0 6px 0 #4b0708) drop-shadow(0 10px 10px rgba(0,0,0,0.45))',
+            }}
+          >
+            <svg
+              viewBox="0 0 100 130"
+              width="100%"
+              height="100%"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <defs>
+                <radialGradient id="wm-drop-fill" cx="0.5" cy="0.3" r="0.75">
+                  <stop offset="0%" stopColor="#ff8a8a" />
+                  <stop offset="55%" stopColor="#d01a22" />
+                  <stop offset="100%" stopColor="#5a060a" />
+                </radialGradient>
+                <radialGradient id="wm-drop-pin" cx="0.5" cy="0.55" r="0.6">
+                  <stop offset="0%" stopColor="#1a1a1a" />
+                  <stop offset="55%" stopColor="#5a5a5a" />
+                  <stop offset="100%" stopColor="#a0a0a0" />
+                </radialGradient>
+              </defs>
+              {/* Balloon shape: fat rounded top with a tapered tail
+                  that narrows to a point at the bottom. Top half
+                  spans the full 0–100 width; the lower half pulls
+                  in toward the centre line so the apex reads as a
+                  proper pointer tip. */}
+              <path
+                d="M50,5 C22,5 0,27 0,55 C0,88 30,118 50,128 C70,118 100,88 100,55 C100,27 78,5 50,5 Z"
+                fill="url(#wm-drop-fill)"
+                stroke="#3b0306"
+                strokeWidth="3"
+                strokeLinejoin="round"
+              />
+              {/* Inner pin — a small metallic rivet rendered as a
+                  radial gradient ellipse. Darker centre + lighter
+                  rim sells the "concave button" look from the
+                  reference (the v1 cream highlight read more as a
+                  shine than a fixture). */}
+              <ellipse
+                cx="50"
+                cy="45"
+                rx="12"
+                ry="11"
+                fill="url(#wm-drop-pin)"
+                stroke="#0a0a0a"
+                strokeWidth="1.5"
+              />
+              <ellipse cx="50" cy="45" rx="4" ry="3.5" fill="#0a0a0a" />
+            </svg>
+          </div>
+
           {/* Inner ring decoration — thin gold band hugging the
               edge of the gold rim (matches the reference's
               :before ring). Sits above the bulbs so they read as
