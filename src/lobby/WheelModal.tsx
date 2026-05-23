@@ -428,13 +428,16 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             } as React.CSSProperties
           }
         >
-          {/* Pointer — WHITE balloon-shaped teardrop matching the
-              user's reference: fat rounded top, single tapered
-              apex, small dark rivet inside. Flat off-white fill +
-              light-grey stroke keeps it readable on the gold rim
-              and the colored wedges below. Pivot at apex
-              (transformOrigin 50% 100%) — kickTicker swings the
-              bulb while the apex stays fixed on the rim. */}
+          {/* Pointer — drop/teardrop shape copied from the user's
+              reference SVG. Round bulb at the top + short tapered
+              tail; white body (#fcfcfc) with the two-tone rivet
+              from the reference (outer #ccc, inner #666). Pivot
+              moved into the bulb (transformOrigin 50% 30%) so the
+              kick swings the APEX (matching the reference, where
+              the wide-end pivot lets the narrow tip swing as
+              wedges pass underneath). preserveAspectRatio kept as
+              "xMidYMid meet" so the drop holds its proportions
+              instead of stretching. */}
           <div
             ref={tickerRef}
             aria-hidden
@@ -443,9 +446,9 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               top: 'calc(var(--wheel-d) * -0.13)',
               left: '50%',
               transform: 'translateX(-50%)',
-              transformOrigin: '50% 100%',
-              width: 'calc(var(--wheel-d) * 0.12)',
-              height: 'calc(var(--wheel-d) * 0.20)',
+              transformOrigin: '50% 30%',
+              width: 'calc(var(--wheel-d) * 0.13)',
+              height: 'calc(var(--wheel-d) * 0.18)',
               zIndex: 20,
               filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))',
             }}
@@ -454,21 +457,22 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               viewBox="0 0 100 130"
               width="100%"
               height="100%"
-              preserveAspectRatio="none"
+              preserveAspectRatio="xMidYMid meet"
               aria-hidden
             >
-              {/* Balloon shape: fat rounded top tapering to a single
-                  apex. Flat white fill + thin grey stroke. */}
+              {/* Vertical adaptation of the reference's drop path:
+                  fat circular bulb across the top half tapering to a
+                  short narrow tail at the bottom. No stroke — the
+                  CSS drop-shadow filter on the wrapper provides the
+                  edge separation. */}
               <path
-                d="M50,5 C22,5 0,27 0,55 C0,88 30,118 50,128 C70,118 100,88 100,55 C100,27 78,5 50,5 Z"
-                fill="#fafafa"
-                stroke="#b8b8b8"
-                strokeWidth="2"
-                strokeLinejoin="round"
+                d="M50,4 C23,4 4,24 4,46 C4,68 22,83 34,87 C39,99 49,122 50,128 C51,122 61,99 66,87 C78,83 96,68 96,46 C96,24 77,4 50,4 Z"
+                fill="#fcfcfc"
               />
-              {/* Inner rivet — single flat dark grey circle. */}
-              <circle cx="50" cy="45" r="9" fill="#6a6a6a" />
-              <circle cx="50" cy="45" r="4" fill="#2a2a2a" />
+              {/* Outer rivet — light grey ring (reference path #3). */}
+              <circle cx="50" cy="42" r="9" fill="#ccc" />
+              {/* Inner rivet — darker grey centre (reference path #4). */}
+              <circle cx="50" cy="42" r="4.5" fill="#666" />
             </svg>
           </div>
 
