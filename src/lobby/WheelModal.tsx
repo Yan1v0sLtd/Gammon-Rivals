@@ -428,15 +428,13 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             } as React.CSSProperties
           }
         >
-          {/* Pointer — red balloon-shaped teardrop that hangs above
-              the wheel with only its narrow apex piercing into the
-              disc. Flat fill (no gradient) keeps the silhouette
-              reading as a 2D pointer instead of the round 3D
-              "ball" the radial gradient gave it. Shrunk ~30% from
-              v3 (0.17→0.12 wide, 0.28→0.20 tall) so it fills the
-              same proportional slot as the GSAP reference. Pivot
-              at apex (transformOrigin 50% 100%) — kickTicker swings
-              the bulb while the apex stays fixed on the rim. */}
+          {/* Pointer — WHITE balloon-shaped teardrop matching the
+              user's reference: fat rounded top, single tapered
+              apex, small dark rivet inside. Flat off-white fill +
+              light-grey stroke keeps it readable on the gold rim
+              and the colored wedges below. Pivot at apex
+              (transformOrigin 50% 100%) — kickTicker swings the
+              bulb while the apex stays fixed on the rim. */}
           <div
             ref={tickerRef}
             aria-hidden
@@ -449,9 +447,6 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               width: 'calc(var(--wheel-d) * 0.12)',
               height: 'calc(var(--wheel-d) * 0.20)',
               zIndex: 20,
-              // Single soft ambient shadow only — no hard 3D drop
-              // (the chunky v3 shadow read as embossed/round; the
-              // user wants a flat sticker look).
               filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))',
             }}
           >
@@ -463,19 +458,17 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               aria-hidden
             >
               {/* Balloon shape: fat rounded top tapering to a single
-                  apex. Flat fill + thin dark stroke for definition
-                  — no gradients, so the silhouette stays 2D. */}
+                  apex. Flat white fill + thin grey stroke. */}
               <path
                 d="M50,5 C22,5 0,27 0,55 C0,88 30,118 50,128 C70,118 100,88 100,55 C100,27 78,5 50,5 Z"
-                fill="#c81f23"
-                stroke="#4a0508"
+                fill="#fafafa"
+                stroke="#b8b8b8"
                 strokeWidth="2"
                 strokeLinejoin="round"
               />
-              {/* Inner pin — single flat dark circle. Reads as a
-                  rivet without the rounded "looking into a hole"
-                  effect the v3 radial gradient created. */}
-              <circle cx="50" cy="45" r="9" fill="#1a1a1a" />
+              {/* Inner rivet — single flat dark grey circle. */}
+              <circle cx="50" cy="45" r="9" fill="#6a6a6a" />
+              <circle cx="50" cy="45" r="4" fill="#2a2a2a" />
             </svg>
           </div>
 
