@@ -430,28 +430,29 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
         >
           {/* Pointer — red balloon-shaped teardrop that hangs above
               the wheel with only its narrow apex piercing into the
-              disc. Positioned in wheel-d units so the bulb scales
-              with the wheel; the negative top pulls the bulb above
-              the gold frame, and the apex sits ~7% into the disc so
-              it visually "lands" on the slot below. Pivot at apex
-              (transformOrigin 50% 100%) — the bulb sways when
-              kickTicker fires, matching the GSAP reference where
-              the heavy end swings while the contact point stays
-              fixed on the rim. */}
+              disc. Flat fill (no gradient) keeps the silhouette
+              reading as a 2D pointer instead of the round 3D
+              "ball" the radial gradient gave it. Shrunk ~30% from
+              v3 (0.17→0.12 wide, 0.28→0.20 tall) so it fills the
+              same proportional slot as the GSAP reference. Pivot
+              at apex (transformOrigin 50% 100%) — kickTicker swings
+              the bulb while the apex stays fixed on the rim. */}
           <div
             ref={tickerRef}
             aria-hidden
             className="absolute"
             style={{
-              top: 'calc(var(--wheel-d) * -0.20)',
+              top: 'calc(var(--wheel-d) * -0.13)',
               left: '50%',
               transform: 'translateX(-50%)',
               transformOrigin: '50% 100%',
-              width: 'calc(var(--wheel-d) * 0.17)',
-              height: 'calc(var(--wheel-d) * 0.28)',
+              width: 'calc(var(--wheel-d) * 0.12)',
+              height: 'calc(var(--wheel-d) * 0.20)',
               zIndex: 20,
-              filter:
-                'drop-shadow(0 6px 0 #4b0708) drop-shadow(0 10px 10px rgba(0,0,0,0.45))',
+              // Single soft ambient shadow only — no hard 3D drop
+              // (the chunky v3 shadow read as embossed/round; the
+              // user wants a flat sticker look).
+              filter: 'drop-shadow(0 3px 4px rgba(0,0,0,0.4))',
             }}
           >
             <svg
@@ -461,45 +462,20 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               preserveAspectRatio="none"
               aria-hidden
             >
-              <defs>
-                <radialGradient id="wm-drop-fill" cx="0.5" cy="0.3" r="0.75">
-                  <stop offset="0%" stopColor="#ff8a8a" />
-                  <stop offset="55%" stopColor="#d01a22" />
-                  <stop offset="100%" stopColor="#5a060a" />
-                </radialGradient>
-                <radialGradient id="wm-drop-pin" cx="0.5" cy="0.55" r="0.6">
-                  <stop offset="0%" stopColor="#1a1a1a" />
-                  <stop offset="55%" stopColor="#5a5a5a" />
-                  <stop offset="100%" stopColor="#a0a0a0" />
-                </radialGradient>
-              </defs>
-              {/* Balloon shape: fat rounded top with a tapered tail
-                  that narrows to a point at the bottom. Top half
-                  spans the full 0–100 width; the lower half pulls
-                  in toward the centre line so the apex reads as a
-                  proper pointer tip. */}
+              {/* Balloon shape: fat rounded top tapering to a single
+                  apex. Flat fill + thin dark stroke for definition
+                  — no gradients, so the silhouette stays 2D. */}
               <path
                 d="M50,5 C22,5 0,27 0,55 C0,88 30,118 50,128 C70,118 100,88 100,55 C100,27 78,5 50,5 Z"
-                fill="url(#wm-drop-fill)"
-                stroke="#3b0306"
-                strokeWidth="3"
+                fill="#c81f23"
+                stroke="#4a0508"
+                strokeWidth="2"
                 strokeLinejoin="round"
               />
-              {/* Inner pin — a small metallic rivet rendered as a
-                  radial gradient ellipse. Darker centre + lighter
-                  rim sells the "concave button" look from the
-                  reference (the v1 cream highlight read more as a
-                  shine than a fixture). */}
-              <ellipse
-                cx="50"
-                cy="45"
-                rx="12"
-                ry="11"
-                fill="url(#wm-drop-pin)"
-                stroke="#0a0a0a"
-                strokeWidth="1.5"
-              />
-              <ellipse cx="50" cy="45" rx="4" ry="3.5" fill="#0a0a0a" />
+              {/* Inner pin — single flat dark circle. Reads as a
+                  rivet without the rounded "looking into a hole"
+                  effect the v3 radial gradient created. */}
+              <circle cx="50" cy="45" r="9" fill="#1a1a1a" />
             </svg>
           </div>
 
