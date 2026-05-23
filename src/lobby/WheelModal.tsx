@@ -165,7 +165,11 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
   /** Tilt the ticker briefly, then snap back. Called from the spin
    *  rAF loop each time a wedge boundary crosses under the pointer.
    *  Cancel any in-flight kick before starting a new one so rapid
-   *  early-spin boundaries don't pile up overlapping animations. */
+   *  early-spin boundaries don't pile up overlapping animations.
+   *  The −10° kick + +3° overshoot matches the GSAP reference's
+   *  subtler swing (down from the v1 −22° we used earlier — that was
+   *  too aggressive and read as the pointer bouncing rather than
+   *  ticking). */
   const kickTicker = () => {
     const el = tickerRef.current;
     if (!el) return;
@@ -173,10 +177,11 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
     el.animate(
       [
         { transform: 'translateX(-50%) rotate(0deg)' },
-        { transform: 'translateX(-50%) rotate(-22deg)', offset: 0.4 },
+        { transform: 'translateX(-50%) rotate(-10deg)', offset: 0.4 },
+        { transform: 'translateX(-50%) rotate(3deg)', offset: 0.75 },
         { transform: 'translateX(-50%) rotate(0deg)' },
       ],
-      { duration: 160, easing: 'ease-out', fill: 'forwards' }
+      { duration: 180, easing: 'ease-out', fill: 'forwards' }
     );
   };
 
@@ -395,9 +400,14 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
           </button>
         </div>
 
-        {/* Pointer — red diamond/teardrop shape that hangs into the
-            top of the wheel. Pivot anchored at the top so the kick
-            animation swings the apex from side to side. */}
+        {/* Pointer — red teardrop/drop shape that hangs into the top
+            of the wheel. SVG-based so we can draw a true drop with
+            curved shoulders and a sharp apex (the diamond clipPath
+            we used in v1 read as a kite, not a pointer). Pivot
+            anchored at the top so kickTicker swings the apex from
+            side to side without translating it. The inner light
+            "pin" is the same highlight the reference shows — sells
+            the drop-of-paint look. */}
         <div
           ref={tickerRef}
           aria-hidden
@@ -408,14 +418,45 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             transform: 'translateX(-50%)',
             transformOrigin: '50% 0%',
             width: 'clamp(2.6rem, 6vmin, 3.4rem)',
-            height: 'clamp(3.2rem, 7.5vmin, 4.2rem)',
-            background:
-              'radial-gradient(circle at 50% 20%, #ff5858, #a90f17 60%, #5b060a)',
-            clipPath: 'polygon(50% 0%, 88% 35%, 50% 100%, 12% 35%)',
+            height: 'clamp(3.4rem, 8vmin, 4.6rem)',
             filter:
               'drop-shadow(0 6px 0 #4b0708) drop-shadow(0 8px 8px rgba(0,0,0,0.45))',
           }}
-        />
+        >
+          <svg
+            viewBox="0 0 100 130"
+            width="100%"
+            height="100%"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <defs>
+              <radialGradient id="wm-drop-fill" cx="0.5" cy="0.25" r="0.7">
+                <stop offset="0%" stopColor="#ff7a7a" />
+                <stop offset="55%" stopColor="#cf1a20" />
+                <stop offset="100%" stopColor="#5b060a" />
+              </radialGradient>
+              <radialGradient id="wm-drop-pin" cx="0.5" cy="0.4" r="0.5">
+                <stop offset="0%" stopColor="#ffe9c7" />
+                <stop offset="100%" stopColor="#f1a78c" />
+              </radialGradient>
+            </defs>
+            {/* Classic drop shape: rounded top, tapered apex at the
+                bottom. Coordinates are tuned so the visual centre of
+                gravity sits ~30% from the top, matching the GSAP
+                reference's pointer. */}
+            <path
+              d="M50,128 C18,98 6,68 14,42 C22,18 38,4 50,4 C62,4 78,18 86,42 C94,68 82,98 50,128 Z"
+              fill="url(#wm-drop-fill)"
+              stroke="#3b0306"
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+            {/* Inner pin — small bright oval that catches the eye and
+                reads as a highlight on the drop. */}
+            <ellipse cx="50" cy="38" rx="13" ry="11" fill="url(#wm-drop-pin)" />
+          </svg>
+        </div>
 
         {/* Wheel frame — thick gold ring around the spinning disc.
             Contains 16 evenly-spaced bulb lights and the disc itself
@@ -454,9 +495,16 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             }}
           />
 
-          {/* Bulb lights — 16 evenly-spaced gold dots arranged
-              around the rim. Each one is rotated by i × 22.5° and
-              translated outward so it sits inside the gold ring. */}
+          {/* Tick marks — 10 small rectangular gold pips around the
+              rim, one per wedge boundary (i × 36° + 18°). Replaces
+              the 16 round bulbs we used in v1 to match the GSAP
+              reference's tick-mark rim. Each pip is a thin vertical
+              rectangle rotated to point outward, with a brighter
+              gold highlight on top of a dark amber base so it pops
+              against the gold rim. The boundary placement (instead
+              of slot centres) means the ticks line up with the
+              wedge dividers when the wheel is at rest, reading as
+              clear slot demarcations. */}
           <div
             aria-hidden
             className="absolute rounded-full"
@@ -466,22 +514,23 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
               pointerEvents: 'none',
             }}
           >
-            {Array.from({ length: 16 }).map((_, i) => (
+            {Array.from({ length: SLOT_COUNT }).map((_, i) => (
               <span
-                key={`bulb-${i}`}
+                key={`tick-${i}`}
                 className="absolute"
                 style={{
                   left: '50%',
                   top: '50%',
-                  width: 'calc(var(--wheel-d) * 0.035)',
-                  height: 'calc(var(--wheel-d) * 0.035)',
-                  marginLeft: 'calc(var(--wheel-d) * -0.0175)',
-                  marginTop: 'calc(var(--wheel-d) * -0.0175)',
-                  borderRadius: '50%',
+                  width: 'calc(var(--wheel-d) * 0.022)',
+                  height: 'calc(var(--wheel-d) * 0.055)',
+                  marginLeft: 'calc(var(--wheel-d) * -0.011)',
+                  marginTop: 'calc(var(--wheel-d) * -0.0275)',
+                  borderRadius: 'calc(var(--wheel-d) * 0.006)',
                   background:
-                    'radial-gradient(circle, #fff9b0, #ffc52d 60%, #a94b08)',
-                  boxShadow: '0 0 8px #ffd44a',
-                  transform: `rotate(${i * 22.5}deg) translateY(calc(var(--wheel-d) * -0.54))`,
+                    'linear-gradient(180deg, #fff7c0 0%, #ffd24a 45%, #a94b08 100%)',
+                  boxShadow:
+                    '0 0 6px rgba(255, 220, 120, 0.8), inset 0 0 0 1px rgba(91, 35, 6, 0.6)',
+                  transform: `rotate(${i * SLOT_ANGLE + SLOT_HALF}deg) translateY(calc(var(--wheel-d) * -0.535))`,
                   transformOrigin: 'center',
                 }}
               />
