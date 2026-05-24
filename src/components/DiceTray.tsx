@@ -546,6 +546,32 @@ function createDiceMaterials(used: boolean): THREE.MeshStandardMaterial[] {
 
 function disposeStage(stage: ThreeDiceStage | null): void {
   if (!stage) return;
+  // CRITICAL: forceContextLoss() must come BEFORE dispose().
+  //
+  // renderer.dispose() only frees Three.js's JS-side resources
+  // (programs, textures, buffers). The underlying WebGL context
+  // stays allocated on the GPU until the browser's GC eventually
+  // reclaims it — which can take many seconds — and during that
+  // window it STILL counts against the browser's per-page context
+  // cap (~16 in Chrome, ~32 in Firefox/Safari).
+  //
+  // This effect re-runs every time `rollKey` or `diceCount`
+  // changes (i.e. on every dice roll), so without forceContextLoss
+  // we accumulate dead-but-counted contexts. After ~16 rolls the
+  // cap is hit and the browser kills the OLDEST live context to
+  // free space — which turns out to be the Pixi board's WebGL
+  // context in BoardCanvas. Result: board canvas goes white
+  // mid-match, lobby chrome (which has no WebGL) keeps working.
+  //
+  // forceContextLoss() triggers the `webglcontextlost` event
+  // synchronously, signalling the browser to release the GPU-side
+  // context immediately. The Pixi board's separate context is
+  // unaffected — they're independent canvases.
+  //
+  // Symptom in the console before this fix:
+  //   "WARNING: Too many active WebGL contexts. Oldest context
+  //    will be lost." (counter climbed by 1 per roll)
+  stage.renderer.forceContextLoss();
   stage.renderer.dispose();
   stage.geometry.dispose();
   stage.shadowGeometry.dispose();
