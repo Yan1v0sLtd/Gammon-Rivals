@@ -119,10 +119,12 @@ function paletteFor(slug: string): TierPalette {
 
 /** XP boost icon — same purple-gradient hex used by DailyBonus +
  *  WheelModal so the XP visual language stays consistent across the
- *  lobby. Inline SVG (no .webp exists for XP). */
+ *  lobby. Inline SVG (no .webp exists for XP).
+ *  Responsive sizing: shrinks on small screens so 5 cards fit
+ *  side-by-side without horizontal scroll. */
 function XpHexIcon() {
   return (
-    <svg viewBox="0 0 100 110" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
+    <svg viewBox="0 0 100 110" className="h-4 w-4 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9" aria-hidden>
       <defs>
         <linearGradient id="diff-xp-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#7c3aed" />
@@ -146,7 +148,7 @@ function CoinIcon() {
     <img
       src="/lobby/icons/gold-coin.webp"
       alt=""
-      className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]"
+      className="h-4 w-4 shrink-0 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9"
       draggable={false}
     />
   );
@@ -156,7 +158,7 @@ function CoinIcon() {
  *  exists in the game's icon set). */
 function ClockIcon() {
   return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)]" aria-hidden>
+    <svg viewBox="0 0 40 40" className="h-4 w-4 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9" aria-hidden>
       <circle cx="20" cy="20" r="17" fill="#fde68a" stroke="#5a3413" strokeWidth="2" />
       <circle cx="20" cy="20" r="13" fill="none" stroke="#7c2d12" strokeWidth="0.8" />
       <line x1="20" y1="20" x2="20" y2="10" stroke="#7c2d12" strokeWidth="2.5" strokeLinecap="round" />
@@ -263,10 +265,13 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           modal. whitespace-nowrap + reduced tracking makes the
           longest expected name ("GRAND MASTER") fit on one line so
           all five cards share one height — wrapping would push the
-          GRAND MASTER card taller than its neighbours. */}
-      <div className="px-3 pt-3 pb-1 text-center">
+          GRAND MASTER card taller than its neighbours.
+          Mobile sizing: tighter padding + tighter letter-spacing +
+          smaller font so the longest name still fits inside the
+          narrow 5-up column on a phone. */}
+      <div className="px-1 pt-1.5 pb-0.5 text-center sm:px-2 sm:pt-2 sm:pb-1 lg:px-3 lg:pt-3 lg:pb-1">
         <div
-          className="font-display text-sm font-black uppercase tracking-[0.1em] sm:text-base whitespace-nowrap"
+          className="font-display text-[0.5rem] font-black uppercase tracking-[0.04em] sm:text-xs sm:tracking-[0.08em] lg:text-base lg:tracking-[0.1em] whitespace-nowrap"
           style={{
             color: palette.title,
             textShadow: '0 2px 0 rgba(0,0,0,0.55)',
@@ -293,45 +298,47 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           the reference screenshot the user shared: each row in its
           own beige pill, icon on the left, label + value stacked on
           the right with the value rendered in the tier accent
-          colour. */}
-      <div className="m-3 rounded-xl border border-amber-700/40 bg-[#f4e7c5] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+          colour.
+          Mobile: micro-padding + tiny gap + sm text so each stat
+          row stays scannable in the narrow 5-up column. */}
+      <div className="m-1 rounded-md border border-amber-700/40 bg-[#f4e7c5] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] sm:m-2 sm:rounded-lg sm:p-1.5 lg:m-3 lg:rounded-xl lg:p-2">
+        <div className="space-y-0.5 sm:space-y-1 lg:space-y-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
             <XpHexIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
                 XP Boost
               </div>
               <div
-                className="font-display text-lg font-black leading-none tabular-nums"
+                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
                 style={{ color: palette.title }}
               >
                 {row.xp_multiplier_pct}%
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
             <CoinIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
                 Entry Fee
               </div>
               <div
-                className="font-display text-lg font-black leading-none tabular-nums"
+                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
                 style={{ color: palette.title }}
               >
                 {formatCompactNumber(row.entry_fee_coins)}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 rounded-lg border border-amber-700/15 bg-[#fdf6e3] px-2.5 py-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
             <ClockIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-amber-900/70">
+              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
                 Time to Move
               </div>
               <div
-                className="font-display text-lg font-black leading-none tabular-nums"
+                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
                 style={{ color: palette.title }}
               >
                 {formatSeconds(row.turn_seconds)}
@@ -348,14 +355,16 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
             - grey "Unlocks at Lv N" → level-gated (disabled)
           The CTA's colour is independent of the tier accent so a
           player can tell at a glance whether each room is playable
-          without parsing five different greens / blues / etc. */}
-      <div className="px-3 pb-3">
+          without parsing five different greens / blues / etc.
+          Mobile: tighter padding + smaller font so the button
+          fits the narrow column without forcing horizontal scroll. */}
+      <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-3 lg:pb-3">
         <button
           type="button"
           onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
           disabled={buttonDisabled}
           className={
-            'block w-full rounded-md py-2 font-display text-base font-black uppercase tracking-[0.18em] text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 ' +
+            'block w-full rounded py-1 font-display text-[0.55rem] font-black uppercase tracking-[0.06em] text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 sm:rounded-md sm:py-1.5 sm:text-xs sm:tracking-[0.1em] lg:py-2 lg:text-base lg:tracking-[0.18em] ' +
             ctaClass
           }
         >
@@ -424,40 +433,43 @@ export function DifficultyModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-1 sm:p-2 lg:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label="Select room difficulty"
     >
       <div
-        className="relative w-[min(96vw,80rem)] max-h-[94vh] overflow-y-auto rounded-2xl"
+        className="relative w-[min(99vw,80rem)] max-h-[98vh] overflow-y-auto rounded-xl sm:max-h-[96vh] sm:rounded-2xl lg:w-[min(96vw,80rem)] lg:max-h-[94vh]"
         onClick={(e) => e.stopPropagation()}
         style={{
           background:
             'radial-gradient(circle at 50% 0%, rgba(70,42,12,0.45) 0%, rgba(8,5,3,0.92) 60%), linear-gradient(180deg, #100a06 0%, #050302 100%)',
-          border: '3px solid #d3a04e',
+          border: '2px solid #d3a04e',
           boxShadow:
             'inset 0 0 0 1px rgba(0,0,0,0.55), 0 30px 60px rgba(0,0,0,0.7)',
-          padding: 'clamp(1rem, 2vw, 1.75rem)',
+          padding: 'clamp(0.4rem, 1.4vw, 1.75rem)',
         }}
       >
-        {/* Header — title only, subtitle removed per user request. */}
-        <div className="relative mb-6 flex flex-col items-center text-center">
-          <div className="flex items-center gap-4">
-            <span className="text-2xl text-amber-300/70">✦</span>
-            <h2 className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-3xl font-black uppercase tracking-[0.18em] text-transparent md:text-4xl">
+        {/* Header — title only, subtitle removed per user request.
+            Mobile: smaller title + tighter margin so the 5-card grid
+            has more vertical room and the modal fits the phone
+            viewport without scrolling. */}
+        <div className="relative mb-2 flex flex-col items-center text-center sm:mb-4 lg:mb-6">
+          <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4">
+            <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
+            <h2 className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-base font-black uppercase tracking-[0.12em] text-transparent sm:text-2xl sm:tracking-[0.18em] lg:text-3xl md:text-4xl">
               Select Room
             </h2>
-            <span className="text-2xl text-amber-300/70">✦</span>
+            <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-0 top-0 grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-[#0c0908]/80 text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95"
+            className="absolute right-0 top-0 grid h-6 w-6 place-items-center rounded-full border-2 border-[#c89a47] bg-[#0c0908]/80 text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95 sm:h-8 sm:w-8 lg:h-10 lg:w-10"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -473,7 +485,11 @@ export function DifficultyModal({
             No difficulties configured yet.
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 pt-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-5">
+          // 5-up grid at EVERY breakpoint per user spec ("all 5
+          // difficulties should fit 1 line"). Card internals are
+          // responsive (tiny on phones, full-size on desktop) so
+          // they don't force horizontal overflow.
+          <div className="grid grid-cols-5 gap-1 pt-1 sm:gap-2 sm:pt-2 lg:gap-5">
             {rows.map((row) => (
               <DifficultyCard
                 key={row.id}
@@ -498,9 +514,13 @@ export function DifficultyModal({
 
         {/* Footer legend — two short tips. The "entry fee deducted
             on join" tip was dropped per user request; the entry-fee
-            row on each card is already self-explanatory. */}
+            row on each card is already self-explanatory.
+            Mobile: hide the legend entirely so the 5-card grid +
+            header fit the phone viewport without scrolling. The
+            stat icons + labels on each card are already self-
+            explanatory. */}
         <div
-          className="mt-6 grid gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 md:grid-cols-2 md:text-sm"
+          className="mt-3 hidden gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 sm:grid md:grid-cols-2 md:text-sm lg:mt-6"
           style={{
             background: 'linear-gradient(180deg, #14100a 0%, #080604 100%)',
             borderColor: '#5a3a14',
