@@ -41,23 +41,10 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
     }
     if (!isSupabaseConfigured) return;
 
-    const channel = supabase.channel('online-users', {
-      config: {
-        presence: {
-          // Watcher uses a random key so we don't clash with a real
-          // user's presence row — and so the BO doesn't accidentally
-          // self-count. The channel still surfaces everyone else's
-          // tracked state.
-          key: `watcher-${Math.random().toString(36).slice(2, 10)}`,
-        },
-      },
-    });
-
-    const recompute = () => {
-      const state = channel.presenceState() as Record<
-        string,
-        Array<{ profile_id?: string; is_guest?: boolean }>
-      >;
+    // Shared helper: compute counts from any presence-state snapshot.
+    const computeFromState = (
+      state: Record<string, Array<{ profile_id?: string; is_guest?: boolean }>>
+    ) => {
       const seen = new Map<string, boolean>(); // profile_id -> is_guest
       for (const presences of Object.values(state)) {
         for (const p of presences) {
@@ -82,6 +69,63 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
         guests,
         profileIds: new Set(seen.keys()),
       });
+    };
+
+    // CRITICAL: supabase-js's `client.channel(topic)` returns the
+    // EXISTING channel if one already exists for that topic in this
+    // client. AuthProvider's useOnlinePresence subscribes to
+    // 'online-users' as soon as a session exists — which is true by
+    // the time the BO Users tab opens. If we then call
+    // `supabase.channel('online-users', ...)` here we get the SAME
+    // already-subscribed channel back, and any `.on('presence', ...)`
+    // calls throw "cannot add presence callbacks ... after
+    // subscribe()" — crashing the BO Users page.
+    //
+    // Fix: detect that an 'online-users' channel already exists in
+    // the client. If yes, skip subscribing (we'd just collide); fall
+    // back to polling its presenceState(). If no, create+subscribe
+    // ourselves with real .on() listeners.
+    const existing = supabase
+      .getChannels()
+      .find((c) => c.topic === 'realtime:online-users');
+
+    if (existing) {
+      // Polling mode. 1500ms is fine — operators don't need
+      // sub-second precision on this counter.
+      const tick = () => {
+        const state = existing.presenceState() as Record<
+          string,
+          Array<{ profile_id?: string; is_guest?: boolean }>
+        >;
+        computeFromState(state);
+      };
+      tick();
+      const intervalId = window.setInterval(tick, 1500);
+      return () => {
+        window.clearInterval(intervalId);
+      };
+    }
+
+    // No existing channel: original behaviour — create our own with
+    // realtime event callbacks for instant updates.
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          // Watcher uses a random key so we don't clash with a real
+          // user's presence row — and so the BO doesn't accidentally
+          // self-count. The channel still surfaces everyone else's
+          // tracked state.
+          key: `watcher-${Math.random().toString(36).slice(2, 10)}`,
+        },
+      },
+    });
+
+    const recompute = () => {
+      const state = channel.presenceState() as Record<
+        string,
+        Array<{ profile_id?: string; is_guest?: boolean }>
+      >;
+      computeFromState(state);
     };
 
     channel

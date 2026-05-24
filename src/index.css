@@ -7851,19 +7851,24 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    .dice-board, .dice-cube, or .dice-face here.
    ────────────────────────────────────────────────────────────── */
 
-/* Tray container — sits in the MIDDLE of the active player's half
-   of the board, vertically centred. left:25% places the centre of
-   the tray at the middle of the left half; left:75% at the middle
-   of the right half. translate(-50%, -50%) on the transform line
-   centres the dice cluster on those anchor points. Two cubes are
-   side-by-side (row), small. */
+/* Tray container — sits closer to the central bar of the player's
+   half-board (was at 25% / 75% = dead centre of each half, the
+   user wanted them nudged toward the centre). Vertically centred.
+   translate(-50%, -50%) on the transform line centres the dice
+   cluster on the anchor point. Two cubes are side-by-side (row).
+
+   Cube size is driven by a CSS custom property `--dice-cube-size`
+   so every dependent rule (face dimensions, translateZ, pip size)
+   stays in sync when we change the size. The default uses a vmin
+   clamp so the dice scale with viewport — fixes the "dice are
+   tiny on desktop because 22px was a fixed pixel value" issue. */
 .dice-board {
   position: absolute;
   top: 50%;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
+  gap: clamp(0.25rem, 0.8vmin, 0.6rem);
   z-index: 5;
   /* IMPORTANT: the translate(...) for centring + transform-style:
      preserve-3d together. Without preserve-3d the translate
@@ -7871,27 +7876,38 @@ button.lobby-hourly-bonus-pill.is-ready:active {
      the cubes. (Same lesson learned in v2.) */
   transform: translate(-50%, -50%);
   transform-style: preserve-3d;
-  /* Perspective lives on the tray so each cube has the same viewer
-     position. Smaller value = more dramatic 3D look at this size. */
-  perspective: 320px;
+  /* Perspective scales with the cube so the 3D effect stays
+     consistent across viewport sizes. */
+  perspective: calc(var(--dice-cube-size) * 14);
   /* Decorative — let board clicks pass through. */
   pointer-events: none;
+  /* Default cube size: scales from 28px on tiny phones up to 56px
+     on large screens via 5.5vmin. Same proportional look at every
+     resolution (fixes "too small on web" report). */
+  --dice-cube-size: clamp(28px, 5.5vmin, 56px);
 }
 
-.dice-board--left  { left: 25%; }
-.dice-board--right { left: 75%; }
+/* Anchor positions — nudged inward from the half-board centres
+   (was 25% / 75%) toward the middle of the board. 35% puts the
+   left tray at the inner edge of the left half; 65% mirrors on
+   the right. Tweak these two values to taste. */
+.dice-board--left  { left: 35%; }
+.dice-board--right { left: 65%; }
 
 /* The cube itself. preserve-3d puts the six faces in real 3D space.
    The transition does ALL the visual work — every new roll just
    sets a new transform value on this element and the browser
    interpolates the rotation, naturally tumbling through the
    accumulated 360° turns en route to the final face. */
-/* Cube — ~4x smaller than v4-initial (22px desktop, 18px mobile).
-   translateZ on the faces must equal half this value (11px / 9px). */
+/* All cube dimensions derived from --dice-cube-size on the tray
+   (see .dice-board). Changing that one variable resizes everything
+   together — width/height, face dimensions, translateZ, pips,
+   padding. No more "I changed the cube to 22px but forgot to update
+   translateZ from 40px" foot-gun. */
 .dice-cube {
   position: relative;
-  width: 22px;
-  height: 22px;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
   transform-style: preserve-3d;
   /* Initial resting tilt — visible briefly between mount and the
      first useEffect run that sets the inline transform. The
@@ -7903,84 +7919,51 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-@media (max-width: 640px) {
-  .dice-cube {
-    width: 18px;
-    height: 18px;
-  }
-}
-
 /* Used dice (their pip value has been consumed in a move) dim out.
    Opacity only — filter would flatten the 3D context. */
 .dice-cube--used {
   opacity: 0.4;
 }
 
-/* Each face is a 22x22 square in the cube's local space. CSS Grid
-   3x3 lays out the pips; per-face nth-child rules below put each
-   pip in the right cell. Padding is small because the pips are
-   only ~4px at this size — too much padding and they bunch in the
-   centre. */
+/* Each face fills the cube's bounding square. CSS Grid 3x3 lays
+   out the pips; per-face nth-child rules below put each pip in
+   the right cell. Border-radius + padding scale with cube size so
+   the look stays proportional across the viewport-clamp range. */
 .dice-face {
   position: absolute;
-  width: 22px;
-  height: 22px;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
   background: #fcfcfc;
-  border-radius: 4px;
+  border-radius: calc(var(--dice-cube-size) * 0.13);
   border: 1px solid #e0e0e0;
   box-shadow:
-    inset 0 0 3px rgba(0, 0, 0, 0.15),
-    0 1px 3px rgba(0, 0, 0, 0.3);
+    inset 0 0 calc(var(--dice-cube-size) * 0.1) rgba(0, 0, 0, 0.15),
+    0 calc(var(--dice-cube-size) * 0.05) calc(var(--dice-cube-size) * 0.13) rgba(0, 0, 0, 0.3);
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  padding: 2px;
+  padding: calc(var(--dice-cube-size) * 0.08);
   box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
-  .dice-face {
-    width: 18px;
-    height: 18px;
-    border-radius: 3px;
-    padding: 1.5px;
-  }
-}
+/* Per-face cube-space positions. translateZ MUST be half the cube
+   width — derived directly from --dice-cube-size. */
+.dice-face--f1 { transform: rotateY(0deg)    translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f6 { transform: rotateY(180deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f3 { transform: rotateY(90deg)   translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f4 { transform: rotateY(-90deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f2 { transform: rotateX(90deg)   translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f5 { transform: rotateX(-90deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
 
-/* Per-face cube-space positions. translateZ must be half the cube
-   width: 11px for 22px desktop, 9px for 18px mobile. */
-.dice-face--f1 { transform: rotateY(0deg)    translateZ(11px); }
-.dice-face--f6 { transform: rotateY(180deg)  translateZ(11px); }
-.dice-face--f3 { transform: rotateY(90deg)   translateZ(11px); }
-.dice-face--f4 { transform: rotateY(-90deg)  translateZ(11px); }
-.dice-face--f2 { transform: rotateX(90deg)   translateZ(11px); }
-.dice-face--f5 { transform: rotateX(-90deg)  translateZ(11px); }
-
-@media (max-width: 640px) {
-  .dice-face--f1 { transform: rotateY(0deg)    translateZ(9px); }
-  .dice-face--f6 { transform: rotateY(180deg)  translateZ(9px); }
-  .dice-face--f3 { transform: rotateY(90deg)   translateZ(9px); }
-  .dice-face--f4 { transform: rotateY(-90deg)  translateZ(9px); }
-  .dice-face--f2 { transform: rotateX(90deg)   translateZ(9px); }
-  .dice-face--f5 { transform: rotateX(-90deg)  translateZ(9px); }
-}
-
-/* A single pip — proportionally smaller than v4-initial since the
-   face is only ~22px now. 4px circle in a ~6px grid cell still
-   reads clearly. */
+/* Pip diameter is 18% of the cube — readable at the smallest end
+   of the clamp (28px → 5px pip) and not overpowering at the
+   largest (56px → 10px pip). */
 .dice-pip {
   display: block;
   background-color: #b30000;
   border-radius: 50%;
-  width: 4px;
-  height: 4px;
+  width: calc(var(--dice-cube-size) * 0.18);
+  height: calc(var(--dice-cube-size) * 0.18);
   margin: auto;
-}
-
-@media (max-width: 640px) {
-  .dice-pip {
-    width: 3px;
-    height: 3px;
-  }
 }
 
 /* Per-face pip placement using the 3×3 grid. The cells are
