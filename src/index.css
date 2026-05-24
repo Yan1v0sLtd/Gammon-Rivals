@@ -7833,260 +7833,48 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   CSS 3D dice — lightweight replacement for the old Three.js
-   DiceTray. Pure CSS transforms with `transform-style: preserve-3d`
-   render on the compositor / GPU without consuming a WebGL context
-   slot, so we can roll indefinitely without ever tripping the
-   per-page WebGL context cap (~16 in Chrome) that previously made
-   the Pixi board canvas go white mid-match.
+   DiceTray v3 — Three.js dice tray positioning.
 
-   The pip math below is calibrated for a 100px native die size and
-   matches the user-supplied reference snippet exactly (so the dot
-   patterns are correct on all six faces). The tray container
-   applies a CSS `scale(...)` to shrink them to fit the board side.
+   The actual 3D rendering happens inside .dice-tray-3d-canvas via
+   a Three.js WebGLRenderer (one per match, persistent across all
+   rolls; see src/components/DiceTray.tsx for the architecture
+   notes). This block is just the positioning chrome: a fixed-size
+   container anchored to the player's board side, vertically
+   centred.
+
+   We deliberately do NOT apply filter / overflow:hidden / etc.
+   here — the Three.js renderer owns the canvas inside and there's
+   no preserve-3d concern (it's WebGL, not CSS 3D). But keeping the
+   container minimal makes future changes easier to reason about.
    ────────────────────────────────────────────────────────────── */
 
-/* Tray container — vertically centred, anchored to the chosen side
-   of the board. Plain absolute positioning + flex; NO transform,
-   NO perspective, NO filter on this element. Anything in that
-   group forces transform-style: flat on the children per the CSS
-   Transforms spec, which collapses the 3D cubes into 2D edges
-   ("the dice disappear when rotated 90deg" symptom). All 3D
-   handling lives on the per-cube .css-dice-cube wrapper below. */
-.css-dice-tray {
+.dice-tray-3d {
   position: absolute;
   top: 50%;
-  /* translateY(-50%) is needed to vertically centre the tray, but
-     since this transform sits on the tray itself we MUST also set
-     transform-style: preserve-3d or the cubes flatten. */
   transform: translateY(-50%);
-  transform-style: preserve-3d;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.6rem, 1.4vmin, 1rem);
   z-index: 5;
-  /* Dice are decorative — players interact with the board, not
-     these icons. Letting clicks pass through avoids accidentally
-     blocking taps on the dice strip column. */
+  /* Dice are decorative — let clicks pass through to the board
+     beneath. */
   pointer-events: none;
 }
 
-.css-dice-tray--left  { left: 0.5rem; }
-.css-dice-tray--right { right: 0.5rem; }
+.dice-tray-3d--left  { left: 0.5rem; }
+.dice-tray-3d--right { right: 0.5rem; }
 
-/* Per-cube perspective wrapper. perspective lives here (not on the
-   tray) so each cube has its own viewer position and the
-   flex-column gap doesn't share a single skewed perspective across
-   both dice. Its width/height set the visible cube size; the inner
-   .css-dice-die is at 100px native and scaled to fit via the
-   `--cube-scale` custom property below.
-   IMPORTANT: this wrapper must NOT use filter / overflow:hidden /
-   mix-blend-mode etc. — any of those force flat on the cube. */
-.css-dice-cube {
-  width: 65px;
-  height: 65px;
-  perspective: 700px;
-  transform-style: preserve-3d;
-}
-
-@media (max-width: 640px) {
-  .css-dice-cube {
-    width: 50px;
-    height: 50px;
-    perspective: 540px;
-  }
-}
-
-/* The die itself — 100px native to keep the user's pip math
-   verbatim. We scale down via inline transform combined with the
-   per-face rotation set by JS (see FACE_TRANSFORM in DiceTray.tsx).
-   preserve-3d so the six face divs render in true 3D space. NO
-   filter here — it would flatten the cube. */
-.css-dice-die {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  transform-style: preserve-3d;
-  /* Pre-scale so the 100px native cube fits the 65px wrapper.
-     Use transform-origin: 0 0 so the cube anchors to the wrapper's
-     top-left and the scaled width matches the wrapper's width. */
-  transform: scale(0.65);
-  transform-origin: 0 0;
-  /* Smooth settle from the keyframe-end pose to the final face
-     transform that the JS sets via setTimeout. */
-  transition: transform 0.35s ease;
-}
-
-@media (max-width: 640px) {
-  .css-dice-die {
-    transform: scale(0.5);
-  }
-}
-
-/* "Used" dice (after their pip count has been consumed in a move)
-   dim out. Opacity only — filter would flatten the cube. */
-.css-dice-die--used {
-  opacity: 0.35;
-}
-
-/* Tumble keyframe — wild 3D rotation at the midpoint; cube returns
-   to "no rotation" at the end (face 1 forward). The JS-side
-   setTimeout then snaps the cube's inline transform to the actual
-   rolled face's rotation, with a smooth 0.35s transition (see
-   .css-dice-die `transition: transform 0.35s ease`).
-   IMPORTANT: every keyframe stop MUST include the scale, because
-   CSS animations don't merge with the element's static transform;
-   they REPLACE it. Without scale here, the cube would pop to 100%
-   native size during the tumble and shrink again at the end. */
-@keyframes css-dice-roll {
-  0% {
-    transform: scale(0.65) rotateX(0deg) rotateY(0deg);
-  }
-  50% {
-    transform: scale(0.65) rotateX(455deg) rotateY(455deg);
-  }
-  100% {
-    transform: scale(0.65) rotateX(360deg) rotateY(360deg);
-  }
-}
-
-@media (max-width: 640px) {
-  @keyframes css-dice-roll {
-    0% {
-      transform: scale(0.5) rotateX(0deg) rotateY(0deg);
-    }
-    50% {
-      transform: scale(0.5) rotateX(455deg) rotateY(455deg);
-    }
-    100% {
-      transform: scale(0.5) rotateX(360deg) rotateY(360deg);
-    }
-  }
-}
-
-.css-dice-face {
-  position: absolute;
+.dice-tray-3d-canvas {
   width: 100%;
   height: 100%;
-  border-radius: 20px;
-  border: 5px solid #f6f3f0;
-  transform-style: preserve-3d;
-  background: linear-gradient(145deg, #dddbd8, #fff);
 }
 
-/* The ::before draws a subtle "back" layer behind the face so the
-   die has a hint of inner depth at face edges. translateZ(-1px)
-   pushes it just behind the face plane. */
-.css-dice-face::before {
-  position: absolute;
-  content: '';
+.dice-tray-3d-canvas canvas {
+  /* Three.js sets the canvas to its render-target dimensions in
+     pixels; this rule lets the CSS-side container drive the visible
+     size while the renderer keeps its own pixel buffer. */
+  display: block;
   width: 100%;
   height: 100%;
-  border-radius: 20px;
-  background: #f6f3f0;
-  transform: translateZ(-1px);
 }
 
-/* Default pip (a single centred dot). Each face's ::after either
-   uses this default (and adds box-shadows to multiply into more
-   pips) or overrides size/color (face 1 uses a bigger red pip). */
-.css-dice-face::after {
-  position: absolute;
-  content: '';
-  top: 50%;
-  left: 50%;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #131210;
-}
+/* (Old CSS 3D dice rules removed — DiceTray v2's CSS cubes are gone.
+   The new tray uses a Three.js renderer for the cubes themselves.) */
 
-/* Face placement — each face is translated 50px (half the cube
-   width) along the axis matching its name, in the cube's local
-   3D space. preserve-3d on the parent keeps these as real 3D
-   planes rather than collapsing them onto the 2D plane. */
-.css-dice-face--front  { transform: translateZ(50px); }
-.css-dice-face--back   { transform: rotateX(180deg) translateZ(50px); }
-.css-dice-face--top    { transform: rotateX(90deg) translateZ(50px); }
-.css-dice-face--bottom { transform: rotateX(-90deg) translateZ(50px); }
-.css-dice-face--right  { transform: rotateY(90deg) translateZ(50px); }
-.css-dice-face--left   { transform: rotateY(-90deg) translateZ(50px); }
-
-/* Per-face pip patterns. Each face uses one base ::after pip plus
-   box-shadows to clone it into the dot pattern for that value. The
-   pixel offsets are tuned for a 100px die — DO NOT change the die
-   size without also re-tuning these box-shadow offsets.
-
-   Face → pip count mapping (matches the rotation table in
-   DiceTray.tsx):
-     .front  → 1 (red, larger)
-     .back   → 6 (two columns of 3)
-     .top    → 2 (diagonal)
-     .bottom → 5 (four corners + centre)
-     .right  → 4 (four corners)
-     .left   → 3 (diagonal of 3) */
-
-/* 1: single big red pip in the centre */
-.css-dice-face--front::after {
-  width: 30px;
-  height: 30px;
-  background: #f63330;
-  margin: -15px 0 0 -15px;
-}
-
-/* 6: 2 columns × 3 rows */
-.css-dice-face--back::after {
-  margin: -35px 0 0 -30px;
-  box-shadow:
-    40px 0,
-    0 25px,
-    40px 25px,
-    0 50px,
-    40px 50px;
-}
-
-/* 2: top-left + bottom-right diagonal */
-.css-dice-face--top::after {
-  margin: -30px 0 0 -30px;
-  box-shadow: 40px 40px;
-}
-
-/* 5: four corners + centre */
-.css-dice-face--bottom::after {
-  margin: -36px 0 0 -36px;
-  box-shadow:
-    26px 26px,
-    52px 52px,
-    52px 0,
-    0 52px;
-}
-
-/* 4: four corners */
-.css-dice-face--right::after {
-  margin: -30px 0 0 -30px;
-  box-shadow:
-    40px 0,
-    0 40px,
-    40px 40px;
-}
-
-/* 3: three pips on the diagonal */
-.css-dice-face--left::after {
-  margin: -35px 0 0 -35px;
-  box-shadow:
-    25px 25px,
-    50px 50px;
-}
-
-/* Respect prefers-reduced-motion: skip the tumble; jump straight
-   to the final face. The component still sets the inline transform
-   after ROLL_ANIMATION_MS, so dice end up on the correct face. */
-@media (prefers-reduced-motion: reduce) {
-  @keyframes css-dice-roll {
-    /* No-op — the cube stays still and snaps to the final transform
-       when the JS timer fires. */
-    0%, 100% {
-      transform: none;
-    }
-  }
-}
