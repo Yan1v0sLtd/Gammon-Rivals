@@ -7991,10 +7991,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border: none;
   box-shadow: none;
   padding: 0;
-  /* Slight inset to avoid a 1px seam at the cube's rounded corners
-     where adjacent face edges meet — keeps the artwork looking
-     tight at the edges. */
-  border-radius: calc(var(--dice-cube-size) * 0.13);
+  /* IMPORTANT: no border-radius in sprite mode. The artwork itself
+     has its own rounded corners (it's drawn on a transparent
+     square tile, with the die in the middle). If we add a CSS
+     border-radius here too, the face div clips the artwork's
+     corners and the dice render with visibly chopped-off edges.
+     Letting the face stay a flat rectangle keeps the artwork
+     pixel-perfect on every face. */
+  border-radius: 0;
+  /* Let the browser pick the best resampling for the scaled
+     sprite — produces smoother edges than the default at small
+     viewport sizes. */
+  image-rendering: auto;
 }
 
 /* 3-col × 2-row layout. background-position percentages are
