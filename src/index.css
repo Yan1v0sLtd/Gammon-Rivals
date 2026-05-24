@@ -7847,13 +7847,20 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    ────────────────────────────────────────────────────────────── */
 
 /* Tray container — vertically centred, anchored to the chosen side
-   of the board. position:absolute so it overlays the Pixi canvas
-   instead of pushing the board layout around. The scale brings the
-   user's 100px reference die down to a board-friendly ~65px on
-   desktop and ~52px on narrow mobile. */
+   of the board. Plain absolute positioning + flex; NO transform,
+   NO perspective, NO filter on this element. Anything in that
+   group forces transform-style: flat on the children per the CSS
+   Transforms spec, which collapses the 3D cubes into 2D edges
+   ("the dice disappear when rotated 90deg" symptom). All 3D
+   handling lives on the per-cube .css-dice-cube wrapper below. */
 .css-dice-tray {
   position: absolute;
   top: 50%;
+  /* translateY(-50%) is needed to vertically centre the tray, but
+     since this transform sits on the tray itself we MUST also set
+     transform-style: preserve-3d or the cubes flatten. */
+  transform: translateY(-50%);
+  transform-style: preserve-3d;
   display: flex;
   flex-direction: column;
   gap: clamp(0.6rem, 1.4vmin, 1rem);
@@ -7862,53 +7869,98 @@ button.lobby-hourly-bonus-pill.is-ready:active {
      these icons. Letting clicks pass through avoids accidentally
      blocking taps on the dice strip column. */
   pointer-events: none;
-  /* The perspective shapes the apparent depth of the cubes. Larger
-     values flatten the look; smaller values exaggerate the 3D
-     tumble. 800px is a comfortable middle. */
-  perspective: 800px;
-  transform: translateY(-50%) scale(0.65);
-  transform-origin: center;
-}
-
-@media (max-width: 640px) {
-  .css-dice-tray {
-    transform: translateY(-50%) scale(0.52);
-  }
 }
 
 .css-dice-tray--left  { left: 0.5rem; }
 .css-dice-tray--right { right: 0.5rem; }
 
+/* Per-cube perspective wrapper. perspective lives here (not on the
+   tray) so each cube has its own viewer position and the
+   flex-column gap doesn't share a single skewed perspective across
+   both dice. Its width/height set the visible cube size; the inner
+   .css-dice-die is at 100px native and scaled to fit via the
+   `--cube-scale` custom property below.
+   IMPORTANT: this wrapper must NOT use filter / overflow:hidden /
+   mix-blend-mode etc. — any of those force flat on the cube. */
+.css-dice-cube {
+  width: 65px;
+  height: 65px;
+  perspective: 700px;
+  transform-style: preserve-3d;
+}
+
+@media (max-width: 640px) {
+  .css-dice-cube {
+    width: 50px;
+    height: 50px;
+    perspective: 540px;
+  }
+}
+
 /* The die itself — 100px native to keep the user's pip math
-   verbatim. preserve-3d so the six face divs render in true 3D
-   space relative to the cube. The transition handles the brief
-   settle after the tumble keyframe finishes. */
+   verbatim. We scale down via inline transform combined with the
+   per-face rotation set by JS (see FACE_TRANSFORM in DiceTray.tsx).
+   preserve-3d so the six face divs render in true 3D space. NO
+   filter here — it would flatten the cube. */
 .css-dice-die {
   position: relative;
   width: 100px;
   height: 100px;
   transform-style: preserve-3d;
+  /* Pre-scale so the 100px native cube fits the 65px wrapper.
+     Use transform-origin: 0 0 so the cube anchors to the wrapper's
+     top-left and the scaled width matches the wrapper's width. */
+  transform: scale(0.65);
+  transform-origin: 0 0;
+  /* Smooth settle from the keyframe-end pose to the final face
+     transform that the JS sets via setTimeout. */
   transition: transform 0.35s ease;
-  /* Soft drop shadow so the cube reads as a physical object sitting
-     on the board surface rather than a flat sticker. */
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+
+@media (max-width: 640px) {
+  .css-dice-die {
+    transform: scale(0.5);
+  }
 }
 
 /* "Used" dice (after their pip count has been consumed in a move)
-   dim out — same UX as the previous tray. The filter chain combines
-   the desaturation with the existing drop shadow. */
+   dim out. Opacity only — filter would flatten the cube. */
 .css-dice-die--used {
   opacity: 0.35;
-  filter: grayscale(0.6) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
 }
 
-/* Tumble keyframe — 50% rotation by ~455° on both axes lands the
-   cube somewhere "random looking" mid-roll; the JS-side timeout
-   then sets the final per-face transform so the cube settles on
-   the rolled value. Mirrors the user-supplied reference snippet. */
+/* Tumble keyframe — wild 3D rotation at the midpoint; cube returns
+   to "no rotation" at the end (face 1 forward). The JS-side
+   setTimeout then snaps the cube's inline transform to the actual
+   rolled face's rotation, with a smooth 0.35s transition (see
+   .css-dice-die `transition: transform 0.35s ease`).
+   IMPORTANT: every keyframe stop MUST include the scale, because
+   CSS animations don't merge with the element's static transform;
+   they REPLACE it. Without scale here, the cube would pop to 100%
+   native size during the tumble and shrink again at the end. */
 @keyframes css-dice-roll {
+  0% {
+    transform: scale(0.65) rotateX(0deg) rotateY(0deg);
+  }
   50% {
-    transform: rotateX(455deg) rotateY(455deg);
+    transform: scale(0.65) rotateX(455deg) rotateY(455deg);
+  }
+  100% {
+    transform: scale(0.65) rotateX(360deg) rotateY(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  @keyframes css-dice-roll {
+    0% {
+      transform: scale(0.5) rotateX(0deg) rotateY(0deg);
+    }
+    50% {
+      transform: scale(0.5) rotateX(455deg) rotateY(455deg);
+    }
+    100% {
+      transform: scale(0.5) rotateX(360deg) rotateY(360deg);
+    }
   }
 }
 
