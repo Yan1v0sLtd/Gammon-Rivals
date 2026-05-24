@@ -7833,48 +7833,195 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   DiceTray v3 — Three.js dice tray positioning.
+   DiceTray v4 — pure HTML+CSS 3D dice.
 
-   The actual 3D rendering happens inside .dice-tray-3d-canvas via
-   a Three.js WebGLRenderer (one per match, persistent across all
-   rolls; see src/components/DiceTray.tsx for the architecture
-   notes). This block is just the positioning chrome: a fixed-size
-   container anchored to the player's board side, vertically
-   centred.
+   Six face divs per cube (in transform-style: preserve-3d), each
+   positioned at ±40px along an axis. Pips are <span> children
+   placed inside the face via CSS Grid (3×3 per face) with per-face
+   nth-child rules. No keyframes — the "tumble" comes from setting
+   the cube's inline transform to a target with multiple full 360°
+   turns baked in; the CSS transition interpolates smoothly through
+   those turns to land on the rolled face.
 
-   We deliberately do NOT apply filter / overflow:hidden / etc.
-   here — the Three.js renderer owns the canvas inside and there's
-   no preserve-3d concern (it's WebGL, not CSS 3D). But keeping the
-   container minimal makes future changes easier to reason about.
+   Critical CSS gotcha (twice burned, now permanently fixed):
+   `filter`, `overflow: hidden`, `mix-blend-mode`, `clip-path` on
+   the cube or any ancestor up to .dice-board force `transform-
+   style: flat` per the CSS Transforms spec — the 3D cube
+   collapses to a 2D edge. None of those properties appear on
+   .dice-board, .dice-cube, or .dice-face here.
    ────────────────────────────────────────────────────────────── */
 
-.dice-tray-3d {
+/* Tray container — anchored to the player's board side, vertically
+   centred. Holds two cubes stacked vertically with a small gap. */
+.dice-board {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.7rem, 1.6vmin, 1.25rem);
   z-index: 5;
-  /* Dice are decorative — let clicks pass through to the board
-     beneath. */
+  /* IMPORTANT: vertical centring + transform-style: preserve-3d
+     together. Without preserve-3d the translateY(-50%) transform
+     would create a flat rendering context that collapses the
+     cubes. (Same lesson learned in v2.) */
+  transform: translateY(-50%);
+  transform-style: preserve-3d;
+  /* Perspective lives on the tray so each cube has the same viewer
+     position; tweaking this value changes how dramatic the 3D
+     tumble looks. */
+  perspective: 900px;
+  /* Decorative — let board clicks pass through. */
   pointer-events: none;
 }
 
-.dice-tray-3d--left  { left: 0.5rem; }
-.dice-tray-3d--right { right: 0.5rem; }
+.dice-board--left  { left: 0.6rem; }
+.dice-board--right { right: 0.6rem; }
 
-.dice-tray-3d-canvas {
-  width: 100%;
-  height: 100%;
+/* The cube itself. preserve-3d puts the six faces in real 3D space.
+   The transition does ALL the visual work — every new roll just
+   sets a new transform value on this element and the browser
+   interpolates the rotation, naturally tumbling through the
+   accumulated 360° turns en route to the final face. */
+.dice-cube {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  transform-style: preserve-3d;
+  /* Initial resting tilt (visible only before the first roll fires,
+     which is rare since the tray doesn't mount until there IS a
+     roll). Mostly here so the cube looks 3D-ish if a screenshot
+     gets taken between rolls. */
+  transform: rotateX(-20deg) rotateY(25deg);
+  /* The signature physical-feeling settle — 1.5s with a strong
+     decel curve so the cube rotates fast at first and eases hard
+     into the final face. */
+  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-.dice-tray-3d-canvas canvas {
-  /* Three.js sets the canvas to its render-target dimensions in
-     pixels; this rule lets the CSS-side container drive the visible
-     size while the renderer keeps its own pixel buffer. */
+@media (max-width: 640px) {
+  .dice-cube {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* Used dice (their pip value's been consumed in a move) dim out.
+   Opacity only — filter would flatten the 3D context. */
+.dice-cube--used {
+  opacity: 0.4;
+}
+
+/* Each face is an 80×80 square in the cube's local space. CSS Grid
+   3×3 lays out the pips in a standard arrangement; per-face
+   nth-child rules below place each pip in the right cell. */
+.dice-face {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  background: #fcfcfc;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.3);
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .dice-face {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    padding: 6px;
+  }
+}
+
+/* Per-face cube-space positions. translateZ(40px) pushes the face
+   out half the cube depth; the various rotations turn the face to
+   point in its named direction. Distance must match cube half-
+   width (40 = 80/2). */
+.dice-face--f1 { transform: rotateY(0deg)    translateZ(40px); }
+.dice-face--f6 { transform: rotateY(180deg)  translateZ(40px); }
+.dice-face--f3 { transform: rotateY(90deg)   translateZ(40px); }
+.dice-face--f4 { transform: rotateY(-90deg)  translateZ(40px); }
+.dice-face--f2 { transform: rotateX(90deg)   translateZ(40px); }
+.dice-face--f5 { transform: rotateX(-90deg)  translateZ(40px); }
+
+@media (max-width: 640px) {
+  /* Mobile: cube is 60px, so faces translate by 30. */
+  .dice-face--f1 { transform: rotateY(0deg)    translateZ(30px); }
+  .dice-face--f6 { transform: rotateY(180deg)  translateZ(30px); }
+  .dice-face--f3 { transform: rotateY(90deg)   translateZ(30px); }
+  .dice-face--f4 { transform: rotateY(-90deg)  translateZ(30px); }
+  .dice-face--f2 { transform: rotateX(90deg)   translateZ(30px); }
+  .dice-face--f5 { transform: rotateX(-90deg)  translateZ(30px); }
+}
+
+/* A single pip. The grid cell holds it; margin:auto centres it
+   within the cell. Color is the traditional dark-red backgammon
+   dot. */
+.dice-pip {
   display: block;
-  width: 100%;
-  height: 100%;
+  background-color: #b30000;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  margin: auto;
 }
 
-/* (Old CSS 3D dice rules removed — DiceTray v2's CSS cubes are gone.
-   The new tray uses a Three.js renderer for the cubes themselves.) */
+@media (max-width: 640px) {
+  .dice-pip {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Per-face pip placement using the 3×3 grid. The cells are
+   row/col 1..3. Each face's nth-child rule puts the pip in the
+   correct standard-dice cell. */
+
+/* 1 pip — centre */
+.dice-face--f1 .dice-pip { grid-area: 2 / 2; }
+
+/* 2 pips — top-left, bottom-right */
+.dice-face--f2 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
+.dice-face--f2 .dice-pip:nth-child(2) { grid-area: 3 / 3; }
+
+/* 3 pips — diagonal */
+.dice-face--f3 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
+.dice-face--f3 .dice-pip:nth-child(2) { grid-area: 2 / 2; }
+.dice-face--f3 .dice-pip:nth-child(3) { grid-area: 3 / 3; }
+
+/* 4 pips — four corners */
+.dice-face--f4 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
+.dice-face--f4 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
+.dice-face--f4 .dice-pip:nth-child(3) { grid-area: 3 / 1; }
+.dice-face--f4 .dice-pip:nth-child(4) { grid-area: 3 / 3; }
+
+/* 5 pips — four corners + centre */
+.dice-face--f5 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
+.dice-face--f5 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
+.dice-face--f5 .dice-pip:nth-child(3) { grid-area: 2 / 2; }
+.dice-face--f5 .dice-pip:nth-child(4) { grid-area: 3 / 1; }
+.dice-face--f5 .dice-pip:nth-child(5) { grid-area: 3 / 3; }
+
+/* 6 pips — two columns of three */
+.dice-face--f6 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
+.dice-face--f6 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
+.dice-face--f6 .dice-pip:nth-child(3) { grid-area: 2 / 1; }
+.dice-face--f6 .dice-pip:nth-child(4) { grid-area: 2 / 3; }
+.dice-face--f6 .dice-pip:nth-child(5) { grid-area: 3 / 1; }
+.dice-face--f6 .dice-pip:nth-child(6) { grid-area: 3 / 3; }
+
+/* Respect prefers-reduced-motion: skip the long tumble, just snap
+   to the final face. */
+@media (prefers-reduced-motion: reduce) {
+  .dice-cube {
+    transition: transform 0.2s ease-out;
+  }
+}
 
