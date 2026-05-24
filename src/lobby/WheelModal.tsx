@@ -39,6 +39,14 @@ interface Props {
    *  lobby uses this to refresh the wallet + wheel state so the
    *  next cooldown begins. */
   readonly onSpinComplete: () => void;
+  /** Optional: called as soon as the wheel lands and reward
+   *  flights are about to spawn — earlier than `onSpinComplete`.
+   *  Use this for state that the player sees CHANGE during the
+   *  flight animation (e.g. the lobby's XP progress bar, visible
+   *  through the modal's translucent backdrop). The fetch fires
+   *  ~1500ms before the modal closes, so by the time the flights
+   *  land the new value is already painted. */
+  readonly onProgressionUpdated?: () => void;
 }
 
 const SLOT_COUNT = 10;
@@ -146,7 +154,7 @@ function shortAmount(n: number): string {
   return String(n);
 }
 
-export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
+export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdated }: Props) {
   const state = wheel.state;
   const slots = state?.slots ?? [];
 
@@ -312,6 +320,20 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
     if (result.credited_xp > 0) {
       const count = Math.min(5, Math.max(2, result.credited_xp));
       spawnFlights('xp', count);
+    }
+
+    // Early progression refresh — fire NOW (while flights are
+    // mid-air) so the lobby's XP progress bar (visible through
+    // the translucent modal backdrop) fills smoothly as the XP
+    // tokens arrive at the level hex. By the time the fetch
+    // resolves (~150-300ms) the new value is painted; users see
+    // the bar fill DURING the flight animation rather than
+    // popping after modal close. Kept separate from
+    // onSpinComplete because the wallet RollingNumber WANTS to
+    // tick AFTER the flights land (visual cause→effect), so
+    // wallet refresh stays at close time.
+    if (result.credited_xp > 0) {
+      onProgressionUpdated?.();
     }
 
     // Hold open long enough for the slowest-stagger flight to

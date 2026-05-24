@@ -89,7 +89,7 @@ function LobbyBackgroundLayer({
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
-  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet } = useAuth();
+  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet, refreshProfile } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
@@ -302,11 +302,14 @@ export function LobbyScreen() {
       if (src) spawnFlights('coins', src, 6);
     }
 
-    // Refresh streak state (so canClaim flips to false) and wallet (so
-    // the top-bar counter ticks up around the time the flights land).
+    // Refresh streak state (so canClaim flips to false), wallet
+    // (so the top-bar counter ticks up around the time the
+    // flights land), AND profile (so the level progress bar
+    // reflects any XP the daily bonus credited).
     dailyBonus.refetch();
     window.setTimeout(() => {
       void refreshWallet();
+      void refreshProfile();
     }, 600);
 
     // Hold the modal open long enough to see the CLAIMED card and the
@@ -704,9 +707,11 @@ export function LobbyScreen() {
           result={missionsResult}
           onClose={() => {
             setMissionsModalOpen(false);
-            // Claims/rerolls/chests may have credited the wallet —
-            // refresh so the top-bar RollingNumber catches up.
+            // Claims/rerolls/chests may have credited the wallet
+            // AND XP — refresh both so the top-bar RollingNumber
+            // and the level progress bar catch up.
             void refreshWallet();
+            void refreshProfile();
           }}
         />
       ) : null}
@@ -715,11 +720,21 @@ export function LobbyScreen() {
         <WheelModal
           wheel={wheel}
           onClose={() => setWheelModalOpen(false)}
+          onProgressionUpdated={() => {
+            // Fires when the wheel lands + XP flights spawn —
+            // ~1500ms BEFORE the modal closes. The lobby's
+            // XP progress bar (visible through the translucent
+            // backdrop) updates while the XP tokens are still
+            // flying toward the level hex, so the bar fills
+            // smoothly during the flight animation.
+            void refreshProfile();
+          }}
           onSpinComplete={() => {
-            // Server credited the wallet inside spin_wheel; refresh
-            // the local wallet so the top-bar RollingNumber ticks to
-            // the new total, and re-fetch the wheel state so the
-            // lobby pill flips back to its cooldown countdown.
+            // Fires when the modal is about to close. Refresh
+            // wallet (so RollingNumber ticks the new total AFTER
+            // coin/gem flights land — visual cause→effect) and
+            // re-fetch the wheel state so the lobby pill flips
+            // back to its cooldown countdown.
             void refreshWallet();
             wheel.refetch();
           }}
