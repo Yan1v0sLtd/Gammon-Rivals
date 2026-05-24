@@ -7910,10 +7910,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   transform-style: preserve-3d;
 }
 
-/* Ground shadow — a flat, blurred ellipse sitting just below the
-   cube. The cube tumbles above it; the shadow stays put so the
-   die reads as a physical object resting on the felt rather than
-   pasted to it.
+/* Halo shadow — a flat, blurred dark region surrounding the cube
+   on ALL sides (not just below). Reads as a soft "glow of
+   darkness" behind the die; combined with the wood/cream
+   artwork that doesn't extend to the face edges, it sells the
+   die as a discrete object that doesn't sit perfectly flat on
+   the felt.
 
    Notes on the 3D-friendliness:
    - filter: blur() forces transform-style: flat on this element,
@@ -7923,24 +7925,42 @@ button.lobby-hourly-bonus-pill.is-ready:active {
      up to the .dice-stand parent or sideways to the .dice-cube
      sibling, so the cube's 3D rendering is untouched.
    - z-index: -1 puts the shadow visually behind the cube without
-     leaving the stand's 3D context. */
+     leaving the stand's 3D context.
+   - Slight vertical bias on the gradient (centre-y at 58%) keeps
+     a hint of "more shadow under the die" so it still reads as
+     having gravity, just without being a pure ground patch. */
 .dice-shadow {
   position: absolute;
-  /* Slight vertical drop so the shadow appears below the cube
-     rather than overlapping it. */
-  bottom: calc(var(--dice-cube-size) * -0.12);
-  left: 8%;
-  right: 8%;
-  height: calc(var(--dice-cube-size) * 0.22);
+  /* Extend the shadow ~14% beyond the cube on every side. The
+     blurred gradient then fades to transparent before the
+     halo's bounding box edge, so the visible shadow is roughly
+     the size of the cube plus a soft cushion of darkness
+     around it. */
+  top: calc(var(--dice-cube-size) * -0.14);
+  bottom: calc(var(--dice-cube-size) * -0.14);
+  left: calc(var(--dice-cube-size) * -0.14);
+  right: calc(var(--dice-cube-size) * -0.14);
   background: radial-gradient(
-    ellipse at center,
+    ellipse 60% 60% at center 58%,
     rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.25) 45%,
-    rgba(0, 0, 0, 0) 78%
+    rgba(0, 0, 0, 0.28) 45%,
+    rgba(0, 0, 0, 0) 80%
   );
-  filter: blur(calc(var(--dice-cube-size) * 0.06));
+  filter: blur(calc(var(--dice-cube-size) * 0.08));
   pointer-events: none;
   z-index: -1;
+  /* The shadow opacity transitions with the cube so when a die
+     dims from "fresh" to "used" the shadow dims with it. */
+  transition: opacity 0.25s ease;
+}
+
+/* When the die's pip has been consumed in a move, dim both the
+   cube AND the shadow together. (Was previously only on the cube,
+   which left a fully-opaque shadow under a barely-visible die —
+   players reported it as "shadow without dice".) */
+.dice-stand--used .dice-cube,
+.dice-stand--used .dice-shadow {
+  opacity: 0.4;
 }
 
 /* All cube dimensions derived from --dice-cube-size on the tray
@@ -7963,11 +7983,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-/* Used dice (their pip value has been consumed in a move) dim out.
-   Opacity only — filter would flatten the 3D context. */
-.dice-cube--used {
-  opacity: 0.4;
-}
+/* Used-dice dimming moved to .dice-stand--used (above). A rule
+   targeting just .dice-cube--used would only dim the cube and
+   leave the sibling shadow at full opacity — see the dimming
+   rule alongside the shadow CSS above. */
 
 /* Each face fills the cube's bounding square. CSS Grid 3x3 lays
    out the pips; per-face nth-child rules below put each pip in

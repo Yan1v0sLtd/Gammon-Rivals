@@ -208,7 +208,11 @@ function CssDie({
   // sprite rules (in src/index.css) handle the per-face
   // background-position. The CSS variable carries the URL into
   // every face div without us having to thread it 6 times.
-  const className = `dice-cube${used ? ' dice-cube--used' : ''}${sprite ? ' dice-cube--sprite' : ''}`;
+  // The `used` styling now lives on the .dice-stand wrapper
+  // (see render below) so a single rule can dim both the cube
+  // and the shadow at the same time. The cube className itself
+  // only carries the sprite-mode flag now.
+  const className = `dice-cube${sprite ? ' dice-cube--sprite' : ''}`;
   const style = sprite
     ? ({ ['--dice-sprite-url' as string]: `url("${sprite}")` } as React.CSSProperties)
     : undefined;
@@ -223,15 +227,19 @@ function CssDie({
     ));
   };
 
-  // The stand wrapper holds the cube + a flat ground-shadow
-  // sibling. It MUST keep transform-style: preserve-3d so the
-  // cube's faces still render in 3D. The shadow is its own
-  // element with filter: blur() — filter forces flat on the
-  // element it's applied to (per CSS Transforms spec), but only
-  // on THAT element. The sibling cube and parent stand are
-  // unaffected.
+  // The stand wrapper holds the cube + a flat shadow sibling. It
+  // MUST keep transform-style: preserve-3d so the cube's faces
+  // still render in 3D. The shadow has filter: blur() — that
+  // filter forces flat only on the shadow element itself, not
+  // the cube sibling or the stand parent.
+  //
+  // The `used` className is on the STAND (not just the cube) so a
+  // single CSS rule can dim both the cube AND the shadow
+  // together. Without that, a "used" die went to 40% opacity but
+  // its shadow stayed at full strength — players reported seeing
+  // "shadow without die" after consuming a pip in a move.
   return (
-    <div className="dice-stand">
+    <div className={`dice-stand${used ? ' dice-stand--used' : ''}`}>
       <div ref={ref} className={className} style={style}>
         <div className="dice-face dice-face--f1">{renderPips(1)}</div>
         <div className="dice-face dice-face--f2">{renderPips(2)}</div>
