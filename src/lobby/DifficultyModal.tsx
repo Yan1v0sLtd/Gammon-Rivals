@@ -256,90 +256,132 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
         // card).
         boxShadow: `${palette.halo}, 0 14px 26px rgba(0,0,0,0.55)`,
         border: '1px solid rgba(211,160,78,0.35)',
+        // Container query anchor — every `cqi` unit inside this
+        // card now resolves to 1% of THIS card's actual width
+        // (not viewport-width). That's what lets text/icons in
+        // the card scale with the card itself: when 5 cards
+        // share a 1200px row each card is ~230px wide, when 5
+        // cards share a 400px row each is ~76px wide, and
+        // `clamp(min, Xcqi, max)` adapts smoothly in both.
+        // Browser support: Chrome 105+, Firefox 110+, Safari 16+
+        // (Baseline since Feb 2023 — fine for this app).
+        containerType: 'inline-size',
       }}
     >
       {/* Tier name strip — sits above the hero on the dark card
           background, rendered in the tier accent so the difficulty
           identity (BEGINNER / ADVANCED / PRO / EXPERT / GRAND
           MASTER) reads even when the player only glances at the
-          modal. whitespace-nowrap + reduced tracking makes the
-          longest expected name ("GRAND MASTER") fit on one line so
-          all five cards share one height — wrapping would push the
-          GRAND MASTER card taller than its neighbours.
-          Mobile sizing: tighter padding + tighter letter-spacing +
-          smaller font so the longest name still fits inside the
-          narrow 5-up column on a phone. */}
-      <div className="px-1 pt-1.5 pb-0.5 text-center sm:px-2 sm:pt-2 sm:pb-1 lg:px-3 lg:pt-3 lg:pb-1">
+          modal. whitespace-nowrap + container-query font scales
+          the longest expected name ("GRAND MASTER") down on
+          narrow cards so all five tiles share one height. */}
+      <div className="px-1 pt-1 pb-0.5 text-center lg:px-3 lg:pt-2">
         <div
-          className="font-display text-[0.5rem] font-black uppercase tracking-[0.04em] sm:text-xs sm:tracking-[0.08em] lg:text-base lg:tracking-[0.1em] whitespace-nowrap"
+          className="font-display font-black uppercase whitespace-nowrap"
           style={{
             color: palette.title,
             textShadow: '0 2px 0 rgba(0,0,0,0.55)',
+            // 6.2cqi ≈ 6.2% of card width — at 380px → 23.5px,
+            // at 200px → 12.4px, at 80px → 5px. Clamped so it
+            // never gets bigger than 1.1rem (~17.5px) or smaller
+            // than 0.5rem (~8px).
+            fontSize: 'clamp(0.5rem, 6.2cqi, 1.1rem)',
+            // Tracking scales with font-size — 0.08em widens to
+            // ~1.4px at 17.5px and tightens to ~0.6px at 8px so
+            // the GRAND MASTER name always fits the strip.
+            letterSpacing: '0.08em',
           }}
         >
           {row.display_name}
         </div>
       </div>
 
-      {/* Hero panel — the per-tier room image. Aspect-ratio is
-          locked so all five cards stay perfectly aligned regardless
-          of the source image's intrinsic size. */}
+      {/* Hero panel — the per-tier room image. Aspect ratio
+          changed from 4:3 to 16:9 to claw back vertical space
+          (4:3 made each card ~75% as tall as wide; 16:9 is
+          ~56%, saving ~20% per card height). Five cards sharing
+          one row x ~25% saving = the modal now fits a portrait
+          phone without vertical scroll. */}
       <div
         className="w-full"
         style={{
           ...heroStyle,
-          aspectRatio: '4 / 3',
+          aspectRatio: '16 / 9',
         }}
         aria-hidden
       />
 
       {/* Stats panel — cream rounded outer card containing three
-          icon-rows (XP boost / entry fee / time to move). Mirrors
-          the reference screenshot the user shared: each row in its
-          own beige pill, icon on the left, label + value stacked on
-          the right with the value rendered in the tier accent
-          colour.
-          Mobile: micro-padding + tiny gap + sm text so each stat
-          row stays scannable in the narrow 5-up column. */}
-      <div className="m-1 rounded-md border border-amber-700/40 bg-[#f4e7c5] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] sm:m-2 sm:rounded-lg sm:p-1.5 lg:m-3 lg:rounded-xl lg:p-2">
+          icon-rows (XP boost / entry fee / time to move). Each
+          value uses a container-query font-size so the longer
+          numbers ("500%", "150K") shrink-to-fit on narrow cards
+          instead of overflowing the pill. */}
+      <div className="m-1 rounded-md border border-amber-700/40 bg-[#f4e7c5] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] sm:m-2 sm:rounded-lg sm:p-1.5 lg:m-2.5 lg:rounded-xl lg:p-2">
         <div className="space-y-0.5 sm:space-y-1 lg:space-y-1.5">
-          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
             <XpHexIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
+              <div
+                className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
+                style={{
+                  fontSize: 'clamp(0.4rem, 3cqi, 0.65rem)',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 XP Boost
               </div>
               <div
-                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
-                style={{ color: palette.title }}
+                className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+                style={{
+                  color: palette.title,
+                  fontSize: 'clamp(0.65rem, 6cqi, 1.1rem)',
+                }}
               >
                 {row.xp_multiplier_pct}%
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
             <CoinIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
+              <div
+                className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
+                style={{
+                  fontSize: 'clamp(0.4rem, 3cqi, 0.65rem)',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 Entry Fee
               </div>
               <div
-                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
-                style={{ color: palette.title }}
+                className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+                style={{
+                  color: palette.title,
+                  fontSize: 'clamp(0.65rem, 6cqi, 1.1rem)',
+                }}
               >
                 {formatCompactNumber(row.entry_fee_coins)}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2.5 lg:rounded-lg lg:px-2.5 lg:py-1.5">
+          <div className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
             <ClockIcon />
             <div className="min-w-0 flex-1">
-              <div className="text-[0.4rem] font-bold uppercase tracking-[0.04em] text-amber-900/70 sm:text-[0.5rem] sm:tracking-[0.08em] lg:text-[0.6rem] lg:tracking-[0.14em]">
+              <div
+                className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
+                style={{
+                  fontSize: 'clamp(0.4rem, 3cqi, 0.65rem)',
+                  letterSpacing: '0.05em',
+                }}
+              >
                 Time to Move
               </div>
               <div
-                className="font-display text-[0.65rem] font-black leading-none tabular-nums sm:text-sm lg:text-lg"
-                style={{ color: palette.title }}
+                className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+                style={{
+                  color: palette.title,
+                  fontSize: 'clamp(0.65rem, 6cqi, 1.1rem)',
+                }}
               >
                 {formatSeconds(row.turn_seconds)}
               </div>
@@ -356,17 +398,29 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           The CTA's colour is independent of the tier accent so a
           player can tell at a glance whether each room is playable
           without parsing five different greens / blues / etc.
-          Mobile: tighter padding + smaller font so the button
-          fits the narrow column without forcing horizontal scroll. */}
-      <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-3 lg:pb-3">
+          whitespace-nowrap + container-query font-size makes the
+          longest label ("UNLOCKS AT LV 10") always fit a single
+          line at any card width — no more two-line wrap on the
+          locked-tier cards. */}
+      <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
         <button
           type="button"
           onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
           disabled={buttonDisabled}
           className={
-            'block w-full rounded py-1 font-display text-[0.55rem] font-black uppercase tracking-[0.06em] text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 sm:rounded-md sm:py-1.5 sm:text-xs sm:tracking-[0.1em] lg:py-2 lg:text-base lg:tracking-[0.18em] ' +
+            'block w-full rounded py-1 font-display font-black uppercase text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 whitespace-nowrap sm:rounded-md sm:py-1.5 lg:py-2 ' +
             ctaClass
           }
+          style={{
+            // 4.8cqi ≈ ~18px on a 380px-wide card and ~10px on a
+            // 200px card. Clamped so it never gets bigger than
+            // 1rem or smaller than 0.5rem. The longest label
+            // (UNLOCKS AT LV 10 = 16 chars) at 1rem with 0.05em
+            // tracking is ~120px wide — fits any card down to
+            // ~140px wide with room to spare.
+            fontSize: 'clamp(0.5rem, 4.8cqi, 1rem)',
+            letterSpacing: '0.05em',
+          }}
         >
           {buttonLabel}
         </button>
@@ -452,13 +506,13 @@ export function DifficultyModal({
         }}
       >
         {/* Header — title only, subtitle removed per user request.
-            Mobile: smaller title + tighter margin so the 5-card grid
-            has more vertical room and the modal fits the phone
-            viewport without scrolling. */}
-        <div className="relative mb-2 flex flex-col items-center text-center sm:mb-4 lg:mb-6">
+            Vertical margins tightened across all breakpoints to
+            free up more room for the 5-card grid so the modal
+            fits the viewport without scrolling. */}
+        <div className="relative mb-1 flex flex-col items-center text-center sm:mb-2 lg:mb-4">
           <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4">
             <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
-            <h2 className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-base font-black uppercase tracking-[0.12em] text-transparent sm:text-2xl sm:tracking-[0.18em] lg:text-3xl md:text-4xl">
+            <h2 className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-base font-black uppercase tracking-[0.12em] text-transparent sm:text-xl sm:tracking-[0.18em] lg:text-2xl md:text-3xl">
               Select Room
             </h2>
             <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
@@ -515,12 +569,13 @@ export function DifficultyModal({
         {/* Footer legend — two short tips. The "entry fee deducted
             on join" tip was dropped per user request; the entry-fee
             row on each card is already self-explanatory.
-            Mobile: hide the legend entirely so the 5-card grid +
-            header fit the phone viewport without scrolling. The
-            stat icons + labels on each card are already self-
-            explanatory. */}
+            Hidden on phones AND tablets (`hidden lg:grid`) so the
+            5-card grid + header fit the viewport without scrolling.
+            The stat icons + labels on each card are already self-
+            explanatory; the legend is purely a nice-to-have on
+            desktop. */}
         <div
-          className="mt-3 hidden gap-3 rounded-xl border p-4 text-xs font-bold text-white/75 sm:grid md:grid-cols-2 md:text-sm lg:mt-6"
+          className="mt-3 hidden gap-3 rounded-xl border p-3 text-xs font-bold text-white/75 lg:mt-4 lg:grid lg:grid-cols-2 lg:p-4 lg:text-sm"
           style={{
             background: 'linear-gradient(180deg, #14100a 0%, #080604 100%)',
             borderColor: '#5a3a14',
