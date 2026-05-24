@@ -791,23 +791,9 @@ function StreakPanel({
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Title overlay — sits on top of the frame's baked
-          "WEEKLY CHALLENGE" plate. Background colour roughly matches
-          the plate so the swap reads as a relabel, not an overlay. */}
-      <div
-        className="absolute left-1/2 top-[5%] flex -translate-x-1/2 items-center gap-2 rounded-md px-6 py-1.5"
-        style={{
-          background: 'linear-gradient(180deg, #4a1a6f 0%, #2a0e44 100%)',
-          boxShadow: 'inset 0 0 0 2px rgba(255, 207, 100, 0.5)',
-        }}
-      >
-        <span className="text-base">🔥</span>
-        <span className="font-display text-sm font-black tracking-[0.18em] text-amber-200 sm:text-base">
-          DAILY STREAK
-        </span>
-      </div>
-
-      {/* Content overlay inside the frame's interior */}
+      {/* Content overlay inside the frame's interior. (Title bar
+          was removed — operator confirmed the title plate is
+          handled by the frame artwork itself.) */}
       <div className="absolute inset-0 flex flex-col items-center justify-end px-[8%] pb-[8%] pt-[20%]">
         <div className="mb-2 text-xs font-bold text-amber-200 sm:text-sm">
           {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
