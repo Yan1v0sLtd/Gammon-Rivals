@@ -1,0 +1,113 @@
+<!--
+  Gammon Rivals — placeholder brand mark for the Android adaptive icon
+  + splash screen. Swap this file with a designer-made logo (1024×1024
+  PNG or SVG) when one exists; re-run `npx @capacitor/assets generate`
+  and every Android density variant regenerates from the new source.
+
+  Design notes:
+  • Dark navy → black radial background (matches the lobby card chrome
+    + the DifficultyModal background).
+  • Two interlocking backgammon triangles forming a stylized "G"/"R"
+    silhouette — backgammon-specific iconography that reads at 48px
+    (the smallest mipmap density) without becoming a blob.
+  • Gold gradient on the triangles mirrors the SPIN button gradient
+    (#fff070 → #ffbd24 → #f2730d → #b73808) so the icon and the
+    in-app CTA share a visual language.
+  • Inner content sits inside the Android adaptive-icon safe zone
+    (the inner 66dp of a 108dp foreground) — the launcher can crop
+    the outer 21dp to fit circle / squircle / teardrop masks and the
+    main mark stays intact.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Background: deep navy → near-black, vignette toward the corners -->
+    <radialGradient id="bg" cx="50%" cy="42%" r="65%">
+      <stop offset="0%"  stop-color="#1a1f4a"/>
+      <stop offset="55%" stop-color="#0a0e2b"/>
+      <stop offset="100%" stop-color="#020208"/>
+    </radialGradient>
+
+    <!-- Gold body for the triangles: matches the SPIN button gradient -->
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff070"/>
+      <stop offset="35%" stop-color="#ffbd24"/>
+      <stop offset="72%" stop-color="#f2730d"/>
+      <stop offset="100%" stop-color="#b73808"/>
+    </linearGradient>
+
+    <!-- Cream secondary for the right-hand triangle, mirrors the
+         alternating point colors on a real backgammon board. -->
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff7d6"/>
+      <stop offset="60%" stop-color="#f4dca0"/>
+      <stop offset="100%" stop-color="#a87a2f"/>
+    </linearGradient>
+
+    <!-- Subtle inner shadow on the disc edge for depth -->
+    <radialGradient id="rim" cx="50%" cy="50%" r="50%">
+      <stop offset="86%" stop-color="rgba(0,0,0,0)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0.55)"/>
+    </radialGradient>
+
+    <!-- Gold outer ring (matches the wheel + difficulty modal rim) -->
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff4a1"/>
+      <stop offset="35%" stop-color="#f8bf31"/>
+      <stop offset="80%" stop-color="#c46d0e"/>
+      <stop offset="100%" stop-color="#5a2407"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background. The adaptive icon background LAYER uses
+       this fill; the foreground layer is the triangles only (rendered
+       to a separate PNG with transparent bg). -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- Gold ring framing the mark. Lives in both layers (it reads as
+       part of the silhouette on round-mask launchers and disappears
+       gracefully on squircle/rounded-square masks). -->
+  <circle cx="512" cy="512" r="438" fill="none" stroke="url(#ring)" stroke-width="22"/>
+  <circle cx="512" cy="512" r="438" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="3"/>
+
+  <!-- Two interlocking backgammon triangles forming the mark.
+       Left triangle = gold gradient, points DOWN.
+       Right triangle = cream gradient, points UP.
+       They overlap in the centre creating an hourglass/dice-tower
+       silhouette that reads as "backgammon" at any size. -->
+
+  <!-- Left triangle (gold, pointing down). Coords picked so the apex
+       lands near the centre and the wide base sits at the top of the
+       inner safe zone. -->
+  <polygon
+    points="270,260 590,260 430,720"
+    fill="url(#gold)"
+    stroke="rgba(0,0,0,0.45)"
+    stroke-width="6"
+    stroke-linejoin="round"
+  />
+
+  <!-- Right triangle (cream, pointing up). Mirrors the left across
+       the vertical centre, slightly offset so the apexes don't fuse
+       into a single bowtie at small sizes. -->
+  <polygon
+    points="434,764 754,764 594,304"
+    fill="url(#cream)"
+    stroke="rgba(0,0,0,0.45)"
+    stroke-width="6"
+    stroke-linejoin="round"
+  />
+
+  <!-- Light glint on the gold triangle's upper edge — gives the icon
+       lift instead of reading as flat color. -->
+  <polygon
+    points="270,260 590,260 565,302 295,302"
+    fill="rgba(255,255,255,0.35)"
+  />
+  <polygon
+    points="434,764 754,764 729,722 459,722"
+    fill="rgba(255,255,255,0.22)"
+  />
+
+  <!-- Rim vignette for depth -->
+  <circle cx="512" cy="512" r="450" fill="url(#rim)"/>
+</svg>

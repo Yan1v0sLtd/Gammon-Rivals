@@ -11,6 +11,8 @@
     "android:open": "npx cap open android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:build": "npm run build && npx cap build android",
+    "android:assets": "node scripts/render-android-assets.mjs && npx @capacitor/assets generate --android",
+    "android:reload": "node scripts/android-reload.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -19,6 +21,7 @@
   "dependencies": {
     "@capacitor/android": "^8.3.4",
     "@capacitor/core": "^8.3.4",
+    "@capacitor/splash-screen": "^8.0.1",
     "@supabase/supabase-js": "^2.105.3",
     "cannon-es": "^0.20.0",
     "pixi.js": "^8.18.1",
@@ -28,6 +31,7 @@
     "three": "^0.160.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.3.4",
     "@eslint/js": "^10.0.1",
     "@testing-library/jest-dom": "^6.9.1",

@@ -1,0 +1,60 @@
+<!--
+  Foreground-only variant of the icon for Android's adaptive icon
+  system. The ANDROID launcher composites this on top of the
+  background layer (separate PNG), and may apply a circle / squircle
+  / teardrop mask + parallax animation. Critical rules:
+
+    • Canvas: 1024×1024 (Android upscales / downscales as needed).
+    • Safe zone: the inner 66% (≈340–684 on this canvas) is GUARANTEED
+      visible across all launchers. Anything outside that ring may be
+      cropped depending on the user's launcher shape.
+    • No background fill — the background LAYER handles that.
+
+  The triangles are shrunk and re-centred vs the full icon source so
+  they fit comfortably inside the safe zone.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff070"/>
+      <stop offset="35%" stop-color="#ffbd24"/>
+      <stop offset="72%" stop-color="#f2730d"/>
+      <stop offset="100%" stop-color="#b73808"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff7d6"/>
+      <stop offset="60%" stop-color="#f4dca0"/>
+      <stop offset="100%" stop-color="#a87a2f"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff4a1"/>
+      <stop offset="35%" stop-color="#f8bf31"/>
+      <stop offset="80%" stop-color="#c46d0e"/>
+      <stop offset="100%" stop-color="#5a2407"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Inner gold ring (inside the safe zone) -->
+  <circle cx="512" cy="512" r="320" fill="none" stroke="url(#ring)" stroke-width="18"/>
+
+  <!-- Same triangles as the full icon but scaled / repositioned to fit
+       inside the safe zone (340–684 axis bounds, padded). -->
+  <polygon
+    points="350,358 568,358 458,672"
+    fill="url(#gold)"
+    stroke="rgba(0,0,0,0.45)"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="462,696 680,696 570,382"
+    fill="url(#cream)"
+    stroke="rgba(0,0,0,0.45)"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+
+  <!-- Glints -->
+  <polygon points="350,358 568,358 552,386 366,386" fill="rgba(255,255,255,0.35)"/>
+  <polygon points="462,696 680,696 664,668 478,668" fill="rgba(255,255,255,0.22)"/>
+</svg>

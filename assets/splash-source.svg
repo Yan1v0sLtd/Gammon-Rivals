@@ -1,0 +1,97 @@
+<!--
+  Splash screen master. Shown while the Capacitor WebView boots and
+  fetches the Vercel bundle (~1-3s typical). 2732×2732 so it can be
+  cropped to any aspect ratio without quality loss (Capacitor's asset
+  generator pulls portrait + landscape variants from the same square).
+
+  Layout:
+    • Same navy radial gradient as the icon background.
+    • Icon mark centred at ~30% of canvas height (keeps it visible on
+      tall portrait phones where the bottom 40% gets cropped on some
+      launchers).
+    • "GAMMON RIVALS" wordmark below the icon — gold gradient, big
+      slab type. This is the first text the player sees on cold start.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732" width="2732" height="2732">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="65%">
+      <stop offset="0%"  stop-color="#1a1f4a"/>
+      <stop offset="55%" stop-color="#0a0e2b"/>
+      <stop offset="100%" stop-color="#020208"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff070"/>
+      <stop offset="35%" stop-color="#ffbd24"/>
+      <stop offset="72%" stop-color="#f2730d"/>
+      <stop offset="100%" stop-color="#b73808"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff7d6"/>
+      <stop offset="60%" stop-color="#f4dca0"/>
+      <stop offset="100%" stop-color="#a87a2f"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff4a1"/>
+      <stop offset="35%" stop-color="#f8bf31"/>
+      <stop offset="80%" stop-color="#c46d0e"/>
+      <stop offset="100%" stop-color="#5a2407"/>
+    </linearGradient>
+
+    <!-- Wordmark gold for "GAMMON RIVALS" — slightly brighter than the
+         icon gradient so text reads against the dark bg -->
+    <linearGradient id="title" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fde68a"/>
+      <stop offset="45%" stop-color="#fcd34d"/>
+      <stop offset="100%" stop-color="#a16207"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="2732" height="2732" fill="url(#bg)"/>
+
+  <!-- Icon mark, centred horizontally, top third vertically.
+       Translate origin to (1366, 820), scale 0.9× of the icon source. -->
+  <g transform="translate(956, 540) scale(0.8)">
+    <circle cx="512" cy="512" r="438" fill="none" stroke="url(#ring)" stroke-width="22"/>
+    <circle cx="512" cy="512" r="438" fill="none" stroke="rgba(0,0,0,0.55)" stroke-width="3"/>
+    <polygon
+      points="270,260 590,260 430,720"
+      fill="url(#gold)"
+      stroke="rgba(0,0,0,0.45)"
+      stroke-width="6"
+      stroke-linejoin="round"
+    />
+    <polygon
+      points="434,764 754,764 594,304"
+      fill="url(#cream)"
+      stroke="rgba(0,0,0,0.45)"
+      stroke-width="6"
+      stroke-linejoin="round"
+    />
+    <polygon points="270,260 590,260 565,302 295,302" fill="rgba(255,255,255,0.35)"/>
+    <polygon points="434,764 754,764 729,722 459,722" fill="rgba(255,255,255,0.22)"/>
+  </g>
+
+  <!-- Wordmark — "GAMMON RIVALS" in heavy slab gold. -->
+  <text
+    x="1366" y="1820"
+    text-anchor="middle"
+    font-family="'Segoe UI', system-ui, sans-serif"
+    font-weight="900"
+    font-size="200"
+    letter-spacing="22"
+    fill="url(#title)"
+    style="text-shadow: 0 4px 0 rgba(0,0,0,0.6);"
+  >GAMMON RIVALS</text>
+
+  <!-- Sub-tagline — small uppercase, muted gold so it doesn't fight
+       the wordmark. -->
+  <text
+    x="1366" y="1960"
+    text-anchor="middle"
+    font-family="'Segoe UI', system-ui, sans-serif"
+    font-weight="700"
+    font-size="80"
+    letter-spacing="18"
+    fill="rgba(252,211,77,0.55)"
+  >ROLL THE DICE</text>
+</svg>
