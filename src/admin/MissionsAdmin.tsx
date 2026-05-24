@@ -35,7 +35,7 @@ interface Props {
   readonly canManage: boolean;
 }
 
-type SubTab = 'templates' | 'chests' | 'reroll' | 'streak' | 'preview';
+type SubTab = 'templates' | 'chests' | 'reroll' | 'streak' | 'simulator';
 
 export function MissionsAdmin({ canManage }: Props) {
   const [tab, setTab] = useState<SubTab>('templates');
@@ -45,7 +45,7 @@ export function MissionsAdmin({ canManage }: Props) {
     { id: 'chests',    label: 'Chests' },
     { id: 'reroll',    label: 'Reroll' },
     { id: 'streak',    label: 'Streak Chest' },
-    { id: 'preview',   label: 'Dry-run preview' },
+    { id: 'simulator', label: 'Simulator' },
   ];
 
   return (
@@ -72,7 +72,7 @@ export function MissionsAdmin({ canManage }: Props) {
       {tab === 'chests'    && <ChestsEditor canManage={canManage} />}
       {tab === 'reroll'    && <RerollEditor canManage={canManage} />}
       {tab === 'streak'    && <StreakEditor canManage={canManage} />}
-      {tab === 'preview'   && <DryRunPreview />}
+      {tab === 'simulator' && <SimulatorTab canManage={canManage} />}
     </div>
   );
 }
@@ -860,19 +860,362 @@ function StreakEditor({ canManage }: { readonly canManage: boolean }) {
 /* Dry-run preview (stub for v1; full impl is a fast-follow)          */
 /* ────────────────────────────────────────────────────────────────── */
 
-function DryRunPreview() {
+/* ────────────────────────────────────────────────────────────────── */
+/* Simulator tab — test-user builder + archetype-spawn + cleanup      */
+/* ────────────────────────────────────────────────────────────────── */
+
+interface TestProfileSummary {
+  id: string;
+  display_name: string;
+  level: number;
+  pvp_rating: number;
+  created_at: string;
+}
+
+interface TestUserState {
+  profile: { id: string; display_name: string; level: number; xp: number; pvp_rating: number };
+  metrics: ReadonlyArray<{ metric_code: string; baseline_7d: number; tier: string | null }>;
+  missions: ReadonlyArray<{
+    id: string; title: string; rarity: string; period: string; mission_type: string;
+    metric_code: string; resolution_mode: string; resolved_goal: number;
+    mission_points: number;
+    rewards: ReadonlyArray<{ currency_code: string | null; amount: number }>;
+  }>;
+}
+
+/** Metrics the operator can author baselines for. The Phase 4
+ *  triggers feed these for real users; for synthetic users we
+ *  set them directly. */
+const KNOWN_METRICS = [
+  'matches_per_day',
+  'coins_wagered_per_day',
+  'coins_won_net_per_day',
+  'xp_per_day',
+  'gems_spent_per_day',
+  'wheel_spins_per_day',
+  'ranked_wins_per_week',
+  'win_streak',
+  'levels_per_week',
+];
+
+function SimulatorTab({ canManage }: { readonly canManage: boolean }) {
+  const [profiles, setProfiles] = useState<TestProfileSummary[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [state, setState] = useState<TestUserState | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // New-profile form
+  const [newName, setNewName] = useState('');
+  const [newLevel, setNewLevel] = useState(10);
+  const [newRating, setNewRating] = useState(1200);
+
+  // Archetype-spawn form
+  const [casuals, setCasuals] = useState(5);
+  const [regulars, setRegulars] = useState(5);
+  const [whales, setWhales] = useState(3);
+
+  const loadProfiles = useCallback(async () => {
+    const { data, error: e } = await supabase.rpc('simulate_list_test_profiles');
+    if (e) { setError(extractErrorMessage(e)); return; }
+    setProfiles(((data ?? []) as unknown) as TestProfileSummary[]);
+  }, []);
+
+  const loadState = useCallback(async (id: string) => {
+    const { data, error: e } = await supabase.rpc('simulate_get_test_user_state', { p_profile_id: id });
+    if (e) { setError(extractErrorMessage(e)); return; }
+    setState(data as unknown as TestUserState);
+  }, []);
+
+  useEffect(() => { void loadProfiles(); }, [loadProfiles]);
+  useEffect(() => {
+    if (selectedId) void loadState(selectedId);
+    else setState(null);
+  }, [selectedId, loadState]);
+
+  const createProfile = async () => {
+    if (!newName.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      const { data, error: e } = await supabase.rpc('simulate_create_test_profile', {
+        p_display_name: newName.trim(),
+        p_level: newLevel,
+        p_pvp_rating: newRating,
+      });
+      if (e) throw e;
+      setNewName('');
+      await loadProfiles();
+      setSelectedId(data as unknown as string);
+    } catch (e) { setError(extractErrorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
+  const setMetric = async (metric: string, baseline: number) => {
+    if (!selectedId) return;
+    setBusy(true); setError(null);
+    try {
+      const { error: e } = await supabase.rpc('simulate_set_metric', {
+        p_profile_id: selectedId, p_metric_code: metric, p_baseline: baseline,
+      });
+      if (e) throw e;
+      await loadState(selectedId);
+    } catch (e) { setError(extractErrorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
+  const reassign = async () => {
+    if (!selectedId) return;
+    setBusy(true); setError(null);
+    try {
+      const { error: rErr } = await supabase.rpc('simulate_reset_today_missions', { p_profile_id: selectedId });
+      if (rErr) throw rErr;
+      const { error: aErr } = await supabase.rpc('assign_daily_missions_for_profile', { p_profile_id: selectedId });
+      if (aErr) throw aErr;
+      await loadState(selectedId);
+    } catch (e) { setError(extractErrorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
+  const spawnArchetypes = async () => {
+    setBusy(true); setError(null);
+    try {
+      const { error: e } = await supabase.rpc('simulate_spawn_archetypes', {
+        p_casuals: casuals, p_regulars: regulars, p_whales: whales,
+      });
+      if (e) throw e;
+      await loadProfiles();
+    } catch (e) { setError(extractErrorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
+  const cleanupAll = async () => {
+    if (!window.confirm(`Delete ALL ${profiles.length} synthetic test profiles? Cannot be undone.`)) return;
+    setBusy(true); setError(null);
+    try {
+      const { error: e } = await supabase.rpc('simulate_cleanup_all');
+      if (e) throw e;
+      setSelectedId(null);
+      await loadProfiles();
+    } catch (e) { setError(extractErrorMessage(e)); }
+    finally { setBusy(false); }
+  };
+
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/70">
-      <h3 className="mb-2 font-bold text-amber-100">Dry-run preview</h3>
-      <p className="mb-2">
-        Coming as a Phase 7 fast-follow: pick any player by ID/handle, see what they'd be assigned today
-        and why (rarity pool sizes, eligibility filter results, resolved goal math).
-      </p>
-      <p className="text-xs text-white/50">
-        Until this lands, you can test on yourself: claim/reroll missions on your live account and watch the
-        DB tables via Studio. The `assign_daily_missions_for_profile(uuid)` RPC is already callable directly
-        from Studio for ad-hoc per-profile tests.
-      </p>
+    <div className="grid gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]">
+      {/* Left column: profile list + new-profile form + bulk spawn */}
+      <div className="space-y-3">
+        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
+          <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">Create test user</h4>
+          <input
+            type="text" placeholder="display name" value={newName}
+            disabled={!canManage}
+            onChange={(e) => setNewName(e.target.value)}
+            className="mb-2 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          />
+          <div className="mb-2 grid grid-cols-2 gap-2">
+            <label className="text-xs text-white/60">
+              Level
+              <input
+                type="number" value={newLevel} disabled={!canManage}
+                onChange={(e) => setNewLevel(Number(e.target.value))}
+                className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              />
+            </label>
+            <label className="text-xs text-white/60">
+              pvp_rating
+              <input
+                type="number" value={newRating} disabled={!canManage}
+                onChange={(e) => setNewRating(Number(e.target.value))}
+                className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              />
+            </label>
+          </div>
+          {canManage && (
+            <button
+              type="button" disabled={busy || !newName.trim()} onClick={createProfile}
+              className="w-full rounded bg-emerald-600 py-1.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+            >
+              + Create
+            </button>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
+          <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">Spawn archetypes (bulk)</h4>
+          <div className="mb-2 grid grid-cols-3 gap-2">
+            {[
+              { label: 'Casuals',  value: casuals,  set: setCasuals },
+              { label: 'Regulars', value: regulars, set: setRegulars },
+              { label: 'Whales',   value: whales,   set: setWhales },
+            ].map((row) => (
+              <label key={row.label} className="text-xs text-white/60">
+                {row.label}
+                <input
+                  type="number" value={row.value} disabled={!canManage}
+                  onChange={(e) => row.set(Number(e.target.value))}
+                  className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                />
+              </label>
+            ))}
+          </div>
+          {canManage && (
+            <button
+              type="button" disabled={busy} onClick={spawnArchetypes}
+              className="w-full rounded bg-amber-600 py-1.5 text-sm font-bold text-white hover:bg-amber-500 disabled:opacity-50"
+            >
+              Spawn + assign + recompute
+            </button>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/[0.045]">
+          <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
+            <span className="text-xs uppercase tracking-wider text-amber-100/70">Test users ({profiles.length})</span>
+            {canManage && profiles.length > 0 && (
+              <button
+                type="button" disabled={busy} onClick={cleanupAll}
+                className="rounded bg-rose-700/60 px-2 py-0.5 text-xs text-white hover:bg-rose-700"
+              >
+                Delete all
+              </button>
+            )}
+          </div>
+          <div className="max-h-[40vh] overflow-y-auto">
+            {profiles.length === 0 ? (
+              <div className="p-3 text-sm text-white/40">No synthetic profiles yet.</div>
+            ) : (
+              profiles.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setSelectedId(p.id)}
+                  className={`flex w-full items-center justify-between border-t border-white/5 px-3 py-2 text-left text-sm transition hover:bg-white/[0.04] ${
+                    selectedId === p.id ? 'bg-amber-500/10' : ''
+                  }`}
+                >
+                  <span className="text-white">{p.display_name}</span>
+                  <span className="text-xs text-white/50">L{p.level} · {p.pvp_rating}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Right column: selected user detail */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+        {!state ? (
+          <p className="text-sm text-white/50">Select a test user, or create one to begin.</p>
+        ) : (
+          <>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-amber-100">{state.profile.display_name}</h3>
+                <div className="text-xs text-white/50">
+                  Level {state.profile.level} · pvp_rating {state.profile.pvp_rating} · {state.profile.xp} XP
+                </div>
+              </div>
+              {canManage && (
+                <button
+                  type="button" disabled={busy} onClick={reassign}
+                  className="rounded bg-amber-500 px-3 py-1.5 text-sm font-bold text-amber-950 hover:brightness-110 disabled:opacity-50"
+                >
+                  Reset & re-assign
+                </button>
+              )}
+            </div>
+
+            {/* Metrics editor */}
+            <div className="mb-4">
+              <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">
+                Metric baselines (drives stretch resolution + tier)
+              </h4>
+              <div className="space-y-1.5">
+                {KNOWN_METRICS.map((m) => {
+                  const row = state.metrics.find((x) => x.metric_code === m);
+                  return (
+                    <MetricRow
+                      key={m}
+                      metric={m}
+                      baseline={row?.baseline_7d ?? 0}
+                      tier={row?.tier ?? null}
+                      disabled={!canManage || busy}
+                      onCommit={(v) => setMetric(m, v)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Currently-assigned missions */}
+            <div>
+              <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">
+                Active missions ({state.missions.length})
+              </h4>
+              {state.missions.length === 0 ? (
+                <p className="text-sm text-white/40">No missions assigned — hit Reset &amp; re-assign.</p>
+              ) : (
+                <div className="space-y-2">
+                  {state.missions.map((m) => (
+                    <div key={m.id} className="rounded bg-black/30 p-2 ring-1 ring-white/5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white">{m.title}</span>
+                        <span className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                          m.rarity === 'epic' ? 'bg-fuchsia-700 text-white' :
+                          m.rarity === 'rare' ? 'bg-sky-700 text-white' : 'bg-stone-700 text-white'
+                        }`}>{m.rarity}{m.period === 'weekly' ? ' · weekly' : ''}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-white/60">
+                        <span className="font-mono">{m.mission_type}</span>
+                        <span>→ goal {m.resolved_goal} ({m.resolution_mode})</span>
+                        <span>+{m.mission_points} MP</span>
+                        {m.rewards.length > 0 && (
+                          <span>
+                            {m.rewards.map((r, i) => (
+                              <span key={i} className="ml-1 rounded bg-white/10 px-1.5 py-0.5">
+                                +{r.amount} {r.currency_code}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
+function MetricRow({
+  metric, baseline, tier, disabled, onCommit,
+}: {
+  readonly metric: string; readonly baseline: number; readonly tier: string | null;
+  readonly disabled?: boolean; readonly onCommit: (v: number) => void;
+}) {
+  const [val, setVal] = useState(String(baseline));
+  useEffect(() => { setVal(String(baseline)); }, [baseline]);
+  const tierColor =
+    tier === 'whale' ? 'bg-fuchsia-700' :
+    tier === 'regular' ? 'bg-sky-700' :
+    tier === 'casual' ? 'bg-stone-700' : 'bg-black/40';
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-44 font-mono text-xs text-white/60">{metric}</span>
+      <input
+        type="number" step="0.1" value={val} disabled={disabled}
+        onChange={(e) => setVal(e.target.value)}
+        onBlur={() => { const n = Number(val); if (!Number.isNaN(n) && n !== baseline) onCommit(n); }}
+        className="w-24 rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+      />
+      <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ${tierColor}`}>
+        {tier ?? '—'}
+      </span>
     </div>
   );
 }

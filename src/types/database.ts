@@ -1047,6 +1047,39 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Json;
       };
+      // Daily Missions Phase 8 — simulation harness (BO-only).
+      simulate_create_test_profile: {
+        Args: { p_display_name: string; p_level?: number; p_pvp_rating?: number };
+        Returns: string;
+      };
+      simulate_set_metric: {
+        Args: { p_profile_id: string; p_metric_code: string; p_baseline: number };
+        Returns: string;
+      };
+      simulate_reset_today_missions: {
+        Args: { p_profile_id: string };
+        Returns: number;
+      };
+      simulate_spawn_archetypes: {
+        Args: { p_casuals?: number; p_regulars?: number; p_whales?: number };
+        Returns: Json;
+      };
+      simulate_cleanup_all: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      simulate_get_test_user_state: {
+        Args: { p_profile_id: string };
+        Returns: Json;
+      };
+      simulate_list_test_profiles: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      assign_daily_missions_for_profile: {
+        Args: { p_profile_id: string };
+        Returns: number;
+      };
       get_rtp_per_player: {
         Args: {
           p_table_config_id: string;
