@@ -333,7 +333,11 @@ declare
   cfg public.reroll_pricing_config;
   prof public.profiles;
   baseline numeric;
-  resolved_goal int;
+  -- Named v_resolved_goal (not resolved_goal) to avoid a name
+  -- collision with the column of the same name in the UPDATE
+  -- below — would raise "column reference resolved_goal is
+  -- ambiguous" at execution time.
+  v_resolved_goal int;
   rerolls_today int;
   gem_cost int;
   wallet_row public.user_wallets;
@@ -432,13 +436,13 @@ begin
 
   -- Resolve goal for the new template.
   if new_template.resolution_mode = 'fixed' then
-    resolved_goal := new_template.goal_value;
+    v_resolved_goal := new_template.goal_value;
   else
     select pm.baseline_7d into baseline
     from public.player_metrics pm
     where pm.profile_id = caller_id and pm.metric_code = new_template.metric_code;
     baseline := coalesce(baseline, 0);
-    resolved_goal := greatest(new_template.goal_min,
+    v_resolved_goal := greatest(new_template.goal_min,
       least(new_template.goal_max, greatest(1, ceil(baseline * new_template.stretch_factor)::int)));
   end if;
 
@@ -465,7 +469,7 @@ begin
     'subtitle', new_template.subtitle,
     'icon_url', new_template.icon_url,
     'rarity', new_template.rarity,
-    'resolved_goal', resolved_goal,
+    'resolved_goal', v_resolved_goal,
     'gem_cost', gem_cost,
     'rerolls_today', rerolls_today + 1,
     'next_reroll_cost', case
