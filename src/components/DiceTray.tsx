@@ -122,11 +122,19 @@ export default function DiceTray({ roll, remaining, settleSide = 'right' }: Prop
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
   if (!roll || dice.length === 0) return null;
 
-  // Stable id per roll/state combo. Used as a dep in CssDie's
-  // effect to re-trigger the tumble on every new roll AND when
-  // the "used" status changes (so a die snaps back fresh if the
-  // turn restarts — defensive, not strictly required).
-  const rollId = `${roll[0]}-${roll[1]}-${remaining.length}`;
+  // Stable id per roll. DELIBERATELY does NOT include
+  // remaining.length — that was the v4-initial bug where the
+  // tumble re-fired on every sub-move the player made (each move
+  // consumes a value from `remaining`, shrinking its length, so
+  // remaining.length was effectively a "move counter" that
+  // dragged the dice into another spin every checker move).
+  //
+  // The dice should only re-tumble on a NEW ROLL. New rolls come
+  // either from (a) the tray unmounting + remounting between
+  // turns (roll goes null in between) or (b) the roll prop
+  // changing values within the same mount. Both are handled by
+  // this simpler id.
+  const rollId = `${roll[0]}-${roll[1]}`;
 
   return (
     <div className={`dice-board dice-board--${settleSide}`} aria-hidden>
@@ -180,9 +188,22 @@ function CssDie({
     const nextX = nextRotationStop(rotation.current.x, base.x);
     const nextY = nextRotationStop(rotation.current.y, base.y);
     rotation.current = { x: nextX, y: nextY };
+
+    // CRITICAL: force the browser to commit the CURRENT style
+    // (the CSS-default `rotateX(-20deg) rotateY(25deg)` on first
+    // mount, or the inline transform from a previous run) BEFORE
+    // we set the new target. Without this, the AI's first roll —
+    // and any other roll that lands within the same paint frame
+    // as the cube's mount — gets the new transform applied in
+    // the same paint, and the browser skips the transition
+    // entirely. The dice just appear on the rolled face with no
+    // tumble. Reading offsetHeight forces synchronous layout
+    // recalculation, which gives the browser a known "from"
+    // state to interpolate from.
+    void el.offsetHeight;
+
     el.style.transform = `rotateX(${nextX}deg) rotateY(${nextY}deg)`;
-    // The transition CSS on .dice-cube takes care of the smooth
-    // tumble from the previous rotation to this new one.
+    // The transition CSS on .dice-cube does the actual tumble.
   }, [rollId, value]);
 
   return (
