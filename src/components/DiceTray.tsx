@@ -223,14 +223,24 @@ function CssDie({
     ));
   };
 
+  // The stand wrapper holds the cube + a flat ground-shadow
+  // sibling. It MUST keep transform-style: preserve-3d so the
+  // cube's faces still render in 3D. The shadow is its own
+  // element with filter: blur() — filter forces flat on the
+  // element it's applied to (per CSS Transforms spec), but only
+  // on THAT element. The sibling cube and parent stand are
+  // unaffected.
   return (
-    <div ref={ref} className={className} style={style}>
-      <div className="dice-face dice-face--f1">{renderPips(1)}</div>
-      <div className="dice-face dice-face--f2">{renderPips(2)}</div>
-      <div className="dice-face dice-face--f3">{renderPips(3)}</div>
-      <div className="dice-face dice-face--f4">{renderPips(4)}</div>
-      <div className="dice-face dice-face--f5">{renderPips(5)}</div>
-      <div className="dice-face dice-face--f6">{renderPips(6)}</div>
+    <div className="dice-stand">
+      <div ref={ref} className={className} style={style}>
+        <div className="dice-face dice-face--f1">{renderPips(1)}</div>
+        <div className="dice-face dice-face--f2">{renderPips(2)}</div>
+        <div className="dice-face dice-face--f3">{renderPips(3)}</div>
+        <div className="dice-face dice-face--f4">{renderPips(4)}</div>
+        <div className="dice-face dice-face--f5">{renderPips(5)}</div>
+        <div className="dice-face dice-face--f6">{renderPips(6)}</div>
+      </div>
+      <div className="dice-shadow" aria-hidden />
     </div>
   );
 }

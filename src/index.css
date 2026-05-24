@@ -7899,6 +7899,50 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    sets a new transform value on this element and the browser
    interpolates the rotation, naturally tumbling through the
    accumulated 360° turns en route to the final face. */
+/* Stand — per-die wrapper holding the cube + the ground-shadow
+   element. Keeps preserve-3d so the cube's faces still render in
+   3D. Sizes itself to the cube; the shadow inside is absolutely
+   positioned relative to the stand. */
+.dice-stand {
+  position: relative;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
+  transform-style: preserve-3d;
+}
+
+/* Ground shadow — a flat, blurred ellipse sitting just below the
+   cube. The cube tumbles above it; the shadow stays put so the
+   die reads as a physical object resting on the felt rather than
+   pasted to it.
+
+   Notes on the 3D-friendliness:
+   - filter: blur() forces transform-style: flat on this element,
+     per the CSS Transforms spec. The shadow IS flat (it's a
+     blurred 2D gradient), so that's fine.
+   - filter is scoped to THIS element only — it does NOT propagate
+     up to the .dice-stand parent or sideways to the .dice-cube
+     sibling, so the cube's 3D rendering is untouched.
+   - z-index: -1 puts the shadow visually behind the cube without
+     leaving the stand's 3D context. */
+.dice-shadow {
+  position: absolute;
+  /* Slight vertical drop so the shadow appears below the cube
+     rather than overlapping it. */
+  bottom: calc(var(--dice-cube-size) * -0.12);
+  left: 8%;
+  right: 8%;
+  height: calc(var(--dice-cube-size) * 0.22);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.25) 45%,
+    rgba(0, 0, 0, 0) 78%
+  );
+  filter: blur(calc(var(--dice-cube-size) * 0.06));
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* All cube dimensions derived from --dice-cube-size on the tray
    (see .dice-board). Changing that one variable resizes everything
    together — width/height, face dimensions, translateZ, pips,
