@@ -7831,3 +7831,210 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     animation: wheel-modal-backdrop-fade 200ms ease-out both;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   CSS 3D dice — lightweight replacement for the old Three.js
+   DiceTray. Pure CSS transforms with `transform-style: preserve-3d`
+   render on the compositor / GPU without consuming a WebGL context
+   slot, so we can roll indefinitely without ever tripping the
+   per-page WebGL context cap (~16 in Chrome) that previously made
+   the Pixi board canvas go white mid-match.
+
+   The pip math below is calibrated for a 100px native die size and
+   matches the user-supplied reference snippet exactly (so the dot
+   patterns are correct on all six faces). The tray container
+   applies a CSS `scale(...)` to shrink them to fit the board side.
+   ────────────────────────────────────────────────────────────── */
+
+/* Tray container — vertically centred, anchored to the chosen side
+   of the board. position:absolute so it overlays the Pixi canvas
+   instead of pushing the board layout around. The scale brings the
+   user's 100px reference die down to a board-friendly ~65px on
+   desktop and ~52px on narrow mobile. */
+.css-dice-tray {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.4vmin, 1rem);
+  z-index: 5;
+  /* Dice are decorative — players interact with the board, not
+     these icons. Letting clicks pass through avoids accidentally
+     blocking taps on the dice strip column. */
+  pointer-events: none;
+  /* The perspective shapes the apparent depth of the cubes. Larger
+     values flatten the look; smaller values exaggerate the 3D
+     tumble. 800px is a comfortable middle. */
+  perspective: 800px;
+  transform: translateY(-50%) scale(0.65);
+  transform-origin: center;
+}
+
+@media (max-width: 640px) {
+  .css-dice-tray {
+    transform: translateY(-50%) scale(0.52);
+  }
+}
+
+.css-dice-tray--left  { left: 0.5rem; }
+.css-dice-tray--right { right: 0.5rem; }
+
+/* The die itself — 100px native to keep the user's pip math
+   verbatim. preserve-3d so the six face divs render in true 3D
+   space relative to the cube. The transition handles the brief
+   settle after the tumble keyframe finishes. */
+.css-dice-die {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  transform-style: preserve-3d;
+  transition: transform 0.35s ease;
+  /* Soft drop shadow so the cube reads as a physical object sitting
+     on the board surface rather than a flat sticker. */
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+}
+
+/* "Used" dice (after their pip count has been consumed in a move)
+   dim out — same UX as the previous tray. The filter chain combines
+   the desaturation with the existing drop shadow. */
+.css-dice-die--used {
+  opacity: 0.35;
+  filter: grayscale(0.6) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+/* Tumble keyframe — 50% rotation by ~455° on both axes lands the
+   cube somewhere "random looking" mid-roll; the JS-side timeout
+   then sets the final per-face transform so the cube settles on
+   the rolled value. Mirrors the user-supplied reference snippet. */
+@keyframes css-dice-roll {
+  50% {
+    transform: rotateX(455deg) rotateY(455deg);
+  }
+}
+
+.css-dice-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  border: 5px solid #f6f3f0;
+  transform-style: preserve-3d;
+  background: linear-gradient(145deg, #dddbd8, #fff);
+}
+
+/* The ::before draws a subtle "back" layer behind the face so the
+   die has a hint of inner depth at face edges. translateZ(-1px)
+   pushes it just behind the face plane. */
+.css-dice-face::before {
+  position: absolute;
+  content: '';
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  background: #f6f3f0;
+  transform: translateZ(-1px);
+}
+
+/* Default pip (a single centred dot). Each face's ::after either
+   uses this default (and adds box-shadows to multiply into more
+   pips) or overrides size/color (face 1 uses a bigger red pip). */
+.css-dice-face::after {
+  position: absolute;
+  content: '';
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #131210;
+}
+
+/* Face placement — each face is translated 50px (half the cube
+   width) along the axis matching its name, in the cube's local
+   3D space. preserve-3d on the parent keeps these as real 3D
+   planes rather than collapsing them onto the 2D plane. */
+.css-dice-face--front  { transform: translateZ(50px); }
+.css-dice-face--back   { transform: rotateX(180deg) translateZ(50px); }
+.css-dice-face--top    { transform: rotateX(90deg) translateZ(50px); }
+.css-dice-face--bottom { transform: rotateX(-90deg) translateZ(50px); }
+.css-dice-face--right  { transform: rotateY(90deg) translateZ(50px); }
+.css-dice-face--left   { transform: rotateY(-90deg) translateZ(50px); }
+
+/* Per-face pip patterns. Each face uses one base ::after pip plus
+   box-shadows to clone it into the dot pattern for that value. The
+   pixel offsets are tuned for a 100px die — DO NOT change the die
+   size without also re-tuning these box-shadow offsets.
+
+   Face → pip count mapping (matches the rotation table in
+   DiceTray.tsx):
+     .front  → 1 (red, larger)
+     .back   → 6 (two columns of 3)
+     .top    → 2 (diagonal)
+     .bottom → 5 (four corners + centre)
+     .right  → 4 (four corners)
+     .left   → 3 (diagonal of 3) */
+
+/* 1: single big red pip in the centre */
+.css-dice-face--front::after {
+  width: 30px;
+  height: 30px;
+  background: #f63330;
+  margin: -15px 0 0 -15px;
+}
+
+/* 6: 2 columns × 3 rows */
+.css-dice-face--back::after {
+  margin: -35px 0 0 -30px;
+  box-shadow:
+    40px 0,
+    0 25px,
+    40px 25px,
+    0 50px,
+    40px 50px;
+}
+
+/* 2: top-left + bottom-right diagonal */
+.css-dice-face--top::after {
+  margin: -30px 0 0 -30px;
+  box-shadow: 40px 40px;
+}
+
+/* 5: four corners + centre */
+.css-dice-face--bottom::after {
+  margin: -36px 0 0 -36px;
+  box-shadow:
+    26px 26px,
+    52px 52px,
+    52px 0,
+    0 52px;
+}
+
+/* 4: four corners */
+.css-dice-face--right::after {
+  margin: -30px 0 0 -30px;
+  box-shadow:
+    40px 0,
+    0 40px,
+    40px 40px;
+}
+
+/* 3: three pips on the diagonal */
+.css-dice-face--left::after {
+  margin: -35px 0 0 -35px;
+  box-shadow:
+    25px 25px,
+    50px 50px;
+}
+
+/* Respect prefers-reduced-motion: skip the tumble; jump straight
+   to the final face. The component still sets the inline transform
+   after ROLL_ANIMATION_MS, so dice end up on the correct face. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes css-dice-roll {
+    /* No-op — the cube stays still and snaps to the final transform
+       when the JS timer fires. */
+    0%, 100% {
+      transform: none;
+    }
+  }
+}
