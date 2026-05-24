@@ -516,6 +516,7 @@ export default function PlayOnline() {
         roll={game.roll}
         remaining={game.remaining}
         settleSide={isRollForSelf ? 'right' : 'left'}
+        themeSprite={selectedTheme.diceImage}
       />
 
       {/* Manual claim-victory button — shown only once the auto-

@@ -647,6 +647,7 @@ export default function HotSeat() {
         roll={game.roll}
         remaining={game.remaining}
         settleSide={isRollForSelf ? 'right' : 'left'}
+        themeSprite={selectedTheme.diceImage}
       />
       {alignmentEnabled && (
         <AlignmentPanel

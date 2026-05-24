@@ -106,4 +106,16 @@ export interface Theme {
   readonly backgroundImage?: string;
   readonly gameplayBackgroundImage?: string;
   readonly layout?: ThemeLayout;
+  /** Optional theme-provided dice artwork. Must be a single image
+   *  laid out as a **3 columns × 2 rows** sprite sheet, with face
+   *  values 1–6 in reading order (face 1 top-left, face 6
+   *  bottom-right). Rendered by src/components/DiceTray.tsx via
+   *  CSS background-image + background-position per face.
+   *
+   *  Falls back to the default white-cube-with-red-pips CSS dice
+   *  when omitted.
+   *
+   *  Sourced from board_theme_configs.dice_image (see
+   *  src/board/theme/remote.ts → themeFromBoardConfig). */
+  readonly diceImage?: string;
 }

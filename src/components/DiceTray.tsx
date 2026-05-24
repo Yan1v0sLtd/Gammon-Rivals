@@ -33,6 +33,14 @@ interface Props {
   readonly remaining: readonly Die[];
   readonly settleSide?: 'left' | 'right';
   readonly placement?: 'board' | 'hud';
+  /** Optional theme-provided dice sprite (3 cols × 2 rows of faces
+   *  1–6 in reading order). When supplied, each face div renders
+   *  with the sprite as its background-image instead of the default
+   *  CSS pip grid. The cube transforms (rotations / tumble / face
+   *  selection) work identically — only the per-face artwork
+   *  changes. Sourced from Theme.diceImage on the active board
+   *  theme; null/undefined → fall back to default pip cubes. */
+  readonly themeSprite?: string;
 }
 
 /**
@@ -118,36 +126,29 @@ function diceToShow(
 
 /* ─── Component ────────────────────────────────────────────────── */
 
-export default function DiceTray({ roll, remaining, settleSide = 'right' }: Props) {
+export default function DiceTray({
+  roll,
+  remaining,
+  settleSide = 'right',
+  themeSprite,
+}: Props) {
   const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
   if (!roll || dice.length === 0) return null;
 
   // Stable id per roll. DELIBERATELY does NOT include
   // remaining.length — that was the v4-initial bug where the
-  // tumble re-fired on every sub-move the player made (each move
-  // consumes a value from `remaining`, shrinking its length, so
-  // remaining.length was effectively a "move counter" that
-  // dragged the dice into another spin every checker move).
-  //
-  // The dice should only re-tumble on a NEW ROLL. New rolls come
-  // either from (a) the tray unmounting + remounting between
-  // turns (roll goes null in between) or (b) the roll prop
-  // changing values within the same mount. Both are handled by
-  // this simpler id.
+  // tumble re-fired on every sub-move the player made.
   const rollId = `${roll[0]}-${roll[1]}`;
 
   return (
     <div className={`dice-board dice-board--${settleSide}`} aria-hidden>
       {dice.map((d, i) => (
         <CssDie
-          // Index-based key so the same DOM cube survives across
-          // re-renders of the same roll (preserves cumulative
-          // rotation between intra-roll updates like a die going
-          // from fresh -> used).
           key={i}
           value={d.value}
           used={d.used}
           rollId={`${rollId}-${i}`}
+          sprite={themeSprite}
         />
       ))}
     </div>
@@ -169,10 +170,12 @@ function CssDie({
   value,
   used,
   rollId,
+  sprite,
 }: {
   readonly value: Die;
   readonly used: boolean;
   readonly rollId: string;
+  readonly sprite?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // Cumulative absolute rotation across this die's lifetime. We
@@ -189,61 +192,45 @@ function CssDie({
     const nextY = nextRotationStop(rotation.current.y, base.y);
     rotation.current = { x: nextX, y: nextY };
 
-    // CRITICAL: force the browser to commit the CURRENT style
-    // (the CSS-default `rotateX(-20deg) rotateY(25deg)` on first
-    // mount, or the inline transform from a previous run) BEFORE
-    // we set the new target. Without this, the AI's first roll —
-    // and any other roll that lands within the same paint frame
-    // as the cube's mount — gets the new transform applied in
-    // the same paint, and the browser skips the transition
-    // entirely. The dice just appear on the rolled face with no
-    // tumble. Reading offsetHeight forces synchronous layout
-    // recalculation, which gives the browser a known "from"
-    // state to interpolate from.
+    // Force the browser to commit the CURRENT style before setting
+    // the new transform. Without this, mount + transform-set in
+    // the same paint frame skips the transition entirely
+    // (AI-roll "no animation" bug).
     void el.offsetHeight;
 
     el.style.transform = `rotateX(${nextX}deg) rotateY(${nextY}deg)`;
-    // The transition CSS on .dice-cube does the actual tumble.
   }, [rollId, value]);
 
+  // When a theme sprite URL is provided, switch to sprite mode:
+  // the cube gets the .dice-cube--sprite class, each face uses
+  // background-image (positioned to its tile of the sprite), and
+  // we skip rendering pip <span> children entirely. The CSS
+  // sprite rules (in src/index.css) handle the per-face
+  // background-position. The CSS variable carries the URL into
+  // every face div without us having to thread it 6 times.
+  const className = `dice-cube${used ? ' dice-cube--used' : ''}${sprite ? ' dice-cube--sprite' : ''}`;
+  const style = sprite
+    ? ({ ['--dice-sprite-url' as string]: `url("${sprite}")` } as React.CSSProperties)
+    : undefined;
+
+  // For sprite mode we don't render any pip children — the
+  // sprite IS the face artwork. For default mode we render the
+  // standard pip counts per face (1, 2, 3, 4, 5, 6).
+  const renderPips = (count: number) => {
+    if (sprite) return null;
+    return Array.from({ length: count }, (_, i) => (
+      <span key={i} className="dice-pip" />
+    ));
+  };
+
   return (
-    <div
-      ref={ref}
-      className={`dice-cube${used ? ' dice-cube--used' : ''}`}
-    >
-      <div className="dice-face dice-face--f1">
-        <span className="dice-pip" />
-      </div>
-      <div className="dice-face dice-face--f2">
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-      </div>
-      <div className="dice-face dice-face--f3">
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-      </div>
-      <div className="dice-face dice-face--f4">
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-      </div>
-      <div className="dice-face dice-face--f5">
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-      </div>
-      <div className="dice-face dice-face--f6">
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-        <span className="dice-pip" />
-      </div>
+    <div ref={ref} className={className} style={style}>
+      <div className="dice-face dice-face--f1">{renderPips(1)}</div>
+      <div className="dice-face dice-face--f2">{renderPips(2)}</div>
+      <div className="dice-face dice-face--f3">{renderPips(3)}</div>
+      <div className="dice-face dice-face--f4">{renderPips(4)}</div>
+      <div className="dice-face dice-face--f5">{renderPips(5)}</div>
+      <div className="dice-face dice-face--f6">{renderPips(6)}</div>
     </div>
   );
 }

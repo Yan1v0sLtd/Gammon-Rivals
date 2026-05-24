@@ -2786,7 +2786,7 @@ export default function Admin() {
                       <ImageField label="Gameplay background image" folder={boardDraft.id} kind="gameplay-bg" value={boardDraft.gameplay_background_image} onChange={(gameplay_background_image) => setBoardDraft((d) => ({ ...d, gameplay_background_image }))} />
                       <ImageField label="White checker image" folder={boardDraft.id} kind="checker-white" value={boardDraft.white_checker_image} onChange={(white_checker_image) => setBoardDraft((d) => ({ ...d, white_checker_image }))} />
                       <ImageField label="Black checker image" folder={boardDraft.id} kind="checker-black" value={boardDraft.black_checker_image} onChange={(black_checker_image) => setBoardDraft((d) => ({ ...d, black_checker_image }))} />
-                      <ImageField label="Dice image" folder={boardDraft.id} kind="dice" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
+                      <ImageField label="Dice sprite (3 cols × 2 rows: face 1 top-left → face 6 bottom-right)" folder={boardDraft.id} kind="dice" value={boardDraft.dice_image} onChange={(dice_image) => setBoardDraft((d) => ({ ...d, dice_image }))} />
                       <ImageField label="Tray image" folder={boardDraft.id} kind="tray" value={boardDraft.tray_image} onChange={(tray_image) => setBoardDraft((d) => ({ ...d, tray_image }))} />
                       <ImageField label="Holder image" folder={boardDraft.id} kind="holder" value={boardDraft.holder_image} onChange={(holder_image) => setBoardDraft((d) => ({ ...d, holder_image }))} />
                       <TextArea label="Metadata JSON object" value={boardDraft.metadata} onChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))} />

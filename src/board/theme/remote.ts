@@ -170,6 +170,11 @@ export function themeFromBoardConfig(config: BoardThemeConfig): Theme {
       ...premiumTheme.layout,
       ...layoutFromMetadata(config.metadata),
     },
+    // Dice sprite — when present in the BO config, DiceTray
+    // renders the 3×2 sprite per face instead of the default
+    // CSS-pip cube. See Theme interface comment for the layout
+    // contract.
+    diceImage: normalizePublicAssetPath(config.dice_image),
   };
 }
 
