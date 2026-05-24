@@ -7,7 +7,7 @@ Gammon Rivals now has a Capacitor Android shell.
 - Capacitor is installed.
 - The Android project lives in `android/`.
 - App name: `Gammon Rivals`
-- Android package id: `com.yanivos.gammonrivals`
+- Android package id: `com.gammonrivals.app`
 - Web build output is copied into Android with `npm run android:sync`.
 
 ## Install First

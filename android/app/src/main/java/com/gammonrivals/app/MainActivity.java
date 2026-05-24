@@ -1,4 +1,4 @@
-package com.yanivos.gammonrivals;
+package com.gammonrivals.app;
 
 import android.graphics.Color;
 import android.os.Build;

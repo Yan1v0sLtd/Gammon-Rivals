@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.yanivos.gammonrivals',
+  appId: 'com.gammonrivals.app',
   appName: 'Gammon Rivals',
   webDir: 'dist'
 };
