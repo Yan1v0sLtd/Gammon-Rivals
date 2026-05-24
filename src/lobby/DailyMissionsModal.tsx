@@ -131,8 +131,15 @@ export function DailyMissionsModal({ result, onClose }: Props) {
         {/* Header */}
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl font-black tracking-wider text-amber-200 sm:text-3xl">
-              DAILY MISSIONS
+            <h2 className="flex items-center gap-3 font-display text-2xl font-black tracking-wider text-amber-200 sm:text-3xl">
+              <span>DAILY MISSIONS</span>
+              <img
+                src="/lobby/missions/dice-icon.webp"
+                alt=""
+                draggable={false}
+                className="h-8 w-8 object-contain sm:h-10 sm:w-10"
+                onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+              />
             </h2>
             <p className="mt-0.5 text-sm text-amber-100/70">
               Complete missions. Earn points. Claim epic rewards!
@@ -216,20 +223,18 @@ export function DailyMissionsModal({ result, onClose }: Props) {
               />
             </div>
 
-            {/* Weekly Challenge */}
+            {/* Weekly Challenge — ornate purple+gold frame from the
+                mockup. The frame artwork has the title plate baked
+                in, so we don't render a separate heading. Content
+                (mission title, progress, reward, action button) is
+                overlaid in absolute-positioned regions tuned to the
+                frame's visual layout. */}
             {weekly && (
-              <div className="mt-4">
-                <h3 className="mb-2 font-display text-lg font-bold tracking-wide text-fuchsia-200">
-                  WEEKLY CHALLENGE
-                </h3>
-                <MissionCard
-                  mission={weekly}
-                  isClaiming={claimingMissionId === weekly.id}
-                  isRerolling={false}
-                  onClaim={() => handleClaim(weekly.id)}
-                  variant="weekly"
-                />
-              </div>
+              <WeeklyChallengeCard
+                mission={weekly}
+                isClaiming={claimingMissionId === weekly.id}
+                onClaim={() => handleClaim(weekly.id)}
+              />
             )}
 
             {actionError && (
@@ -262,52 +267,81 @@ function ChestTrackStrip({
   const maxThreshold = Math.max(...milestones.map((m) => m.threshold_mp), 100);
   const progressPct = Math.min(100, (mpEarned / maxThreshold) * 100);
 
+  // Chests grow progressively bigger from left to right, reinforcing
+  // the milestone progression visually. Values are h-* tailwind sizes.
+  const chestSizes = ['h-12', 'h-14', 'h-16', 'h-20'];
+
   return (
-    <div className="mb-4 rounded-xl bg-black/40 p-3 ring-1 ring-amber-500/30">
-      <div className="mb-2 flex items-center justify-between">
-        <div className="flex items-baseline gap-1">
-          <span className="font-display text-2xl font-black text-amber-200">{mpEarned}</span>
-          <span className="text-sm text-amber-100/60">/ {maxThreshold}</span>
-          <span className="ml-2 text-[10px] uppercase tracking-wider text-amber-200/50">Mission Points</span>
+    <div className="mb-4 rounded-2xl bg-gradient-to-b from-black/60 to-black/30 p-4 ring-1 ring-amber-500/40">
+      {/* Top row: MP value (with lightning-bolt mark) + the chest icons */}
+      <div className="flex items-end gap-4 sm:gap-6">
+        {/* Lightning + MP count, left-anchored like the mockup */}
+        <div className="flex shrink-0 flex-col items-center">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-b from-amber-300 to-amber-600 text-xl text-amber-950 shadow-md ring-2 ring-amber-200/70">
+            ⚡
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="font-display text-2xl font-black text-amber-100">{mpEarned}</span>
+            <span className="text-xs text-amber-200/60">/ {maxThreshold}</span>
+          </div>
+          <span className="text-[9px] uppercase tracking-wider text-amber-200/60">Mission Points</span>
         </div>
-      </div>
-      <div className="relative h-3 rounded-full bg-black/50">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-200"
-          style={{ width: `${progressPct}%` }}
-        />
-      </div>
-      <div className="mt-2 flex items-center justify-between">
-        {milestones.map((m) => {
-          const claimed = chestsClaimed.includes(m.milestone_index);
-          const unlocked = mpEarned >= m.threshold_mp;
-          const ready = unlocked && !claimed;
-          return (
-            <button
-              key={m.milestone_index}
-              type="button"
-              disabled={!ready || claimingIdx !== null}
-              onClick={() => onClaimChest(m.milestone_index)}
-              className={`flex flex-col items-center gap-0.5 transition ${
-                ready ? 'scale-110' : ''
-              }`}
-              aria-label={`${m.display_name} chest at ${m.threshold_mp} MP`}
-            >
-              <span
-                className={`grid h-8 w-8 place-items-center rounded-lg text-base ring-1 ${
-                  claimed
-                    ? 'bg-emerald-700 text-emerald-200 ring-emerald-400/40'
-                    : ready
-                      ? 'animate-pulse bg-gradient-to-b from-amber-300 to-amber-500 text-amber-900 ring-amber-200/80'
-                      : 'bg-black/60 text-amber-200/40 ring-amber-500/20'
-                }`}
-              >
-                {claimed ? '✓' : '⌬'}
-              </span>
-              <span className="text-[10px] text-amber-100/60">{m.threshold_mp}</span>
-            </button>
-          );
-        })}
+
+        {/* Chest track with horizontal progress line */}
+        <div className="relative flex-1 pb-6 pt-2">
+          {/* Progress line behind the chests */}
+          <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-black/50">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-200"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+
+          {/* The 4 chest buttons */}
+          <div className="relative flex items-end justify-between">
+            {milestones.map((m, i) => {
+              const claimed = chestsClaimed.includes(m.milestone_index);
+              const unlocked = mpEarned >= m.threshold_mp;
+              const ready = unlocked && !claimed;
+              const sizeClass = chestSizes[i] ?? 'h-14';
+              return (
+                <button
+                  key={m.milestone_index}
+                  type="button"
+                  disabled={!ready || claimingIdx !== null}
+                  onClick={() => onClaimChest(m.milestone_index)}
+                  className={`relative flex flex-col items-center gap-1 transition ${
+                    ready ? 'animate-pulse' : ''
+                  } ${!unlocked ? 'opacity-50 grayscale' : ''}`}
+                  aria-label={`${m.display_name} chest at ${m.threshold_mp} MP`}
+                >
+                  <img
+                    src={`/lobby/missions/chest-${m.milestone_index}.webp`}
+                    alt=""
+                    draggable={false}
+                    className={`${sizeClass} object-contain drop-shadow-lg`}
+                    onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+                  />
+                  <span className="font-display text-xs font-bold text-amber-100">
+                    {m.threshold_mp}
+                  </span>
+                  {/* Claimed checkmark / unclaimed circle, below the threshold */}
+                  <span
+                    className={`absolute -bottom-5 grid h-4 w-4 place-items-center rounded-full text-[9px] ring-1 ${
+                      claimed
+                        ? 'bg-emerald-600 text-white ring-emerald-300'
+                        : ready
+                          ? 'bg-amber-400 text-amber-950 ring-amber-200'
+                          : 'bg-black/60 text-transparent ring-amber-500/30'
+                    }`}
+                  >
+                    {claimed ? '✓' : ''}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -318,7 +352,6 @@ function MissionCard({
   isClaiming,
   isRerolling,
   onClaim,
-  variant = 'daily',
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
@@ -330,33 +363,37 @@ function MissionCard({
   const isClaimed = !!mission.claimed_at;
   const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
 
-  const rarityStyle: Record<string, { badgeBg: string; ring: string; label: string }> = {
-    common: { badgeBg: 'from-stone-500 to-stone-700', ring: 'ring-stone-400/40', label: 'COMMON' },
-    rare: { badgeBg: 'from-sky-500 to-sky-700', ring: 'ring-sky-300/50', label: 'RARE' },
-    epic: { badgeBg: 'from-fuchsia-500 to-fuchsia-700', ring: 'ring-fuchsia-300/50', label: 'EPIC' },
+  const ringByRarity: Record<string, string> = {
+    common: 'ring-emerald-700/40',
+    rare:   'ring-sky-600/50',
+    epic:   'ring-fuchsia-600/50',
   };
-  const rs = rarityStyle[mission.rarity] ?? rarityStyle.common;
+
+  // The badge PNG (operator-provided art) bakes the rarity tier
+  // and a generic dice/trophy icon into a single artwork — so it
+  // replaces both the per-mission icon AND the small rarity label
+  // we used in v1. If a mission_template authors a custom icon_url
+  // later, we'll layer that on top in a follow-up.
+  const badgeSrc = `/lobby/missions/badge-${mission.rarity}.webp`;
 
   return (
     <div
       className={`flex items-center gap-3 rounded-xl bg-gradient-to-b from-[#241935] to-[#150d24] p-3 ring-1 ${
-        rs.ring
+        ringByRarity[mission.rarity] ?? ringByRarity.common
       } ${isClaimed ? 'opacity-50' : ''}`}
     >
-      {/* Icon + rarity badge */}
-      <div className="relative shrink-0">
-        <div className="grid h-14 w-14 place-items-center rounded-lg bg-black/40 ring-1 ring-amber-500/30">
-          {mission.icon_url ? (
-            <img src={mission.icon_url} alt="" className="h-10 w-10 object-contain" draggable={false} />
-          ) : (
-            <span className="text-2xl">{variant === 'weekly' ? '🏆' : '🎯'}</span>
-          )}
-        </div>
-        <div
-          className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-md bg-gradient-to-b px-1.5 py-0.5 text-[8px] font-black tracking-wider text-white shadow ${rs.badgeBg}`}
-        >
-          {rs.label}
-        </div>
+      {/* Rarity badge (icon + rarity word baked into the artwork) */}
+      <div className="shrink-0">
+        <img
+          src={badgeSrc}
+          alt={`${mission.rarity} mission`}
+          draggable={false}
+          className="h-16 w-16 object-contain"
+          onError={(e) => {
+            // Fallback: hide if the asset hasn't been uploaded yet.
+            (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+          }}
+        />
       </div>
 
       {/* Title, subtitle, progress */}
@@ -405,6 +442,86 @@ function MissionCard({
       >
         {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
       </button>
+    </div>
+  );
+}
+
+function WeeklyChallengeCard({
+  mission,
+  isClaiming,
+  onClaim,
+}: {
+  readonly mission: Mission;
+  readonly isClaiming: boolean;
+  readonly onClaim: () => void;
+}) {
+  const isCompleted = !!mission.completed_at && !mission.claimed_at;
+  const isClaimed = !!mission.claimed_at;
+  const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
+
+  return (
+    <div
+      className="relative mt-4 w-full"
+      style={{
+        // Aspect ratio of the frame artwork. Adjust if the actual
+        // PNG ships at a different ratio.
+        aspectRatio: '1438 / 1130',
+        backgroundImage: 'url(/lobby/missions/weekly-challenge-frame.webp)',
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* Content overlay. Padding values are tuned so the inner
+          content sits inside the frame's visible area, not over
+          the gold trim. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-end px-[10%] pb-[8%] pt-[18%]">
+        <h3 className="font-display text-base font-bold text-fuchsia-100 sm:text-lg">
+          {mission.title}
+        </h3>
+        {mission.subtitle && (
+          <p className="mt-1 text-center text-xs text-fuchsia-200/70 sm:text-sm">
+            {mission.subtitle}
+          </p>
+        )}
+
+        <div className="mt-3 flex w-full max-w-xs items-center gap-2">
+          <div className="relative h-2 flex-1 rounded-full bg-black/50">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full ${
+                isCompleted ? 'bg-emerald-400' : 'bg-gradient-to-r from-fuchsia-400 to-fuchsia-200'
+              }`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <span className="font-mono text-xs font-bold text-fuchsia-100">
+            {mission.progress} / {mission.resolved_goal}
+          </span>
+        </div>
+
+        <div className="mt-2 flex items-center gap-2">
+          {mission.rewards.map((r, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <RewardIcon reward={r} />
+              <span className="text-[10px] font-bold text-fuchsia-100">
+                +{formatAmount(r.amount)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          disabled={!isCompleted || isClaimed || isClaiming}
+          onClick={onClaim}
+          className={`mt-3 rounded-lg px-6 py-1.5 text-sm font-bold shadow-md transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            isCompleted
+              ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white'
+              : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white'
+          }`}
+        >
+          {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
+        </button>
+      </div>
     </div>
   );
 }
