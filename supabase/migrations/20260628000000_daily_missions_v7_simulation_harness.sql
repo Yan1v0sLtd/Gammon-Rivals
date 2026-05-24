@@ -10,6 +10,14 @@ alter table public.profiles add column if not exists is_simulated boolean not nu
 create index if not exists profiles_is_simulated_idx
   on public.profiles (is_simulated) where is_simulated = true;
 
+-- Note: profiles.id has a FK to auth.users.id, and Supabase has an
+-- on_auth_user_created trigger that auto-creates a default profiles
+-- row. So we INSERT into auth.users (which is allowed under
+-- SECURITY DEFINER as postgres), let the trigger create the
+-- profiles row, then UPDATE it with our synthetic fields. We can't
+-- use pgcrypto's crypt() inline because it's in the extensions
+-- schema and not on the function's search_path; the placeholder
+-- hash is fine because these synthetic users never sign in.
 create or replace function public.simulate_create_test_profile(
   p_display_name text, p_level int default 1, p_pvp_rating int default 0
 )
@@ -18,12 +26,36 @@ as $$
 declare new_id uuid := gen_random_uuid();
 begin
   if not private.can_manage_config(auth.uid()) then raise exception 'forbidden'; end if;
-  insert into public.profiles
-    (id, display_name, is_guest, level, xp, pvp_rating, is_simulated, avatar_seed, created_at, updated_at)
-  values
-    (new_id, '[sim] ' || p_display_name, false, p_level, 0, p_pvp_rating, true,
-     'sim-' || new_id::text, now(), now());
-  insert into public.user_wallets (profile_id, coins, gems) values (new_id, 5000, 100);
+
+  insert into auth.users (
+    id, instance_id, aud, role, email, encrypted_password,
+    created_at, updated_at, raw_app_meta_data, raw_user_meta_data, is_sso_user
+  )
+  values (
+    new_id,
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated', 'authenticated',
+    'sim+' || new_id::text || '@gammon-rivals.test',
+    '$2a$10$INVALID-SYNTHETIC-NO-LOGIN-PLACEHOLDER-HASH-AAA',
+    now(), now(),
+    '{"provider":"simulated","providers":["simulated"]}'::jsonb,
+    jsonb_build_object('display_name', '[sim] ' || p_display_name),
+    false
+  );
+
+  -- The on_auth_user_created trigger created a default profiles row;
+  -- patch it with our synthetic fields.
+  update public.profiles set
+    display_name = '[sim] ' || p_display_name,
+    is_guest = false, level = p_level, xp = 0,
+    pvp_rating = p_pvp_rating, is_simulated = true,
+    avatar_seed = 'sim-' || new_id::text, updated_at = now()
+  where id = new_id;
+
+  insert into public.user_wallets (profile_id, coins, gems)
+  values (new_id, 5000, 100)
+  on conflict (profile_id) do update set coins = 5000, gems = 100;
+
   return new_id;
 end;
 $$;
@@ -132,15 +164,20 @@ end;
 $$;
 grant execute on function public.simulate_spawn_archetypes(int, int, int) to authenticated;
 
+-- Cleanup nukes both profiles and the auth.users rows we created.
+-- Profiles deletes first (cascades to player_metrics, mission state,
+-- weekly pass, etc. via on-delete-cascade FKs), then auth.users.
 create or replace function public.simulate_cleanup_all()
 returns int language plpgsql security definer set search_path = public, pg_temp
 as $$
-declare cnt int;
+declare victim_ids uuid[];
 begin
   if not private.can_manage_config(auth.uid()) then raise exception 'forbidden'; end if;
-  with deleted as (delete from public.profiles where is_simulated = true returning 1)
-  select count(*) into cnt from deleted;
-  return cnt;
+  select array_agg(id) into victim_ids from public.profiles where is_simulated = true;
+  if victim_ids is null then return 0; end if;
+  delete from public.profiles where id = any(victim_ids);
+  delete from auth.users   where id = any(victim_ids);
+  return array_length(victim_ids, 1);
 end;
 $$;
 grant execute on function public.simulate_cleanup_all() to authenticated;
