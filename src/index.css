@@ -3242,6 +3242,37 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     transform: translateY(-50%);
   }
 
+  /* Desktop-landscape sizing for the lobby-style XP bar on the
+     profile page. Scales with --profile-u so it matches the rest
+     of the desktop profile layout (the original .profile-xp-bar
+     used `width: min(100%, calc(580 * var(--profile-u))); height:
+     calc(34 * var(--profile-u))` — we mirror those values). */
+  .profile-xp-wide.lobby-profile-progress {
+    width: min(100%, calc(580 * var(--profile-u)));
+    height: calc(34 * var(--profile-u));
+  }
+
+  .profile-xp-wide .lobby-profile-progress-label {
+    font-size: calc(20 * var(--profile-u));
+  }
+
+  /* Position the hex on the bottom-RIGHT of the profile avatar
+     (mirroring the lobby's `right: 0.05rem; bottom: -0.08rem`
+     pattern, scaled to the profile's 220px avatar in a 330px
+     column). The original .profile-level-shield used
+     `right: calc(50% - 106 * --profile-u)` which puts the hex's
+     right edge just past the avatar's right edge (avatar
+     radius = 110px). We use the same math. */
+  .profile-level-shield-hex.lobby-profile-level-shield {
+    right: calc(50% - calc(106 * var(--profile-u)));
+    bottom: calc(18 * var(--profile-u));
+    left: auto;
+    transform: none;
+    width: calc(82 * var(--profile-u));
+    height: calc(95 * var(--profile-u));
+    font-size: calc(40 * var(--profile-u));
+  }
+
   .profile-next-reward {
     gap: calc(8 * var(--profile-u));
     margin-top: calc(14 * var(--profile-u));
@@ -7704,34 +7735,47 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    much larger avatar + wider XP container.
    ───────────────────────────────────────────────────────────────── */
 
-/* Lift the level hex into the profile-avatar-stage's bottom-centre
-   anchor (the old .profile-level-shield used `right: calc(50% -
-   6.3rem); bottom: 0.7rem`). Override the lobby's smaller, top-right
-   absolute position with a bottom-centred one and bump the size up
-   for the profile's 220px avatar. */
+/* Position the level hex at the bottom-RIGHT corner of the avatar
+   (matching the lobby's `right: 0.05rem; bottom: -0.08rem` pattern,
+   scaled for the profile's much larger 220px avatar).
+   The avatar is centred in .profile-avatar-stage via `place-items:
+   center`, so we use `right: calc(50% - <half-avatar-width>)` to
+   anchor the hex's right edge at the avatar's right edge, then
+   nudge slightly inward with a positive bottom value so the hex
+   sits on the lower-right curve of the avatar circle.
+
+   Overrides the lobby class defaults of `right: 0.05rem; bottom:
+   -0.08rem` (those are sized for the lobby's small top-bar avatar
+   container that's fitted to its content). */
 .profile-level-shield-hex.lobby-profile-level-shield {
-  right: auto;
-  bottom: 0.7rem;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Avatar mobile size: clamp(11rem, 11.5vw, 13.75rem)
+     Half-avatar:        clamp(5.5rem, 5.75vw, 6.875rem)
+     Pull the hex slightly OUT past the avatar's right edge so
+     ~half of it overlaps the circle and half peeks out. */
+  right: clamp(-1rem, calc(50% - 6.4rem), 0rem);
+  bottom: clamp(0.4rem, 1.6dvh, 1.2rem);
+  left: auto;
+  transform: none;
   width: 4.2rem;
   height: 4.85rem;
   font-size: 1.6rem;
 }
 
-/* Widen the lobby progress bar to fill the profile XP row.
-   .lobby-profile-progress is `width: clamp(6.4rem, 13vw, 11rem)`
-   which is sized for the lobby's compact top-bar. Profile wants
-   the bar to fill the available row. */
+/* Widen the lobby progress bar to fill the profile XP row, and
+   use a bigger height matching the original .profile-xp-bar
+   (clamp(1.55rem, 1.78vw, 2.125rem)) so the bar feels weighty
+   on the profile card rather than the lobby's compact bar.
+   The lobby's default is `width: clamp(6.4rem, 13vw, 11rem)` —
+   sized for the lobby's tiny top-bar slot. */
 .profile-xp-wide.lobby-profile-progress {
   display: block;
   width: 100%;
   max-width: 100%;
-  height: 1.5rem;
+  height: clamp(1.55rem, 1.78vw, 2.125rem);
 }
 
 .profile-xp-wide .lobby-profile-progress-label {
-  font-size: 0.82rem;
+  font-size: clamp(0.85rem, 1.05vw, 1.15rem);
 }
 
 /* Tighten the profile-history-list so the new scroll wrapper
