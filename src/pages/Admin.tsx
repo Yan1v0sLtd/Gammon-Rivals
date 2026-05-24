@@ -17,6 +17,7 @@ import FeltCornersField from '../admin/FeltCornersField';
 import BoardTuningField from '../admin/BoardTuningField';
 import BoardPreview from '../admin/BoardPreview';
 import { WheelAdmin } from '../admin/WheelAdmin';
+import { MissionsAdmin } from '../admin/MissionsAdmin';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -49,6 +50,7 @@ type Section =
   | 'Level System'
   | 'Daily Bonus'
   | 'Hourly Wheel'
+  | 'Daily Missions'
   | 'Tables / Rooms'
   | 'Difficulties'
   | 'RTP Analytics'
@@ -166,6 +168,7 @@ const sections: readonly Section[] = [
   'Level System',
   'Daily Bonus',
   'Hourly Wheel',
+  'Daily Missions',
   'Tables / Rooms',
   'Difficulties',
   'RTP Analytics',
@@ -2250,6 +2253,10 @@ export default function Admin() {
 
           {activeSection === 'Hourly Wheel' && (
             <WheelAdmin canManage={canManage} />
+          )}
+
+          {activeSection === 'Daily Missions' && (
+            <MissionsAdmin canManage={canManage} />
           )}
 
           {activeSection === 'Tables / Rooms' && (
