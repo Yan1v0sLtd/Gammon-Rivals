@@ -773,55 +773,86 @@ function StreakPanel({
 
   const handleClaim = async () => {
     await supabase.rpc('claim_streak_chest');
-    // Realtime hook will refetch automatically.
   };
 
+  // Reusing the Weekly Challenge frame as a generic ornate panel
+  // treatment. The frame artwork has "WEEKLY CHALLENGE" baked into
+  // its title plate at the top, so we cover that region with our own
+  // "🔥 DAILY STREAK" title bar styled to blend with the gold frame.
+  // If/when a dedicated daily-streak-frame.webp asset arrives, swap
+  // the backgroundImage URL and remove the title overlay.
   return (
-    <div className="rounded-xl bg-gradient-to-b from-orange-900/40 to-rose-900/40 p-3 ring-1 ring-orange-500/40">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">🔥</span>
-          <span className="font-display font-bold text-amber-100">DAILY STREAK</span>
-        </div>
-        <span className="text-xs font-bold text-amber-200">{streak.current_streak_days} days</span>
-      </div>
-      <p className="mt-1 text-[11px] text-amber-100/60">
-        Complete all daily missions for 7 days to earn the streak chest.
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <div className="relative h-2 flex-1 rounded-full bg-black/50">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-orange-400 to-rose-400"
-            style={{ width: `${((streak.current_streak_days % 7) / 7) * 100}%` }}
-          />
-        </div>
-        <span className="font-mono text-xs font-bold text-amber-100">
-          {streak.current_streak_days % 7} / 7
+    <div
+      className="relative w-full"
+      style={{
+        aspectRatio: '1438 / 1130',
+        backgroundImage: 'url(/lobby/missions/weekly-challenge-frame.webp)',
+        backgroundSize: '100% 100%',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* Title overlay — sits on top of the frame's baked
+          "WEEKLY CHALLENGE" plate. Background colour roughly matches
+          the plate so the swap reads as a relabel, not an overlay. */}
+      <div
+        className="absolute left-1/2 top-[5%] flex -translate-x-1/2 items-center gap-2 rounded-md px-6 py-1.5"
+        style={{
+          background: 'linear-gradient(180deg, #4a1a6f 0%, #2a0e44 100%)',
+          boxShadow: 'inset 0 0 0 2px rgba(255, 207, 100, 0.5)',
+        }}
+      >
+        <span className="text-base">🔥</span>
+        <span className="font-display text-sm font-black tracking-[0.18em] text-amber-200 sm:text-base">
+          DAILY STREAK
         </span>
       </div>
-      {canClaim ? (
-        <button
-          type="button"
-          onClick={handleClaim}
-          className="mt-2 w-full rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-3 py-1.5 text-sm font-bold text-amber-950 shadow-md"
-        >
-          CLAIM STREAK CHEST
-        </button>
-      ) : (
-        <p className="mt-2 text-center text-[11px] text-amber-200/70">
-          {daysToChest} day{daysToChest === 1 ? '' : 's'} to next chest
-        </p>
-      )}
-      {streakChestRewards.length > 0 && (
-        <div className="mt-2 flex items-center justify-center gap-1.5">
-          {streakChestRewards.map((r, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <RewardIcon reward={r} />
-              <span className="text-[9px] font-bold text-amber-100">+{formatAmount(r.amount)}</span>
-            </div>
-          ))}
+
+      {/* Content overlay inside the frame's interior */}
+      <div className="absolute inset-0 flex flex-col items-center justify-end px-[8%] pb-[8%] pt-[20%]">
+        <div className="mb-2 text-xs font-bold text-amber-200 sm:text-sm">
+          {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
         </div>
-      )}
+        <p className="mb-3 text-center text-[11px] text-amber-100/70 sm:text-xs">
+          Complete all daily missions for 7 days to earn the streak chest.
+        </p>
+
+        <div className="flex w-full max-w-xs items-center gap-2">
+          <div className="relative h-2 flex-1 rounded-full bg-black/60">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-orange-400 to-rose-400"
+              style={{ width: `${((streak.current_streak_days % 7) / 7) * 100}%` }}
+            />
+          </div>
+          <span className="font-mono text-xs font-bold text-amber-100">
+            {streak.current_streak_days % 7} / 7
+          </span>
+        </div>
+
+        {streakChestRewards.length > 0 && (
+          <div className="mt-3 flex items-center justify-center gap-2">
+            {streakChestRewards.map((r, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <RewardIcon reward={r} />
+                <span className="text-[10px] font-bold text-amber-100">+{formatAmount(r.amount)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {canClaim ? (
+          <button
+            type="button"
+            onClick={handleClaim}
+            className="mt-3 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-6 py-1.5 text-sm font-bold text-amber-950 shadow-md"
+          >
+            CLAIM STREAK CHEST
+          </button>
+        ) : (
+          <p className="mt-3 text-center text-[11px] text-amber-200/70">
+            {daysToChest} day{daysToChest === 1 ? '' : 's'} to next chest
+          </p>
+        )}
+      </div>
     </div>
   );
 }
