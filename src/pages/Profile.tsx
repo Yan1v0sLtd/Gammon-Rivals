@@ -409,11 +409,21 @@ export default function Profile() {
 }
 
 /**
- * Profile-page CurrencyPill — same look as the lobby's pill (icon
- * orb + value plate + green `+` to-shop button). Replicated inline
- * rather than extracted because the lobby's CurrencyPill is private
- * to LobbyTopBar; if a third callsite arrives, extract this into
- * components/CurrencyPill.tsx.
+ * Profile-page CurrencyPill — same VISUAL design as the lobby's
+ * top-bar pill, but does NOT reuse the lobby's CSS class names
+ * (`.lobby-currency-pill`, `.lobby-currency-icon`, etc).
+ *
+ * Why: the lobby has desktop-only overrides like
+ *   .lobby-currency-icon { width: calc(46 * var(--lobby-u)); }
+ * where `--lobby-u` is defined on `.lobby-shell`. Outside that
+ * scope (e.g. on /profile) `--lobby-u` is undefined → the calc()
+ * becomes invalid → width falls back to `auto` → the <img>
+ * renders at its intrinsic webp size (~512-1024px), which on the
+ * profile page made the icons full-screen.
+ *
+ * Fix: drop the lobby class hooks entirely; same Tailwind
+ * primitives just without the `lobby-currency-*` class names.
+ * Pixel-for-pixel identical look at the same viewport widths.
  */
 function CurrencyPill({
   flyTarget,
@@ -432,9 +442,9 @@ function CurrencyPill({
     <div
       aria-label={`${label}: ${value ?? 0}`}
       data-fly-target={flyTarget}
-      className="lobby-currency-pill relative flex h-[2.4rem] min-w-[6.84rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+      className="relative flex h-[2.4rem] min-w-[6.84rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
-      <span className="lobby-currency-icon -ml-[0.8rem] grid h-[2.8rem] w-[2.8rem] shrink-0 place-items-center">
+      <span className="-ml-[0.8rem] grid h-[2.8rem] w-[2.8rem] shrink-0 place-items-center">
         <img
           src={icon}
           alt=""
@@ -442,14 +452,14 @@ function CurrencyPill({
           draggable={false}
         />
       </span>
-      <span className="lobby-currency-value -ml-[0.4rem] flex h-[2.04rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.8rem] text-center font-display text-base font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+      <span className="-ml-[0.4rem] flex h-[2.04rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.8rem] text-center font-display text-base font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
         {formatCompactNumber(value)}
       </span>
       <button
         type="button"
         onClick={onAdd}
         aria-label={`Get more ${label}`}
-        className="lobby-currency-add relative mr-[0.2rem] grid h-[2rem] w-[2rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
+        className="relative mr-[0.2rem] grid h-[2rem] w-[2rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
       >
         <span className="absolute left-1/2 top-1/2 h-[1.2rem] w-[0.3rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
         <span className="absolute left-1/2 top-1/2 h-[0.3rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
