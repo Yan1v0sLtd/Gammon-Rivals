@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase';
+// IMPORTANT: use the BO's independent Supabase session, NOT the
+// main player-facing client. The main client carries the operator's
+// PLAYER auth (which isn't in admin_roles), and our admin-gated
+// RPCs check auth.uid() inline → would return 'forbidden'. The
+// adminSupabase client is the one logged in as the operator's BO
+// session and is what every other admin/* file uses.
+import { adminSupabase as supabase } from '../lib/adminSupabase';
 import { extractErrorMessage } from '../lib/errors';
 
 // The Daily Missions tables aren't in the generated Database type
