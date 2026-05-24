@@ -104,7 +104,7 @@ declare
   total_coins int := 0;
   total_gems int := 0;
   total_xp int := 0;
-  week_key text := to_char(now(), 'IYYY-"W"IW');
+  v_week_key text := to_char(now(), 'IYYY-"W"IW');
   already_claimed boolean;
 begin
   if caller_id is null then raise exception 'not_authenticated'; end if;
@@ -115,7 +115,7 @@ begin
 
   -- Lock the weekly-pass row so concurrent claims are serialised.
   select * into pass_row from public.player_weekly_pass
-  where profile_id = caller_id and week_key = week_key
+  where profile_id = caller_id and week_key = v_week_key
   for update;
   if not found then raise exception 'pass_not_started'; end if;
 

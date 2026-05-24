@@ -50,7 +50,7 @@ declare
   prof public.profiles;
   template_row public.mission_templates;
   baseline numeric;
-  resolved_goal int;
+  v_resolved_goal int;
   now_utc timestamptz := now();
   -- End-of-day in UTC: 00:00 of tomorrow UTC.
   day_end timestamptz := (current_date + interval '1 day')::timestamptz;
@@ -163,7 +163,7 @@ begin
 
     -- Resolve goal_value per resolution_mode.
     if template_row.resolution_mode = 'fixed' then
-      resolved_goal := template_row.goal_value;
+      v_resolved_goal := template_row.goal_value;
     else
       -- stretch: clamp(ceil(baseline_7d * stretch_factor), min, max)
       select pm.baseline_7d into baseline
@@ -172,7 +172,7 @@ begin
         and pm.metric_code = template_row.metric_code;
 
       baseline := coalesce(baseline, 0);
-      resolved_goal := greatest(
+      v_resolved_goal := greatest(
         template_row.goal_min,
         least(
           template_row.goal_max,
@@ -186,7 +186,7 @@ begin
       (profile_id, mission_template_id, rarity_slot, resolved_goal,
        expires_at, period, assigned_at)
     values
-      (p_profile_id, template_row.id, template_row.rarity, resolved_goal,
+      (p_profile_id, template_row.id, template_row.rarity, v_resolved_goal,
        day_end, 'daily', now_utc);
 
     picked_ids := picked_ids || template_row.id;
@@ -228,14 +228,14 @@ begin
 
       if template_row.id is not null then
         if template_row.resolution_mode = 'fixed' then
-          resolved_goal := template_row.goal_value;
+          v_resolved_goal := template_row.goal_value;
         else
           select pm.baseline_7d into baseline
           from public.player_metrics pm
           where pm.profile_id = p_profile_id
             and pm.metric_code = template_row.metric_code;
           baseline := coalesce(baseline, 0);
-          resolved_goal := greatest(
+          v_resolved_goal := greatest(
             template_row.goal_min,
             least(
               template_row.goal_max,
@@ -248,7 +248,7 @@ begin
           (profile_id, mission_template_id, rarity_slot, resolved_goal,
            expires_at, period, assigned_at)
         values
-          (p_profile_id, template_row.id, template_row.rarity, resolved_goal,
+          (p_profile_id, template_row.id, template_row.rarity, v_resolved_goal,
            week_end, 'weekly', now_utc);
         assigned := assigned + 1;
       end if;

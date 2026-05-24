@@ -167,7 +167,7 @@ declare
   total_gems int := 0;
   total_xp int := 0;
   mp_award int := 0;
-  week_key text := to_char(now(), 'IYYY-"W"IW');
+  v_week_key text := to_char(now(), 'IYYY-"W"IW');
   unclaimed_today int;
   prior_streak int;
   prior_last_date date;
@@ -269,7 +269,7 @@ begin
   mp_award := mt.mission_points;
   if mp_award > 0 then
     insert into public.player_weekly_pass (profile_id, week_key, mp_earned)
-    values (caller_id, week_key, mp_award)
+    values (caller_id, v_week_key, mp_award)
     on conflict (profile_id, week_key) do update set
       mp_earned = public.player_weekly_pass.mp_earned + excluded.mp_earned,
       updated_at = now();
