@@ -18,10 +18,8 @@ const MODE_LABEL: Record<string, string> = {
   'ai-hard': 'AI - Hard',
 };
 
-const profileShortcuts = [
-  { label: 'Friends', icon: '/lobby/icons/friends.webp' },
-  { label: 'Settings', icon: '/lobby/icons/settings-gear.webp' },
-] as const;
+// Friends + Settings shortcuts removed from the Profile top bar
+// (operator preference — those entry points live elsewhere).
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -168,7 +166,10 @@ export default function Profile() {
   const xpTarget = progression.nextLevelXp ?? Math.max(progression.xp, progression.currentLevelXp + 1000);
   const xpText = `${formatCompactNumber(progression.xp)} / ${formatCompactNumber(xpTarget)} XP`;
   const nextLevelLabel = progression.nextLevelXp ? progression.level + 1 : progression.level;
-  const visibleMatches = matches?.slice(0, 3) ?? null;
+  // Show ALL match history rows (was capped at 3). The list
+  // scrolls when > 4 entries thanks to the max-h + overflow-y-auto
+  // wrapper applied around .profile-history-list in the JSX below.
+  const visibleMatches = matches ?? null;
 
   return (
     <main className="profile-page text-white">
@@ -178,22 +179,26 @@ export default function Profile() {
             <span className="profile-back-chevron" />
           </Link>
 
-          <div className="profile-currency-bar" aria-label="Wallet">
-            <ProfileCurrency icon="/lobby/icons/gold-coin.webp" label="Coins" value={wallet?.coins ?? 0} />
-            <span className="profile-currency-divider" aria-hidden="true" />
-            <ProfileCurrency icon="/lobby/icons/gem.webp" label="Gems" value={wallet?.gems ?? 0} />
+          {/* Currency strip uses the same pill design as the lobby
+              top-bar (CurrencyPill in LobbyTopBar.tsx). Replicating
+              the Tailwind classes inline rather than extracting a
+              shared component since it's only two call-sites. */}
+          <div className="flex items-center gap-3" aria-label="Wallet">
+            <CurrencyPill
+              flyTarget="coins"
+              icon="/lobby/icons/gold-coin.webp"
+              label="Coins"
+              value={wallet?.coins ?? 0}
+              onAdd={() => navigate('/shop')}
+            />
+            <CurrencyPill
+              flyTarget="gems"
+              icon="/lobby/icons/gem.webp"
+              label="Gems"
+              value={wallet?.gems ?? 0}
+              onAdd={() => navigate('/shop')}
+            />
           </div>
-
-          <nav className="profile-shortcuts" aria-label="Profile shortcuts">
-            {profileShortcuts.map((shortcut) => (
-              <button key={shortcut.label} type="button" className="profile-shortcut">
-                <span className="profile-shortcut-icon">
-                  <img src={shortcut.icon} alt="" draggable={false} />
-                </span>
-                <span>{shortcut.label}</span>
-              </button>
-            ))}
-          </nav>
         </header>
 
         <section className="profile-main-card">
@@ -206,7 +211,11 @@ export default function Profile() {
               ring="none"
               className="profile-avatar-image"
             />
-            <div className="profile-level-shield">
+            {/* Reuse the lobby's pointy-top hex shield (gold rim +
+                black inner) instead of the older profile-page
+                shield. Same CSS class so every level-shield in the
+                app stays visually consistent. */}
+            <div className="lobby-profile-level-shield profile-level-shield-hex">
               <span>{progression.level}</span>
             </div>
           </div>
@@ -269,11 +278,23 @@ export default function Profile() {
                 <span>Level {progression.level}</span>
                 <span>Level {nextLevelLabel}</span>
               </div>
+              {/* Lobby lava-XP bar — reuses the .lobby-profile-progress
+                  class (orange→yellow gradient with animated bubble
+                  layers riding the filled portion). profile-xp-wide
+                  scope widens it to the profile card's column. */}
               <div className="profile-xp-row">
-                <div className="profile-xp-bar" aria-label={`XP progress ${progression.progressLabel}`}>
-                  <span style={{ width: `${progression.progressPercent}%` }} />
-                </div>
-                <span className="profile-xp-text">{xpText}</span>
+                <span
+                  className="lobby-profile-progress profile-xp-wide"
+                  aria-label={`XP progress ${progression.progressLabel}`}
+                >
+                  <span
+                    className="lobby-profile-progress-fill"
+                    style={{ width: `${progression.progressPercent}%` }}
+                  >
+                    <span className="lobby-profile-progress-bubbles" aria-hidden="true" />
+                  </span>
+                  <span className="lobby-profile-progress-label">{xpText}</span>
+                </span>
               </div>
               <div className="profile-next-reward">
                 <span>Next Reward:</span>
@@ -319,6 +340,11 @@ export default function Profile() {
                 <Link to="/">Start one</Link>
               </div>
             ) : (
+              // max-h + overflow-y-auto keeps the panel a fixed size
+              // (frame stays put) while letting the list scroll past
+              // the first ~4 rows. 17rem ≈ 4 rows at the current
+              // profile-history-row height (4.2rem each in CSS).
+              <div className="max-h-[17rem] overflow-y-auto">
               <ul className="profile-history-list">
                 {visibleMatches.map((m) => {
                   const outcome = ownerOutcome(m);
@@ -363,6 +389,7 @@ export default function Profile() {
                   );
                 })}
               </ul>
+              </div>
             )}
           </section>
 
@@ -381,20 +408,52 @@ export default function Profile() {
   );
 }
 
-function ProfileCurrency({
+/**
+ * Profile-page CurrencyPill — same look as the lobby's pill (icon
+ * orb + value plate + green `+` to-shop button). Replicated inline
+ * rather than extracted because the lobby's CurrencyPill is private
+ * to LobbyTopBar; if a third callsite arrives, extract this into
+ * components/CurrencyPill.tsx.
+ */
+function CurrencyPill({
+  flyTarget,
   icon,
   label,
   value,
+  onAdd,
 }: {
+  readonly flyTarget: 'coins' | 'gems' | 'xp';
   readonly icon: string;
   readonly label: string;
   readonly value: number;
+  readonly onAdd: () => void;
 }) {
   return (
-    <div className="profile-currency-pill" aria-label={`${label}: ${formatCompactNumber(value)}`}>
-      <img src={icon} alt="" draggable={false} />
-      <span>{formatCompactNumber(value)}</span>
-      <button type="button" aria-label={`Add ${label}`}>+</button>
+    <div
+      aria-label={`${label}: ${value ?? 0}`}
+      data-fly-target={flyTarget}
+      className="lobby-currency-pill relative flex h-[2.4rem] min-w-[6.84rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+    >
+      <span className="lobby-currency-icon -ml-[0.8rem] grid h-[2.8rem] w-[2.8rem] shrink-0 place-items-center">
+        <img
+          src={icon}
+          alt=""
+          className="h-full w-full object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.42)]"
+          draggable={false}
+        />
+      </span>
+      <span className="lobby-currency-value -ml-[0.4rem] flex h-[2.04rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.8rem] text-center font-display text-base font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+        {formatCompactNumber(value)}
+      </span>
+      <button
+        type="button"
+        onClick={onAdd}
+        aria-label={`Get more ${label}`}
+        className="lobby-currency-add relative mr-[0.2rem] grid h-[2rem] w-[2rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
+      >
+        <span className="absolute left-1/2 top-1/2 h-[1.2rem] w-[0.3rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
+        <span className="absolute left-1/2 top-1/2 h-[0.3rem] w-[1.2rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
+      </button>
     </div>
   );
 }
@@ -410,12 +469,33 @@ function Stat({
   readonly value: number;
   readonly wide?: boolean;
 }) {
+  // Coins + Gems use the real webp icons (same artwork as the
+  // wallet pills + lobby) instead of the CSS-painted profile-
+  // stat-icon sprites. Other stat icons stay on the sprites.
+  const realIcon = icon === 'coins' ? '/lobby/icons/gold-coin.webp'
+    : icon === 'gems' ? '/lobby/icons/gem.webp'
+    : null;
+
   return (
     <div className={`profile-stat-card ${wide ? 'profile-stat-card--wide' : ''}`}>
-      <span className={`profile-stat-icon profile-stat-icon--${icon}`} aria-hidden="true">
-        <span />
-      </span>
-      <strong>{formatCompactNumber(value)}</strong>
+      {realIcon ? (
+        <span className="grid h-9 w-9 shrink-0 place-items-center" aria-hidden="true">
+          <img
+            src={realIcon}
+            alt=""
+            draggable={false}
+            className="h-full w-full object-contain drop-shadow-[0_3px_3px_rgba(0,0,0,0.45)]"
+          />
+        </span>
+      ) : (
+        <span className={`profile-stat-icon profile-stat-icon--${icon}`} aria-hidden="true">
+          <span />
+        </span>
+      )}
+      {/* text-[1.35rem] is smaller than the previous default (~2rem
+          via .profile-stat-card strong) so a value like "16.6K" fits
+          comfortably without overflowing the stat box. */}
+      <strong className="!text-[1.35rem] !leading-none">{formatCompactNumber(value)}</strong>
       <small>{label}</small>
     </div>
   );

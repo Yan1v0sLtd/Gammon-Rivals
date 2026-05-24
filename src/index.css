@@ -7695,3 +7695,51 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   z-index: -1;
   animation: daily-bonus-spin 3s linear infinite;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Profile page polish — reusing lobby visual primitives
+   (CurrencyPill, level hex, lava XP bar) but the lobby's CSS
+   selectors are positioned for the lobby's tiny avatar. These
+   overrides reposition + resize them for the profile page's
+   much larger avatar + wider XP container.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Lift the level hex into the profile-avatar-stage's bottom-centre
+   anchor (the old .profile-level-shield used `right: calc(50% -
+   6.3rem); bottom: 0.7rem`). Override the lobby's smaller, top-right
+   absolute position with a bottom-centred one and bump the size up
+   for the profile's 220px avatar. */
+.profile-level-shield-hex.lobby-profile-level-shield {
+  right: auto;
+  bottom: 0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4.2rem;
+  height: 4.85rem;
+  font-size: 1.6rem;
+}
+
+/* Widen the lobby progress bar to fill the profile XP row.
+   .lobby-profile-progress is `width: clamp(6.4rem, 13vw, 11rem)`
+   which is sized for the lobby's compact top-bar. Profile wants
+   the bar to fill the available row. */
+.profile-xp-wide.lobby-profile-progress {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 1.5rem;
+}
+
+.profile-xp-wide .lobby-profile-progress-label {
+  font-size: 0.82rem;
+}
+
+/* Tighten the profile-history-list so the new scroll wrapper
+   (max-h: 17rem; overflow-y: auto) fits ~4 rows cleanly. The
+   .profile-history-row has its own padding which is already tuned;
+   this just removes the panel-level max-height/overflow that
+   competed with the new scroll wrapper. */
+.profile-history-panel ul.profile-history-list {
+  max-height: none;
+  overflow: visible;
+}
