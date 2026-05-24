@@ -7787,3 +7787,47 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   max-height: none;
   overflow: visible;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   WheelModal open animation — backdrop fades in, content stack
+   rises into place (translateY + scale + opacity). The "ascending
+   fade-in" the user asked for: starts 36px below its final
+   position at 92% scale + 0 opacity, ramps to final transform +
+   full opacity. Same easing curve as the lobby's board-swap
+   animation so the motion language stays consistent.
+   ────────────────────────────────────────────────────────────── */
+@keyframes wheel-modal-backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes wheel-modal-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(36px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wheel-modal-backdrop {
+  animation: wheel-modal-backdrop-fade 360ms ease-out both;
+}
+
+.wheel-modal-rise {
+  animation: wheel-modal-rise 560ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
+}
+
+/* Respect users who've asked their OS to reduce motion — they
+   still see a small fade so the modal doesn't pop in jarringly,
+   but no transform sweep. */
+@media (prefers-reduced-motion: reduce) {
+  .wheel-modal-rise {
+    animation: wheel-modal-backdrop-fade 200ms ease-out both;
+  }
+}

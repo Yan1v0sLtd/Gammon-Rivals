@@ -335,40 +335,51 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
   if (!state) return null;
 
   const isReady = phase === 'idle' && wheel.canSpin;
-  const wheelDimension = 'clamp(17rem, 65vmin, 24rem)';
+  // Wheel diameter — clamp(min, vmin-scaled, max). Reduced
+  // from `clamp(17rem, 65vmin, 24rem)` so on a landscape phone
+  // (vmin ≈ short-side ~500px) the wheel + chrome fits inside
+  // the viewport without overflow. New range:
+  //   • min 11rem (176px) on tiny screens
+  //   • 48vmin scales smoothly — on 500vmin → 240px, on 800vmin → 384px
+  //   • max 22rem (352px) caps the desktop size so the wheel
+  //     doesn't dominate larger screens
+  const wheelDimension = 'clamp(11rem, 48vmin, 22rem)';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+    <div className="wheel-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
       {/* Carnival / fortune-wheel stack: title plate, pointer,
           gold-framed wheel with bulb lights, big SPIN CTA. No more
           cream modal box — the elements sit directly on the page
-          overlay, matching the reference design. */}
-      <div className="relative flex flex-col items-center">
+          overlay, matching the reference design.
+          `wheel-modal-rise` keyframe (defined in index.css)
+          fades+rises the stack into place: opacity 0→1 and
+          translateY(36px)→0 with a soft over-curve. Backdrop
+          gets its own fade-in via `wheel-modal-backdrop` on the
+          parent. */}
+      <div className="wheel-modal-rise relative flex flex-col items-center">
         {/* Title plate + close button. Wrapped in a relative
             container so the close button can be positioned against
             the plate's edge (not the bonus-ui stack's edge, which
             previously placed the X on top of the right "✦"). */}
         <div className="relative z-10 flex items-center justify-center">
-          {/* Red pill with thick gold border. Width clamped narrower
-              than v1 so the X button sits outside its right edge
-              instead of overlapping the title text. */}
+          {/* Red pill with thick gold border. Sizes reduced
+              proportionally with the wheel — same visual ratio
+              but smaller on mobile. */}
           <div
             className="grid place-items-center font-display whitespace-nowrap"
             style={{
-              width: 'clamp(17rem, 60vmin, 22rem)',
-              height: 'clamp(3rem, 7.5vmin, 3.6rem)',
+              width: 'clamp(13rem, 50vmin, 19rem)',
+              height: 'clamp(2.3rem, 6vmin, 3rem)',
               borderRadius: '9999px',
               background: 'linear-gradient(180deg, #6d0808 0%, #3b0203 100%)',
-              border: '4px solid #f6b52b',
+              border: '3px solid #f6b52b',
               boxShadow:
                 '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
               color: '#ffd76b',
-              // Smaller font + tighter letter-spacing so "✦ HOURLY
-              // BONUS ✦" fits comfortably and the right ✦ stays
-              // visible (the X used to obscure it).
-              fontSize: 'clamp(1rem, 2.6vmin, 1.4rem)',
+              // Font + tracking shrink in lockstep with the plate.
+              fontSize: 'clamp(0.78rem, 2.2vmin, 1.2rem)',
               fontWeight: 900,
-              letterSpacing: '0.1em',
+              letterSpacing: '0.08em',
               textShadow: '0 3px 0 #7a3507, 0 0 10px rgba(255,210,80,0.7)',
             }}
           >
@@ -376,27 +387,27 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
           </div>
 
           {/* Close orb — sits fully outside the plate's right edge.
-              right:-2.75rem (vs v1 -1.25rem) pushes the orb's left
-              edge past the pill's right edge so the X no longer
-              overlaps the right ✦ glyph. Translating outside the
-              flex container is OK because the outer modal has
-              p-4 — there's room. */}
+              Sized down proportionally; right offset moves in to
+              match the narrower plate. */}
           <button
             type="button"
             onClick={onClose}
             disabled={phase !== 'idle'}
             aria-label="Close"
-            className="absolute grid h-10 w-10 place-items-center rounded-full font-display text-xl font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+            className="absolute grid place-items-center rounded-full font-display font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
             style={{
               top: '50%',
-              right: '-2.75rem',
+              right: 'clamp(-2.4rem, -5.5vmin, -1.8rem)',
+              width: 'clamp(1.9rem, 5.4vmin, 2.5rem)',
+              height: 'clamp(1.9rem, 5.4vmin, 2.5rem)',
+              fontSize: 'clamp(0.95rem, 2.7vmin, 1.25rem)',
               transform: 'translateY(-50%)',
               background:
                 'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
-              border: '3px solid #ffd35a',
+              border: '2px solid #ffd35a',
               textShadow: '0 2px 0 #8b180b',
               boxShadow:
-                '0 4px 0 #702207, 0 8px 14px rgba(0,0,0,0.45)',
+                '0 3px 0 #702207, 0 6px 12px rgba(0,0,0,0.45)',
             }}
           >
             ×
@@ -407,11 +418,12 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             Houses the tick-marked rim, the spinning disc, the center
             hub, AND the red teardrop pointer (positioned absolute
             with negative top so its bulb sits above the rim and only
-            the apex pierces the disc). mt-14 gives the pointer's
-            bulb room to sit above the rim without crowding the
-            title pill. */}
+            the apex pierces the disc). mt-6 gives the pointer's
+            bulb room to sit above the rim — reduced from mt-14 so
+            the total stack height shrinks enough to fit a landscape
+            phone. */}
         <div
-          className="relative mt-14"
+          className="relative mt-3 sm:mt-5 lg:mt-8"
           style={
             {
               // 1.13× wheel-d gives the gold ring room to breathe
@@ -705,26 +717,29 @@ export function WheelModal({ wheel, onClose, onSpinComplete }: Props) {
             border and a 3D drop-shadow that compresses on press.
             Tap-to-spin on the wheel itself is also supported (the
             disc has no pointer-events disabled), but the big button
-            is the obvious target on mobile. */}
+            is the obvious target on mobile.
+            Sizes scaled down to match the smaller wheel — same
+            vmin-based ratio so the button stays proportional to
+            the wheel above it. */}
         <button
           type="button"
           disabled={!isReady}
           onClick={handleSpin}
           className="relative z-10 mt-2 font-display transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
           style={{
-            width: 'clamp(11rem, 32vmin, 14rem)',
-            height: 'clamp(3.6rem, 9vmin, 4.4rem)',
+            width: 'clamp(8.5rem, 24vmin, 12rem)',
+            height: 'clamp(2.6rem, 7vmin, 3.6rem)',
             borderRadius: '9999px',
-            border: '6px solid #ffd866',
+            border: '5px solid #ffd866',
             background:
               'linear-gradient(180deg, #fff070 0%, #ffbd24 35%, #f2730d 72%, #b73808 100%)',
             color: 'white',
-            fontSize: 'clamp(1.6rem, 4.4vmin, 2.4rem)',
+            fontSize: 'clamp(1.15rem, 3.3vmin, 1.9rem)',
             fontWeight: 900,
             letterSpacing: '0.1em',
-            textShadow: '0 4px 0 #8e3308',
+            textShadow: '0 3px 0 #8e3308',
             boxShadow:
-              '0 7px 0 #793006, 0 12px 18px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
+              '0 5px 0 #793006, 0 10px 16px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
           }}
         >
           {phase === 'idle' ? 'SPIN' : 'SPINNING…'}
