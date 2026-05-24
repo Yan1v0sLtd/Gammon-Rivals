@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { extractErrorMessage } from '../lib/errors';
+import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import {
   formatCountdown,
   nextResetMs,
@@ -39,6 +40,41 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
 
+  // Reward-flight animation state. Mirrors the WheelModal pattern:
+  // capture the source button rect at claim-time, find the wallet
+  // pill destination via [data-fly-target], spawn N tokens per
+  // currency with a stagger so they trail behind each other.
+  const [flights, setFlights] = useState<readonly RewardFlightSpec[]>([]);
+  const nextFlightIdRef = useRef(0);
+
+  const spawnFlights = (currency: FlightCurrency, count: number, srcEl: HTMLElement | null) => {
+    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
+    if (!target || !srcEl) return;
+    const srcRect = srcEl.getBoundingClientRect();
+    const dstRect = target.getBoundingClientRect();
+    const startX = srcRect.left + srcRect.width / 2;
+    const startY = srcRect.top + srcRect.height / 2;
+    const endX = dstRect.left + dstRect.width / 2;
+    const endY = dstRect.top + dstRect.height / 2;
+    const additions: RewardFlightSpec[] = [];
+    for (let i = 0; i < count; i++) {
+      additions.push({
+        id: nextFlightIdRef.current++,
+        currency,
+        startX: startX + (Math.random() - 0.5) * 30,
+        startY: startY + (Math.random() - 0.5) * 30,
+        endX,
+        endY,
+        delayMs: i * 70,
+        durationMs: 850,
+      });
+    }
+    setFlights((prev) => [...prev, ...additions]);
+  };
+  const removeFlight = (id: number) => {
+    setFlights((prev) => prev.filter((f) => f.id !== id));
+  };
+
   // Refresh "now" every minute so the header countdown ticks.
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 60_000);
@@ -76,13 +112,44 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     return nextResetMs(state);
   }, [state, now]);
 
-  const handleClaim = async (missionId: string) => {
+  const handleClaim = async (missionId: string, srcEl: HTMLElement | null) => {
     setClaimingMissionId(missionId);
     setActionError(null);
+    // Look up the mission's reward bundle BEFORE the RPC fires, so we
+    // know which currencies to fly + how many tokens of each. The
+    // count scales with amount (8 max per currency to keep the
+    // animation tight).
+    const mission = missionsList.find((m) => m.id === missionId);
     try {
-      const { error: rpcErr } = await supabase.rpc('claim_mission', { p_mission_id: missionId });
-      if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-      else refetch();
+      const { data, error: rpcErr } = await supabase.rpc('claim_mission', { p_mission_id: missionId });
+      if (rpcErr) {
+        setActionError(extractErrorMessage(rpcErr));
+        return;
+      }
+      // Spawn flights — credited_* values from the RPC response are
+      // authoritative (covers the case where the operator changed
+      // rewards mid-claim).
+      const credited = data as { credited_coins?: number; credited_gems?: number; credited_xp?: number };
+      if (credited?.credited_coins && credited.credited_coins > 0) {
+        spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
+      }
+      if (credited?.credited_gems && credited.credited_gems > 0) {
+        spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
+      }
+      if (credited?.credited_xp && credited.credited_xp > 0) {
+        spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
+      }
+      // Fallback if the RPC didn't return credited_* (older clients):
+      // derive from the mission's rewards bundle.
+      if (!credited?.credited_coins && !credited?.credited_gems && !credited?.credited_xp && mission) {
+        for (const r of mission.rewards) {
+          if (r.reward_kind !== 'currency' || !r.currency_code) continue;
+          if (r.currency_code === 'coins') spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(r.amount / 75))), srcEl);
+          else if (r.currency_code === 'gems') spawnFlights('gems', Math.min(6, Math.max(2, r.amount)), srcEl);
+          else if (r.currency_code === 'xp') spawnFlights('xp', Math.min(5, Math.max(2, r.amount)), srcEl);
+        }
+      }
+      refetch();
     } catch (e) {
       setActionError(extractErrorMessage(e));
     } finally {
@@ -93,7 +160,11 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   const handleClaimAll = async () => {
     const claimables = dailies.filter((m) => m.completed_at && !m.claimed_at);
     for (const m of claimables) {
-      await handleClaim(m.id);
+      // For the batch claim, use the Claim All button as the visual
+      // origin for every flight — simpler than tracking per-card
+      // refs through the batch.
+      const claimAllBtn = document.querySelector<HTMLElement>('[data-claim-all-btn]');
+      await handleClaim(m.id, claimAllBtn);
     }
   };
 
@@ -183,6 +254,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
               <h3 className="font-display text-lg font-bold tracking-wide text-amber-100">DAILY MISSIONS</h3>
               <button
                 type="button"
+                data-claim-all-btn
                 disabled={claimableCount === 0 || claimingMissionId !== null}
                 onClick={handleClaimAll}
                 className="rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-1.5 text-sm font-bold text-amber-950 shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
@@ -199,7 +271,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   mission={m}
                   isClaiming={claimingMissionId === m.id}
                   isRerolling={rerollingMissionId === m.id}
-                  onClaim={() => handleClaim(m.id)}
+                  onClaim={(el) => handleClaim(m.id, el)}
                 />
               ))}
               {dailies.length === 0 && (
@@ -233,7 +305,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
               <WeeklyChallengeCard
                 mission={weekly}
                 isClaiming={claimingMissionId === weekly.id}
-                onClaim={() => handleClaim(weekly.id)}
+                onClaim={(el) => handleClaim(weekly.id, el)}
               />
             )}
 
@@ -245,6 +317,14 @@ export function DailyMissionsModal({ result, onClose }: Props) {
           </>
         )}
       </div>
+
+      {/* Reward-flight tokens render OUTSIDE the modal frame at
+          z-[60] so they travel cleanly over the lobby top-bar to
+          land on the wallet pill ([data-fly-target="coins"|"gems"|"xp"]).
+          Same pattern WheelModal uses. */}
+      {flights.map((spec) => (
+        <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
+      ))}
     </div>
   );
 }
@@ -287,18 +367,17 @@ function ChestTrackStrip({
           <span className="text-[9px] uppercase tracking-wider text-amber-200/60">Mission Points</span>
         </div>
 
-        {/* Chest track with horizontal progress line */}
-        <div className="relative flex-1 pb-6 pt-2">
-          {/* Progress line behind the chests */}
-          <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-black/50">
-            <div
-              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-200"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-
-          {/* The 4 chest buttons */}
-          <div className="relative flex items-end justify-between">
+        {/* Chest track. Layout, top-to-bottom:
+              row 1: chest icons (bottom-aligned, progressively sized)
+              row 2: horizontal progress line (BENEATH the chests)
+              row 3: threshold numbers
+              row 4: claimed checkmark / unclaimed circle
+            The progress line is its own row so it doesn't overlap
+            the chest artwork — earlier version had it positioned at
+            top-1/2 of the row which cut through the chests. */}
+        <div className="flex-1">
+          {/* Row 1: chests */}
+          <div className="flex items-end justify-between">
             {milestones.map((m, i) => {
               const claimed = chestsClaimed.includes(m.milestone_index);
               const unlocked = mpEarned >= m.threshold_mp;
@@ -306,11 +385,11 @@ function ChestTrackStrip({
               const sizeClass = chestSizes[i] ?? 'h-14';
               return (
                 <button
-                  key={m.milestone_index}
+                  key={`chest-${m.milestone_index}`}
                   type="button"
                   disabled={!ready || claimingIdx !== null}
                   onClick={() => onClaimChest(m.milestone_index)}
-                  className={`relative flex flex-col items-center gap-1 transition ${
+                  className={`flex transition ${
                     ready ? 'animate-pulse' : ''
                   } ${!unlocked ? 'opacity-50 grayscale' : ''}`}
                   aria-label={`${m.display_name} chest at ${m.threshold_mp} MP`}
@@ -322,12 +401,40 @@ function ChestTrackStrip({
                     className={`${sizeClass} object-contain drop-shadow-lg`}
                     onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
                   />
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Row 2: progress line, UNDER the chests */}
+          <div className="relative mt-1 h-1 rounded-full bg-black/50">
+            <div
+              className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 to-amber-200"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+
+          {/* Rows 3 + 4: threshold numbers + claimed status circle */}
+          <div className="mt-1 flex items-start justify-between">
+            {milestones.map((m) => {
+              const claimed = chestsClaimed.includes(m.milestone_index);
+              const unlocked = mpEarned >= m.threshold_mp;
+              const ready = unlocked && !claimed;
+              return (
+                <div
+                  key={`thr-${m.milestone_index}`}
+                  className="flex flex-col items-center gap-0.5"
+                  style={{
+                    // Each label sits over the centre of its chest. Since
+                    // the parent uses justify-between, each label's flex
+                    // box already aligns to the chest above it.
+                  }}
+                >
                   <span className="font-display text-xs font-bold text-amber-100">
                     {m.threshold_mp}
                   </span>
-                  {/* Claimed checkmark / unclaimed circle, below the threshold */}
                   <span
-                    className={`absolute -bottom-5 grid h-4 w-4 place-items-center rounded-full text-[9px] ring-1 ${
+                    className={`grid h-4 w-4 place-items-center rounded-full text-[9px] ring-1 ${
                       claimed
                         ? 'bg-emerald-600 text-white ring-emerald-300'
                         : ready
@@ -337,7 +444,7 @@ function ChestTrackStrip({
                   >
                     {claimed ? '✓' : ''}
                   </span>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -356,9 +463,10 @@ function MissionCard({
   readonly mission: Mission;
   readonly isClaiming: boolean;
   readonly isRerolling: boolean;
-  readonly onClaim: () => void;
+  readonly onClaim: (sourceEl: HTMLElement | null) => void;
   readonly variant?: 'daily' | 'weekly';
 }) {
+  const btnRef = useRef<HTMLButtonElement | null>(null);
   const isCompleted = !!mission.completed_at && !mission.claimed_at;
   const isClaimed = !!mission.claimed_at;
   const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
@@ -380,7 +488,7 @@ function MissionCard({
     <div
       className={`flex items-center gap-3 rounded-xl bg-gradient-to-b from-[#241935] to-[#150d24] p-3 ring-1 ${
         ringByRarity[mission.rarity] ?? ringByRarity.common
-      } ${isClaimed ? 'opacity-50' : ''}`}
+      }`}
     >
       {/* Rarity badge (icon + rarity word baked into the artwork) */}
       <div className="shrink-0">
@@ -429,15 +537,20 @@ function MissionCard({
       {/* Rewards */}
       <RewardStack rewards={mission.rewards} />
 
-      {/* Action button */}
+      {/* Action button. CLAIMED keeps the green palette (just darker)
+          so the user can still see "this was claimed" as a positive
+          state, not a faded/dead button. */}
       <button
+        ref={btnRef}
         type="button"
         disabled={!isCompleted || isClaimed || isClaiming || isRerolling}
-        onClick={onClaim}
-        className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold shadow-md transition disabled:cursor-not-allowed disabled:opacity-50 ${
-          isCompleted
-            ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white hover:brightness-110'
-            : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white'
+        onClick={() => onClaim(btnRef.current)}
+        className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold shadow-md transition ${
+          isClaimed
+            ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 text-white opacity-90'
+            : isCompleted
+              ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white hover:brightness-110'
+              : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white disabled:cursor-not-allowed disabled:opacity-50'
         }`}
       >
         {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
@@ -453,8 +566,9 @@ function WeeklyChallengeCard({
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
-  readonly onClaim: () => void;
+  readonly onClaim: (sourceEl: HTMLElement | null) => void;
 }) {
+  const btnRef = useRef<HTMLButtonElement | null>(null);
   const isCompleted = !!mission.completed_at && !mission.claimed_at;
   const isClaimed = !!mission.claimed_at;
   const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
@@ -510,13 +624,16 @@ function WeeklyChallengeCard({
         </div>
 
         <button
+          ref={btnRef}
           type="button"
           disabled={!isCompleted || isClaimed || isClaiming}
-          onClick={onClaim}
-          className={`mt-3 rounded-lg px-6 py-1.5 text-sm font-bold shadow-md transition disabled:cursor-not-allowed disabled:opacity-60 ${
-            isCompleted
-              ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white'
-              : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white'
+          onClick={() => onClaim(btnRef.current)}
+          className={`mt-3 rounded-lg px-6 py-1.5 text-sm font-bold shadow-md transition ${
+            isClaimed
+              ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 text-white opacity-90'
+              : isCompleted
+                ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white'
+                : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white disabled:cursor-not-allowed disabled:opacity-60'
           }`}
         >
           {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
@@ -618,9 +735,25 @@ function RerollPanel({
             type="button"
             disabled={!selectedId || rerollingId !== null}
             onClick={() => selectedId && onReroll(selectedId)}
-            className="w-full rounded-lg bg-gradient-to-b from-rose-400 to-rose-600 px-3 py-1.5 text-sm font-bold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-rose-400 to-rose-600 px-3 py-1.5 text-sm font-bold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {rerollingId ? 'Rerolling…' : isFree ? 'REROLL (FREE)' : `REROLL (${rerollState.next_cost}g)`}
+            {rerollingId ? (
+              <span>Rerolling…</span>
+            ) : isFree ? (
+              <span>REROLL (FREE)</span>
+            ) : (
+              <>
+                <span>REROLL ({rerollState.next_cost}</span>
+                <img
+                  src="/lobby/icons/gem.webp"
+                  alt="gems"
+                  draggable={false}
+                  className="h-4 w-4 object-contain"
+                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+                />
+                <span>)</span>
+              </>
+            )}
           </button>
         </div>
       )}

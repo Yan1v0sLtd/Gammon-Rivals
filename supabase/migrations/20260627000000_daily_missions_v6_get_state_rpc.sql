@@ -58,7 +58,8 @@ begin
         ) order by
           case pdm.period when 'weekly' then 1 else 0 end,
           case pdm.rarity_slot when 'common' then 1 when 'rare' then 2 when 'epic' then 3 else 4 end,
-          pdm.assigned_at
+          pdm.assigned_at,
+          pdm.id
       ), '[]'::jsonb)
       from public.player_daily_missions pdm
       join public.mission_templates mt on mt.id = pdm.mission_template_id
