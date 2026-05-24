@@ -272,6 +272,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   isClaiming={claimingMissionId === m.id}
                   isRerolling={rerollingMissionId === m.id}
                   onClaim={(el) => handleClaim(m.id, el)}
+                  onGo={onClose}
                 />
               ))}
               {dailies.length === 0 && (
@@ -306,6 +307,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                 mission={weekly}
                 isClaiming={claimingMissionId === weekly.id}
                 onClaim={(el) => handleClaim(weekly.id, el)}
+                onGo={onClose}
               />
             )}
 
@@ -459,11 +461,15 @@ function MissionCard({
   isClaiming,
   isRerolling,
   onClaim,
+  onGo,
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
   readonly isRerolling: boolean;
   readonly onClaim: (sourceEl: HTMLElement | null) => void;
+  /** Called when the GO button is clicked on an incomplete mission.
+   *  Closes the missions modal so the player can go play. */
+  readonly onGo?: () => void;
   readonly variant?: 'daily' | 'weekly';
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
@@ -475,6 +481,14 @@ function MissionCard({
     common: 'ring-emerald-700/40',
     rare:   'ring-sky-600/50',
     epic:   'ring-fuchsia-600/50',
+  };
+
+  // Progress-bar fill color is rarity-driven so the player can scan
+  // the missions at a glance and instantly tell the tier of each.
+  const progressFillByRarity: Record<string, string> = {
+    common: 'bg-gradient-to-r from-emerald-500 to-emerald-300',
+    rare:   'bg-gradient-to-r from-sky-500 to-sky-300',
+    epic:   'bg-gradient-to-r from-fuchsia-500 to-fuchsia-300',
   };
 
   // The badge PNG (operator-provided art) bakes the rarity tier
@@ -518,12 +532,10 @@ function MissionCard({
           <div className="truncate text-xs text-amber-100/60">{mission.subtitle}</div>
         )}
         <div className="mt-1.5 flex items-center gap-2">
-          <div className="relative h-2 flex-1 rounded-full bg-black/50">
+          <div className="relative h-1.5 flex-1 rounded-full bg-black/50">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${
-                isCompleted
-                  ? 'bg-emerald-400'
-                  : 'bg-gradient-to-r from-amber-400 to-amber-200'
+                progressFillByRarity[mission.rarity] ?? progressFillByRarity.common
               }`}
               style={{ width: `${progressPct}%` }}
             />
@@ -537,20 +549,28 @@ function MissionCard({
       {/* Rewards */}
       <RewardStack rewards={mission.rewards} />
 
-      {/* Action button. CLAIMED keeps the green palette (just darker)
-          so the user can still see "this was claimed" as a positive
-          state, not a faded/dead button. */}
+      {/* Action button.
+          GO  (not complete) — closes the modal so the player goes
+                              back to the lobby and starts playing.
+          CLAIM (complete)   — fires the claim RPC + reward flight.
+          CLAIMED            — disabled, darker green palette so the
+                              "you got this" state still reads as
+                              positive (not a faded/dead button). */}
       <button
         ref={btnRef}
         type="button"
-        disabled={!isCompleted || isClaimed || isClaiming || isRerolling}
-        onClick={() => onClaim(btnRef.current)}
+        disabled={isClaimed || isClaiming || isRerolling}
+        onClick={() => {
+          if (isClaimed) return;
+          if (isCompleted) onClaim(btnRef.current);
+          else onGo?.();
+        }}
         className={`shrink-0 rounded-lg px-4 py-2 text-sm font-bold shadow-md transition ${
           isClaimed
             ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 text-white opacity-90'
             : isCompleted
               ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white hover:brightness-110'
-              : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white disabled:cursor-not-allowed disabled:opacity-50'
+              : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white hover:brightness-110'
         }`}
       >
         {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
@@ -563,10 +583,12 @@ function WeeklyChallengeCard({
   mission,
   isClaiming,
   onClaim,
+  onGo,
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
   readonly onClaim: (sourceEl: HTMLElement | null) => void;
+  readonly onGo?: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const isCompleted = !!mission.completed_at && !mission.claimed_at;
@@ -626,14 +648,18 @@ function WeeklyChallengeCard({
         <button
           ref={btnRef}
           type="button"
-          disabled={!isCompleted || isClaimed || isClaiming}
-          onClick={() => onClaim(btnRef.current)}
+          disabled={isClaimed || isClaiming}
+          onClick={() => {
+            if (isClaimed) return;
+            if (isCompleted) onClaim(btnRef.current);
+            else onGo?.();
+          }}
           className={`mt-3 rounded-lg px-6 py-1.5 text-sm font-bold shadow-md transition ${
             isClaimed
               ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 text-white opacity-90'
               : isCompleted
                 ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 text-white'
-                : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white disabled:cursor-not-allowed disabled:opacity-60'
+                : 'bg-gradient-to-b from-sky-400 to-sky-600 text-white hover:brightness-110'
           }`}
         >
           {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
@@ -645,14 +671,22 @@ function WeeklyChallengeCard({
 
 function RewardStack({ rewards }: { readonly rewards: readonly RewardItem[] }) {
   if (rewards.length === 0) return null;
+  // Render rewards with a thin vertical divider between each pair —
+  // the mockup uses visual separation rather than just gap so a
+  // mission with 3 rewards reads as "+250 | +20 | +10" not a blob.
   return (
-    <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-      {rewards.map((r, i) => (
-        <div key={i} className="flex flex-col items-center">
-          <RewardIcon reward={r} />
-          <span className="text-[10px] font-bold text-amber-100">+{formatAmount(r.amount)}</span>
-        </div>
-      ))}
+    <div className="hidden shrink-0 items-center gap-2 sm:flex">
+      {rewards.flatMap((r, i) => {
+        const item = (
+          <div key={`r-${i}`} className="flex flex-col items-center">
+            <RewardIcon reward={r} />
+            <span className="text-[10px] font-bold text-amber-100">+{formatAmount(r.amount)}</span>
+          </div>
+        );
+        return i === 0
+          ? [item]
+          : [<div key={`sep-${i}`} className="h-9 w-px bg-amber-500/30" />, item];
+      })}
     </div>
   );
 }
