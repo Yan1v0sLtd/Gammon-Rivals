@@ -5,6 +5,9 @@ import type { WheelStateResult } from './useWheelState';
 interface Props {
   readonly wheel: WheelStateResult;
   readonly onClaimWheel: () => void;
+  readonly onOpenMissions?: () => void;
+  /** Badge count for the Missions slot (claimable + unclaimed). */
+  readonly missionsBadge?: number;
 }
 
 /**
@@ -14,7 +17,7 @@ interface Props {
  * pre-rendered icon+label .webp; the middle slot now hosts the
  * hourly-bonus wheel widget.
  */
-export function LobbyBottomNav({ wheel, onClaimWheel }: Props) {
+export function LobbyBottomNav({ wheel, onClaimWheel, onOpenMissions, missionsBadge }: Props) {
   return (
     <nav aria-label="Lobby sections" className="lobby-bottom-nav-shell">
       <div className="lobby-bottom-nav-bar" aria-hidden="true" />
@@ -30,15 +33,21 @@ export function LobbyBottomNav({ wheel, onClaimWheel }: Props) {
               </div>
             );
           }
+          const isMissions = item.id === 'missions';
+          const onClick = isMissions ? onOpenMissions : undefined;
+          const badge = isMissions && missionsBadge && missionsBadge > 0
+            ? String(missionsBadge)
+            : item.badge;
           return item.image ? (
             <button
               key={item.id}
               type="button"
               className="lobby-bottom-nav-slot"
               aria-label={item.label}
+              onClick={onClick}
             >
               <img src={item.image} alt="" draggable={false} />
-              {item.badge ? <span className="lobby-nav-badge">{item.badge}</span> : null}
+              {badge ? <span className="lobby-nav-badge">{badge}</span> : null}
             </button>
           ) : (
             <span key={item.id} className="lobby-bottom-nav-slot is-placeholder" aria-hidden="true" />

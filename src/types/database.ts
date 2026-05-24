@@ -1024,6 +1024,29 @@ export type Database = {
         Args: { p_config_id?: string };
         Returns: Json;
       };
+      // Daily Missions (Phase 4-6) — types added manually since a
+      // full Supabase types regen would lose the project's hand-
+      // patched phantom columns (profiles.avatar_url etc).
+      get_player_missions_today: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      claim_mission: {
+        Args: { p_mission_id: string };
+        Returns: Json;
+      };
+      reroll_mission: {
+        Args: { p_mission_id: string };
+        Returns: Json;
+      };
+      claim_chest: {
+        Args: { p_milestone_index: number };
+        Returns: Json;
+      };
+      claim_streak_chest: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       get_rtp_per_player: {
         Args: {
           p_table_config_id: string;

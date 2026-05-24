@@ -25,6 +25,8 @@ import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { useWheelState } from './useWheelState';
 import { WheelModal } from './WheelModal';
+import { DailyMissionsModal } from './DailyMissionsModal';
+import { useDailyMissions } from './useDailyMissions';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
@@ -117,6 +119,10 @@ export function LobbyScreen() {
   const wheel = useWheelState('main');
   const [wheelModalOpen, setWheelModalOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [missionsModalOpen, setMissionsModalOpen] = useState(false);
+  const missionsResult = useDailyMissions(profile?.id);
+  const missionsClaimableBadge =
+    missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0;
   const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
   const [justClaimedBonus, setJustClaimedBonus] = useState<{
@@ -665,6 +671,8 @@ export function LobbyScreen() {
             // doesn't open the modal in the wrong state.
             if (wheel.canSpin) setWheelModalOpen(true);
           }}
+          onOpenMissions={() => setMissionsModalOpen(true)}
+          missionsBadge={missionsClaimableBadge}
         />
       </div>
 
@@ -687,6 +695,18 @@ export function LobbyScreen() {
             if (isPurchasing) return;
             setPurchaseTarget(null);
             setPurchaseError(null);
+          }}
+        />
+      ) : null}
+
+      {missionsModalOpen ? (
+        <DailyMissionsModal
+          result={missionsResult}
+          onClose={() => {
+            setMissionsModalOpen(false);
+            // Claims/rerolls/chests may have credited the wallet —
+            // refresh so the top-bar RollingNumber catches up.
+            void refreshWallet();
           }}
         />
       ) : null}
