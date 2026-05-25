@@ -186,8 +186,9 @@ export function nextResetMs(state: MissionsState | null): number {
 }
 
 export function formatCountdown(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000);
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
-  return `${h}h ${m}m`;
+  const s = totalSeconds % 60;
+  return `${h}h ${m}m ${s}s`;
 }
