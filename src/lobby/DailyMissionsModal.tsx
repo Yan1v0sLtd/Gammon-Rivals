@@ -287,14 +287,15 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                 onClaimChest={handleClaimChest}
               />
 
-              {/* 3-column body
+              {/* 2-column body — 60 % / 40 % split per the mockup.
                   ─────────────────────────────────────────────────────
-                  Left  : DAILY MISSIONS heading + CLAIM ALL + 4 cards
-                  Middle: 2 ornate weekly cards side-by-side
-                  Right : REROLL panel
-                  Heights are equalised by the grid so the columns
-                  align top + bottom on the panel canvas. */}
-              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,0.85fr)] gap-4">
+                  Left  : DAILY MISSIONS heading + CLAIM ALL + 4 cards.
+                          Takes the wider 60 % column so the cards
+                          have room to breathe.
+                  Right : vertical stack of two ornate weekly cards
+                          (side-by-side) + a horizontal REROLL panel
+                          underneath. */}
+              <div className="grid grid-cols-[3fr_2fr] gap-4">
                 {/* Left column */}
                 <div className="flex flex-col">
                   <div className="mb-2 flex items-center justify-between">
@@ -312,7 +313,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                     </button>
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-1 flex-col gap-2">
                     {dailies.map((m) => (
                       <MissionCard
                         key={m.id}
@@ -331,46 +332,47 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Middle column: 2 weekly-challenge cards. If only
-                    one weekly mission exists, fall back to rendering
-                    the streak panel in the second slot styled to
-                    match the ornate frame. */}
-                <div className="grid grid-cols-2 gap-3">
-                  {weeklies[0] ? (
-                    <WeeklyChallengeCard
-                      mission={weeklies[0]}
-                      isClaiming={claimingMissionId === weeklies[0].id}
-                      onClaim={(el) => handleClaim(weeklies[0]!.id, el)}
-                      onGo={onClose}
-                    />
-                  ) : (
-                    <StreakPanel
-                      streak={state.streak}
-                      streakChestRewards={state.streak_chest_rewards}
-                    />
-                  )}
-                  {weeklies[1] ? (
-                    <WeeklyChallengeCard
-                      mission={weeklies[1]}
-                      isClaiming={claimingMissionId === weeklies[1].id}
-                      onClaim={(el) => handleClaim(weeklies[1]!.id, el)}
-                      onGo={onClose}
-                    />
-                  ) : (
-                    <StreakPanel
-                      streak={state.streak}
-                      streakChestRewards={state.streak_chest_rewards}
-                    />
-                  )}
-                </div>
+                {/* Right column: weeklies on top, reroll at the bottom */}
+                <div className="flex flex-col gap-3">
+                  <div className="grid flex-1 grid-cols-2 gap-3">
+                    {weeklies[0] ? (
+                      <WeeklyChallengeCard
+                        mission={weeklies[0]}
+                        isClaiming={claimingMissionId === weeklies[0].id}
+                        onClaim={(el) => handleClaim(weeklies[0]!.id, el)}
+                        onGo={onClose}
+                      />
+                    ) : (
+                      <StreakPanel
+                        streak={state.streak}
+                        streakChestRewards={state.streak_chest_rewards}
+                      />
+                    )}
+                    {weeklies[1] ? (
+                      <WeeklyChallengeCard
+                        mission={weeklies[1]}
+                        isClaiming={claimingMissionId === weeklies[1].id}
+                        onClaim={(el) => handleClaim(weeklies[1]!.id, el)}
+                        onGo={onClose}
+                      />
+                    ) : (
+                      <StreakPanel
+                        streak={state.streak}
+                        streakChestRewards={state.streak_chest_rewards}
+                      />
+                    )}
+                  </div>
 
-                {/* Right column: REROLL */}
-                <RerollPanel
-                  rerollState={state.reroll}
-                  rerollingId={rerollingMissionId}
-                  dailies={dailies}
-                  onReroll={handleReroll}
-                />
+                  {/* REROLL — horizontal compact layout: header row with
+                      title + count, sub-line with free/cost text + the
+                      action button, 4 mission radios on a single row. */}
+                  <RerollPanel
+                    rerollState={state.reroll}
+                    rerollingId={rerollingMissionId}
+                    dailies={dailies}
+                    onReroll={handleReroll}
+                  />
+                </div>
               </div>
 
               {actionError && (
@@ -796,15 +798,23 @@ function RerollPanel({
 
   return (
     <div className="rounded-xl bg-black/40 p-3 ring-1 ring-amber-500/30">
+      {/* Top row: reroll glyph + title on the left, x/y counter on
+          the right. */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🔄</span>
-          <span className="font-display font-bold text-amber-100">REROLL</span>
+          <span className="grid h-7 w-7 place-items-center rounded-md bg-indigo-900/60 text-base text-indigo-200 ring-1 ring-indigo-500/50">
+            ⟳
+          </span>
+          <span className="font-display text-sm font-bold tracking-wide text-amber-100">
+            REROLL
+          </span>
         </div>
         <span className="text-xs font-bold text-amber-200">
           {rerollState.rerolls_today} / {rerollState.daily_cap}
         </span>
       </div>
+
+      {/* Sub-line: "First reroll is free." / cost copy. */}
       <p className="mt-1 text-[11px] text-amber-100/60">
         {rerollState.next_cost === null
           ? 'Out of rerolls today.'
@@ -812,27 +822,35 @@ function RerollPanel({
             ? 'First reroll is free.'
             : `Next reroll: ${rerollState.next_cost} gems.`}
       </p>
+
+      {/* Bottom row: 4 mission radios inline on the left, REROLL
+          button on the right. Reflows to a 2-row stack on narrow
+          width via the wrap. */}
       {canReroll && (
-        <div className="mt-2 space-y-1.5">
-          {rerollable.map((m) => (
-            <div key={m.id} className="flex items-center gap-2">
-              <label className="flex flex-1 items-center gap-2 text-xs text-amber-100/80">
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {rerollable.map((m) => (
+              <label
+                key={m.id}
+                className="flex items-center gap-1.5 text-xs text-amber-100/85 cursor-pointer"
+              >
                 <input
                   type="radio"
                   name="reroll-target"
                   value={m.id}
                   checked={selectedId === m.id}
                   onChange={() => setSelectedId(m.id)}
+                  className="accent-rose-500"
                 />
-                <span className="truncate">{m.title}</span>
+                <span>{m.title}</span>
               </label>
-            </div>
-          ))}
+            ))}
+          </div>
           <button
             type="button"
             disabled={!selectedId || rerollingId !== null}
             onClick={() => selectedId && onReroll(selectedId)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-rose-400 to-rose-600 px-3 py-1.5 text-sm font-bold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b from-rose-400 to-rose-600 px-5 py-2 text-sm font-bold text-white shadow-md transition disabled:cursor-not-allowed disabled:opacity-50"
           >
             {rerollingId ? (
               <span>Rerolling…</span>
