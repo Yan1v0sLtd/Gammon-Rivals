@@ -179,11 +179,15 @@ export default function Profile() {
             <span className="profile-back-chevron" />
           </Link>
 
-          {/* Currency strip uses the same pill design as the lobby
-              top-bar (CurrencyPill in LobbyTopBar.tsx). Replicating
-              the Tailwind classes inline rather than extracting a
-              shared component since it's only two call-sites. */}
-          <div className="flex items-center gap-3" aria-label="Wallet">
+          {/* Wallet pills centered in the top nav (was right-aligned).
+            * Same pill design as the lobby top-bar, but the size-modifier
+            * class shrinks the pill ~20 % so the centered cluster sits
+            * comfortably in the available room without crowding the
+            * back button. */}
+          <div
+            className="profile-top-currency flex items-center gap-3"
+            aria-label="Wallet"
+          >
             <CurrencyPill
               flyTarget="coins"
               icon="/lobby/icons/gold-coin.webp"
@@ -201,137 +205,159 @@ export default function Profile() {
           </div>
         </header>
 
-        <section className="profile-main-card">
-          <div className="profile-avatar-stage">
-            <div className="profile-avatar-glow" />
-            <Avatar
-              seed={profile?.avatar_seed ?? 'profile'}
-              imageUrl={profile?.avatar_url}
-              size={220}
-              ring="none"
-              className="profile-avatar-image"
-            />
-            {/* Reuse the lobby's pointy-top hex shield (gold rim +
-                black inner) instead of the older profile-page
-                shield. Same CSS class so every level-shield in the
-                app stays visually consistent. */}
-            <div className="lobby-profile-level-shield profile-level-shield-hex">
-              <span>{progression.level}</span>
-            </div>
-          </div>
-
-          <div className="profile-info-column">
-            {editing ? (
-              <div className="profile-name-editor">
-                <input
-                  value={draftName}
-                  onChange={(e) => setDraftName(e.target.value)}
-                  className="profile-name-input"
-                  maxLength={32}
-                  autoFocus
+        {/* Two-column body: profile + stats + logout on the left,
+          * match history (tall) on the right so the player can scan
+          * more matches without scrolling. */}
+        <div className="profile-body-grid">
+          <div className="profile-left-stack">
+            <section className="profile-main-card">
+              <div className="profile-avatar-stage">
+                <div className="profile-avatar-glow" />
+                <Avatar
+                  seed={profile?.avatar_seed ?? 'profile'}
+                  imageUrl={profile?.avatar_url}
+                  size={220}
+                  ring="none"
+                  className="profile-avatar-image"
                 />
-                <button
-                  type="button"
-                  onClick={() => void saveName()}
-                  disabled={savingName || draftName.trim().length === 0}
-                  className="profile-small-action"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="profile-small-action profile-small-action--ghost"
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <div className="profile-name-row">
-                <h1>{profile?.display_name ?? 'Player'}</h1>
-                <button
-                  type="button"
-                  onClick={startEditName}
-                  className="profile-edit-button"
-                  aria-label="Edit name"
-                >
-                  <span />
-                </button>
-              </div>
-            )}
-
-            <div className="profile-rank-row">
-              <span className="profile-rank-badge">
-                <span className="profile-rank-shield" aria-hidden="true">
-                  <span />
-                </span>
-                <span>{progression.statusLabel}</span>
-              </span>
-              <span className="profile-rating">
-                <span className="profile-rating-cup" aria-hidden="true" />
-                Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
-              </span>
-            </div>
-
-            <div className="profile-xp-section">
-              <div className="profile-level-row">
-                <span>Level {progression.level}</span>
-                <span>Level {nextLevelLabel}</span>
-              </div>
-              {/* Lobby lava-XP bar — reuses the .lobby-profile-progress
-                  class (orange→yellow gradient with animated bubble
-                  layers riding the filled portion). profile-xp-wide
-                  scope widens it to the profile card's column. */}
-              <div className="profile-xp-row">
-                <span
-                  className="lobby-profile-progress profile-xp-wide"
-                  aria-label={`XP progress ${progression.progressLabel}`}
-                >
-                  <span
-                    className="lobby-profile-progress-fill"
-                    style={{ width: `${progression.progressPercent}%` }}
-                  >
-                    <span className="lobby-profile-progress-bubbles" aria-hidden="true" />
-                  </span>
-                  <span className="lobby-profile-progress-label">{xpText}</span>
-                </span>
-              </div>
-              <div className="profile-next-reward">
-                <span>Next Reward:</span>
-                <img src="/lobby/icons/gold-coin.webp" alt="" draggable={false} />
-                <strong>500 Coins</strong>
-              </div>
-              {isGuest && (
-                <div className="profile-save-progress">
-                  <button
-                    type="button"
-                    onClick={() => void handleLinkGoogle()}
-                    disabled={linkingGoogle}
-                    className="profile-google-button"
-                  >
-                    {linkingGoogle ? 'Opening Google...' : 'Link Google'}
-                  </button>
-                  {linkErr && <span>{linkErr}</span>}
+                {/* Reuse the lobby's pointy-top hex shield (gold rim +
+                  * black inner) at the SAME size used in the lobby.
+                  * The earlier oversized profile-page override has been
+                  * removed in favour of the lobby clamp values. */}
+                <div className="lobby-profile-level-shield profile-level-shield-hex">
+                  <span>{progression.level}</span>
                 </div>
-              )}
-            </div>
+              </div>
 
+              <div className="profile-info-column">
+                {editing ? (
+                  <div className="profile-name-editor">
+                    <input
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      className="profile-name-input"
+                      maxLength={32}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void saveName()}
+                      disabled={savingName || draftName.trim().length === 0}
+                      className="profile-small-action"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(false)}
+                      className="profile-small-action profile-small-action--ghost"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="profile-name-row">
+                    <h1>{profile?.display_name ?? 'Player'}</h1>
+                    <button
+                      type="button"
+                      onClick={startEditName}
+                      className="profile-edit-button"
+                      aria-label="Edit name"
+                    >
+                      <span />
+                    </button>
+                  </div>
+                )}
+
+                <div className="profile-rank-row">
+                  <span className="profile-rank-badge">
+                    <span className="profile-rank-shield" aria-hidden="true">
+                      <span />
+                    </span>
+                    <span>{progression.statusLabel}</span>
+                  </span>
+                  <span className="profile-rating">
+                    <span className="profile-rating-cup" aria-hidden="true" />
+                    Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
+                  </span>
+                </div>
+
+                <div className="profile-xp-section">
+                  <div className="profile-level-row">
+                    <span>Level {progression.level}</span>
+                    <span>Level {nextLevelLabel}</span>
+                  </div>
+                  {/* Lobby lava-XP bar — reuses the .lobby-profile-progress
+                    * class (orange→yellow gradient with animated bubble
+                    * layers riding the filled portion). profile-xp-wide
+                    * scope widens it to the profile card's column. */}
+                  <div className="profile-xp-row">
+                    <span
+                      className="lobby-profile-progress profile-xp-wide"
+                      aria-label={`XP progress ${progression.progressLabel}`}
+                    >
+                      <span
+                        className="lobby-profile-progress-fill"
+                        style={{ width: `${progression.progressPercent}%` }}
+                      >
+                        <span className="lobby-profile-progress-bubbles" aria-hidden="true" />
+                      </span>
+                      <span className="lobby-profile-progress-label">{xpText}</span>
+                    </span>
+                  </div>
+                  <div className="profile-next-reward">
+                    <span>Next Reward:</span>
+                    <img src="/lobby/icons/gold-coin.webp" alt="" draggable={false} />
+                    <strong>500 Coins</strong>
+                  </div>
+                  {isGuest && (
+                    <div className="profile-save-progress">
+                      <button
+                        type="button"
+                        onClick={() => void handleLinkGoogle()}
+                        disabled={linkingGoogle}
+                        className="profile-google-button"
+                      >
+                        {linkingGoogle ? 'Opening Google...' : 'Link Google'}
+                      </button>
+                      {linkErr && <span>{linkErr}</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {/* Stats live UNDER the avatar/info card (was on the right).
+              * Wallet balances are no longer duplicated here — the top
+              * bar already shows them. Four match-stats only. */}
+            <section className="profile-stat-grid" aria-label="Player stats">
+              <Stat icon="finished" label="Finished" value={stats?.totalFinished ?? 0} />
+              <Stat icon="wins" label="AI Wins" value={stats?.aiWins ?? 0} />
+              <Stat icon="losses" label="AI Losses" value={stats?.aiLosses ?? 0} />
+              <Stat icon="hotseat" label="Hot-seat" value={stats?.hotseatPlayed ?? 0} />
+            </section>
+
+            {/* Full-width pill that fills the left column so it visually
+              * matches the cards above. Reshaped from the prior square
+              * 1×1 button. */}
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              disabled={signingOut}
+              className="profile-logout-button"
+            >
+              <span className="profile-logout-icon" aria-hidden="true" />
+              {signingOut ? 'Logging out...' : 'Log Out'}
+            </button>
           </div>
 
-          <section className="profile-stat-grid" aria-label="Player stats">
-            <Stat icon="coins" label="Coins" value={wallet?.coins ?? 0} />
-            <Stat icon="gems" label="Gems" value={wallet?.gems ?? 0} />
-            <Stat icon="finished" label="Finished" value={stats?.totalFinished ?? 0} />
-            <Stat icon="wins" label="AI Wins" value={stats?.aiWins ?? 0} />
-            <Stat icon="losses" label="AI Losses" value={stats?.aiLosses ?? 0} wide />
-            <Stat icon="hotseat" label="Hot-seat" value={stats?.hotseatPlayed ?? 0} wide />
-          </section>
-        </section>
-
-        <div className="profile-bottom-grid">
           <section className="profile-history-panel">
             <h2>Match History</h2>
-            {loadErr && <div className="profile-panel-message profile-panel-message--error">{loadErr}</div>}
+            {loadErr && (
+              <div className="profile-panel-message profile-panel-message--error">
+                {loadErr}
+              </div>
+            )}
             {visibleMatches === null ? (
               <div className="profile-panel-message">Loading...</div>
             ) : visibleMatches.length === 0 ? (
@@ -340,68 +366,65 @@ export default function Profile() {
                 <Link to="/">Start one</Link>
               </div>
             ) : (
-              // max-h + overflow-y-auto keeps the panel a fixed size
-              // (frame stays put) while letting the list scroll past
-              // the first ~4 rows. 17rem ≈ 4 rows at the current
-              // profile-history-row height (4.2rem each in CSS).
-              <div className="max-h-[17rem] overflow-y-auto">
-              <ul className="profile-history-list">
-                {visibleMatches.map((m) => {
-                  const outcome = ownerOutcome(m);
-                  const outcomeLabel =
-                    outcome === 'won'
-                      ? 'Won'
-                      : outcome === 'lost'
-                      ? 'Lost'
-                      : outcome === 'open'
-                      ? 'In Progress'
-                      : 'Hot-seat';
-                  return (
-                    <li key={m.id}>
-                      <button
-                        type="button"
-                        className="profile-history-row"
-                        onClick={() => m.finished_at && void openReplay(m.id)}
-                        disabled={!m.finished_at}
-                      >
-                        <span className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`} aria-hidden="true">
-                          <span />
-                        </span>
-                        <span className="profile-history-copy">
-                          <span>
-                            {MODE_LABEL[m.mode] ?? m.mode}
-                            <em> to {m.target}</em>
+              // History panel is the full height of the right column now,
+              // so the inner scroll container takes 100 % and shows ~10
+              // rows on a typical landscape viewport.
+              <div className="profile-history-scroll">
+                <ul className="profile-history-list">
+                  {visibleMatches.map((m) => {
+                    const outcome = ownerOutcome(m);
+                    const outcomeLabel =
+                      outcome === 'won'
+                        ? 'Won'
+                        : outcome === 'lost'
+                        ? 'Lost'
+                        : outcome === 'open'
+                        ? 'In Progress'
+                        : 'Hot-seat';
+                    return (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          className="profile-history-row"
+                          onClick={() => m.finished_at && void openReplay(m.id)}
+                          disabled={!m.finished_at}
+                        >
+                          <span
+                            className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`}
+                            aria-hidden="true"
+                          >
+                            <span />
                           </span>
-                          <small>
-                            {formatDate(m.finished_at ?? m.started_at)}
-                            {m.game_count > 0 && ` - ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
-                          </small>
-                        </span>
-                        <span className="profile-history-score">
-                          {m.white_score} - {m.black_score}
-                        </span>
-                        <span className={`profile-history-status profile-history-status--${outcome}`}>
-                          {outcomeLabel}
-                        </span>
-                        <span className="profile-history-chevron" aria-hidden="true">›</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          <span className="profile-history-copy">
+                            <span>
+                              {MODE_LABEL[m.mode] ?? m.mode}
+                              <em> to {m.target}</em>
+                            </span>
+                            <small>
+                              {formatDate(m.finished_at ?? m.started_at)}
+                              {m.game_count > 0 &&
+                                ` - ${m.game_count} game${m.game_count > 1 ? 's' : ''}`}
+                            </small>
+                          </span>
+                          <span className="profile-history-score">
+                            {m.white_score} - {m.black_score}
+                          </span>
+                          <span
+                            className={`profile-history-status profile-history-status--${outcome}`}
+                          >
+                            {outcomeLabel}
+                          </span>
+                          <span className="profile-history-chevron" aria-hidden="true">
+                            ›
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             )}
           </section>
-
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            disabled={signingOut}
-            className="profile-logout-button"
-          >
-            <span className="profile-logout-icon" aria-hidden="true" />
-            {signingOut ? 'Logging out...' : 'Log Out'}
-          </button>
         </div>
       </div>
     </main>
