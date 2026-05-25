@@ -112,13 +112,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     [dailies],
   );
 
-  // Scale-to-fit wrapper. The modal is authored at a fixed design size
-  // (1300 × 820) and shrinks proportionally on smaller viewports so
-  // mobile fits without scrolling. Mirrors the pattern Shop.tsx uses.
-  // Bumped from 720 → 820 to fit the chunkier text + the reroll pill
-  // without anything bleeding past the gold border on smaller screens.
+  // Scale-to-fit wrapper. Design size 1300 × 900. The H bumped to 900
+  // so the body has room for four mission cards stacked vertically plus
+  // a slim chest strip on top and the reroll pill at the bottom without
+  // anything spilling past the gold border at scale 1. On smaller
+  // viewports the wrapper shrinks the whole panel proportionally.
   const PANEL_DESIGN_W = 1300;
-  const PANEL_DESIGN_H = 820;
+  const PANEL_DESIGN_H = 900;
   const [scale, setScale] = useState(1);
   useEffect(() => {
     const update = () => {
@@ -320,10 +320,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   lets the inner grid shrink when scale-to-fit
                   applies on narrow viewports. */}
               <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-4">
-                {/* Left column — daily missions */}
-                <div className="flex flex-col">
+                {/* Left column — daily missions. min-h-0 +
+                    overflow-hidden so the inner mission-card stack
+                    is clipped to the row's allocated height instead
+                    of pushing past the panel's gold border. */}
+                <div className="flex min-h-0 flex-col overflow-hidden">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-display text-xl font-bold tracking-wide text-[#FFF6E9]">
+                    <h3 className="font-display text-2xl font-bold tracking-wide text-[#FFF6E9]">
                       DAILY MISSIONS
                     </h3>
                     <button
@@ -331,13 +334,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                       data-claim-all-btn
                       disabled={claimableCount === 0 || claimingMissionId !== null}
                       onClick={handleClaimAll}
-                      className="rounded-md bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-5 py-1.5 text-sm font-bold text-[#3a1f08] shadow-md transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded-md bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-5 py-2 text-base font-bold text-[#3a1f08] shadow-md transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {claimableCount > 0 ? `CLAIM ALL (${claimableCount})` : 'CLAIM ALL'}
                     </button>
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-2">
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
                     {dailies.map((m) => (
                       <MissionCard
                         key={m.id}
@@ -356,9 +359,10 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Right column: 2 weekly cards side by side, full
-                    height of the column. */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Right column: 2 weekly cards side by side, clipped
+                    to the row's allocated height so they don't push
+                    past the panel into the reroll pill's space. */}
+                <div className="grid min-h-0 grid-cols-2 gap-3 overflow-hidden">
                   {weeklies[0] ? (
                     <WeeklyChallengeCard
                       mission={weeklies[0]}
@@ -442,21 +446,25 @@ function ChestTrackStrip({
 
   // Chests grow progressively bigger from left to right, reinforcing
   // the milestone progression visually. Values are h-* tailwind sizes.
-  const chestSizes = ['h-12', 'h-14', 'h-16', 'h-20'];
+  // Trimmed one tier (was h-12-h-20) so the chest strip doesn't eat
+  // 30 % of the panel; daily missions need that vertical room.
+  const chestSizes = ['h-10', 'h-12', 'h-14', 'h-16'];
 
   return (
-    <div className="mb-3 rounded-2xl bg-gradient-to-b from-[#1D2460] to-[#162C73] p-5 ring-1 ring-[#D89A2B]/60">
-      <div className="flex items-end gap-6">
-        {/* Lightning + MP count, left-anchored */}
+    <div className="mb-3 rounded-2xl bg-gradient-to-b from-[#1D2460] to-[#162C73] p-3 ring-1 ring-[#D89A2B]/60">
+      <div className="flex items-end gap-4">
+        {/* Lightning + MP count, left-anchored. Compact size — the
+            chest strip should NOT dominate the panel; the daily
+            mission stack underneath needs the vertical room. */}
         <div className="flex shrink-0 flex-col items-center">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-gradient-to-b from-[#FFD25C] to-[#B67816] text-3xl text-[#3a1f08] shadow-md ring-2 ring-[#FFD25C]/70">
+          <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-b from-[#FFD25C] to-[#B67816] text-xl text-[#3a1f08] shadow-md ring-2 ring-[#FFD25C]/70">
             ⚡
           </div>
-          <div className="mt-2 flex items-baseline gap-1">
-            <span className="font-display text-3xl font-black text-[#FFF6E9]">{mpEarned}</span>
-            <span className="text-base text-[#C6B7D8]">/ {maxThreshold}</span>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="font-display text-2xl font-black text-[#FFF6E9]">{mpEarned}</span>
+            <span className="text-sm text-[#C6B7D8]">/ {maxThreshold}</span>
           </div>
-          <span className="text-xs uppercase tracking-wider text-[#FFD25C]/80">
+          <span className="text-[10px] uppercase tracking-wider text-[#FFD25C]/80">
             Mission Points
           </span>
         </div>
@@ -510,7 +518,7 @@ function ChestTrackStrip({
           </div>
 
           {/* Row 3: threshold + dot, 4-col grid matching the chest row */}
-          <div className="mt-2 grid grid-cols-4">
+          <div className="mt-1.5 grid grid-cols-4">
             {milestones.map((m) => {
               const claimed = chestsClaimed.includes(m.milestone_index);
               const unlocked = mpEarned >= m.threshold_mp;
@@ -518,13 +526,13 @@ function ChestTrackStrip({
               return (
                 <div
                   key={`thr-${m.milestone_index}`}
-                  className="flex flex-col items-center gap-1"
+                  className="flex flex-col items-center gap-0.5"
                 >
-                  <span className="font-display text-base font-bold text-[#FFF6E9]">
+                  <span className="font-display text-sm font-bold text-[#FFF6E9]">
                     {m.threshold_mp}
                   </span>
                   <span
-                    className={`grid h-4 w-4 place-items-center rounded-full text-[10px] ring-1 ${
+                    className={`grid h-3.5 w-3.5 place-items-center rounded-full text-[9px] ring-1 ${
                       claimed
                         ? 'bg-emerald-500 text-white ring-emerald-300'
                         : ready
@@ -597,19 +605,21 @@ function MissionCard({
 
   return (
     <div
-      className={`flex items-center gap-4 rounded-xl p-4 ring-1 ${
+      className={`flex items-center gap-3 rounded-xl p-3 ring-1 ${
         cardBgByRarity[mission.rarity] ?? cardBgByRarity.common
       } ${ringByRarity[mission.rarity] ?? ringByRarity.common} ${
         glowByRarity[mission.rarity] ?? glowByRarity.common
       }`}
     >
-      {/* Rarity badge (icon + rarity word baked into the artwork) */}
+      {/* Rarity badge (icon + rarity word baked into the artwork).
+          Shrunk h-20 → h-14 so 4 cards stack inside the body height
+          without overflow. */}
       <div className="shrink-0">
         <img
           src={badgeSrc}
           alt={`${mission.rarity} mission`}
           draggable={false}
-          className="h-20 w-20 object-contain"
+          className="h-14 w-14 object-contain"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
           }}
@@ -619,17 +629,17 @@ function MissionCard({
       {/* Title, subtitle, progress */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <div className="truncate font-display text-xl font-bold text-[#FFF6E9]">
+          <div className="truncate font-display text-2xl font-bold text-[#FFF6E9]">
             {mission.title}
           </div>
           {mission.mission_points > 0 && (
-            <span className="rounded-md bg-[#1D2460]/80 px-2 py-0.5 text-xs font-bold text-[#FFD25C] ring-1 ring-[#D89A2B]/40">
+            <span className="rounded-md bg-[#1D2460]/80 px-2 py-0.5 text-sm font-bold text-[#FFD25C] ring-1 ring-[#D89A2B]/40">
               +{mission.mission_points} MP
             </span>
           )}
         </div>
         {mission.subtitle && (
-          <div className="truncate text-sm text-[#C6B7D8]">{mission.subtitle}</div>
+          <div className="truncate text-base text-[#C6B7D8]">{mission.subtitle}</div>
         )}
         <div className="mt-2 flex items-center gap-2">
           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#17122D]">
@@ -640,7 +650,7 @@ function MissionCard({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="font-mono text-sm font-bold text-[#FFF6E9]">
+          <span className="font-mono text-base font-bold text-[#FFF6E9]">
             {mission.progress} / {mission.resolved_goal}
           </span>
         </div>
@@ -649,10 +659,7 @@ function MissionCard({
       {/* Rewards */}
       <RewardStack rewards={mission.rewards} />
 
-      {/* Action button.
-          GO    — sky-blue gradient per spec, closes the modal.
-          CLAIM — emerald gradient, fires the claim RPC + flight.
-          CLAIMED — disabled darker emerald. */}
+      {/* Action button. */}
       <button
         ref={btnRef}
         type="button"
@@ -662,7 +669,7 @@ function MissionCard({
           if (isCompleted) onClaim(btnRef.current);
           else onGo?.();
         }}
-        className={`shrink-0 rounded-lg px-5 py-2.5 text-base font-bold text-white shadow-md transition ${
+        className={`shrink-0 rounded-lg px-6 py-2.5 text-lg font-bold text-white shadow-md transition ${
           isClaimed
             ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
             : isCompleted
@@ -711,7 +718,7 @@ function WeeklyChallengeCard({
       />
 
       {/* Title plate — gold ribbon banner at the top. */}
-      <div className="relative z-[1] mb-2 self-center rounded-md bg-gradient-to-b from-[#E2A93B] to-[#B67816] px-4 py-1 font-display text-base font-black uppercase tracking-wider text-[#3a1f08] shadow ring-1 ring-[#FFD25C]/70">
+      <div className="relative z-[1] mb-2 self-center rounded-md bg-gradient-to-b from-[#E2A93B] to-[#B67816] px-5 py-1 font-display text-lg font-black uppercase tracking-wider text-[#3a1f08] shadow ring-1 ring-[#FFD25C]/70">
         Weekly Challenge
       </div>
 
@@ -720,11 +727,11 @@ function WeeklyChallengeCard({
         * title/subtitle prevents long copy from breaking the layout. */}
       <div className="relative z-[1] flex flex-1 flex-col items-center justify-between overflow-hidden px-2 text-center">
         <div className="w-full">
-          <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-[#FFF6E9]">
+          <h3 className="line-clamp-2 font-display text-xl font-bold leading-tight text-[#FFF6E9]">
             {mission.title}
           </h3>
           {mission.subtitle && (
-            <p className="mt-1 line-clamp-3 text-sm leading-snug text-[#C6B7D8]">
+            <p className="mt-1 line-clamp-3 text-base leading-snug text-[#C6B7D8]">
               {mission.subtitle}
             </p>
           )}
@@ -741,16 +748,16 @@ function WeeklyChallengeCard({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="font-mono text-sm font-bold text-[#FFF6E9]">
+          <span className="font-mono text-base font-bold text-[#FFF6E9]">
             {mission.progress} / {mission.resolved_goal}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {mission.rewards.map((r, i) => (
             <div key={i} className="flex flex-col items-center">
               <RewardIcon reward={r} />
-              <span className="text-sm font-bold text-[#FFF6E9]">
+              <span className="text-base font-bold text-[#FFF6E9]">
                 +{formatAmount(r.amount)}
               </span>
             </div>
@@ -766,7 +773,7 @@ function WeeklyChallengeCard({
             if (isCompleted) onClaim(btnRef.current);
             else onGo?.();
           }}
-          className={`rounded-lg px-7 py-2 text-base font-bold text-white shadow-md transition ${
+          className={`rounded-lg px-8 py-2 text-lg font-bold text-white shadow-md transition ${
             isClaimed
               ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
               : isCompleted
@@ -957,16 +964,16 @@ function StreakPanel({
         }}
       />
 
-      <div className="relative z-[1] mb-2 self-center rounded-md bg-gradient-to-b from-[#E2A93B] to-[#B67816] px-4 py-1 font-display text-base font-black uppercase tracking-wider text-[#3a1f08] shadow ring-1 ring-[#FFD25C]/70">
+      <div className="relative z-[1] mb-2 self-center rounded-md bg-gradient-to-b from-[#E2A93B] to-[#B67816] px-5 py-1 font-display text-lg font-black uppercase tracking-wider text-[#3a1f08] shadow ring-1 ring-[#FFD25C]/70">
         Daily Streak
       </div>
 
       <div className="relative z-[1] flex flex-1 flex-col items-center justify-between overflow-hidden px-2 text-center">
         <div className="w-full">
-          <div className="font-display text-lg font-bold leading-tight text-[#FFF6E9]">
+          <div className="font-display text-xl font-bold leading-tight text-[#FFF6E9]">
             {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
           </div>
-          <p className="mt-1 line-clamp-3 text-sm leading-snug text-[#C6B7D8]">
+          <p className="mt-1 line-clamp-3 text-base leading-snug text-[#C6B7D8]">
             Complete all daily missions for 7 days to earn the streak chest.
           </p>
         </div>
@@ -978,17 +985,17 @@ function StreakPanel({
               style={{ width: `${((streak.current_streak_days % 7) / 7) * 100}%` }}
             />
           </div>
-          <span className="font-mono text-sm font-bold text-[#FFF6E9]">
+          <span className="font-mono text-base font-bold text-[#FFF6E9]">
             {streak.current_streak_days % 7} / 7
           </span>
         </div>
 
         {streakChestRewards.length > 0 && (
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-4">
             {streakChestRewards.map((r, i) => (
               <div key={i} className="flex flex-col items-center">
                 <RewardIcon reward={r} />
-                <span className="text-sm font-bold text-[#FFF6E9]">
+                <span className="text-base font-bold text-[#FFF6E9]">
                   +{formatAmount(r.amount)}
                 </span>
               </div>
@@ -1000,12 +1007,12 @@ function StreakPanel({
           <button
             type="button"
             onClick={handleClaim}
-            className="rounded-lg bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-6 py-1.5 text-sm font-bold text-[#3a1f08] shadow-md hover:brightness-110"
+            className="rounded-lg bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-7 py-2 text-base font-bold text-[#3a1f08] shadow-md hover:brightness-110"
           >
             CLAIM STREAK CHEST
           </button>
         ) : (
-          <p className="text-sm text-[#C6B7D8]">
+          <p className="text-base text-[#C6B7D8]">
             {daysToChest} day{daysToChest === 1 ? '' : 's'} to next chest
           </p>
         )}
