@@ -8125,3 +8125,176 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
+
+/* =============================================================================
+ * Profile page layout v2
+ * -----------------------------------------------------------------------------
+ * Restructure per feedback on the live profile screen:
+ *   1. Hex on the avatar was huge — drop the per-profile size override and
+ *      let the shared `.lobby-profile-level-shield` clamp values apply.
+ *   2. Wallet pills move from the top-right to centred in the top bar, and
+ *      shrink ~20 %.
+ *   3. Match history moves from a bottom row into the right column, where
+ *      it gets the full body height to show more matches without scrolling.
+ *   4. Stats move from the right column of the main card into a row under
+ *      the avatar/info card.
+ *   5. Log Out becomes a full-width pill at the bottom of the left column
+ *      (was a square button next to the history panel).
+ *
+ * Strategy: append-only block at the end of the stylesheet so we don't
+ * fight the dense landscape media query above for cascade ordering. Every
+ * selector below is more-specific or later in source order than its
+ * counterpart in the v1 layout.
+ * ============================================================================= */
+
+/* Hex: collapse the per-profile override so the lobby's clamp() values
+ * (≈2.1–2.7 rem wide) are what gets painted. We still need to nail the
+ * positioning relative to the avatar (the lobby anchors it to the lobby's
+ * smaller avatar; the profile uses a 220 px avatar). */
+.profile-level-shield-hex.lobby-profile-level-shield {
+  /* `right: 8 %` puts the hex flush against the avatar's right edge
+   * regardless of avatar/page size; `bottom: 4 %` keeps it on the lower
+   * arc the same way the lobby hex sits. */
+  right: 8%;
+  bottom: 4%;
+  left: auto;
+  top: auto;
+  transform: none;
+  /* Lobby clamp values — same shield, same size everywhere it appears. */
+  width: clamp(2.1rem, 3.25vw, 2.7rem);
+  height: clamp(2.43rem, 3.76vw, 3.12rem);
+  font-size: clamp(1rem, 1.7vw, 1.32rem);
+}
+
+/* Top bar: keep the back button on the left, center the currency cluster,
+ * and shrink the pills ~20 %. The `.profile-top-currency` wrapper is an
+ * absolute-positioned centred row so it doesn't get squeezed by the
+ * back button. */
+.profile-top-nav {
+  position: relative;
+}
+
+.profile-top-currency {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Pills: 80 % of their previous size. The pill markup uses Tailwind
+ * arbitrary values (h-[2.4rem], min-w-[6.84rem] etc.) — we scale via
+ * `transform: scale()` + `transform-origin: center` since the values
+ * are scattered across many child elements. Layout box has to shrink
+ * too so the centred cluster width matches; `width: fit-content` lets
+ * the visual scale carry the layout. */
+.profile-top-currency > * {
+  transform: scale(0.8);
+  transform-origin: center;
+}
+.profile-top-currency {
+  gap: 0.6rem;
+}
+
+/* Body grid: left stack + tall history. The right column gets all the
+ * vertical room formerly split between main-card-row and bottom-row. */
+.profile-body-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 1.5rem;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.profile-left-stack {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Main card: was a 3-column grid (avatar | info | stats). Now it only
+ * holds avatar + info — stats moved out to a sibling. So this becomes a
+ * 2-column grid. The .profile-stat-grid rule below restyles the moved
+ * stats independently. */
+.profile-main-card {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  gap: 1.5rem !important;
+  padding: 1.5rem !important;
+  align-items: center !important;
+}
+
+/* Stat row: 4 equal cards laid out in one row under the avatar card.
+ * Wallet coins/gems duplicates have been removed from the JSX (the top
+ * bar already shows them) so we only have 4 stats now. */
+.profile-stat-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  border-left: 0 !important;
+  padding: 0 !important;
+  gap: 0.75rem;
+}
+
+/* Log Out: full-width pill that fills the left column so it visually
+ * matches the cards above it. Was a square button next to the history
+ * panel. Reuses the dark gradient/rim treatment of the card surfaces. */
+.profile-logout-button {
+  width: 100%;
+  height: auto;
+  min-height: 3.5rem;
+  padding: 0.85rem 1.5rem;
+  border-radius: 1rem;
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+}
+
+/* History panel takes the full height of the right column and scrolls
+ * internally — more rows visible without scrolling the page itself. */
+.profile-history-panel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-history-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Landscape (desktop / tablet): override the v1 grid-template-rows on
+ * .profile-screen — we no longer have a separate bottom row, just the
+ * body grid that fills the remaining viewport. Same `--profile-u` math
+ * the v1 layout relied on for the top nav row height. */
+@media (orientation: landscape) {
+  .profile-screen {
+    grid-template-rows:
+      calc(86 * var(--profile-u))
+      minmax(0, 1fr);
+  }
+
+  /* The main card no longer needs to be a fixed 420px tall slot — it
+   * sits inside the left stack with `height: auto`. */
+  .profile-main-card {
+    height: auto !important;
+    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr) !important;
+  }
+}
+
+/* Portrait + narrow: collapse the body grid to a single column. Match
+ * history floats to the bottom and uses its own intrinsic height. */
+@media (max-width: 760px), (orientation: portrait) {
+  .profile-body-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-history-panel {
+    min-height: 22rem;
+  }
+
+  .profile-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
