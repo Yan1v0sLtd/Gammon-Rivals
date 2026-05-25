@@ -574,24 +574,31 @@ function MissionCard({
   const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
 
   // Rarity-driven palette. Source: design spec
-  //   Common  card bg #35296A → #19183B, border glow #3BC8FF, fill #7DFF4D
-  //   Rare    card bg #2C2E86,           border glow #2AAEFF, fill #35C8FF
-  //   Epic    card bg #4A216F,           border glow #D447FF, fill #C85CFF
+  //   Common  card bg #35296A → #19183B, border #3BC8FF, fill #7DFF4D
+  //   Rare    card bg #2C2E86,           border #2AAEFF, fill #35C8FF
+  //   Epic    card bg #4A216F,           border #D447FF, fill #C85CFF
+  // Hard rings replace the previous soft outer glow — the bloomy
+  // `shadow-[0_0_14px_rgba(...)]` was bleeding past the card edges
+  // and making the borders read as fuzzy. A 2-px ring at full opacity
+  // gives crisp UI panel edges; the drop-shadow at the bottom adds
+  // depth without colouring the edge.
   const cardBgByRarity: Record<string, string> = {
     common: 'bg-gradient-to-b from-[#35296A] to-[#19183B]',
     rare:   'bg-gradient-to-b from-[#2C2E86] to-[#19183B]',
     epic:   'bg-gradient-to-b from-[#4A216F] to-[#19183B]',
   };
   const ringByRarity: Record<string, string> = {
-    common: 'ring-[#3BC8FF]/60',
-    rare:   'ring-[#2AAEFF]/60',
-    epic:   'ring-[#D447FF]/60',
+    common: 'ring-2 ring-[#3BC8FF]',
+    rare:   'ring-2 ring-[#2AAEFF]',
+    epic:   'ring-2 ring-[#D447FF]',
   };
-  // Recommended outer glow per spec.
+  // Tight drop-shadow (NOT a coloured outer glow) for subtle depth.
+  // Same value across all rarities so the cards read as a coherent
+  // stack; rarity is expressed via the ring colour + progress fill.
   const glowByRarity: Record<string, string> = {
-    common: 'shadow-[0_0_14px_rgba(60,190,255,0.5)]',
-    rare:   'shadow-[0_0_14px_rgba(60,190,255,0.5)]',
-    epic:   'shadow-[0_0_14px_rgba(210,80,255,0.5)]',
+    common: 'shadow-[0_4px_8px_rgba(0,0,0,0.4)]',
+    rare:   'shadow-[0_4px_8px_rgba(0,0,0,0.4)]',
+    epic:   'shadow-[0_4px_8px_rgba(0,0,0,0.4)]',
   };
   const progressFillByRarity: Record<string, string> = {
     common: 'bg-[#7DFF4D] shadow-[0_0_12px_rgba(120,255,120,0.55)]',
@@ -705,7 +712,7 @@ function WeeklyChallengeCard({
   // box just needs to read clearly and contain its content.
   return (
     <div
-      className="relative flex h-full w-full flex-col rounded-2xl bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 ring-2 ring-[#E2A93B]/80 shadow-[0_0_24px_rgba(110,27,206,0.45)]"
+      className="relative flex h-full w-full flex-col rounded-2xl bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 ring-2 ring-[#E2A93B] shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
     >
       {/* Inner fog — radial highlight at the top centre for depth. */}
       <div
@@ -954,7 +961,7 @@ function StreakPanel({
   // matches the weekly card visually. Title plate reads "DAILY
   // STREAK" instead of "WEEKLY CHALLENGE".
   return (
-    <div className="relative flex h-full w-full flex-col rounded-2xl bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 ring-2 ring-[#E2A93B]/80 shadow-[0_0_24px_rgba(110,27,206,0.45)]">
+    <div className="relative flex h-full w-full flex-col rounded-2xl bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 ring-2 ring-[#E2A93B] shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
