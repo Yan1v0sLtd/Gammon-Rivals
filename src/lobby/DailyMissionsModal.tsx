@@ -606,21 +606,22 @@ function MissionCard({
       }`}
     >
       {/* Rarity badge (icon + rarity word baked into the artwork).
-          Shrunk h-20 → h-14 so 4 cards stack inside the body height
-          without overflow. */}
+          Doubled in size from h-14 → h-28 per operator request. */}
       <div className="shrink-0">
         <img
           src={badgeSrc}
           alt={`${mission.rarity} mission`}
           draggable={false}
-          className="h-14 w-14 object-contain"
+          className="h-28 w-28 object-contain"
           onError={(e) => {
             (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
           }}
         />
       </div>
 
-      {/* Title, subtitle, progress */}
+      {/* Title, subtitle, progress. Progress row capped to
+          max-w-[50%] per request so the bar visually weights about
+          half the text-column width instead of filling it. */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <div className="truncate font-display text-2xl font-bold text-[#FFF6E9]">
@@ -635,7 +636,7 @@ function MissionCard({
         {mission.subtitle && (
           <div className="truncate text-base text-[#C6B7D8]">{mission.subtitle}</div>
         )}
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex max-w-[50%] items-center gap-2">
           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#17122D]">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${
@@ -650,10 +651,10 @@ function MissionCard({
         </div>
       </div>
 
-      {/* Rewards */}
-      <RewardStack rewards={mission.rewards} />
+      {/* Rewards — large variant (2× icons + label) per request. */}
+      <RewardStack rewards={mission.rewards} large />
 
-      {/* Action button. */}
+      {/* Action button — width bumped 50 % (px-6 → px-9). */}
       <button
         ref={btnRef}
         type="button"
@@ -663,7 +664,7 @@ function MissionCard({
           if (isCompleted) onClaim(btnRef.current);
           else onGo?.();
         }}
-        className={`shrink-0 rounded-lg px-6 py-2.5 text-lg font-bold text-white shadow-md transition ${
+        className={`shrink-0 rounded-lg px-9 py-2.5 text-lg font-bold text-white shadow-md transition ${
           isClaimed
             ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
             : isCompleted
@@ -796,23 +797,31 @@ function WeeklyChallengeCard({
   );
 }
 
-function RewardStack({ rewards }: { readonly rewards: readonly RewardItem[] }) {
+function RewardStack({
+  rewards,
+  large = false,
+}: {
+  readonly rewards: readonly RewardItem[];
+  readonly large?: boolean;
+}) {
   if (rewards.length === 0) return null;
-  // Render rewards with a thin vertical divider between each pair —
-  // the mockup uses visual separation rather than just gap so a
-  // mission with 3 rewards reads as "+250 | +20 | +10" not a blob.
+  // `large` doubles the icon + label sizes for use inside the
+  // mission cards (operator request); leaves the default sizes for
+  // any other caller.
+  const labelClass = large ? 'text-xl font-bold text-amber-100' : 'text-[10px] font-bold text-amber-100';
+  const dividerClass = large ? 'h-12 w-px bg-amber-500/30' : 'h-9 w-px bg-amber-500/30';
   return (
-    <div className="hidden shrink-0 items-center gap-2 sm:flex">
+    <div className="hidden shrink-0 items-center gap-3 sm:flex">
       {rewards.flatMap((r, i) => {
         const item = (
-          <div key={`r-${i}`} className="flex flex-col items-center">
-            <RewardIcon reward={r} />
-            <span className="text-[10px] font-bold text-amber-100">+{formatAmount(r.amount)}</span>
+          <div key={`r-${i}`} className="flex flex-col items-center gap-0.5">
+            <RewardIcon reward={r} large={large} />
+            <span className={labelClass}>+{formatAmount(r.amount)}</span>
           </div>
         );
         return i === 0
           ? [item]
-          : [<div key={`sep-${i}`} className="h-9 w-px bg-amber-500/30" />, item];
+          : [<div key={`sep-${i}`} className={dividerClass} />, item];
       })}
     </div>
   );
