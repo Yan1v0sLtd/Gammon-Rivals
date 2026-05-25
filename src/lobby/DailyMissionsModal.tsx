@@ -359,23 +359,22 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Right column — 3 panels stacked vertically:
-                      Daily Streak (top)
-                      Weekly Challenge (middle)
-                      REROLL (bottom)
-                    Each panel uses flex-1 so they share the column
-                    height equally with explicit min-h-0 to allow
-                    shrinking. overflow-hidden on the column clips
-                    any panel that exceeds its row. */}
+                {/* Right column — 3 panels stacked vertically.
+                    Streak + Weekly are `shrink-0` so each is only as
+                    tall as its content needs (≈30 % shorter than the
+                    previous flex-1-stretched version). The reroll
+                    pill uses `mt-auto` to anchor at the bottom of
+                    the column so the empty space sits between the
+                    upper panels and the reroll, not below it. */}
                 <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
-                  <div className="flex min-h-0 flex-1">
+                  <div className="shrink-0">
                     <StreakPanel
                       streak={state.streak}
                       streakChestRewards={state.streak_chest_rewards}
                     />
                   </div>
                   {weeklies[0] && (
-                    <div className="flex min-h-0 flex-1">
+                    <div className="shrink-0">
                       <WeeklyChallengeCard
                         mission={weeklies[0]}
                         isClaiming={claimingMissionId === weeklies[0].id}
@@ -384,7 +383,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                       />
                     </div>
                   )}
-                  <div className="shrink-0">
+                  <div className="mt-auto shrink-0">
                     <RerollPanel
                       rerollState={state.reroll}
                       rerollingId={rerollingMissionId}
@@ -700,7 +699,7 @@ function WeeklyChallengeCard({
   // pinned to the bottom with the X / Y count beside it. Right:
   // rewards row at the top, GO button stacked below.
   return (
-    <div className="relative flex h-full w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-4 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+    <div className="relative flex w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -710,9 +709,9 @@ function WeeklyChallengeCard({
         }}
       />
 
-      {/* LEFT — gold label + dice icon (icon sits BELOW the label,
-          anchored to the bottom-left of the left column). */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between">
+      {/* LEFT — gold label + dice icon below. justify-center so the
+          two elements pack tight instead of stretching to fill. */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
         <div className="font-display text-xl font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
           Weekly
           <br />
@@ -722,14 +721,15 @@ function WeeklyChallengeCard({
           src="/lobby/missions/dice-icon.webp"
           alt=""
           draggable={false}
-          className="h-14 w-14 object-contain opacity-95"
+          className="h-12 w-12 object-contain opacity-95"
           onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
         />
       </div>
 
-      {/* MIDDLE — title + subtitle stacked at the top; progress bar
-          at the bottom; the count sits to the right of the bar. */}
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
+      {/* MIDDLE — title + subtitle + progress bar. justify-center
+          with gap so content sits tight in the middle without the
+          empty space pushed by justify-between. */}
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-center gap-2">
         <div>
           <h3 className="font-display text-2xl font-bold leading-tight text-[#FFF6E9]">
             {mission.title}
@@ -758,8 +758,9 @@ function WeeklyChallengeCard({
         </div>
       </div>
 
-      {/* RIGHT — rewards row + GO button stacked underneath. */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between gap-2">
+      {/* RIGHT — rewards row + GO button. justify-center keeps the
+          pair tight in the middle of the right column. */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
         <div className="flex items-center gap-3">
           {mission.rewards.map((r, i) => (
             <div key={i} className="flex flex-col items-center gap-0.5">
@@ -965,7 +966,7 @@ function StreakPanel({
   // NO "X days to next chest" footer — count is in the progress
   // label.
   return (
-    <div className="relative flex h-full w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-4 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+    <div className="relative flex w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -975,20 +976,21 @@ function StreakPanel({
         }}
       />
 
-      {/* LEFT — gold "DAILY / STREAK" label above a dark square "7" box */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between">
+      {/* LEFT — gold "DAILY / STREAK" label + dark square "7" box.
+          justify-center + gap-2 packs them tight (no empty space). */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
         <div className="font-display text-xl font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
           Daily
           <br />
           Streak
         </div>
-        <div className="grid h-14 w-14 place-items-center rounded-lg bg-[#1A1028] ring-1 ring-[#E2A93B]/70">
-          <span className="font-display text-3xl font-black text-[#FFD25C]">7</span>
+        <div className="grid h-12 w-12 place-items-center rounded-lg bg-[#1A1028] ring-1 ring-[#E2A93B]/70">
+          <span className="font-display text-2xl font-black text-[#FFD25C]">7</span>
         </div>
       </div>
 
-      {/* MIDDLE — N days title, subtitle, progress bar */}
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
+      {/* MIDDLE — N days + subtitle + progress bar, packed tight */}
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-center gap-2">
         <div>
           <div className="font-display text-2xl font-bold leading-tight text-[#FFF6E9]">
             {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
