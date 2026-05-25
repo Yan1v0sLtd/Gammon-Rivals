@@ -662,7 +662,7 @@ function WeeklyChallengeCard({
 
   return (
     <div
-      className="relative mt-4 w-full"
+      className="relative w-full"
       style={{
         // Aspect ratio of the frame artwork. Adjust if the actual
         // PNG ships at a different ratio.
@@ -672,21 +672,24 @@ function WeeklyChallengeCard({
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Content overlay. Padding values are tuned so the inner
-          content sits inside the frame's visible area, not over
-          the gold trim. */}
-      <div className="absolute inset-0 flex flex-col items-center justify-end px-[10%] pb-[8%] pt-[18%]">
-        <h3 className="font-display text-base font-bold text-fuchsia-100 sm:text-lg">
+      {/* Content overlay. justify-center + py-[16%] keeps content
+        * inside the frame's interior even when the title wraps to two
+        * lines on the narrow (2-up) column. overflow-hidden clips any
+        * leftover spillover instead of letting it escape past the gold
+        * border. Font sizes shrunk + line-clamp on title/subtitle so a
+        * long mission name doesn't push everything else out the top. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden px-[10%] py-[16%]">
+        <h3 className="line-clamp-2 text-center font-display text-sm font-bold leading-tight text-fuchsia-100">
           {mission.title}
         </h3>
         {mission.subtitle && (
-          <p className="mt-1 text-center text-xs text-fuchsia-200/70 sm:text-sm">
+          <p className="mt-1 line-clamp-2 text-center text-[11px] leading-tight text-fuchsia-200/70">
             {mission.subtitle}
           </p>
         )}
 
-        <div className="mt-3 flex w-full max-w-xs items-center gap-2">
-          <div className="relative h-2 flex-1 rounded-full bg-black/50">
+        <div className="mt-2 flex w-full max-w-xs items-center gap-2">
+          <div className="relative h-1.5 flex-1 rounded-full bg-black/50">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${
                 isCompleted ? 'bg-emerald-400' : 'bg-gradient-to-r from-fuchsia-400 to-fuchsia-200'
@@ -694,7 +697,7 @@ function WeeklyChallengeCard({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="font-mono text-xs font-bold text-fuchsia-100">
+          <span className="font-mono text-[11px] font-bold text-fuchsia-100">
             {mission.progress} / {mission.resolved_goal}
           </span>
         </div>
@@ -719,7 +722,7 @@ function WeeklyChallengeCard({
             if (isCompleted) onClaim(btnRef.current);
             else onGo?.();
           }}
-          className={`mt-3 rounded-lg px-6 py-1.5 text-sm font-bold shadow-md transition ${
+          className={`mt-2 rounded-lg px-5 py-1 text-xs font-bold shadow-md transition ${
             isClaimed
               ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 text-white opacity-90'
               : isCompleted
@@ -906,31 +909,33 @@ function StreakPanel({
         backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Content overlay inside the frame's interior. (Title bar
-          was removed — operator confirmed the title plate is
-          handled by the frame artwork itself.) */}
-      <div className="absolute inset-0 flex flex-col items-center justify-end px-[8%] pb-[8%] pt-[20%]">
-        <div className="mb-2 text-xs font-bold text-amber-200 sm:text-sm">
+      {/* Content overlay inside the frame's interior. Same
+        * `justify-center + py-[16%] + overflow-hidden + tighter
+        * fonts` treatment as WeeklyChallengeCard so the streak
+        * subtitle ("Complete all daily missions for 7 days…") can
+        * wrap to 2 lines without escaping the top of the frame. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center overflow-hidden px-[8%] py-[16%]">
+        <div className="text-sm font-bold leading-tight text-amber-200">
           {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
         </div>
-        <p className="mb-3 text-center text-[11px] text-amber-100/70 sm:text-xs">
+        <p className="mt-1 line-clamp-2 text-center text-[11px] leading-tight text-amber-100/70">
           Complete all daily missions for 7 days to earn the streak chest.
         </p>
 
-        <div className="flex w-full max-w-xs items-center gap-2">
-          <div className="relative h-2 flex-1 rounded-full bg-black/60">
+        <div className="mt-2 flex w-full max-w-xs items-center gap-2">
+          <div className="relative h-1.5 flex-1 rounded-full bg-black/60">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-orange-400 to-rose-400"
               style={{ width: `${((streak.current_streak_days % 7) / 7) * 100}%` }}
             />
           </div>
-          <span className="font-mono text-xs font-bold text-amber-100">
+          <span className="font-mono text-[11px] font-bold text-amber-100">
             {streak.current_streak_days % 7} / 7
           </span>
         </div>
 
         {streakChestRewards.length > 0 && (
-          <div className="mt-3 flex items-center justify-center gap-2">
+          <div className="mt-2 flex items-center justify-center gap-2">
             {streakChestRewards.map((r, i) => (
               <div key={i} className="flex flex-col items-center">
                 <RewardIcon reward={r} />
@@ -944,12 +949,12 @@ function StreakPanel({
           <button
             type="button"
             onClick={handleClaim}
-            className="mt-3 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-6 py-1.5 text-sm font-bold text-amber-950 shadow-md"
+            className="mt-2 rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-5 py-1 text-xs font-bold text-amber-950 shadow-md"
           >
             CLAIM STREAK CHEST
           </button>
         ) : (
-          <p className="mt-3 text-center text-[11px] text-amber-200/70">
+          <p className="mt-2 text-center text-[11px] text-amber-200/70">
             {daysToChest} day{daysToChest === 1 ? '' : 's'} to next chest
           </p>
         )}
