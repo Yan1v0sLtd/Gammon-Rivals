@@ -619,12 +619,15 @@ function MissionCard({
         />
       </div>
 
-      {/* Title, subtitle, progress. Progress row capped to
-          max-w-[50%] per request so the bar visually weights about
-          half the text-column width instead of filling it. */}
+      {/* Title, subtitle, progress. Sizes bumped ~20 % per request:
+            title    text-2xl → text-3xl
+            subtitle text-base → text-lg
+          Progress row width 50 % → 60 % and the bar itself
+          h-2 → h-2.5 (20 % thicker), count label text-base → text-lg.
+       */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <div className="truncate font-display text-2xl font-bold text-[#FFF6E9]">
+          <div className="truncate font-display text-3xl font-bold text-[#FFF6E9]">
             {mission.title}
           </div>
           {mission.mission_points > 0 && (
@@ -634,10 +637,10 @@ function MissionCard({
           )}
         </div>
         {mission.subtitle && (
-          <div className="truncate text-base text-[#C6B7D8]">{mission.subtitle}</div>
+          <div className="truncate text-lg text-[#C6B7D8]">{mission.subtitle}</div>
         )}
-        <div className="mt-2 flex max-w-[50%] items-center gap-2">
-          <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#17122D]">
+        <div className="mt-2 flex max-w-[60%] items-center gap-2">
+          <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[#17122D]">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${
                 progressFillByRarity[mission.rarity] ?? progressFillByRarity.common
@@ -645,7 +648,7 @@ function MissionCard({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="font-mono text-base font-bold text-[#FFF6E9]">
+          <span className="font-mono text-lg font-bold text-[#FFF6E9]">
             {mission.progress} / {mission.resolved_goal}
           </span>
         </div>
