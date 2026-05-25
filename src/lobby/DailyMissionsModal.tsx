@@ -97,14 +97,39 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     () => missionsList.filter((m) => m.period === 'daily'),
     [missionsList],
   );
-  const weekly = useMemo(
-    () => missionsList.find((m) => m.period === 'weekly') ?? null,
+  // Up to 2 weekly missions render side-by-side in the middle column.
+  // If only 1 exists, the second slot falls back to the streak panel
+  // styled to match the ornate weekly-frame look.
+  const weeklies = useMemo(
+    () => missionsList.filter((m) => m.period === 'weekly').slice(0, 2),
     [missionsList],
   );
   const claimableCount = useMemo(
     () => dailies.filter((m) => m.completed_at && !m.claimed_at).length,
     [dailies],
   );
+
+  // Scale-to-fit wrapper. The modal is authored at a fixed design size
+  // (1300 × 720) and shrinks proportionally on smaller viewports so
+  // mobile fits without scrolling. Mirrors the pattern Shop.tsx uses.
+  const PANEL_DESIGN_W = 1300;
+  const PANEL_DESIGN_H = 720;
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const s = Math.min(
+        1,
+        (w * 0.98) / PANEL_DESIGN_W,
+        (h * 0.96) / PANEL_DESIGN_H,
+      );
+      setScale(s);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
 
   const countdownMs = useMemo(() => {
     // Compute against `now` so it ticks; nextResetMs reads Date.now() once.
@@ -197,127 +222,165 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 sm:p-8">
-      <div className="relative w-full max-w-4xl rounded-3xl bg-gradient-to-b from-[#1c1430] via-[#0f0a1f] to-[#0a0716] p-4 shadow-2xl ring-1 ring-amber-500/40 sm:p-6">
-        {/* Header */}
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div>
-            <h2 className="flex items-center gap-3 font-display text-2xl font-black tracking-wider text-amber-200 sm:text-3xl">
-              <span>DAILY MISSIONS</span>
-              <img
-                src="/lobby/missions/dice-icon.webp"
-                alt=""
-                draggable={false}
-                className="h-8 w-8 object-contain sm:h-10 sm:w-10"
-                onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-              />
-            </h2>
-            <p className="mt-0.5 text-sm text-amber-100/70">
-              Complete missions. Earn points. Claim epic rewards!
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-black/40 px-3 py-1.5 text-right">
-              <div className="text-[10px] uppercase tracking-wider text-amber-200/60">Refreshes in</div>
-              <div className="font-mono text-sm font-bold text-amber-100">{formatCountdown(countdownMs)}</div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2">
+      {/* Scale-to-fit wrapper. The inner panel is authored at its
+          natural design size (1300 × 720); on any smaller viewport,
+          we shrink the whole panel by min(98vw/W, 96vh/H) so the
+          entire modal is always visible at once without scrolling. */}
+      <div className="origin-center" style={{ transform: `scale(${scale})` }}>
+        <div
+          className="relative rounded-3xl bg-gradient-to-b from-[#1c1430] via-[#0f0a1f] to-[#0a0716] p-5 shadow-2xl ring-1 ring-amber-500/40"
+          style={{ width: `${PANEL_DESIGN_W}px`, height: `${PANEL_DESIGN_H}px` }}
+        >
+          {/* Header */}
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="flex items-center gap-3 font-display text-3xl font-black tracking-wider text-amber-200">
+                <span>DAILY MISSIONS</span>
+                <img
+                  src="/lobby/missions/dice-icon.webp"
+                  alt=""
+                  draggable={false}
+                  className="h-10 w-10 object-contain"
+                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+                />
+              </h2>
+              <p className="mt-0.5 text-sm text-amber-100/70">
+                Complete missions. Earn points. Claim epic rewards!
+              </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="grid h-10 w-10 place-items-center rounded-full bg-rose-700 text-white shadow-lg ring-2 ring-amber-300/60 transition hover:bg-rose-600"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        {isLoading && !state ? (
-          <div className="py-12 text-center text-amber-200/70">Loading missions…</div>
-        ) : error ? (
-          <div className="rounded-lg bg-rose-950/60 px-4 py-3 text-rose-200">{error}</div>
-        ) : !state ? (
-          <div className="py-12 text-center text-amber-200/70">No missions today.</div>
-        ) : (
-          <>
-            {/* Mission Points + Chest Track */}
-            <ChestTrackStrip
-              mpEarned={state.weekly_pass.mp_earned}
-              milestones={state.chest_milestones}
-              chestsClaimed={state.weekly_pass.chests_claimed}
-              claimingIdx={claimingChestIdx}
-              onClaimChest={handleClaimChest}
-            />
-
-            {/* Action row */}
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-display text-lg font-bold tracking-wide text-amber-100">DAILY MISSIONS</h3>
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg bg-black/40 px-3 py-1.5 text-right">
+                <div className="text-[10px] uppercase tracking-wider text-amber-200/60">
+                  Refreshes in
+                </div>
+                <div className="font-mono text-sm font-bold text-amber-100">
+                  {formatCountdown(countdownMs)}
+                </div>
+              </div>
               <button
                 type="button"
-                data-claim-all-btn
-                disabled={claimableCount === 0 || claimingMissionId !== null}
-                onClick={handleClaimAll}
-                className="rounded-lg bg-gradient-to-b from-amber-300 to-amber-500 px-4 py-1.5 text-sm font-bold text-amber-950 shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={onClose}
+                aria-label="Close"
+                className="grid h-10 w-10 place-items-center rounded-full bg-rose-700 text-white shadow-lg ring-2 ring-amber-300/60 transition hover:bg-rose-600"
               >
-                {claimableCount > 0 ? `CLAIM ALL (${claimableCount})` : 'CLAIM ALL'}
+                ×
               </button>
             </div>
+          </div>
 
-            {/* Mission cards */}
-            <div className="space-y-2.5">
-              {dailies.map((m) => (
-                <MissionCard
-                  key={m.id}
-                  mission={m}
-                  isClaiming={claimingMissionId === m.id}
-                  isRerolling={rerollingMissionId === m.id}
-                  onClaim={(el) => handleClaim(m.id, el)}
-                  onGo={onClose}
+          {isLoading && !state ? (
+            <div className="py-12 text-center text-amber-200/70">Loading missions…</div>
+          ) : error ? (
+            <div className="rounded-lg bg-rose-950/60 px-4 py-3 text-rose-200">{error}</div>
+          ) : !state ? (
+            <div className="py-12 text-center text-amber-200/70">No missions today.</div>
+          ) : (
+            <>
+              {/* Mission Points + Chest Track — stays full-width above
+                  the 3-column body. */}
+              <ChestTrackStrip
+                mpEarned={state.weekly_pass.mp_earned}
+                milestones={state.chest_milestones}
+                chestsClaimed={state.weekly_pass.chests_claimed}
+                claimingIdx={claimingChestIdx}
+                onClaimChest={handleClaimChest}
+              />
+
+              {/* 3-column body
+                  ─────────────────────────────────────────────────────
+                  Left  : DAILY MISSIONS heading + CLAIM ALL + 4 cards
+                  Middle: 2 ornate weekly cards side-by-side
+                  Right : REROLL panel
+                  Heights are equalised by the grid so the columns
+                  align top + bottom on the panel canvas. */}
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,0.85fr)] gap-4">
+                {/* Left column */}
+                <div className="flex flex-col">
+                  <div className="mb-2 flex items-center justify-between">
+                    <h3 className="font-display text-base font-bold tracking-wide text-amber-100">
+                      DAILY MISSIONS
+                    </h3>
+                    <button
+                      type="button"
+                      data-claim-all-btn
+                      disabled={claimableCount === 0 || claimingMissionId !== null}
+                      onClick={handleClaimAll}
+                      className="rounded-md bg-gradient-to-b from-amber-300 to-amber-500 px-3 py-1 text-xs font-bold text-amber-950 shadow-md transition disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {claimableCount > 0 ? `CLAIM ALL (${claimableCount})` : 'CLAIM ALL'}
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {dailies.map((m) => (
+                      <MissionCard
+                        key={m.id}
+                        mission={m}
+                        isClaiming={claimingMissionId === m.id}
+                        isRerolling={rerollingMissionId === m.id}
+                        onClaim={(el) => handleClaim(m.id, el)}
+                        onGo={onClose}
+                      />
+                    ))}
+                    {dailies.length === 0 && (
+                      <div className="rounded-lg bg-black/30 py-6 text-center text-sm text-amber-200/60">
+                        No active missions. Come back at midnight UTC.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Middle column: 2 weekly-challenge cards. If only
+                    one weekly mission exists, fall back to rendering
+                    the streak panel in the second slot styled to
+                    match the ornate frame. */}
+                <div className="grid grid-cols-2 gap-3">
+                  {weeklies[0] ? (
+                    <WeeklyChallengeCard
+                      mission={weeklies[0]}
+                      isClaiming={claimingMissionId === weeklies[0].id}
+                      onClaim={(el) => handleClaim(weeklies[0]!.id, el)}
+                      onGo={onClose}
+                    />
+                  ) : (
+                    <StreakPanel
+                      streak={state.streak}
+                      streakChestRewards={state.streak_chest_rewards}
+                    />
+                  )}
+                  {weeklies[1] ? (
+                    <WeeklyChallengeCard
+                      mission={weeklies[1]}
+                      isClaiming={claimingMissionId === weeklies[1].id}
+                      onClaim={(el) => handleClaim(weeklies[1]!.id, el)}
+                      onGo={onClose}
+                    />
+                  ) : (
+                    <StreakPanel
+                      streak={state.streak}
+                      streakChestRewards={state.streak_chest_rewards}
+                    />
+                  )}
+                </div>
+
+                {/* Right column: REROLL */}
+                <RerollPanel
+                  rerollState={state.reroll}
+                  rerollingId={rerollingMissionId}
+                  dailies={dailies}
+                  onReroll={handleReroll}
                 />
-              ))}
-              {dailies.length === 0 && (
-                <div className="rounded-lg bg-black/30 py-6 text-center text-sm text-amber-200/60">
-                  No active missions. Come back at midnight UTC.
+              </div>
+
+              {actionError && (
+                <div className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+                  {actionError}
                 </div>
               )}
-            </div>
-
-            {/* Reroll + Streak strip */}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <RerollPanel
-                rerollState={state.reroll}
-                rerollingId={rerollingMissionId}
-                dailies={dailies}
-                onReroll={handleReroll}
-              />
-              <StreakPanel
-                streak={state.streak}
-                streakChestRewards={state.streak_chest_rewards}
-              />
-            </div>
-
-            {/* Weekly Challenge — ornate purple+gold frame from the
-                mockup. The frame artwork has the title plate baked
-                in, so we don't render a separate heading. Content
-                (mission title, progress, reward, action button) is
-                overlaid in absolute-positioned regions tuned to the
-                frame's visual layout. */}
-            {weekly && (
-              <WeeklyChallengeCard
-                mission={weekly}
-                isClaiming={claimingMissionId === weekly.id}
-                onClaim={(el) => handleClaim(weekly.id, el)}
-                onGo={onClose}
-              />
-            )}
-
-            {actionError && (
-              <div className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
-                {actionError}
-              </div>
-            )}
-          </>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Reward-flight tokens render OUTSIDE the modal frame at
