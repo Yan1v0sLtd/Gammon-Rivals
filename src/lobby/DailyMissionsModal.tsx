@@ -112,13 +112,12 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     [dailies],
   );
 
-  // Scale-to-fit wrapper. Design size 1300 × 900. The H bumped to 900
-  // so the body has room for four mission cards stacked vertically plus
-  // a slim chest strip on top and the reroll pill at the bottom without
-  // anything spilling past the gold border at scale 1. On smaller
-  // viewports the wrapper shrinks the whole panel proportionally.
-  const PANEL_DESIGN_W = 1300;
-  const PANEL_DESIGN_H = 900;
+  // Scale-to-fit wrapper. Design size 1500 × 800 — wider + slightly
+  // shorter than v1 so the modal uses more of the mobile-landscape
+  // viewport (typically 932 × 430 → leaves no usable side margins).
+  // The whole panel shrinks proportionally on smaller viewports.
+  const PANEL_DESIGN_W = 1500;
+  const PANEL_DESIGN_H = 800;
   const [scale, setScale] = useState(1);
   useEffect(() => {
     const update = () => {
@@ -239,19 +238,23 @@ export function DailyMissionsModal({ result, onClose }: Props) {
           * default-block so the reroll could be pushed past the
           * panel's bottom border when the body was tall. */}
         <div
-          className="relative flex flex-col rounded-3xl bg-gradient-to-b from-[#162C73] to-[#09051D] p-5 shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-2 ring-[#D89A2B]/80"
+          className="relative flex flex-col rounded-3xl bg-gradient-to-b from-[#162C73] to-[#09051D] p-4 shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-2 ring-[#D89A2B]/80"
           style={{ width: `${PANEL_DESIGN_W}px`, height: `${PANEL_DESIGN_H}px` }}
         >
-          {/* Header */}
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <div>
+          {/* Top row — title block + chest progress + refresh/close
+              all share a single horizontal line so the chest area
+              gets compact + the title/timer aren't eating a separate
+              row of vertical space. */}
+          <div className="mb-3 flex shrink-0 items-stretch gap-3">
+            {/* Title block — left of the chest strip */}
+            <div className="flex shrink-0 flex-col justify-center pr-1">
               <h2 className="flex items-center gap-3 font-display text-4xl font-black tracking-wider text-[#FFD25C]">
                 <span>DAILY MISSIONS</span>
                 <img
                   src="/lobby/missions/dice-icon.webp"
                   alt=""
                   draggable={false}
-                  className="h-12 w-12 object-contain"
+                  className="h-10 w-10 object-contain"
                   onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
                 />
               </h2>
@@ -259,7 +262,22 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                 Complete missions. Earn points. Claim epic rewards!
               </p>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Chest progress — fills the middle */}
+            {state ? (
+              <ChestTrackStrip
+                mpEarned={state.weekly_pass.mp_earned}
+                milestones={state.chest_milestones}
+                chestsClaimed={state.weekly_pass.chests_claimed}
+                claimingIdx={claimingChestIdx}
+                onClaimChest={handleClaimChest}
+              />
+            ) : (
+              <div className="flex-1" />
+            )}
+
+            {/* Refresh chip stacked over the close button on the right */}
+            <div className="flex shrink-0 flex-col items-end gap-2">
               <div className="rounded-lg bg-[#1D2460]/80 px-3 py-1.5 text-right ring-1 ring-[#D89A2B]/40">
                 <div className="text-xs uppercase tracking-wider text-[#FFD25C]/80">
                   Refreshes in
@@ -268,10 +286,6 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   {formatCountdown(countdownMs)}
                 </div>
               </div>
-              {/* Close X — same chrome as the Shop close button
-                * (dark gradient + gold rim + gold SVG X). Per
-                * operator: keep the close button visually
-                * consistent across modals. */}
               <button
                 type="button"
                 onClick={onClose}
@@ -302,28 +316,11 @@ export function DailyMissionsModal({ result, onClose }: Props) {
             <div className="py-12 text-center text-amber-200/70">No missions today.</div>
           ) : (
             <>
-              {/* Mission Points + Chest Track — stays full-width above
-                  the 3-column body. */}
-              <ChestTrackStrip
-                mpEarned={state.weekly_pass.mp_earned}
-                milestones={state.chest_milestones}
-                chestsClaimed={state.weekly_pass.chests_claimed}
-                claimingIdx={claimingChestIdx}
-                onClaimChest={handleClaimChest}
-              />
-
-              {/* Body: 60/40 split for daily + weekly, then a
-                  full-width REROLL pill underneath. flex-1 takes
-                  whatever vertical room is left after the header +
-                  chest strip, so the reroll (mt-auto below) is
-                  always glued to the bottom of the panel. min-h-0
-                  lets the inner grid shrink when scale-to-fit
-                  applies on narrow viewports. */}
+              {/* Body: 60/40 split. Right column is now a vertical
+                  stack of three panels: Daily Streak (top), Weekly
+                  Challenge (middle), REROLL (bottom). */}
               <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-4">
-                {/* Left column — daily missions. min-h-0 +
-                    overflow-hidden so the inner mission-card stack
-                    is clipped to the row's allocated height instead
-                    of pushing past the panel's gold border. */}
+                {/* Left column — daily missions */}
                 <div className="flex min-h-0 flex-col overflow-hidden">
                   <div className="mb-3 flex items-center justify-between">
                     <h3 className="font-display text-2xl font-bold tracking-wide text-[#FFF6E9]">
@@ -340,11 +337,6 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                     </button>
                   </div>
 
-                  {/* pb-px (1 px bottom padding) gives the last mission
-                      card a hair of breathing room before the parent's
-                      overflow clip boundary — without it the Epic card
-                      at the bottom of the stack had its 1-px bottom
-                      border clipped by the column's overflow-hidden. */}
                   <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pb-px">
                     {dailies.map((m) => (
                       <MissionCard
@@ -364,50 +356,40 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Right column: 2 weekly cards side by side, clipped
-                    to the row's allocated height so they don't push
-                    past the panel into the reroll pill's space. */}
-                <div className="grid min-h-0 grid-cols-2 gap-3 overflow-hidden">
-                  {weeklies[0] ? (
-                    <WeeklyChallengeCard
-                      mission={weeklies[0]}
-                      isClaiming={claimingMissionId === weeklies[0].id}
-                      onClaim={(el) => handleClaim(weeklies[0]!.id, el)}
-                      onGo={onClose}
-                    />
-                  ) : (
+                {/* Right column — 3 panels stacked vertically:
+                      Daily Streak (top)
+                      Weekly Challenge (middle)
+                      REROLL (bottom)
+                    Each panel uses flex-1 so they share the column
+                    height equally with explicit min-h-0 to allow
+                    shrinking. overflow-hidden on the column clips
+                    any panel that exceeds its row. */}
+                <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                  <div className="flex min-h-0 flex-1">
                     <StreakPanel
                       streak={state.streak}
                       streakChestRewards={state.streak_chest_rewards}
                     />
+                  </div>
+                  {weeklies[0] && (
+                    <div className="flex min-h-0 flex-1">
+                      <WeeklyChallengeCard
+                        mission={weeklies[0]}
+                        isClaiming={claimingMissionId === weeklies[0].id}
+                        onClaim={(el) => handleClaim(weeklies[0]!.id, el)}
+                        onGo={onClose}
+                      />
+                    </div>
                   )}
-                  {weeklies[1] ? (
-                    <WeeklyChallengeCard
-                      mission={weeklies[1]}
-                      isClaiming={claimingMissionId === weeklies[1].id}
-                      onClaim={(el) => handleClaim(weeklies[1]!.id, el)}
-                      onGo={onClose}
+                  <div className="shrink-0">
+                    <RerollPanel
+                      rerollState={state.reroll}
+                      rerollingId={rerollingMissionId}
+                      dailies={dailies}
+                      onReroll={handleReroll}
                     />
-                  ) : (
-                    <StreakPanel
-                      streak={state.streak}
-                      streakChestRewards={state.streak_chest_rewards}
-                    />
-                  )}
+                  </div>
                 </div>
-              </div>
-
-              {/* REROLL — full-width green pill pinned to the bottom
-                  of the flex-column panel via mt-3. Combined with the
-                  flex-1 body above, this guarantees the reroll never
-                  bleeds past the panel's gold border. */}
-              <div className="mt-3 shrink-0">
-                <RerollPanel
-                  rerollState={state.reroll}
-                  rerollingId={rerollingMissionId}
-                  dailies={dailies}
-                  onReroll={handleReroll}
-                />
               </div>
 
               {actionError && (
@@ -456,12 +438,9 @@ function ChestTrackStrip({
   const chestSizes = ['h-10', 'h-12', 'h-14', 'h-16'];
 
   return (
-    <div className="mb-3 rounded-2xl bg-gradient-to-b from-[#1D2460] to-[#162C73] p-3 ring-1 ring-[#D89A2B]/60">
-      <div className="flex items-end gap-4">
-        {/* Lightning + MP count, left-anchored. Compact size — the
-            chest strip should NOT dominate the panel; the daily
-            mission stack underneath needs the vertical room. */}
-        <div className="flex shrink-0 flex-col items-center">
+    <div className="flex flex-1 items-center gap-4 rounded-2xl bg-gradient-to-b from-[#1D2460] to-[#162C73] px-4 py-2 ring-1 ring-[#D89A2B]/60">
+      {/* MP counter left-anchored — compact column with ⚡ + value */}
+      <div className="flex shrink-0 flex-col items-center">
           <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-b from-[#FFD25C] to-[#B67816] text-xl text-[#3a1f08] shadow-md ring-2 ring-[#FFD25C]/70">
             ⚡
           </div>
@@ -552,7 +531,6 @@ function ChestTrackStrip({
             })}
           </div>
         </div>
-      </div>
     </div>
   );
 }
