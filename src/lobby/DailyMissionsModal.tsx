@@ -340,7 +340,12 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                     </button>
                   </div>
 
-                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+                  {/* pb-px (1 px bottom padding) gives the last mission
+                      card a hair of breathing room before the parent's
+                      overflow clip boundary — without it the Epic card
+                      at the bottom of the stack had its 1-px bottom
+                      border clipped by the column's overflow-hidden. */}
+                  <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden pb-px">
                     {dailies.map((m) => (
                       <MissionCard
                         key={m.id}
@@ -587,16 +592,16 @@ function MissionCard({
     rare:   'bg-gradient-to-b from-[#2C2E86] to-[#19183B]',
     epic:   'bg-gradient-to-b from-[#4A216F] to-[#19183B]',
   };
-  // Using `border-N` instead of `ring-N` is intentional: ring is
+  // Using `border` (1 px) instead of ring-N is intentional: ring is
   // rendered as an OUTSET box-shadow, which gets clipped by the
-  // `overflow-hidden` on the mission-stack column parent (added to
-  // keep the cards from spilling past the panel). border draws
-  // INSIDE the element's box (with default box-sizing: border-box)
-  // so it's never affected by parent overflow.
+  // `overflow-hidden` on the mission-stack column parent. border
+  // draws INSIDE the element's box (with box-sizing: border-box) so
+  // it's never affected by parent overflow. 1 px matches the chest
+  // strip's ring-1 visual weight.
   const ringByRarity: Record<string, string> = {
-    common: 'border-2 border-[#3BC8FF]',
-    rare:   'border-2 border-[#2AAEFF]',
-    epic:   'border-2 border-[#D447FF]',
+    common: 'border border-[#3BC8FF]',
+    rare:   'border border-[#2AAEFF]',
+    epic:   'border border-[#D447FF]',
   };
   // Tight drop-shadow (NOT a coloured outer glow) for subtle depth.
   // Same value across all rarities so the cards read as a coherent
@@ -718,7 +723,7 @@ function WeeklyChallengeCard({
   // box just needs to read clearly and contain its content.
   return (
     <div
-      className="relative flex h-full w-full flex-col rounded-2xl border-2 border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
+      className="relative flex h-full w-full flex-col rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]"
     >
       {/* Inner fog — radial highlight at the top centre for depth. */}
       <div
@@ -967,7 +972,7 @@ function StreakPanel({
   // matches the weekly card visually. Title plate reads "DAILY
   // STREAK" instead of "WEEKLY CHALLENGE".
   return (
-    <div className="relative flex h-full w-full flex-col rounded-2xl border-2 border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+    <div className="relative flex h-full w-full flex-col rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
