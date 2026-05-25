@@ -694,13 +694,13 @@ function WeeklyChallengeCard({
   const isClaimed = !!mission.claimed_at;
   const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
 
-  // HORIZONTAL layout per the mockup:
-  //   [Label + dice icon | Title + subtitle + progress | Rewards + GO]
-  // Was a tall portrait card; the new shape fits the right column
-  // stack (Streak / Weekly / Reroll) while staying compact.
+  // HORIZONTAL layout — direct port of the operator's reference
+  // screenshot. Left column: "WEEKLY / CHALLENGE" gold label + dice
+  // icon below. Middle: title at top, 1-line subtitle, progress bar
+  // pinned to the bottom with the X / Y count beside it. Right:
+  // rewards row at the top, GO button stacked below.
   return (
-    <div className="relative flex h-full w-full items-stretch gap-3 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
-      {/* Inner fog — radial highlight for depth. */}
+    <div className="relative flex h-full w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-4 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -710,9 +710,10 @@ function WeeklyChallengeCard({
         }}
       />
 
-      {/* LEFT — "WEEKLY CHALLENGE" gold label stacked over a dice icon */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
-        <div className="font-display text-base font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
+      {/* LEFT — gold label + dice icon (icon sits BELOW the label,
+          anchored to the bottom-left of the left column). */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between">
+        <div className="font-display text-xl font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
           Weekly
           <br />
           Challenge
@@ -721,25 +722,26 @@ function WeeklyChallengeCard({
           src="/lobby/missions/dice-icon.webp"
           alt=""
           draggable={false}
-          className="h-12 w-12 object-contain opacity-90"
+          className="h-14 w-14 object-contain opacity-95"
           onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
         />
       </div>
 
-      {/* MIDDLE — title + subtitle + progress bar */}
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-center gap-2">
+      {/* MIDDLE — title + subtitle stacked at the top; progress bar
+          at the bottom; the count sits to the right of the bar. */}
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
         <div>
-          <h3 className="line-clamp-2 font-display text-xl font-bold leading-tight text-[#FFF6E9]">
+          <h3 className="font-display text-2xl font-bold leading-tight text-[#FFF6E9]">
             {mission.title}
           </h3>
           {mission.subtitle && (
-            <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-[#C6B7D8]">
+            <p className="mt-1 text-base leading-snug text-[#C6B7D8]">
               {mission.subtitle}
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#1A1028]">
             <div
               className={`absolute inset-y-0 left-0 rounded-full ${
@@ -750,19 +752,19 @@ function WeeklyChallengeCard({
               style={{ width: `${progressPct}%` }}
             />
           </div>
-          <span className="font-mono text-sm font-bold text-[#FFF6E9]">
+          <span className="font-mono text-lg font-bold text-[#FFF6E9]">
             {mission.progress} / {mission.resolved_goal}
           </span>
         </div>
       </div>
 
-      {/* RIGHT — rewards + GO button stacked */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
+      {/* RIGHT — rewards row + GO button stacked underneath. */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           {mission.rewards.map((r, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <RewardIcon reward={r} />
-              <span className="text-sm font-bold text-[#FFF6E9]">
+            <div key={i} className="flex flex-col items-center gap-0.5">
+              <RewardIcon reward={r} large />
+              <span className="text-base font-bold text-[#FFF6E9]">
                 +{formatAmount(r.amount)}
               </span>
             </div>
@@ -778,7 +780,7 @@ function WeeklyChallengeCard({
             if (isCompleted) onClaim(btnRef.current);
             else onGo?.();
           }}
-          className={`rounded-lg px-6 py-1.5 text-base font-bold text-white shadow-md transition ${
+          className={`rounded-lg px-7 py-2 text-xl font-bold text-white shadow-md transition ${
             isClaimed
               ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
               : isCompleted
@@ -815,7 +817,9 @@ function RewardStack({ rewards }: { readonly rewards: readonly RewardItem[] }) {
   );
 }
 
-function RewardIcon({ reward }: { readonly reward: RewardItem }) {
+function RewardIcon({ reward, large = false }: { readonly reward: RewardItem; readonly large?: boolean }) {
+  const sizeClass = large ? 'h-10 w-10' : 'h-7 w-7';
+  const xpFontSize = large ? 'text-[12px]' : 'text-[9px]';
   if (reward.reward_kind === 'currency') {
     const iconMap: Record<string, string> = {
       coins: '/lobby/icons/gold-coin.webp',
@@ -824,14 +828,14 @@ function RewardIcon({ reward }: { readonly reward: RewardItem }) {
     const src = iconMap[reward.currency_code ?? ''];
     if (reward.currency_code === 'xp') {
       return (
-        <div className="grid h-7 w-7 place-items-center rounded bg-gradient-to-b from-violet-400 to-violet-700 text-[9px] font-black text-white">
+        <div className={`grid ${sizeClass} place-items-center rounded bg-gradient-to-b from-violet-400 to-violet-700 ${xpFontSize} font-black text-white`}>
           XP
         </div>
       );
     }
-    if (src) return <img src={src} alt="" className="h-7 w-7 object-contain" draggable={false} />;
+    if (src) return <img src={src} alt="" className={`${sizeClass} object-contain`} draggable={false} />;
   }
-  return <div className="grid h-7 w-7 place-items-center rounded bg-stone-700 text-[9px] text-white">?</div>;
+  return <div className={`grid ${sizeClass} place-items-center rounded bg-stone-700 ${xpFontSize} text-white`}>?</div>;
 }
 
 function formatAmount(n: number): string {
@@ -954,11 +958,14 @@ function StreakPanel({
     await supabase.rpc('claim_streak_chest');
   };
 
-  // HORIZONTAL layout per the mockup, matching WeeklyChallengeCard:
-  //   [Label + calendar icon | days + subtitle + progress | rewards]
-  // No GO button — claim is automatic / handled separately.
+  // HORIZONTAL layout — direct port of the reference screenshot.
+  // Left: "DAILY / STREAK" gold label + dark "7" box. Middle: "N
+  // days" title, 2-line subtitle, progress bar with X/Y to the
+  // right. Right: 3 rewards in a row (CLAIM button when day 7+).
+  // NO "X days to next chest" footer — count is in the progress
+  // label.
   return (
-    <div className="relative flex h-full w-full items-stretch gap-3 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-3 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+    <div className="relative flex h-full w-full items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-4 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 rounded-2xl"
@@ -968,50 +975,51 @@ function StreakPanel({
         }}
       />
 
-      {/* LEFT — "DAILY STREAK" gold label + calendar pictogram with "7" */}
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
-        <div className="font-display text-base font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
+      {/* LEFT — gold "DAILY / STREAK" label above a dark square "7" box */}
+      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-between">
+        <div className="font-display text-xl font-black uppercase leading-tight tracking-wider text-[#FFD25C] text-center">
           Daily
           <br />
           Streak
         </div>
-        <div className="relative grid h-12 w-12 place-items-center rounded-md bg-[#1A1028] ring-1 ring-[#E2A93B]/70">
-          <span className="font-display text-2xl font-black text-[#FFD25C]">7</span>
+        <div className="grid h-14 w-14 place-items-center rounded-lg bg-[#1A1028] ring-1 ring-[#E2A93B]/70">
+          <span className="font-display text-3xl font-black text-[#FFD25C]">7</span>
         </div>
       </div>
 
-      {/* MIDDLE — days count + subtitle + progress bar */}
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-center gap-2">
+      {/* MIDDLE — N days title, subtitle, progress bar */}
+      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-between gap-3">
         <div>
-          <div className="font-display text-xl font-bold leading-tight text-[#FFF6E9]">
+          <div className="font-display text-2xl font-bold leading-tight text-[#FFF6E9]">
             {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
           </div>
-          <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-[#C6B7D8]">
+          <p className="mt-1 text-base leading-snug text-[#C6B7D8]">
             Complete all daily missions for 7 days to earn the streak chest.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[#1A1028]">
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-[#B54CFF] shadow-[0_0_14px_rgba(210,80,255,0.5)]"
               style={{ width: `${((streak.current_streak_days % 7) / 7) * 100}%` }}
             />
           </div>
-          <span className="font-mono text-sm font-bold text-[#FFF6E9]">
+          <span className="font-mono text-lg font-bold text-[#FFF6E9]">
             {streak.current_streak_days % 7} / 7
           </span>
         </div>
       </div>
 
-      {/* RIGHT — rewards (and CLAIM button when applicable) */}
+      {/* RIGHT — rewards row (3 items horizontal). CLAIM button
+          appears only when streak hits 7 days. */}
       <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
         {streakChestRewards.length > 0 && (
           <div className="flex items-center gap-3">
             {streakChestRewards.map((r, i) => (
-              <div key={i} className="flex flex-col items-center">
-                <RewardIcon reward={r} />
-                <span className="text-sm font-bold text-[#FFF6E9]">
+              <div key={i} className="flex flex-col items-center gap-0.5">
+                <RewardIcon reward={r} large />
+                <span className="text-base font-bold text-[#FFF6E9]">
                   +{formatAmount(r.amount)}
                 </span>
               </div>
@@ -1023,7 +1031,7 @@ function StreakPanel({
           <button
             type="button"
             onClick={handleClaim}
-            className="rounded-lg bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-5 py-1.5 text-sm font-bold text-[#3a1f08] shadow-md hover:brightness-110"
+            className="rounded-lg bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-6 py-2 text-base font-bold text-[#3a1f08] shadow-md hover:brightness-110"
           >
             CLAIM
           </button>
