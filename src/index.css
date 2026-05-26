@@ -8325,21 +8325,20 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --lobby-pp-pad: clamp(8px, 0.8vw, 12px);
   position: relative;
   isolation: isolate;
-  /* Compact widget for the lobby top bar — capped to ~24rem on
-   * desktop, halved to 12rem on mobile (see media query below) so
-   * the card sits cleanly in the top-left corner. Outer margin is
-   * doubled vs v3 (12px top / 16px left) to give it room from the
-   * screen edges. Inner gradient alpha dropped to 0.25 so the
-   * lobby background reads through; the gold border + outer
-   * shadows stay opaque to keep the card edge defined. */
+  /* Compact widget for the lobby top bar — capped to ~14rem on
+   * desktop, dropped to 10rem on mobile (see media query below).
+   * Outer margin is 12 px top / 16 px left so the card breathes
+   * off the screen edges. BG gradient runs at 0.85 alpha — the
+   * dark-blue brand colour is preserved with just a hint of
+   * transparency so the lobby art reads through subtly. */
   width: 100%;
-  max-width: min(100%, 24rem);
+  max-width: min(100%, 14rem);
   margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
   border-radius: var(--lobby-pp-radius);
   border: 2.5px solid transparent;
   background:
-    linear-gradient(143deg, rgba(7, 12, 49, 0.25), rgba(4, 6, 28, 0.25)) padding-box,
+    linear-gradient(143deg, rgba(7, 12, 49, 0.85), rgba(4, 6, 28, 0.85)) padding-box,
     linear-gradient(115deg, #fff4a5 0%, #ff9e05 18%, #ff6df8 47%, #5b43ff 64%, #fff0a7 82%, #ff7b16 100%) border-box;
   box-shadow:
     0 0 0 1.5px rgba(255, 245, 170, 0.3) inset,
@@ -8587,13 +8586,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-xp-card {
   padding: clamp(5px, 0.6vw, 8px) clamp(6px, 0.75vw, 10px) clamp(5px, 0.6vw, 8px);
   border-radius: clamp(8px, 0.9vw, 12px);
-  /* BG alpha dropped to 0.25 so the lobby background reads through.
-   * Border + drop-shadow stay full strength so the panel still
-   * registers as a distinct surface above the outer card's
-   * (also-translucent) BG. */
+  /* BG at 0.85 alpha — the dark-blue colour reads as before with
+   * only a hint of transparency, just enough to let the outer
+   * card's BG show through faintly. */
   background:
-    linear-gradient(180deg, rgba(18, 35, 92, 0.25), rgba(6, 9, 42, 0.25)),
-    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.18), transparent 42%);
+    linear-gradient(180deg, rgba(18, 35, 92, 0.85), rgba(6, 9, 42, 0.85)),
+    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.3), transparent 42%);
   border: 1px solid rgba(98, 84, 218, 0.45);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -8746,12 +8744,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: clamp(4px, 0.45vw, 6px) clamp(4px, 0.6vw, 8px);
   border-radius: clamp(8px, 0.9vw, 11px);
-  /* BG alpha dropped to 0.25 to match the XP card so lobby BG
-   * shows through. The dividers between stat cells stay opaque
-   * for legibility. */
+  /* BG at 0.85 alpha to match the XP card — preserves the dark
+   * brand colour with only a slight transparency. */
   background:
-    linear-gradient(180deg, rgba(20, 15, 66, 0.25), rgba(4, 8, 35, 0.25)),
-    radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.15), transparent 36%);
+    linear-gradient(180deg, rgba(20, 15, 66, 0.85), rgba(4, 8, 35, 0.85)),
+    radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.25), transparent 36%);
   border: 1px solid rgba(104, 69, 219, 0.5);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -8858,13 +8855,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   vertical-align: -0.08em;
 }
 
-/* Mobile — halve the card width (24rem → 12rem) and stack the
- * stat cells vertically (3-up would make each cell too narrow at
- * phone widths). Text sizes are unchanged per request; the card
- * just compresses its chrome around the same text. */
-@media (max-width: 600px) {
+/* Mobile + tablet — cap the card at 10rem (was 12rem at 600 px) and
+ * raise the breakpoint to 900 px so it catches the tablet/phone-
+ * mockup viewports the previous narrower breakpoint missed. Stack
+ * the stat cells vertically since 3-up makes each cell too narrow
+ * at these widths. Text sizes are unchanged. */
+@media (max-width: 900px) {
   .lobby-pp-card {
-    max-width: 12rem;
+    max-width: 10rem;
   }
 
   .lobby-pp-stats {
