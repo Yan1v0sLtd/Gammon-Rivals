@@ -8543,7 +8543,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .lobby-pp-name {
   width: 100%;
-  text-align: center;
+  /* Left-aligned to sit directly above the rank chip (which is
+   * inline-flex / width:max-content and also starts at the
+   * column's left edge). */
+  text-align: left;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(10px, 1.2vw, 14px);
@@ -8618,6 +8621,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .lobby-pp-xp-row {
+  /* Width matches the XP bar below (50%) so "LEVEL N" sits over
+   * the bar's left edge and "LEVEL N+1" over the bar's right
+   * edge. Keeps the two-label header visually tied to the bar
+   * instead of stretching to the card's edge. */
+  width: 50%;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
