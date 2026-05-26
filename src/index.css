@@ -8321,73 +8321,55 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  */
 
 .lobby-pp-card {
-  --lobby-pp-radius: clamp(12px, 1vw, 16px);
-  --lobby-pp-pad: clamp(8px, 0.8vw, 12px);
+  --lobby-pp-radius: 0;
+  --lobby-pp-pad: clamp(10px, 1vw, 14px);
   position: relative;
   isolation: isolate;
-  /* Compact widget for the lobby top bar — capped to 12rem now
-   * that the stats panel is gone and the rank chip sits below
-   * the name (vertical stack inside the right column means the
-   * column doesn't need width for two horizontal elements).
-   * Outer margin 12px top / 16px left keeps it off the screen
-   * edges. */
+  /* Frameless widget — no border, no inner ring, no card frame.
+   * Profile info floats on a soft radial gradient that fades to
+   * transparent at the edges so the lobby art shows through.
+   * The gradient is denser in the centre (where the avatar +
+   * info live) and dissolves at the perimeter. A small backdrop
+   * blur softens the lobby art behind so the text reads cleanly. */
   width: 100%;
-  max-width: min(100%, 14rem);
+  max-width: min(100%, 16rem);
   margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
+  border: none;
   border-radius: var(--lobby-pp-radius);
-  /* Border halved from 2.5 px → 1.25 px per operator request — the
-   * gold/purple gradient frame now reads as a finer rim. */
-  border: 1.25px solid transparent;
   background:
-    linear-gradient(143deg, rgba(7, 12, 49, 0.85), rgba(4, 6, 28, 0.85)) padding-box,
-    linear-gradient(115deg, #fff4a5 0%, #ff9e05 18%, #ff6df8 47%, #5b43ff 64%, #fff0a7 82%, #ff7b16 100%) border-box;
-  box-shadow:
-    0 0 0 1.5px rgba(255, 245, 170, 0.3) inset,
-    0 0 0 3px rgba(28, 13, 75, 0.5),
-    0 0 18px rgba(175, 46, 255, 0.45),
-    0 10px 28px rgba(0, 0, 0, 0.45);
-  /* Soft blur on what shows through so the lobby art doesn't
-   * fight the card text for attention. */
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  overflow: hidden;
+    radial-gradient(
+      ellipse at center,
+      rgba(45, 22, 95, 0.62) 0%,
+      rgba(25, 12, 55, 0.42) 40%,
+      rgba(10, 5, 30, 0.18) 72%,
+      transparent 100%
+    );
+  box-shadow: none;
+  overflow: visible;
   text-align: left;
   color: white;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
+/* Inner border + outer glow pseudo-elements removed — the
+ * frameless v10 design relies on the radial gradient backdrop
+ * alone. Both rules left as a no-op marker so the source
+ * history stays legible. */
 .lobby-pp-card::before {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border-radius: calc(var(--lobby-pp-radius) - 5px);
-  border: 1px solid rgba(122, 86, 255, 0.45);
-  box-shadow: inset 0 0 18px rgba(89, 48, 202, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  pointer-events: none;
-  z-index: 4;
+  content: none;
 }
 
 .lobby-pp-card::after {
-  content: "";
-  position: absolute;
-  inset: -18%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 18% 42%, rgba(179, 56, 255, 0.4), transparent 22%),
-    radial-gradient(circle at 90% 48%, rgba(27, 44, 139, 0.42), transparent 30%);
+  content: none;
 }
 
+/* Shine line was part of the frame chrome — hidden in v10's
+ * frameless design. The element still renders in the JSX so we
+ * can resurrect it with a single line if a frame returns. */
 .lobby-pp-shine {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  top: 4px;
-  height: 1.5px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), #ffd237, transparent);
-  filter: drop-shadow(0 0 6px #ffd237);
-  z-index: 5;
-  pointer-events: none;
+  display: none;
 }
 
 .lobby-pp-content {
@@ -8601,21 +8583,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   text-overflow: ellipsis;
 }
 
-/* XP card */
+/* XP card — frameless. Was a dark-blue rounded panel with its
+ * own border + drop-shadow. The v10 design lets the level
+ * header, XP bar, and next-reward line sit directly on the
+ * outer card's radial gradient backdrop. The XP bar pill keeps
+ * its own gold/orange frame (defined below). */
 .lobby-pp-xp-card {
-  padding: clamp(5px, 0.6vw, 8px) clamp(6px, 0.75vw, 10px) clamp(5px, 0.6vw, 8px);
-  border-radius: clamp(8px, 0.9vw, 12px);
-  /* BG at 0.85 alpha — preserves the dark-blue brand colour with
-   * a slight transparency so the outer card's BG reads through
-   * faintly. */
-  background:
-    linear-gradient(180deg, rgba(18, 35, 92, 0.85), rgba(6, 9, 42, 0.85)),
-    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.3), transparent 42%);
-  border: 1px solid rgba(98, 84, 218, 0.45);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.22),
-    0 4px 8px rgba(0, 0, 0, 0.26);
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .lobby-pp-xp-row {
