@@ -76,16 +76,32 @@ export interface LobbyNavItem {
 // DB-managed boards.
 export const lobbyBoards: readonly LobbyBoard[] = [];
 
+/**
+ * Side-rail offer cards (left column of the lobby). Each card is
+ * a 200x200 source image now — the wide horizontal layouts from
+ * earlier rounds were replaced with square icon-style assets per
+ * operator direction:
+ *
+ *   - 'coins'   → "Special Offers" badge (treasure + chest + dice)
+ *   - 'daily'   → "Daily Bonus" circular badge
+ *   - 'connect' → "How to Play" circular badge (was the Google-
+ *                 linking Connect tile; the id stays for click-
+ *                 routing compat, the visible image + title shift)
+ *
+ * Click routing in LobbyScreen still keys off `id`, so a future
+ * round wiring "how to play" to a modal can branch on
+ * id === 'connect' without renaming. Aspect ratio is now 1/1 so
+ * the square icons fit cleanly in the side-rail column.
+ */
 export const lobbyOffers: readonly LobbyOffer[] = [
   {
     id: 'coins',
-    title: 'Coins Offer',
-    subtitle: 'Limited bundle',
+    title: 'Special Offers',
+    subtitle: 'Limited deals',
     tone: 'from-[#8f18ff] via-[#bd23d7] to-[#6110a8]',
-    badge: '2',
     symbol: '$',
-    image: '/lobby/cards/coins-offer.webp',
-    aspectRatio: '650 / 261',
+    image: '/lobby/cards/special-offers.webp',
+    aspectRatio: '1 / 1',
   },
   {
     id: 'daily',
@@ -94,15 +110,17 @@ export const lobbyOffers: readonly LobbyOffer[] = [
     tone: 'from-[#075dbf] via-[#1176d7] to-[#073d86]',
     badge: '1',
     symbol: '*',
-    image: '/lobby/cards/daily-bonus.webp',
-    aspectRatio: '650 / 275',
+    image: '/lobby/cards/daily-bonus-icon.webp',
+    aspectRatio: '1 / 1',
   },
   {
     id: 'connect',
-    title: 'Connect',
-    subtitle: 'Save progress',
+    title: 'How to Play',
+    subtitle: 'Learn the basics',
     tone: 'from-[#146b25] via-[#1d8d38] to-[#0c4b1c]',
     symbol: 'f',
+    image: '/lobby/cards/how-to-play.webp',
+    aspectRatio: '1 / 1',
   },
 ];
 

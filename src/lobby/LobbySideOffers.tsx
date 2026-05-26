@@ -11,24 +11,26 @@ export function LobbySideOffers({ onOfferClick }: LobbySideOffersProps = {}) {
         <button
           key={offer.id}
           type="button"
+          aria-label={offer.title}
           onClick={() => onOfferClick?.(offer.id)}
           style={offer.image ? { aspectRatio: offer.aspectRatio } : undefined}
-          className={`lobby-offer-card relative flex min-h-[6.7rem] min-w-[13rem] flex-1 items-center gap-3 overflow-hidden text-left transition hover:brightness-110 active:translate-y-1 ${
+          className={`lobby-offer-card relative flex min-w-[12.5rem] max-w-[12.5rem] items-center justify-center overflow-visible bg-transparent p-0 text-left transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${
             offer.image
-              ? 'rounded-lg border border-white/22 bg-black/20 p-0 shadow-[0_9px_18px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.16)]'
-              : `rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`
+              ? 'border-0 shadow-none'
+              : `min-h-[6.7rem] rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`
           }`}
         >
           {offer.image ? (
             <>
+              {/* Standalone 200x200 icon. No background tint, no
+                  arrow chevron, no border — the icon art carries
+                  its own frame and CTA hint. */}
               <img
                 src={offer.image}
                 alt=""
-                className="absolute inset-0 h-full w-full object-cover"
+                className="h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.42)]"
                 draggable={false}
               />
-              <span className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,transparent_72%,rgba(0,0,0,0.42)_100%)]" />
-              <span className="lobby-offer-arrow" aria-hidden="true">›</span>
             </>
           ) : (
             <>
