@@ -4,7 +4,6 @@ import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
 import { LobbyProfileCard } from './LobbyProfileCard';
 import { RollingNumber } from './RollingNumber';
-import type { LobbyProfileStats } from './useLobbyProfileStats';
 import { XpBoostBadge } from './XpBoostBadge';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -14,7 +13,6 @@ interface LobbyTopBarProps {
   readonly profile: ProfileRow | null;
   readonly wallet: UserWallet | null;
   readonly progression: ProfileProgression;
-  readonly profileStats: LobbyProfileStats | null;
   readonly isGuest: boolean;
   onLinkGoogle(): Promise<void>;
 }
@@ -101,7 +99,6 @@ export function LobbyTopBar({
   profile,
   wallet,
   progression,
-  profileStats,
   isGuest,
   onLinkGoogle,
 }: LobbyTopBarProps) {
@@ -140,7 +137,6 @@ export function LobbyTopBar({
         <LobbyProfileCard
           profile={profile}
           progression={progression}
-          stats={profileStats}
         />
         {/* XP-boost chip + guest "Save progress" CTA sit BELOW the
             premium card so they don't break its tight visual

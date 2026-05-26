@@ -23,7 +23,6 @@ import {
 import { LobbyActionCard } from './LobbyActionCard';
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
-import { useLobbyProfileStats } from './useLobbyProfileStats';
 import { useWheelState } from './useWheelState';
 import { WheelModal } from './WheelModal';
 import { DailyMissionsModal } from './DailyMissionsModal';
@@ -118,11 +117,6 @@ export function LobbyScreen() {
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const dailyBonus = useDailyBonus();
   const wheel = useWheelState('main');
-  // Profile stats for the new premium card — one RPC, refetches on
-  // login change. Refresh hook is exposed in case a future flow
-  // needs to bump the numbers after a match completes (today the
-  // numbers update naturally on next lobby mount).
-  const { stats: profileStats } = useLobbyProfileStats(profile?.id);
   const [wheelModalOpen, setWheelModalOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [missionsModalOpen, setMissionsModalOpen] = useState(false);
@@ -629,7 +623,6 @@ export function LobbyScreen() {
           profile={profile}
           wallet={wallet}
           progression={progression}
-          profileStats={profileStats}
           isGuest={isGuest}
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
         />
