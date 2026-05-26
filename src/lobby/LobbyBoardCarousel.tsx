@@ -436,10 +436,13 @@ export function LobbyBoardCarousel({
 
   // ----- Arrow / dot navigation -----
 
-  const animateByOffset = (delta: -1 | 1) => {
-    cancelAnimation();
-    animateTo(Math.round(positionRef.current) + delta, SNAP_DURATION_MS, true);
-  };
+  // animateByOffset was used by the prev/next arrows that were
+  // removed in v12. Kept as a comment placeholder so future
+  // surfaces (e.g. keyboard arrow keys) can re-add a one-liner.
+  // const animateByOffset = (delta: -1 | 1) => {
+  //   cancelAnimation();
+  //   animateTo(Math.round(positionRef.current) + delta, SNAP_DURATION_MS, true);
+  // };
 
   const animateToBoardIdx = (idx: number) => {
     if (boards.length === 0) return;
@@ -608,46 +611,9 @@ export function LobbyBoardCarousel({
           </div>
         </div>
 
-        <button
-          type="button"
-          aria-label="Previous board"
-          onClick={() => animateByOffset(-1)}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="absolute left-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-gradient-to-b from-[#2f3540] via-[#1a1f2a] to-[#0a0e16] text-[#ffd16f] shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_2px_0_rgba(255,255,255,0.22),inset_0_-5px_0_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,216,116,0.28)] transition hover:scale-105 hover:brightness-110 active:scale-95"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-7 w-7 -translate-x-[1px] drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="15 5 8 12 15 19" />
-          </svg>
-        </button>
-        <button
-          type="button"
-          aria-label="Next board"
-          onClick={() => animateByOffset(1)}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="absolute right-[14%] top-[43%] z-40 grid h-14 w-14 -translate-y-1/2 place-items-center rounded-full border-[3px] border-[#d8a04f] bg-gradient-to-b from-[#2f3540] via-[#1a1f2a] to-[#0a0e16] text-[#ffd16f] shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_2px_0_rgba(255,255,255,0.22),inset_0_-5px_0_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,216,116,0.28)] transition hover:scale-105 hover:brightness-110 active:scale-95"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-7 w-7 translate-x-[1px] drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="9 5 16 12 9 19" />
-          </svg>
-        </button>
+        {/* Prev/Next navigation arrows removed per operator
+            direction — board switching is now drag/swipe-only (and
+            the bottom dot indicators handle taps for accessibility). */}
 
         {/* Inline PLAY button — only on the centered board, only when
           *  the player fully owns it (level + purchase). Half the size
