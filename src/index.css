@@ -791,7 +791,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     width: 100%;
   }
 
-  .lobby-offer-card {
+  /* Non-image offer cards (text + symbol + arrow chrome) — the
+   * old Connect-style tile. Kept slim on short landscape so it
+   * doesn't dominate. Now scoped to :not(:has(> img)) so the
+   * new 400x400 image icons aren't constrained to this layout. */
+  .lobby-offer-card:not(:has(> img)) {
     flex: 0 0 clamp(2.7rem, 12dvh, 3.35rem);
     min-width: 0;
     min-height: 0;
@@ -801,9 +805,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     gap: 0.32rem;
   }
 
-  .lobby-offer-card:has(> img) > span.relative {
-    margin-left: 36%;
-    padding-right: 0.55rem;
+  /* Image offer cards — square aspect, sized off the viewport
+   * shorter axis. min(40dvw, 22dvh) keeps them visible without
+   * dominating the column. */
+  .lobby-offer-card:has(> img) {
+    flex: 0 0 min(40dvw, 22dvh) !important;
+    width: min(40dvw, 22dvh) !important;
+    height: min(40dvw, 22dvh) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 0;
+    gap: 0;
   }
 
   .lobby-offer-card:not(:has(> img)) > span.relative.grid {
@@ -1402,8 +1415,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     padding: 0;
   }
 
-  .lobby-offer-card {
-    /* 20 % smaller across the board. 330 -> 264, 125 -> 100. */
+  /* Old text-tile cards — wide horizontal rectangle. Scoped to
+   * non-image variants so the new 400x400 icon cards aren't
+   * forced into a 264u x 100u shape. */
+  .lobby-offer-card:not(:has(> img)) {
     flex: 0 0 calc(100 * var(--lobby-u));
     width: calc(264 * var(--lobby-u));
     min-width: 0;
@@ -1416,8 +1431,23 @@ button.lobby-hourly-bonus-pill.is-ready:active {
       0 calc(7 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
   }
 
-  .lobby-offer-card:has(> img) > span.absolute.inset-0 {
-    background: linear-gradient(90deg, transparent 0%, transparent 72%, rgba(0, 0, 0, 0.42) 100%) !important;
+  /* Image icon cards — square, sized off lobby-u so they scale
+   * with the rest of the lobby. 240u ~ 256 px on 1080p desktop
+   * which is a good "noticeable but not dominating" footprint;
+   * shrinks proportionally on smaller screens. */
+  .lobby-offer-card:has(> img) {
+    flex: 0 0 calc(240 * var(--lobby-u)) !important;
+    width: calc(240 * var(--lobby-u)) !important;
+    height: calc(240 * var(--lobby-u)) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 0;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 0;
+    gap: 0;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
   }
 
   .lobby-offer-card:not(:has(> img)) > span.relative.grid {
