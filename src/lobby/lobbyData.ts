@@ -106,8 +106,23 @@ export const lobbyOffers: readonly LobbyOffer[] = [
   },
 ];
 
+/**
+ * Feature gate for the Daily Missions surface. Flipped to `false` per
+ * product direction — the feature ships server-side (cron jobs continue
+ * to rotate missions + accrue progress) but every client-facing
+ * surface (nav slot, modal entry point, the useDailyMissions DB
+ * round-trip) is suppressed. Re-enable by flipping to `true`; nothing
+ * else needs to change.
+ */
+export const MISSIONS_ENABLED = false;
+
 export const lobbyNavItems: readonly LobbyNavItem[] = [
-  { id: 'missions', label: 'Missions', image: '/lobby/nav/missions.webp' },
+  // Missions slot — when MISSIONS_ENABLED is false we drop the image
+  // so LobbyBottomNav renders an empty placeholder (matches the
+  // existing middle-slot treatment) and skips the onClick wiring.
+  MISSIONS_ENABLED
+    ? { id: 'missions', label: 'Missions', image: '/lobby/nav/missions.webp' }
+    : { id: 'missions-disabled', label: '' },
   { id: 'events', label: 'Events', image: '/lobby/nav/events.webp' },
   // Middle slot reserved — leave empty for now.
   { id: 'placeholder', label: '' },

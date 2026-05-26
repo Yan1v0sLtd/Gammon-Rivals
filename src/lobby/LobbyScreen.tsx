@@ -29,7 +29,7 @@ import { DailyMissionsModal } from './DailyMissionsModal';
 import { useDailyMissions } from './useDailyMissions';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
-import type { LobbyBoard, LobbyBoardId } from './lobbyData';
+import { MISSIONS_ENABLED, type LobbyBoard, type LobbyBoardId } from './lobbyData';
 import { RewardFlight, type RewardFlightSpec, type FlightCurrency } from './RewardFlight';
 import { useDailyBonus } from './useDailyBonus';
 import { useLobbyBoards } from './useLobbyBoards';
@@ -51,7 +51,9 @@ const LOBBY_STATIC_ASSETS: readonly string[] = [
   '/lobby/cards/coins-offer.webp',
   '/lobby/cards/daily-bonus.webp',
   '/lobby/nav/events.webp',
-  '/lobby/nav/missions.webp',
+  // Missions nav icon intentionally excluded — the feature is gated by
+  // MISSIONS_ENABLED in lobbyData.ts. Re-add this entry when the
+  // surface is enabled again.
   '/lobby/nav/nav-bg.webp',
   '/lobby/nav/tournaments.webp',
   '/lobby/nav/vip-club.webp',
@@ -120,9 +122,14 @@ export function LobbyScreen() {
   const [wheelModalOpen, setWheelModalOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [missionsModalOpen, setMissionsModalOpen] = useState(false);
-  const missionsResult = useDailyMissions(profile?.id);
-  const missionsClaimableBadge =
-    missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0;
+  // Missions hook still mounted unconditionally to satisfy rules-of-hooks,
+  // but we pass `undefined` when MISSIONS_ENABLED is false so it skips
+  // the get_player_missions_today RPC + realtime subscriptions and stays
+  // a no-op. Re-enable end-to-end by flipping MISSIONS_ENABLED.
+  const missionsResult = useDailyMissions(MISSIONS_ENABLED ? profile?.id : undefined);
+  const missionsClaimableBadge = MISSIONS_ENABLED
+    ? missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0
+    : 0;
   const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
   const [justClaimedBonus, setJustClaimedBonus] = useState<{
@@ -709,7 +716,7 @@ export function LobbyScreen() {
         />
       ) : null}
 
-      {missionsModalOpen ? (
+      {MISSIONS_ENABLED && missionsModalOpen ? (
         <DailyMissionsModal
           result={missionsResult}
           onClose={() => {
