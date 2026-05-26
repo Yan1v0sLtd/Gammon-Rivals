@@ -14,17 +14,16 @@ interface LobbyProfileCardProps {
  * Compact profile card for the lobby top-bar. Visual structure
  * (`lobby-pp-*` classes in index.css):
  *
- *   ┌─────────────────────────────────────────────┐
- *   │ shine line                                  │
- *   │ ┌─────────┐  ┌──────────────────────────┐   │
- *   │ │         │  │ NAME           ★ RANK    │   │
- *   │ │ avatar  │  │ ┌──────────────────────┐ │   │
- *   │ │ + level │  │ │ LEVEL N › LEVEL N+1  │ │   │
- *   │ │  shield │  │ │ ▓▓░░ XP / max XP     │ │   │
- *   │ │         │  │ │ Next Reward: 🪙 500  │ │   │
- *   │ └─────────┘  │ └──────────────────────┘ │   │
- *   │              └──────────────────────────┘   │
- *   └─────────────────────────────────────────────┘
+ *   ┌────────────────────────────────────────┐
+ *   │ shine line                             │
+ *   │ ┌─────────┐  NAME                      │
+ *   │ │         │  ★ RANK                    │
+ *   │ │ avatar  │  ┌──────────────────────┐  │
+ *   │ │ + level │  │ LEVEL N › LEVEL N+1  │  │
+ *   │ │  shield │  │ ▓▓░░ XP / max XP     │  │
+ *   │ │         │  │ Next Reward: 🪙 500  │  │
+ *   │ └─────────┘  └──────────────────────┘  │
+ *   └────────────────────────────────────────┘
  *
  * Stats panel (Highest Win / Daily Streak / Win Rate) lived here
  * previously; removed per operator direction. The data hook
@@ -84,15 +83,10 @@ export function LobbyProfileCard({
         </div>
 
         <div className="lobby-pp-main">
-          {/* Name + rank sit on a single horizontal row. The name
-              flexes and truncates with ellipsis; the rank pill is
-              flex-shrink: 0 so it always stays visible. */}
-          <div className="lobby-pp-name-row">
-            <h1 className="lobby-pp-name">{name}</h1>
-            <div className="lobby-pp-rank" aria-label={`Rank ${progression.statusLabel}`}>
-              <div className="lobby-pp-rank-badge" aria-hidden="true">★</div>
-              <div className="lobby-pp-rank-text">{progression.statusLabel.toUpperCase()}</div>
-            </div>
+          <h1 className="lobby-pp-name">{name}</h1>
+          <div className="lobby-pp-rank" aria-label={`Rank ${progression.statusLabel}`}>
+            <div className="lobby-pp-rank-badge" aria-hidden="true">★</div>
+            <div className="lobby-pp-rank-text">{progression.statusLabel.toUpperCase()}</div>
           </div>
 
           <section className="lobby-pp-xp-card" aria-label="Level progress">

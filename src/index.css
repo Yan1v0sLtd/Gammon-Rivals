@@ -8325,20 +8325,20 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --lobby-pp-pad: clamp(8px, 0.8vw, 12px);
   position: relative;
   isolation: isolate;
-  /* Compact widget for the lobby top bar — capped to 16rem so the
-   * 3-column stats panel (Highest Win / Daily Streak / Win Rate)
-   * fits horizontally without forcing a vertical stack. Smaller
-   * than the original 24rem cap, big enough for the composition
-   * to read clearly. Outer margin 12px top / 16px left keeps it
-   * off the screen edges. */
+  /* Compact widget for the lobby top bar — capped to 12rem now
+   * that the stats panel is gone and the rank chip sits below
+   * the name (vertical stack inside the right column means the
+   * column doesn't need width for two horizontal elements).
+   * Outer margin 12px top / 16px left keeps it off the screen
+   * edges. */
   width: 100%;
-  max-width: min(100%, 16rem);
+  max-width: min(100%, 12rem);
   margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
   border-radius: var(--lobby-pp-radius);
   border: 2.5px solid transparent;
   background:
-    linear-gradient(143deg, rgba(7, 12, 49, 0.25), rgba(4, 6, 28, 0.25)) padding-box,
+    linear-gradient(143deg, rgba(7, 12, 49, 0.85), rgba(4, 6, 28, 0.85)) padding-box,
     linear-gradient(115deg, #fff4a5 0%, #ff9e05 18%, #ff6df8 47%, #5b43ff 64%, #fff0a7 82%, #ff7b16 100%) border-box;
   box-shadow:
     0 0 0 1.5px rgba(255, 245, 170, 0.3) inset,
@@ -8522,18 +8522,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   padding-top: 0;
 }
 
-/* Name + rank on a single horizontal line. Name flexes (truncates
- * with ellipsis); rank is flex-shrink: 0 so it stays whole. */
-.lobby-pp-name-row {
-  display: flex;
-  align-items: center;
-  gap: clamp(5px, 0.7vw, 9px);
-  min-width: 0;
-}
-
 .lobby-pp-name {
-  flex: 0 1 auto;
-  min-width: 0;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(11px, 1.35vw, 18px);
@@ -8598,10 +8587,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-xp-card {
   padding: clamp(5px, 0.6vw, 8px) clamp(6px, 0.75vw, 10px) clamp(5px, 0.6vw, 8px);
   border-radius: clamp(8px, 0.9vw, 12px);
-  /* BG at 0.25 alpha so the lobby BG reads through clearly. */
+  /* BG at 0.85 alpha — preserves the dark-blue brand colour with
+   * a slight transparency so the outer card's BG reads through
+   * faintly. */
   background:
-    linear-gradient(180deg, rgba(18, 35, 92, 0.25), rgba(6, 9, 42, 0.25)),
-    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.18), transparent 42%);
+    linear-gradient(180deg, rgba(18, 35, 92, 0.85), rgba(6, 9, 42, 0.85)),
+    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.3), transparent 42%);
   border: 1px solid rgba(98, 84, 218, 0.45);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
