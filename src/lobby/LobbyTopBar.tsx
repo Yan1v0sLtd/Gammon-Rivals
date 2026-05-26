@@ -135,7 +135,7 @@ export function LobbyTopBar({
   };
 
   return (
-    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(20rem,1fr)_auto] md:items-start">
+    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
       <div className="lobby-pp-shell relative flex min-w-0 flex-col gap-2">
         <LobbyProfileCard
           profile={profile}

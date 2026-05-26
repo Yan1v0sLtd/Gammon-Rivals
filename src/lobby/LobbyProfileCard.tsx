@@ -109,25 +109,46 @@ export function LobbyProfileCard({
               <div
                 className="lobby-pp-xp-fill"
                 style={{ width: `${Math.max(0, Math.min(100, progression.progressPercent))}%` }}
-              />
+              >
+                {/* Decorative bubbles flowing inside the filled
+                    portion. Two layers (slow + fast) — see CSS
+                    `lobby-pp-xp-fill-bubbles` + its ::after pseudo.
+                    Ported from the legacy `.lobby-profile-progress-
+                    bubbles` so the new bar gets the same lava-flow
+                    feel as the old skinny bar. */}
+                <span className="lobby-pp-xp-fill-bubbles" aria-hidden="true" />
+              </div>
+              {/* Wrap text in a single span so the surrounding flex
+                  container treats it as ONE centered child. Without
+                  the wrapper, fragment-style children (the <b> and
+                  the trailing text node) become separate flex items
+                  that can wrap and look odd. */}
               <div className="lobby-pp-xp-text">
-                {isMaxLevel ? (
-                  <>
-                    <b>{progression.xp.toLocaleString()}</b>&nbsp;XP
-                  </>
-                ) : (
-                  <>
-                    <b>{xpIntoLevel.toLocaleString()}</b>
-                    &nbsp;/ {span.toLocaleString()} XP
-                  </>
-                )}
+                <span>
+                  {isMaxLevel ? (
+                    <>
+                      <b>{progression.xp.toLocaleString()}</b>&nbsp;XP
+                    </>
+                  ) : (
+                    <>
+                      <b>{xpIntoLevel.toLocaleString()}</b>
+                      &nbsp;/ {span.toLocaleString()} XP
+                    </>
+                  )}
+                </span>
               </div>
             </div>
 
             {isMaxLevel || nextRewardCoins <= 0 ? null : (
               <p className="lobby-pp-reward">
-                Next Reward: <span className="lobby-pp-coin">♛</span>
-                <b>&nbsp;{nextRewardCoins.toLocaleString()} Coins</b>
+                Next Reward:{' '}
+                <img
+                  src="/lobby/icons/gold-coin.webp"
+                  alt=""
+                  draggable={false}
+                  className="lobby-pp-coin-img"
+                />
+                <b>{nextRewardCoins.toLocaleString()} Coins</b>
               </p>
             )}
           </section>
@@ -138,7 +159,12 @@ export function LobbyProfileCard({
             label="Highest Win"
             value={
               <>
-                <span className="lobby-pp-coin" aria-hidden="true">♛</span>
+                <img
+                  src="/lobby/icons/gold-coin.webp"
+                  alt=""
+                  draggable={false}
+                  className="lobby-pp-coin-img"
+                />
                 {formatCompactNumber(stats?.highestWin ?? 0)}
               </>
             }
