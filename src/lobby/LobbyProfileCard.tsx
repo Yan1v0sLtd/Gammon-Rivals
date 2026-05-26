@@ -14,16 +14,18 @@ interface LobbyProfileCardProps {
  * Compact profile card for the lobby top-bar. Visual structure
  * (`lobby-pp-*` classes in index.css):
  *
- *   ┌────────────────────────────────────────┐
- *   │ shine line                             │
- *   │  ┌───────┐   ┌──────────────────────┐  │
- *   │  │ avatar│   │ LEVEL N › LEVEL N+1  │  │
- *   │  │ + lvl │   │ ▓▓░░ XP / max XP     │  │
- *   │  │ shield│   │ Next Reward: 🪙 500  │  │
- *   │  └───────┘   └──────────────────────┘  │
- *   │   NAME                                 │
- *   │   ★ RANK                               │
- *   └────────────────────────────────────────┘
+ *   ┌─────────────────────────────────────────┐
+ *   │  ┌───────┐    NAME                      │
+ *   │  │ avatar│    ★ RANK                    │
+ *   │  │ + lvl │    LEVEL N    LEVEL N+1      │
+ *   │  │ shield│    ▓▓░░░░░░░ XP / max XP     │
+ *   │  └───────┘                              │
+ *   └─────────────────────────────────────────┘
+ *
+ * The card has no frame chrome — just a soft radial gradient
+ * backdrop that fades to transparent at the edges (CSS mask
+ * matches the gradient so backdrop-blur doesn't paint a hard
+ * rectangle). XP bar is the only element with a visible border.
  *
  * Stats panel (Highest Win / Daily Streak / Win Rate) lived here
  * previously; removed per operator direction. The data hook
@@ -50,7 +52,6 @@ export function LobbyProfileCard({
   const isMaxLevel = progression.nextLevelXp === null;
 
   const nextLevel = progression.nextLevelReward?.level ?? progression.level + 1;
-  const nextRewardCoins = progression.nextLevelReward?.coins ?? 0;
 
   return (
     <Link
@@ -62,9 +63,9 @@ export function LobbyProfileCard({
       <span className="lobby-pp-shine" aria-hidden="true" />
 
       <div className="lobby-pp-content">
-        {/* Identity column — avatar up top, then name + rank stacked
-            directly under it. Keeps the right column for the XP card
-            only, which lets the modal squeeze its overall height. */}
+        {/* Identity column — JUST the avatar + level shield. Name and
+            rank moved to the top of the main column so the whole text
+            stack reads vertically (name → rank → level → bar). */}
         <div className="lobby-pp-identity">
           <div className="lobby-pp-avatar-wrap">
             <div className="lobby-pp-avatar-ring">
@@ -85,15 +86,15 @@ export function LobbyProfileCard({
               </div>
             </div>
           </div>
+        </div>
 
+        <div className="lobby-pp-main">
           <h1 className="lobby-pp-name">{name}</h1>
           <div className="lobby-pp-rank" aria-label={`Rank ${progression.statusLabel}`}>
             <div className="lobby-pp-rank-badge" aria-hidden="true">★</div>
             <div className="lobby-pp-rank-text">{progression.statusLabel.toUpperCase()}</div>
           </div>
-        </div>
 
-        <div className="lobby-pp-main">
           <section className="lobby-pp-xp-card" aria-label="Level progress">
             <div className="lobby-pp-xp-row">
               <span>LEVEL {progression.level}</span>
@@ -137,18 +138,9 @@ export function LobbyProfileCard({
               </div>
             </div>
 
-            {isMaxLevel || nextRewardCoins <= 0 ? null : (
-              <p className="lobby-pp-reward">
-                Next Reward:{' '}
-                <img
-                  src="/lobby/icons/gold-coin.webp"
-                  alt=""
-                  draggable={false}
-                  className="lobby-pp-coin-img"
-                />
-                <b>{nextRewardCoins.toLocaleString()} Coins</b>
-              </p>
-            )}
+            {/* "Next Reward: 🪙 N Coins" line removed per operator
+                direction — the level reward is still surfaced on
+                level-up promotion, the profile card stays minimal. */}
           </section>
         </div>
       </div>

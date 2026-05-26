@@ -8351,6 +8351,27 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   color: white;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
+  /* CSS mask matching the radial backdrop gradient. backdrop-filter
+   * normally fills the element's full rectangle (creating a hard
+   * blur edge); the mask clips both the blur and the gradient
+   * paint to the same elliptical falloff so the card melts into
+   * the lobby BG without any visible rectangular boundary. */
+  mask-image: radial-gradient(
+    ellipse at center,
+    black 0%,
+    black 38%,
+    rgba(0, 0, 0, 0.85) 60%,
+    rgba(0, 0, 0, 0.35) 82%,
+    transparent 100%
+  );
+  -webkit-mask-image: radial-gradient(
+    ellipse at center,
+    black 0%,
+    black 38%,
+    rgba(0, 0, 0, 0.85) 60%,
+    rgba(0, 0, 0, 0.35) 82%,
+    transparent 100%
+  );
 }
 
 /* Inner border + outer glow pseudo-elements removed — the
@@ -8609,7 +8630,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .lobby-pp-xp-row .lobby-pp-xp-next {
-  color: #bda0ff;
+  /* Same colour as the LEVEL N label on the left — operator wanted
+   * symmetry between "Level 1" and "Level 2". */
+  color: white;
   text-align: right;
   text-shadow: 0 1px 0 #2b185b;
 }
@@ -8622,6 +8645,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .lobby-pp-xp-bar {
   position: relative;
+  /* Half-width so it doesn't dominate the row. Stays left-aligned
+   * so the LEVEL N label sits directly above the bar's start. */
+  width: 50%;
   height: clamp(12px, 1.35vw, 17px);
   border-radius: 999px;
   padding: 1.5px;
