@@ -8332,11 +8332,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * Outer margin 12px top / 16px left keeps it off the screen
    * edges. */
   width: 100%;
-  max-width: min(100%, 12rem);
+  max-width: min(100%, 14rem);
   margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
   border-radius: var(--lobby-pp-radius);
-  border: 2.5px solid transparent;
+  /* Border halved from 2.5 px → 1.25 px per operator request — the
+   * gold/purple gradient frame now reads as a finer rim. */
+  border: 1.25px solid transparent;
   background:
     linear-gradient(143deg, rgba(7, 12, 49, 0.85), rgba(4, 6, 28, 0.85)) padding-box,
     linear-gradient(115deg, #fff4a5 0%, #ff9e05 18%, #ff6df8 47%, #5b43ff 64%, #fff0a7 82%, #ff7b16 100%) border-box;
@@ -8393,16 +8395,30 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   z-index: 2;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  column-gap: clamp(6px, 0.75vw, 10px);
-  row-gap: clamp(6px, 0.7vw, 9px);
+  /* Top-align the two columns so the avatar sits at the same top
+   * line as the XP card. The identity column stretches downward
+   * with name + rank under the avatar; the XP card stays compact
+   * at the top of column 2, defining the modal's overall height. */
+  align-items: start;
+  column-gap: clamp(8px, 0.9vw, 12px);
+}
+
+/* Identity column — avatar + level shield + name + rank stacked
+ * vertically. Sits beside the XP card; the heights of the two
+ * columns balance so the modal doesn't get taller than necessary. */
+.lobby-pp-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(3px, 0.4vw, 5px);
+  min-width: 0;
 }
 
 /* Avatar column — column 1, row 1. */
 .lobby-pp-avatar-wrap {
   display: grid;
   place-items: center;
-  padding-bottom: clamp(8px, 0.9vw, 13px); /* leaves room for the level shield */
+  padding-bottom: clamp(6px, 0.7vw, 10px); /* leaves room for the level shield */
 }
 
 .lobby-pp-avatar-ring {
@@ -8523,16 +8539,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .lobby-pp-name {
+  width: 100%;
+  text-align: center;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
-  font-size: clamp(11px, 1.35vw, 18px);
+  font-size: clamp(10px, 1.2vw, 14px);
   line-height: 1;
   letter-spacing: -0.03em;
   color: white;
   text-shadow:
     0 1px 0 #d7dcff,
     0 2px 0 #151a55,
-    0 4px 6px rgba(0, 0, 0, 0.55);
+    0 3px 5px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

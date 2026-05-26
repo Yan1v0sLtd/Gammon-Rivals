@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
 import { LobbyProfileCard } from './LobbyProfileCard';
@@ -14,6 +13,12 @@ interface LobbyTopBarProps {
   readonly wallet: UserWallet | null;
   readonly progression: ProfileProgression;
   readonly isGuest: boolean;
+  /**
+   * Linking Google to a guest account. The lobby top-bar no longer
+   * exposes a "Save progress" button (operator decision — guests
+   * can still link from /profile), but the prop is kept so future
+   * surfaces can wire to it without an interface change.
+   */
   onLinkGoogle(): Promise<void>;
 }
 
@@ -99,11 +104,8 @@ export function LobbyTopBar({
   profile,
   wallet,
   progression,
-  isGuest,
-  onLinkGoogle,
 }: LobbyTopBarProps) {
   const navigate = useNavigate();
-  const [linking, setLinking] = useState(false);
   const openShop = () => navigate('/shop');
   const currencies = [
     {
@@ -122,15 +124,6 @@ export function LobbyTopBar({
     },
   ] as const;
 
-  const handleLinkGoogle = async () => {
-    setLinking(true);
-    try {
-      await onLinkGoogle();
-    } finally {
-      setLinking(false);
-    }
-  };
-
   return (
     <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
       <div className="lobby-pp-shell relative flex min-w-0 flex-col gap-2">
@@ -138,23 +131,13 @@ export function LobbyTopBar({
           profile={profile}
           progression={progression}
         />
-        {/* XP-boost chip + guest "Save progress" CTA sit BELOW the
-            premium card so they don't break its tight visual
-            grid. Both surface only when needed. */}
+        {/* XP-boost chip sits BELOW the premium card so it doesn't
+            break the card's tight visual grid. Renders nothing when
+            no boost is active. The guest "Save progress" CTA that
+            used to live here was removed per operator request —
+            guests can still link Google from the /profile page. */}
         <div className="flex flex-wrap items-center gap-2">
           <XpBoostBadge />
-          {isGuest && (
-            <button
-              type="button"
-              onClick={() => {
-                void handleLinkGoogle();
-              }}
-              disabled={linking}
-              className="rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
-            >
-              {linking ? 'Opening Google...' : 'Save progress'}
-            </button>
-          )}
         </div>
       </div>
 

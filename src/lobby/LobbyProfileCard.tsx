@@ -16,13 +16,13 @@ interface LobbyProfileCardProps {
  *
  *   ┌────────────────────────────────────────┐
  *   │ shine line                             │
- *   │ ┌─────────┐  NAME                      │
- *   │ │         │  ★ RANK                    │
- *   │ │ avatar  │  ┌──────────────────────┐  │
- *   │ │ + level │  │ LEVEL N › LEVEL N+1  │  │
- *   │ │  shield │  │ ▓▓░░ XP / max XP     │  │
- *   │ │         │  │ Next Reward: 🪙 500  │  │
- *   │ └─────────┘  └──────────────────────┘  │
+ *   │  ┌───────┐   ┌──────────────────────┐  │
+ *   │  │ avatar│   │ LEVEL N › LEVEL N+1  │  │
+ *   │  │ + lvl │   │ ▓▓░░ XP / max XP     │  │
+ *   │  │ shield│   │ Next Reward: 🪙 500  │  │
+ *   │  └───────┘   └──────────────────────┘  │
+ *   │   NAME                                 │
+ *   │   ★ RANK                               │
  *   └────────────────────────────────────────┘
  *
  * Stats panel (Highest Win / Daily Streak / Win Rate) lived here
@@ -62,33 +62,38 @@ export function LobbyProfileCard({
       <span className="lobby-pp-shine" aria-hidden="true" />
 
       <div className="lobby-pp-content">
-        <div className="lobby-pp-avatar-wrap">
-          <div className="lobby-pp-avatar-ring">
-            <span className="lobby-pp-spark s1" aria-hidden="true" />
-            <span className="lobby-pp-spark s2" aria-hidden="true" />
+        {/* Identity column — avatar up top, then name + rank stacked
+            directly under it. Keeps the right column for the XP card
+            only, which lets the modal squeeze its overall height. */}
+        <div className="lobby-pp-identity">
+          <div className="lobby-pp-avatar-wrap">
+            <div className="lobby-pp-avatar-ring">
+              <span className="lobby-pp-spark s1" aria-hidden="true" />
+              <span className="lobby-pp-spark s2" aria-hidden="true" />
 
-            <div className="lobby-pp-avatar-img">
-              <Avatar
-                seed={profile?.avatar_seed ?? 'guest'}
-                imageUrl={profile?.avatar_url}
-                size={240}
-                ring="none"
-              />
-            </div>
+              <div className="lobby-pp-avatar-img">
+                <Avatar
+                  seed={profile?.avatar_seed ?? 'guest'}
+                  imageUrl={profile?.avatar_url}
+                  size={240}
+                  ring="none"
+                />
+              </div>
 
-            <div className="lobby-pp-shield">
-              <span>{progression.level}</span>
+              <div className="lobby-pp-shield">
+                <span>{progression.level}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="lobby-pp-main">
           <h1 className="lobby-pp-name">{name}</h1>
           <div className="lobby-pp-rank" aria-label={`Rank ${progression.statusLabel}`}>
             <div className="lobby-pp-rank-badge" aria-hidden="true">★</div>
             <div className="lobby-pp-rank-text">{progression.statusLabel.toUpperCase()}</div>
           </div>
+        </div>
 
+        <div className="lobby-pp-main">
           <section className="lobby-pp-xp-card" aria-label="Level progress">
             <div className="lobby-pp-xp-row">
               <span>LEVEL {progression.level}</span>

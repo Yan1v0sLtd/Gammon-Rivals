@@ -659,8 +659,21 @@ export function LobbyBoardCarousel({
         {showPlayOnBoard ? (
           <button
             type="button"
+            // Touch-event isolation. The carousel viewport above calls
+            // setPointerCapture on its own pointerdown handler — once
+            // the pointer is captured, all subsequent events go to the
+            // viewport and the button's `onClick` is never synthesised
+            // on Android WebView. stopPropagation on EACH touch+pointer
+            // event (down/up + start/end) keeps the button as the
+            // pointer's target. `touch-action: manipulation` also kills
+            // the 300 ms double-tap zoom delay so the click fires
+            // immediately on tap-end.
             onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
+            onTouchStart={(event) => event.stopPropagation()}
+            onTouchEnd={(event) => event.stopPropagation()}
             onClick={onPlay}
+            style={{ touchAction: 'manipulation' }}
             className="lobby-play-button absolute left-1/2 top-[44%] z-40 h-5 min-w-16 -translate-x-1/2 -translate-y-1/2 px-3 font-display text-xs font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
           >
             Play
