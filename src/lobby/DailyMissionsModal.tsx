@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { extractErrorMessage } from '../lib/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
+import { CHESTS_ENABLED } from './lobbyData';
 import {
   formatCountdown,
   nextResetMs,
@@ -266,8 +267,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
               </p>
             </div>
 
-            {/* Chest progress — fills the middle */}
-            {state ? (
+            {/* Chest progress — fills the middle. Gated by CHESTS_ENABLED
+                (lobbyData.ts): when the chest sub-feature is disabled we
+                render an empty flex-1 spacer so the title block stays
+                left and the refresh/close cluster stays right. Server
+                still accrues mp_earned, so re-enabling shows accurate
+                state with no backfill needed. */}
+            {CHESTS_ENABLED && state ? (
               <ChestTrackStrip
                 mpEarned={state.weekly_pass.mp_earned}
                 milestones={state.chest_milestones}
@@ -630,7 +636,11 @@ function MissionCard({
           <div className="truncate font-display text-3xl font-bold text-[#FFF6E9]">
             {mission.title}
           </div>
-          {mission.mission_points > 0 && (
+          {/* "+X MP" indicator hidden when the chest sub-feature is
+              disabled — those points feed the chest progress, which
+              isn't visible right now. mp_earned still accrues
+              server-side. */}
+          {CHESTS_ENABLED && mission.mission_points > 0 && (
             <span className="rounded-md bg-[#1D2460]/80 px-2 py-0.5 text-sm font-bold text-[#FFD25C] ring-1 ring-[#D89A2B]/40">
               +{mission.mission_points} MP
             </span>

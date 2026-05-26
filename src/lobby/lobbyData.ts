@@ -107,22 +107,25 @@ export const lobbyOffers: readonly LobbyOffer[] = [
 ];
 
 /**
- * Feature gate for the Daily Missions surface. Flipped to `false` per
- * product direction — the feature ships server-side (cron jobs continue
- * to rotate missions + accrue progress) but every client-facing
- * surface (nav slot, modal entry point, the useDailyMissions DB
- * round-trip) is suppressed. Re-enable by flipping to `true`; nothing
- * else needs to change.
+ * Feature gate for the Mission Chests sub-feature inside the Daily
+ * Missions modal. When `false` we hide:
+ *   - The Chest Track Strip in the modal header (the 4 chest icons +
+ *     the MP progress line that runs through them).
+ *   - The "+X MP" indicators on each mission card (those points feed
+ *     the chest threshold, which is now hidden).
+ *
+ * Everything else in Daily Missions stays ON: daily mission list,
+ * Weekly Challenge, Daily Streak (and its OWN streak chest — that is
+ * a separate feature from the weekly Mission Chests), reroll.
+ *
+ * Server-side: cron jobs continue to accrue mp_earned, so when this
+ * flag flips back to `true` players see a populated bar with no data
+ * loss. Re-enable in one place by setting this to `true`.
  */
-export const MISSIONS_ENABLED = false;
+export const CHESTS_ENABLED = false;
 
 export const lobbyNavItems: readonly LobbyNavItem[] = [
-  // Missions slot — when MISSIONS_ENABLED is false we drop the image
-  // so LobbyBottomNav renders an empty placeholder (matches the
-  // existing middle-slot treatment) and skips the onClick wiring.
-  MISSIONS_ENABLED
-    ? { id: 'missions', label: 'Missions', image: '/lobby/nav/missions.webp' }
-    : { id: 'missions-disabled', label: '' },
+  { id: 'missions', label: 'Missions', image: '/lobby/nav/missions.webp' },
   { id: 'events', label: 'Events', image: '/lobby/nav/events.webp' },
   // Middle slot reserved — leave empty for now.
   { id: 'placeholder', label: '' },
