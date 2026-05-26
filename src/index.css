@@ -8325,14 +8325,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --lobby-pp-pad: clamp(8px, 0.8vw, 12px);
   position: relative;
   isolation: isolate;
-  /* Compact widget for the lobby top bar — capped to ~14rem on
-   * desktop, dropped to 10rem on mobile (see media query below).
-   * Outer margin is 12 px top / 16 px left so the card breathes
-   * off the screen edges. BG gradient runs at 0.85 alpha — the
-   * dark-blue brand colour is preserved with just a hint of
-   * transparency so the lobby art reads through subtly. */
+  /* Compact widget for the lobby top bar — capped to 16rem so the
+   * 3-column stats panel (Highest Win / Daily Streak / Win Rate)
+   * fits horizontally without forcing a vertical stack. Smaller
+   * than the original 24rem cap, big enough for the composition
+   * to read clearly. Outer margin 12px top / 16px left keeps it
+   * off the screen edges. */
   width: 100%;
-  max-width: min(100%, 14rem);
+  max-width: min(100%, 16rem);
   margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
   border-radius: var(--lobby-pp-radius);
@@ -8855,29 +8855,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   vertical-align: -0.08em;
 }
 
-/* Mobile + tablet — cap the card at 10rem (was 12rem at 600 px) and
- * raise the breakpoint to 900 px so it catches the tablet/phone-
- * mockup viewports the previous narrower breakpoint missed. Stack
- * the stat cells vertically since 3-up makes each cell too narrow
- * at these widths. Text sizes are unchanged. */
-@media (max-width: 900px) {
-  .lobby-pp-card {
-    max-width: 10rem;
-  }
-
-  .lobby-pp-stats {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .lobby-pp-stat {
-    border-right: 0;
-    border-bottom: 1px solid rgba(138, 95, 255, 0.28);
-    padding: 4px 4px 6px;
-  }
-
-  .lobby-pp-stat:last-child {
-    border-bottom: 0;
-  }
-}
+/* The card now uses the same horizontal composition at every
+ * viewport size — avatar left, name + rank + xp right, stats
+ * panel (3-column) spanning the full width below. The 16rem
+ * desktop cap is also the mobile cap; the layout doesn't need
+ * to fold to a vertical stack at this size. */
 
