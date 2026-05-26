@@ -5,6 +5,7 @@ import App from './App.tsx';
 import { AuthProvider } from './lib/auth';
 import { AdminAuthProvider } from './lib/adminAuth';
 import { NavigationOverlayProvider } from './lib/navigationOverlay';
+import { installNativeAuthHandler } from './lib/nativeAuth';
 
 // -----------------------------------------------------------------------------
 // Stale chunk auto-reload
@@ -58,6 +59,14 @@ window.addEventListener('error', (event) => {
 window.addEventListener('load', () => {
   sessionStorage.removeItem(RELOAD_FLAG);
 });
+
+// Wire the Capacitor `appUrlOpen` listener BEFORE React mounts so a
+// deep-link auth callback (gammonrivals://auth/callback#…) that
+// arrives milliseconds after process start still has a registered
+// handler. On web this is a no-op — the function exits early when
+// `Capacitor.isNativePlatform()` returns false. Fire-and-forget;
+// the listener is async-installed but doesn't need to block render.
+void installNativeAuthHandler();
 
 // AdminAuthProvider sits next to AuthProvider but operates on a
 // separate Supabase client (adminSupabase) with its own storageKey.

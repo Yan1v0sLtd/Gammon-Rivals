@@ -3,5 +3,10 @@
     <string name="app_name">Gammon Rivals</string>
     <string name="title_activity_main">Gammon Rivals</string>
     <string name="package_name">com.gammonrivals.app</string>
-    <string name="custom_url_scheme">com.gammonrivals.app</string>
+    <!-- Deep-link scheme used by the Android app to receive OAuth
+         redirects (Phase 3). Apps register an `<intent-filter>` in
+         AndroidManifest.xml referencing this string; Supabase OAuth
+         redirects to `gammonrivals://auth/callback#access_token=…`
+         which the OS routes back into MainActivity. -->
+    <string name="custom_url_scheme">gammonrivals</string>
 </resources>

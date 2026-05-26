@@ -12,6 +12,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { getProfileProgression, type ProfileProgression } from './progression';
 import { useOnlinePresence } from './useOnlinePresence';
+import { isNativePlatform, openAuthInBrowser, pickOAuthRedirectTo } from './nativeAuth';
 import type { Database } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -58,8 +59,25 @@ function googleAvatar(user: User): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function redirectToOAuthProvider(url: string | null): void {
+/**
+ * Dispatch the Supabase OAuth URL to the right surface for the
+ * current platform.
+ *
+ *   - Web: navigate the current tab to the OAuth URL (same-page
+ *     redirect → Google → Supabase callback → back to /auth/callback).
+ *   - Native (Capacitor): open the URL in Chrome Custom Tabs via
+ *     `@capacitor/browser`. We can't navigate the WebView itself —
+ *     Google's OAuth endpoint refuses to render inside an embedded
+ *     WebView (security policy / phishing prevention). The deep-link
+ *     handler in src/lib/nativeAuth.ts installs the session when
+ *     Supabase redirects back to gammonrivals://auth/callback.
+ */
+async function dispatchOAuthForPlatform(url: string | null): Promise<void> {
   if (!url) throw new Error('Google sign-in did not return a redirect URL.');
+  if (isNativePlatform()) {
+    await openAuthInBrowser(url);
+    return;
+  }
   window.location.assign(url);
 }
 
@@ -367,16 +385,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async (options?: { redirectTo?: string }) => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
+    // On native, swap the web redirect for our deep-link
+    // `gammonrivals://auth/callback`. The native deep-link handler
+    // (src/lib/nativeAuth.ts) installs the session when Supabase
+    // redirects back. On web this returns the caller's URL
+    // unchanged.
+    const redirectTo = pickOAuthRedirectTo(options?.redirectTo ?? makeAuthRedirect());
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: options?.redirectTo ?? makeAuthRedirect(),
+        redirectTo,
         queryParams: { prompt: 'select_account' },
         skipBrowserRedirect: true,
       },
     });
     if (error) throw error;
-    redirectToOAuthProvider(data.url);
+    await dispatchOAuthForPlatform(data.url);
   }, []);
 
   const linkGoogleIdentity = useCallback(
@@ -386,16 +410,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signInWithGoogle(options);
         return;
       }
+      // Same native/web split as signInWithGoogle. The `next=/profile`
+      // is preserved through the deep link's query string so the
+      // native handler could route back there if we wire navigation
+      // into the completion listener later.
+      const redirectTo = pickOAuthRedirectTo(
+        options?.redirectTo ?? makeAuthRedirect('/profile'),
+        '/profile'
+      );
       const { data, error } = await supabase.auth.linkIdentity({
         provider: 'google',
         options: {
-          redirectTo: options?.redirectTo ?? makeAuthRedirect('/profile'),
+          redirectTo,
           queryParams: { prompt: 'select_account' },
           skipBrowserRedirect: true,
         },
       });
       if (error) throw error;
-      redirectToOAuthProvider(data.url);
+      await dispatchOAuthForPlatform(data.url);
     },
     [session, signInWithGoogle]
   );

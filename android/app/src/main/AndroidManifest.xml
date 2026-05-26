@@ -19,6 +19,22 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Deep-link intent filter (Phase 3).
+                 Receives `gammonrivals://auth/callback#access_token=…`
+                 from Supabase OAuth redirects. The OS hands the URL to
+                 MainActivity which forwards it to the JS layer via the
+                 @capacitor/app `appUrlOpen` event. See
+                 src/lib/nativeAuth.ts for the JS-side handler.
+                 The scheme is read from
+                 res/values/strings.xml → custom_url_scheme. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="@string/custom_url_scheme"
+                      android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider
