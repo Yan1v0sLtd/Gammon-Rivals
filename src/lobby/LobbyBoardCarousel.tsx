@@ -506,10 +506,10 @@ export function LobbyBoardCarousel({
   //   - 'free-unlock' — level requirement met AND no gem price, so
   //                     there's nothing to purchase. These play for free.
   // 'level-locked' shows the padlock; 'purchasable' shows the gem-price
-  // pill. Neither offers PLAY until the user resolves that gate.
-  const selectedBoardState = getBoardState(selected);
-  const showPlayOnBoard =
-    selectedBoardState === 'owned' || selectedBoardState === 'free-unlock';
+  // PLAY-on-board check now lives inside the per-board loop
+  // (showPlayHere combines isCenter with the same state check).
+  // The pill / lock overlay logic for locked/purchasable boards
+  // still uses getBoardState(board) inside the loop.
 
   return (
     <section className="lobby-carousel-section relative mx-auto w-full max-w-[64rem] overflow-visible">
@@ -528,6 +528,15 @@ export function LobbyBoardCarousel({
             const showLock = state === 'level-locked';
             const showPill = state === 'level-locked' || state === 'purchasable';
             const isCenter = Math.abs(d) < 0.5;
+            // PLAY button now lives ON the centered board (same as
+            // the lock) — only renders when the board is playable
+            // AND it's the visually-centred slot. Sharing the per-
+            // board coordinate system means the play + lock use
+            // identical centering math (top: calc(50% - 5px)) so
+            // they visually swap into the same position depending
+            // on the board's state.
+            const showPlayHere =
+              isCenter && (state === 'owned' || state === 'free-unlock');
             const style = boardTransform(d, layout);
             return (
               <div
@@ -562,6 +571,34 @@ export function LobbyBoardCarousel({
                     >
                       <path d="M12 1.5a5 5 0 0 0-5 5V10H6.5A2.5 2.5 0 0 0 4 12.5v8A2.5 2.5 0 0 0 6.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 10H17V6.5a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3V10H9V6.5a3 3 0 0 1 3-3zm0 11a2 2 0 0 1 .8 3.83V20.5a.8.8 0 0 1-1.6 0v-2.17A2 2 0 0 1 12 14.5z" />
                     </svg>
+                  </button>
+                ) : null}
+                {/* PLAY button on the centered + playable board. Same
+                    `top: calc(50% - 5px)` / `-translate-y-1/2` math
+                    as the lock so the two badges sit at exactly the
+                    same visual position depending on board state.
+                    Touch-event isolation (pointer/touch start+end
+                    stopPropagation + touch-action: manipulation) is
+                    needed because the carousel viewport calls
+                    setPointerCapture on its own pointerdown, which
+                    would otherwise eat the button's onClick on
+                    Android WebView. */}
+                {showPlayHere ? (
+                  <button
+                    type="button"
+                    aria-label={`Play on ${board.name}`}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerUp={(event) => event.stopPropagation()}
+                    onTouchStart={(event) => event.stopPropagation()}
+                    onTouchEnd={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onPlay();
+                    }}
+                    style={{ touchAction: 'manipulation' }}
+                    className="lobby-play-button absolute left-1/2 top-[calc(50%-5px)] z-40 h-[10%] min-w-[28%] -translate-x-1/2 -translate-y-1/2 px-[5%] font-display text-xs font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
+                  >
+                    Play
                   </button>
                 ) : null}
                 {showPill ? (
@@ -615,36 +652,11 @@ export function LobbyBoardCarousel({
             direction — board switching is now drag/swipe-only (and
             the bottom dot indicators handle taps for accessibility). */}
 
-        {/* Inline PLAY button — only on the centered board, only when
-          *  the player fully owns it (level + purchase). Half the size
-          *  of the previous bottom-of-carousel button and sits at the
-          *  visual center of the board so it reads as "tap to enter
-          *  this room" rather than a global play action. Click opens
-          *  the difficulty modal via onPlay(); the parent looks at the
-          *  selected board to decide which room to launch. */}
-        {showPlayOnBoard ? (
-          <button
-            type="button"
-            // Touch-event isolation. The carousel viewport above calls
-            // setPointerCapture on its own pointerdown handler — once
-            // the pointer is captured, all subsequent events go to the
-            // viewport and the button's `onClick` is never synthesised
-            // on Android WebView. stopPropagation on EACH touch+pointer
-            // event (down/up + start/end) keeps the button as the
-            // pointer's target. `touch-action: manipulation` also kills
-            // the 300 ms double-tap zoom delay so the click fires
-            // immediately on tap-end.
-            onPointerDown={(event) => event.stopPropagation()}
-            onPointerUp={(event) => event.stopPropagation()}
-            onTouchStart={(event) => event.stopPropagation()}
-            onTouchEnd={(event) => event.stopPropagation()}
-            onClick={onPlay}
-            style={{ touchAction: 'manipulation' }}
-            className="lobby-play-button absolute left-1/2 top-[44%] z-40 h-5 min-w-16 -translate-x-1/2 -translate-y-1/2 px-3 font-display text-xs font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
-          >
-            Play
-          </button>
-        ) : null}
+        {/* PLAY button used to live here at the carousel level
+            (top: 44%). It now renders INSIDE the per-board container
+            (see the loop above) using the same centering math as the
+            .lobby-carousel-board-lock-button so the two badges swap
+            into the exact same position. */}
 
         <div className="absolute bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center gap-4">
           {boards.map((board, idx) => (
