@@ -172,6 +172,11 @@ export default function HotSeat() {
   const opp = params.get('opp');
   const aiConfig = useMemo(() => parseOpponent(opp), [opp]);
   const target = useMemo(() => parseTarget(params.get('target')), [params]);
+  // Board theme is a PER-CLIENT cosmetic — each player reads their
+  // OWN selected theme from THEIR OWN URL's `?board=…` query param.
+  // Matchmaking ignores theme entirely (see findMatchInTier in
+  // src/lib/persistence.ts). Two players can be paired into the same
+  // match with completely different themes on their screens.
   const boardParam = params.get('board');
   /**
    * When the difficulty modal calls enter_room(), the new match row is

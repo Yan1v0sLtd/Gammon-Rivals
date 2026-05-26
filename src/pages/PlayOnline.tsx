@@ -74,6 +74,12 @@ export default function PlayOnline() {
     inactivityForfeitMs,
     turnSeconds: turnSecondsParam,
   });
+  // Board theme is a PER-CLIENT cosmetic — each player reads their
+  // OWN selected theme from THEIR OWN URL's `?board=…` query param.
+  // The matches row on the server has no board column; two players
+  // can be in the same match with completely different themes on
+  // their screens. Do NOT change this to read from `game.match.*`
+  // — that would couple matchmaking to theme inventory.
   const boardParam = params.get('board');
   const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
@@ -110,14 +116,19 @@ export default function PlayOnline() {
   };
 
   const inviteCode = game.match?.invite_code;
+  // Invite URLs DELIBERATELY omit the inviter's `?board=…` param.
+  // Before, the inviter's chosen theme was baked into the URL the
+  // recipient followed, so the recipient's own theme preference
+  // got overridden. Now the recipient lands on /join/<code> with
+  // no board param and the join flow uses their own selection.
+  // This is consistent with the matchmaking design: theme is
+  // per-client cosmetic, never carried across players.
   const inviteUrl = useMemo(
     () =>
       inviteCode
-        ? `${window.location.origin}/join/${inviteCode}${
-            boardParam ? `?board=${encodeURIComponent(boardParam)}` : ''
-          }`
+        ? `${window.location.origin}/join/${inviteCode}`
         : null,
-    [boardParam, inviteCode]
+    [inviteCode]
   );
 
   const copyLink = async () => {

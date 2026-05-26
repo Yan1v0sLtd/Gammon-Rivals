@@ -464,6 +464,13 @@ export function LobbyScreen() {
       const params = new URLSearchParams();
       params.set('opp', mode === 'pvp' ? 'pvp' : mode);
       params.set('target', String(target));
+      // `board` is THIS PLAYER's selected theme — written into their
+      // own URL only. The matched opponent runs this same code in
+      // their own client and writes their OWN selection. Two players
+      // end up with different `?board=…` values pointing at the same
+      // matchId. The matches table has no board column; theme is a
+      // pure per-client cosmetic and is NOT a matchmaking dimension.
+      // See findMatchInTier in src/lib/persistence.ts.
       params.set('board', effectiveSelectedBoardId);
       params.set('matchId', matchId);
       params.set('turn', String(turnSeconds));

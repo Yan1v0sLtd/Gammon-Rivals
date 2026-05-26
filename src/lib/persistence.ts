@@ -188,6 +188,21 @@ export interface FindMatchResult {
  * queue and the RPC returns status='queued' — call again after a short
  * delay. Raises: not_authenticated, room_not_found, room_disabled,
  * pvp_not_allowed_in_tier, insufficient_coins.
+ *
+ * ─── MATCHMAKING IS THEME-BLIND BY DESIGN ─────────────────────────
+ * The only matching dimensions are tableConfigId (difficulty tier)
+ * and rating band. Board themes are PER-CLIENT cosmetics — each
+ * player chooses their own from the lobby carousel and sees their
+ * own theme during the match. The matches table doesn't store a
+ * board id; each client reads its theme from its own URL's
+ * `?board=…` query param (see PlayOnline / HotSeat). Two players
+ * with completely different theme inventories CAN and SHOULD match.
+ *
+ * Do not add `boardId` / `themeId` parameters to this signature.
+ * If a future feature legitimately needs the board choice on the
+ * server (e.g. validating ownership), pass it via a separate RPC
+ * and don't gate matchmaking on it.
+ * ─────────────────────────────────────────────────────────────────
  */
 export async function findMatchInTier(args: {
   tableConfigId: string;
@@ -233,6 +248,10 @@ export async function cancelMatchmakingRpc(): Promise<void> {
  * strength from caller's pvp_rating with cfg.ai_level as the floor,
  * debits the entry fee, creates the match. Same payload shape as the
  * old enter_room result.
+ *
+ * Same theme-blindness contract as findMatchInTier above — only
+ * the tier is passed; the AI doesn't care about the player's chosen
+ * board theme, and the matches row never stores a board id.
  */
 export interface EnterRoomResult {
   matchId: string;
