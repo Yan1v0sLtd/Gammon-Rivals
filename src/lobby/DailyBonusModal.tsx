@@ -21,6 +21,11 @@ interface DailyBonusModalProps {
    *  (player missed a day). */
   readonly daysClaimedInCurrentStreak: number;
   readonly onClaim: () => void;
+  /** Dismiss the modal. The lobby now opens this modal even when
+   *  the player can't claim (already collected today), so an
+   *  explicit close affordance is required — tap-outside on the
+   *  backdrop also calls this. */
+  readonly onClose: () => void;
 }
 
 interface DayCardProps {
@@ -275,11 +280,18 @@ export function DailyBonusModal({
   justClaimed,
   daysClaimedInCurrentStreak,
   onClaim,
+  onClose,
 }: DailyBonusModalProps) {
   const byDay = new Map(configs.map((c) => [c.day, c]));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Daily Bonus"
+    >
       {/*
        * CSS-only panel. Three nested layers for the gold-on-cream "framed
        * parchment" look:
@@ -290,7 +302,25 @@ export function DailyBonusModal({
        * Title and cards now define the modal's height; no background
        * image, no aspect-ratio constraint.
        */}
-      <div className="relative w-full max-w-5xl origin-center scale-[0.45] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]">
+      <div
+        className="relative w-full max-w-5xl origin-center scale-[0.45] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        {/* Close button — top-right of the gold frame. The lobby
+            opens this modal even when the player can't claim
+            (already collected today), so an explicit dismiss is
+            required. Tap-outside on the backdrop also closes. */}
+        <button
+          type="button"
+          aria-label="Close daily bonus"
+          onClick={onClose}
+          className="absolute -right-2 -top-2 z-30 grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-[#ffd16f] shadow-[0_6px_14px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,212,135,0.22)] transition hover:brightness-110 active:translate-y-0.5"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
         <div className="rounded-[22px] bg-gradient-to-b from-[#fef3c7] via-[#fbbf24] to-[#92400e] p-[2px]">
           <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] px-[clamp(1rem,3vw,2.5rem)] pb-[clamp(1rem,3vw,2rem)] pt-[clamp(1rem,3vw,2rem)]">
             {/* Top + bottom decorative lozenges */}

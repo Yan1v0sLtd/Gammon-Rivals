@@ -15,6 +15,7 @@ import { useImagePreloader } from '../lib/useImagePreloader';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { DailyBonusModal } from './DailyBonusModal';
+import { HowToPlayModal } from './HowToPlayModal';
 import {
   DifficultyModal,
   type DifficultySelection,
@@ -119,6 +120,7 @@ export function LobbyScreen() {
   const wheel = useWheelState('main');
   const [wheelModalOpen, setWheelModalOpen] = useState(false);
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
   const [missionsModalOpen, setMissionsModalOpen] = useState(false);
   const missionsResult = useDailyMissions(profile?.id);
   const missionsClaimableBadge =
@@ -627,11 +629,17 @@ export function LobbyScreen() {
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
         />
 
-        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[17rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[19rem_minmax(34rem,1fr)_22rem]">
+        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[26rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[26rem_minmax(34rem,1fr)_22rem]">
           <LobbySideOffers
             onOfferClick={(offerId) => {
-              if (offerId === 'daily' && dailyBonus.canClaim) openDailyBonus();
+              // Daily Bonus now opens UNCONDITIONALLY — the player
+              // can't claim if it's already been collected today,
+              // but the modal still surfaces so they can see the
+              // 7-day grid + close out. Connect ('how-to-play')
+              // opens the tutorial popup; Coins routes to /shop.
+              if (offerId === 'daily') openDailyBonus();
               else if (offerId === 'coins') navigate('/shop');
+              else if (offerId === 'connect') setHowToPlayOpen(true);
             }}
           />
 
@@ -758,7 +766,12 @@ export function LobbyScreen() {
           justClaimed={justClaimedBonus}
           daysClaimedInCurrentStreak={dailyBonus.daysClaimedInCurrentStreak}
           onClaim={claimDailyBonus}
+          onClose={() => setDailyBonusOpen(false)}
         />
+      ) : null}
+
+      {howToPlayOpen ? (
+        <HowToPlayModal onClose={() => setHowToPlayOpen(false)} />
       ) : null}
 
       <DifficultyModal
