@@ -14,6 +14,17 @@ export interface ProfileProgression {
   readonly progress: number;
   readonly progressPercent: number;
   readonly progressLabel: string;
+  /**
+   * Coin / gem reward grant attached to the next level-up. Read from
+   * the level_configs row for `level + 1` so the lobby's profile
+   * card can surface the "Next Reward" line. `null` when there's no
+   * next level configured (player at the top of the ladder).
+   */
+  readonly nextLevelReward: {
+    readonly level: number;
+    readonly coins: number;
+    readonly gems: number;
+  } | null;
 }
 
 const DEFAULT_LEVEL_SPAN = 100;
@@ -49,6 +60,14 @@ export function getProfileProgression(
   const progress = nextConfig === null && enabledLevels.length > 0 ? 1 : clamp01((xp - currentLevelXp) / span);
   const progressPercent = Math.round(progress * 100);
 
+  const nextLevelReward = nextConfig
+    ? {
+        level: nextConfig.level,
+        coins: nextConfig.reward_coins ?? 0,
+        gems: nextConfig.reward_gems ?? 0,
+      }
+    : null;
+
   return {
     level,
     xp,
@@ -60,5 +79,6 @@ export function getProfileProgression(
     progress,
     progressPercent,
     progressLabel: `${progressPercent}%`,
+    nextLevelReward,
   };
 }

@@ -1047,6 +1047,13 @@ export type Database = {
         Args: Record<string, never>;
         Returns: Json;
       };
+      // Lobby premium profile card — see migration
+      // 20260630000000_lobby_profile_stats_rpc.sql. Returns
+      // { highest_win, streak_days, wins, total_finished, win_rate_pct }.
+      get_player_lobby_stats: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       // Daily Missions Phase 8 — simulation harness (BO-only).
       simulate_create_test_profile: {
         Args: { p_display_name: string; p_level?: number; p_pvp_rating?: number };

@@ -1,9 +1,10 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import Avatar from '../components/Avatar';
 import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
+import { LobbyProfileCard } from './LobbyProfileCard';
 import { RollingNumber } from './RollingNumber';
+import type { LobbyProfileStats } from './useLobbyProfileStats';
 import { XpBoostBadge } from './XpBoostBadge';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -13,6 +14,7 @@ interface LobbyTopBarProps {
   readonly profile: ProfileRow | null;
   readonly wallet: UserWallet | null;
   readonly progression: ProfileProgression;
+  readonly profileStats: LobbyProfileStats | null;
   readonly isGuest: boolean;
   onLinkGoogle(): Promise<void>;
 }
@@ -99,12 +101,12 @@ export function LobbyTopBar({
   profile,
   wallet,
   progression,
+  profileStats,
   isGuest,
   onLinkGoogle,
 }: LobbyTopBarProps) {
   const navigate = useNavigate();
   const [linking, setLinking] = useState(false);
-  const name = profile?.display_name ?? 'Player';
   const openShop = () => navigate('/shop');
   const currencies = [
     {
@@ -133,71 +135,18 @@ export function LobbyTopBar({
   };
 
   return (
-    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
-      <div className="lobby-profile-card group">
-        <div className="lobby-profile-avatar-wrap">
-          <Link to="/profile" className="block" aria-label="Open profile">
-            <div className="lobby-profile-avatar-core">
-              <Avatar
-                seed={profile?.avatar_seed ?? 'guest'}
-                imageUrl={profile?.avatar_url}
-                size={78}
-                ring="none"
-              />
-            </div>
-            <div className="lobby-profile-level-shield" data-fly-target="xp">
-              {/* Span wrapper so the .lobby-profile-level-shield > *
-                  rule (z-index: 1) can lift the digit above the
-                  ::before pseudo painting the purple inner core. A
-                  bare text node would lose the stacking battle and
-                  render hidden under the purple fill. */}
-              <span>{progression.level}</span>
-            </div>
-          </Link>
-        </div>
-        <div className="lobby-profile-copy">
-          <Link to="/profile" className="block min-w-0" aria-label="Open profile">
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="truncate font-display text-[clamp(1.45rem,2.2vw,2.25rem)] font-black leading-none text-white drop-shadow-[0_3px_0_rgba(0,0,0,0.44)]">
-                {name}
-              </div>
-              {/* Pen / "edit name" affordance removed — names are
-                  fixed at signup. The .lobby-profile-edit CSS
-                  rules in index.css still exist for now but no
-                  element references them. */}
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="lobby-rank-badge">
-                <span className="lobby-rank-star" aria-hidden="true" />
-                <span>{progression.statusLabel}</span>
-              </span>
-              <span className="lobby-profile-progress">
-                <span
-                  className="lobby-profile-progress-fill"
-                  style={{ width: `${progression.progressPercent}%` }}
-                >
-                  {/* Bubble layer — purely decorative, lives ON the
-                      filled portion only because it's inside .fill.
-                      CSS handles the animation loop. */}
-                  <span className="lobby-profile-progress-bubbles" aria-hidden="true" />
-                </span>
-                {/* Percent text floats centred over the whole bar
-                    (not the fill) so it reads the same regardless
-                    of how full the bar is. White with a dark
-                    stroke + drop-shadow for legibility on either
-                    side of the fill edge. */}
-                <span className="lobby-profile-progress-label">
-                  {progression.progressLabel}
-                </span>
-              </span>
-            </div>
-          </Link>
-          {/* XP-boost chip. Renders null when no boost is active so it
-            * occupies no space — and it ticks its own countdown so the
-            * rest of the top-bar doesn't re-render every second. */}
-          <div className="mt-2 flex items-center">
-            <XpBoostBadge />
-          </div>
+    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(20rem,1fr)_auto] md:items-start">
+      <div className="lobby-pp-shell relative flex min-w-0 flex-col gap-2">
+        <LobbyProfileCard
+          profile={profile}
+          progression={progression}
+          stats={profileStats}
+        />
+        {/* XP-boost chip + guest "Save progress" CTA sit BELOW the
+            premium card so they don't break its tight visual
+            grid. Both surface only when needed. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <XpBoostBadge />
           {isGuest && (
             <button
               type="button"
@@ -205,7 +154,7 @@ export function LobbyTopBar({
                 void handleLinkGoogle();
               }}
               disabled={linking}
-              className="mt-2 rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
+              className="rounded-full border border-[#f6d770]/45 bg-[#071429]/75 px-3 py-1 text-[0.68rem] font-black uppercase tracking-wide text-[#f6d770] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:bg-[#0d2142] disabled:opacity-60"
             >
               {linking ? 'Opening Google...' : 'Save progress'}
             </button>
