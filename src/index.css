@@ -8325,26 +8325,31 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --lobby-pp-pad: clamp(8px, 0.8vw, 12px);
   position: relative;
   isolation: isolate;
-  /* Compact widget for the lobby top bar — capped to ~24rem so the
-   * card sits in the top-left corner without dominating the
-   * header. Every internal clamp() below was scaled to ~75% of the
-   * previous round (cf. v2). Small top + left margin keeps the
-   * card off the screen edge, roughly half the spacing the side
-   * panels (Daily Bonus / Connect) use inside their own columns. */
+  /* Compact widget for the lobby top bar — capped to ~24rem on
+   * desktop, halved to 12rem on mobile (see media query below) so
+   * the card sits cleanly in the top-left corner. Outer margin is
+   * doubled vs v3 (12px top / 16px left) to give it room from the
+   * screen edges. Inner gradient alpha dropped to 0.25 so the
+   * lobby background reads through; the gold border + outer
+   * shadows stay opaque to keep the card edge defined. */
   width: 100%;
   max-width: min(100%, 24rem);
-  margin: 6px 0 0 8px;
+  margin: 12px 0 0 16px;
   padding: var(--lobby-pp-pad);
   border-radius: var(--lobby-pp-radius);
   border: 2.5px solid transparent;
   background:
-    linear-gradient(143deg, rgba(7, 12, 49, 0.98), rgba(4, 6, 28, 0.98)) padding-box,
+    linear-gradient(143deg, rgba(7, 12, 49, 0.25), rgba(4, 6, 28, 0.25)) padding-box,
     linear-gradient(115deg, #fff4a5 0%, #ff9e05 18%, #ff6df8 47%, #5b43ff 64%, #fff0a7 82%, #ff7b16 100%) border-box;
   box-shadow:
     0 0 0 1.5px rgba(255, 245, 170, 0.3) inset,
     0 0 0 3px rgba(28, 13, 75, 0.5),
     0 0 18px rgba(175, 46, 255, 0.45),
     0 10px 28px rgba(0, 0, 0, 0.45);
+  /* Soft blur on what shows through so the lobby art doesn't
+   * fight the card text for attention. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   overflow: hidden;
   text-align: left;
   color: white;
@@ -8582,9 +8587,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-xp-card {
   padding: clamp(5px, 0.6vw, 8px) clamp(6px, 0.75vw, 10px) clamp(5px, 0.6vw, 8px);
   border-radius: clamp(8px, 0.9vw, 12px);
+  /* BG alpha dropped to 0.25 so the lobby background reads through.
+   * Border + drop-shadow stay full strength so the panel still
+   * registers as a distinct surface above the outer card's
+   * (also-translucent) BG. */
   background:
-    linear-gradient(180deg, rgba(18, 35, 92, 0.6), rgba(6, 9, 42, 0.86)),
-    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.3), transparent 42%);
+    linear-gradient(180deg, rgba(18, 35, 92, 0.25), rgba(6, 9, 42, 0.25)),
+    radial-gradient(circle at 8% 0%, rgba(72, 95, 255, 0.18), transparent 42%);
   border: 1px solid rgba(98, 84, 218, 0.45);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
@@ -8737,9 +8746,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: clamp(4px, 0.45vw, 6px) clamp(4px, 0.6vw, 8px);
   border-radius: clamp(8px, 0.9vw, 11px);
+  /* BG alpha dropped to 0.25 to match the XP card so lobby BG
+   * shows through. The dividers between stat cells stay opaque
+   * for legibility. */
   background:
-    linear-gradient(180deg, rgba(20, 15, 66, 0.88), rgba(4, 8, 35, 0.92)),
-    radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.25), transparent 36%);
+    linear-gradient(180deg, rgba(20, 15, 66, 0.25), rgba(4, 8, 35, 0.25)),
+    radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.15), transparent 36%);
   border: 1px solid rgba(104, 69, 219, 0.5);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
@@ -8846,11 +8858,15 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   vertical-align: -0.08em;
 }
 
-/* Mobile — the desktop layout is already compact enough to fit on a
- * 360 px viewport, so we keep the horizontal avatar + main layout and
- * just stack the stat cells vertically (3-up makes each cell too
- * narrow at phone widths). */
+/* Mobile — halve the card width (24rem → 12rem) and stack the
+ * stat cells vertically (3-up would make each cell too narrow at
+ * phone widths). Text sizes are unchanged per request; the card
+ * just compresses its chrome around the same text. */
 @media (max-width: 600px) {
+  .lobby-pp-card {
+    max-width: 12rem;
+  }
+
   .lobby-pp-stats {
     grid-template-columns: 1fr;
     gap: 4px;
