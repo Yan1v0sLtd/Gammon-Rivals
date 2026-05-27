@@ -14,7 +14,7 @@ export function LobbySideOffers({ onOfferClick }: LobbySideOffersProps = {}) {
           aria-label={offer.title}
           onClick={() => onOfferClick?.(offer.id)}
           style={offer.image ? { aspectRatio: offer.aspectRatio } : undefined}
-          className={`lobby-offer-card relative flex min-w-[25rem] max-w-[25rem] items-center justify-center overflow-visible bg-transparent p-0 text-left outline-none ring-0 focus:outline-none focus-visible:outline-none transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${
+          className={`lobby-offer-card relative flex min-w-[17.5rem] max-w-[17.5rem] items-center justify-center overflow-visible bg-transparent p-0 text-left outline-none ring-0 focus:outline-none focus-visible:outline-none transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${
             offer.image
               ? 'border-0 shadow-none'
               : `min-h-[6.7rem] rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`

@@ -629,7 +629,7 @@ export function LobbyScreen() {
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
         />
 
-        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[26rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[26rem_minmax(34rem,1fr)_22rem]">
+        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[18.5rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[18.5rem_minmax(34rem,1fr)_22rem]">
           <LobbySideOffers
             onOfferClick={(offerId) => {
               // Daily Bonus now opens UNCONDITIONALLY — the player
