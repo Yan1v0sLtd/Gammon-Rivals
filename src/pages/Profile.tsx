@@ -136,7 +136,7 @@ export default function Profile() {
     setSigningOut(true);
     try {
       await signOut();
-      navigate('/');
+      navigate('/play');
     } finally {
       setSigningOut(false);
     }
@@ -175,7 +175,7 @@ export default function Profile() {
     <main className="profile-page text-white">
       <div className="profile-screen">
         <header className="profile-top-nav">
-          <Link to="/" className="profile-icon-button" aria-label="Back to lobby">
+          <Link to="/play" className="profile-icon-button" aria-label="Back to lobby">
             <span className="profile-back-chevron" />
           </Link>
 
@@ -363,7 +363,7 @@ export default function Profile() {
             ) : visibleMatches.length === 0 ? (
               <div className="profile-panel-message">
                 <span>No matches yet.</span>
-                <Link to="/">Start one</Link>
+                <Link to="/play">Start one</Link>
               </div>
             ) : (
               // History panel is the full height of the right column now,

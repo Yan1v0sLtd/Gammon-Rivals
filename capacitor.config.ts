@@ -33,7 +33,12 @@ const config: CapacitorConfig = {
   appName: 'Gammon Rivals',
   webDir: 'dist',
   server: {
-    url: 'https://gammon-rivals.vercel.app',
+    // Production canonical domain. The vercel.app URL keeps working
+    // as a Vercel alias (every previous APK that's still installed
+    // will keep loading from there), so this switch only affects
+    // new APK builds. After cutover, this is the URL the WebView
+    // hits at app launch.
+    url: 'https://gammonrivals.com',
     // Force the WebView to use https so window.location.origin
     // matches Vercel and Supabase auth redirects stay consistent
     // between web and native.

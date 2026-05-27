@@ -166,7 +166,7 @@ export default function Lobby() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
       <header className="flex items-center justify-between px-4 py-3 text-board-felt/80">
-        <Link to="/" className="text-board-accent text-sm">← Home</Link>
+        <Link to="/play" className="text-board-accent text-sm">← Home</Link>
         <div className="text-xs text-board-felt/50">Lobby</div>
         <Link to="/profile" className="text-xs text-board-felt/60 hover:text-board-accent">
           {profile?.display_name ?? 'Profile'}

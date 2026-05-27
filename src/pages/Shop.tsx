@@ -966,7 +966,7 @@ export default function Shop() {
               gems={wallet?.gems ?? 0}
               coins={wallet?.coins ?? 0}
               onBack={() => navigate(-1)}
-              onClose={() => navigate('/')}
+              onClose={() => navigate('/play')}
             />
 
             <div className="flex">

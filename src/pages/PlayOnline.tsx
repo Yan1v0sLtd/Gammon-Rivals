@@ -191,7 +191,7 @@ export default function PlayOnline() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center text-rose-400 gap-3 p-6">
         <div>Error: {game.error}</div>
-        <Link to="/" className="text-board-accent text-sm">← Home</Link>
+        <Link to="/play" className="text-board-accent text-sm">← Home</Link>
       </main>
     );
   }
@@ -209,7 +209,7 @@ export default function PlayOnline() {
     return (
       <main className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
         <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
-          <Link to="/" className="text-board-accent text-sm">← Home</Link>
+          <Link to="/play" className="text-board-accent text-sm">← Home</Link>
           <div className="text-xs text-board-felt/50">Online · to {match.target}</div>
           <Link to="/profile" className="text-xs text-board-felt/60 hover:text-board-accent">Profile</Link>
         </header>
@@ -250,7 +250,7 @@ export default function PlayOnline() {
                   .from('matches')
                   .update({ finished_at: new Date().toISOString() })
                   .eq('id', match.id);
-                navigate('/');
+                navigate('/play');
               }}
               className="text-xs text-board-felt/50 hover:text-rose-400 transition"
             >
@@ -500,7 +500,7 @@ export default function PlayOnline() {
                   </div>
                 )}
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/play')}
                   className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
                 >
                   Home

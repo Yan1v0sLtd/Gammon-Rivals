@@ -38,7 +38,7 @@ export default function MatchHeader({
     // Put the loader up before the route changes so the gameplay never
     // flashes between unmount and the lobby's own preload gate.
     showOverlay();
-    navigate('/');
+    navigate('/play');
   };
 
   return (

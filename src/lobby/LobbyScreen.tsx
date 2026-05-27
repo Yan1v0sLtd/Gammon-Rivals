@@ -617,7 +617,7 @@ export function LobbyScreen() {
           wallet={wallet}
           progression={progression}
           isGuest={isGuest}
-          onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
+          onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/play` })}
         />
 
         <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[18.5rem_minmax(30rem,1fr)] xl:gap-6 2xl:grid-cols-[18.5rem_minmax(34rem,1fr)]">

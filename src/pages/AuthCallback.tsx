@@ -3,10 +3,21 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 
+/**
+ * The post-sign-in landing path. Defaults to `/play` (the lobby)
+ * — not `/` (the public marketing landing). A signed-in player
+ * should always end up inside the game, not back on the home
+ * page they just clicked through. Same fallback applies when
+ * the `next` param is unsafe (off-origin, recursive callback,
+ * etc.) so a misbehaving link can't loop the user through the
+ * callback forever.
+ */
+const POST_SIGN_IN_DEFAULT = '/play';
+
 function safeNextPath(value: string | null): string {
-  if (!value) return '/';
-  if (!value.startsWith('/') || value.startsWith('//')) return '/';
-  if (value.startsWith('/auth/callback')) return '/';
+  if (!value) return POST_SIGN_IN_DEFAULT;
+  if (!value.startsWith('/') || value.startsWith('//')) return POST_SIGN_IN_DEFAULT;
+  if (value.startsWith('/auth/callback')) return POST_SIGN_IN_DEFAULT;
   return value;
 }
 
@@ -91,7 +102,7 @@ export default function AuthCallback() {
         </h1>
         <p className="mt-3 text-sm text-rose-100">{error}</p>
         <Link
-          to="/"
+          to="/play"
           className="mt-5 inline-block rounded-lg bg-[#f6d770] px-4 py-2 font-black text-[#101a2a]"
         >
           Back to lobby

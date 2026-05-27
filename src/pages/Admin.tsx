@@ -1844,7 +1844,7 @@ export default function Admin() {
     return (
       <main className="min-h-screen bg-[#061225] text-white">
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
-          <Link to="/" className="text-sm font-semibold text-amber-200/80 hover:text-amber-100">
+          <Link to="/play" className="text-sm font-semibold text-amber-200/80 hover:text-amber-100">
             ← Back to lobby
           </Link>
           <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
@@ -1889,7 +1889,7 @@ export default function Admin() {
       <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
         <div className="mx-auto flex max-w-[96rem] items-center justify-between gap-4">
           <div>
-            <Link to="/" className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
+            <Link to="/play" className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
               ← Lobby
             </Link>
             <h1 className="mt-1 text-2xl font-black tracking-tight">Back Office</h1>

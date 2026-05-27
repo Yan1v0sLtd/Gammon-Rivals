@@ -625,7 +625,7 @@ export default function HotSeat() {
             onNextGame={game.nextGame}
             onNewMatch={() => {
               showOverlay();
-              navigate('/');
+              navigate('/play');
             }}
           />
         ) : null

@@ -24,7 +24,10 @@ export default function App() {
       <RouteErrorBoundary>
         <Suspense fallback={<LoadingScreen />}>
           <Routes>
-            <Route path="/" element={<AuthGate><Home /></AuthGate>} />
+            {/* `/` is the marketing landing page (public/landing.html,
+                served via the Vercel rewrite in vercel.json). The
+                game / lobby lives at `/play`. */}
+            <Route path="/play" element={<AuthGate><Home /></AuthGate>} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/hotseat" element={<AuthGate><HotSeat /></AuthGate>} />
             <Route path="/profile" element={<AuthGate><Profile /></AuthGate>} />

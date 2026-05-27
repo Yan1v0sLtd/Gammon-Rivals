@@ -38,7 +38,7 @@ export default function JoinMatch() {
       {error ? (
         <>
           <div className="text-rose-400 text-center">{error}</div>
-          <Link to="/" className="text-board-accent text-sm">← Home</Link>
+          <Link to="/play" className="text-board-accent text-sm">← Home</Link>
         </>
       ) : (
         <div className="text-board-felt/60">Joining match…</div>

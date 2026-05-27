@@ -57,7 +57,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
           </div>
           <div className="flex gap-3">
             <Link
-              to="/"
+              to="/play"
               className="px-4 py-2 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110"
             >
               Home
