@@ -117,6 +117,39 @@
       .play-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
       .play-btn:active { transform: translateY(3px); box-shadow: 0 4px 0 #06450a, 0 14px 28px rgba(0,0,0,0.5), inset 0 3px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.4); }
 
+      /*
+       * Pre-launch "Coming Soon" CTA. Same pill silhouette as
+       * .play-btn but visually passive: gold outline on dark
+       * fill, no hover/active states, default cursor. When the
+       * game is ready, swap the <span class="cta-soon"> back to
+       * <a class="play-btn" href="/play">Play Now</a>.
+       */
+      .cta-soon {
+        display: inline-grid;
+        place-items: center;
+        min-width: 14rem;
+        height: 4rem;
+        padding: 0 2.5rem;
+        font-weight: 900;
+        font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: #f6d770;
+        border: 2px solid rgba(246, 215, 112, 0.55);
+        border-radius: 9999px;
+        background:
+          linear-gradient(180deg, rgba(70, 50, 18, 0.55) 0%, rgba(20, 12, 4, 0.7) 100%);
+        box-shadow:
+          0 10px 28px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 235, 180, 0.2);
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+        cursor: default;
+        user-select: none;
+      }
+      @media (max-width: 480px) {
+        .cta-soon { width: 100%; max-width: 22rem; }
+      }
+
       footer {
         display: flex;
         justify-content: center;
@@ -139,7 +172,9 @@
     <div class="stage">
       <header>
         <span class="brand">Gammon Rivals</span>
-        <a class="brand" href="/play" style="text-decoration: none;">Sign In →</a>
+        <!-- Sign-in link intentionally removed pre-launch. Add back as:
+             <a class="brand" href="/play" style="text-decoration: none;">Sign In →</a>
+        -->
       </header>
 
       <main>
@@ -148,12 +183,14 @@
           src="/brand/logo.webp"
           alt="Gammon Rivals — Roll. Strategize. Win."
         />
-        <a class="play-btn" href="/play">Play Now</a>
+        <span class="cta-soon">Coming Soon</span>
       </main>
 
       <footer>
         <span>© Gammon Rivals</span>
-        <a href="/play">Sign In</a>
+        <!-- Sign-in link intentionally removed pre-launch. Add back as:
+             <a href="/play">Sign In</a>
+        -->
       </footer>
     </div>
   </body>
