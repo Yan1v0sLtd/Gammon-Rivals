@@ -36,6 +36,7 @@ export default function PlayOnline() {
     wallet,
     progression,
     levelConfigs,
+    levelStatusTiers,
     isLoading: authLoading,
   } = useAuth();
   const navigate = useNavigate();
@@ -281,8 +282,10 @@ export default function PlayOnline() {
   const isLocalTurn = !!game.isLocalTurn;
   const isRollForSelf = game.turn === selfColor;
   const selfProgression =
-    selfProfile?.id === user.id ? progression : getProfileProgression(selfProfile, levelConfigs);
-  const opponentProgression = getProfileProgression(opponentProf, levelConfigs);
+    selfProfile?.id === user.id
+      ? progression
+      : getProfileProgression(selfProfile, levelConfigs, levelStatusTiers);
+  const opponentProgression = getProfileProgression(opponentProf, levelConfigs, levelStatusTiers);
   const selfName = selfProfile?.display_name;
   const oppName = opponentProf?.display_name;
 

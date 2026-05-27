@@ -2,6 +2,7 @@ import type { Database } from '../types/database';
 
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
+export type LevelStatusTier = Database['public']['Tables']['level_status_tiers']['Row'];
 
 export interface ProfileProgression {
   readonly level: number;
@@ -38,9 +39,45 @@ function fallbackLevelXp(level: number): number {
   return Math.max(0, (level - 1) * DEFAULT_LEVEL_SPAN);
 }
 
+/**
+ * Derive the status / rank label for a given level from the
+ * `level_status_tiers` config. Picks the first enabled tier (lowest
+ * sort_order, then level_from) whose [level_from, level_to] range
+ * contains the level.
+ *
+ * Falls back to:
+ *   1. The legacy per-row `level_configs.status_label`
+ *   2. `'Rookie'` if nothing else matches
+ *
+ * The fallback chain lets us roll this change out without backfilling
+ * status_label on every existing level_configs row — anywhere a tier
+ * is missing, the old column still wins.
+ */
+function resolveStatusLabel(
+  level: number,
+  levelStatusTiers: readonly LevelStatusTier[],
+  legacyLabel: string | null | undefined
+): string {
+  if (levelStatusTiers.length > 0) {
+    const ordered = levelStatusTiers
+      .filter((t) => t.is_enabled)
+      .slice()
+      .sort((a, b) => {
+        if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+        return a.level_from - b.level_from;
+      });
+    const match = ordered.find(
+      (t) => level >= t.level_from && level <= t.level_to
+    );
+    if (match) return match.label;
+  }
+  return (legacyLabel ?? '').trim() || 'Rookie';
+}
+
 export function getProfileProgression(
   profile: ProfileRow | null,
-  levelConfigs: readonly LevelConfig[] = []
+  levelConfigs: readonly LevelConfig[] = [],
+  levelStatusTiers: readonly LevelStatusTier[] = []
 ): ProfileProgression {
   const level = Math.max(1, profile?.level ?? 1);
   const xp = Math.max(0, profile?.xp ?? 0);
@@ -71,7 +108,7 @@ export function getProfileProgression(
   return {
     level,
     xp,
-    statusLabel: currentConfig?.status_label || 'Rookie',
+    statusLabel: resolveStatusLabel(level, levelStatusTiers, currentConfig?.status_label),
     currentLevelXp,
     nextLevelXp: nextConfig ? nextLevelXp : null,
     xpIntoLevel: Math.max(0, xp - currentLevelXp),

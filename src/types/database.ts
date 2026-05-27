@@ -498,6 +498,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      level_status_tiers: {
+        Row: {
+          id: string;
+          level_from: number;
+          level_to: number;
+          label: string;
+          sort_order: number;
+          is_enabled: boolean;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          level_from: number;
+          level_to: number;
+          label: string;
+          sort_order?: number;
+          is_enabled?: boolean;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          level_from?: number;
+          level_to?: number;
+          label?: string;
+          sort_order?: number;
+          is_enabled?: boolean;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       table_configs: {
         Row: {
           id: string;

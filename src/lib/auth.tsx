@@ -18,6 +18,7 @@ import type { Database } from '../types/database';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
 type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
+type LevelStatusTier = Database['public']['Tables']['level_status_tiers']['Row'];
 
 /**
  * Active XP boost summary shown in the lobby + applied by the server.
@@ -99,6 +100,12 @@ export interface AuthContextValue {
   readonly profile: ProfileRow | null;
   readonly wallet: UserWallet | null;
   readonly levelConfigs: LevelConfig[];
+  /**
+   * Declarative level → rank label config (e.g. L1-15 = Rookie,
+   * L16-40 = Skilled). Consumed by getProfileProgression to derive
+   * statusLabel without coupling to the per-row level_configs.status_label.
+   */
+  readonly levelStatusTiers: LevelStatusTier[];
   readonly progression: ProfileProgression;
   /** Highest currently-active XP multiplier and its expiry, or null if
    *  no boost is active. Read by the top-bar badge; refreshed after a
@@ -131,6 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [wallet, setWallet] = useState<UserWallet | null>(null);
   const [levelConfigs, setLevelConfigs] = useState<LevelConfig[]>([]);
+  const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([]);
   const [activeXpBoost, setActiveXpBoost] = useState<ActiveXpBoost | null>(null);
   const [isLoading, setLoading] = useState(isSupabaseConfigured);
   const profileFetchRef = useRef<string | null>(null);
@@ -138,15 +146,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchLevelConfigs = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data, error } = await supabase
-      .from('level_configs')
-      .select('*')
-      .order('level', { ascending: true });
-    if (error) {
-      console.warn('level config fetch error', error);
-      return;
+    // Fetch level_configs + level_status_tiers in parallel. Both are
+    // small, cached for the session, and consumed together by
+    // getProfileProgression — no point waterfall-ing them.
+    const [levelsResult, tiersResult] = await Promise.all([
+      supabase
+        .from('level_configs')
+        .select('*')
+        .order('level', { ascending: true }),
+      supabase
+        .from('level_status_tiers')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('level_from', { ascending: true }),
+    ]);
+    if (levelsResult.error) {
+      console.warn('level config fetch error', levelsResult.error);
+    } else {
+      setLevelConfigs(levelsResult.data ?? []);
     }
-    setLevelConfigs(data ?? []);
+    if (tiersResult.error) {
+      // Non-fatal: progression.ts falls back to the legacy
+      // level_configs.status_label column when tiers are unavailable.
+      console.warn('level status tier fetch error', tiersResult.error);
+    } else {
+      setLevelStatusTiers(tiersResult.data ?? []);
+    }
   }, []);
 
   const fetchWallet = useCallback(async (userId: string) => {
@@ -475,8 +500,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAnonymous = isSupabaseConfigured ? (session?.user?.is_anonymous ?? false) : false;
   const isGuest = profile?.is_guest ?? isAnonymous;
   const progression = useMemo(
-    () => getProfileProgression(profile, levelConfigs),
-    [profile, levelConfigs]
+    () => getProfileProgression(profile, levelConfigs, levelStatusTiers),
+    [profile, levelConfigs, levelStatusTiers]
   );
 
   const value = useMemo<AuthContextValue>(
@@ -486,6 +511,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       wallet,
       levelConfigs,
+      levelStatusTiers,
       progression,
       activeXpBoost,
       isLoading,
@@ -507,6 +533,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       wallet,
       levelConfigs,
+      levelStatusTiers,
       progression,
       activeXpBoost,
       isLoading,

@@ -31,6 +31,28 @@ type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
 type AdminEmailRoleRow = Database['public']['Tables']['admin_email_allowlist']['Row'];
 type AdminRole = AdminRoleRow['role'];
 type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
+type LevelStatusTier = Database['public']['Tables']['level_status_tiers']['Row'];
+/**
+ * Editable per-row state for the Status Tiers panel. We keep `id`
+ * nullable so a brand-new row (not yet inserted) can sit alongside
+ * existing ones in the same draft array. All numeric fields are
+ * stored as strings so the inputs can be empty mid-edit without
+ * blanking the form state.
+ */
+type LevelStatusTierDraft = {
+  id: string | null;
+  level_from: string;
+  level_to: string;
+  label: string;
+  sort_order: string;
+  is_enabled: boolean;
+};
+/**
+ * Number of rows shown at once in the Levels table. The curve can
+ * easily hit 100+ levels, so we paginate to keep the BO scrollable.
+ * 'all' is the escape hatch for spreadsheet-style scanning.
+ */
+type LevelsPageSize = 25 | 50 | 100 | 'all';
 type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
 type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
@@ -754,6 +776,13 @@ export default function Admin() {
   const [profileDraft, setProfileDraft] = useState({ level: '1', xp: '0', rating: '1500', admin_note: '', suspension_reason: '' });
   const [walletDraft, setWalletDraft] = useState({ currency: 'coins', amount: '', reason: '' });
   const [levels, setLevels] = useState<LevelConfig[]>([]);
+  const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([]);
+  const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([]);
+  const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50);
+  const [levelsPageIndex, setLevelsPageIndex] = useState(0);
+  const [savingTiers, setSavingTiers] = useState(false);
+  const [tierError, setTierError] = useState<string | null>(null);
+  const [tierMessage, setTierMessage] = useState<string | null>(null);
   const [dailyBonusConfigs, setDailyBonusConfigs] = useState<DailyBonusConfig[]>([]);
   const [tables, setTables] = useState<TableConfig[]>([]);
   const [boards, setBoards] = useState<BoardThemeConfig[]>([]);
@@ -995,6 +1024,7 @@ export default function Admin() {
         activeMatchCount,
         profilesResult,
         levelResult,
+        levelStatusTierResult,
         dailyBonusResult,
         tableResult,
         boardResult,
@@ -1017,6 +1047,11 @@ export default function Admin() {
           .order('created_at', { ascending: false })
           .limit(120),
         supabase.from('level_configs').select('*').order('level', { ascending: true }),
+        supabase
+          .from('level_status_tiers')
+          .select('*')
+          .order('sort_order', { ascending: true })
+          .order('level_from', { ascending: true }),
         supabase.from('daily_bonus_configs').select('*').order('day', { ascending: true }),
         supabase.from('table_configs').select('*').order('sort_order', { ascending: true }),
         supabase.from('board_theme_configs').select('*').order('sort_order', { ascending: true }),
@@ -1034,6 +1069,7 @@ export default function Admin() {
         activeMatchCount.error ??
         profilesResult.error ??
         levelResult.error ??
+        levelStatusTierResult.error ??
         dailyBonusResult.error ??
         tableResult.error ??
         boardResult.error ??
@@ -1060,6 +1096,21 @@ export default function Admin() {
         return new Set([...current].filter((id) => visibleIds.has(id)));
       });
       setLevels(levelResult.data ?? []);
+      const tierRows = levelStatusTierResult.data ?? [];
+      setLevelStatusTiers(tierRows);
+      // Initialize the editable drafts from the freshly loaded rows.
+      // String-ify numerics so the inputs can be cleared without
+      // losing form state.
+      setTierDrafts(
+        tierRows.map((t) => ({
+          id: t.id,
+          level_from: String(t.level_from),
+          level_to: String(t.level_to),
+          label: t.label,
+          sort_order: String(t.sort_order),
+          is_enabled: t.is_enabled,
+        })),
+      );
       setDailyBonusConfigs(dailyBonusResult.data ?? []);
       setTables(tableResult.data ?? []);
       setBoards(boardResult.data ?? []);
@@ -1476,6 +1527,155 @@ export default function Admin() {
       setError(err);
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  // --- Status tier helpers --------------------------------------
+  //
+  // The tier panel is a small inline list. `tierDrafts` is the editable
+  // mirror of `levelStatusTiers` (the last loaded snapshot). On Save we
+  // diff: any draft.id that no longer exists in drafts gets deleted,
+  // any draft with id=null gets inserted, the rest get updated. Then we
+  // refetch to get fresh ids + audit timestamps.
+
+  function updateTierDraft(index: number, patch: Partial<LevelStatusTierDraft>) {
+    setTierDrafts((rows) =>
+      rows.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
+  }
+
+  function addBlankTier() {
+    // Default the new row's level_from to one past the previous row's
+    // level_to so a designer adding tiers in order doesn't have to
+    // re-type the boundary. Empty list -> start at 1.
+    const lastTo = tierDrafts.length
+      ? Math.max(
+          0,
+          Number.parseInt(tierDrafts[tierDrafts.length - 1].level_to, 10) || 0,
+        )
+      : 0;
+    const nextFrom = lastTo > 0 ? lastTo + 1 : 1;
+    setTierDrafts((rows) => [
+      ...rows,
+      {
+        id: null,
+        level_from: String(nextFrom),
+        level_to: '',
+        label: '',
+        sort_order: String(rows.length + 1),
+        is_enabled: true,
+      },
+    ]);
+  }
+
+  function removeTierDraft(index: number) {
+    setTierDrafts((rows) => rows.filter((_, i) => i !== index));
+  }
+
+  function resetTierDrafts() {
+    setTierDrafts(
+      levelStatusTiers.map((t) => ({
+        id: t.id,
+        level_from: String(t.level_from),
+        level_to: String(t.level_to),
+        label: t.label,
+        sort_order: String(t.sort_order),
+        is_enabled: t.is_enabled,
+      })),
+    );
+    setTierError(null);
+    setTierMessage(null);
+  }
+
+  async function saveTiers() {
+    if (!canManage || savingTiers) return;
+    setSavingTiers(true);
+    setTierError(null);
+    setTierMessage(null);
+    try {
+      // Validate before any DB call so we don't end up with a
+      // partially-saved set on bad input.
+      const validated = tierDrafts.map((draft, i) => {
+        const from = Number.parseInt(draft.level_from, 10);
+        const to = Number.parseInt(draft.level_to, 10);
+        const sort = Number.parseInt(draft.sort_order, 10);
+        if (!Number.isFinite(from) || from <= 0) {
+          throw new Error(`Tier #${i + 1}: "From" must be a positive integer.`);
+        }
+        if (!Number.isFinite(to) || to < from) {
+          throw new Error(
+            `Tier #${i + 1}: "To" must be ≥ "From" (got ${draft.level_to}).`,
+          );
+        }
+        const label = draft.label.trim();
+        if (!label) throw new Error(`Tier #${i + 1}: label is required.`);
+        return {
+          id: draft.id,
+          level_from: from,
+          level_to: to,
+          label,
+          sort_order: Number.isFinite(sort) ? sort : i + 1,
+          is_enabled: draft.is_enabled,
+        };
+      });
+
+      const draftIds = new Set(
+        validated.map((v) => v.id).filter((id): id is string => !!id),
+      );
+      const toDelete = levelStatusTiers
+        .filter((existing) => !draftIds.has(existing.id))
+        .map((t) => t.id);
+      const toInsert = validated.filter((v) => v.id === null);
+      const toUpdate = validated.filter((v) => v.id !== null);
+
+      if (toDelete.length > 0) {
+        const { error } = await supabase
+          .from('level_status_tiers')
+          .delete()
+          .in('id', toDelete);
+        if (error) throw error;
+      }
+      if (toInsert.length > 0) {
+        const { error } = await supabase.from('level_status_tiers').insert(
+          toInsert.map((row) => ({
+            level_from: row.level_from,
+            level_to: row.level_to,
+            label: row.label,
+            sort_order: row.sort_order,
+            is_enabled: row.is_enabled,
+            updated_by: user?.id ?? null,
+          })),
+        );
+        if (error) throw error;
+      }
+      if (toUpdate.length > 0) {
+        // No bulk update RPC for arbitrary per-row changes, so issue
+        // a per-row .update(). The tier table is small (~10 rows
+        // max), so this is fine.
+        for (const row of toUpdate) {
+          if (!row.id) continue;
+          const { error } = await supabase
+            .from('level_status_tiers')
+            .update({
+              level_from: row.level_from,
+              level_to: row.level_to,
+              label: row.label,
+              sort_order: row.sort_order,
+              is_enabled: row.is_enabled,
+              updated_by: user?.id ?? null,
+            })
+            .eq('id', row.id);
+          if (error) throw error;
+        }
+      }
+      setTierMessage(
+        `Saved. ${toInsert.length} added · ${toUpdate.length} updated · ${toDelete.length} removed.`,
+      );
+      await loadAdminData();
+    } catch (err) {
+      setTierError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSavingTiers(false);
     }
   }
 
@@ -2400,52 +2600,238 @@ export default function Admin() {
             </div>
           )}
 
-          {activeSection === 'Level System' && (
-            <>
-              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-                <ConfigTable title="Levels" rows={levels.map((row) => {
-                  const rowMicros =
-                    usdMicrosFor(rateMap, 'coins', row.reward_coins) +
-                    usdMicrosFor(rateMap, 'gems', row.reward_gems);
-                  return [
-                    `Level ${row.level}`,
-                    row.status_label ?? 'Rookie',
-                    `${formatNumber(row.xp_required)} XP`,
-                    `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
-                    formatUsdMicros(rowMicros),
-                    row.is_enabled ? 'Enabled' : 'Disabled',
-                  ];
-                })} onRowClick={(index) => setLevelDraft(levelToDraft(levels[index]))} />
+          {activeSection === 'Level System' && (() => {
+            // Pagination math. `levels` is already sorted ascending by
+            // level in loadAdminData. The page index is clamped to the
+            // valid range so changing pageSize doesn't strand the user
+            // on a phantom page.
+            const totalLevels = levels.length;
+            const effectivePageSize =
+              levelsPageSize === 'all' ? Math.max(totalLevels, 1) : levelsPageSize;
+            const totalPages = Math.max(1, Math.ceil(totalLevels / effectivePageSize));
+            const clampedPageIndex = Math.min(Math.max(0, levelsPageIndex), totalPages - 1);
+            const pageStart = clampedPageIndex * effectivePageSize;
+            const pageEnd = Math.min(pageStart + effectivePageSize, totalLevels);
+            const pagedLevels = levels.slice(pageStart, pageEnd);
+            const pageSizeOptions: LevelsPageSize[] = [25, 50, 100, 'all'];
+
+            return (
+              <>
+                {/* Status Tiers — declarative level → rank label. The
+                    lobby derives status from these rows in real time,
+                    so changes here propagate without re-applying the
+                    curve or touching individual level rows. */}
                 <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                  <h2 className="text-lg font-black">Edit level</h2>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <Field label="Level" value={levelDraft.level} onChange={(level) => setLevelDraft((d) => ({ ...d, level }))} />
-                    <Field label="XP required" value={levelDraft.xp_required} onChange={(xp_required) => setLevelDraft((d) => ({ ...d, xp_required }))} />
-                    <Field label="Status label" value={levelDraft.status_label} onChange={(status_label) => setLevelDraft((d) => ({ ...d, status_label }))} />
-                    <Field label="Reward coins" value={levelDraft.reward_coins} onChange={(reward_coins) => setLevelDraft((d) => ({ ...d, reward_coins }))} />
-                    <Field label="Reward gems" value={levelDraft.reward_gems} onChange={(reward_gems) => setLevelDraft((d) => ({ ...d, reward_gems }))} />
+                  <div className="flex items-baseline justify-between">
+                    <h2 className="text-lg font-black">Status tiers</h2>
+                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+                      declarative level → rank label
+                    </span>
                   </div>
-                  <div className="mt-3 space-y-3">
-                    <TextArea label="Reward items JSON array" value={levelDraft.reward_items} onChange={(reward_items) => setLevelDraft((d) => ({ ...d, reward_items }))} />
-                    <TextArea label="Unlock rules JSON object" value={levelDraft.unlock_rules} onChange={(unlock_rules) => setLevelDraft((d) => ({ ...d, unlock_rules }))} />
-                    <Toggle label="Enabled" checked={levelDraft.is_enabled} onChange={(is_enabled) => setLevelDraft((d) => ({ ...d, is_enabled }))} />
-                    <div className="flex gap-2">
-                      <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
-                      <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+                  <p className="mt-1 text-xs text-white/55">
+                    Map level ranges to a rank label (Rookie, Veteran, etc.).
+                    The lobby derives a player's displayed status from these
+                    tiers — so changing a range updates every level without
+                    re-applying the curve. Ranges may overlap; the lowest
+                    sort_order wins.
+                  </p>
+                  <div className="mt-4 space-y-2">
+                    {tierDrafts.length === 0 ? (
+                      <div className="rounded-lg border border-white/10 bg-black/20 px-4 py-6 text-center text-xs text-white/45">
+                        No tiers configured. Click "+ Add tier" to define your first range.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+                          <span>From</span>
+                          <span>To</span>
+                          <span>Label</span>
+                          <span>Sort</span>
+                          <span>Enabled</span>
+                          <span></span>
+                        </div>
+                        {tierDrafts.map((draft, i) => (
+                          <div
+                            key={`tier-${draft.id ?? `new-${i}`}`}
+                            className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] items-center gap-2"
+                          >
+                            <input
+                              type="number"
+                              min="1"
+                              value={draft.level_from}
+                              onChange={(e) => updateTierDraft(i, { level_from: e.target.value })}
+                              className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              value={draft.level_to}
+                              onChange={(e) => updateTierDraft(i, { level_to: e.target.value })}
+                              className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                            />
+                            <input
+                              type="text"
+                              value={draft.label}
+                              placeholder="Rookie"
+                              onChange={(e) => updateTierDraft(i, { label: e.target.value })}
+                              className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-amber-200/60"
+                            />
+                            <input
+                              type="number"
+                              value={draft.sort_order}
+                              onChange={(e) => updateTierDraft(i, { sort_order: e.target.value })}
+                              className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                            />
+                            <label className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/20">
+                              <input
+                                type="checkbox"
+                                checked={draft.is_enabled}
+                                onChange={(e) => updateTierDraft(i, { is_enabled: e.target.checked })}
+                                className="h-4 w-4 accent-amber-300"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeTierDraft(i)}
+                              title="Remove tier"
+                              className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 text-base font-black text-rose-200/80 transition hover:bg-rose-300/20"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <SecondaryButton onClick={addBlankTier}>+ Add tier</SecondaryButton>
+                    <PrimaryButton
+                      onClick={() => void saveTiers()}
+                      disabled={!canManage || savingTiers}
+                    >
+                      {savingTiers ? 'Saving…' : 'Save tiers'}
+                    </PrimaryButton>
+                    <SecondaryButton onClick={resetTierDrafts}>Discard changes</SecondaryButton>
+                    {tierError ? (
+                      <span className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">
+                        {tierError}
+                      </span>
+                    ) : null}
+                    {tierMessage ? (
+                      <span className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-100">
+                        {tierMessage}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Levels grid: paginated table on the left, sticky
+                    editor on the right. `items-start` lets the sticky
+                    child stop at the top of the column instead of
+                    stretching to match the table's height. */}
+                <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+                  <div>
+                    {/* Pagination controls */}
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="text-white/40 uppercase tracking-[0.14em] font-bold">
+                        Rows per page:
+                      </span>
+                      {pageSizeOptions.map((option) => (
+                        <button
+                          key={`page-size-${option}`}
+                          type="button"
+                          onClick={() => {
+                            setLevelsPageSize(option);
+                            setLevelsPageIndex(0);
+                          }}
+                          className={`rounded-md px-2.5 py-1 font-bold transition ${
+                            levelsPageSize === option
+                              ? 'bg-amber-300/20 text-amber-100 border border-amber-200/40'
+                              : 'bg-white/[0.04] text-white/55 border border-white/10 hover:border-white/25'
+                          }`}
+                        >
+                          {option === 'all' ? 'All' : option}
+                        </button>
+                      ))}
+                      <span className="ml-auto flex items-center gap-2 text-white/55">
+                        <button
+                          type="button"
+                          onClick={() => setLevelsPageIndex(Math.max(0, clampedPageIndex - 1))}
+                          disabled={clampedPageIndex === 0}
+                          className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
+                        >
+                          ‹ Prev
+                        </button>
+                        <span className="font-mono text-white/70">
+                          {totalLevels === 0
+                            ? 'no rows'
+                            : `${pageStart + 1}–${pageEnd} of ${totalLevels}`}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setLevelsPageIndex(Math.min(totalPages - 1, clampedPageIndex + 1))}
+                          disabled={clampedPageIndex >= totalPages - 1}
+                          className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
+                        >
+                          Next ›
+                        </button>
+                      </span>
+                    </div>
+                    <ConfigTable
+                      title="Levels"
+                      rows={pagedLevels.map((row) => {
+                        const rowMicros =
+                          usdMicrosFor(rateMap, 'coins', row.reward_coins) +
+                          usdMicrosFor(rateMap, 'gems', row.reward_gems);
+                        return [
+                          `Level ${row.level}`,
+                          row.status_label ?? 'Rookie',
+                          `${formatNumber(row.xp_required)} XP`,
+                          `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
+                          formatUsdMicros(rowMicros),
+                          row.is_enabled ? 'Enabled' : 'Disabled',
+                        ];
+                      })}
+                      onRowClick={(index) =>
+                        setLevelDraft(levelToDraft(pagedLevels[index]))
+                      }
+                    />
+                  </div>
+                  <div className="sticky top-4 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                    <h2 className="text-lg font-black">Edit level</h2>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <Field label="Level" value={levelDraft.level} onChange={(level) => setLevelDraft((d) => ({ ...d, level }))} />
+                      <Field label="XP required" value={levelDraft.xp_required} onChange={(xp_required) => setLevelDraft((d) => ({ ...d, xp_required }))} />
+                      <Field label="Status label (legacy)" value={levelDraft.status_label} onChange={(status_label) => setLevelDraft((d) => ({ ...d, status_label }))} />
+                      <Field label="Reward coins" value={levelDraft.reward_coins} onChange={(reward_coins) => setLevelDraft((d) => ({ ...d, reward_coins }))} />
+                      <Field label="Reward gems" value={levelDraft.reward_gems} onChange={(reward_gems) => setLevelDraft((d) => ({ ...d, reward_gems }))} />
+                    </div>
+                    <p className="mt-2 text-[10px] text-white/35">
+                      "Status label" on a level row is legacy — the Status
+                      tiers panel above takes precedence in the lobby.
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      <TextArea label="Reward items JSON array" value={levelDraft.reward_items} onChange={(reward_items) => setLevelDraft((d) => ({ ...d, reward_items }))} />
+                      <TextArea label="Unlock rules JSON object" value={levelDraft.unlock_rules} onChange={(unlock_rules) => setLevelDraft((d) => ({ ...d, unlock_rules }))} />
+                      <Toggle label="Enabled" checked={levelDraft.is_enabled} onChange={(is_enabled) => setLevelDraft((d) => ({ ...d, is_enabled }))} />
+                      <div className="flex gap-2">
+                        <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
+                        <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              <LevelCurveProposal
-                canManage={canManage}
-                currentLevels={levels}
-                currentUserId={user?.id ?? null}
-                onApplied={loadAdminData}
-                coinValueMicros={rateMap.get('coins') ?? 100}
-                gemValueMicros={rateMap.get('gems') ?? 10000}
-              />
-            </>
-          )}
+                <LevelCurveProposal
+                  canManage={canManage}
+                  currentLevels={levels}
+                  currentUserId={user?.id ?? null}
+                  onApplied={loadAdminData}
+                  coinValueMicros={rateMap.get('coins') ?? 100}
+                  gemValueMicros={rateMap.get('gems') ?? 10000}
+                />
+              </>
+            );
+          })()}
 
           {activeSection === 'Daily Bonus' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
