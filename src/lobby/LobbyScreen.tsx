@@ -84,11 +84,11 @@ function LobbyBackgroundLayer({
         src={board.background}
         alt=""
         className="h-full w-full object-cover"
-        // 20 % blur on the lobby art so the foreground icons +
-        // profile card read cleanly without fighting the busy
-        // zen-garden scenery behind. Pure visual treatment —
-        // the image asset itself is untouched.
-        style={{ filter: 'blur(20px)' }}
+        // Light 5 px blur on the lobby art — enough to take the
+        // edge off the zen-garden scenery without fully smearing
+        // it. Pure visual treatment, the image asset itself is
+        // untouched.
+        style={{ filter: 'blur(5px)' }}
         draggable={false}
       />
       <div className="absolute inset-0" style={{ background: board.backgroundTone }} />
