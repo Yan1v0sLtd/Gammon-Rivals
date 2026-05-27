@@ -2,7 +2,16 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+
+// Test-user login is gated by two build-time env vars so the button
+// renders only on preview / dev builds. Production builds leave both
+// vars unset → the button never mounts, never appears in the DOM, and
+// the email/password never end up in the prod bundle (Vite tree-shakes
+// the dead branch).
+const TEST_LOGIN_EMAIL = import.meta.env.VITE_TEST_LOGIN_EMAIL as string | undefined;
+const TEST_LOGIN_PASSWORD = import.meta.env.VITE_TEST_LOGIN_PASSWORD as string | undefined;
+const TEST_LOGIN_ENABLED = Boolean(TEST_LOGIN_EMAIL && TEST_LOGIN_PASSWORD);
 
 function isLocalhostOrigin(): boolean {
   return (
@@ -19,7 +28,7 @@ function loopbackUrl(): string {
 function AuthScreen() {
   const location = useLocation();
   const { signInWithGoogle, signInAnonymously } = useAuth();
-  const [busy, setBusy] = useState<'google' | 'guest' | null>(null);
+  const [busy, setBusy] = useState<'google' | 'guest' | 'test' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const nextPath = `${location.pathname}${location.search}`;
   const isSwitchingLocalHost = isLocalhostOrigin();
@@ -52,6 +61,27 @@ function AuthScreen() {
     setError(null);
     try {
       await signInAnonymously();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Dev-only login that signs into a pre-created Supabase auth user
+  // using email/password from build-time env vars. Lets the operator
+  // re-use the SAME account between testing sessions instead of
+  // creating a new anonymous guest every reload.
+  const loginAsTestUser = async () => {
+    if (!TEST_LOGIN_ENABLED) return;
+    setBusy('test');
+    setError(null);
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: TEST_LOGIN_EMAIL!,
+        password: TEST_LOGIN_PASSWORD!,
+      });
+      if (signInError) throw signInError;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -105,6 +135,20 @@ function AuthScreen() {
             >
               {busy === 'guest' ? 'Starting guest…' : 'Play as Guest'}
             </button>
+            {/* Test login — rendered only when the build has the
+                VITE_TEST_LOGIN_EMAIL + VITE_TEST_LOGIN_PASSWORD env
+                vars set. Production builds leave them unset → the
+                whole branch is tree-shaken out of the bundle. */}
+            {TEST_LOGIN_ENABLED && (
+              <button
+                type="button"
+                onClick={loginAsTestUser}
+                disabled={!isSupabaseConfigured || busy !== null}
+                className="rounded-xl border border-violet-300/50 bg-violet-900/40 px-5 py-3 font-display text-base font-black text-violet-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.13),0_8px_18px_rgba(0,0,0,0.3)] transition hover:bg-violet-800/60 active:translate-y-0.5 disabled:opacity-55"
+              >
+                {busy === 'test' ? 'Signing in…' : 'Login as Test User'}
+              </button>
+            )}
           </div>
         )}
 

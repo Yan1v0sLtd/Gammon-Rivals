@@ -1174,6 +1174,53 @@ export default function Admin() {
     });
   }
 
+  /** Hard-delete (irreversible) — calls the admin_hard_delete_user RPC
+   *  which removes the auth.users row + cascades through everything.
+   *  Intended for shell/test users that pile up during dev. Guarded
+   *  by a type-to-confirm prompt because there's no undo. */
+  async function hardDeleteUsers(profileIds: string[]) {
+    if (!canManage) return;
+    const uniqueIds = [...new Set(profileIds)].filter((profileId) => profileId !== user?.id);
+    if (uniqueIds.length === 0) {
+      setDataError('Select at least one user that is not your current admin profile.');
+      return;
+    }
+
+    const word = window.prompt(
+      `HARD DELETE ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}?\n\n` +
+        `This is IRREVERSIBLE — the auth.users row is removed and all related ` +
+        `wallet / inventory / match data is cascade-deleted from the database.\n\n` +
+        `Type DELETE to confirm.`,
+      ''
+    );
+    if (word === null) return;
+    if (word.trim().toUpperCase() !== 'DELETE') {
+      setDataError('Hard delete aborted — confirmation text did not match.');
+      return;
+    }
+
+    setSavingKey('user-delete');
+    setDataError(null);
+    try {
+      // Loop sequentially so an error on one row surfaces with the
+      // matching id; .rpc() doesn't have a batch form for this.
+      for (const id of uniqueIds) {
+        const { error } = await supabase.rpc('admin_hard_delete_user', { target_id: id });
+        if (error) throw new Error(`${id.slice(0, 8)}…: ${error.message}`);
+      }
+      setCheckedUserIds(new Set());
+      if (selectedUserId && uniqueIds.includes(selectedUserId)) {
+        setSelectedUserId(null);
+        setSelectedUserDetail(null);
+      }
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   async function softDeleteUsers(profileIds: string[]) {
     if (!canManage) return;
     const uniqueIds = [...new Set(profileIds)].filter((profileId) => profileId !== user?.id);
@@ -1915,12 +1962,23 @@ export default function Admin() {
                       ? `${checkedUserCount} selected`
                       : `${filteredUsers.length} live users shown`}
                   </span>
-                  <DangerButton
-                    onClick={() => void softDeleteUsers([...checkedUserIds])}
-                    disabled={!canManage || checkedUserCount === 0 || savingKey === 'user-delete'}
-                  >
-                    Delete selected
-                  </DangerButton>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <DangerButton
+                      onClick={() => void softDeleteUsers([...checkedUserIds])}
+                      disabled={!canManage || checkedUserCount === 0 || savingKey === 'user-delete'}
+                    >
+                      Delete selected
+                    </DangerButton>
+                    {/* Hard delete — purges auth.users + cascades. Used to
+                        clear shell/test users that pile up during dev.
+                        Type-DELETE confirm is inside hardDeleteUsers. */}
+                    <DangerButton
+                      onClick={() => void hardDeleteUsers([...checkedUserIds])}
+                      disabled={!canManage || checkedUserCount === 0 || savingKey === 'user-delete'}
+                    >
+                      Hard delete (irreversible)
+                    </DangerButton>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-white/10 text-sm">
@@ -1979,17 +2037,31 @@ export default function Admin() {
                             {row.is_suspended ? <StatusPill enabled={false} /> : <StatusPill enabled />}
                           </td>
                           <td className="px-4 py-3">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                void softDeleteUsers([row.id]);
-                              }}
-                              disabled={!canManage || row.id === user?.id || savingKey === 'user-delete'}
-                              className="rounded-md border border-rose-300/25 px-2 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"
-                            >
-                              Delete
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void softDeleteUsers([row.id]);
+                                }}
+                                disabled={!canManage || row.id === user?.id || savingKey === 'user-delete'}
+                                className="rounded-md border border-rose-300/25 px-2 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                Delete
+                              </button>
+                              <button
+                                type="button"
+                                title="Hard delete (irreversible)"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  void hardDeleteUsers([row.id]);
+                                }}
+                                disabled={!canManage || row.id === user?.id || savingKey === 'user-delete'}
+                                className="rounded-md border border-rose-500/50 bg-rose-700/15 px-2 py-1 text-xs font-bold text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                Hard
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -2019,6 +2091,12 @@ export default function Admin() {
                             disabled={!canManage || selectedUser.id === user?.id || savingKey === 'user-delete'}
                           >
                             Delete user
+                          </DangerButton>
+                          <DangerButton
+                            onClick={() => void hardDeleteUsers([selectedUser.id])}
+                            disabled={!canManage || selectedUser.id === user?.id || savingKey === 'user-delete'}
+                          >
+                            Hard delete (irreversible)
                           </DangerButton>
                         </div>
                       </div>

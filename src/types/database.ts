@@ -948,6 +948,10 @@ export type Database = {
         Args: { target_item_id: string };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
+      admin_hard_delete_user: {
+        Args: { target_id: string };
+        Returns: void;
+      };
       claim_daily_bonus: {
         Args: Record<string, never>;
         Returns: Json;
