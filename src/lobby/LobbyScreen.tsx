@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { AILevel } from '../ai';
+// AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
 import { extractErrorMessage } from '../lib/errors';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
@@ -21,7 +21,9 @@ import {
   type DifficultySelection,
   type MatchmakingOverlayState,
 } from './DifficultyModal';
-import { LobbyActionCard } from './LobbyActionCard';
+// LobbyActionCard import removed — the Play Friends + Tournaments
+// cards that used it were dropped from the right-rail per operator
+// direction. Component file still exists in case the cards return.
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { useWheelState } from './useWheelState';
@@ -58,7 +60,9 @@ const LOBBY_STATIC_ASSETS: readonly string[] = [
   '/lobby/nav/vip-club.webp',
 ];
 
-type OpponentChoice = 'hotseat' | AILevel;
+// type OpponentChoice = 'hotseat' | AILevel;  ← used by the
+// now-removed startMatch handler (Play Friends + Tournaments
+// cards). Kept commented so a re-add is one line.
 
 function LobbyBackgroundLayer({
   board,
@@ -80,6 +84,11 @@ function LobbyBackgroundLayer({
         src={board.background}
         alt=""
         className="h-full w-full object-cover"
+        // 20 % blur on the lobby art so the foreground icons +
+        // profile card read cleanly without fighting the busy
+        // zen-garden scenery behind. Pure visual treatment —
+        // the image asset itself is untouched.
+        style={{ filter: 'blur(20px)' }}
         draggable={false}
       />
       <div className="absolute inset-0" style={{ background: board.backgroundTone }} />
@@ -355,28 +364,11 @@ export function LobbyScreen() {
     return () => window.clearTimeout(clearPrevious);
   }, [selectedBoard]);
 
-  const startMatch = (opponent: OpponentChoice, target = 1) => {
-    if (selectedBoard) {
-      const state = boardStateOf(selectedBoard);
-      if (state === 'level-locked') {
-        setLockedTooltipFor(selectedBoard);
-        return;
-      }
-      if (state === 'purchasable') {
-        setPurchaseError(null);
-        setPurchaseTarget(selectedBoard);
-        return;
-      }
-    }
-    const params = new URLSearchParams();
-    params.set('opp', opponent);
-    params.set('target', String(target));
-    params.set('board', effectiveSelectedBoardId);
-    // Put the loader up before the route changes so the lobby never
-    // flashes between unmount and the gameplay's own preload gate.
-    showOverlay();
-    navigate(`/hotseat?${params.toString()}`);
-  };
+  // startMatch was the click handler for Play Friends (hotseat)
+  // and Tournaments (AI). Both cards were removed from the
+  // right-rail per operator direction. The function is kept as
+  // a commented stub so a re-add is a one-import flip.
+  // const startMatch = (opponent: OpponentChoice, target = 1) => { ... };
 
   /**
    * Matchmaking overlay state. Renders inside the DifficultyModal
@@ -629,7 +621,7 @@ export function LobbyScreen() {
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/` })}
         />
 
-        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[18.5rem_minmax(30rem,1fr)_19rem] xl:gap-6 2xl:grid-cols-[18.5rem_minmax(34rem,1fr)_22rem]">
+        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[18.5rem_minmax(30rem,1fr)] xl:gap-6 2xl:grid-cols-[18.5rem_minmax(34rem,1fr)]">
           <LobbySideOffers
             onOfferClick={(offerId) => {
               // Daily Bonus now opens UNCONDITIONALLY — the player
@@ -658,26 +650,11 @@ export function LobbyScreen() {
             />
           </div>
 
-          <aside className="lobby-action-stack grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            {/* "Play Online" was removed — every PLAY in the
-              * carousel now starts as PvP matchmaking, falling back
-              * to AI after 4 seconds. The separate "challenge anyone"
-              * surface is no longer needed. */}
-            <LobbyActionCard
-              title="Play Friends"
-              subtitle="Two players on this device"
-              tone="green"
-              compactIcon="2"
-              onClick={() => startMatch('hotseat')}
-            />
-            <LobbyActionCard
-              title="Tournaments"
-              subtitle="Warm up against Bailey"
-              tone="purple"
-              iconSrc="/lobby/icons/trophy.webp"
-              onClick={() => startMatch('medium')}
-            />
-          </aside>
+          {/* Play Friends + Tournaments cards removed per operator
+              direction. Hotseat ("two players on this device") is
+              still accessible through the bottom-nav or invite-code
+              join flow; Tournaments doesn't have a feature behind
+              it yet, so the card was just placeholder. */}
         </div>
 
         <LobbyBottomNav

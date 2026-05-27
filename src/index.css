@@ -8365,6 +8365,31 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   padding: var(--lobby-pp-pad);
   border: none;
   border-radius: var(--lobby-pp-radius);
+  /* Background, mask, and backdrop-filter all moved to ::before
+   * so the card content (avatar, name, etc.) stays fully opaque.
+   * The previous version applied the mask to .lobby-pp-card
+   * itself, which made everything inside the card (including the
+   * avatar) fade with the ellipse — the avatar near the upper
+   * area of the mask was rendering at ~70% opacity. */
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  text-align: left;
+  color: white;
+  cursor: pointer;
+}
+
+/* Backdrop layer — holds the radial purple gradient + mask +
+ * backdrop-filter so the card content (avatar, name, etc.)
+ * sits above it FULLY OPAQUE. The previous version applied the
+ * mask to .lobby-pp-card itself, which faded everything inside
+ * (including the avatar) along the elliptical falloff. */
+.lobby-pp-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background:
     radial-gradient(
       ellipse 70% 75% at center,
@@ -8373,18 +8398,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
       rgba(10, 5, 30, 0.18) 65%,
       transparent 95%
     );
-  box-shadow: none;
-  overflow: visible;
-  text-align: left;
-  color: white;
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
-  /* CSS mask matching the radial backdrop gradient. The ellipse
-   * is sized 70%×75% of the box so the falloff lands WELL inside
-   * the rectangle — the corners + edges of the box are fully
-   * masked-out (transparent). Without an explicit size the mask
-   * defaults to `farthest-corner`, which keeps faint colour at
-   * the side midpoints and leaves a visible rectangular edge. */
   mask-image: radial-gradient(
     ellipse 70% 75% at center,
     black 0%,
@@ -8403,12 +8418,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   );
 }
 
-/* Inner border + outer glow pseudo-elements removed — the
- * frameless v10 design relies on the radial gradient backdrop
- * alone. Both rules left as a no-op marker so the source
- * history stays legible. */
-.lobby-pp-card::before {
-  content: none;
+/* All content sits above the ::before backdrop. */
+.lobby-pp-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .lobby-pp-card::after {

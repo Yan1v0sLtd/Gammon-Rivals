@@ -51,13 +51,22 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
           draggable={false}
         />
 
-        {/* PLAY button — gold gradient, centred under the popup.
-         *  Tapping it dismisses (the player returns to the lobby
-         *  to actually play). */}
+        {/* PLAY button — sits inside the popup near the bottom
+         *  (was at bottom: -1.5rem which clipped off-screen on
+         *  shorter viewports). Visual style mirrors the carousel
+         *  `.lobby-play-button` green-gradient pill but inlined
+         *  here so the carousel's mobile-landscape size override
+         *  doesn't shrink this one. Tapping it dismisses — the
+         *  player returns to the lobby to actually play. */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute left-1/2 bottom-[-1.5rem] grid h-12 min-w-[10rem] -translate-x-1/2 place-items-center rounded-xl border-2 border-[#8a5100] bg-gradient-to-b from-[#fff7b3] via-[#ffc21a] to-[#d66c00] px-8 font-display text-xl font-black uppercase tracking-[0.16em] text-[#3a1f08] shadow-[0_8px_18px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.5)] transition hover:brightness-110 active:translate-y-[1px]"
+          className="absolute left-1/2 bottom-[5%] grid h-11 min-w-[8rem] -translate-x-1/2 place-items-center rounded-full border-2 border-[#e0ff8f]/95 px-7 font-display text-lg font-black uppercase tracking-[0.18em] text-[#132109] shadow-[0_5px_0_#06450a,0_13px_22px_rgba(0,0,0,0.34),inset_0_2px_0_rgba(255,255,255,0.74),inset_0_-5px_0_rgba(0,78,5,0.34),0_0_0_2px_rgba(7,27,11,0.85)] transition hover:brightness-110 active:translate-y-[1px]"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
+            textShadow: '0 1px 0 rgba(255, 255, 255, 0.28)',
+          }}
         >
           Play
         </button>
