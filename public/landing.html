@@ -79,23 +79,13 @@
         gap: clamp(1.5rem, 4vw, 2.5rem);
       }
 
-      h1 {
-        font-weight: 900;
-        font-size: clamp(2.5rem, 8vw, 5.5rem);
-        line-height: 0.95;
-        letter-spacing: -0.04em;
-        background: linear-gradient(180deg, #fff8d6 0%, #f6d770 50%, #d99820 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-        text-shadow: 0 4px 16px rgba(0,0,0,0.55);
-      }
-
-      .tagline {
-        font-size: clamp(1rem, 2vw, 1.4rem);
-        max-width: 36rem;
-        color: rgba(243, 234, 211, 0.86);
-        line-height: 1.45;
+      .logo {
+        width: 100%;
+        max-width: clamp(18rem, 62vw, 36rem);
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        filter: drop-shadow(0 14px 32px rgba(0, 0, 0, 0.55));
       }
 
       .play-btn {
@@ -153,10 +143,11 @@
       </header>
 
       <main>
-        <h1>GAMMON<br />RIVALS</h1>
-        <p class="tagline">
-          Roll the dice. Race your checkers. Out-think real opponents online or sharpen up against the AI.
-        </p>
+        <img
+          class="logo"
+          src="/brand/logo.webp"
+          alt="Gammon Rivals — Roll. Strategize. Win."
+        />
         <a class="play-btn" href="/play">Play Now</a>
       </main>
 
