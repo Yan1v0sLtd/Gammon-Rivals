@@ -11,6 +11,12 @@ import {
   isAdminSupabaseConfigured as isSupabaseConfigured,
 } from '../lib/adminSupabase';
 import { useAdminAuth } from '../lib/adminAuth';
+import {
+  buildCurrencyRateMap,
+  formatUsdMicros,
+  usdMicrosFor,
+  type CurrencyConfigRow,
+} from '../lib/currency';
 import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
 import FeltCornersField from '../admin/FeltCornersField';
@@ -47,6 +53,7 @@ function isValidBoardId(id: string): boolean {
 type Section =
   | 'Dashboard'
   | 'Users'
+  | 'Currencies'
   | 'Level System'
   | 'Daily Bonus'
   | 'Hourly Wheel'
@@ -162,9 +169,21 @@ type ShopDraft = {
   sort_order: string;
 };
 
+type CurrencyDraft = {
+  code: string;
+  display_name: string;
+  // USD value of one unit, as a free-text decimal string. Converted to
+  // micros (USD × 1_000_000) on save so the operator can type e.g.
+  // "0.01" without thinking about the storage representation.
+  usd_value: string;
+  is_enabled: boolean;
+  sort_order: string;
+};
+
 const sections: readonly Section[] = [
   'Dashboard',
   'Users',
+  'Currencies',
   'Level System',
   'Daily Bonus',
   'Hourly Wheel',
@@ -677,6 +696,18 @@ function boardToDraft(row?: BoardThemeConfig): BoardDraft {
   };
 }
 
+function currencyToDraft(row?: CurrencyConfigRow): CurrencyDraft {
+  return {
+    code: row?.code ?? '',
+    display_name: row?.display_name ?? '',
+    // Show the value in plain USD (e.g. "0.01"). Six decimals covers
+    // sub-cent rates (1 coin = $0.0001) without scientific notation.
+    usd_value: row ? (row.usd_value_micros / 1_000_000).toFixed(6) : '',
+    is_enabled: row?.is_enabled ?? true,
+    sort_order: row?.sort_order.toString() ?? '0',
+  };
+}
+
 function shopToDraft(row?: ShopItem): ShopDraft {
   return {
     id: row?.id ?? '',
@@ -726,6 +757,7 @@ export default function Admin() {
   const [tables, setTables] = useState<TableConfig[]>([]);
   const [boards, setBoards] = useState<BoardThemeConfig[]>([]);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   // RTP dashboard state — fetched lazily when the section is opened so
   // we don't pay the aggregation cost on every BO load.
@@ -763,6 +795,7 @@ export default function Admin() {
   const [boardEditorOpen, setBoardEditorOpen] = useState(false);
   const [boardEditorMode, setBoardEditorMode] = useState<'add' | 'edit'>('add');
   const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft());
+  const [currencyDraft, setCurrencyDraft] = useState<CurrencyDraft>(() => currencyToDraft());
   const [dataError, setDataError] = useState<string | null>(null);
   const [boardMessage, setBoardMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -770,6 +803,11 @@ export default function Admin() {
 
   const canManage = role === 'owner' || role === 'admin';
   const selectedUser = users.find((row) => row.id === selectedUserId) ?? null;
+  // Currency rate map for $ value columns across the reward configs.
+  // Disabled currencies are excluded so the operator can hide a code
+  // from $ math without dropping its row (XP isn't priced at all — it's
+  // not seeded, so it just returns 0 from the helpers).
+  const rateMap = useMemo(() => buildCurrencyRateMap(currencies), [currencies]);
   const currentUserEmail = normalizeEmail(user?.email ?? '');
   const selectedEmailRole =
     adminEmailRoles.find((row) => row.email === normalizeEmail(emailRoleDraft.email)) ?? null;
@@ -963,6 +1001,7 @@ export default function Admin() {
         auditResult,
         roleResult,
         emailRoleResult,
+        currencyResult,
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase
@@ -984,6 +1023,7 @@ export default function Admin() {
         supabase.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(20),
         supabase.from('admin_roles').select('*').order('created_at', { ascending: false }),
         supabase.from('admin_email_allowlist').select('*').order('created_at', { ascending: false }),
+        supabase.from('currency_configs').select('*').order('sort_order', { ascending: true }),
       ]);
 
       const firstError =
@@ -999,7 +1039,8 @@ export default function Admin() {
         shopResult.error ??
         auditResult.error ??
         roleResult.error ??
-        emailRoleResult.error;
+        emailRoleResult.error ??
+        currencyResult.error;
       if (firstError) throw firstError;
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row));
@@ -1025,6 +1066,7 @@ export default function Admin() {
       setAudit(auditResult.data ?? []);
       setAdminRoles(roleResult.data ?? []);
       setAdminEmailRoles(emailRoleResult.data ?? []);
+      setCurrencies(currencyResult.data ?? []);
       setStats({
         users: profileRows.length || userCount.count || 0,
         matches: matchCount.count ?? 0,
@@ -1455,6 +1497,44 @@ export default function Admin() {
         .from('daily_bonus_configs')
         .upsert(payload, { onConflict: 'day' });
       if (error) throw error;
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveCurrency() {
+    if (!canManage) return;
+    setSavingKey('currency');
+    setDataError(null);
+    try {
+      const code = currencyDraft.code.trim();
+      if (!code) throw new Error('Currency code is required.');
+      if (!/^[a-z][a-z0-9_]*$/.test(code)) {
+        throw new Error(
+          'Code must be lowercase letters, digits, or underscores, starting with a letter.',
+        );
+      }
+      const displayName = currencyDraft.display_name.trim();
+      if (!displayName) throw new Error('Display name is required.');
+      const usd = Number(currencyDraft.usd_value);
+      if (!Number.isFinite(usd) || usd < 0) {
+        throw new Error('USD value must be a non-negative number (e.g. 0.01).');
+      }
+      // Convert "$X.YZ" → micros. Round so 0.0001 doesn't drift to 99.
+      const micros = Math.round(usd * 1_000_000);
+      const sortOrder = requiredNumber(currencyDraft.sort_order, 'Sort order');
+      const { error } = await supabase.rpc('admin_upsert_currency_config', {
+        p_code: code,
+        p_display_name: displayName,
+        p_usd_value_micros: micros,
+        p_is_enabled: currencyDraft.is_enabled,
+        p_sort_order: sortOrder,
+      });
+      if (error) throw error;
+      setCurrencyDraft(currencyToDraft());
       await loadAdminData();
     } catch (err) {
       setError(err);
@@ -2235,15 +2315,105 @@ export default function Admin() {
             </div>
           )}
 
+          {activeSection === 'Currencies' && (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+              <ConfigTable
+                title="Currencies"
+                rows={currencies.map((row) => [
+                  row.code,
+                  row.display_name,
+                  `$${(row.usd_value_micros / 1_000_000).toFixed(6)} / unit`,
+                  `100 = ${formatUsdMicros(row.usd_value_micros * 100)}`,
+                  row.is_enabled ? 'Enabled' : 'Disabled',
+                ])}
+                onRowClick={(index) =>
+                  setCurrencyDraft(currencyToDraft(currencies[index]))
+                }
+              />
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <h2 className="text-lg font-black">Edit currency</h2>
+                <p className="mt-1 text-xs text-white/55">
+                  USD value per single unit. The Hourly Wheel, Daily
+                  Bonus, Level Rewards, and Tables / Rooms sections use
+                  these rates to show a $ value column. Add a new code
+                  (e.g. <code className="font-mono">chips</code>) when
+                  introducing a new currency. Disable instead of
+                  deleting — existing reward configs reference codes by
+                  name and would render as $0 if the code disappears.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field
+                    label="Code"
+                    value={currencyDraft.code}
+                    onChange={(code) => setCurrencyDraft((d) => ({ ...d, code }))}
+                  />
+                  <Field
+                    label="Display name"
+                    value={currencyDraft.display_name}
+                    onChange={(display_name) =>
+                      setCurrencyDraft((d) => ({ ...d, display_name }))
+                    }
+                  />
+                  <Field
+                    label="USD value per unit"
+                    value={currencyDraft.usd_value}
+                    onChange={(usd_value) =>
+                      setCurrencyDraft((d) => ({ ...d, usd_value }))
+                    }
+                  />
+                  <Field
+                    label="Sort order"
+                    value={currencyDraft.sort_order}
+                    onChange={(sort_order) =>
+                      setCurrencyDraft((d) => ({ ...d, sort_order }))
+                    }
+                  />
+                </div>
+                <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+                  Examples — 1 gem = $0.01 → type{' '}
+                  <code className="font-mono">0.01</code>. 1 coin =
+                  $0.0001 → type{' '}
+                  <code className="font-mono">0.0001</code>.
+                </p>
+                <div className="mt-3 space-y-3">
+                  <Toggle
+                    label="Enabled"
+                    checked={currencyDraft.is_enabled}
+                    onChange={(is_enabled) =>
+                      setCurrencyDraft((d) => ({ ...d, is_enabled }))
+                    }
+                  />
+                  <div className="flex gap-2">
+                    <PrimaryButton
+                      onClick={() => void saveCurrency()}
+                      disabled={!canManage || savingKey === 'currency'}
+                    >
+                      Save currency
+                    </PrimaryButton>
+                    <SecondaryButton onClick={() => setCurrencyDraft(currencyToDraft())}>
+                      New
+                    </SecondaryButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeSection === 'Level System' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-              <ConfigTable title="Levels" rows={levels.map((row) => [
-                `Level ${row.level}`,
-                row.status_label ?? 'Rookie',
-                `${formatNumber(row.xp_required)} XP`,
-                `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
-                row.is_enabled ? 'Enabled' : 'Disabled',
-              ])} onRowClick={(index) => setLevelDraft(levelToDraft(levels[index]))} />
+              <ConfigTable title="Levels" rows={levels.map((row) => {
+                const rowMicros =
+                  usdMicrosFor(rateMap, 'coins', row.reward_coins) +
+                  usdMicrosFor(rateMap, 'gems', row.reward_gems);
+                return [
+                  `Level ${row.level}`,
+                  row.status_label ?? 'Rookie',
+                  `${formatNumber(row.xp_required)} XP`,
+                  `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
+                  formatUsdMicros(rowMicros),
+                  row.is_enabled ? 'Enabled' : 'Disabled',
+                ];
+              })} onRowClick={(index) => setLevelDraft(levelToDraft(levels[index]))} />
               <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
                 <h2 className="text-lg font-black">Edit level</h2>
                 <div className="mt-3 grid grid-cols-2 gap-3">
@@ -2270,12 +2440,18 @@ export default function Admin() {
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
               <ConfigTable
                 title="Daily bonus (7 days)"
-                rows={dailyBonusConfigs.map((row) => [
-                  `Day ${row.day}`,
-                  `${formatNumber(row.reward_coins)} coins`,
-                  `${formatNumber(row.reward_gems)} gems`,
-                  `${formatNumber(row.reward_xp)} XP`,
-                ])}
+                rows={dailyBonusConfigs.map((row) => {
+                  const rowMicros =
+                    usdMicrosFor(rateMap, 'coins', row.reward_coins) +
+                    usdMicrosFor(rateMap, 'gems', row.reward_gems);
+                  return [
+                    `Day ${row.day}`,
+                    `${formatNumber(row.reward_coins)} coins`,
+                    `${formatNumber(row.reward_gems)} gems`,
+                    `${formatNumber(row.reward_xp)} XP`,
+                    formatUsdMicros(rowMicros),
+                  ];
+                })}
                 onRowClick={(index) => setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))}
               />
               <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
@@ -2342,12 +2518,17 @@ export default function Admin() {
               {/* Filters to kind='standard' — the five difficulty tiers
                 * live in the dedicated "Difficulties" section to keep
                 * the two surfaces independent. */}
-              <ConfigTable title="Rooms" rows={tables.filter((row) => row.kind !== 'difficulty').map((row) => [
-                row.display_name,
-                `${formatNumber(row.entry_fee_coins)} entry`,
-                `Prize ${formatNumber(row.prize_coins)}`,
-                row.is_enabled ? 'Enabled' : 'Disabled',
-              ])} onRowClick={(index) => {
+              <ConfigTable title="Rooms" rows={tables.filter((row) => row.kind !== 'difficulty').map((row) => {
+                const entryMicros = usdMicrosFor(rateMap, 'coins', row.entry_fee_coins);
+                const prizeMicros = usdMicrosFor(rateMap, 'coins', row.prize_coins);
+                return [
+                  row.display_name,
+                  `${formatNumber(row.entry_fee_coins)} entry`,
+                  `Prize ${formatNumber(row.prize_coins)}`,
+                  `Entry ${formatUsdMicros(entryMicros)} · Prize ${formatUsdMicros(prizeMicros)}`,
+                  row.is_enabled ? 'Enabled' : 'Disabled',
+                ];
+              })} onRowClick={(index) => {
                 const standardRows = tables.filter((row) => row.kind !== 'difficulty');
                 setTableDraft(tableToDraft(standardRows[index]));
               }} />
@@ -2388,15 +2569,21 @@ export default function Admin() {
                 * match end via finish_match(). */}
               <ConfigTable
                 title="Difficulty tiers"
-                rows={tables.filter((row) => row.kind === 'difficulty').map((row) => [
-                  row.display_name,
-                  `${row.xp_multiplier_pct}% XP`,
-                  `Fee ${formatNumber(row.entry_fee_coins)}`,
-                  `W ${formatNumber(row.prize_coins)} / L ${formatNumber(row.prize_coins_loss)}`,
-                  `AI ${row.ai_level}`,
-                  `RTP ${row.target_rtp_pct}%`,
-                  row.is_enabled ? 'Enabled' : 'Disabled',
-                ])}
+                rows={tables.filter((row) => row.kind === 'difficulty').map((row) => {
+                  const feeMicros = usdMicrosFor(rateMap, 'coins', row.entry_fee_coins);
+                  const winMicros = usdMicrosFor(rateMap, 'coins', row.prize_coins);
+                  const lossMicros = usdMicrosFor(rateMap, 'coins', row.prize_coins_loss);
+                  return [
+                    row.display_name,
+                    `${row.xp_multiplier_pct}% XP`,
+                    `Fee ${formatNumber(row.entry_fee_coins)}`,
+                    `W ${formatNumber(row.prize_coins)} / L ${formatNumber(row.prize_coins_loss)}`,
+                    `AI ${row.ai_level}`,
+                    `RTP ${row.target_rtp_pct}%`,
+                    `Fee ${formatUsdMicros(feeMicros)} · W ${formatUsdMicros(winMicros)} · L ${formatUsdMicros(lossMicros)}`,
+                    row.is_enabled ? 'Enabled' : 'Disabled',
+                  ];
+                })}
                 onRowClick={(index) => {
                   const diffRows = tables.filter((row) => row.kind === 'difficulty');
                   setTableDraft(tableToDraft(diffRows[index], 'difficulty'));

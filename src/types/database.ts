@@ -387,6 +387,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      currency_configs: {
+        Row: {
+          code: string;
+          display_name: string;
+          usd_value_micros: number;
+          is_enabled: boolean;
+          sort_order: number;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          code: string;
+          display_name: string;
+          usd_value_micros: number;
+          is_enabled?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          code?: string;
+          display_name?: string;
+          usd_value_micros?: number;
+          is_enabled?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       daily_bonus_configs: {
         Row: {
           day: number;
@@ -951,6 +984,16 @@ export type Database = {
       admin_hard_delete_user: {
         Args: { target_id: string };
         Returns: void;
+      };
+      admin_upsert_currency_config: {
+        Args: {
+          p_code: string;
+          p_display_name: string;
+          p_usd_value_micros: number;
+          p_is_enabled: boolean;
+          p_sort_order: number;
+        };
+        Returns: Database['public']['Tables']['currency_configs']['Row'];
       };
       claim_daily_bonus: {
         Args: Record<string, never>;

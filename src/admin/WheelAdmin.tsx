@@ -5,6 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // `supabase` client is the game tab's session, which may be a
 // different user or none at all.
 import { adminSupabase as supabase } from '../lib/adminSupabase';
+import {
+  buildCurrencyRateMap,
+  formatUsdMicros,
+  usdMicrosFor,
+  type CurrencyConfigRow,
+} from '../lib/currency';
 import type { Database } from '../types/database';
 import ImageField from './ImageField';
 
@@ -268,6 +274,7 @@ function SecondaryButton({
 export function WheelAdmin({ canManage }: Props) {
   const [config, setConfig] = useState<WheelConfigRow | null>(null);
   const [slots, setSlots] = useState<WheelSlotRow[]>([]);
+  const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [configDraft, setConfigDraft] = useState<ConfigDraft>(() => configToDraft(null));
   const [slotDraft, setSlotDraft] = useState<SlotDraft>(() => slotToDraft(undefined));
@@ -286,19 +293,22 @@ export function WheelAdmin({ canManage }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const [cfg, sl] = await Promise.all([
+      const [cfg, sl, cur] = await Promise.all([
         supabase.from('wheel_configs').select('*').eq('id', CONFIG_ID).maybeSingle(),
         supabase
           .from('wheel_slots')
           .select('*')
           .eq('config_id', CONFIG_ID)
           .order('slot_index', { ascending: true }),
+        supabase.from('currency_configs').select('*'),
       ]);
       if (cfg.error) throw cfg.error;
       if (sl.error) throw sl.error;
+      if (cur.error) throw cur.error;
       setConfig(cfg.data ?? null);
       setConfigDraft(configToDraft(cfg.data ?? null));
       setSlots(sl.data ?? []);
+      setCurrencies(cur.data ?? []);
     } catch (err) {
       setErrFromUnknown(err);
     } finally {
@@ -328,6 +338,34 @@ export function WheelAdmin({ canManage }: Props) {
   }, [slots]);
 
   const totalIsValid = totalBasisPoints === 10000;
+
+  const rateMap = useMemo(() => buildCurrencyRateMap(currencies), [currencies]);
+
+  /** Raw USD value of a slot's combined reward (primary + secondary) in
+   *  micros. Doesn't account for chance — that's the EV-per-spin
+   *  footer's job. XP and any currency not in currency_configs return 0
+   *  by design (we don't price progression metrics). */
+  const slotValueMicros = useCallback(
+    (row: WheelSlotRow | undefined): number => {
+      if (!row) return 0;
+      return (
+        usdMicrosFor(rateMap, row.primary_reward_type, row.primary_reward_amount) +
+        usdMicrosFor(rateMap, row.secondary_reward_type, row.secondary_reward_amount)
+      );
+    },
+    [rateMap]
+  );
+
+  /** Probability-weighted EV per spin in micros. Sum over ENABLED slots
+   *  of (slot_value × chance_basis_points / 10000). This is the number
+   *  the operator should tune the wheel against — it's the expected $
+   *  the house pays out every time a player spins. */
+  const evPerSpinMicros = useMemo(() => {
+    return slots.reduce((acc, row) => {
+      if (!row.is_enabled) return acc;
+      return acc + (slotValueMicros(row) * row.chance_basis_points) / 10000;
+    }, 0);
+  }, [slots, slotValueMicros]);
 
   const saveConfig = async () => {
     if (!canManage) return;
@@ -538,12 +576,14 @@ export function WheelAdmin({ canManage }: Props) {
                   <th className="px-3 py-2">Label</th>
                   <th className="px-3 py-2">Accent</th>
                   <th className="px-3 py-2 text-right">Chance</th>
+                  <th className="px-3 py-2 text-right">$ Value</th>
                 </tr>
               </thead>
               <tbody>
                 {Array.from({ length: SLOT_COUNT }).map((_, i) => {
                   const row = slots.find((s) => s.slot_index === i);
                   const isSelected = i === selectedIndex;
+                  const rowMicros = slotValueMicros(row);
                   return (
                     <tr
                       key={i}
@@ -581,12 +621,35 @@ export function WheelAdmin({ canManage }: Props) {
                       <td className="px-3 py-2 text-right font-mono text-xs">
                         {row ? formatPercent(row.chance_basis_points) : '0.00%'}
                       </td>
+                      <td className="px-3 py-2 text-right font-mono text-xs text-emerald-200/85">
+                        {row ? formatUsdMicros(rowMicros) : '—'}
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
+              <tfoot className="bg-white/[0.04] text-[10px] uppercase tracking-[0.14em] text-white/55">
+                <tr className="border-t border-white/10">
+                  <td className="px-3 py-2 font-black" colSpan={4}>
+                    EV per spin
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono normal-case text-white/65">
+                    {formatPercent(totalBasisPoints)}
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono normal-case text-emerald-100">
+                    {formatUsdMicros(evPerSpinMicros, { precision: 4 })}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
+          <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+            $ Value is the raw worth of each slot's reward (primary +
+            secondary) at the rates configured in the Currencies section.
+            XP and any unpriced currency contribute $0. EV per spin is the
+            probability-weighted average: Σ (slot value × chance) over
+            enabled slots — the expected $ paid out per spin.
+          </p>
         </div>
 
         {/* Slot editor */}
