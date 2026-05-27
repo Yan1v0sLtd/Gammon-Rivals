@@ -1,0 +1,450 @@
+import { useMemo, useState } from 'react';
+import { adminSupabase as supabase } from '../lib/adminSupabase';
+import { formatUsdMicros } from '../lib/currency';
+import type { Database } from '../types/database';
+
+type LevelConfigInsert = Database['public']['Tables']['level_configs']['Insert'];
+
+// Default params for the proposed curve. These are the numbers we
+// landed on after challenging the v2 spreadsheet curve: a 4-segment
+// shape that plateaus at L81 and caps the level at 100. Active player
+// (12 matches/day × 107.5 XP/match) reaches L100 in ~154 days vs the
+// spreadsheet's ~2,965. Tweak any input below and the table re-renders;
+// nothing is written to the DB until you press Apply.
+interface CurveParams {
+  base_xp: number;             // XP delta from L1 → L2
+  growth_early: number;         // multiplier per level inside onboarding
+  end_early: number;            // last level of onboarding segment
+  growth_mid: number;
+  end_mid: number;
+  growth_late: number;
+  end_late: number;             // last level before plateau
+  max_level: number;            // last level emitted (>= end_late)
+  matches_per_day: number;      // for active-days display
+  xp_per_match: number;
+  avg_entry_fee_coins: number;  // for $ sunk calc
+  rebate_early_pct: number;     // coin reward as % of sunk gold, L1..30
+  rebate_mid_pct: number;       // L31..60
+  rebate_late_pct: number;      // L61..max
+  gem_cap_level: number;        // milestones with level > this give 0 gems
+  gem_milestones_json: string;  // JSON: { "10": 5, "20": 12, ... }
+  coin_value_micros: number;    // USD micros per 1 coin (from currency_configs)
+  gem_value_micros: number;     // USD micros per 1 gem
+}
+
+const DEFAULT_PARAMS: CurveParams = {
+  base_xp: 70,
+  growth_early: 1.2,
+  end_early: 10,
+  growth_mid: 1.06,
+  end_mid: 40,
+  growth_late: 1.018,
+  end_late: 80,
+  max_level: 100,
+  matches_per_day: 12,
+  xp_per_match: 107.5,
+  avg_entry_fee_coins: 4950,
+  rebate_early_pct: 3.0,
+  rebate_mid_pct: 2.5,
+  rebate_late_pct: 2.0,
+  gem_cap_level: 50,
+  gem_milestones_json: '{"10":5,"20":12,"30":25,"40":50,"50":100}',
+  coin_value_micros: 100,    // $0.0001 / coin
+  gem_value_micros: 10000,   // $0.01 / gem
+};
+
+interface ProposedRow {
+  level: number;
+  per_lvl_xp: number;     // XP delta from previous level (cosmetic — not stored)
+  xp_required_cum: number; // CUMULATIVE — this is what goes into level_configs.xp_required
+  active_days_to_reach: number;
+  coins: number;
+  gems: number;
+  reward_usd_micros: number;
+  sunk_usd_micros: number;
+  rebate_pct: number;
+}
+
+function roundToStep(n: number, step: number): number {
+  return n > 0 ? Math.round(n / step) * step : 0;
+}
+
+// Pure generator — given params, returns the full set of proposed rows.
+// Mirrors the Python prototype exactly: monotonic coin reward, gem cap,
+// and a flat plateau past end_late.
+function generateCurve(p: CurveParams): ProposedRow[] {
+  const milestones: Record<number, number> = (() => {
+    try {
+      const parsed = JSON.parse(p.gem_milestones_json) as Record<string, number>;
+      const out: Record<number, number> = {};
+      for (const [k, v] of Object.entries(parsed)) out[Number(k)] = Number(v);
+      return out;
+    } catch {
+      return {};
+    }
+  })();
+  const rows: ProposedRow[] = [];
+  let perLvl = 0;
+  let cum = 0;
+  let prevCoins = 0;
+  for (let L = 1; L <= p.max_level; L += 1) {
+    if (L === 1) perLvl = 0;
+    else if (L === 2) perLvl = p.base_xp;
+    else if (L <= p.end_early) perLvl = Math.round(perLvl * p.growth_early);
+    else if (L <= p.end_mid) perLvl = Math.round(perLvl * p.growth_mid);
+    else if (L <= p.end_late) perLvl = Math.round(perLvl * p.growth_late);
+    // else: plateau — perLvl stays
+    cum += perLvl;
+    // Gold reward: rebate × sunk-gold-this-level, monotonic so leveling
+    // never feels punishing even when the rebate rate steps down.
+    const sunkThisLvl = (p.avg_entry_fee_coins * perLvl) / p.xp_per_match;
+    const rebatePct =
+      L <= 30
+        ? p.rebate_early_pct
+        : L <= 60
+          ? p.rebate_mid_pct
+          : p.rebate_late_pct;
+    const coinsRaw = roundToStep(sunkThisLvl * (rebatePct / 100), 50);
+    const coins = L === 1 ? 0 : Math.max(coinsRaw, prevCoins);
+    prevCoins = coins;
+    const gems = L <= p.gem_cap_level ? (milestones[L] ?? 0) : 0;
+    const rewardUsdMicros = coins * p.coin_value_micros + gems * p.gem_value_micros;
+    const sunkUsdMicros =
+      ((p.avg_entry_fee_coins * cum) / p.xp_per_match) * p.coin_value_micros;
+    const rebateActualPct = sunkUsdMicros > 0
+      ? (rewardUsdMicros / sunkUsdMicros) * 100
+      : 0;
+    rows.push({
+      level: L,
+      per_lvl_xp: perLvl,
+      xp_required_cum: cum,
+      active_days_to_reach: cum / (p.matches_per_day * p.xp_per_match),
+      coins,
+      gems,
+      reward_usd_micros: rewardUsdMicros,
+      sunk_usd_micros: sunkUsdMicros,
+      rebate_pct: rebateActualPct,
+    });
+  }
+  return rows;
+}
+
+function NumField({
+  label,
+  value,
+  step = 'any',
+  onChange,
+}: {
+  readonly label: string;
+  readonly value: number;
+  readonly step?: number | 'any';
+  readonly onChange: (n: number) => void;
+}) {
+  return (
+    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+      {label}
+      <input
+        type="number"
+        step={step}
+        value={value}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (Number.isFinite(n)) onChange(n);
+        }}
+        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+      />
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly onChange: (s: string) => void;
+  readonly hint?: string;
+}) {
+  return (
+    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+      {label}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+      />
+      {hint ? (
+        <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-white/35">
+          {hint}
+        </span>
+      ) : null}
+    </label>
+  );
+}
+
+interface Props {
+  readonly canManage: boolean;
+  readonly currentLevels: ReadonlyArray<{ level: number; xp_required: number }>;
+  readonly currentUserId: string | null;
+  readonly onApplied: () => void | Promise<void>;
+  readonly coinValueMicros: number;
+  readonly gemValueMicros: number;
+}
+
+// Renders the proposed-curve designer + preview table + apply button.
+// The current level_configs rows are passed in so we can show a
+// side-by-side cum-XP delta column without re-fetching.
+export function LevelCurveProposal({
+  canManage,
+  currentLevels,
+  currentUserId,
+  onApplied,
+  coinValueMicros,
+  gemValueMicros,
+}: Props) {
+  const [params, setParams] = useState<CurveParams>({
+    ...DEFAULT_PARAMS,
+    coin_value_micros: coinValueMicros,
+    gem_value_micros: gemValueMicros,
+  });
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const proposed = useMemo(() => generateCurve(params), [params]);
+
+  // Lookup map for current-curve cumulative XP at each level — shown in
+  // the table as a delta so the operator can see at a glance how much
+  // faster (or slower) the proposed curve is per level.
+  const currentByLevel = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const row of currentLevels) map.set(row.level, row.xp_required);
+    return map;
+  }, [currentLevels]);
+
+  const totals = useMemo(() => {
+    let coins = 0;
+    let gems = 0;
+    let rewardMicros = 0;
+    for (const r of proposed) {
+      coins += r.coins;
+      gems += r.gems;
+      rewardMicros += r.reward_usd_micros;
+    }
+    const sunkMicros = proposed[proposed.length - 1]?.sunk_usd_micros ?? 0;
+    const rebatePct = sunkMicros > 0 ? (rewardMicros / sunkMicros) * 100 : 0;
+    return { coins, gems, rewardMicros, sunkMicros, rebatePct };
+  }, [proposed]);
+
+  const apply = async () => {
+    if (!canManage || applying) return;
+    const confirmed = window.confirm(
+      `Apply this curve? This will REPLACE level_configs rows L1..L${params.max_level}.\n\n` +
+        `Existing rows L${params.max_level + 1}+ will be deleted (cap).\n\n` +
+        `Total: ${proposed.length} rows · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems in rewards.\n\n` +
+        `Players already at higher levels will keep their level (this only changes the XP gates).`,
+    );
+    if (!confirmed) return;
+
+    setApplying(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const payload: LevelConfigInsert[] = proposed.map((r) => ({
+        level: r.level,
+        xp_required: r.xp_required_cum,
+        reward_coins: r.coins,
+        reward_gems: r.gems,
+        reward_items: [],
+        unlock_rules: {},
+        is_enabled: true,
+        updated_by: currentUserId,
+      }));
+      // Upsert in batches of 50 to stay well under any URL/payload limit.
+      for (let i = 0; i < payload.length; i += 50) {
+        const slice = payload.slice(i, i + 50);
+        const { error: upErr } = await supabase
+          .from('level_configs')
+          .upsert(slice, { onConflict: 'level' });
+        if (upErr) throw upErr;
+      }
+      // Drop any rows above the new max_level so the curve has a hard
+      // cap. Without this, an old L150 row from a previous experiment
+      // would still gate players.
+      const { error: delErr } = await supabase
+        .from('level_configs')
+        .delete()
+        .gt('level', params.max_level);
+      if (delErr) throw delErr;
+      setMessage(`Applied. ${proposed.length} levels written · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems.`);
+      await onApplied();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-lg font-black">Curve Proposal — Cap & Plateau</h2>
+        <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+          preview only — nothing written until Apply
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-white/55">
+        4-segment curve with a flat plateau past level{' '}
+        {params.end_late} and a hard cap at level {params.max_level}. Gem
+        rewards stop after level {params.gem_cap_level}. Coin rewards
+        scale with sunk gold (target rebate {params.rebate_early_pct}% →{' '}
+        {params.rebate_late_pct}%) and are monotonic — leveling never
+        decreases the payout.
+      </p>
+
+      {/* Params grid */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <NumField label="Base XP (L1→L2)" value={params.base_xp} onChange={(n) => setParams((p) => ({ ...p, base_xp: n }))} />
+        <NumField label="Onboarding growth" value={params.growth_early} step={0.01} onChange={(n) => setParams((p) => ({ ...p, growth_early: n }))} />
+        <NumField label="Onboarding ends @ L" value={params.end_early} onChange={(n) => setParams((p) => ({ ...p, end_early: n }))} />
+        <div />
+        <NumField label="Growth rate" value={params.growth_mid} step={0.01} onChange={(n) => setParams((p) => ({ ...p, growth_mid: n }))} />
+        <NumField label="Growth ends @ L" value={params.end_mid} onChange={(n) => setParams((p) => ({ ...p, end_mid: n }))} />
+        <NumField label="Mid growth rate" value={params.growth_late} step={0.001} onChange={(n) => setParams((p) => ({ ...p, growth_late: n }))} />
+        <NumField label="Plateau starts @ L" value={params.end_late} onChange={(n) => setParams((p) => ({ ...p, end_late: n }))} />
+        <NumField label="Max level (hard cap)" value={params.max_level} onChange={(n) => setParams((p) => ({ ...p, max_level: n }))} />
+        <NumField label="Matches / day (target)" value={params.matches_per_day} onChange={(n) => setParams((p) => ({ ...p, matches_per_day: n }))} />
+        <NumField label="XP / match (avg)" value={params.xp_per_match} step={0.1} onChange={(n) => setParams((p) => ({ ...p, xp_per_match: n }))} />
+        <NumField label="Avg entry fee (coins)" value={params.avg_entry_fee_coins} onChange={(n) => setParams((p) => ({ ...p, avg_entry_fee_coins: n }))} />
+        <NumField label="Rebate % L1-30" value={params.rebate_early_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_early_pct: n }))} />
+        <NumField label="Rebate % L31-60" value={params.rebate_mid_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_mid_pct: n }))} />
+        <NumField label="Rebate % L61+" value={params.rebate_late_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_late_pct: n }))} />
+        <NumField label="Gem cap level" value={params.gem_cap_level} onChange={(n) => setParams((p) => ({ ...p, gem_cap_level: n }))} />
+        <div className="sm:col-span-2 lg:col-span-4">
+          <TextField
+            label="Gem milestones (JSON: { level: gems })"
+            value={params.gem_milestones_json}
+            onChange={(s) => setParams((p) => ({ ...p, gem_milestones_json: s }))}
+            hint='Levels not listed give 0 gems. Levels above the gem cap also give 0.'
+          />
+        </div>
+      </div>
+
+      {/* Summary strip */}
+      <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.14em]">
+        <span className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-emerald-200">
+          L{params.max_level} in {(proposed[proposed.length - 1]?.active_days_to_reach ?? 0).toFixed(0)} active days
+        </span>
+        <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+          Total coins: {totals.coins.toLocaleString()} ({formatUsdMicros(totals.coins * params.coin_value_micros)})
+        </span>
+        <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+          Total gems: {totals.gems} ({formatUsdMicros(totals.gems * params.gem_value_micros)})
+        </span>
+        <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+          Total reward $: {formatUsdMicros(totals.rewardMicros)}
+        </span>
+        <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+          $ sunk to L{params.max_level}: {formatUsdMicros(totals.sunkMicros)}
+        </span>
+        <span className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-amber-100">
+          Overall rebate: {totals.rebatePct.toFixed(2)}%
+        </span>
+      </div>
+
+      {/* Action row */}
+      <div className="mt-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => void apply()}
+          disabled={!canManage || applying}
+          className="rounded-lg border border-amber-200/40 bg-amber-200/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-200/25 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {applying ? 'Applying…' : `Apply curve to level_configs (${proposed.length} rows)`}
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setParams({
+              ...DEFAULT_PARAMS,
+              coin_value_micros: coinValueMicros,
+              gem_value_micros: gemValueMicros,
+            })
+          }
+          className="rounded-lg border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30"
+        >
+          Reset to defaults
+        </button>
+        {error ? (
+          <span className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">
+            {error}
+          </span>
+        ) : null}
+        {message ? (
+          <span className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-100">
+            {message}
+          </span>
+        ) : null}
+      </div>
+
+      {/* Preview table */}
+      <div className="mt-4 max-h-[32rem] overflow-auto rounded-lg border border-white/10">
+        <table className="min-w-full text-left text-xs">
+          <thead className="sticky top-0 bg-[#0c1626] text-[10px] uppercase tracking-[0.14em] text-white/45">
+            <tr>
+              <th className="px-3 py-2">L</th>
+              <th className="px-3 py-2 text-right">XP req (cum)</th>
+              <th className="px-3 py-2 text-right">Δ per lvl</th>
+              <th className="px-3 py-2 text-right">vs current</th>
+              <th className="px-3 py-2 text-right">Active days</th>
+              <th className="px-3 py-2 text-right">Coins</th>
+              <th className="px-3 py-2 text-right">Gems</th>
+              <th className="px-3 py-2 text-right">$ reward</th>
+              <th className="px-3 py-2 text-right">$ sunk</th>
+              <th className="px-3 py-2 text-right">Rebate %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {proposed.map((r) => {
+              const cur = currentByLevel.get(r.level);
+              const delta = cur != null ? r.xp_required_cum - cur : null;
+              return (
+                <tr key={r.level} className="border-t border-white/5 text-white/70">
+                  <td className="px-3 py-1.5 font-mono">{r.level}</td>
+                  <td className="px-3 py-1.5 text-right font-mono">{r.xp_required_cum.toLocaleString()}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-white/45">{r.per_lvl_xp.toLocaleString()}</td>
+                  <td className="px-3 py-1.5 text-right font-mono">
+                    {delta == null ? (
+                      <span className="text-white/25">—</span>
+                    ) : delta === 0 ? (
+                      <span className="text-white/35">0</span>
+                    ) : delta < 0 ? (
+                      <span className="text-emerald-300/85">{delta.toLocaleString()}</span>
+                    ) : (
+                      <span className="text-rose-300/85">+{delta.toLocaleString()}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-1.5 text-right font-mono">{r.active_days_to_reach.toFixed(1)}</td>
+                  <td className="px-3 py-1.5 text-right font-mono">{r.coins.toLocaleString()}</td>
+                  <td className="px-3 py-1.5 text-right font-mono">{r.gems > 0 ? r.gems : <span className="text-white/25">—</span>}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-emerald-200/80">{formatUsdMicros(r.reward_usd_micros)}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-white/55">{formatUsdMicros(r.sunk_usd_micros)}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-amber-100/75">{r.rebate_pct.toFixed(2)}%</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+        <strong>vs current</strong> = proposed cumulative XP − current
+        cumulative XP for the same level (green = proposed is easier, red
+        = proposed is harder). Levels with no current row show "—".
+      </p>
+    </div>
+  );
+}

@@ -23,6 +23,7 @@ import FeltCornersField from '../admin/FeltCornersField';
 import BoardTuningField from '../admin/BoardTuningField';
 import BoardPreview from '../admin/BoardPreview';
 import { WheelAdmin } from '../admin/WheelAdmin';
+import { LevelCurveProposal } from '../admin/LevelCurveProposal';
 import { MissionsAdmin } from '../admin/MissionsAdmin';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -2400,40 +2401,50 @@ export default function Admin() {
           )}
 
           {activeSection === 'Level System' && (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-              <ConfigTable title="Levels" rows={levels.map((row) => {
-                const rowMicros =
-                  usdMicrosFor(rateMap, 'coins', row.reward_coins) +
-                  usdMicrosFor(rateMap, 'gems', row.reward_gems);
-                return [
-                  `Level ${row.level}`,
-                  row.status_label ?? 'Rookie',
-                  `${formatNumber(row.xp_required)} XP`,
-                  `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
-                  formatUsdMicros(rowMicros),
-                  row.is_enabled ? 'Enabled' : 'Disabled',
-                ];
-              })} onRowClick={(index) => setLevelDraft(levelToDraft(levels[index]))} />
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h2 className="text-lg font-black">Edit level</h2>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Level" value={levelDraft.level} onChange={(level) => setLevelDraft((d) => ({ ...d, level }))} />
-                  <Field label="XP required" value={levelDraft.xp_required} onChange={(xp_required) => setLevelDraft((d) => ({ ...d, xp_required }))} />
-                  <Field label="Status label" value={levelDraft.status_label} onChange={(status_label) => setLevelDraft((d) => ({ ...d, status_label }))} />
-                  <Field label="Reward coins" value={levelDraft.reward_coins} onChange={(reward_coins) => setLevelDraft((d) => ({ ...d, reward_coins }))} />
-                  <Field label="Reward gems" value={levelDraft.reward_gems} onChange={(reward_gems) => setLevelDraft((d) => ({ ...d, reward_gems }))} />
-                </div>
-                <div className="mt-3 space-y-3">
-                  <TextArea label="Reward items JSON array" value={levelDraft.reward_items} onChange={(reward_items) => setLevelDraft((d) => ({ ...d, reward_items }))} />
-                  <TextArea label="Unlock rules JSON object" value={levelDraft.unlock_rules} onChange={(unlock_rules) => setLevelDraft((d) => ({ ...d, unlock_rules }))} />
-                  <Toggle label="Enabled" checked={levelDraft.is_enabled} onChange={(is_enabled) => setLevelDraft((d) => ({ ...d, is_enabled }))} />
-                  <div className="flex gap-2">
-                    <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
-                    <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+            <>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+                <ConfigTable title="Levels" rows={levels.map((row) => {
+                  const rowMicros =
+                    usdMicrosFor(rateMap, 'coins', row.reward_coins) +
+                    usdMicrosFor(rateMap, 'gems', row.reward_gems);
+                  return [
+                    `Level ${row.level}`,
+                    row.status_label ?? 'Rookie',
+                    `${formatNumber(row.xp_required)} XP`,
+                    `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
+                    formatUsdMicros(rowMicros),
+                    row.is_enabled ? 'Enabled' : 'Disabled',
+                  ];
+                })} onRowClick={(index) => setLevelDraft(levelToDraft(levels[index]))} />
+                <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                  <h2 className="text-lg font-black">Edit level</h2>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <Field label="Level" value={levelDraft.level} onChange={(level) => setLevelDraft((d) => ({ ...d, level }))} />
+                    <Field label="XP required" value={levelDraft.xp_required} onChange={(xp_required) => setLevelDraft((d) => ({ ...d, xp_required }))} />
+                    <Field label="Status label" value={levelDraft.status_label} onChange={(status_label) => setLevelDraft((d) => ({ ...d, status_label }))} />
+                    <Field label="Reward coins" value={levelDraft.reward_coins} onChange={(reward_coins) => setLevelDraft((d) => ({ ...d, reward_coins }))} />
+                    <Field label="Reward gems" value={levelDraft.reward_gems} onChange={(reward_gems) => setLevelDraft((d) => ({ ...d, reward_gems }))} />
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    <TextArea label="Reward items JSON array" value={levelDraft.reward_items} onChange={(reward_items) => setLevelDraft((d) => ({ ...d, reward_items }))} />
+                    <TextArea label="Unlock rules JSON object" value={levelDraft.unlock_rules} onChange={(unlock_rules) => setLevelDraft((d) => ({ ...d, unlock_rules }))} />
+                    <Toggle label="Enabled" checked={levelDraft.is_enabled} onChange={(is_enabled) => setLevelDraft((d) => ({ ...d, is_enabled }))} />
+                    <div className="flex gap-2">
+                      <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
+                      <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+              <LevelCurveProposal
+                canManage={canManage}
+                currentLevels={levels}
+                currentUserId={user?.id ?? null}
+                onApplied={loadAdminData}
+                coinValueMicros={rateMap.get('coins') ?? 100}
+                gemValueMicros={rateMap.get('gems') ?? 10000}
+              />
+            </>
           )}
 
           {activeSection === 'Daily Bonus' && (
