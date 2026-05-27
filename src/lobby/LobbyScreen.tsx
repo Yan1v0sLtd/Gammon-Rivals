@@ -84,11 +84,10 @@ function LobbyBackgroundLayer({
         src={board.background}
         alt=""
         className="h-full w-full object-cover"
-        // Light 5 px blur on the lobby art — enough to take the
-        // edge off the zen-garden scenery without fully smearing
-        // it. Pure visual treatment, the image asset itself is
-        // untouched.
-        style={{ filter: 'blur(5px)' }}
+        // Very light 2 px blur — just barely softens the
+        // foreground edge against the busy lobby art without
+        // making the scenery feel out of focus.
+        style={{ filter: 'blur(2px)' }}
         draggable={false}
       />
       <div className="absolute inset-0" style={{ background: board.backgroundTone }} />
