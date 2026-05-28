@@ -11,6 +11,21 @@ type LevelConfigInsert = Database['public']['Tables']['level_configs']['Insert']
 // (12 matches/day × 107.5 XP/match) reaches L100 in ~154 days vs the
 // spreadsheet's ~2,965. Tweak any input below and the table re-renders;
 // nothing is written to the DB until you press Apply.
+/**
+ * One gem-reward rule: "within levels [level_from, level_to], grant
+ * `gems` gems at every Nth level" — where "every Nth" means levels
+ * divisible by `every` (so every=10 hits L10, L20, L30, …). Ranges are
+ * evaluated in order; the first rule whose range contains a level wins,
+ * so they should be contiguous and non-overlapping for predictable
+ * results. A level not covered by any rule grants 0 gems.
+ */
+interface GemRule {
+  level_from: number;
+  level_to: number;
+  gems: number;
+  every: number;
+}
+
 interface CurveParams {
   base_xp: number;             // XP delta from L1 → L2
   growth_early: number;         // multiplier per level inside onboarding
@@ -26,8 +41,7 @@ interface CurveParams {
   rebate_early_pct: number;     // coin reward as % of sunk gold, L1..30
   rebate_mid_pct: number;       // L31..60
   rebate_late_pct: number;      // L61..max
-  gem_cap_level: number;        // milestones with level > this give 0 gems
-  gem_milestones_json: string;  // JSON: { "10": 5, "20": 12, ... }
+  gem_rules: GemRule[];         // range-based gem cadence (see GemRule)
   coin_value_micros: number;    // USD micros per 1 coin (from currency_configs)
   gem_value_micros: number;     // USD micros per 1 gem
 }
@@ -47,11 +61,29 @@ const DEFAULT_PARAMS: CurveParams = {
   rebate_early_pct: 3.0,
   rebate_mid_pct: 2.5,
   rebate_late_pct: 2.0,
-  gem_cap_level: 50,
-  gem_milestones_json: '{"10":5,"20":12,"30":25,"40":50,"50":100}',
+  gem_rules: [
+    { level_from: 1, level_to: 50, gems: 5, every: 10 },
+    { level_from: 51, level_to: 150, gems: 10, every: 10 },
+  ],
   coin_value_micros: 100,    // $0.0001 / coin
   gem_value_micros: 10000,   // $0.01 / gem
 };
+
+/**
+ * Resolve the gem grant for a single level from the rule list. Returns
+ * the gems of the first rule whose [level_from, level_to] range
+ * contains the level AND whose cadence the level hits (level % every
+ * === 0). 0 if no rule covers it or the level isn't on cadence.
+ */
+function gemsForLevel(level: number, rules: readonly GemRule[]): number {
+  for (const rule of rules) {
+    if (level >= rule.level_from && level <= rule.level_to) {
+      if (rule.every > 0 && level % rule.every === 0) return Math.max(0, rule.gems);
+      return 0;
+    }
+  }
+  return 0;
+}
 
 interface ProposedRow {
   level: number;
@@ -70,19 +102,9 @@ function roundToStep(n: number, step: number): number {
 }
 
 // Pure generator — given params, returns the full set of proposed rows.
-// Mirrors the Python prototype exactly: monotonic coin reward, gem cap,
-// and a flat plateau past end_late.
+// Monotonic coin reward, range-based gem cadence, and a flat plateau
+// past end_late.
 function generateCurve(p: CurveParams): ProposedRow[] {
-  const milestones: Record<number, number> = (() => {
-    try {
-      const parsed = JSON.parse(p.gem_milestones_json) as Record<string, number>;
-      const out: Record<number, number> = {};
-      for (const [k, v] of Object.entries(parsed)) out[Number(k)] = Number(v);
-      return out;
-    } catch {
-      return {};
-    }
-  })();
   const rows: ProposedRow[] = [];
   let perLvl = 0;
   let cum = 0;
@@ -107,7 +129,7 @@ function generateCurve(p: CurveParams): ProposedRow[] {
     const coinsRaw = roundToStep(sunkThisLvl * (rebatePct / 100), 50);
     const coins = L === 1 ? 0 : Math.max(coinsRaw, prevCoins);
     prevCoins = coins;
-    const gems = L <= p.gem_cap_level ? (milestones[L] ?? 0) : 0;
+    const gems = gemsForLevel(L, p.gem_rules);
     const rewardUsdMicros = coins * p.coin_value_micros + gems * p.gem_value_micros;
     const sunkUsdMicros =
       ((p.avg_entry_fee_coins * cum) / p.xp_per_match) * p.coin_value_micros;
@@ -157,35 +179,6 @@ function NumField({
   );
 }
 
-function TextField({
-  label,
-  value,
-  onChange,
-  hint,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly onChange: (s: string) => void;
-  readonly hint?: string;
-}) {
-  return (
-    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-      {label}
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
-      />
-      {hint ? (
-        <span className="mt-1 block text-[10px] font-normal normal-case tracking-normal text-white/35">
-          {hint}
-        </span>
-      ) : null}
-    </label>
-  );
-}
-
 interface Props {
   readonly canManage: boolean;
   readonly currentLevels: ReadonlyArray<{ level: number; xp_required: number }>;
@@ -217,6 +210,33 @@ export function LevelCurveProposal({
   const [message, setMessage] = useState<string | null>(null);
 
   const proposed = useMemo(() => generateCurve(params), [params]);
+
+  // --- Gem-rule editors -----------------------------------------
+  const updateGemRule = (index: number, patch: Partial<GemRule>) => {
+    setParams((p) => ({
+      ...p,
+      gem_rules: p.gem_rules.map((r, i) => (i === index ? { ...r, ...patch } : r)),
+    }));
+  };
+  const addGemRule = () => {
+    setParams((p) => {
+      const last = p.gem_rules[p.gem_rules.length - 1];
+      const nextFrom = last ? last.level_to + 1 : 1;
+      return {
+        ...p,
+        gem_rules: [
+          ...p.gem_rules,
+          { level_from: nextFrom, level_to: nextFrom + 99, gems: 10, every: 10 },
+        ],
+      };
+    });
+  };
+  const removeGemRule = (index: number) => {
+    setParams((p) => ({
+      ...p,
+      gem_rules: p.gem_rules.filter((_, i) => i !== index),
+    }));
+  };
 
   // Lookup map for current-curve cumulative XP at each level — shown in
   // the table as a delta so the operator can see at a glance how much
@@ -334,8 +354,8 @@ export function LevelCurveProposal({
       <p className="mt-1 text-xs text-white/55">
         4-segment curve with a flat plateau past level{' '}
         {params.end_late} and a hard cap at level {params.max_level}. Gem
-        rewards stop after level {params.gem_cap_level}. Coin rewards
-        scale with sunk gold (target rebate {params.rebate_early_pct}% →{' '}
+        rewards follow the range rules below. Coin rewards scale with
+        sunk gold (target rebate {params.rebate_early_pct}% →{' '}
         {params.rebate_late_pct}%) and are monotonic — leveling never
         decreases the payout.
       </p>
@@ -357,14 +377,90 @@ export function LevelCurveProposal({
         <NumField label="Rebate % L1-30" value={params.rebate_early_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_early_pct: n }))} />
         <NumField label="Rebate % L31-60" value={params.rebate_mid_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_mid_pct: n }))} />
         <NumField label="Rebate % L61+" value={params.rebate_late_pct} step={0.1} onChange={(n) => setParams((p) => ({ ...p, rebate_late_pct: n }))} />
-        <NumField label="Gem cap level" value={params.gem_cap_level} onChange={(n) => setParams((p) => ({ ...p, gem_cap_level: n }))} />
-        <div className="sm:col-span-2 lg:col-span-4">
-          <TextField
-            label="Gem milestones (JSON: { level: gems })"
-            value={params.gem_milestones_json}
-            onChange={(s) => setParams((p) => ({ ...p, gem_milestones_json: s }))}
-            hint='Levels not listed give 0 gems. Levels above the gem cap also give 0.'
-          />
+      </div>
+
+      {/* Gem reward rules — range-based cadence builder. Replaces the
+          old free-text JSON milestone map. */}
+      <div className="mt-4 rounded-lg border border-white/10 bg-black/15 p-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/45">
+            Gem reward rules
+          </span>
+          <span className="text-[10px] text-white/35">
+            within each range, grant the gems at every Nth level (levels divisible by N)
+          </span>
+        </div>
+        <p className="mt-1 text-[10px] text-white/40">
+          e.g. From 1 To 50, 5 gems, every 10 → L10/20/30/40/50 each grant 5 gems.
+          Ranges are read top-down; keep them contiguous and non-overlapping.
+          A level not covered by any rule grants 0 gems.
+        </p>
+        <div className="mt-3 space-y-2">
+          <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+            <span></span>
+            <span>From level</span>
+            <span>To level</span>
+            <span>Gems</span>
+            <span>Every N lvls</span>
+            <span></span>
+          </div>
+          {params.gem_rules.length === 0 ? (
+            <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-4 text-center text-[11px] text-white/40">
+              No gem rules — every level grants 0 gems. Add a rule to start.
+            </div>
+          ) : (
+            params.gem_rules.map((rule, i) => (
+              <div
+                key={`gem-rule-${i}`}
+                className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-2"
+              >
+                <span className="text-center text-[10px] font-bold text-white/30">{i + 1}</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={rule.level_from}
+                  onChange={(e) => updateGemRule(i, { level_from: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  value={rule.level_to}
+                  onChange={(e) => updateGemRule(i, { level_to: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  value={rule.gems}
+                  onChange={(e) => updateGemRule(i, { gems: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  value={rule.every}
+                  onChange={(e) => updateGemRule(i, { every: Number(e.target.value) })}
+                  className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeGemRule(i)}
+                  title="Remove rule"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 text-base font-black text-rose-200/80 transition hover:bg-rose-300/20"
+                >
+                  ×
+                </button>
+              </div>
+            ))
+          )}
+          <button
+            type="button"
+            onClick={addGemRule}
+            className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-white/30"
+          >
+            + Add gem rule
+          </button>
         </div>
       </div>
 
