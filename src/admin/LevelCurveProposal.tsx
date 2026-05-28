@@ -212,6 +212,7 @@ export function LevelCurveProposal({
     gem_value_micros: gemValueMicros,
   });
   const [applying, setApplying] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -280,12 +281,45 @@ export function LevelCurveProposal({
         .delete()
         .gt('level', params.max_level);
       if (delErr) throw delErr;
-      setMessage(`Applied. ${proposed.length} levels written · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems.`);
+      // Re-align every existing player's level to the new thresholds.
+      // The auto-promote trigger only fires when a player EARNS xp, so
+      // without this pass players stay frozen at their old level (and
+      // show a broken XP bar) until their next match. Promote-only, no
+      // rewards — see recompute_player_levels().
+      const { data: promotedCount, error: recomputeErr } =
+        await supabase.rpc('recompute_player_levels');
+      if (recomputeErr) throw recomputeErr;
+      setMessage(
+        `Applied. ${proposed.length} levels written · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems · ${promotedCount ?? 0} players re-leveled.`,
+      );
       await onApplied();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setApplying(false);
+    }
+  };
+
+  // Manual re-level pass for when the curve wasn't changed via Apply
+  // (e.g. you edited individual level_configs rows by hand) but you
+  // still want existing players snapped to the right level now rather
+  // than on their next xp gain. Same promote-only, no-reward RPC the
+  // Apply flow calls.
+  const recompute = async () => {
+    if (!canManage || recomputing) return;
+    setRecomputing(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const { data: promotedCount, error: rpcErr } =
+        await supabase.rpc('recompute_player_levels');
+      if (rpcErr) throw rpcErr;
+      setMessage(`Re-leveled ${promotedCount ?? 0} players against the current curve.`);
+      await onApplied();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRecomputing(false);
     }
   };
 
@@ -378,6 +412,15 @@ export function LevelCurveProposal({
           className="rounded-lg border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30"
         >
           Reset to defaults
+        </button>
+        <button
+          type="button"
+          onClick={() => void recompute()}
+          disabled={!canManage || recomputing}
+          title="Snap every existing player's level to the CURRENT curve (promote-only, no rewards). Apply already does this automatically — use this after hand-editing level rows."
+          className="rounded-lg border border-sky-300/40 bg-sky-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-sky-100 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {recomputing ? 'Re-leveling…' : 'Re-level players now'}
         </button>
         {error ? (
           <span className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">

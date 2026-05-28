@@ -1021,6 +1021,10 @@ export type Database = {
         Args: { target_id: string };
         Returns: void;
       };
+      recompute_player_levels: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       admin_upsert_currency_config: {
         Args: {
           p_code: string;
