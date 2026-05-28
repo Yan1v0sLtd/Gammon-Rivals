@@ -414,7 +414,10 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
             block
             disabled={buttonDisabled}
             onClick={onPlay}
-            wrapStyle={{ fontSize: 'clamp(11px, 5.5cqi, 16px)' }}
+            // Taller font-size so the button height matches the grey
+            // "Unlocks at Lv N" / orange "Get Coins" buttons rather
+            // than reading as a thin strip.
+            wrapStyle={{ fontSize: 'clamp(13px, 7cqi, 18px)' }}
           />
         ) : (
           // Non-Play states keep their distinct treatment: orange

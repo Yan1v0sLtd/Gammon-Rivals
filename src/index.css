@@ -8961,19 +8961,25 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
 }
 
-.gr-play-wrap {
-  --gr-glow-hue: 48deg;
-  position: relative;
-  display: inline-block;
-  padding: 0.034em;
-  border-radius: 0.448em;
-  line-height: 1;
-  background: linear-gradient(180deg, #f2f4f1 0%, #9ba09b 48%, #4d514d 100%);
-  box-shadow:
-    0 0.276em 0.483em rgba(0, 0, 0, 0.48),
-    0 0 0.207em rgba(210, 220, 210, 0.18),
-    inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
-    inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
+/* In @layer components so Tailwind positioning utilities (.absolute,
+   etc.) applied via wrapClassName win over the default position:relative
+   — otherwise this end-of-file rule beats the utility by source order
+   and the board button drops into normal flow below the board. */
+@layer components {
+  .gr-play-wrap {
+    --gr-glow-hue: 48deg;
+    position: relative;
+    display: inline-block;
+    padding: 0.034em;
+    border-radius: 0.448em;
+    line-height: 1;
+    background: linear-gradient(180deg, #f2f4f1 0%, #9ba09b 48%, #4d514d 100%);
+    box-shadow:
+      0 0.276em 0.483em rgba(0, 0, 0, 0.48),
+      0 0 0.207em rgba(210, 220, 210, 0.18),
+      inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
+      inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
+  }
 }
 
 /* Size presets — the only knob. */
@@ -9015,24 +9021,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     0 0.052em 0 #11401b,
     0 0.103em 0.138em rgba(0, 0, 0, 0.45),
     0 0 0.207em rgba(255, 255, 255, 0.55);
+  /* Flat green — top sheen + vertical gradient for the 3D pill, no
+     dot/line texture pattern. */
   background:
     linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0) 28%),
-    radial-gradient(circle at 12% 18%, rgba(255,255,255,0.08) 0 1px, transparent 2px),
-    radial-gradient(circle at 38% 42%, rgba(0,0,0,0.16) 0 1px, transparent 2px),
-    radial-gradient(circle at 72% 28%, rgba(255,255,255,0.07) 0 1px, transparent 2px),
-    radial-gradient(circle at 88% 70%, rgba(0,0,0,0.18) 0 1px, transparent 2px),
-    repeating-radial-gradient(circle at 35% 30%, rgba(255,255,255,0.04) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(35deg, rgba(0,0,0,0.055) 0 2px, rgba(255,255,255,0.025) 2px 3px, transparent 3px 7px),
     linear-gradient(to top, #1b5a24 0%, #2fa345 52%, #63df73 100%);
-  background-size:
-    100% 100%,
-    0.586em 0.534em,
-    0.724em 0.638em,
-    0.793em 0.741em,
-    0.914em 0.845em,
-    0.31em 0.31em,
-    0.155em 0.155em,
-    100% 100%;
   box-shadow:
     inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
     inset 0 -0.069em 0.034em rgba(8, 72, 18, 0.48),
