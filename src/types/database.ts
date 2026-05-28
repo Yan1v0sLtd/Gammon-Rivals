@@ -534,6 +534,75 @@ export type Database = {
         };
         Relationships: [];
       };
+      economy_grants: {
+        Row: {
+          trigger_key: string;
+          display_name: string;
+          description: string;
+          coins: number;
+          gems: number;
+          one_time: boolean;
+          is_enabled: boolean;
+          sort_order: number;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          trigger_key: string;
+          display_name: string;
+          description?: string;
+          coins?: number;
+          gems?: number;
+          one_time?: boolean;
+          is_enabled?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          trigger_key?: string;
+          display_name?: string;
+          description?: string;
+          coins?: number;
+          gems?: number;
+          one_time?: boolean;
+          is_enabled?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      player_grants: {
+        Row: {
+          id: string;
+          profile_id: string;
+          trigger_key: string;
+          coins: number;
+          gems: number;
+          granted_at: string;
+        };
+        Insert: {
+          id?: string;
+          profile_id: string;
+          trigger_key: string;
+          coins?: number;
+          gems?: number;
+          granted_at?: string;
+        };
+        Update: {
+          id?: string;
+          profile_id?: string;
+          trigger_key?: string;
+          coins?: number;
+          gems?: number;
+          granted_at?: string;
+        };
+        Relationships: [];
+      };
       table_configs: {
         Row: {
           id: string;
@@ -1024,6 +1093,19 @@ export type Database = {
       recompute_player_levels: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      admin_upsert_economy_grant: {
+        Args: {
+          p_trigger_key: string;
+          p_display_name: string;
+          p_description: string;
+          p_coins: number;
+          p_gems: number;
+          p_one_time: boolean;
+          p_is_enabled: boolean;
+          p_sort_order: number;
+        };
+        Returns: Database['public']['Tables']['economy_grants']['Row'];
       };
       admin_upsert_currency_config: {
         Args: {

@@ -53,6 +53,24 @@ type LevelStatusTierDraft = {
  * 'all' is the escape hatch for spreadsheet-style scanning.
  */
 type LevelsPageSize = 25 | 50 | 100 | 'all';
+type EconomyGrant = Database['public']['Tables']['economy_grants']['Row'];
+/**
+ * Editable form state for one economy-grant rule. Numeric fields are
+ * strings so inputs can be cleared mid-edit. `isNew` distinguishes a
+ * brand-new rule (whose trigger_key is still editable) from an
+ * existing one (whose key is the immutable PK).
+ */
+type EconomyGrantDraft = {
+  trigger_key: string;
+  display_name: string;
+  description: string;
+  coins: string;
+  gems: string;
+  one_time: boolean;
+  is_enabled: boolean;
+  sort_order: string;
+  isNew: boolean;
+};
 type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
 type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
@@ -77,6 +95,7 @@ type Section =
   | 'Dashboard'
   | 'Users'
   | 'Currencies'
+  | 'Economy Grants'
   | 'Level System'
   | 'Daily Bonus'
   | 'Hourly Wheel'
@@ -207,6 +226,7 @@ const sections: readonly Section[] = [
   'Dashboard',
   'Users',
   'Currencies',
+  'Economy Grants',
   'Level System',
   'Daily Bonus',
   'Hourly Wheel',
@@ -661,6 +681,20 @@ function levelToDraft(row?: LevelConfig): LevelDraft {
   };
 }
 
+function grantToDraft(row?: EconomyGrant): EconomyGrantDraft {
+  return {
+    trigger_key: row?.trigger_key ?? '',
+    display_name: row?.display_name ?? '',
+    description: row?.description ?? '',
+    coins: row?.coins.toString() ?? '0',
+    gems: row?.gems.toString() ?? '0',
+    one_time: row?.one_time ?? true,
+    is_enabled: row?.is_enabled ?? true,
+    sort_order: row?.sort_order.toString() ?? '0',
+    isNew: row === undefined,
+  };
+}
+
 function dailyBonusToDraft(row?: DailyBonusConfig): DailyBonusDraft {
   return {
     day: row?.day.toString() ?? '1',
@@ -776,6 +810,8 @@ export default function Admin() {
   const [profileDraft, setProfileDraft] = useState({ level: '1', xp: '0', rating: '1500', admin_note: '', suspension_reason: '' });
   const [walletDraft, setWalletDraft] = useState({ currency: 'coins', amount: '', reason: '' });
   const [levels, setLevels] = useState<LevelConfig[]>([]);
+  const [economyGrants, setEconomyGrants] = useState<EconomyGrant[]>([]);
+  const [grantDraft, setGrantDraft] = useState<EconomyGrantDraft>(() => grantToDraft());
   const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([]);
   const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([]);
   const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50);
@@ -1025,6 +1061,7 @@ export default function Admin() {
         profilesResult,
         levelResult,
         levelStatusTierResult,
+        economyGrantResult,
         dailyBonusResult,
         tableResult,
         boardResult,
@@ -1052,6 +1089,11 @@ export default function Admin() {
           .select('*')
           .order('sort_order', { ascending: true })
           .order('level_from', { ascending: true }),
+        supabase
+          .from('economy_grants')
+          .select('*')
+          .order('sort_order', { ascending: true })
+          .order('trigger_key', { ascending: true }),
         supabase.from('daily_bonus_configs').select('*').order('day', { ascending: true }),
         supabase.from('table_configs').select('*').order('sort_order', { ascending: true }),
         supabase.from('board_theme_configs').select('*').order('sort_order', { ascending: true }),
@@ -1070,6 +1112,7 @@ export default function Admin() {
         profilesResult.error ??
         levelResult.error ??
         levelStatusTierResult.error ??
+        economyGrantResult.error ??
         dailyBonusResult.error ??
         tableResult.error ??
         boardResult.error ??
@@ -1096,6 +1139,7 @@ export default function Admin() {
         return new Set([...current].filter((id) => visibleIds.has(id)));
       });
       setLevels(levelResult.data ?? []);
+      setEconomyGrants(economyGrantResult.data ?? []);
       const tierRows = levelStatusTierResult.data ?? [];
       setLevelStatusTiers(tierRows);
       // Initialize the editable drafts from the freshly loaded rows.
@@ -1676,6 +1720,40 @@ export default function Admin() {
       setTierError(err instanceof Error ? err.message : String(err));
     } finally {
       setSavingTiers(false);
+    }
+  }
+
+  async function saveGrant() {
+    if (!canManage) return;
+    setSavingKey('grant');
+    setDataError(null);
+    try {
+      const triggerKey = grantDraft.trigger_key.trim().toLowerCase();
+      if (!/^[a-z][a-z0-9_]*$/.test(triggerKey)) {
+        throw new Error(
+          'Trigger key must be lowercase letters/numbers/underscores, starting with a letter (e.g. refer_friend).',
+        );
+      }
+      if (!grantDraft.display_name.trim()) {
+        throw new Error('Display name is required.');
+      }
+      const { error } = await supabase.rpc('admin_upsert_economy_grant', {
+        p_trigger_key: triggerKey,
+        p_display_name: grantDraft.display_name.trim(),
+        p_description: grantDraft.description.trim(),
+        p_coins: requiredNumber(grantDraft.coins, 'Coins'),
+        p_gems: requiredNumber(grantDraft.gems, 'Gems'),
+        p_one_time: grantDraft.one_time,
+        p_is_enabled: grantDraft.is_enabled,
+        p_sort_order: requiredNumber(grantDraft.sort_order, 'Sort order'),
+      });
+      if (error) throw error;
+      setGrantDraft(grantToDraft());
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
     }
   }
 
@@ -2594,6 +2672,94 @@ export default function Admin() {
                     <SecondaryButton onClick={() => setCurrencyDraft(currencyToDraft())}>
                       New
                     </SecondaryButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'Economy Grants' && (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+              <ConfigTable
+                title="Economy grants"
+                rows={economyGrants.map((row) => [
+                  row.trigger_key,
+                  row.display_name,
+                  `${formatNumber(row.coins)} coins · ${row.gems} gems`,
+                  row.one_time ? 'One-time' : 'Repeatable',
+                  row.is_enabled ? 'Enabled' : 'Disabled',
+                ])}
+                onRowClick={(index) => setGrantDraft(grantToDraft(economyGrants[index]))}
+              />
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <h2 className="text-lg font-black">Edit grant</h2>
+                <p className="mt-1 text-xs text-white/55">
+                  Coin / gem grants fired by a trigger.{' '}
+                  <code className="font-mono">signup</code> is the
+                  starting balance every new player receives. Add a new
+                  key (e.g. <code className="font-mono">refer_friend</code>,{' '}
+                  <code className="font-mono">link_google</code>) to define
+                  a future tap — the value is configurable here today;
+                  firing it is a one-line server call when that feature
+                  ships. Disable rather than delete. One-time grants are
+                  credited at most once per player.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field
+                    label="Trigger key"
+                    value={grantDraft.trigger_key}
+                    disabled={!grantDraft.isNew}
+                    onChange={(trigger_key) => setGrantDraft((d) => ({ ...d, trigger_key }))}
+                  />
+                  <Field
+                    label="Display name"
+                    value={grantDraft.display_name}
+                    onChange={(display_name) => setGrantDraft((d) => ({ ...d, display_name }))}
+                  />
+                  <Field
+                    label="Coins"
+                    value={grantDraft.coins}
+                    onChange={(coins) => setGrantDraft((d) => ({ ...d, coins }))}
+                  />
+                  <Field
+                    label="Gems"
+                    value={grantDraft.gems}
+                    onChange={(gems) => setGrantDraft((d) => ({ ...d, gems }))}
+                  />
+                  <Field
+                    label="Sort order"
+                    value={grantDraft.sort_order}
+                    onChange={(sort_order) => setGrantDraft((d) => ({ ...d, sort_order }))}
+                  />
+                </div>
+                <div className="mt-3 space-y-3">
+                  <Field
+                    label="Description"
+                    value={grantDraft.description}
+                    onChange={(description) => setGrantDraft((d) => ({ ...d, description }))}
+                  />
+                  <Toggle
+                    label="One-time (max once per player)"
+                    checked={grantDraft.one_time}
+                    onChange={(one_time) => setGrantDraft((d) => ({ ...d, one_time }))}
+                  />
+                  <Toggle
+                    label="Enabled"
+                    checked={grantDraft.is_enabled}
+                    onChange={(is_enabled) => setGrantDraft((d) => ({ ...d, is_enabled }))}
+                  />
+                  {!grantDraft.isNew ? (
+                    <p className="text-[10px] normal-case tracking-normal text-white/40">
+                      Trigger key is the primary key and can't be changed on
+                      an existing grant. Click "New" to create one with a
+                      different key.
+                    </p>
+                  ) : null}
+                  <div className="flex gap-2">
+                    <PrimaryButton onClick={() => void saveGrant()} disabled={!canManage || savingKey === 'grant'}>
+                      Save grant
+                    </PrimaryButton>
+                    <SecondaryButton onClick={() => setGrantDraft(grantToDraft())}>New</SecondaryButton>
                   </div>
                 </div>
               </div>
