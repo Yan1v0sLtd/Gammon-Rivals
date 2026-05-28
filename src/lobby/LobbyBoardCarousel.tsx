@@ -20,6 +20,10 @@ interface LobbyBoardCarouselProps {
   readonly getBoardState: (board: LobbyBoard) => BoardOwnershipState;
   readonly onLockedTap: (board: LobbyBoard) => void;
   readonly onPurchaseTap: (board: LobbyBoard) => void;
+  /** Player's current gem balance — decides whether tapping a
+   *  gem-gated board's pill opens the purchase modal or expands a
+   *  "Get more Gems" nudge. */
+  readonly walletGems: number;
 }
 
 // A tap is a pointer event that travels less than this distance, total.
@@ -171,11 +175,12 @@ export function LobbyBoardCarousel({
   onSelectedIdChange,
   onPlay,
   getBoardState,
-  // onLockedTap is unused now — both locked states use the centered
-  // UnlockPill (level-locked expands inline; purchasable opens the
-  // gem-purchase popup via onPurchaseTap). Kept in the props type for
-  // back-compat with LobbyScreen, just not destructured.
+  // onLockedTap is unused — level-locked boards expand the centered
+  // lock inline (UnlockPill), and the gem pill defers to it when the
+  // player is under-level. Kept in the props type for LobbyScreen
+  // back-compat, just not destructured.
   onPurchaseTap,
+  walletGems,
 }: LobbyBoardCarouselProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
 
@@ -202,17 +207,30 @@ export function LobbyBoardCarousel({
 
   const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
 
-  // Which board's lock pill is expanded (showing "Reach level N to
-  // unlock"). Only one open at a time; a click anywhere else collapses
-  // it. The pill stops propagation on its own click, so this document
-  // listener only fires for outside clicks.
+  // Which board has an expanded lock pill ("Reach level N to unlock")
+  // or an expanded gem pill ("Get more Gems"). Only one of either at a
+  // time; a click anywhere else collapses both. The pills stop
+  // propagation on their own click, so this document listener only
+  // fires for outside clicks.
   const [expandedLockId, setExpandedLockId] = useState<string | null>(null);
+  const [expandedGemsId, setExpandedGemsId] = useState<string | null>(null);
+  const expandLock = useCallback((id: string) => {
+    setExpandedLockId(id);
+    setExpandedGemsId(null);
+  }, []);
+  const expandGems = useCallback((id: string) => {
+    setExpandedGemsId(id);
+    setExpandedLockId(null);
+  }, []);
   useEffect(() => {
-    if (!expandedLockId) return;
-    const collapse = () => setExpandedLockId(null);
+    if (!expandedLockId && !expandedGemsId) return;
+    const collapse = () => {
+      setExpandedLockId(null);
+      setExpandedGemsId(null);
+    };
     document.addEventListener('click', collapse);
     return () => document.removeEventListener('click', collapse);
-  }, [expandedLockId]);
+  }, [expandedLockId, expandedGemsId]);
 
   // ----- Animation control -----
 
@@ -542,12 +560,15 @@ export function LobbyBoardCarousel({
         <div className="absolute inset-0 overflow-visible">
           {rendered.map(({ board, signedIdx, d, key }) => {
             const state = getBoardState(board);
-            // Centered lock pill states:
-            //   level-locked → expands inline to "Reach level N".
-            //   purchasable  → a lock badge that opens the gem-purchase
-            //                  popup (same lock visual, consistent UX).
+            // Two independent gates, two pills:
+            //   showLock  (centered) → LEVEL gate. Only when the player
+            //             is under the required level. Expands to
+            //             "Reach level N to unlock".
+            //   showGems  (bottom)   → GEM gate. Whenever the board
+            //             costs gems (level-locked OR purchasable). Its
+            //             tap behavior depends on state (see below).
             const showLock = state === 'level-locked';
-            const showPurchaseLock = state === 'purchasable';
+            const showGems = state === 'level-locked' || state === 'purchasable';
             const isCenter = Math.abs(d) < 0.5;
             // PLAY button now lives ON the centered board (same as
             // the lock) — only renders when the board is playable
@@ -580,9 +601,10 @@ export function LobbyBoardCarousel({
                   // the board's real unlockLevel. Same centering math as
                   // the PLAY button.
                   <UnlockPill
+                    variant="lock"
                     level={board.unlockLevel}
                     open={expandedLockId === board.id}
-                    onOpen={() => setExpandedLockId(board.id)}
+                    onOpen={() => expandLock(board.id)}
                     ariaLabel={`${board.name} locked`}
                     wrapStyle={{ fontSize: '12cqi' }}
                     wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
@@ -622,18 +644,29 @@ export function LobbyBoardCarousel({
                     wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
                   />
                 ) : null}
-                {showPurchaseLock ? (
-                  // Gem-purchasable board: same lock badge as the
-                  // level-locked one, but tapping opens the gem-purchase
-                  // popup (which shows the price + confirm) rather than
-                  // expanding inline. Consistent lock visual across both
-                  // locked states.
+                {showGems ? (
+                  // GEM gate pill (gem badge, bottom). Tap behavior:
+                  //   under-level (level-locked) → expand the centered
+                  //       LEVEL lock — you must clear the level first.
+                  //   at-level + not enough gems → expand this pill to
+                  //       "Get more Gems".
+                  //   at-level + enough gems → open the purchase popup.
                   <UnlockPill
-                    mode="button"
-                    onOpen={() => onPurchaseTap(board)}
+                    variant="gem"
+                    text="Get more Gems"
+                    open={expandedGemsId === board.id}
+                    onOpen={() => {
+                      if (state === 'level-locked') {
+                        expandLock(board.id);
+                      } else if (walletGems >= board.priceGems) {
+                        onPurchaseTap(board);
+                      } else {
+                        expandGems(board.id);
+                      }
+                    }}
                     ariaLabel={`Unlock ${board.name} for ${board.priceGems} gems`}
                     wrapStyle={{ fontSize: '12cqi' }}
-                    wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                    wrapClassName="absolute bottom-[8%] left-1/2 z-40 -translate-x-1/2"
                   />
                 ) : null}
               </div>

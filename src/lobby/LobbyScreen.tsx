@@ -646,6 +646,7 @@ export function LobbyScreen() {
               getBoardState={boardStateOf}
               onLockedTap={handleLockedTap}
               onPurchaseTap={handlePurchaseTap}
+              walletGems={wallet?.gems ?? 0}
             />
           </div>
 

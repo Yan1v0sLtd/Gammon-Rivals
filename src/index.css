@@ -9258,6 +9258,16 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     drop-shadow(0 0 0.077em rgba(255, 211, 75, 0.38));
 }
 
+/* Gem variant — the gem.webp keeps its own colors, just sized + a
+   soft drop-shadow to seat it in the badge. */
+.gr-unlock-icon img {
+  width: 0.62em;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.5));
+}
+
 .gr-unlock-text {
   opacity: 0;
   /* em here is relative to THIS element's font-size (0.282em of pill),
