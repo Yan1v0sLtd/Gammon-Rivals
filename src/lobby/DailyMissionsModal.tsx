@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { extractErrorMessage } from '../lib/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import { CHESTS_ENABLED } from './lobbyData';
+import { PlayButton } from '../components/PlayButton';
 import {
   formatCountdown,
   nextResetMs,
@@ -667,26 +668,35 @@ function MissionCard({
       {/* Rewards — large variant (2× icons + label) per request. */}
       <RewardStack rewards={mission.rewards} large />
 
-      {/* Action button — width bumped 50 % (px-6 → px-9). */}
-      <button
-        ref={btnRef}
-        type="button"
-        disabled={isClaimed || isClaiming || isRerolling}
-        onClick={() => {
-          if (isClaimed) return;
-          if (isCompleted) onClaim(btnRef.current);
-          else onGo?.();
-        }}
-        className={`shrink-0 rounded-lg px-9 py-2.5 text-lg font-bold text-white shadow-md transition ${
-          isClaimed
-            ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
-            : isCompleted
-              ? 'bg-gradient-to-b from-emerald-400 to-emerald-600 hover:brightness-110'
-              : 'bg-gradient-to-b from-[#4ED2FF] to-[#0088FF] shadow-[0_0_12px_rgba(115,216,255,0.45)] hover:brightness-110'
-        }`}
-      >
-        {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
-      </button>
+      {/* Action button. GO (incomplete) uses the standardized premium
+          Play button; CLAIM / CLAIMED keep their own treatment (the
+          claim flight animation needs btnRef on that element). */}
+      {!isCompleted && !isClaimed ? (
+        <PlayButton
+          label="GO"
+          size="sm"
+          disabled={isRerolling}
+          onClick={() => onGo?.()}
+          wrapClassName="shrink-0"
+        />
+      ) : (
+        <button
+          ref={btnRef}
+          type="button"
+          disabled={isClaimed || isClaiming || isRerolling}
+          onClick={() => {
+            if (isClaimed) return;
+            if (isCompleted) onClaim(btnRef.current);
+          }}
+          className={`shrink-0 rounded-lg px-9 py-2.5 text-lg font-bold text-white shadow-md transition ${
+            isClaimed
+              ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
+              : 'bg-gradient-to-b from-emerald-400 to-emerald-600 hover:brightness-110'
+          }`}
+        >
+          {isClaimed ? 'CLAIMED' : isClaiming ? '…' : 'CLAIM'}
+        </button>
+      )}
     </div>
   );
 }
@@ -786,25 +796,26 @@ function WeeklyChallengeCard({
           ))}
         </div>
 
-        <button
-          ref={btnRef}
-          type="button"
-          disabled={isClaimed || isClaiming}
-          onClick={() => {
-            if (isClaimed) return;
-            if (isCompleted) onClaim(btnRef.current);
-            else onGo?.();
-          }}
-          className={`rounded-lg px-7 py-2 text-xl font-bold text-white shadow-md transition ${
-            isClaimed
-              ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
-              : isCompleted
-                ? 'bg-gradient-to-b from-emerald-400 to-emerald-600'
-                : 'bg-gradient-to-b from-[#4ED2FF] to-[#0088FF] shadow-[0_0_12px_rgba(115,216,255,0.45)] hover:brightness-110'
-          }`}
-        >
-          {isClaimed ? 'CLAIMED' : isCompleted ? (isClaiming ? '…' : 'CLAIM') : 'GO'}
-        </button>
+        {!isCompleted && !isClaimed ? (
+          <PlayButton label="GO" size="sm" onClick={() => onGo?.()} />
+        ) : (
+          <button
+            ref={btnRef}
+            type="button"
+            disabled={isClaimed || isClaiming}
+            onClick={() => {
+              if (isClaimed) return;
+              if (isCompleted) onClaim(btnRef.current);
+            }}
+            className={`rounded-lg px-7 py-2 text-xl font-bold text-white shadow-md transition ${
+              isClaimed
+                ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
+                : 'bg-gradient-to-b from-emerald-400 to-emerald-600'
+            }`}
+          >
+            {isClaimed ? 'CLAIMED' : isClaiming ? '…' : 'CLAIM'}
+          </button>
+        )}
       </div>
     </div>
   );

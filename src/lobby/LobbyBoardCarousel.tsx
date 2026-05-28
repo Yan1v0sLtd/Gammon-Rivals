@@ -9,6 +9,7 @@ import {
 } from 'react';
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import type { BoardOwnershipState } from './useUserBoardInventory';
+import { PlayButton } from '../components/PlayButton';
 
 interface LobbyBoardCarouselProps {
   readonly boards: readonly LobbyBoard[];
@@ -584,8 +585,9 @@ export function LobbyBoardCarousel({
                     would otherwise eat the button's onClick on
                     Android WebView. */}
                 {showPlayHere ? (
-                  <button
-                    type="button"
+                  <PlayButton
+                    label="Play"
+                    size="lg"
                     aria-label={`Play on ${board.name}`}
                     onPointerDown={(event) => event.stopPropagation()}
                     onPointerUp={(event) => event.stopPropagation()}
@@ -596,10 +598,8 @@ export function LobbyBoardCarousel({
                       onPlay();
                     }}
                     style={{ touchAction: 'manipulation' }}
-                    className="lobby-play-button absolute left-1/2 top-[calc(50%-5px)] z-40 h-[10%] min-w-[28%] -translate-x-1/2 -translate-y-1/2 px-[5%] font-display text-xs font-black uppercase tracking-[0.18em] text-[#132109] transition hover:brightness-110 active:translate-y-0.5"
-                  >
-                    Play
-                  </button>
+                    wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                  />
                 ) : null}
                 {showPill ? (
                   <button

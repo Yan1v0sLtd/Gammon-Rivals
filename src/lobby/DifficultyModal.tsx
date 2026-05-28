@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
+import { PlayButton } from '../components/PlayButton';
 import type { Database, Json } from '../types/database';
 
 /**
@@ -402,28 +403,38 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           longest label ("UNLOCKS AT LV 10") always fit a single
           line at any card width — no more two-line wrap on the
           locked-tier cards. */}
-      <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
-        <button
-          type="button"
-          onClick={levelLocked ? undefined : affordable ? onPlay : onGetCoins}
-          disabled={buttonDisabled}
-          className={
-            'block w-full rounded py-1 font-display font-black uppercase text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 whitespace-nowrap sm:rounded-md sm:py-1.5 lg:py-2 ' +
-            ctaClass
-          }
-          style={{
-            // 4.8cqi ≈ ~18px on a 380px-wide card and ~10px on a
-            // 200px card. Clamped so it never gets bigger than
-            // 1rem or smaller than 0.5rem. The longest label
-            // (UNLOCKS AT LV 10 = 16 chars) at 1rem with 0.05em
-            // tracking is ~120px wide — fits any card down to
-            // ~140px wide with room to spare.
-            fontSize: 'clamp(0.5rem, 4.8cqi, 1rem)',
-            letterSpacing: '0.05em',
-          }}
-        >
-          {buttonLabel}
-        </button>
+      <div className="flex items-center justify-center px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
+        {affordable && !levelLocked ? (
+          // Standardized premium Play button. Sized off a container-
+          // query font-size (same cqi the old CTA used) so it scales
+          // down on narrow cards rather than overflowing — the whole
+          // button is em-based, so font-size drives everything.
+          <PlayButton
+            label="Play"
+            size="sm"
+            disabled={buttonDisabled}
+            onClick={onPlay}
+            wrapStyle={{ fontSize: 'clamp(9px, 8.5cqi, 18px)' }}
+          />
+        ) : (
+          // Non-Play states keep their distinct treatment: orange
+          // "Get Coins" (shop nudge) and grey "Unlocks at Lv N".
+          <button
+            type="button"
+            onClick={levelLocked ? undefined : onGetCoins}
+            disabled={buttonDisabled}
+            className={
+              'block w-full rounded py-1 font-display font-black uppercase text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 whitespace-nowrap sm:rounded-md sm:py-1.5 lg:py-2 ' +
+              ctaClass
+            }
+            style={{
+              fontSize: 'clamp(0.5rem, 4.8cqi, 1rem)',
+              letterSpacing: '0.05em',
+            }}
+          >
+            {buttonLabel}
+          </button>
+        )}
       </div>
     </div>
   );
