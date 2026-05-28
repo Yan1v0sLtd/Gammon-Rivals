@@ -115,10 +115,28 @@ declare
   lvl_row public.level_configs;
   wallet_after public.user_wallets;
   promoted_count int := 0;
+  has_deleted_at boolean;
 begin
-  for prof in
-    select * from public.profiles
-    where deleted_at is null
+  -- profiles.deleted_at exists on a clean replay (added by the
+  -- 20260513 soft-delete migration) but was dropped out-of-band on
+  -- environments that later switched to hard-delete. Probe for the
+  -- column so this backfill runs whether or not it's present, instead
+  -- of erroring with "column deleted_at does not exist" mid-chain.
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'deleted_at'
+  ) into has_deleted_at;
+
+  for prof in execute (
+    case
+      when has_deleted_at
+        then 'select * from public.profiles where deleted_at is null'
+        else 'select * from public.profiles'
+    end
+  )
   loop
     total_coins := 0;
     total_gems := 0;
