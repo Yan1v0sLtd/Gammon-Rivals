@@ -9151,3 +9151,149 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .gr-play-sparkle { animation: none; opacity: 0.6; }
 }
 
+/* ==========================================================================
+ * Expandable locked pill (.gr-unlock-*) — see src/components/UnlockPill.tsx
+ *
+ * Collapsed: a round gold-rimmed lock badge. Tapped (.is-open): expands
+ * into a pill reading "Reach level N to unlock". All dimensions are em
+ * relative to the pill font-size (1em == the design's 78px height /
+ * collapsed square side), so a single font-size scales the whole thing.
+ * Positioning + centering live on the .gr-unlock-wrap so the pill keeps
+ * its own hover-lift transform.
+ * ========================================================================== */
+
+/* Wrap in @layer components so caller positioning utilities (.absolute,
+   translate, …) on the wrap win over the default position:relative. */
+@layer components {
+  .gr-unlock-wrap {
+    position: relative;
+    display: inline-flex;
+  }
+}
+
+.gr-unlock-pill {
+  --gold-light: #ffe98b;
+  --gold-mid: #d9a83a;
+  --gold-dark: #8a5d12;
+  position: relative;
+  flex: none;
+  width: 1em;          /* collapsed: square (= height) */
+  height: 1em;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+  color: var(--gold-light);
+  background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
+  box-shadow:
+    0 0 0 0.019em var(--gold-dark),
+    0 0 0 0.032em var(--gold-mid),
+    inset 0 0.026em 0.103em rgba(255, 255, 255, 0.08),
+    inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
+    0 0.09em 0.205em rgba(0, 0, 0, 0.45);
+  transition:
+    width 430ms cubic-bezier(0.2, 0.9, 0.2, 1.12),
+    transform 180ms ease,
+    box-shadow 220ms ease;
+}
+
+.gr-unlock-pill.is-open { width: 3.974em; }
+
+.gr-unlock-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 0.026em;
+  background: linear-gradient(135deg, #ffe98b 0%, #c78f25 34%, #fff0a0 52%, #8a5d12 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gr-unlock-pill::after {
+  content: "";
+  position: absolute;
+  inset: 0.09em;
+  border-radius: inherit;
+  border: 0.013em solid rgba(255, 238, 157, 0.28);
+  box-shadow: inset 0 0 0.205em rgba(255, 220, 95, 0.08);
+  pointer-events: none;
+}
+
+.gr-unlock-pill:hover {
+  transform: translateY(-0.013em);
+  box-shadow:
+    0 0 0 0.019em var(--gold-dark),
+    0 0 0 0.032em var(--gold-mid),
+    0 0 0.256em rgba(255, 216, 91, 0.28),
+    inset 0 0.026em 0.103em rgba(255, 255, 255, 0.1),
+    inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
+    0 0.128em 0.256em rgba(0, 0, 0, 0.5);
+}
+
+.gr-unlock-icon,
+.gr-unlock-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 220ms ease, transform 280ms ease, filter 280ms ease;
+}
+
+.gr-unlock-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.gr-unlock-icon svg {
+  width: 0.449em;
+  height: 0.449em;
+  display: block;
+  filter:
+    drop-shadow(0 0.013em 0 rgba(255, 255, 255, 0.35))
+    drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 0.077em rgba(255, 211, 75, 0.38));
+}
+
+.gr-unlock-text {
+  opacity: 0;
+  /* em here is relative to THIS element's font-size (0.282em of pill),
+     so the design's px offsets are divided by 22, not 78. */
+  font-size: 0.282em;
+  transform: translateY(0.409em) scale(0.96);
+  filter: blur(0.18em);
+  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 0.009em;
+  color: #ffe98b;
+  text-shadow:
+    0 0.045em 0 #7a4f0c,
+    0 0.091em 0.318em rgba(255, 216, 91, 0.38),
+    0 0.182em 0.455em rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+.gr-unlock-pill.is-open .gr-unlock-icon {
+  opacity: 0;
+  transform: translateY(-0.115em) scale(0.8);
+  filter: blur(0.051em);
+}
+
+.gr-unlock-pill.is-open .gr-unlock-text {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition-delay: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gr-unlock-pill,
+  .gr-unlock-icon,
+  .gr-unlock-text {
+    transition-duration: 1ms;
+  }
+}
+

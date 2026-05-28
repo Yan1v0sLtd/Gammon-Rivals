@@ -10,6 +10,7 @@ import {
 import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import type { BoardOwnershipState } from './useUserBoardInventory';
 import { PlayButton } from '../components/PlayButton';
+import { UnlockPill } from '../components/UnlockPill';
 
 interface LobbyBoardCarouselProps {
   readonly boards: readonly LobbyBoard[];
@@ -170,6 +171,9 @@ export function LobbyBoardCarousel({
   onSelectedIdChange,
   onPlay,
   getBoardState,
+  // Still used by the bottom gem-price pill for level-locked boards.
+  // The centered lock now expands inline instead (see UnlockPill +
+  // expandedLockId), so it no longer calls this.
   onLockedTap,
   onPurchaseTap,
 }: LobbyBoardCarouselProps) {
@@ -197,6 +201,18 @@ export function LobbyBoardCarousel({
   const externalAnimRef = useRef(false);
 
   const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
+
+  // Which board's lock pill is expanded (showing "Reach level N to
+  // unlock"). Only one open at a time; a click anywhere else collapses
+  // it. The pill stops propagation on its own click, so this document
+  // listener only fires for outside clicks.
+  const [expandedLockId, setExpandedLockId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expandedLockId) return;
+    const collapse = () => setExpandedLockId(null);
+    document.addEventListener('click', collapse);
+    return () => document.removeEventListener('click', collapse);
+  }, [expandedLockId]);
 
   // ----- Animation control -----
 
@@ -554,25 +570,19 @@ export function LobbyBoardCarousel({
                   draggable={false}
                 />
                 {showLock ? (
-                  <button
-                    type="button"
-                    aria-label={`${board.name} locked`}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onLockedTap(board);
-                    }}
-                    className="lobby-carousel-board-lock-button absolute left-1/2 top-[calc(50%-5px)] grid w-[12%] aspect-square -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border-[3px] border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] p-0 shadow-[0_10px_18px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,212,135,0.22)]"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-[55%] w-[55%] drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]"
-                      fill="#f6d770"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 1.5a5 5 0 0 0-5 5V10H6.5A2.5 2.5 0 0 0 4 12.5v8A2.5 2.5 0 0 0 6.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 10H17V6.5a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3V10H9V6.5a3 3 0 0 1 3-3zm0 11a2 2 0 0 1 .8 3.83V20.5a.8.8 0 0 1-1.6 0v-2.17A2 2 0 0 1 12 14.5z" />
-                    </svg>
-                  </button>
+                  // Expandable lock pill. Collapsed size tracks the old
+                  // w-[12%] lock via 12cqi (board is a container). Tap
+                  // expands it inline to "Reach level N to unlock" using
+                  // the board's real unlockLevel. Same centering math as
+                  // the PLAY button.
+                  <UnlockPill
+                    level={board.unlockLevel}
+                    open={expandedLockId === board.id}
+                    onOpen={() => setExpandedLockId(board.id)}
+                    ariaLabel={`${board.name} locked`}
+                    wrapStyle={{ fontSize: '12cqi' }}
+                    wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                  />
                 ) : null}
                 {/* PLAY button on the centered + playable board. Same
                     `top: calc(50% - 5px)` / `-translate-y-1/2` math
