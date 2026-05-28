@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 interface BoardPurchaseModalProps {
   readonly boardName: string;
   readonly priceGems: number;
@@ -25,6 +27,15 @@ export function BoardPurchaseModal({
   onConfirm,
   onCancel,
 }: BoardPurchaseModalProps) {
+  // Enter animation: the gold card scales up out of nothing (the
+  // "emerge from the lock" effect) while the backdrop fades in. Flip
+  // `entered` on the frame after mount so the CSS transition runs.
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -32,6 +43,8 @@ export function BoardPurchaseModal({
         background:
           'radial-gradient(circle at center, rgba(92,48,14,0.35), rgba(0,0,0,0.78))',
         backdropFilter: 'blur(4px)',
+        opacity: entered ? 1 : 0,
+        transition: 'opacity 220ms ease',
       }}
     >
       {/* Gold modal frame. Multiple stacked box-shadows fake the
@@ -48,6 +61,14 @@ export function BoardPurchaseModal({
           color: '#4b2108',
           boxShadow:
             '0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)',
+          // Scale-up "emerge" entrance (springy), matching the unlock
+          // pill → popup animation.
+          transformOrigin: 'center',
+          transform: entered ? 'scaleX(1) scaleY(1)' : 'scaleX(0.16) scaleY(0.12)',
+          opacity: entered ? 1 : 0,
+          transition:
+            'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
+          transitionDelay: entered ? '120ms' : '0ms',
         }}
       >
         {/* Decorative inset border ring */}

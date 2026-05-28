@@ -171,10 +171,10 @@ export function LobbyBoardCarousel({
   onSelectedIdChange,
   onPlay,
   getBoardState,
-  // Still used by the bottom gem-price pill for level-locked boards.
-  // The centered lock now expands inline instead (see UnlockPill +
-  // expandedLockId), so it no longer calls this.
-  onLockedTap,
+  // onLockedTap is unused now — both locked states use the centered
+  // UnlockPill (level-locked expands inline; purchasable opens the
+  // gem-purchase popup via onPurchaseTap). Kept in the props type for
+  // back-compat with LobbyScreen, just not destructured.
   onPurchaseTap,
 }: LobbyBoardCarouselProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -542,8 +542,12 @@ export function LobbyBoardCarousel({
         <div className="absolute inset-0 overflow-visible">
           {rendered.map(({ board, signedIdx, d, key }) => {
             const state = getBoardState(board);
+            // Centered lock pill states:
+            //   level-locked → expands inline to "Reach level N".
+            //   purchasable  → a lock badge that opens the gem-purchase
+            //                  popup (same lock visual, consistent UX).
             const showLock = state === 'level-locked';
-            const showPill = state === 'level-locked' || state === 'purchasable';
+            const showPurchaseLock = state === 'purchasable';
             const isCenter = Math.abs(d) < 0.5;
             // PLAY button now lives ON the centered board (same as
             // the lock) — only renders when the board is playable
@@ -618,34 +622,19 @@ export function LobbyBoardCarousel({
                     wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
                   />
                 ) : null}
-                {showPill ? (
-                  <button
-                    type="button"
-                    aria-label={
-                      state === 'level-locked'
-                        ? `${board.name} requires level ${board.unlockLevel}`
-                        : `Unlock ${board.name} for ${board.priceGems} gems`
-                    }
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (state === 'level-locked') onLockedTap(board);
-                      else onPurchaseTap(board);
-                    }}
-                    className="lobby-carousel-board-pill-button absolute bottom-[10px] left-1/2 flex h-[16%] w-[44%] -translate-x-1/2 cursor-pointer items-center justify-center gap-[8%] rounded-full border-[2px] border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] px-[6%] shadow-[0_4px_8px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,212,135,0.18)]"
-                  >
-                    <img
-                      src="/lobby/carousel/gem.webp"
-                      alt=""
-                      className="pointer-events-none h-[68%] w-auto select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
-                      draggable={false}
-                    />
-                    {board.priceGems > 0 ? (
-                      <span className="pointer-events-none select-none whitespace-nowrap font-display text-[clamp(0.9rem,2.1vw,1.4rem)] font-black leading-none tracking-[0.04em] text-white tabular-nums drop-shadow-[0_2px_0_rgba(0,0,0,0.55)]">
-                        {board.priceGems.toLocaleString()}
-                      </span>
-                    ) : null}
-                  </button>
+                {showPurchaseLock ? (
+                  // Gem-purchasable board: same lock badge as the
+                  // level-locked one, but tapping opens the gem-purchase
+                  // popup (which shows the price + confirm) rather than
+                  // expanding inline. Consistent lock visual across both
+                  // locked states.
+                  <UnlockPill
+                    mode="button"
+                    onOpen={() => onPurchaseTap(board)}
+                    ariaLabel={`Unlock ${board.name} for ${board.priceGems} gems`}
+                    wrapStyle={{ fontSize: '12cqi' }}
+                    wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                  />
                 ) : null}
               </div>
             );
