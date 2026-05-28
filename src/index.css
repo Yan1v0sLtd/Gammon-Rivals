@@ -8981,6 +8981,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .gr-play-md { font-size: 26px; }
 .gr-play-sm { font-size: 16px; }
 
+/* Full-width variant: the pill stretches to the parent width and
+   font-size then only drives the height. */
+.gr-play-block { display: block; width: 100%; }
+.gr-play-block .gr-play-button { width: 100%; }
+
 .gr-play-wrap::before {
   content: "";
   position: absolute;

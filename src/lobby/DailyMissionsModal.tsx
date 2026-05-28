@@ -678,6 +678,7 @@ function MissionCard({
           disabled={isRerolling}
           onClick={() => onGo?.()}
           wrapClassName="shrink-0"
+          wrapStyle={{ fontSize: '20px' }}
         />
       ) : (
         <button
@@ -797,7 +798,7 @@ function WeeklyChallengeCard({
         </div>
 
         {!isCompleted && !isClaimed ? (
-          <PlayButton label="GO" size="sm" onClick={() => onGo?.()} />
+          <PlayButton label="GO" size="sm" onClick={() => onGo?.()} wrapStyle={{ fontSize: '22px' }} />
         ) : (
           <button
             ref={btnRef}

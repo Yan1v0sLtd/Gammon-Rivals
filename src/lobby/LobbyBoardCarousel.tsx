@@ -544,7 +544,7 @@ export function LobbyBoardCarousel({
                 key={key}
                 data-board-signed-idx={signedIdx}
                 data-state={state}
-                className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing"
+                className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing [container-type:inline-size]"
                 style={style}
               >
                 <img
@@ -585,9 +585,15 @@ export function LobbyBoardCarousel({
                     would otherwise eat the button's onClick on
                     Android WebView. */}
                 {showPlayHere ? (
+                  // Sized off the board's own width (container-query
+                  // units — the board sets container-type: inline-size)
+                  // so it tracks the previous percentage-based button
+                  // instead of the viewport. Sparkles off to match the
+                  // plain original. Same centering math as the lock.
                   <PlayButton
                     label="Play"
                     size="lg"
+                    sparkles={false}
                     aria-label={`Play on ${board.name}`}
                     onPointerDown={(event) => event.stopPropagation()}
                     onPointerUp={(event) => event.stopPropagation()}
@@ -598,6 +604,7 @@ export function LobbyBoardCarousel({
                       onPlay();
                     }}
                     style={{ touchAction: 'manipulation' }}
+                    wrapStyle={{ fontSize: 'clamp(7px, 4.5cqi, 22px)' }}
                     wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
                   />
                 ) : null}

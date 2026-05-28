@@ -30,6 +30,9 @@ export interface PlayButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   readonly wrapClassName?: string;
   /** Inline style on the outer wrap — handy for a one-off font-size. */
   readonly wrapStyle?: CSSProperties;
+  /** Stretch to fill the parent width instead of the natural ~3:1
+   *  pill. font-size then only drives the height. */
+  readonly block?: boolean;
 }
 
 export function PlayButton({
@@ -38,13 +41,17 @@ export function PlayButton({
   sparkles,
   wrapClassName = '',
   wrapStyle,
+  block = false,
   className = '',
   type = 'button',
   ...buttonProps
 }: PlayButtonProps) {
   const showSparkles = sparkles ?? size === 'lg';
   return (
-    <div className={`gr-play-wrap gr-play-${size} ${wrapClassName}`} style={wrapStyle}>
+    <div
+      className={`gr-play-wrap gr-play-${size} ${block ? 'gr-play-block' : ''} ${wrapClassName}`}
+      style={wrapStyle}
+    >
       {showSparkles ? (
         <>
           <i className="gr-play-sparkle" aria-hidden="true" />

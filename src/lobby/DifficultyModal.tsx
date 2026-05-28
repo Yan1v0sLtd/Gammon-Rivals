@@ -403,18 +403,18 @@ function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins
           longest label ("UNLOCKS AT LV 10") always fit a single
           line at any card width — no more two-line wrap on the
           locked-tier cards. */}
-      <div className="flex items-center justify-center px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
+      <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
         {affordable && !levelLocked ? (
-          // Standardized premium Play button. Sized off a container-
-          // query font-size (same cqi the old CTA used) so it scales
-          // down on narrow cards rather than overflowing — the whole
-          // button is em-based, so font-size drives everything.
+          // Standardized premium Play button, full-width to match the
+          // cream stats block above (same horizontal inset). `block`
+          // stretches it; font-size only drives the height, scaled via
+          // a container-query unit so it stays proportionate per card.
           <PlayButton
             label="Play"
-            size="sm"
+            block
             disabled={buttonDisabled}
             onClick={onPlay}
-            wrapStyle={{ fontSize: 'clamp(9px, 8.5cqi, 18px)' }}
+            wrapStyle={{ fontSize: 'clamp(11px, 5.5cqi, 16px)' }}
           />
         ) : (
           // Non-Play states keep their distinct treatment: orange
