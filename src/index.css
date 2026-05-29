@@ -3402,7 +3402,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .profile-google-button {
     width: 100%;
-    min-height: calc(58 * var(--profile-u));
+    min-height: calc(74 * var(--profile-u));
     gap: calc(10 * var(--profile-u));
     border-radius: calc(16 * var(--profile-u));
     padding: calc(10 * var(--profile-u)) calc(20 * var(--profile-u));
@@ -3419,24 +3419,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .profile-save-progress-err {
     font-size: calc(16 * var(--profile-u));
   }
-
-  /* Match the lobby top-bar pills EXACTLY: same --lobby-u formula as
-   * .lobby-shell so the reused `.lobby-currency-*` rules render at the
-   * identical size/shape here. */
-  .profile-top-currency {
-    --lobby-u: min(0.055804dvw, 0.120773dvh);
-  }
-
-  /* Level shield: was ~46% of the avatar width (too big) and only just
-   * straddling the rim. Shrink it (proportional to the avatar via
-   * --profile-u) and nudge it lower so it sits cleanly on the bottom
-   * edge. */
-  .profile-pp-shield {
-    width: calc(60 * var(--profile-u));
-    bottom: calc(-30 * var(--profile-u));
-    border-width: calc(2 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
+  /* NOTE: the landscape overrides for --lobby-u (currency pills) and
+   * .profile-pp-shield live in a SEPARATE landscape block near the end
+   * of the file — their base rules (.profile-top-currency,
+   * .profile-pp-shield) are defined LATER than this block, so an
+   * override here would lose the cascade to them. */
 
   .profile-stat-grid {
     grid-template-columns: repeat(4, calc(140 * var(--profile-u)));
@@ -8771,6 +8758,31 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-size: clamp(1.1rem, 1.8vw, 1.5rem);
   color: #fff;
   text-shadow: 0 1px 0 #25235b;
+}
+
+/* Landscape overrides for the profile currency pills + level shield.
+ * MUST live HERE — after the base `.profile-top-currency` and
+ * `.profile-pp-shield` rules above — so it wins the cascade. An
+ * identical block up in the main @media(orientation:landscape) section
+ * (line ~3042) loses, because those base rules are defined LATER in the
+ * file and media queries add no specificity. */
+@media (orientation: landscape) {
+  /* Currency pills: match the lobby top bar 1:1 — same --lobby-u formula
+   * as `.lobby-shell`, so the reused `.lobby-currency-*` rules render at
+   * the identical flat, --lobby-u-scaled size. (Portrait keeps the fixed
+   * 0.62px fallback set on the base `.profile-top-currency` rule.) */
+  .profile-top-currency {
+    --lobby-u: min(0.055804dvw, 0.120773dvh);
+  }
+
+  /* Level shield: shrink from ~46% of the avatar width to ~27% and nudge
+   * it a touch lower so it sits cleanly on the avatar's bottom edge. */
+  .profile-pp-shield {
+    width: calc(60 * var(--profile-u));
+    bottom: calc(-30 * var(--profile-u));
+    border-width: calc(2 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
 }
 
 /* Right column — name+rank row + XP card. Column 2, row 1. */
