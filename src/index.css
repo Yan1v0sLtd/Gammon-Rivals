@@ -8464,6 +8464,32 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
+/* Portrait: stack the avatar card to a single column (avatar on top,
+ * info below) so the display name gets the full card width. The base
+ * `.profile-main-card` rule forces a 2-column `auto | minmax(0,1fr)`
+ * grid with `!important`, which on a phone squeezes the info column to
+ * ~110px and truncates the name to "Y.". The avatar-stage uses
+ * `place-items: center`, so a single 1fr column centers the avatar
+ * above the (full-width) info column automatically. Scoped to portrait
+ * ONLY — the landscape 2-column card is correct and must stay untouched
+ * — and placed AFTER the landscape block above so it wins the cascade
+ * over the base `!important` grid. */
+@media (orientation: portrait) {
+  .profile-main-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* The base name size effectively pins to ~2.55rem (~41px) on phones —
+   * its 3.35vw term only overtakes the min past ~1200px wide — so a
+   * 13-char name like "Yaniv Alfassi" lands ~1px wider than the column
+   * and the ellipsis clips it to "Yaniv Alfa...". Scale the name with
+   * the viewport in portrait so typical names fit with margin; very long
+   * names still ellipsize gracefully. */
+  .profile-name-row h1 {
+    font-size: clamp(1.6rem, 6.4vw, 2.55rem);
+  }
+}
+
 /* Portrait + narrow: collapse the body grid to a single column. Match
  * history floats to the bottom and uses its own intrinsic height. */
 @media (max-width: 760px), (orientation: portrait) {
