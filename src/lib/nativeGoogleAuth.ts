@@ -46,9 +46,17 @@ export async function signInWithGoogleNative(): Promise<void> {
   }
   await ensureInitialized();
 
+  // Do NOT pass custom `scopes` here. The @capgo plugin's Android
+  // GoogleProvider already requests `openid` + `userinfo.email` +
+  // `userinfo.profile` by default, and passing ANY custom scope trips its
+  // guard: "You CANNOT use scopes without modifying the main activity"
+  // (custom scopes force an offline/authorization flow that needs a
+  // MainActivity subclass we don't want). The default scopes already put
+  // email + basic profile into the returned ID token — all that Supabase's
+  // signInWithIdToken needs.
   const response = await SocialLogin.login({
     provider: 'google',
-    options: { scopes: ['email', 'profile'] },
+    options: {},
   });
 
   // Online mode returns { idToken, accessToken, profile }. Cast defensively
