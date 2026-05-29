@@ -3068,6 +3068,37 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     padding: var(--profile-pad-y) var(--profile-pad-x);
   }
 
+  /* Cap the body grid's single row to its own (definite) height so the
+   * two columns can't push past the viewport. Without an explicit row
+   * the implicit `auto` row grew to the tallest column's content, which
+   * overflowed the screen's body cell by ~26px on short landscape
+   * phones (logout slipping under the fold). minmax(0, 1fr) pins the row
+   * to the cell; the history list scrolls internally instead. */
+  .profile-body-grid {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  /* Pack the left column (profile card / stats / logout) at the TOP.
+   * The column is stretched to the full body height (so it matches the
+   * history panel — equal-height "boxes"), but its rows are content-
+   * sized: with the default align-content:stretch the leftover space was
+   * injected BETWEEN the rows, stranding the Log Out button in the
+   * middle with big gaps and stretching the cards. `start` keeps them
+   * tight under each other; the spare height becomes clean whitespace at
+   * the bottom of the column. */
+  .profile-left-stack {
+    align-content: start;
+  }
+
+  /* History sits in the SAME body row as the left column, so its top must
+   * line up with the profile card's top. The base rule carries a
+   * margin-top: 1.05rem (a leftover from the old stacked layout) which
+   * pushed the panel ~17px lower than the card and made it overflow the
+   * row. Zero it out for the side-by-side landscape layout. */
+  .profile-history-panel {
+    margin-top: 0;
+  }
+
   .profile-top-nav {
     flex-wrap: nowrap;
     align-items: flex-start;
@@ -8334,6 +8365,45 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .profile-main-card {
     height: auto !important;
     grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr) !important;
+  }
+}
+
+/* Short landscape (a phone held sideways). The tall-landscape layout
+ * above pins the body to the viewport (height: 100dvh + minmax(0,1fr)
+ * rows + history height:100%) so nothing scrolls — perfect on a
+ * desktop/tablet with room to spare. But a landscape phone is only
+ * ~380-430px tall, and the profile card's text (name, rank, level) is
+ * sized in rem and does NOT shrink with --profile-u, so the left column
+ * physically can't be squeezed to fit — forcing it clips the XP bar and
+ * the logout (the exact bug we kept hitting).
+ *
+ * So for short viewports we abandon the fixed-height fit and let the
+ * page grow + scroll naturally. The history list is the only element
+ * that could balloon the page, so we cap it with max-height and keep its
+ * own internal scroll — that's what guards against the runaway the tall
+ * layout's minmax(0,1fr) was protecting against. Result: nothing clips;
+ * at most the user scrolls a few px to reach the bottom of the left
+ * column. Placed AFTER both landscape blocks so it wins the cascade. */
+@media (orientation: landscape) and (max-height: 540px) {
+  .profile-page {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .profile-screen {
+    height: auto;
+    min-height: 100dvh;
+    grid-template-rows: calc(86 * var(--profile-u)) auto;
+  }
+
+  .profile-body-grid {
+    grid-template-rows: auto;
+    align-items: start;
+  }
+
+  .profile-history-panel {
+    height: auto;
+    max-height: 80dvh;
   }
 }
 
