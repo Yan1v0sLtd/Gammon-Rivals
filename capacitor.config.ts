@@ -19,10 +19,13 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * Caveats while `server.url` is set:
  *   • Internet required at app launch (WebView fetches from Vercel)
- *   • `window.location.origin` = `https://gammon-rivals.vercel.app`,
- *     so any auth callback URLs need to be registered with that
- *     origin (already the case for the existing Supabase + Google
- *     OAuth setup).
+ *   • `window.location.origin` = `https://gammonrivals.com`, so any
+ *     auth callback URLs need to be registered with that origin
+ *     (already the case for the existing Supabase + Google OAuth
+ *     setup).
+ *   • The URL points at `/play`, NOT the apex. Post-cutover the apex
+ *     (`/`) serves the public "Coming Soon" marketing landing — the
+ *     native app must boot straight into the game lobby instead.
  *
  * Switching back to bundled mode for Play Store later: comment out
  * the `server` block, leave `webDir`, and `cap sync` will package
@@ -33,12 +36,12 @@ const config: CapacitorConfig = {
   appName: 'Gammon Rivals',
   webDir: 'dist',
   server: {
-    // Production canonical domain. The vercel.app URL keeps working
-    // as a Vercel alias (every previous APK that's still installed
-    // will keep loading from there), so this switch only affects
-    // new APK builds. After cutover, this is the URL the WebView
-    // hits at app launch.
-    url: 'https://gammonrivals.com',
+    // Production canonical domain, pointed at /play. The apex (/) now
+    // serves the public "Coming Soon" marketing landing after the
+    // domain cutover, so the native app must launch into the game
+    // lobby directly — otherwise the WebView shows the landing page
+    // instead of the game.
+    url: 'https://gammonrivals.com/play',
     // Force the WebView to use https so window.location.origin
     // matches Vercel and Supabase auth redirects stay consistent
     // between web and native.
