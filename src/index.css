@@ -3041,23 +3041,28 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 @media (orientation: landscape) {
   .profile-page {
-    height: 100dvh;
+    /* Was height:100dvh + overflow:hidden → clipped the bottom
+     * (logout) on short landscape phones. Grow with content + scroll. */
     min-height: 100dvh;
-    overflow: hidden;
+    height: auto;
+    overflow-y: auto;
   }
 
   .profile-screen {
-    --profile-u: min(0.052083dvw, 0.092593dvh);
     --profile-pad-x: calc(32 * var(--profile-u));
     --profile-pad-y: calc(24 * var(--profile-u));
     --profile-gap-y: calc(30 * var(--profile-u));
     --profile-side-inset: calc(18 * var(--profile-u));
-    height: 100dvh;
-    min-height: 0;
+    --profile-u: min(0.052083dvw, 0.092593dvh);
+    /* Two rows (header + body). The old 3-row template had an empty
+     * 3rd row and crammed the whole body into a fixed ~420u slot, so
+     * the left column (card + stats + logout) clipped. Now the body
+     * sizes to its content and the page scrolls if needed. */
+    min-height: 100dvh;
+    height: auto;
     grid-template-rows:
       calc(86 * var(--profile-u))
-      calc(420 * var(--profile-u))
-      calc(300 * var(--profile-u));
+      minmax(min-content, 1fr);
     gap: var(--profile-gap-y);
     padding: var(--profile-pad-y) var(--profile-pad-x);
   }
@@ -3134,8 +3139,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .profile-main-card {
-    height: calc(420 * var(--profile-u));
-    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr) calc(700 * var(--profile-u));
+    /* Auto height so the info column (name → rank → XP → next reward →
+     * Google) flows naturally instead of overflowing a fixed 420u slot
+     * and overlapping (the XP bar over the Google button). */
+    height: auto;
+    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr);
     gap: calc(40 * var(--profile-u));
     margin-inline: var(--profile-side-inset);
     border-radius: calc(28 * var(--profile-u));
@@ -3143,9 +3151,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .profile-avatar-stage {
-    align-self: stretch;
+    /* Shrink-wrap the avatar so the level shield anchors to its real
+     * bottom edge (was stretched → shield floated below the avatar). */
+    align-self: center;
     min-height: 0;
-    place-items: start center;
+    place-items: center;
     padding-top: 0;
   }
 
