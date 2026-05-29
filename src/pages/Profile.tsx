@@ -102,6 +102,28 @@ export default function Profile() {
     };
   }, [user, refreshProfile]);
 
+  // Reset the "Opening Google..." button state when the user returns to
+  // the app. handleLinkGoogle sets linkingGoogle=true and kicks off the
+  // OAuth flow; on a successful link the app redirects through
+  // /auth/callback and this component remounts fresh. But if the user
+  // opens the Google sheet and then CANCELS (no redirect fires), the
+  // promise resolves without throwing and linkingGoogle would stick on
+  // true forever — leaving the button stuck on "Opening Google..." and
+  // disabled. Whenever the page becomes visible/focused again, clear it
+  // so the button is clickable again. (If the link actually succeeded,
+  // auth state refreshes, isGuest flips false, and the button is gone.)
+  useEffect(() => {
+    const reset = () => {
+      if (document.visibilityState === 'visible') setLinkingGoogle(false);
+    };
+    document.addEventListener('visibilitychange', reset);
+    window.addEventListener('focus', reset);
+    return () => {
+      document.removeEventListener('visibilitychange', reset);
+      window.removeEventListener('focus', reset);
+    };
+  }, []);
+
   const startEditName = () => {
     setDraftName(profile?.display_name ?? '');
     setEditing(true);
@@ -309,22 +331,30 @@ export default function Profile() {
                     <img src="/lobby/icons/gold-coin.webp" alt="" draggable={false} />
                     <strong>500 Coins</strong>
                   </div>
-                  {isGuest && (
-                    <div className="profile-save-progress">
-                      <button
-                        type="button"
-                        onClick={() => void handleLinkGoogle()}
-                        disabled={linkingGoogle}
-                        className="profile-google-button"
-                      >
-                        {linkingGoogle ? 'Opening Google...' : 'Link Google'}
-                      </button>
-                      {linkErr && <span>{linkErr}</span>}
-                    </div>
-                  )}
                 </div>
               </div>
             </section>
+
+            {/* Guest-only "save your progress" CTA. Moved OUT of the
+              * profile card's info column (where it was crammed under the
+              * XP bar and read as an afterthought) to a dedicated
+              * full-width banner directly below the card — a clear,
+              * uncramped call to action. Absent entirely for signed-in
+              * users, so their stack stays card -> stats -> logout. */}
+            {isGuest && (
+              <div className="profile-save-progress">
+                <button
+                  type="button"
+                  onClick={() => void handleLinkGoogle()}
+                  disabled={linkingGoogle}
+                  className="profile-google-button"
+                >
+                  <span className="profile-google-glyph" aria-hidden="true">G</span>
+                  {linkingGoogle ? 'Opening Google...' : 'Connect with Google'}
+                </button>
+                {linkErr && <span className="profile-save-progress-err">{linkErr}</span>}
+              </div>
+            )}
 
             {/* Stats live UNDER the avatar/info card (was on the right).
               * Wallet balances are no longer duplicated here — the top
@@ -443,9 +473,14 @@ export default function Profile() {
  * renders at its intrinsic webp size (~512-1024px), which on the
  * profile page made the icons full-screen.
  *
- * Fix: drop the lobby class hooks entirely; same Tailwind
- * primitives just without the `lobby-currency-*` class names.
- * Pixel-for-pixel identical look at the same viewport widths.
+ * Update: to make these EXACTLY match the lobby pills (the operator
+ * kept seeing a mismatch — the lobby restyles its pills via the
+ * `.lobby-currency-*` rules into a flat, --lobby-u-scaled shape with a
+ * green-bordered "+", which the bare Tailwind copy never reproduced),
+ * we now reuse the `.lobby-currency-*` class hooks AND supply
+ * `--lobby-u` ourselves on `.profile-top-currency` (landscape uses the
+ * same formula as `.lobby-shell`; portrait uses a fixed fallback) plus
+ * an explicit pill height, so the lobby rules resolve correctly here.
  */
 function CurrencyPill({
   flyTarget,
@@ -464,9 +499,9 @@ function CurrencyPill({
     <div
       aria-label={`${label}: ${value ?? 0}`}
       data-fly-target={flyTarget}
-      className="relative flex h-[2.76rem] min-w-[7.87rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+      className="lobby-currency-pill relative flex h-[2.76rem] min-w-[7.87rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
     >
-      <span className="-ml-[0.92rem] grid h-[3.22rem] w-[3.22rem] shrink-0 place-items-center">
+      <span className="lobby-currency-icon -ml-[0.92rem] grid h-[3.22rem] w-[3.22rem] shrink-0 place-items-center">
         <img
           src={icon}
           alt=""
@@ -474,14 +509,14 @@ function CurrencyPill({
           draggable={false}
         />
       </span>
-      <span className="-ml-[0.46rem] flex h-[2.35rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.92rem] text-center font-display text-lg font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+      <span className="lobby-currency-value -ml-[0.46rem] flex h-[2.35rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.92rem] text-center font-display text-lg font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
         {formatCompactNumber(value)}
       </span>
       <button
         type="button"
         onClick={onAdd}
         aria-label={`Get more ${label}`}
-        className="relative mr-[0.23rem] grid h-[2.3rem] w-[2.3rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
+        className="lobby-currency-add relative mr-[0.23rem] grid h-[2.3rem] w-[2.3rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
       >
         <span className="absolute left-1/2 top-1/2 h-[1.38rem] w-[0.345rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />
         <span className="absolute left-1/2 top-1/2 h-[0.345rem] w-[1.38rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]" />

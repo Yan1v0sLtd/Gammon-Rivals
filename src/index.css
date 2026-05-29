@@ -2771,26 +2771,62 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   color: #ffd322;
 }
 
+/* Guest "Connect with Google" CTA. Moved out of the crammed profile-card
+ * info column to its own full-width banner row in the left stack (below
+ * the card). A single clear call-to-action instead of a tiny button
+ * squeezed under the XP bar. */
 .profile-save-progress {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.85rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0;
   border: 0;
   padding: 0;
 }
 
 .profile-google-button {
-  min-height: 2.4rem;
-  border-radius: 0.75rem;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid rgba(255, 220, 100, 0.76);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffe77b, #c87e18);
+  color: #241109;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.7rem 1.1rem;
+  box-shadow: 0 0.28rem 0 #704000;
 }
 
-.profile-save-progress span {
+.profile-google-button:disabled {
+  opacity: 0.72;
+}
+
+/* White roundel with the Google "G" so the CTA reads as a Google action
+ * without bundling the brand SVG. Scoped under the button so it isn't
+ * caught by the pink error-text rule. */
+.profile-google-button .profile-google-glyph {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a73e8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.profile-save-progress-err {
   color: #ff9eb0;
   font-size: 0.82rem;
   font-weight: 800;
+  text-align: center;
 }
 
 .profile-stat-grid {
@@ -3360,19 +3396,46 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .profile-save-progress {
-    gap: calc(12 * var(--profile-u));
-    margin-top: calc(12 * var(--profile-u));
+    gap: calc(6 * var(--profile-u));
+    margin: 0;
   }
 
   .profile-google-button {
-    min-height: calc(40 * var(--profile-u));
-    border-radius: calc(12 * var(--profile-u));
-    padding: calc(7 * var(--profile-u)) calc(14 * var(--profile-u));
-    font-size: calc(18 * var(--profile-u));
+    width: 100%;
+    min-height: calc(58 * var(--profile-u));
+    gap: calc(10 * var(--profile-u));
+    border-radius: calc(16 * var(--profile-u));
+    padding: calc(10 * var(--profile-u)) calc(20 * var(--profile-u));
+    font-size: calc(24 * var(--profile-u));
+    box-shadow: 0 calc(4 * var(--profile-u)) 0 #704000;
   }
 
-  .profile-save-progress span {
+  .profile-google-button .profile-google-glyph {
+    width: calc(34 * var(--profile-u));
+    height: calc(34 * var(--profile-u));
+    font-size: calc(22 * var(--profile-u));
+  }
+
+  .profile-save-progress-err {
     font-size: calc(16 * var(--profile-u));
+  }
+
+  /* Match the lobby top-bar pills EXACTLY: same --lobby-u formula as
+   * .lobby-shell so the reused `.lobby-currency-*` rules render at the
+   * identical size/shape here. */
+  .profile-top-currency {
+    --lobby-u: min(0.055804dvw, 0.120773dvh);
+  }
+
+  /* Level shield: was ~46% of the avatar width (too big) and only just
+   * straddling the rim. Shrink it (proportional to the avatar via
+   * --profile-u) and nudge it lower so it sits cleanly on the bottom
+   * edge. */
+  .profile-pp-shield {
+    width: calc(60 * var(--profile-u));
+    bottom: calc(-30 * var(--profile-u));
+    border-width: calc(2 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
   }
 
   .profile-stat-grid {
@@ -8259,20 +8322,22 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  /* The pills reuse the lobby's `.lobby-currency-*` styling so they look
+   * IDENTICAL to the lobby top bar (flat, green-bordered "+",
+   * --lobby-u-scaled). Those rules need --lobby-u, normally defined on
+   * `.lobby-shell` — supply it here. Portrait uses a fixed fallback
+   * because the lobby's dvw-based formula collapses to a few px when the
+   * viewport is tall-and-narrow; landscape (below) uses the real
+   * formula so it matches the lobby pixel-for-pixel. */
+  --lobby-u: 0.62px;
+  gap: calc(14 * var(--lobby-u));
 }
 
-/* Pills: 80 % of their previous size. The pill markup uses Tailwind
- * arbitrary values (h-[2.4rem], min-w-[6.84rem] etc.) — we scale via
- * `transform: scale()` + `transform-origin: center` since the values
- * are scattered across many child elements. Layout box has to shrink
- * too so the centred cluster width matches; `width: fit-content` lets
- * the visual scale carry the layout. */
-.profile-top-currency > * {
-  transform: scale(0.8);
-  transform-origin: center;
-}
-.profile-top-currency {
-  gap: 0.6rem;
+/* Explicit pill height so the lobby rule's `height: 100%` resolves
+ * against a real box. (The old `transform: scale(0.8)` shrink hack is
+ * gone — it blurred the pills and never matched the lobby's size.) */
+.profile-top-currency .lobby-currency-pill {
+  height: calc(62 * var(--lobby-u));
 }
 
 /* Body grid: left stack + tall history. The right column gets all the
