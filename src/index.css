@@ -2413,9 +2413,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 /* Profile v2: landscape game-screen layout. */
 .profile-page {
-  height: 100dvh;
+  /* Was height:100dvh + overflow:hidden, which crammed the whole
+   * profile into a fixed viewport and CLIPPED the bottom (logout cut
+   * off) on short landscape phones. Now it's at least full-height but
+   * grows with content and scrolls — nothing clips. */
   min-height: 100dvh;
-  overflow: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(circle at 16% 18%, rgba(94, 55, 180, 0.16), transparent 26rem),
     radial-gradient(circle at 82% 12%, rgba(255, 194, 86, 0.09), transparent 24rem),
@@ -2428,13 +2431,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --profile-pad-y: clamp(0.875rem, 2.22dvh, 1.5rem);
   --profile-gap: clamp(1rem, 2.78dvh, 1.875rem);
   display: grid;
-  grid-template-rows:
-    clamp(4.35rem, 7.96dvh, 5.375rem)
-    clamp(20rem, 38.9dvh, 26.25rem)
-    clamp(14.4rem, 27.8dvh, 18.75rem);
+  /* header + body. minmax(min-content, 1fr): the body fills the
+   * viewport when there's room (desktop) but grows to its content
+   * when there isn't (short landscape) so the left column can't clip. */
+  grid-template-rows: auto minmax(min-content, 1fr);
   gap: var(--profile-gap);
   width: 100%;
-  height: 100dvh;
+  min-height: 100dvh;
   padding: var(--profile-pad-y) var(--profile-pad-x);
 }
 
@@ -2584,9 +2587,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .profile-avatar-stage {
-  min-height: auto;
-  place-items: start center;
-  align-self: stretch;
+  /* Shrink-wrap the avatar (don't stretch to the card height) so the
+   * level shield can anchor to the avatar's actual bottom edge. */
+  min-height: 0;
+  place-items: center;
+  align-self: center;
   padding-top: 0;
 }
 
@@ -8300,7 +8305,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .profile-screen {
     grid-template-rows:
       calc(86 * var(--profile-u))
-      minmax(0, 1fr);
+      minmax(min-content, 1fr);
   }
 
   /* The main card no longer needs to be a fixed 420px tall slot — it
@@ -8581,7 +8586,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .profile-pp-shield {
   position: absolute;
   left: 50%;
-  top: calc(50% + 80px);
+  /* Stage shrink-wraps the avatar, so its bottom edge IS the avatar's
+   * bottom — sit the shield straddling it, bottom-centre. */
+  top: auto;
+  bottom: -0.6rem;
   transform: translateX(-50%);
   width: clamp(2.3rem, 3.6vw, 3rem);
   aspect-ratio: 0.78;
