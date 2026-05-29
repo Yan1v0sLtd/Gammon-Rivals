@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useShop } from '../components/ShopProvider';
 import type { ProfileProgression } from '../lib/progression';
 import type { Database } from '../types/database';
 import { LobbyProfileCard } from './LobbyProfileCard';
@@ -105,8 +105,7 @@ export function LobbyTopBar({
   wallet,
   progression,
 }: LobbyTopBarProps) {
-  const navigate = useNavigate();
-  const openShop = () => navigate('/shop');
+  const { openShop } = useShop();
   const currencies = [
     {
       id: 'coins',

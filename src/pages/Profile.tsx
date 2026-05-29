@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../lib/auth';
+import { useShop } from '../components/ShopProvider';
 import { formatCompactNumber } from '../lib/format';
 import {
   getOwnerStats,
@@ -69,6 +70,7 @@ export default function Profile() {
     refreshProfile,
   } = useAuth();
   const navigate = useNavigate();
+  const { openShop } = useShop();
   const [matches, setMatches] = useState<MatchSummary[] | null>(null);
   const [stats, setStats] = useState<OwnerStats | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -215,14 +217,14 @@ export default function Profile() {
               icon="/lobby/icons/gold-coin.webp"
               label="Coins"
               value={wallet?.coins ?? 0}
-              onAdd={() => navigate('/shop')}
+              onAdd={openShop}
             />
             <CurrencyPill
               flyTarget="gems"
               icon="/lobby/icons/gem.webp"
               label="Gems"
               value={wallet?.gems ?? 0}
-              onAdd={() => navigate('/shop')}
+              onAdd={openShop}
             />
           </div>
         </header>

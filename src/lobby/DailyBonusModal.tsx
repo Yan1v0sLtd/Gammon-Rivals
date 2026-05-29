@@ -1,3 +1,4 @@
+import { ScaleInModal } from '../components/ScaleInModal';
 import type { DailyBonusConfig } from './useDailyBonus';
 
 interface DailyBonusModalProps {
@@ -285,13 +286,7 @@ export function DailyBonusModal({
   const byDay = new Map(configs.map((c) => [c.day, c]));
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Daily Bonus"
-    >
+    <ScaleInModal onClose={onClose} className="w-full max-w-5xl">
       {/*
        * CSS-only panel. Three nested layers for the gold-on-cream "framed
        * parchment" look:
@@ -300,11 +295,12 @@ export function DailyBonusModal({
        *   inner: cream gradient interior where the title + cards live
        *
        * Title and cards now define the modal's height; no background
-       * image, no aspect-ratio constraint.
+       * image, no aspect-ratio constraint. The responsive scale-[…] is
+       * preserved — the ScaleInModal entrance composes with it (the card
+       * emerges from 0.12× its own scale up to its own scale).
        */}
       <div
-        className="relative w-full max-w-5xl origin-center scale-[0.54] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.89]"
-        onClick={(event) => event.stopPropagation()}
+        className="relative w-full origin-center scale-[0.54] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.89]"
       >
         {/* Close button — top-right of the gold frame. The lobby
             opens this modal even when the player can't claim
@@ -389,7 +385,7 @@ export function DailyBonusModal({
           </div>
         </div>
       </div>
-    </div>
+    </ScaleInModal>
   );
 }
 

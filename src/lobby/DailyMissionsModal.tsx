@@ -4,6 +4,7 @@ import { extractErrorMessage } from '../lib/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import { CHESTS_ENABLED } from './lobbyData';
 import { PlayButton } from '../components/PlayButton';
+import { ScaleInModal } from '../components/ScaleInModal';
 import {
   formatCountdown,
   nextResetMs,
@@ -228,7 +229,12 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2">
+    <>
+      {/* Opens with the shared ScaleInModal "emerge" entrance. Backdrop
+          tap-to-close + Escape are disabled here because this modal owns
+          its own guarded Escape (won't close mid-claim) and has an
+          explicit close button — outside-tap shouldn't drop progress. */}
+      <ScaleInModal closeOnBackdropClick={false} closeOnEscape={false}>
       {/* Scale-to-fit wrapper. The inner panel is authored at its
           natural design size (1300 × 720); on any smaller viewport,
           we shrink the whole panel by min(98vw/W, 96vh/H) so the
@@ -410,15 +416,17 @@ export function DailyMissionsModal({ result, onClose }: Props) {
           )}
         </div>
       </div>
+      </ScaleInModal>
 
-      {/* Reward-flight tokens render OUTSIDE the modal frame at
-          z-[60] so they travel cleanly over the lobby top-bar to
-          land on the wallet pill ([data-fly-target="coins"|"gems"|"xp"]).
-          Same pattern WheelModal uses. */}
+      {/* Reward-flight tokens render OUTSIDE the modal frame (and outside
+          the ScaleInModal entrance transform — a transformed ancestor
+          would break their fixed positioning) at z-[60] so they travel
+          cleanly over the lobby top-bar to land on the wallet pill
+          ([data-fly-target="coins"|"gems"|"xp"]). */}
       {flights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
-    </div>
+    </>
   );
 }
 

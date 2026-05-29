@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate } from 'react-router-dom';
 // AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
+import { useShop } from '../components/ShopProvider';
 import { extractErrorMessage } from '../lib/errors';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
 import {
@@ -97,6 +98,7 @@ function LobbyBackgroundLayer({
 
 export function LobbyScreen() {
   const navigate = useNavigate();
+  const { openShop } = useShop();
   const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet, refreshProfile } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
@@ -629,7 +631,7 @@ export function LobbyScreen() {
               // 7-day grid + close out. Connect ('how-to-play')
               // opens the tutorial popup; Coins routes to /shop.
               if (offerId === 'daily') openDailyBonus();
-              else if (offerId === 'coins') navigate('/shop');
+              else if (offerId === 'coins') openShop();
               else if (offerId === 'connect') setHowToPlayOpen(true);
             }}
           />
@@ -767,7 +769,7 @@ export function LobbyScreen() {
           // doesn't look ungated.
           setDifficultyOpen(false);
           setDifficultyError(null);
-          navigate('/shop');
+          openShop();
         }}
         walletCoins={wallet?.coins ?? 0}
         playerLevel={progression.level}

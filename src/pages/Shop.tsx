@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { ScaleInModal } from '../components/ScaleInModal';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -724,8 +724,13 @@ interface Toast {
   readonly text: string;
 }
 
-export default function Shop() {
-  const navigate = useNavigate();
+/**
+ * The shop, rendered as a scale-in popup over whatever screen opened it
+ * (lobby, profile, deep link). Was a full-screen route; now a modal so it
+ * shares the lobby's signature "emerge" open animation. `onClose` is
+ * wired to the global ShopProvider — see useShop().
+ */
+export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const { user, wallet, refreshWallet, refreshXpBoost } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [toast, setToast] = useState<Toast | null>(null);
@@ -944,29 +949,29 @@ export default function Shop() {
   };
 
   return (
-    <main className="relative flex h-dvh w-screen items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)] text-white">
-      {/*
-       * Scale-to-fit wrapper. The panel is authored at its natural
-       * desktop size (~1280 × 620). On any viewport smaller than that,
-       * we shrink the whole panel by min(viewport_w/panel_w, viewport_h/
-       * panel_h) so the entire shop is always visible at once without
-       * scrolling. On big viewports the scale clamps to 1 — no growth
-       * beyond design size.
-       */}
-      <div
-        className="origin-center"
-        style={{
-          transform: `scale(${scale})`,
-        }}
-      >
+    <>
+      <ScaleInModal onClose={onClose}>
+        {/*
+         * Scale-to-fit wrapper, kept INSIDE the ScaleInModal entrance
+         * transform so the popup emerges at the right size. Panel is
+         * authored at its natural ~1280×620; on smaller viewports we
+         * shrink by min(vw/W, vh/H) so the whole shop is visible at once
+         * without scrolling. Clamps to 1 on big viewports.
+         */}
+        <div
+          className="origin-center text-white"
+          style={{
+            transform: `scale(${scale})`,
+          }}
+        >
         <div className="w-[1280px]">
           {/* Decorative parchment panel */}
           <div className="relative overflow-hidden rounded-3xl border-[5px] border-[#c89a47] bg-gradient-to-b from-[#fef3c7] via-[#f7e9c8] to-[#e7d09a] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
             <ShopTopBar
               gems={wallet?.gems ?? 0}
               coins={wallet?.coins ?? 0}
-              onBack={() => navigate(-1)}
-              onClose={() => navigate('/play')}
+              onBack={onClose}
+              onClose={onClose}
             />
 
             <div className="flex">
@@ -994,10 +999,11 @@ export default function Shop() {
           </div>
         </div>
       </div>
+      </ScaleInModal>
 
-      {/* Reward-flight overlay. Rendered as a sibling of the scaled
-       *  wrapper so its `position: fixed` is viewport-relative and not
-       *  scoped to a transformed ancestor. */}
+      {/* Reward-flight overlay + toast render OUTSIDE the ScaleInModal
+       *  entrance transform (a transformed ancestor would break their
+       *  `position: fixed`), as siblings in the fragment. */}
       {rewardFlights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
@@ -1017,6 +1023,6 @@ export default function Shop() {
           {toast.text}
         </div>
       ) : null}
-    </main>
+    </>
   );
 }
