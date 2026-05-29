@@ -303,7 +303,7 @@ export function DailyBonusModal({
        * image, no aspect-ratio constraint.
        */}
       <div
-        className="relative w-full max-w-5xl origin-center scale-[0.45] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.74]"
+        className="relative w-full max-w-5xl origin-center scale-[0.54] rounded-3xl bg-gradient-to-b from-[#fde68a] via-[#d97706] to-[#78350f] p-[5px] shadow-[0_25px_60px_rgba(0,0,0,0.65)] lg:scale-[0.89]"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Close button — top-right of the gold frame. The lobby

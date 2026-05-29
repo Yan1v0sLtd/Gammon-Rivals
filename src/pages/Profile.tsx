@@ -220,11 +220,10 @@ export default function Profile() {
                   ring="none"
                   className="profile-avatar-image"
                 />
-                {/* Reuse the lobby's pointy-top hex shield (gold rim +
-                  * black inner) at the SAME size used in the lobby.
-                  * The earlier oversized profile-page override has been
-                  * removed in favour of the lobby clamp values. */}
-                <div className="lobby-profile-level-shield profile-level-shield-hex">
+                {/* Same rounded shield shape as the lobby profile card
+                  * (.lobby-pp-shield), scaled up + anchored to the
+                  * bottom-centre of the avatar circle via .profile-pp-shield. */}
+                <div className="profile-pp-shield">
                   <span>{progression.level}</span>
                 </div>
               </div>

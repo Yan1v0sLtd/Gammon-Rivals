@@ -8390,30 +8390,34 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Radii are 50%/50% so the ellipse touches the card edges at their
+   * midpoints and is fully transparent by then — corners are well
+   * beyond the ellipse, so nothing paints a rectangle. (The old
+   * 70%/75% radii extended PAST the box, so the edges clipped a still-
+   * opaque slice of the gradient → the faint square the user saw.) The
+   * mask matches so backdrop-blur is clipped to the same falloff. */
   background:
     radial-gradient(
-      ellipse 70% 75% at center,
+      ellipse 50% 50% at center,
       rgba(45, 22, 95, 0.62) 0%,
-      rgba(25, 12, 55, 0.42) 35%,
-      rgba(10, 5, 30, 0.18) 65%,
-      transparent 95%
+      rgba(28, 14, 62, 0.44) 42%,
+      rgba(12, 6, 34, 0.16) 74%,
+      transparent 100%
     );
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
   mask-image: radial-gradient(
-    ellipse 70% 75% at center,
+    ellipse 50% 50% at center,
     black 0%,
-    black 30%,
-    rgba(0, 0, 0, 0.7) 60%,
-    rgba(0, 0, 0, 0.2) 88%,
+    black 38%,
+    rgba(0, 0, 0, 0.55) 68%,
     transparent 100%
   );
   -webkit-mask-image: radial-gradient(
-    ellipse 70% 75% at center,
+    ellipse 50% 50% at center,
     black 0%,
-    black 30%,
-    rgba(0, 0, 0, 0.7) 60%,
-    rgba(0, 0, 0, 0.2) 88%,
+    black 38%,
+    rgba(0, 0, 0, 0.55) 68%,
     transparent 100%
   );
 }
@@ -8566,6 +8570,36 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
   font-size: clamp(10px, 1.1vw, 14px);
+  color: #fff;
+  text-shadow: 0 1px 0 #25235b;
+}
+
+/* Profile-page shield — same rounded shape as .lobby-pp-shield, but
+ * scaled up for the big profile avatar and anchored to the bottom-
+ * centre of the avatar circle (the avatar is 220px, centred in
+ * .profile-avatar-stage). Replaces the old pointy hex. */
+.profile-pp-shield {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 80px);
+  transform: translateX(-50%);
+  width: clamp(2.3rem, 3.6vw, 3rem);
+  aspect-ratio: 0.78;
+  display: grid;
+  place-items: center;
+  border: 2px solid #f2b633;
+  border-radius: 18% 18% 45% 45%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
+    linear-gradient(180deg, #20296d, #0b103e 72%);
+  box-shadow:
+    inset 0 0 6px rgba(115, 98, 255, 0.38),
+    0 3px 7px rgba(0, 0, 0, 0.5),
+    0 0 5px rgba(255, 194, 50, 0.4);
+  z-index: 6;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
   color: #fff;
   text-shadow: 0 1px 0 #25235b;
 }
