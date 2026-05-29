@@ -47,6 +47,21 @@ const config: CapacitorConfig = {
     // between web and native.
     androidScheme: 'https',
   },
+  plugins: {
+    // @capgo/capacitor-social-login defaults to bundling ALL providers
+    // (Google, Facebook, Apple, Twitter). We only do Google sign-in, so
+    // disable the rest — otherwise their native SDKs get pulled in and
+    // would demand their own config (Facebook app id, etc.) and bloat /
+    // break the Android build.
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+    },
+  },
 };
 
 export default config;

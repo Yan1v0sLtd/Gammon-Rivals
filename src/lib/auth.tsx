@@ -13,6 +13,7 @@ import { isSupabaseConfigured, supabase } from './supabase';
 import { getProfileProgression, type ProfileProgression } from './progression';
 import { useOnlinePresence } from './useOnlinePresence';
 import { isNativePlatform, openAuthInBrowser, pickOAuthRedirectTo } from './nativeAuth';
+import { signInWithGoogleNative } from './nativeGoogleAuth';
 import type { Database } from '../types/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -410,11 +411,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async (options?: { redirectTo?: string }) => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
-    // On native, swap the web redirect for our deep-link
-    // `gammonrivals://auth/callback`. The native deep-link handler
-    // (src/lib/nativeAuth.ts) installs the session when Supabase
-    // redirects back. On web this returns the caller's URL
-    // unchanged.
+    // Native (Android): use the in-app Google account picker (Credential
+    // Manager) — no browser tab — and exchange the ID token with Supabase.
+    // This is what keeps the app looking like a real native app; the old
+    // Custom-Tab redirect flow left the user stranded in a browser. Web
+    // keeps the redirect-based OAuth flow below.
+    if (isNativePlatform()) {
+      await signInWithGoogleNative();
+      return;
+    }
     const redirectTo = pickOAuthRedirectTo(options?.redirectTo ?? makeAuthRedirect());
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -433,6 +438,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
       if (!session?.user) {
         await signInWithGoogle(options);
+        return;
+      }
+      // Native: no browser — use the native picker + ID token, same as
+      // sign-in. NOTE: Supabase has no idToken-based linkIdentity, so on
+      // native this signs the user in AS the Google account rather than
+      // linking it to the current guest; a guest's local progress isn't
+      // carried over. Proper guest→Google migration on native is a
+      // separate follow-up.
+      if (isNativePlatform()) {
+        await signInWithGoogleNative();
         return;
       }
       // Same native/web split as signInWithGoogle. The `next=/profile`
