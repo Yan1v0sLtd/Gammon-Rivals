@@ -3041,10 +3041,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 @media (orientation: landscape) {
   .profile-page {
-    /* Was height:100dvh + overflow:hidden → clipped the bottom
-     * (logout) on short landscape phones. Grow with content + scroll. */
-    min-height: 100dvh;
-    height: auto;
+    /* Definite viewport height so the body's 1fr row and the history
+     * panel's height:100% resolve. overflow-y:auto is a safety net if
+     * content ever exceeds the viewport (it scrolls instead of being
+     * clipped, which was the original logout-cutoff bug). */
+    height: 100dvh;
     overflow-y: auto;
   }
 
@@ -3054,15 +3055,15 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     --profile-gap-y: calc(30 * var(--profile-u));
     --profile-side-inset: calc(18 * var(--profile-u));
     --profile-u: min(0.052083dvw, 0.092593dvh);
-    /* Two rows (header + body). The old 3-row template had an empty
-     * 3rd row and crammed the whole body into a fixed ~420u slot, so
-     * the left column (card + stats + logout) clipped. Now the body
-     * sizes to its content and the page scrolls if needed. */
-    min-height: 100dvh;
-    height: auto;
+    /* Two rows: header + body. The OLD template had THREE rows
+     * (86u / 420u / EMPTY 300u) which crammed the body into ~420u and
+     * wasted 300u below — that's what clipped the logout. Now the body
+     * row takes ALL remaining height (minmax(0,1fr)). Definite height
+     * keeps it from ballooning. */
+    height: 100dvh;
     grid-template-rows:
       calc(86 * var(--profile-u))
-      minmax(min-content, 1fr);
+      minmax(0, 1fr);
     gap: var(--profile-gap-y);
     padding: var(--profile-pad-y) var(--profile-pad-x);
   }
@@ -8310,12 +8311,22 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 /* Landscape (desktop / tablet): override the v1 grid-template-rows on
  * .profile-screen — we no longer have a separate bottom row, just the
  * body grid that fills the remaining viewport. Same `--profile-u` math
- * the v1 layout relied on for the top nav row height. */
+ * the v1 layout relied on for the top nav row height.
+ *
+ * IMPORTANT: the body row MUST be `minmax(0, 1fr)`, NOT
+ * `minmax(min-content, 1fr)`. With min-content the row grows to fit the
+ * history list's intrinsic height (every match row), which — combined
+ * with `.profile-history-panel { height: 100% }` — ballooned the page
+ * to thousands of px on short landscape viewports. `minmax(0, 1fr)`
+ * caps the row at the available viewport share so the inner
+ * `.profile-history-scroll` handles overflow. Must stay in sync with
+ * the `@media (orientation: landscape)` block higher up that sets
+ * `.profile-screen { height: 100dvh }`. */
 @media (orientation: landscape) {
   .profile-screen {
     grid-template-rows:
       calc(86 * var(--profile-u))
-      minmax(min-content, 1fr);
+      minmax(0, 1fr);
   }
 
   /* The main card no longer needs to be a fixed 420px tall slot — it
