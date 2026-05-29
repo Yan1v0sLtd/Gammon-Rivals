@@ -3377,7 +3377,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .profile-stat-grid {
     grid-template-columns: repeat(4, calc(140 * var(--profile-u)));
-    grid-template-rows: calc(160 * var(--profile-u)) calc(120 * var(--profile-u));
+    /* ONE row. The 4 stat cards fill a single row of 4 columns, so the
+     * old second row (calc(120 * u)) was always empty — ~95px of dead
+     * space that pushed the Log Out button down and stranded it. The
+     * wallet coins/gems cards that once occupied row 2 were removed from
+     * the JSX (the top bar shows balances now). */
+    grid-template-rows: calc(160 * var(--profile-u));
     gap: calc(20 * var(--profile-u));
     align-content: center;
     justify-content: center;
