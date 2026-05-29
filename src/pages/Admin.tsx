@@ -74,6 +74,7 @@ type EconomyGrantDraft = {
 type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
 type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
+type PodiumImage = Database['public']['Tables']['podium_images']['Row'];
 type AuditEntry = Database['public']['Tables']['admin_audit_log']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
 type WalletTransaction = Database['public']['Tables']['wallet_transactions']['Row'];
@@ -822,6 +823,11 @@ export default function Admin() {
   const [dailyBonusConfigs, setDailyBonusConfigs] = useState<DailyBonusConfig[]>([]);
   const [tables, setTables] = useState<TableConfig[]>([]);
   const [boards, setBoards] = useState<BoardThemeConfig[]>([]);
+  const [podiums, setPodiums] = useState<PodiumImage[]>([]);
+  const [podiumDraft, setPodiumDraft] = useState<{ name: string; image_url: string }>({
+    name: '',
+    image_url: '',
+  });
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
@@ -905,6 +911,105 @@ export default function Admin() {
     }));
     if (successMessage) setBoardMessage(successMessage);
   }
+
+  // Podium library (the stand the board sits on in the lobby carousel).
+  // Loaded on demand when the Board Themes section opens (see effect
+  // below) rather than in the big initial load, to keep that batch lean.
+  const loadPodiums = useCallback(async (successMessage?: string) => {
+    const { data, error } = await withRequestTimeout(
+      supabase
+        .from('podium_images')
+        .select('*')
+        .order('sort_order', { ascending: false })
+        .order('created_at', { ascending: false }),
+      'Loading podiums'
+    );
+    if (error) throw error;
+    setPodiums(data ?? []);
+    if (successMessage) setBoardMessage(successMessage);
+  }, []);
+
+  async function addPodium() {
+    if (!canManage) return;
+    const image_url = podiumDraft.image_url.trim();
+    if (!image_url) {
+      setDataError('Upload or paste a podium image first.');
+      return;
+    }
+    setSavingKey('podium-add');
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase
+          .from('podium_images')
+          .insert({
+            name: podiumDraft.name.trim() || 'Podium',
+            image_url,
+            updated_by: user?.id ?? null,
+          })
+          .select('id'),
+        'Adding podium'
+      );
+      if (error) throw error;
+      setPodiumDraft({ name: '', image_url: '' });
+      await loadPodiums('Podium added.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function activatePodium(podium: PodiumImage) {
+    if (!canManage || podium.is_active) return;
+    setSavingKey(`podium-active-${podium.id}`);
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase.rpc('set_active_podium', { p_id: podium.id }),
+        'Activating podium'
+      );
+      if (error) throw error;
+      await loadPodiums('Podium activated.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deletePodium(podium: PodiumImage) {
+    if (!canManage) return;
+    if (podium.is_active) {
+      setDataError('Set another podium active before deleting the active one.');
+      return;
+    }
+    const confirmed = window.confirm(`Delete podium "${podium.name}"?`);
+    if (!confirmed) return;
+    setSavingKey(`podium-delete-${podium.id}`);
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase.from('podium_images').delete().eq('id', podium.id).select('id'),
+        'Deleting podium'
+      );
+      if (error) throw error;
+      await loadPodiums('Podium deleted.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  // Load the podium library when the operator opens Board Themes.
+  useEffect(() => {
+    if (activeSection !== 'Board Themes') return;
+    void loadPodiums().catch(setError);
+  }, [activeSection, loadPodiums, setError]);
 
   // Once we've verified the signed-in admin's access once, we don't
   // want to blank the page back to a "Checking access" placeholder on
@@ -3472,6 +3577,110 @@ export default function Admin() {
                   {boardMessage}
                 </div>
               )}
+
+              {/* Podium — the stand the board sits on in the lobby
+                  carousel. A small library; exactly one is active. */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <div>
+                  <h3 className="text-base font-black">Podium</h3>
+                  <p className="mt-1 text-sm text-white/50">
+                    The stand the board sits on in the lobby carousel. Upload options and pick
+                    the one that&apos;s live. Wide transparent PNG/WebP works best.
+                  </p>
+                </div>
+
+                {podiums.length > 0 && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {podiums.map((p) => (
+                      <div
+                        key={p.id}
+                        className={`overflow-hidden rounded-lg border p-3 transition ${
+                          p.is_active
+                            ? 'border-amber-300/60 bg-amber-300/[0.06]'
+                            : 'border-white/10 bg-black/20'
+                        }`}
+                      >
+                        <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded bg-black/40">
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            className="h-full w-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-bold">{p.name}</span>
+                          {p.is_active && (
+                            <span className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={!canManage || p.is_active || savingKey === `podium-active-${p.id}`}
+                            onClick={() => void activatePodium(p)}
+                            className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            {p.is_active
+                              ? 'Active'
+                              : savingKey === `podium-active-${p.id}`
+                              ? 'Activating...'
+                              : 'Set active'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canManage || p.is_active || savingKey === `podium-delete-${p.id}`}
+                            onClick={() => void deletePodium(p)}
+                            className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                    Add a podium
+                  </div>
+                  <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                        Name
+                        <input
+                          type="text"
+                          value={podiumDraft.name}
+                          disabled={!canManage}
+                          onChange={(event) =>
+                            setPodiumDraft((draft) => ({ ...draft, name: event.target.value }))
+                          }
+                          placeholder="e.g. Royal Holder"
+                          className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+                        />
+                      </label>
+                      <ImageField
+                        label="Podium image"
+                        value={podiumDraft.image_url}
+                        onChange={(url) =>
+                          setPodiumDraft((draft) => ({ ...draft, image_url: url }))
+                        }
+                        folder="podiums"
+                        disabled={!canManage}
+                      />
+                    </div>
+                    <PrimaryButton
+                      onClick={() => void addPodium()}
+                      disabled={!canManage || !podiumDraft.image_url.trim() || savingKey === 'podium-add'}
+                    >
+                      {savingKey === 'podium-add' ? 'Adding...' : 'Add podium'}
+                    </PrimaryButton>
+                  </div>
+                </div>
+              </div>
 
               {boards.length === 0 ? (
                 <EmptyState text="No board themes yet. Use Populate Current Boards or Add Board to create one." />

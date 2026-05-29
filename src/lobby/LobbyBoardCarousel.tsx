@@ -11,6 +11,7 @@ import type { LobbyBoard, LobbyBoardId } from './lobbyData';
 import type { BoardOwnershipState } from './useUserBoardInventory';
 import { PlayButton } from '../components/PlayButton';
 import { UnlockPill } from '../components/UnlockPill';
+import { useActivePodium } from './useActivePodium';
 
 interface LobbyBoardCarouselProps {
   readonly boards: readonly LobbyBoard[];
@@ -183,6 +184,9 @@ export function LobbyBoardCarousel({
   walletGems,
 }: LobbyBoardCarouselProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  // BO-managed podium (the stand under the board). Falls back to the
+  // bundled royal-holder asset until Supabase resolves the active one.
+  const podiumImage = useActivePodium();
 
   // Continuous carousel position. round(position) mod boards.length is the
   // currently centered board; fractional part is drag/animation offset.
@@ -675,7 +679,7 @@ export function LobbyBoardCarousel({
         </div>
 
         <img
-          src="/lobby/holders/royal-holder.webp"
+          src={podiumImage}
           alt=""
           className="pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none drop-shadow-[0_22px_24px_rgba(0,0,0,0.36)]"
           draggable={false}

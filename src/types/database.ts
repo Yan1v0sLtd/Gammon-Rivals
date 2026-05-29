@@ -603,6 +603,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      podium_images: {
+        Row: {
+          id: string;
+          name: string;
+          image_url: string;
+          is_active: boolean;
+          sort_order: number;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          image_url: string;
+          is_active?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          image_url?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       table_configs: {
         Row: {
           id: string;
@@ -1093,6 +1126,10 @@ export type Database = {
       recompute_player_levels: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      set_active_podium: {
+        Args: { p_id: string };
+        Returns: void;
       };
       admin_upsert_economy_grant: {
         Args: {
