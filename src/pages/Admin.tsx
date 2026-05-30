@@ -1650,8 +1650,16 @@ export default function Admin() {
     setSavingKey('level');
     setDataError(null);
     try {
+      const level = requiredNumber(levelDraft.level, 'Level');
+      if (!Number.isInteger(level) || level < 1) {
+        // The DB enforces `level > 0` on an int PK. A blank Level field
+        // resolves to Number('') === 0, which used to hit the database and
+        // surface the raw "level_configs_level_check" violation. Validate
+        // here so the operator gets a clear message instead.
+        throw new Error('Level must be a whole number of 1 or more.');
+      }
       const payload: Database['public']['Tables']['level_configs']['Insert'] = {
-        level: requiredNumber(levelDraft.level, 'Level'),
+        level,
         xp_required: requiredNumber(levelDraft.xp_required, 'XP required'),
         status_label: levelDraft.status_label.trim() || 'Rookie',
         reward_coins: requiredNumber(levelDraft.reward_coins, 'Reward coins'),
@@ -3087,7 +3095,19 @@ export default function Admin() {
                       <Toggle label="Enabled" checked={levelDraft.is_enabled} onChange={(is_enabled) => setLevelDraft((d) => ({ ...d, is_enabled }))} />
                       <div className="flex gap-2">
                         <PrimaryButton onClick={() => void saveLevel()} disabled={!canManage || savingKey === 'level'}>Save level</PrimaryButton>
-                        <SecondaryButton onClick={() => setLevelDraft(levelToDraft())}>New</SecondaryButton>
+                        <SecondaryButton
+                          onClick={() => {
+                            // Pre-fill the next free level so "New" on a packed
+                            // 1..N table proposes N+1 instead of a blank field
+                            // (blank saved as level 0 and tripped the `level > 0`
+                            // check constraint). Operator can still overwrite it.
+                            const nextLevel =
+                              levels.reduce((max, row) => Math.max(max, row.level), 0) + 1;
+                            setLevelDraft({ ...levelToDraft(), level: String(nextLevel) });
+                          }}
+                        >
+                          New
+                        </SecondaryButton>
                       </div>
                     </div>
                   </div>
