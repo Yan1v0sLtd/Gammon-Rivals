@@ -622,7 +622,15 @@ export function LobbyScreen() {
           onLinkGoogle={() => linkGoogleIdentity({ redirectTo: `${window.location.origin}/auth/callback?next=/play` })}
         />
 
-        <div className="lobby-main-grid grid flex-1 items-center gap-4 py-3 xl:grid-cols-[18.5rem_minmax(30rem,1fr)] xl:gap-6 2xl:grid-cols-[18.5rem_minmax(34rem,1fr)]">
+        {/* Layout is fully owned by `.lobby-main-grid` in index.css (the
+            absolute, 3-column `minmax(0,1fr) [board] minmax(0,1fr)` canvas
+            grid). The old Tailwind `xl:grid-cols-[18.5rem_…]` /
+            `2xl:grid-cols-…` utilities were overriding that rule on desktop
+            (≥1280px) — a 2-column [rail | board] grid that pushed the board
+            into an offset right column, so the board was centred on mobile
+            but off-centre on web. Removed so the index.css grid wins on
+            every breakpoint and the board is consistently screen-centred. */}
+        <div className="lobby-main-grid">
           <LobbySideOffers
             onOfferClick={(offerId) => {
               // Daily Bonus now opens UNCONDITIONALLY — the player
