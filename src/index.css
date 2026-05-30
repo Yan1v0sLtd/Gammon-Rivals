@@ -1513,10 +1513,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     height: calc(490 * var(--lobby-u));
     min-width: 0;
     overflow: visible;
-    /* Lift the whole carousel (board + podium + Play) up so the bigger
-       board sits on the podium like before the +20% growth. Only the
-       carousel moves — the offers rail (grid col 1) is untouched. */
-    transform: translateY(calc(-40 * var(--lobby-u)));
+    /* Lift the whole carousel (board + podium + Play) and scale it down
+       10%. Only the carousel moves — the offers rail (grid col 1) is
+       untouched. scale(0.9) shrinks uniformly (board keeps sitting on the
+       podium); the translateY raises it (extra -15px on top of the lift).
+       transform-origin is the default centre, so the carousel's centre is
+       what moves up. */
+    transform: translateY(calc(-40 * var(--lobby-u) - 15px)) scale(0.9);
   }
 
   .lobby-carousel-section {
