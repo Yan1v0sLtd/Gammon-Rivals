@@ -72,9 +72,12 @@ export function Sunbeam() {
       const x1 = cx + Math.cos(beam.angle) * beam.length * k;
       const y1 = cy + Math.sin(beam.angle) * beam.length * k;
       const gradient = ctx.createLinearGradient(cx, cy, x1, y1);
-      gradient.addColorStop(0, `rgba(255, 225, 80, ${0.35 * opacity})`);
-      gradient.addColorStop(0.35, `rgba(255, 170, 20, ${0.16 * opacity})`);
-      gradient.addColorStop(0.7, `rgba(255, 120, 0, ${0.05 * opacity})`);
+      // Beam alphas ~2x the original config so the warm rays read clearly
+      // over the BRIGHT lobby art (the source effect was tuned for a dark
+      // backdrop). Colours / count / rotation / pulse are unchanged.
+      gradient.addColorStop(0, `rgba(255, 225, 80, ${0.7 * opacity})`);
+      gradient.addColorStop(0.35, `rgba(255, 170, 20, ${0.34 * opacity})`);
+      gradient.addColorStop(0.7, `rgba(255, 120, 0, ${0.12 * opacity})`);
       gradient.addColorStop(1, 'rgba(255, 120, 0, 0)');
       ctx.beginPath();
       ctx.moveTo(cx, cy);
@@ -119,8 +122,8 @@ export function Sunbeam() {
 
       // Soft center glow.
       const sun = ctx.createRadialGradient(cx, cy, 0, cx, cy, CONFIG.circleRadius * k);
-      sun.addColorStop(0, 'rgba(255, 235, 120, 0.95)');
-      sun.addColorStop(0.55, 'rgba(255, 170, 20, 0.45)');
+      sun.addColorStop(0, 'rgba(255, 235, 120, 0.98)');
+      sun.addColorStop(0.55, 'rgba(255, 175, 30, 0.62)');
       sun.addColorStop(1, 'rgba(255, 130, 0, 0)');
       ctx.fillStyle = sun;
       ctx.beginPath();
