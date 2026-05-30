@@ -478,12 +478,11 @@ html, body, #root {
   position: relative;
   display: grid;
   place-items: center;
-  /* Hourly bonus shrunk a further 15% (each clamp value x0.85 on top of
-   * the earlier 0.9 pass). The wheel graphic + the negative margin that
-   * lifts it above the bar scale together so it keeps its proportions and
-   * vertical seat. */
-  width: clamp(4.21rem, 7.5vw, 6.89rem);
-  margin-top: clamp(-2.6rem, -4.13vw, -1.84rem);
+  /* Hourly bonus shrunk again — now x0.85 then x0.95 on top of the
+   * original 0.9 pass. The wheel graphic + the negative margin that lifts
+   * it above the bar scale together so it keeps its proportions + seat. */
+  width: clamp(4rem, 7.13vw, 6.55rem);
+  margin-top: clamp(-2.47rem, -3.92vw, -1.75rem);
   padding: 0;
   background: none;
   border: 0;
@@ -1398,7 +1397,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     display: grid;
     width: 100%;
     height: calc(490 * var(--lobby-u));
-    grid-template-columns: 1fr calc(1032 * var(--lobby-u)) 1fr;
+    /* minmax(0, 1fr) — NOT plain 1fr — for the side columns. A bare 1fr
+       has an implicit min-content floor, so the left offers (264u + margin)
+       forced col 1 wider than col 3 and shoved the board ~11u right of
+       centre, misaligning it with the viewport-centred nav. minmax(0,1fr)
+       lets both sides shrink equally so the board column is truly centred
+       (offers harmlessly overflow into the empty gap on narrow widths). */
+    grid-template-columns: minmax(0, 1fr) calc(1032 * var(--lobby-u)) minmax(0, 1fr);
     column-gap: calc(72 * var(--lobby-u));
     align-items: start;
     padding: 0;
@@ -8692,11 +8697,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-content {
   position: relative;
   z-index: 2;
-  /* Stacked: avatar on top, XP bar directly below it (the name / rank /
-     level row were removed — those live on /profile now). */
+  /* Stacked + LEFT-aligned: avatar stays in its top-left spot, XP bar
+     directly below it (the name / rank / level row were removed — those
+     live on /profile now). */
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: clamp(4px, 0.5vw, 7px);
 }
 
