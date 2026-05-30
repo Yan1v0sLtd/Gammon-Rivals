@@ -85,11 +85,17 @@ export default function BoardPreview({
     };
   }, [metadata]);
 
-  const initialState = useMemo(() => initialBoard(), []);
-  // A fully-borne-off state (empty board, 15 checkers in each tray) so the
-  // operator can SEE the bear-off stacks while nudging the tray layout keys
-  // in BoardTuningField. initialBoard() has 0 off, so the trays would
-  // otherwise render empty and tray alignment would be blind.
+  // Seed a few borne-off checkers into the DEFAULT preview so BOTH trays
+  // are always populated. The true opening position has 0 off, which left
+  // the trays empty — so tray alignment was blind unless you found the
+  // toggle. The board still shows the opening layout for on-board tuning.
+  const initialState = useMemo(() => {
+    const base = initialBoard();
+    return { ...base, off: { white: 8, black: 8 } };
+  }, []);
+  // "Bear-off only" view: empty board, full trays (15 each) so the operator
+  // can verify the whole stack fits the tray height + spacing without the
+  // on-board checkers in the way.
   const bearOffState = useMemo(() => {
     const base = initialBoard();
     return {
@@ -114,7 +120,7 @@ export default function BoardPreview({
               : 'bg-slate-800 text-white/70 hover:bg-slate-700'
           }`}
         >
-          {showBearOff ? 'Showing bear-off' : 'Show bear-off'}
+          {showBearOff ? 'Bear-off only ✓' : 'Bear-off only'}
         </button>
       </div>
       <div
