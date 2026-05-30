@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import BoardCanvas from '../board/BoardCanvas';
 import { initialBoard } from '../engine/board';
 import { premiumTheme } from '../board/theme/premium';
@@ -86,14 +86,36 @@ export default function BoardPreview({
   }, [metadata]);
 
   const initialState = useMemo(() => initialBoard(), []);
+  // A fully-borne-off state (empty board, 15 checkers in each tray) so the
+  // operator can SEE the bear-off stacks while nudging the tray layout keys
+  // in BoardTuningField. initialBoard() has 0 off, so the trays would
+  // otherwise render empty and tray alignment would be blind.
+  const bearOffState = useMemo(() => {
+    const base = initialBoard();
+    return {
+      ...base,
+      points: base.points.map((p) => ({ ...p, owner: null, count: 0 })),
+      bar: { white: 0, black: 0 },
+      off: { white: 15, black: 15 },
+    };
+  }, []);
+  const [showBearOff, setShowBearOff] = useState(false);
 
   return (
     <div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
       <div className="mb-1.5 flex items-center justify-between">
         <span>Live preview</span>
-        <span className="text-[10px] normal-case tracking-normal text-white/35">
-          Initial position rendered with the current tuning
-        </span>
+        <button
+          type="button"
+          onClick={() => setShowBearOff((v) => !v)}
+          className={`rounded px-2 py-1 text-[10px] font-bold normal-case tracking-normal transition ${
+            showBearOff
+              ? 'bg-amber-300/90 text-black'
+              : 'bg-slate-800 text-white/70 hover:bg-slate-700'
+          }`}
+        >
+          {showBearOff ? 'Showing bear-off' : 'Show bear-off'}
+        </button>
       </div>
       <div
         className="relative w-full overflow-visible rounded-lg border border-white/10 bg-black/40"
@@ -101,7 +123,7 @@ export default function BoardPreview({
       >
         {draftTheme ? (
           <div className="absolute inset-0">
-            <BoardCanvas state={initialState} theme={draftTheme} layoutOverride={layoutOverride} />
+            <BoardCanvas state={showBearOff ? bearOffState : initialState} theme={draftTheme} layoutOverride={layoutOverride} />
           </div>
         ) : (
           <div className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
