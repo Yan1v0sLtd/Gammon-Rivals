@@ -13,14 +13,14 @@ interface Beam {
 const BASE = 340;
 
 const CONFIG = {
-  amountOfBeams: 48,
-  minLength: 70,
-  maxLength: 210,
-  circleRadius: 36,
-  blurStrength: 5,
-  fadeInOutTime: 8,
-  rotationSpeed: -0.002,
-  lineWidth: 34,
+  amountOfBeams: 90,
+  minLength: 85,
+  maxLength: 240,
+  circleRadius: 42,
+  blurStrength: 4,
+  fadeInOutTime: 10,
+  rotationSpeed: -0.0016,
+  lineWidth: 42,
 };
 
 /**
@@ -72,13 +72,15 @@ export function Sunbeam() {
       const x1 = cx + Math.cos(beam.angle) * beam.length * k;
       const y1 = cy + Math.sin(beam.angle) * beam.length * k;
       const gradient = ctx.createLinearGradient(cx, cy, x1, y1);
-      // Beam alphas ~2x the original config so the warm rays read clearly
-      // over the BRIGHT lobby art (the source effect was tuned for a dark
-      // backdrop). Colours / count / rotation / pulse are unchanged.
-      gradient.addColorStop(0, `rgba(255, 225, 80, ${0.7 * opacity})`);
-      gradient.addColorStop(0.35, `rgba(255, 170, 20, ${0.34 * opacity})`);
-      gradient.addColorStop(0.7, `rgba(255, 120, 0, ${0.12 * opacity})`);
-      gradient.addColorStop(1, 'rgba(255, 120, 0, 0)');
+      // Denser, brighter "pop" tuning (90 beams + 5-stop gradient + hotter
+      // core) supplied by the operator so the warm rays read clearly over
+      // the BRIGHT lobby art. Pixel dimensions still scale by k so the
+      // effect tracks the lobby's --lobby-u sizing.
+      gradient.addColorStop(0, `rgba(255, 245, 130, ${0.7 * opacity})`);
+      gradient.addColorStop(0.25, `rgba(255, 205, 60, ${0.38 * opacity})`);
+      gradient.addColorStop(0.55, `rgba(255, 150, 0, ${0.16 * opacity})`);
+      gradient.addColorStop(0.82, `rgba(255, 110, 0, ${0.055 * opacity})`);
+      gradient.addColorStop(1, 'rgba(255, 110, 0, 0)');
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(x1, y1);
@@ -103,18 +105,18 @@ export function Sunbeam() {
       for (const beam of beams) {
         beam.angle += CONFIG.rotationSpeed;
         const pulse = (Math.sin((time * Math.PI) / CONFIG.fadeInOutTime + beam.phase) + 1) / 2;
-        drawBeam(beam, cx, cy, 0.35 + pulse * 0.65, k);
+        drawBeam(beam, cx, cy, 0.45 + pulse * 0.75, k);
       }
       ctx.restore();
 
       // Fade the whole beam area outward into transparency.
       ctx.save();
       ctx.globalCompositeOperation = 'destination-in';
-      const fade = ctx.createRadialGradient(cx, cy, 10 * k, cx, cy, 170 * k);
+      const fade = ctx.createRadialGradient(cx, cy, 12 * k, cx, cy, 170 * k);
       fade.addColorStop(0, 'rgba(0,0,0,1)');
-      fade.addColorStop(0.35, 'rgba(0,0,0,0.95)');
-      fade.addColorStop(0.55, 'rgba(0,0,0,0.55)');
-      fade.addColorStop(0.75, 'rgba(0,0,0,0.16)');
+      fade.addColorStop(0.38, 'rgba(0,0,0,0.98)');
+      fade.addColorStop(0.58, 'rgba(0,0,0,0.68)');
+      fade.addColorStop(0.76, 'rgba(0,0,0,0.24)');
       fade.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = fade;
       ctx.fillRect(0, 0, w, h);
@@ -122,8 +124,9 @@ export function Sunbeam() {
 
       // Soft center glow.
       const sun = ctx.createRadialGradient(cx, cy, 0, cx, cy, CONFIG.circleRadius * k);
-      sun.addColorStop(0, 'rgba(255, 235, 120, 0.98)');
-      sun.addColorStop(0.55, 'rgba(255, 175, 30, 0.62)');
+      sun.addColorStop(0, 'rgba(255, 245, 150, 1)');
+      sun.addColorStop(0.45, 'rgba(255, 190, 35, 0.72)');
+      sun.addColorStop(0.75, 'rgba(255, 145, 0, 0.28)');
       sun.addColorStop(1, 'rgba(255, 130, 0, 0)');
       ctx.fillStyle = sun;
       ctx.beginPath();
