@@ -93,6 +93,23 @@ export interface ThemeLayout {
   readonly whiteOffTrayTopRatio?: number;
   readonly whiteOffTrayHeightRatio?: number;
   readonly offCheckerStackSpacingRatio?: number;
+  /** Felt-anchored bear-off trays. When the theme provides felt corners,
+   *  the trays are DERIVED from the right felt edge + the felt's vertical
+   *  extent (see computeLayout), so they auto-track each board's felt
+   *  instead of needing absolute per-board positions. These shared knobs
+   *  tune that derivation; sensible global defaults mean most boards need
+   *  no per-board tray config at all.
+   *    offTrayInsetRatio  — tray centre across the right rail (0 = felt
+   *                         edge, 1 = board edge). Default 0.5.
+   *    offTrayMarginRatio — vertical inset from felt top/bottom (fraction
+   *                         of felt height). Default 0.06.
+   *    offTrayMidGapRatio — gap between the two trays at the felt midline
+   *                         (fraction of felt height). Default 0.22.
+   *  The absolute *OffTray*Ratio keys below are the legacy fallback (used
+   *  only for corner-less themes or an explicit per-board override). */
+  readonly offTrayInsetRatio?: number;
+  readonly offTrayMarginRatio?: number;
+  readonly offTrayMidGapRatio?: number;
   /** Angle (deg) tilting the off-tray stack axis away from vertical.
    *  0 stacks straight up/down; positive tilts checkers' top right. */
   readonly blackOffTrayTiltDeg?: number;

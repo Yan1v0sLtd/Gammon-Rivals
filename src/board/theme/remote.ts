@@ -109,6 +109,12 @@ function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       typeof source.offCheckerStackSpacingRatio === 'number'
         ? source.offCheckerStackSpacingRatio
         : undefined,
+    offTrayInsetRatio:
+      typeof source.offTrayInsetRatio === 'number' ? source.offTrayInsetRatio : undefined,
+    offTrayMarginRatio:
+      typeof source.offTrayMarginRatio === 'number' ? source.offTrayMarginRatio : undefined,
+    offTrayMidGapRatio:
+      typeof source.offTrayMidGapRatio === 'number' ? source.offTrayMidGapRatio : undefined,
     blackOffTrayTiltDeg:
       typeof source.blackOffTrayTiltDeg === 'number' ? source.blackOffTrayTiltDeg : undefined,
     whiteOffTrayTiltDeg:

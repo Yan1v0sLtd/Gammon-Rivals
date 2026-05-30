@@ -160,12 +160,63 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   const checkerStackSpacing = sharedCheckerStackSpacing;
   const topCheckerPadding = themeLayout?.topCheckerPaddingRatio ?? 1;
   const bottomCheckerPadding = themeLayout?.bottomCheckerPaddingRatio ?? 1;
-  const blackOffTrayX = width * (themeLayout?.blackOffTrayXRatio ?? 0.925);
-  const blackOffTrayTop = height * (themeLayout?.blackOffTrayTopRatio ?? 0.145);
-  const blackOffTrayHeight = height * (themeLayout?.blackOffTrayHeightRatio ?? 0.255);
-  const whiteOffTrayX = width * (themeLayout?.whiteOffTrayXRatio ?? 0.925);
-  const whiteOffTrayTop = height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61);
-  const whiteOffTrayHeight = height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255);
+  // Bear-off trays. When the theme provides felt corners, DERIVE both
+  // trays from the felt itself instead of absolute board fractions — so
+  // each board's tray auto-tracks its own felt. Set the corners once (the
+  // same dots that place the points) and the trays follow; there's no
+  // per-board tray position to configure. The trays sit just outside the
+  // right felt edge, spanning the felt vertically: black on the upper
+  // half, white on the lower half, with a gap at the midline.
+  //
+  // Shared tuning knobs (global defaults; a board MAY override them in its
+  // own metadata.layout for an oddly-framed board):
+  //   offTrayInsetRatio  - tray centre across the right rail (0 = at the
+  //                        felt edge, 1 = at the board edge). Default 0.5.
+  //   offTrayMarginRatio - vertical inset from the felt top/bottom edges,
+  //                        as a fraction of felt height. Default 0.06.
+  //   offTrayMidGapRatio - gap between the two trays at the felt midline,
+  //                        as a fraction of felt height. Default 0.22.
+  // (Defaults reproduce the legacy 0.925 / 0.145 / 0.61 look, but anchored
+  // to each board's felt rather than fixed to the image.)
+  //
+  // Corner-less themes — or a board that explicitly sets the absolute
+  // *OffTray*Ratio keys — keep the legacy absolute behaviour unchanged.
+  const offTrayInset = themeLayout?.offTrayInsetRatio ?? 0.5;
+  const offTrayMargin = themeLayout?.offTrayMarginRatio ?? 0.06;
+  const offTrayMidGap = themeLayout?.offTrayMidGapRatio ?? 0.22;
+  const hasExplicitOffTray =
+    themeLayout?.whiteOffTrayXRatio !== undefined ||
+    themeLayout?.blackOffTrayXRatio !== undefined;
+  let blackOffTrayX: number;
+  let blackOffTrayTop: number;
+  let blackOffTrayHeight: number;
+  let whiteOffTrayX: number;
+  let whiteOffTrayTop: number;
+  let whiteOffTrayHeight: number;
+  if ((feltTLRatio || feltBRRatio) && !hasExplicitOffTray) {
+    const feltRightEdge = Math.max(feltTR[0], feltBR[0]);
+    const feltTopEdge = Math.min(feltTL[1], feltTR[1]);
+    const feltBottomEdge = Math.max(feltBL[1], feltBR[1]);
+    const feltMid = (feltTopEdge + feltBottomEdge) / 2;
+    const feltH = Math.max(1, feltBottomEdge - feltTopEdge);
+    const railGap = Math.max(0, width - feltRightEdge);
+    const trayX = feltRightEdge + railGap * offTrayInset;
+    const margin = feltH * offTrayMargin;
+    const halfGap = (feltH * offTrayMidGap) / 2;
+    blackOffTrayX = trayX;
+    blackOffTrayTop = feltTopEdge + margin;
+    blackOffTrayHeight = Math.max(1, feltMid - halfGap - blackOffTrayTop);
+    whiteOffTrayX = trayX;
+    whiteOffTrayTop = feltMid + halfGap;
+    whiteOffTrayHeight = Math.max(1, feltBottomEdge - margin - whiteOffTrayTop);
+  } else {
+    blackOffTrayX = width * (themeLayout?.blackOffTrayXRatio ?? 0.925);
+    blackOffTrayTop = height * (themeLayout?.blackOffTrayTopRatio ?? 0.145);
+    blackOffTrayHeight = height * (themeLayout?.blackOffTrayHeightRatio ?? 0.255);
+    whiteOffTrayX = width * (themeLayout?.whiteOffTrayXRatio ?? 0.925);
+    whiteOffTrayTop = height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61);
+    whiteOffTrayHeight = height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255);
+  }
   const offCheckerStackSpacing = themeLayout?.offCheckerStackSpacingRatio ?? 0.56;
   const blackOffTrayTiltDeg = themeLayout?.blackOffTrayTiltDeg ?? 0;
   const whiteOffTrayTiltDeg = themeLayout?.whiteOffTrayTiltDeg ?? 0;

@@ -7,15 +7,12 @@ type LayoutKey =
   | 'pointHeightRatio'
   | 'checkerStackSpacingRatio'
   | 'checkerRadiusRatio'
-  | 'whiteOffTrayXRatio'
-  | 'whiteOffTrayTopRatio'
-  | 'whiteOffTrayHeightRatio'
-  | 'whiteOffTrayTiltDeg'
-  | 'blackOffTrayXRatio'
-  | 'blackOffTrayTopRatio'
-  | 'blackOffTrayHeightRatio'
+  | 'offTrayInsetRatio'
+  | 'offTrayMarginRatio'
+  | 'offTrayMidGapRatio'
+  | 'offCheckerStackSpacingRatio'
   | 'blackOffTrayTiltDeg'
-  | 'offCheckerStackSpacingRatio';
+  | 'whiteOffTrayTiltDeg';
 
 interface Field {
   key: LayoutKey;
@@ -66,106 +63,51 @@ const BOARD_FIELDS: readonly Field[] = [
   },
 ];
 
-// Bear-off tray geometry. These keys ALREADY drive the renderer
-// (BoardRenderer.offTrayMetrics / offCheckerAnchor read them from
-// metadata.layout); they were just never exposed in the back office, so
-// borne-off checkers could only be aligned by editing the raw metadata
-// JSON. Defaults mirror premiumTheme.layout. Tilt is in degrees
-// (0 = straight stack); the rest are fractions of the board image.
-// Toggle "Show bear-off" in the live preview to see the stacks while
-// nudging.
+// Bear-off tray tuning. The trays now AUTO-ALIGN to each board's felt
+// corners (see computeLayout — they derive from the right felt edge + the
+// felt's vertical extent). These knobs just adjust that derivation and
+// have good global defaults, so most boards need NO tray config — you set
+// the felt corners (which you do anyway for the points) and the trays
+// follow. Nudging here writes to this board's metadata.layout as a
+// per-board override for an odd frame. Toggle "Bear-off only" in the live
+// preview to see the stacks while nudging.
 const TRAY_FIELDS: readonly Field[] = [
   {
-    key: 'whiteOffTrayXRatio',
-    label: 'White tray X',
-    hint: 'Horizontal centre of the white bear-off tray (fraction of board width).',
-    min: 0.5,
-    max: 1.0,
-    smallStep: 0.004,
+    key: 'offTrayInsetRatio',
+    label: 'Distance from felt',
+    hint: 'Tray position across the right rail: 0 = against the felt edge, 1 = at the board edge.',
+    min: 0,
+    max: 1,
+    smallStep: 0.02,
+    bigStep: 0.08,
+    decimals: 2,
+    defaultValue: 0.5,
+  },
+  {
+    key: 'offTrayMarginRatio',
+    label: 'Top/bottom margin',
+    hint: 'Inset of the stacks from the felt top & bottom edges (fraction of felt height).',
+    min: 0,
+    max: 0.2,
+    smallStep: 0.005,
     bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.925,
+    decimals: 3,
+    defaultValue: 0.06,
   },
   {
-    key: 'whiteOffTrayTopRatio',
-    label: 'White tray top',
-    hint: 'Top edge of the white tray (fraction of board height).',
-    min: 0.0,
-    max: 0.95,
-    smallStep: 0.004,
-    bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.61,
-  },
-  {
-    key: 'whiteOffTrayHeightRatio',
-    label: 'White tray height',
-    hint: 'Vertical span the white stack fills (fraction of board height).',
-    min: 0.08,
-    max: 0.6,
-    smallStep: 0.004,
-    bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.255,
-  },
-  {
-    key: 'whiteOffTrayTiltDeg',
-    label: 'White tray tilt',
-    hint: 'Angle (°) tilting the white stack off vertical. 0 = straight.',
-    min: -30,
-    max: 30,
-    smallStep: 0.5,
-    bigStep: 3,
-    decimals: 1,
-    defaultValue: 0,
-  },
-  {
-    key: 'blackOffTrayXRatio',
-    label: 'Black tray X',
-    hint: 'Horizontal centre of the black bear-off tray (fraction of board width).',
-    min: 0.5,
-    max: 1.0,
-    smallStep: 0.004,
-    bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.925,
-  },
-  {
-    key: 'blackOffTrayTopRatio',
-    label: 'Black tray top',
-    hint: 'Top edge of the black tray (fraction of board height).',
-    min: 0.0,
-    max: 0.95,
-    smallStep: 0.004,
-    bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.145,
-  },
-  {
-    key: 'blackOffTrayHeightRatio',
-    label: 'Black tray height',
-    hint: 'Vertical span the black stack fills (fraction of board height).',
-    min: 0.08,
-    max: 0.6,
-    smallStep: 0.004,
-    bigStep: 0.02,
-    decimals: 4,
-    defaultValue: 0.255,
-  },
-  {
-    key: 'blackOffTrayTiltDeg',
-    label: 'Black tray tilt',
-    hint: 'Angle (°) tilting the black stack off vertical. 0 = straight.',
-    min: -30,
-    max: 30,
-    smallStep: 0.5,
-    bigStep: 3,
-    decimals: 1,
-    defaultValue: 0,
+    key: 'offTrayMidGapRatio',
+    label: 'Middle gap',
+    hint: 'Gap between the black (upper) and white (lower) trays at the felt midline.',
+    min: 0,
+    max: 0.5,
+    smallStep: 0.01,
+    bigStep: 0.04,
+    decimals: 2,
+    defaultValue: 0.22,
   },
   {
     key: 'offCheckerStackSpacingRatio',
-    label: 'Tray stack spacing',
+    label: 'Stack spacing',
     hint: 'Gap between borne-off checkers (multiplier of checker radius).',
     min: 0.3,
     max: 1.0,
@@ -173,6 +115,28 @@ const TRAY_FIELDS: readonly Field[] = [
     bigStep: 0.08,
     decimals: 2,
     defaultValue: 0.56,
+  },
+  {
+    key: 'blackOffTrayTiltDeg',
+    label: 'Black tilt',
+    hint: 'Angle (°) tilting the black (upper) stack off vertical. 0 = straight.',
+    min: -30,
+    max: 30,
+    smallStep: 0.5,
+    bigStep: 3,
+    decimals: 1,
+    defaultValue: 0,
+  },
+  {
+    key: 'whiteOffTrayTiltDeg',
+    label: 'White tilt',
+    hint: 'Angle (°) tilting the white (lower) stack off vertical. 0 = straight.',
+    min: -30,
+    max: 30,
+    smallStep: 0.5,
+    bigStep: 3,
+    decimals: 1,
+    defaultValue: 0,
   },
 ];
 
@@ -220,17 +184,15 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Compact panel of per-board visual nudgers. Each control reads /
  * writes a single key under `metadata.layout` so the values persist
- * with the rest of the board theme. Replaces the in-session
- * alignment-tool nudgers (which only saved to localStorage for the
- * legacy premium-purple board, not for back-office-managed themes).
+ * with the rest of the board theme.
  *
  * Two groups:
  *   - Board: on-board checker geometry (point depth, stack spacing,
  *     checker radius).
- *   - Bear-off trays: where borne-off checkers stack on the right rail
- *     (per-colour X / top / height / tilt + shared stack spacing). These
- *     keys already drive the renderer; toggle "Show bear-off" in the
- *     live preview to align them.
+ *   - Bear-off trays: the trays auto-align to the board's felt corners;
+ *     these knobs fine-tune that derivation (distance from felt, margins,
+ *     mid gap, stack spacing, tilt) and are optional per-board overrides.
+ *     Toggle "Bear-off only" in the live preview to see them.
  */
 export default function BoardTuningField({ metadata, onMetadataChange }: Props) {
   const renderField = (field: Field) => {
@@ -306,7 +268,7 @@ export default function BoardTuningField({ metadata, onMetadataChange }: Props) 
       <div className="mb-1.5 mt-3 flex items-center justify-between">
         <span>Bear-off trays</span>
         <span className="text-[10px] normal-case tracking-normal text-white/35">
-          Align borne-off checkers — toggle “Show bear-off” in the preview
+          Auto-aligned to your felt corners — nudge only to fine-tune
         </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">{TRAY_FIELDS.map(renderField)}</div>
