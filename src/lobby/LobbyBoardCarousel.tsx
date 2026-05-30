@@ -34,7 +34,16 @@ function PodiumImage({ src }: { readonly src: string }) {
   return (
     <>
       {layers.map((layer, i) => {
-        const fading = i === layers.length - 1 && layers.length > 1;
+        const isNewest = i === layers.length - 1;
+        const animating = layers.length > 1;
+        // True cross-fade: the newest layer fades IN while the older
+        // layer(s) fade OUT at the same time (same 450ms). Prune to the
+        // newest once its fade-in ends.
+        const fadeClass = animating
+          ? isNewest
+            ? ' lobby-podium-fade-in'
+            : ' lobby-podium-fade-out'
+          : '';
         return (
           <img
             key={layer.id}
@@ -42,10 +51,8 @@ function PodiumImage({ src }: { readonly src: string }) {
             alt=""
             aria-hidden="true"
             draggable={false}
-            onAnimationEnd={fading ? () => setLayers([layer]) : undefined}
-            className={`pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none${
-              fading ? ' lobby-podium-fade-in' : ''
-            }`}
+            onAnimationEnd={isNewest && animating ? () => setLayers([layer]) : undefined}
+            className={`pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none${fadeClass}`}
           />
         );
       })}

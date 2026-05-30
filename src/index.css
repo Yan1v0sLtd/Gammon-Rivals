@@ -1513,6 +1513,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     height: calc(490 * var(--lobby-u));
     min-width: 0;
     overflow: visible;
+    /* Lift the whole carousel (board + podium + Play) up so the bigger
+       board sits on the podium like before the +20% growth. Only the
+       carousel moves — the offers rail (grid col 1) is untouched. */
+    transform: translateY(calc(-40 * var(--lobby-u)));
   }
 
   .lobby-carousel-section {
@@ -1548,9 +1552,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .lobby-carousel-board[data-slot='selected'] {
     transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
-    /* Soft contact shadow under the centred board so it reads as sitting
-       on the podium (selected board only — side boards stay flat). */
-    filter: drop-shadow(0 calc(16 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.5));
+    /* Tight, dark contact shadow under the centred board so it reads as
+       sitting on the podium (selected board only — side boards stay flat). */
+    filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
   }
 
   .lobby-carousel-board[data-slot='previous'] {
@@ -1568,9 +1572,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     bottom: calc(-8 * var(--lobby-u) - 40px);
     width: calc(936 * var(--lobby-u));
     max-width: none;
-    /* Soft ground shadow beneath the podium (overrides the Tailwind
+    /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
        drop-shadow on the <img>); scales with --lobby-u. */
-    filter: drop-shadow(0 calc(26 * var(--lobby-u)) calc(26 * var(--lobby-u)) rgba(0, 0, 0, 0.42));
+    filter: drop-shadow(0 calc(20 * var(--lobby-u)) calc(13 * var(--lobby-u)) rgba(0, 0, 0, 0.62));
   }
 
   /* Podium cross-fade: the newest layer fades in over the old one when the
@@ -1587,6 +1591,19 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .lobby-podium-fade-in {
     animation: lobbyPodiumFade 450ms ease forwards;
+  }
+
+  @keyframes lobbyPodiumFadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+
+  .lobby-podium-fade-out {
+    animation: lobbyPodiumFadeOut 450ms ease forwards;
   }
 
   .lobby-carousel-viewport > div[class*='top-'] {
