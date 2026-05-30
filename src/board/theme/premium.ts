@@ -59,12 +59,14 @@ export const premiumTheme: Theme = {
       0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0,
     ],
-    blackOffTrayXRatio: 0.925,
-    blackOffTrayTopRatio: 0.145,
-    blackOffTrayHeightRatio: 0.255,
-    whiteOffTrayXRatio: 0.925,
-    whiteOffTrayTopRatio: 0.61,
-    whiteOffTrayHeightRatio: 0.255,
+    // The absolute bear-off tray ratios (black/whiteOffTray X/Top/Height)
+    // were removed on purpose. The trays now DERIVE from the felt corners
+    // in computeLayout, and the absolute fallback for corner-less themes
+    // like this one lives there (?? 0.925 / 0.145 / 0.61). Keeping them
+    // here made them leak through the back-office preview's layout merge
+    // ({...premiumTheme.layout, ...boardMetadata}), where they tripped the
+    // "explicit per-board override" check and bypassed the felt
+    // derivation — so the preview showed the old fixed position.
     offCheckerStackSpacingRatio: 0.56,
   },
 };
