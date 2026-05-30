@@ -478,11 +478,12 @@ html, body, #root {
   position: relative;
   display: grid;
   place-items: center;
-  /* Hourly bonus 10% smaller — every clamp here was scaled by 0.9
-   * (cf. operator request). The wheel graphic + the pill underneath
-   * shrink together so the widget keeps its proportions. */
-  width: clamp(4.95rem, 8.82vw, 8.1rem);
-  margin-top: clamp(-3.06rem, -4.86vw, -2.16rem);
+  /* Hourly bonus shrunk a further 15% (each clamp value x0.85 on top of
+   * the earlier 0.9 pass). The wheel graphic + the negative margin that
+   * lifts it above the bar scale together so it keeps its proportions and
+   * vertical seat. */
+  width: clamp(4.21rem, 7.5vw, 6.89rem);
+  margin-top: clamp(-2.6rem, -4.13vw, -1.84rem);
   padding: 0;
   background: none;
   border: 0;
@@ -8691,10 +8692,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-content {
   position: relative;
   z-index: 2;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  column-gap: clamp(10px, 1.1vw, 14px);
+  /* Stacked: avatar on top, XP bar directly below it (the name / rank /
+     level row were removed — those live on /profile now). */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(4px, 0.5vw, 7px);
 }
 
 /* Identity column — avatar + level shield + name + rank stacked
@@ -8998,9 +9001,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .lobby-pp-xp-bar {
   position: relative;
-  /* Half-width so it doesn't dominate the row. Stays left-aligned
-   * so the LEVEL N label sits directly above the bar's start. */
-  width: 50%;
+  /* Sized to the avatar circle (same clamp as .lobby-pp-avatar-ring) and
+   * centred below it — it's now the only text element in the card. */
+  width: clamp(67px, 7.6vw, 96px);
   height: clamp(14px, 1.62vw, 20px);
   border-radius: 999px;
   padding: 2px;
