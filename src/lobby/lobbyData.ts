@@ -8,6 +8,10 @@ export interface LobbyBoard {
   readonly name: string;
   readonly subtitle: string;
   readonly image: string;
+  /** Per-board podium / "holder" image (the stand under the board in the
+   *  lobby carousel). When set it OVERRIDES the global active podium; when
+   *  null the global podium (useActivePodium) is the fallback. */
+  readonly holderImage: string | null;
   readonly accent: string;
   readonly background: string;
   readonly backgroundTone: string;
@@ -41,6 +45,7 @@ export function lobbyBoardFromConfig(config: BoardThemeConfig): LobbyBoard {
     name: config.display_name,
     subtitle: metadataText(config.metadata, 'subtitle') ?? `Unlocks at level ${config.unlock_level}`,
     image: normalizePublicAssetPath(config.preview_image) ?? '/lobby/board-previews/classic-green.webp',
+    holderImage: normalizePublicAssetPath(config.holder_image) ?? null,
     accent,
     background: normalizePublicAssetPath(config.lobby_background_image) ?? '/lobby/backgrounds/classic-green.webp',
     backgroundTone: metadataText(config.metadata, 'backgroundTone') ?? toneForAccent(accent),

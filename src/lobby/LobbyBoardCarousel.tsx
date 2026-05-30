@@ -184,9 +184,11 @@ export function LobbyBoardCarousel({
   walletGems,
 }: LobbyBoardCarouselProps) {
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  // BO-managed podium (the stand under the board). Falls back to the
-  // bundled royal-holder asset until Supabase resolves the active one.
-  const podiumImage = useActivePodium();
+  // Global BO-managed podium (the stand under the board). Falls back to
+  // the bundled royal-holder asset until Supabase resolves the active one.
+  // A board with its own holder_image overrides this — see `podiumImage`
+  // below, derived from the selected board.
+  const activePodium = useActivePodium();
 
   // Continuous carousel position. round(position) mod boards.length is the
   // currently centered board; fractional part is drag/animation offset.
@@ -539,6 +541,9 @@ export function LobbyBoardCarousel({
 
   const selectedBoardIdx = modulo(Math.round(position), boards.length);
   const selected = boards[selectedBoardIdx]!;
+  // The centered board's own holder image wins; the global active podium
+  // is the fallback when this board has no dedicated holder.
+  const podiumImage = selected.holderImage || activePodium;
   // Show the inline PLAY button when the board is fully playable for
   // this user. Two states qualify:
   //   - 'owned'       — bought (or admin-granted) into inventory
