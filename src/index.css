@@ -1066,16 +1066,28 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
+    /* Centre the fixed-aspect lobby "stage" (.lobby-shell) in the viewport
+       so the lobby reads identically — just scaled — on every aspect ratio
+       (mobile / web / Android / iOS). Any letterbox space (viewport aspect
+       != the 1792x828 canvas) is filled by the fixed background layers
+       behind the stage. */
+    display: grid;
+    place-items: center;
   }
 
   .lobby-shell {
     --lobby-u: min(0.055804dvw, 0.120773dvh);
     position: relative;
     display: block;
-    width: 100dvw;
-    height: 100dvh;
+    /* The lobby "stage" IS the 1792x828 design canvas, scaled to fit via
+       --lobby-u and centred by .lobby-screen. Every element positions
+       within this canvas, so the whole composition stays consistent across
+       devices instead of anchoring to the raw viewport edges (which made
+       the board/nav spread apart on wide desktop viewports). */
+    width: calc(1792 * var(--lobby-u));
+    height: calc(828 * var(--lobby-u));
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
     padding: 0;
   }
 
@@ -8640,41 +8652,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * mask to .lobby-pp-card itself, which faded everything inside
  * (including the avatar) along the elliptical falloff. */
 .lobby-pp-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  /* Radii are 50%/50% so the ellipse touches the card edges at their
-   * midpoints and is fully transparent by then — corners are well
-   * beyond the ellipse, so nothing paints a rectangle. (The old
-   * 70%/75% radii extended PAST the box, so the edges clipped a still-
-   * opaque slice of the gradient → the faint square the user saw.) The
-   * mask matches so backdrop-blur is clipped to the same falloff. */
-  background:
-    radial-gradient(
-      ellipse 50% 50% at center,
-      rgba(45, 22, 95, 0.62) 0%,
-      rgba(28, 14, 62, 0.44) 42%,
-      rgba(12, 6, 34, 0.16) 74%,
-      transparent 100%
-    );
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  mask-image: radial-gradient(
-    ellipse 50% 50% at center,
-    black 0%,
-    black 38%,
-    rgba(0, 0, 0, 0.55) 68%,
-    transparent 100%
-  );
-  -webkit-mask-image: radial-gradient(
-    ellipse 50% 50% at center,
-    black 0%,
-    black 38%,
-    rgba(0, 0, 0, 0.55) 68%,
-    transparent 100%
-  );
+  /* Backdrop gradient + blur removed per operator request — the simplified
+   * widget (just avatar + XP bar) reads fine directly on the lobby art, so
+   * the soft purple ellipse and the backdrop-blur are gone. */
+  content: none;
 }
 
 /* All content sits above the ::before backdrop. */
