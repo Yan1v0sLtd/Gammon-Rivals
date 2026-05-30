@@ -7,20 +7,23 @@ interface Beam {
   phase: number;
 }
 
-// The supplied effect was tuned against a 340px square. We scale every
+// The supplied effect was tuned against a 460px square. We scale every
 // pixel dimension by (renderedSize / BASE) so it looks identical at any
 // size — the lobby chrome scales with --lobby-u, so the canvas does too.
-const BASE = 340;
+// fadeRadius is BASE/2, so the glow fills the canvas to its rim; the
+// canvas CSS size (.lobby-sunbeam-canvas) is what sets its on-screen scale.
+const BASE = 460;
 
 const CONFIG = {
   amountOfBeams: 90,
-  minLength: 85,
-  maxLength: 240,
-  circleRadius: 42,
+  minLength: 130,
+  maxLength: 350,
+  fadeRadius: 230,
+  circleRadius: 48,
   blurStrength: 4,
   fadeInOutTime: 10,
   rotationSpeed: -0.0016,
-  lineWidth: 42,
+  lineWidth: 46,
 };
 
 /**
@@ -112,11 +115,11 @@ export function Sunbeam() {
       // Fade the whole beam area outward into transparency.
       ctx.save();
       ctx.globalCompositeOperation = 'destination-in';
-      const fade = ctx.createRadialGradient(cx, cy, 12 * k, cx, cy, 170 * k);
+      const fade = ctx.createRadialGradient(cx, cy, 20 * k, cx, cy, CONFIG.fadeRadius * k);
       fade.addColorStop(0, 'rgba(0,0,0,1)');
-      fade.addColorStop(0.38, 'rgba(0,0,0,0.98)');
-      fade.addColorStop(0.58, 'rgba(0,0,0,0.68)');
-      fade.addColorStop(0.76, 'rgba(0,0,0,0.24)');
+      fade.addColorStop(0.42, 'rgba(0,0,0,0.98)');
+      fade.addColorStop(0.62, 'rgba(0,0,0,0.68)');
+      fade.addColorStop(0.8, 'rgba(0,0,0,0.24)');
       fade.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = fade;
       ctx.fillRect(0, 0, w, h);
