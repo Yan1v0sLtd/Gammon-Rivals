@@ -1513,13 +1513,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     height: calc(490 * var(--lobby-u));
     min-width: 0;
     overflow: visible;
-    /* Lift the whole carousel (board + podium + Play) and scale it down
-       10%. Only the carousel moves — the offers rail (grid col 1) is
-       untouched. scale(0.9) shrinks uniformly (board keeps sitting on the
-       podium); the translateY raises it (extra -15px on top of the lift).
-       transform-origin is the default centre, so the carousel's centre is
-       what moves up. */
-    transform: translateY(calc(-40 * var(--lobby-u) - 15px)) scale(0.9);
+    /* Small lift; no scale now — board size is the .lobby-carousel-board
+       width, and the board is bottom-anchored so it sits on the podium.
+       Only the carousel moves — the offers rail (grid col 1) is untouched. */
+    transform: translateY(calc(-12 * var(--lobby-u)));
   }
 
   .lobby-carousel-section {
@@ -1545,11 +1542,15 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     --lobby-incoming-prev-x: -84%;
     --lobby-incoming-next-x: 84%;
     --lobby-incoming-scale: 0.64;
-    top: calc(20 * var(--lobby-u) + 20px);
-    /* +20% (was 56%) — bigger boards / more presence on screen. The board
-       stays centred in the viewport and overflows into the (empty) side
-       columns via overflow:visible, so the offers rail is untouched. */
-    width: 67%;
+    /* Bottom-anchored: the board's BASE sits at a fixed point near the
+       podium rim, so growing the board extends it UPWARD into the freed
+       space instead of sinking into the podium — and it stays seated
+       through future size changes. top:auto overrides the short-landscape
+       `top` so the board isn't stretched between both edges. Tune `bottom`
+       once to seat the base on the rim; tune width for size. */
+    top: auto;
+    bottom: calc(-25 * var(--lobby-u));
+    width: 74%;
     height: auto;
   }
 
@@ -1725,7 +1726,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     bottom: calc(15 * var(--lobby-u));
     top: auto;
     z-index: 35;
-    width: calc(1099 * var(--lobby-u));
+    /* -15% (1099 -> 934): smaller navigator frees vertical room for the
+       board and de-emphasises it vs. the hero. Kept above ~900u so the
+       five slots stay comfortable tap targets on mobile. */
+    width: calc(934 * var(--lobby-u));
     margin: 0;
     padding: 0;
     overflow: visible;
