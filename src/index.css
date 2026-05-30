@@ -1372,19 +1372,32 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-main-grid {
-    /* Side stacks shrunk 20 %, centre carousel grown 20 % wide.
-       New widths: 264 + 72 + 1032 + 72 + 280 = 1720 lobby-u.
-       Pulled up 56 lobby-u (150 -> 94) so the lowered podium +
-       Play button don't slide under the bottom navigator on the
-       short iPhone landscape viewport. */
+    /* Full-viewport-width grid so the centre (board) column is centred to
+       the SCREEN. The two 1fr side columns are equal, so the fixed 1032u
+       board column always resolves to exactly 50dvw — the same axis the
+       bottom nav (left:50%) and the top balance pills sit on. The u terms
+       cancel: 1fr = (100% - 1032u - 2*gap)/2, so the board centre =
+       1fr + gap + 516u = 50dvw on EVERY aspect ratio.
+       Before: a fixed 1720u block pinned at left:55u with asymmetric side
+       columns (264u | 1032u | 280u). The board centre landed ~11u right of
+       the canvas centre, AND the whole canvas was left-anchored — so when
+       the scaled 1792x828 canvas was letterboxed (any viewport != ~2.16:1)
+       the board drifted off-centre and FLIPPED side between web (wide) and
+       the Android landscape viewport (tall-ish). That was the off-centre
+       board + the cross-platform inconsistency. Centring the board column
+       to the viewport puts board + podium + nav + balances on one axis
+       everywhere. The left offers stay pinned to the left edge via their
+       own fixed width + margin-left (see .lobby-offers).
+       (top kept at 94u so the lowered podium + Play button don't slide
+       under the bottom navigator on short landscape viewports.) */
     position: absolute;
-    left: calc(55 * var(--lobby-u));
+    left: 0;
     top: calc(94 * var(--lobby-u));
     z-index: 20;
     display: grid;
-    width: calc(1720 * var(--lobby-u));
+    width: 100%;
     height: calc(490 * var(--lobby-u));
-    grid-template-columns: calc(264 * var(--lobby-u)) calc(1032 * var(--lobby-u)) calc(280 * var(--lobby-u));
+    grid-template-columns: 1fr calc(1032 * var(--lobby-u)) 1fr;
     column-gap: calc(72 * var(--lobby-u));
     align-items: start;
     padding: 0;
@@ -1401,6 +1414,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .lobby-offers {
     display: flex;
+    /* The grid's first column is now a flexible 1fr (so the centre board
+       column is screen-centred). Pin the offers to a fixed width at the
+       left edge of that column so they don't stretch across it and stay
+       exactly where they were before the centring change. Overrides the
+       width:100% from the shared .lobby-offers/.lobby-action-stack rule. */
+    width: calc(264 * var(--lobby-u));
+    justify-self: start;
+    margin-left: calc(55 * var(--lobby-u));
     height: calc(400 * var(--lobby-u));
     flex-direction: column;
     /* Pack from the top so the first card aligns with the first
