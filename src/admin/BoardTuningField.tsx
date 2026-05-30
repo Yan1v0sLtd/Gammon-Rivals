@@ -7,9 +7,6 @@ type LayoutKey =
   | 'pointHeightRatio'
   | 'checkerStackSpacingRatio'
   | 'checkerRadiusRatio'
-  | 'offTrayInsetRatio'
-  | 'offTrayMarginRatio'
-  | 'offTrayMidGapRatio'
   | 'offCheckerStackSpacingRatio'
   | 'blackOffTrayTiltDeg'
   | 'whiteOffTrayTiltDeg';
@@ -63,48 +60,11 @@ const BOARD_FIELDS: readonly Field[] = [
   },
 ];
 
-// Bear-off tray tuning. The trays now AUTO-ALIGN to each board's felt
-// corners (see computeLayout — they derive from the right felt edge + the
-// felt's vertical extent). These knobs just adjust that derivation and
-// have good global defaults, so most boards need NO tray config — you set
-// the felt corners (which you do anyway for the points) and the trays
-// follow. Nudging here writes to this board's metadata.layout as a
-// per-board override for an odd frame. Toggle "Bear-off only" in the live
-// preview to see the stacks while nudging.
+// Bear-off stack styling. POSITION is set with the drag editor (the
+// "Bear-off trays" field above — drag each tray's top/bottom dots). These
+// remaining knobs are cosmetic and apply on top of wherever the trays
+// sit: how tightly the borne-off checkers stack, and an optional lean.
 const TRAY_FIELDS: readonly Field[] = [
-  {
-    key: 'offTrayInsetRatio',
-    label: 'Distance from felt',
-    hint: 'Tray position across the right rail: 0 = against the felt edge, 1 = at the board edge.',
-    min: 0,
-    max: 1,
-    smallStep: 0.02,
-    bigStep: 0.08,
-    decimals: 2,
-    defaultValue: 0.5,
-  },
-  {
-    key: 'offTrayMarginRatio',
-    label: 'Top/bottom margin',
-    hint: 'Inset of the stacks from the felt top & bottom edges (fraction of felt height).',
-    min: 0,
-    max: 0.2,
-    smallStep: 0.005,
-    bigStep: 0.02,
-    decimals: 3,
-    defaultValue: 0.06,
-  },
-  {
-    key: 'offTrayMidGapRatio',
-    label: 'Middle gap',
-    hint: 'Gap between the black (upper) and white (lower) trays at the felt midline.',
-    min: 0,
-    max: 0.5,
-    smallStep: 0.01,
-    bigStep: 0.04,
-    decimals: 2,
-    defaultValue: 0.22,
-  },
   {
     key: 'offCheckerStackSpacingRatio',
     label: 'Stack spacing',
@@ -266,9 +226,9 @@ export default function BoardTuningField({ metadata, onMetadataChange }: Props) 
       <div className="grid gap-2 sm:grid-cols-3">{BOARD_FIELDS.map(renderField)}</div>
 
       <div className="mb-1.5 mt-3 flex items-center justify-between">
-        <span>Bear-off trays</span>
+        <span>Bear-off stacks</span>
         <span className="text-[10px] normal-case tracking-normal text-white/35">
-          Auto-aligned to your felt corners — nudge only to fine-tune
+          Stack spacing &amp; lean — set tray position with the drag editor above
         </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-3">{TRAY_FIELDS.map(renderField)}</div>

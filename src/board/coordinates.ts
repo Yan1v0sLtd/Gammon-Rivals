@@ -184,16 +184,17 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   const offTrayInset = themeLayout?.offTrayInsetRatio ?? 0.5;
   const offTrayMargin = themeLayout?.offTrayMarginRatio ?? 0.06;
   const offTrayMidGap = themeLayout?.offTrayMidGapRatio ?? 0.22;
-  const hasExplicitOffTray =
-    themeLayout?.whiteOffTrayXRatio !== undefined ||
-    themeLayout?.blackOffTrayXRatio !== undefined;
-  let blackOffTrayX: number;
-  let blackOffTrayTop: number;
-  let blackOffTrayHeight: number;
-  let whiteOffTrayX: number;
-  let whiteOffTrayTop: number;
-  let whiteOffTrayHeight: number;
-  if ((feltTLRatio || feltBRRatio) && !hasExplicitOffTray) {
+  // Felt-derived defaults for each tray (used per-colour unless that
+  // colour has explicit X/Top/Height ratios — e.g. dragged into place via
+  // the back-office "Bear-off trays" editor). White and black resolve
+  // INDEPENDENTLY: dragging one doesn't pull the other off felt-anchoring.
+  let derivedBlackX = width * 0.925;
+  let derivedBlackTop = height * 0.145;
+  let derivedBlackHeight = height * 0.255;
+  let derivedWhiteX = width * 0.925;
+  let derivedWhiteTop = height * 0.61;
+  let derivedWhiteHeight = height * 0.255;
+  if (feltTLRatio || feltBRRatio) {
     const feltRightEdge = Math.max(feltTR[0], feltBR[0]);
     const feltTopEdge = Math.min(feltTL[1], feltTR[1]);
     const feltBottomEdge = Math.max(feltBL[1], feltBR[1]);
@@ -203,20 +204,29 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     const trayX = feltRightEdge + railGap * offTrayInset;
     const margin = feltH * offTrayMargin;
     const halfGap = (feltH * offTrayMidGap) / 2;
-    blackOffTrayX = trayX;
-    blackOffTrayTop = feltTopEdge + margin;
-    blackOffTrayHeight = Math.max(1, feltMid - halfGap - blackOffTrayTop);
-    whiteOffTrayX = trayX;
-    whiteOffTrayTop = feltMid + halfGap;
-    whiteOffTrayHeight = Math.max(1, feltBottomEdge - margin - whiteOffTrayTop);
-  } else {
-    blackOffTrayX = width * (themeLayout?.blackOffTrayXRatio ?? 0.925);
-    blackOffTrayTop = height * (themeLayout?.blackOffTrayTopRatio ?? 0.145);
-    blackOffTrayHeight = height * (themeLayout?.blackOffTrayHeightRatio ?? 0.255);
-    whiteOffTrayX = width * (themeLayout?.whiteOffTrayXRatio ?? 0.925);
-    whiteOffTrayTop = height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61);
-    whiteOffTrayHeight = height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255);
+    derivedBlackX = trayX;
+    derivedBlackTop = feltTopEdge + margin;
+    derivedBlackHeight = Math.max(1, feltMid - halfGap - derivedBlackTop);
+    derivedWhiteX = trayX;
+    derivedWhiteTop = feltMid + halfGap;
+    derivedWhiteHeight = Math.max(1, feltBottomEdge - margin - derivedWhiteTop);
   }
+  const blackExplicit = themeLayout?.blackOffTrayXRatio !== undefined;
+  const whiteExplicit = themeLayout?.whiteOffTrayXRatio !== undefined;
+  const blackOffTrayX = blackExplicit ? width * (themeLayout?.blackOffTrayXRatio ?? 0.925) : derivedBlackX;
+  const blackOffTrayTop = blackExplicit
+    ? height * (themeLayout?.blackOffTrayTopRatio ?? 0.145)
+    : derivedBlackTop;
+  const blackOffTrayHeight = blackExplicit
+    ? height * (themeLayout?.blackOffTrayHeightRatio ?? 0.255)
+    : derivedBlackHeight;
+  const whiteOffTrayX = whiteExplicit ? width * (themeLayout?.whiteOffTrayXRatio ?? 0.925) : derivedWhiteX;
+  const whiteOffTrayTop = whiteExplicit
+    ? height * (themeLayout?.whiteOffTrayTopRatio ?? 0.61)
+    : derivedWhiteTop;
+  const whiteOffTrayHeight = whiteExplicit
+    ? height * (themeLayout?.whiteOffTrayHeightRatio ?? 0.255)
+    : derivedWhiteHeight;
   const offCheckerStackSpacing = themeLayout?.offCheckerStackSpacingRatio ?? 0.56;
   const blackOffTrayTiltDeg = themeLayout?.blackOffTrayTiltDeg ?? 0;
   const whiteOffTrayTiltDeg = themeLayout?.whiteOffTrayTiltDeg ?? 0;

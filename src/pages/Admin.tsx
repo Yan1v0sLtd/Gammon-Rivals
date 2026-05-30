@@ -20,6 +20,7 @@ import {
 import type { Database, Json } from '../types/database';
 import ImageField from '../admin/ImageField';
 import FeltCornersField from '../admin/FeltCornersField';
+import BearOffTraysField from '../admin/BearOffTraysField';
 import BoardTuningField from '../admin/BoardTuningField';
 import BoardPreview from '../admin/BoardPreview';
 import { WheelAdmin } from '../admin/WheelAdmin';
@@ -3825,6 +3826,11 @@ export default function Admin() {
                       <ImageField label="Lobby image" folder={boardDraft.id} kind="preview" value={boardDraft.preview_image} onChange={(preview_image) => setBoardDraft((d) => ({ ...d, preview_image }))} />
                       <ImageField label="Gameplay image" folder={boardDraft.id} kind="gameplay" value={boardDraft.gameplay_image} onChange={(gameplay_image) => setBoardDraft((d) => ({ ...d, gameplay_image }))} />
                       <FeltCornersField
+                        gameplayImage={boardDraft.gameplay_image}
+                        metadata={boardDraft.metadata}
+                        onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
+                      />
+                      <BearOffTraysField
                         gameplayImage={boardDraft.gameplay_image}
                         metadata={boardDraft.metadata}
                         onMetadataChange={(metadata) => setBoardDraft((d) => ({ ...d, metadata }))}
