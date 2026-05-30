@@ -13,6 +13,46 @@ import { PlayButton } from '../components/PlayButton';
 import { UnlockPill } from '../components/UnlockPill';
 import { useActivePodium } from './useActivePodium';
 
+/**
+ * Renders the lobby podium with a cross-fade when its image changes (e.g.
+ * scrolling to a board that has its own holder image). The new image is
+ * stacked on top and fades in over the previous one
+ * (.lobby-podium-fade-in), then the old layer is pruned. Each layer stays
+ * a direct child of .lobby-carousel-viewport and keeps `pointer-events-none`
+ * so the existing podium size + ground-shadow CSS rule applies to all
+ * layers.
+ */
+function PodiumImage({ src }: { readonly src: string }) {
+  const [layers, setLayers] = useState<readonly { src: string; id: number }[]>([{ src, id: 0 }]);
+  const nextId = useRef(1);
+  useEffect(() => {
+    setLayers((prev) => {
+      if (prev[prev.length - 1]!.src === src) return prev;
+      return [...prev, { src, id: nextId.current++ }];
+    });
+  }, [src]);
+  return (
+    <>
+      {layers.map((layer, i) => {
+        const fading = i === layers.length - 1 && layers.length > 1;
+        return (
+          <img
+            key={layer.id}
+            src={layer.src}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            onAnimationEnd={fading ? () => setLayers([layer]) : undefined}
+            className={`pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none${
+              fading ? ' lobby-podium-fade-in' : ''
+            }`}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 interface LobbyBoardCarouselProps {
   readonly boards: readonly LobbyBoard[];
   readonly selectedId: LobbyBoardId;
@@ -683,12 +723,7 @@ export function LobbyBoardCarousel({
           })}
         </div>
 
-        <img
-          src={podiumImage}
-          alt=""
-          className="pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none drop-shadow-[0_22px_24px_rgba(0,0,0,0.36)]"
-          draggable={false}
-        />
+        <PodiumImage src={podiumImage} />
 
         <div className="absolute left-1/2 top-[3%] z-40 flex h-10 min-w-72 -translate-x-1/2 items-center justify-center bg-[linear-gradient(90deg,transparent,rgba(22,18,17,0.78)_22%,rgba(22,18,17,0.86)_50%,rgba(22,18,17,0.78)_78%,transparent)] px-12 drop-shadow-[0_5px_6px_rgba(0,0,0,0.34)]">
           <div className="font-display text-lg font-black uppercase tracking-[0.12em] text-[#ffe0a0] drop-shadow-[0_2px_0_rgba(0,0,0,0.45)]">

@@ -1539,12 +1539,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     --lobby-incoming-next-x: 84%;
     --lobby-incoming-scale: 0.64;
     top: calc(20 * var(--lobby-u) + 20px);
-    width: 56%;
+    /* +20% (was 56%) — bigger boards / more presence on screen. The board
+       stays centred in the viewport and overflows into the (empty) side
+       columns via overflow:visible, so the offers rail is untouched. */
+    width: 67%;
     height: auto;
   }
 
   .lobby-carousel-board[data-slot='selected'] {
     transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
+    /* Soft contact shadow under the centred board so it reads as sitting
+       on the podium (selected board only — side boards stay flat). */
+    filter: drop-shadow(0 calc(16 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.5));
   }
 
   .lobby-carousel-board[data-slot='previous'] {
@@ -1556,12 +1562,31 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-carousel-viewport > img.pointer-events-none {
-    /* Podium: 20 % larger than baseline, dropped a total of 40 px
-       below its original anchor so the board sits cleanly on the
-       front carving. */
+    /* Podium: grown another 20 % (780 -> 936) to match the bigger boards,
+       dropped below its anchor so the board sits cleanly on the front
+       carving. */
     bottom: calc(-8 * var(--lobby-u) - 40px);
-    width: calc(780 * var(--lobby-u));
+    width: calc(936 * var(--lobby-u));
     max-width: none;
+    /* Soft ground shadow beneath the podium (overrides the Tailwind
+       drop-shadow on the <img>); scales with --lobby-u. */
+    filter: drop-shadow(0 calc(26 * var(--lobby-u)) calc(26 * var(--lobby-u)) rgba(0, 0, 0, 0.42));
+  }
+
+  /* Podium cross-fade: the newest layer fades in over the old one when the
+     podium image swaps (e.g. a board with a dedicated holder). Driven by
+     PodiumImage in LobbyBoardCarousel. */
+  @keyframes lobbyPodiumFade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .lobby-podium-fade-in {
+    animation: lobbyPodiumFade 450ms ease forwards;
   }
 
   .lobby-carousel-viewport > div[class*='top-'] {
