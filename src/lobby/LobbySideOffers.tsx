@@ -1,4 +1,5 @@
 import { lobbyOffers } from './lobbyData';
+import { Sunbeam } from './Sunbeam';
 
 interface LobbySideOffersProps {
   readonly onOfferClick?: (offerId: string) => void;
@@ -22,13 +23,16 @@ export function LobbySideOffers({ onOfferClick }: LobbySideOffersProps = {}) {
         >
           {offer.image ? (
             <>
+              {/* Animated sunbeam glow behind the Special Offers icon only. */}
+              {offer.id === 'coins' ? <Sunbeam /> : null}
               {/* Standalone 200x200 icon. No background tint, no
                   arrow chevron, no border — the icon art carries
-                  its own frame and CTA hint. */}
+                  its own frame and CTA hint. The icon sits ABOVE the
+                  sunbeam canvas (relative z-[1]). */}
               <img
                 src={offer.image}
                 alt=""
-                className="h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.42)]"
+                className="relative z-[1] h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.42)]"
                 draggable={false}
               />
             </>

@@ -608,6 +608,22 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   overscroll-behavior: none;
 }
 
+/* Animated sunbeam glow behind the Special Offers icon (see Sunbeam.tsx).
+   Lives inside the offer-card button, centred and a touch larger than the
+   icon so the rays radiate around it; the icon itself is lifted above via
+   z-[1]. pointer-events:none so taps still hit the button. */
+.lobby-sunbeam-canvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160%;
+  height: 160%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
 @media (orientation: landscape) and (max-height: 720px) {
   .lobby-screen {
     height: 100dvh;
