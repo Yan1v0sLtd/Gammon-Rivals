@@ -3288,7 +3288,7 @@ export default function Admin() {
                   <Field label="Lose prize (consolation)" value={tableDraft.prize_coins_loss} onChange={(prize_coins_loss) => setTableDraft((d) => ({ ...d, prize_coins_loss }))} />
                   <Field label="Target RTP (%)" value={tableDraft.target_rtp_pct} onChange={(target_rtp_pct) => setTableDraft((d) => ({ ...d, target_rtp_pct }))} />
                   <Field label="XP boost (%)" value={tableDraft.xp_multiplier_pct} onChange={(xp_multiplier_pct) => setTableDraft((d) => ({ ...d, xp_multiplier_pct }))} />
-                  <Field label="Base XP on win" value={tableDraft.base_xp_win} onChange={(base_xp_win) => setTableDraft((d) => ({ ...d, base_xp_win }))} />
+                  <Field label="Base XP per match" value={tableDraft.base_xp_win} onChange={(base_xp_win) => setTableDraft((d) => ({ ...d, base_xp_win }))} />
                   <Field label="Turn seconds" value={tableDraft.turn_seconds} onChange={(turn_seconds) => setTableDraft((d) => ({ ...d, turn_seconds }))} />
                   <Field label="Required level" value={tableDraft.required_level} onChange={(required_level) => setTableDraft((d) => ({ ...d, required_level }))} />
                   <Field label="Match target" value={tableDraft.match_target} onChange={(match_target) => setTableDraft((d) => ({ ...d, match_target }))} />

@@ -597,7 +597,7 @@ export function DifficultyModal({
         >
           <div className="flex items-start gap-3">
             <XpHexIcon />
-            <span>Higher difficulty grants more XP for your victories.</span>
+            <span>Higher difficulty grants more XP per match.</span>
           </div>
           <div className="flex items-start gap-3">
             <ClockIcon />
