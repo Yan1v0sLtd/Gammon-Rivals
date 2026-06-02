@@ -1,0 +1,4 @@
+# Generated simulation artifacts (report + CSV/JSON) — re-created by sim.mjs.
+out/
+# Superseded scratch (the real migrations live in supabase/migrations/).
+DRAFT_*.sql
