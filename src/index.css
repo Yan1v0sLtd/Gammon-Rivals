@@ -1445,9 +1445,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .lobby-action-stack {
     align-self: start;
     width: 100%;
-    /* Pushed all six side cards 20 px below the previous 80 lobby-u
-       anchor so they sit closer to the level of the carousel. */
-    margin-top: calc(80 * var(--lobby-u) + 20px);
+    /* Anchor the side cards below the top bar's profile widget. The extra
+       +47px (was +20px) drops the first card clear of the profile card's
+       box on short-landscape, where the two regions otherwise overlap by
+       ~25px and the profile card swallowed taps on the top of the first
+       offer (Special Offers "not clickable"). */
+    margin-top: calc(80 * var(--lobby-u) + 47px);
   }
 
   .lobby-offers {
@@ -1472,6 +1475,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     gap: calc(10 * var(--lobby-u));
     overflow: visible;
     padding: 0;
+    /* Sit above the carousel boards (data-slot selected=30 / side=20) so the
+       fanned-out side-board images, whose transparent boxes overflow into
+       this column, can't intercept taps meant for the offer cards. */
+    position: relative;
+    z-index: 31;
   }
 
   /* Old text-tile cards — wide horizontal rectangle. Scoped to
@@ -8667,6 +8675,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   max-width: min(100%, 19rem);
   margin: 14px 0 0 19px;
   padding: var(--lobby-pp-pad);
+  /* Frameless widget — the bottom padding is invisible but extends the
+     card's hit box ~12-17px below the XP bar, over the top of the first
+     side-offer card and stealing its taps. Drop it so the hit box ends at
+     the visible content; nothing moves visually (no frame/bg). */
+  padding-bottom: 0;
   border: none;
   border-radius: var(--lobby-pp-radius);
   /* Background, mask, and backdrop-filter all moved to ::before
