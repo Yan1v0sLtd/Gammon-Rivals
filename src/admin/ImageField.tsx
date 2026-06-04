@@ -1,5 +1,11 @@
 import { useRef, useState, type DragEvent, type ChangeEvent } from 'react';
-import { supabase } from '../lib/supabase';
+// Storage uploads must run as the signed-in operator, so use the BO's own
+// authenticated client (adminSupabase) — NOT the main game client, which in
+// the operator's browser holds only the anonymous guest session. Uploading via
+// the guest client runs the storage INSERT as `anon`, which can't execute the
+// board-assets RLS policy's private.current_admin_role() check and fails with
+// "permission denied for function current_admin_role".
+import { adminSupabase as supabase } from '../lib/adminSupabase';
 
 const BUCKET = 'board-assets';
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MiB — matches the bucket policy
