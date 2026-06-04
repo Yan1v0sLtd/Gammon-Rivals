@@ -3772,6 +3772,16 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.55rem;
+  /* These are purely-informational player HUDs (name / level / coins / pip /
+     timer — SidePanel has no buttons or links). In the portrait layout this
+     grid is positioned absolutely over the top of the board; its transparent
+     middle area — and, on very narrow screens, the panels themselves — sit on
+     top of the play surface. With the default pointer-events the overlay
+     silently swallows taps on the board, so players couldn't move checkers
+     onto the covered points ("clicking the green areas does nothing"). Since
+     nothing here is interactive, make the whole HUD click-through so every tap
+     reaches the board canvas underneath. */
+  pointer-events: none;
 }
 
 .game-side-slot {
@@ -8232,6 +8242,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    the look stays proportional across the viewport-clamp range. */
 .dice-face {
   position: absolute;
+  /* Hide the reverse side of each face. Without this, the three rear faces
+     render their backs through the cube and z-fight with the front faces
+     mid-tumble — that's the "light flickering" during a roll. With backfaces
+     hidden, only the ~3 camera-facing faces draw, so the cube reads as solid
+     and the flicker is gone. */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   width: var(--dice-cube-size);
   height: var(--dice-cube-size);
   background: #fcfcfc;
