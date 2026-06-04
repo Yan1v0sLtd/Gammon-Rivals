@@ -9,7 +9,7 @@ interface Props {
  * The lobby nav's center slot: the hourly-bonus wheel graphic plus
  * a CSS pill underneath that switches between three states:
  *
- *   - Ready    → orange gradient "CLAIM BONUS" button
+ *   - Ready    → orange gradient "CLAIM" button (large label)
  *   - Cooldown → gold-trimmed pill with the HH:MM:SS countdown
  *   - Unavailable → grey pill with "UNAVAILABLE" text
  *
@@ -58,7 +58,7 @@ export function HourlyBonusWidget({ result, onClaim }: Props) {
           className="lobby-hourly-bonus-pill is-ready"
           onClick={onClaim}
         >
-          Claim bonus
+          Claim
         </button>
       ) : pillKind === 'cooldown' ? (
         <div className="lobby-hourly-bonus-pill is-cooldown" aria-live="polite">
