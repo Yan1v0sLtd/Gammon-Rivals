@@ -1482,6 +1482,22 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     z-index: 31;
   }
 
+  /* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
+     pinned to the right edge of the third grid column. Inherits the left
+     rail's top anchor (margin-top), width, height, gap, flex-column,
+     top-packing (flex-start) and z-index from .lobby-offers; only the
+     horizontal pin flips. */
+  .lobby-offers--right {
+    justify-self: end;
+    margin-left: 0;
+    margin-right: calc(55 * var(--lobby-u));
+    /* The rail box is wider than the square icons; without this the icons
+       sit at the box's LEFT edge, leaving an oversized gap to the screen's
+       right edge. Right-align them so they hug the right with the same gap
+       the left rail's icons have from the left edge. */
+    align-items: flex-end;
+  }
+
   /* Old text-tile cards — wide horizontal rectangle. Scoped to
    * non-image variants so the new 400x400 icon cards aren't
    * forced into a 264u x 100u shape. */
@@ -8659,6 +8675,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * Internal sizes use clamp() so the card breathes at smaller
  * widths even without changing the scale.
  */
+
+/* The top-bar actions row (currency pills + Rewards/Friends/Settings) is a
+   wide flex container whose empty left area overlaps the profile widget /
+   avatar, intercepting taps meant for the "Open profile" link — only the
+   lower shield was reachable. Make the container click-through and re-enable
+   its actual controls so the whole avatar circle opens the profile. */
+.lobby-topbar-actions {
+  pointer-events: none;
+}
+.lobby-topbar-actions > * {
+  pointer-events: auto;
+}
 
 .lobby-pp-card {
   --lobby-pp-radius: 0;

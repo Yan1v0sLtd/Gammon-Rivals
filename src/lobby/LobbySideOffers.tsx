@@ -3,12 +3,28 @@ import { Sunbeam } from './Sunbeam';
 
 interface LobbySideOffersProps {
   readonly onOfferClick?: (offerId: string) => void;
+  /** Which offer ids to render, in order. Defaults to all. Lets the lobby
+   *  split the rail — Special Offers on the left, Daily Bonus + How to Play
+   *  on the right — by mounting two instances. */
+  readonly offerIds?: readonly string[];
+  /** Which side of the board this rail sits on (drives left/right pinning
+   *  in index.css via `.lobby-offers--{side}`). */
+  readonly side?: 'left' | 'right';
 }
 
-export function LobbySideOffers({ onOfferClick }: LobbySideOffersProps = {}) {
+export function LobbySideOffers({
+  onOfferClick,
+  offerIds,
+  side = 'left',
+}: LobbySideOffersProps = {}) {
+  const offers = offerIds
+    ? offerIds
+        .map((id) => lobbyOffers.find((o) => o.id === id))
+        .filter((o): o is (typeof lobbyOffers)[number] => Boolean(o))
+    : lobbyOffers;
   return (
-    <aside className="lobby-offers flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0">
-      {lobbyOffers.map((offer) => (
+    <aside className={`lobby-offers lobby-offers--${side} flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0`}>
+      {offers.map((offer) => (
         <button
           key={offer.id}
           type="button"

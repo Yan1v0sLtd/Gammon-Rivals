@@ -773,10 +773,13 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     const update = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
+      // Leave a clear margin on every side (was 0.98 / 0.96, which let the
+      // panel bleed to the screen edges). 0.86 width / 0.90 height keeps the
+      // whole popup — borders included — comfortably inside the viewport.
       const s = Math.min(
         1,
-        (w * 0.98) / PANEL_DESIGN_W,
-        (h * 0.96) / PANEL_DESIGN_H
+        (w * 0.86) / PANEL_DESIGN_W,
+        (h * 0.9) / PANEL_DESIGN_H
       );
       setScale(s);
     };

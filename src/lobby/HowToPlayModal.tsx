@@ -8,8 +8,7 @@ interface HowToPlayModalProps {
  * Static tutorial popup — triggered from the "How to Play" side-rail
  * icon in the lobby. Shows the prepared backgammon tutorial image
  * (`/lobby/cards/how-to-play-popup.webp`) centred over a darkened
- * backdrop with a CSS gold-gradient PLAY button at the bottom that
- * closes the popup.
+ * backdrop with a close (X) button in the top-right corner.
  *
  * Opens with the shared ScaleInModal "emerge" animation (same springy
  * scale-in the board-purchase popup uses). ScaleInModal owns the
@@ -28,21 +27,15 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
         draggable={false}
       />
 
-      {/* PLAY button — sits inside the popup near the bottom. Visual
-       *  style mirrors the carousel `.lobby-play-button` green-gradient
-       *  pill but inlined here so the carousel's mobile-landscape size
-       *  override doesn't shrink this one. Tapping it dismisses. */}
+      {/* Close (X) — top-right corner. Replaces the old PLAY button; the
+       *  popup is purely informational (PLAY lives on the board carousel). */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute left-1/2 bottom-[5%] grid h-11 min-w-[8rem] -translate-x-1/2 place-items-center rounded-full border-2 border-[#e0ff8f]/95 px-7 font-display text-lg font-black uppercase tracking-[0.18em] text-[#132109] shadow-[0_5px_0_#06450a,0_13px_22px_rgba(0,0,0,0.34),inset_0_2px_0_rgba(255,255,255,0.74),inset_0_-5px_0_rgba(0,78,5,0.34),0_0_0_2px_rgba(7,27,11,0.85)] transition hover:brightness-110 active:translate-y-[1px]"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
-          textShadow: '0 1px 0 rgba(255, 255, 255, 0.28)',
-        }}
+        aria-label="Close how to play"
+        className="absolute -right-3 -top-3 z-[1] grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-xl font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95"
       >
-        Play
+        ✕
       </button>
     </ScaleInModal>
   );

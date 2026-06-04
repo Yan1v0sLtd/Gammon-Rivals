@@ -600,6 +600,16 @@ export function LobbyScreen() {
   // settles while the loader is up — the overlay fades on lobbyReady to
   // reveal a stable, fully painted view.
 
+  // Side-rail offer routing, shared by the left rail (Special Offers) and
+  // the right rail (Daily Bonus + How to Play). Daily Bonus opens
+  // unconditionally (the modal still surfaces the 7-day grid even when
+  // already claimed today); Coins routes to /shop; Connect opens the tutorial.
+  const handleOfferClick = (offerId: string) => {
+    if (offerId === 'daily') openDailyBonus();
+    else if (offerId === 'coins') openShop();
+    else if (offerId === 'connect') setHowToPlayOpen(true);
+  };
+
   return (
     <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
       {fadingBoard ? (
@@ -631,17 +641,11 @@ export function LobbyScreen() {
             but off-centre on web. Removed so the index.css grid wins on
             every breakpoint and the board is consistently screen-centred. */}
         <div className="lobby-main-grid">
+          {/* Left rail: Special Offers only (stays put per operator). */}
           <LobbySideOffers
-            onOfferClick={(offerId) => {
-              // Daily Bonus now opens UNCONDITIONALLY — the player
-              // can't claim if it's already been collected today,
-              // but the modal still surfaces so they can see the
-              // 7-day grid + close out. Connect ('how-to-play')
-              // opens the tutorial popup; Coins routes to /shop.
-              if (offerId === 'daily') openDailyBonus();
-              else if (offerId === 'coins') openShop();
-              else if (offerId === 'connect') setHowToPlayOpen(true);
-            }}
+            offerIds={['coins']}
+            side="left"
+            onOfferClick={handleOfferClick}
           />
 
           <div className="lobby-board-region min-w-0">
@@ -659,6 +663,14 @@ export function LobbyScreen() {
               walletGems={wallet?.gems ?? 0}
             />
           </div>
+
+          {/* Right rail: Daily Bonus (top, level with Special Offers) +
+              How to Play below it. Moved here from the left per operator. */}
+          <LobbySideOffers
+            offerIds={['daily', 'connect']}
+            side="right"
+            onOfferClick={handleOfferClick}
+          />
 
           {/* Play Friends + Tournaments cards removed per operator
               direction. Hotseat ("two players on this device") is
