@@ -38,6 +38,7 @@ import { RewardFlight, type RewardFlightSpec, type FlightCurrency } from './Rewa
 import { useDailyBonus } from './useDailyBonus';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
+import { useLobbyFeatureConfigs } from './useLobbyFeatureConfigs';
 
 // Static lobby assets — referenced unconditionally by sub-components,
 // so they're always part of the first-paint preload. Per-board imagery
@@ -117,6 +118,9 @@ export function LobbyScreen() {
   // the running 3-second timer on each re-render and the tooltip
   // would never auto-dismiss.
   const dismissLockedTooltip = useCallback(() => setLockedTooltipFor(null), []);
+  // Bottom-nav feature gating (Missions/Events/Tournaments/VIP). The lock badge
+  // + "Reach level X" pill are rendered inside LobbyBottomNav itself.
+  const featureConfigs = useLobbyFeatureConfigs();
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
   // Difficulty modal state. `enteringRoomId` is the table_config_id
   // currently being purchased via enter_room — the modal uses it to
@@ -690,6 +694,8 @@ export function LobbyScreen() {
           }}
           onOpenMissions={() => setMissionsModalOpen(true)}
           missionsBadge={missionsClaimableBadge}
+          featureConfigs={featureConfigs}
+          playerLevel={progression.level}
         />
       </div>
 

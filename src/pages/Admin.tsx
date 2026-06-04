@@ -106,6 +106,7 @@ type Section =
   | 'Difficulties'
   | 'RTP Analytics'
   | 'Board Themes'
+  | 'Lobby Features'
   | 'Shop'
   | 'Admin Access';
 
@@ -237,6 +238,7 @@ const sections: readonly Section[] = [
   'Difficulties',
   'RTP Analytics',
   'Board Themes',
+  'Lobby Features',
   'Shop',
   'Admin Access',
 ];
@@ -543,12 +545,14 @@ function Field({
   onChange,
   type = 'text',
   disabled = false,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange(value: string): void;
   type?: string;
   disabled?: boolean;
+  placeholder?: string;
 }) {
   return (
     <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
@@ -557,6 +561,7 @@ function Field({
         type={type}
         value={value}
         disabled={disabled}
+        placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
       />
@@ -814,6 +819,12 @@ export default function Admin() {
   const [levels, setLevels] = useState<LevelConfig[]>([]);
   const [economyGrants, setEconomyGrants] = useState<EconomyGrant[]>([]);
   const [grantDraft, setGrantDraft] = useState<EconomyGrantDraft>(() => grantToDraft());
+  // Bottom-nav feature lock levels (lobby_feature_configs). `level` is kept as
+  // a string for the text input; saved as an integer. `tooltip` is the
+  // optional override copy ("" → default "Reach level N to unlock").
+  const [lobbyFeatures, setLobbyFeatures] = useState<
+    { feature_key: string; label: string; level: string; enabled: boolean; tooltip: string }[]
+  >([]);
   const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([]);
   const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([]);
   const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50);
@@ -1011,6 +1022,30 @@ export default function Admin() {
     if (activeSection !== 'Board Themes') return;
     void loadPodiums().catch(setError);
   }, [activeSection, loadPodiums, setError]);
+
+  // Load bottom-nav feature lock levels when the operator opens Lobby Features.
+  useEffect(() => {
+    if (activeSection !== 'Lobby Features') return;
+    void supabase
+      .from('lobby_feature_configs')
+      .select('feature_key, label, unlock_level, is_enabled, sort_order, tooltip_text')
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) {
+          setError(error);
+          return;
+        }
+        setLobbyFeatures(
+          (data ?? []).map((r) => ({
+            feature_key: r.feature_key,
+            label: r.label,
+            level: String(r.unlock_level),
+            enabled: r.is_enabled,
+            tooltip: r.tooltip_text ?? '',
+          })),
+        );
+      });
+  }, [activeSection]);
 
   // Once we've verified the signed-in admin's access once, we don't
   // want to blank the page back to a "Checking access" placeholder on
@@ -1864,6 +1899,32 @@ export default function Admin() {
       if (error) throw error;
       setGrantDraft(grantToDraft());
       await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveLobbyFeature(featureKey: string) {
+    if (!canManage) return;
+    setSavingKey(`feature:${featureKey}`);
+    setDataError(null);
+    try {
+      const row = lobbyFeatures.find((f) => f.feature_key === featureKey);
+      if (!row) return;
+      const level = requiredNumber(row.level, 'Unlock level');
+      if (level < 1) throw new Error('Unlock level must be at least 1.');
+      const tooltip = row.tooltip.trim();
+      const { error } = await supabase
+        .from('lobby_feature_configs')
+        .update({
+          unlock_level: level,
+          is_enabled: row.enabled,
+          tooltip_text: tooltip === '' ? null : tooltip,
+        })
+        .eq('feature_key', featureKey);
+      if (error) throw error;
     } catch (err) {
       setError(err);
     } finally {
@@ -3874,6 +3935,82 @@ export default function Admin() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeSection === 'Lobby Features' && (
+            <div className="max-w-2xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
+              <h2 className="text-lg font-black">Bottom-nav feature locks</h2>
+              <p className="mt-1 text-xs text-white/55">
+                Gate each bottom-nav feature behind a player level, like boards.
+                A player below the level sees a padlock; tapping it pops a
+                tooltip. Level 1 = always open (set a high level to keep a
+                feature locked for everyone). Leave the tooltip text blank for
+                the default "Reach level X to unlock", or set custom copy like
+                "Coming soon". The center Hourly Bonus wheel is never gated.
+                Disabling a feature hides its action (reserved for future use).
+              </p>
+              <div className="mt-4 space-y-3">
+                {lobbyFeatures.length === 0 ? (
+                  <p className="text-xs text-white/40">Loading…</p>
+                ) : (
+                  lobbyFeatures.map((f) => (
+                    <div
+                      key={f.feature_key}
+                      className="flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3"
+                    >
+                      <div className="min-w-[8rem] flex-1">
+                        <div className="text-sm font-black">{f.label}</div>
+                        <div className="font-mono text-[10px] text-white/40">{f.feature_key}</div>
+                      </div>
+                      <div className="w-28">
+                        <Field
+                          label="Unlock level"
+                          value={f.level}
+                          onChange={(level) =>
+                            setLobbyFeatures((rows) =>
+                              rows.map((r) =>
+                                r.feature_key === f.feature_key ? { ...r, level } : r,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <Toggle
+                        label="Enabled"
+                        checked={f.enabled}
+                        onChange={(enabled) =>
+                          setLobbyFeatures((rows) =>
+                            rows.map((r) =>
+                              r.feature_key === f.feature_key ? { ...r, enabled } : r,
+                            ),
+                          )
+                        }
+                      />
+                      <div className="basis-full">
+                        <Field
+                          label="Tooltip text (optional)"
+                          value={f.tooltip}
+                          placeholder={`Reach level ${f.level || 'N'} to unlock`}
+                          onChange={(tooltip) =>
+                            setLobbyFeatures((rows) =>
+                              rows.map((r) =>
+                                r.feature_key === f.feature_key ? { ...r, tooltip } : r,
+                              ),
+                            )
+                          }
+                        />
+                      </div>
+                      <PrimaryButton
+                        onClick={() => void saveLobbyFeature(f.feature_key)}
+                        disabled={!canManage || savingKey === `feature:${f.feature_key}`}
+                      >
+                        Save
+                      </PrimaryButton>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
 

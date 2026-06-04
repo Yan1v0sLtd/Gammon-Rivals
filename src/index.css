@@ -441,6 +441,166 @@ html, body, #root {
   transform: translateY(1px);
 }
 
+/* Level-locked feature slot. The feature icon dims; a bare gold padlock (no
+   circular badge) sits over it. Tapping the lock wiggles it and pops a
+   gold-rimmed tooltip ABOVE it ("Reach level N to unlock") with a downward
+   pointer and a jelly stretch; it collapses on an outside tap. The tooltip
+   TEXT matches the board carousel pill (Segoe UI / gold) — see .gr-unlock-text.
+   Markup: NavFeatureLock in LobbyBottomNav.tsx. */
+.lobby-bottom-nav-slot.is-locked > img {
+  opacity: 0.4;
+  filter: grayscale(0.55) brightness(0.85);
+}
+
+/* Centered over the slot; tall z so the pop-up tooltip clears neighbours. */
+.lobby-nav-lock-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+}
+
+/* Bare padlock button — no circle, just the gold lock glyph. */
+.lobby-nav-lock {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lobby-nav-lock-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: block;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35))
+    drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 6px rgba(255, 211, 75, 0.38));
+  /* Settle on mount / when the tooltip closes. */
+  animation: lobby-nav-lock-settle 0.5s ease-out forwards;
+}
+
+.lobby-nav-lock-wrap.is-open .lobby-nav-lock-icon {
+  animation: lobby-nav-lock-wiggle 0.5s ease-out forwards;
+}
+
+/* Gold-rimmed dark tooltip bubble that flies up above the lock. */
+.lobby-nav-lock-tip {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  /* Auto-size to the text: short copy ("Coming soon") gives a narrow pill,
+     longer copy ("Reach level N to unlock") a wider one. Padding sets the
+     horizontal breathing room; min/max keep it sane at the extremes. */
+  width: max-content;
+  min-width: 3.5rem;
+  max-width: min(80vw, 18rem);
+  height: 2.1rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 35%, #202020 0%, #101010 58%, #050505 100%);
+  box-shadow:
+    0 0 0 1px #c99629,
+    inset 0 2px 8px rgba(255, 255, 255, 0.08),
+    inset 0 -7px 12px rgba(0, 0, 0, 0.72),
+    0 10px 25px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in, top 0.15s ease-in;
+}
+
+/* Downward pointer diamond. */
+.lobby-nav-lock-tip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px;
+  background: #101010;
+  box-shadow: 1px 1px 0 0 #c99629;
+}
+
+/* Tooltip text — matches the board carousel pill (Segoe UI inherited, gold). */
+.lobby-nav-lock-tip span {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(6px);
+  font-size: 0.79rem;
+  font-weight: 700;
+  letter-spacing: 0.009em;
+  color: #ffe98b;
+  text-shadow:
+    0 0.045em 0 #7a4f0c,
+    0 0.091em 0.318em rgba(255, 216, 91, 0.38),
+    0 0.182em 0.455em rgba(0, 0, 0, 0.75);
+  transition: opacity 0.25s ease 0.35s, transform 0.25s ease 0.35s;
+}
+
+.lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip {
+  top: -3.4rem;
+  opacity: 1;
+  animation: lobby-nav-lock-stretch 1s ease-out forwards 0.15s;
+}
+
+.lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip span {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes lobby-nav-lock-wiggle {
+  0% { transform: rotate(0) scale(1); }
+  20% { transform: rotate(8deg) scale(0.93); }
+  55% { transform: rotate(-5deg) scale(0.97); }
+  80% { transform: rotate(3deg) scale(0.94); }
+  100% { transform: rotate(0) scale(0.95); }
+}
+
+@keyframes lobby-nav-lock-settle {
+  0% { transform: rotate(0) scale(0.95); }
+  20% { transform: rotate(-8deg); }
+  55% { transform: rotate(5deg); }
+  80% { transform: rotate(-3deg); }
+  100% { transform: rotate(0) scale(1); }
+}
+
+@keyframes lobby-nav-lock-stretch {
+  0% { transform: translateX(-50%) scale(1, 1); }
+  10% { transform: translateX(-50%) scale(1.1, 0.9); }
+  30% { transform: translateX(-50%) scale(0.9, 1.1); }
+  50% { transform: translateX(-50%) scale(1.05, 0.95); }
+  100% { transform: translateX(-50%) scale(1, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-nav-lock-icon,
+  .lobby-nav-lock-wrap.is-open .lobby-nav-lock-icon,
+  .lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip {
+    animation-duration: 1ms;
+  }
+}
+
 .lobby-nav-badge {
   position: absolute;
   top: 0.2rem;

@@ -318,6 +318,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      lobby_feature_configs: {
+        Row: {
+          id: string;
+          feature_key: string;
+          label: string;
+          unlock_level: number;
+          is_enabled: boolean;
+          sort_order: number;
+          tooltip_text: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          feature_key: string;
+          label: string;
+          unlock_level?: number;
+          is_enabled?: boolean;
+          sort_order?: number;
+          tooltip_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          feature_key?: string;
+          label?: string;
+          unlock_level?: number;
+          is_enabled?: boolean;
+          sort_order?: number;
+          tooltip_text?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       board_theme_configs: {
         Row: {
           id: string;
