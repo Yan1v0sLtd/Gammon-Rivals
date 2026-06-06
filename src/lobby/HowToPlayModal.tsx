@@ -1,8 +1,12 @@
+import { useImagePreloader } from '../lib/useImagePreloader';
 import { ScaleInModal } from '../components/ScaleInModal';
 
 interface HowToPlayModalProps {
   readonly onClose: () => void;
 }
+
+const HOW_TO_PLAY_IMG = '/lobby/cards/how-to-play-popup.webp';
+const HOW_TO_PLAY_ASSETS: readonly string[] = [HOW_TO_PLAY_IMG];
 
 /**
  * Static tutorial popup — triggered from the "How to Play" side-rail
@@ -14,29 +18,47 @@ interface HowToPlayModalProps {
  * scale-in the board-purchase popup uses). ScaleInModal owns the
  * backdrop, the tap-outside-to-close, and the Escape key.
  *
+ * The image + close button are held until the image is decoded so the
+ * close button never appears over an empty (zero-height) panel — the old
+ * "X shows before the popup" jank. The asset is prefetched on idle from
+ * the lobby (LOBBY_SECONDARY_ASSETS), so `ready` is normally instant; the
+ * brief spinner only shows if the popup is opened before that finished.
+ *
  * The image is rendered at 75% of its natural size (operator spec —
  * "25% smaller than its original") via `width: 75%` on the inner panel.
  */
 export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
+  const { ready } = useImagePreloader(HOW_TO_PLAY_ASSETS);
+
   return (
     <ScaleInModal onClose={onClose} className="relative w-[75%] max-w-[1100px]">
-      <img
-        src="/lobby/cards/how-to-play-popup.webp"
-        alt="How to play backgammon"
-        className="block w-full select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.55)]"
-        draggable={false}
-      />
+      {ready ? (
+        <>
+          <img
+            src={HOW_TO_PLAY_IMG}
+            alt="How to play backgammon"
+            className="block w-full select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.55)]"
+            draggable={false}
+          />
 
-      {/* Close (X) — top-right corner. Replaces the old PLAY button; the
-       *  popup is purely informational (PLAY lives on the board carousel). */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close how to play"
-        className="absolute -right-3 -top-3 z-[1] grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-xl font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95"
-      >
-        ✕
-      </button>
+          {/* Close (X) — top-right corner. Replaces the old PLAY button; the
+           *  popup is purely informational (PLAY lives on the board carousel). */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close how to play"
+            className="absolute -right-3 -top-3 z-[1] grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-xl font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95"
+          >
+            ✕
+          </button>
+        </>
+      ) : (
+        // Brief placeholder so the panel has size while the image decodes
+        // (only visible if opened before the idle prefetch warmed the cache).
+        <div className="grid h-48 w-full place-items-center">
+          <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/90" />
+        </div>
+      )}
     </ScaleInModal>
   );
 }

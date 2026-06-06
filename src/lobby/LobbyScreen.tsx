@@ -13,6 +13,7 @@ import {
 } from '../lib/persistence';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
+import { usePrefetchOnIdle } from '../lib/usePrefetchOnIdle';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { DailyBonusModal } from './DailyBonusModal';
@@ -60,6 +61,21 @@ const LOBBY_STATIC_ASSETS: readonly string[] = [
   '/lobby/nav/nav-bg.webp',
   '/lobby/nav/tournaments.webp',
   '/lobby/nav/vip-club.webp',
+];
+
+// Tier-1 "open next" assets: NOT needed for first paint, but high-probability
+// the player opens them soon (Play → difficulty popup, How-to-Play). Prefetched
+// in the background once the lobby is interactive (see usePrefetchOnIdle) so
+// these sections appear instantly instead of flashing their images in a beat
+// later. Board art is deliberately NOT here — the carousel lazy-loads ±2 boards
+// as you scroll, so this stays small + scalable as boards grow.
+const LOBBY_SECONDARY_ASSETS: readonly string[] = [
+  '/lobby/difficulties/beginner.webp',
+  '/lobby/difficulties/advanced.webp',
+  '/lobby/difficulties/pro.webp',
+  '/lobby/difficulties/expert.webp',
+  '/lobby/difficulties/grand-master.webp',
+  '/lobby/cards/how-to-play-popup.webp',
 ];
 
 // type OpponentChoice = 'hotseat' | AILevel;  ← used by the
@@ -121,6 +137,9 @@ export function LobbyScreen() {
   // Bottom-nav feature gating (Missions/Events/Tournaments/VIP). The lock badge
   // + "Reach level X" pill are rendered inside LobbyBottomNav itself.
   const featureConfigs = useLobbyFeatureConfigs();
+  // Warm "open next" section art (difficulty heroes, How-to-Play) in the
+  // background once the lobby is interactive — no first-open flash.
+  usePrefetchOnIdle(LOBBY_SECONDARY_ASSETS);
   const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
   // Difficulty modal state. `enteringRoomId` is the table_config_id
   // currently being purchased via enter_room — the modal uses it to
