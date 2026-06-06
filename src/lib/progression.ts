@@ -40,6 +40,17 @@ function fallbackLevelXp(level: number): number {
 }
 
 /**
+ * The subset of a status tier that {@link resolveStatusLabel} needs.
+ * Accepts both full `level_status_tiers` rows and lightweight in-memory
+ * drafts (e.g. the Back Office editor) without forcing the caller to
+ * supply id / timestamps.
+ */
+export type StatusTierRange = Pick<
+  LevelStatusTier,
+  'level_from' | 'level_to' | 'label' | 'sort_order' | 'is_enabled'
+>;
+
+/**
  * Derive the status / rank label for a given level from the
  * `level_status_tiers` config. Picks the first enabled tier (lowest
  * sort_order, then level_from) whose [level_from, level_to] range
@@ -52,10 +63,13 @@ function fallbackLevelXp(level: number): number {
  * The fallback chain lets us roll this change out without backfilling
  * status_label on every existing level_configs row — anywhere a tier
  * is missing, the old column still wins.
+ *
+ * Exported so the Back Office's Level list can show the SAME derived
+ * status the lobby does, instead of the non-existent legacy column.
  */
-function resolveStatusLabel(
+export function resolveStatusLabel(
   level: number,
-  levelStatusTiers: readonly LevelStatusTier[],
+  levelStatusTiers: readonly StatusTierRange[],
   legacyLabel: string | null | undefined
 ): string {
   if (levelStatusTiers.length > 0) {

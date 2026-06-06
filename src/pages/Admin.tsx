@@ -26,6 +26,7 @@ import BoardPreview from '../admin/BoardPreview';
 import { WheelAdmin } from '../admin/WheelAdmin';
 import { LevelCurveProposal } from '../admin/LevelCurveProposal';
 import { MissionsAdmin } from '../admin/MissionsAdmin';
+import { resolveStatusLabel } from '../lib/progression';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2956,6 +2957,27 @@ export default function Admin() {
             const pagedLevels = levels.slice(pageStart, pageEnd);
             const pageSizeOptions: LevelsPageSize[] = [25, 50, 100, 'all'];
 
+            // Each level's status is DERIVED from the tier ranges (the same
+            // way the lobby derives it) — NOT from a per-row column. The old
+            // list read `level_configs.status_label`, which doesn't exist, so
+            // every level showed the "Rookie" fallback regardless of the
+            // configured tiers. Built from the live tier drafts so the column
+            // reflects edits in the panel above before they're even saved.
+            const parsedTierRanges = tierDrafts
+              .map((d, i) => ({
+                level_from: Number.parseInt(d.level_from, 10),
+                level_to: Number.parseInt(d.level_to, 10),
+                label: d.label.trim(),
+                sort_order: Number.parseInt(d.sort_order, 10) || i,
+                is_enabled: d.is_enabled,
+              }))
+              .filter(
+                (t) =>
+                  Number.isFinite(t.level_from) &&
+                  Number.isFinite(t.level_to) &&
+                  t.label.length > 0,
+              );
+
             return (
               <>
                 {/* Status Tiers — declarative level → rank label. The
@@ -3126,7 +3148,7 @@ export default function Admin() {
                           usdMicrosFor(rateMap, 'gems', row.reward_gems);
                         return [
                           `Level ${row.level}`,
-                          row.status_label ?? 'Rookie',
+                          resolveStatusLabel(row.level, parsedTierRanges, null),
                           `${formatNumber(row.xp_required)} XP`,
                           `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`,
                           formatUsdMicros(rowMicros),
