@@ -1,5 +1,6 @@
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { ScaleInModal } from '../components/ScaleInModal';
+import { ModalCloseButton } from '../components/ModalCloseButton';
 
 interface HowToPlayModalProps {
   readonly onClose: () => void;
@@ -41,16 +42,16 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
             draggable={false}
           />
 
-          {/* Close (X) — top-right corner. Replaces the old PLAY button; the
-           *  popup is purely informational (PLAY lives on the board carousel). */}
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close how to play"
-            className="absolute -right-3 -top-3 z-[1] grid h-10 w-10 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-xl font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95"
-          >
-            ✕
-          </button>
+          {/* Close (X) — INSIDE the frame's top-right corner, on the navy
+           *  field just inside the gold border bracket. Replaces the old
+           *  PLAY button; the popup is purely informational (PLAY lives on
+           *  the board carousel). Shared with the Daily Bonus modal so both
+           *  close buttons are identical in size + style. */}
+          <ModalCloseButton
+            onClose={onClose}
+            ariaLabel="Close how to play"
+            className="absolute right-[2.6%] top-[4%] z-[1]"
+          />
         </>
       ) : (
         // Brief placeholder so the panel has size while the image decodes
