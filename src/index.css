@@ -794,442 +794,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: block;
 }
 
-@media (orientation: landscape) and (max-height: 720px) {
-  .lobby-screen {
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-  }
-
-  .lobby-shell {
-    height: 100dvh;
-    min-height: 0;
-    overflow: hidden;
-    padding: max(0.08rem, env(safe-area-inset-top)) clamp(0.35rem, 1vw, 0.55rem) 0;
-  }
-
-  .lobby-topbar {
-    grid-template-columns: minmax(12rem, 1fr) auto;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0 0 0.08rem;
-  }
-
-  .lobby-profile-card {
-    gap: 0.42rem;
-    max-width: 100%;
-    padding: 0;
-  }
-
-  .lobby-profile-avatar-wrap {
-    width: 3.35rem;
-    height: 3.35rem;
-  }
-
-  .lobby-profile-avatar-core {
-    inset: 0.18rem;
-    box-shadow:
-      0 0 0 0.12rem #1b123b,
-      0 0 0 0.22rem #ffcc42,
-      0 0 0 0.28rem rgba(255, 255, 255, 0.32),
-      0 0.3rem 0.52rem rgba(0, 0, 0, 0.42);
-  }
-
-  .lobby-profile-avatar-core > * {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .lobby-profile-level-shield {
-    /* Pointy-top hexagon — height = width × 1.155. */
-    width: 1.34rem;
-    height: 1.55rem;
-    font-size: 0.64rem;
-  }
-
-  .lobby-profile-edit {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 0.22rem;
-    font-size: 0.58rem;
-  }
-
-  .lobby-profile-copy > a > div:first-child > div {
-    font-size: 1.05rem;
-  }
-
-  .lobby-rank-badge {
-    min-width: 4.15rem;
-    gap: 0.2rem;
-    border-radius: 0.28rem;
-    font-size: 0.52rem;
-    padding: 0.12rem 0.34rem 0.14rem 0.24rem;
-  }
-
-  .lobby-rank-star {
-    width: 0.62rem;
-    height: 0.62rem;
-  }
-
-  .lobby-profile-progress {
-    width: 4.7rem;
-    height: 0.78rem;
-    border-width: 1px;
-  }
-
-  .lobby-profile-progress-text {
-    display: none;
-  }
-
-  /* On the smallest compact breakpoint the bar is only ~0.78rem
-     tall — the in-bar percentage label would be unreadable, so
-     hide it. The bar's lava animation still plays. */
-  .lobby-profile-progress-label {
-    display: none;
-  }
-
-  .lobby-profile-copy button {
-    margin-top: 0.2rem;
-    padding: 0.12rem 0.5rem;
-    font-size: 0.46rem;
-  }
-
-  .lobby-topbar-actions,
-  .lobby-currency-strip {
-    gap: 0.35rem;
-  }
-
-  .lobby-currency-pill {
-    min-width: 5.25rem;
-    height: 1.82rem;
-  }
-
-  .lobby-currency-icon {
-    width: 2.18rem;
-    height: 2.18rem;
-    margin-left: -0.55rem;
-  }
-
-  .lobby-currency-value {
-    height: 1.34rem;
-    margin-left: -0.34rem;
-    padding-inline: 0.45rem;
-    font-size: 0.72rem;
-  }
-
-  .lobby-currency-add {
-    width: 1.45rem;
-    height: 1.45rem;
-    border-radius: 0.28rem;
-  }
-
-  .lobby-currency-add > span:first-child {
-    width: 0.25rem;
-    height: 0.82rem;
-  }
-
-  .lobby-currency-add > span:last-child {
-    width: 0.82rem;
-    height: 0.25rem;
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] {
-    display: flex;
-    gap: 0.38rem;
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] button {
-    min-width: 2.25rem;
-    gap: 0.08rem;
-    font-size: 0.42rem;
-    line-height: 1;
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] button > span:first-child {
-    width: 1.7rem;
-    height: 1.7rem;
-  }
-
-  .lobby-main-grid {
-    flex: 1 1 auto;
-    grid-template-columns:
-      clamp(9.4rem, 20vw, 10.6rem)
-      minmax(0, 1fr)
-      clamp(9.4rem, 20vw, 10.6rem);
-    gap: clamp(0.45rem, 1.4vw, 0.8rem);
-    min-height: 0;
-    align-items: stretch;
-    padding: 0;
-  }
-
-  .lobby-offers {
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.38rem;
-    min-height: 0;
-    overflow: visible;
-    padding-bottom: 0;
-  }
-
-  .lobby-offers,
-  .lobby-action-stack {
-    align-self: center;
-    width: 100%;
-  }
-
-  /* Non-image offer cards (text + symbol + arrow chrome) — the
-   * old Connect-style tile. Kept slim on short landscape so it
-   * doesn't dominate. Now scoped to :not(:has(> img)) so the
-   * new 400x400 image icons aren't constrained to this layout. */
-  .lobby-offer-card:not(:has(> img)) {
-    flex: 0 0 clamp(2.7rem, 12dvh, 3.35rem);
-    min-width: 0;
-    min-height: 0;
-    height: clamp(2.7rem, 12dvh, 3.35rem);
-    aspect-ratio: auto !important;
-    border-radius: 0.42rem;
-    gap: 0.32rem;
-  }
-
-  /* Image offer cards — square aspect, sized off the viewport
-   * shorter axis. 30% smaller than the prior round per operator
-   * request (min(40dvw, 22dvh) → min(28dvw, 15.4dvh)). */
-  .lobby-offer-card:has(> img) {
-    flex: 0 0 min(28dvw, 15.4dvh) !important;
-    width: min(28dvw, 15.4dvh) !important;
-    height: min(28dvw, 15.4dvh) !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 0;
-    gap: 0;
-  }
-
-  .lobby-offer-card:not(:has(> img)) > span.relative.grid {
-    width: 2.35rem;
-    height: 2.35rem;
-    margin-left: 0.5rem;
-    font-size: 1.26rem;
-    border-width: 1px;
-  }
-
-  .lobby-offer-card > span.relative > span:first-child {
-    font-size: 0.72rem;
-    line-height: 0.95;
-  }
-
-  .lobby-offer-card > span.relative > span:last-child {
-    margin-top: 0.18rem;
-    font-size: 0.43rem;
-    line-height: 1.08;
-    letter-spacing: 0.03em;
-  }
-
-  .lobby-board-region {
-    display: flex;
-    min-height: 0;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  .lobby-carousel-section {
-    display: flex;
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    align-items: center;
-    overflow: hidden;
-  }
-
-  .lobby-carousel-viewport {
-    width: 100%;
-    height: min(100%, calc(100dvh - 6.4rem));
-    max-height: calc(100dvh - 5.75rem);
-    min-height: 0 !important;
-    aspect-ratio: 1.56 / 1;
-  }
-
-  .lobby-carousel-board {
-    --lobby-prev-x: -46%;
-    --lobby-next-x: 46%;
-    --lobby-side-scale: 0.76;
-    --lobby-incoming-prev-x: -78%;
-    --lobby-incoming-next-x: 78%;
-    --lobby-incoming-scale: 0.68;
-    top: calc(4% + 20px);
-    width: 61%;
-    height: auto;
-    aspect-ratio: 4 / 3;
-  }
-
-  .lobby-carousel-board[data-slot='selected'] {
-    transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
-  }
-
-  .lobby-carousel-board[data-slot='previous'] {
-    transform: translateX(-50%) translateX(calc(var(--lobby-prev-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  }
-
-  .lobby-carousel-board[data-slot='next'] {
-    transform: translateX(-50%) translateX(calc(var(--lobby-next-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  }
-
-  .lobby-carousel-viewport > img.pointer-events-none {
-    bottom: 16%;
-    width: 72%;
-    max-width: none;
-  }
-
-  .lobby-carousel-viewport > div[class*='top-'] {
-    top: 0.5%;
-    height: 1.75rem;
-    min-width: 14rem;
-    padding-inline: 2.2rem;
-  }
-
-  .lobby-carousel-viewport > div[class*='top-'] > div {
-    font-size: 0.92rem;
-  }
-
-  .lobby-play-button {
-    /* Halved from the previous sizing — the CTA was visually
-       dominating the board centre. */
-    bottom: 2rem;
-    height: 1.08rem;
-    min-width: 4.7rem;
-    padding: 0 0.9rem;
-    font-size: 0.54rem;
-  }
-
-  .lobby-carousel-viewport > div[class*='bottom-24'] {
-    bottom: 4.7rem;
-    gap: 0.36rem;
-  }
-
-  .lobby-carousel-viewport > div[class*='bottom-24'] button {
-    width: 0.48rem;
-    height: 0.48rem;
-  }
-
-  .lobby-carousel-viewport button[aria-label='Previous board'],
-  .lobby-carousel-viewport button[aria-label='Next board'] {
-    width: 2.55rem;
-    height: 2.55rem;
-    border-width: 0.14rem;
-    font-size: 2.1rem;
-  }
-
-  .lobby-carousel-viewport button[aria-label='Previous board'] {
-    left: 10%;
-  }
-
-  .lobby-carousel-viewport button[aria-label='Next board'] {
-    right: 10%;
-  }
-
-  .lobby-action-stack {
-    grid-template-columns: 1fr !important;
-    align-content: center;
-    gap: 0.38rem;
-    min-height: 0;
-  }
-
-  .lobby-action-card {
-    flex: 0 0 clamp(2.7rem, 12dvh, 3.35rem);
-    min-height: 0;
-    height: clamp(2.7rem, 12dvh, 3.35rem);
-    gap: 0.34rem;
-    border-radius: 0.42rem;
-    padding: 0.38rem 0.46rem;
-  }
-
-  .lobby-action-icon {
-    width: 2.48rem;
-    height: 2.48rem;
-  }
-
-  .lobby-action-icon img {
-    max-width: 2.78rem;
-    max-height: 2.78rem;
-  }
-
-  .lobby-action-icon > span {
-    width: 2.18rem;
-    height: 2.18rem;
-    font-size: 1.18rem;
-  }
-
-  .lobby-action-title {
-    font-size: 0.7rem;
-  }
-
-  .lobby-action-subtitle {
-    margin-top: 0.14rem;
-    font-size: 0.45rem;
-    line-height: 1.08;
-  }
-
-  .lobby-bottom-nav-shell {
-    /* 30 % smaller than the previous 83vw / 42rem / 3.35rem. */
-    flex: 0 0 auto;
-    width: min(58.1vw, 29.4rem);
-    min-height: 2.35rem;
-    margin-top: 0;
-    padding-left: 0.49rem;
-    padding-right: 0.49rem;
-    padding-bottom: max(0.05rem, env(safe-area-inset-bottom));
-  }
-
-  .lobby-bottom-nav-frame {
-    top: 0.45rem;
-    border-radius: 1rem 1rem 0.42rem 0.42rem;
-    transform: perspective(22rem) rotateX(6deg);
-  }
-
-  .lobby-bottom-nav-item {
-    min-height: 2.95rem;
-    gap: 0.02rem;
-  }
-
-  .lobby-bottom-nav-item.is-featured {
-    width: 3.86rem;
-    min-height: 3.86rem;
-    margin-top: -0.95rem;
-    border-width: 0.11rem;
-  }
-
-  .lobby-nav-icon,
-  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
-    width: 2.2rem;
-    height: 1.9rem;
-    transform: scale(0.58);
-  }
-
-  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
-    transform: scale(0.56);
-  }
-
-  .lobby-nav-label,
-  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
-    max-width: 3.9rem;
-    color: #ffe2a0;
-    font-size: 0.46rem;
-    text-shadow: 0 0.08rem 0 rgba(0, 0, 0, 0.55), 0 0 0.35rem rgba(255, 190, 50, 0.22);
-  }
-
-  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
-    max-width: 3.3rem;
-  }
-
-  .lobby-nav-badge {
-    top: 0.1rem;
-    right: 18%;
-    min-width: 1.05rem;
-    padding: 0.12rem 0.24rem;
-    font-size: 0.58rem;
-  }
-}
 
 /* Lobby premium landscape pass, mapped from the 1792x828 mobile mockup. */
 .lobby-screen::after {
@@ -1803,7 +1367,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     /* Podium: grown another 20 % (780 -> 936) to match the bigger boards,
        dropped below its anchor so the board sits cleanly on the front
        carving. */
-    bottom: calc(-8 * var(--lobby-u) - 40px);
+    /* Pure --lobby-u (was `- 40px`): a fixed px term made the podium drift
+       relative to the pure-u board as the stage scaled, so the board stopped
+       seating on the rim. Now both move in lockstep at every size. */
+    bottom: calc(-56 * var(--lobby-u));
     width: calc(936 * var(--lobby-u));
     max-width: none;
     /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
@@ -1849,7 +1416,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        The vertical offset is left as-is (still sits on the wooden
        deck below the carved front); only the button's intrinsic
        size shrinks. */
-    bottom: calc(-35 * var(--lobby-u) - 50px);
+    /* Pure --lobby-u (was `- 50px`) so the Play button stays locked to the
+       board + podium at every scale. */
+    bottom: calc(-85 * var(--lobby-u));
     height: calc(40 * var(--lobby-u));
     min-width: calc(175 * var(--lobby-u));
     padding: 0 calc(21 * var(--lobby-u));
@@ -8858,7 +8427,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .lobby-pp-card {
   --lobby-pp-radius: 0;
-  --lobby-pp-pad: clamp(12px, 1.2vw, 17px);
+  /* Stage-unit scaling (was clamp(px, vw, px)): the whole card now scales with
+     --lobby-u like the rest of the lobby, so the avatar is the same fraction of
+     the screen on phone and desktop. Factor 17.92 = the width-constrained
+     vw→u ratio, so the desktop look is preserved. */
+  --lobby-pp-pad: calc(21.5 * var(--lobby-u));
   position: relative;
   isolation: isolate;
   /* Frameless widget — no border, no inner ring, no card frame.
@@ -8867,9 +8440,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * The gradient is denser in the centre (where the avatar +
    * info live) and dissolves at the perimeter. A small backdrop
    * blur softens the lobby art behind so the text reads cleanly. */
-  width: 100%;
-  max-width: min(100%, 19rem);
-  margin: 14px 0 0 19px;
+  /* Hug the (now --lobby-u) content so the invisible hit-box matches the
+     visible avatar at every scale, and position it in stage units (was a
+     fixed 19rem cap + 14px/19px px margins, which didn't scale). */
+  width: max-content;
+  max-width: 100%;
+  margin: calc(24 * var(--lobby-u)) 0 0 calc(40 * var(--lobby-u));
   padding: var(--lobby-pp-pad);
   /* Frameless widget — the bottom padding is invisible but extends the
      card's hit box ~12-17px below the XP bar, over the top of the first
@@ -8930,7 +8506,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: clamp(4px, 0.5vw, 7px);
+  gap: calc(9 * var(--lobby-u));
 }
 
 /* Identity column — avatar + level shield + name + rank stacked
@@ -8940,7 +8516,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(3px, 0.4vw, 5px);
+  gap: calc(7 * var(--lobby-u));
   min-width: 0;
 }
 
@@ -8948,15 +8524,15 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-avatar-wrap {
   display: grid;
   place-items: center;
-  padding-bottom: clamp(6px, 0.7vw, 10px); /* leaves room for the level shield */
+  padding-bottom: calc(12.5 * var(--lobby-u)); /* leaves room for the level shield */
 }
 
 .lobby-pp-avatar-ring {
   position: relative;
-  width: clamp(67px, 7.6vw, 96px);
+  width: calc(136 * var(--lobby-u));
   aspect-ratio: 1;
   border-radius: 50%;
-  border: clamp(4px, 0.42vw, 5.5px) solid transparent;
+  border: calc(7.5 * var(--lobby-u)) solid transparent;
   background:
     radial-gradient(circle at 46% 42%, #e88dff 0 12%, #b756f4 36%, #7420bd 65%, #27086c 100%) padding-box,
     conic-gradient(
@@ -9008,7 +8584,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .lobby-pp-spark {
   position: absolute;
-  width: clamp(6px, 0.7vw, 10px);
+  width: calc(12.5 * var(--lobby-u));
   aspect-ratio: 1;
   background: white;
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
@@ -9036,9 +8612,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-pp-shield {
   position: absolute;
   left: 50%;
-  bottom: clamp(-12px, -0.85vw, -6px);
+  bottom: calc(-15 * var(--lobby-u));
   transform: translateX(-50%);
-  width: clamp(18px, 2vw, 28px);
+  width: calc(36 * var(--lobby-u));
   aspect-ratio: 0.78;
   display: grid;
   place-items: center;
@@ -9054,7 +8630,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   z-index: 6;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
-  font-size: clamp(10px, 1.1vw, 14px);
+  font-size: calc(19.5 * var(--lobby-u));
   color: #fff;
   text-shadow: 0 1px 0 #25235b;
 }
@@ -9236,8 +8812,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   position: relative;
   /* Sized to the avatar circle (same clamp as .lobby-pp-avatar-ring) and
    * centred below it — it's now the only text element in the card. */
-  width: clamp(67px, 7.6vw, 96px);
-  height: clamp(14px, 1.62vw, 20px);
+  width: calc(136 * var(--lobby-u));
+  height: calc(29 * var(--lobby-u));
   border-radius: 999px;
   padding: 2px;
   background:
@@ -9310,7 +8886,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   justify-content: center;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
-  font-size: clamp(10px, 0.95vw, 12px);
+  font-size: calc(17 * var(--lobby-u));
   color: white;
   text-shadow: 0 1.5px 0 #070819, 0 0 4px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
