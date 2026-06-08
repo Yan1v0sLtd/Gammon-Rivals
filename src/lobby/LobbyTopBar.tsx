@@ -69,9 +69,9 @@ function CurrencyPill({
   );
 }
 
+// Rewards + Friends were placeholder (no-op) icons — removed per operator
+// review. Settings stays.
 const shortcuts = [
-  { label: 'Rewards', icon: '/lobby/icons/rewards-gift.webp' },
-  { label: 'Friends', icon: '/lobby/icons/friends.webp' },
   { label: 'Settings', icon: '/lobby/icons/settings-gear.webp' },
 ] as const;
 

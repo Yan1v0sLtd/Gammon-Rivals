@@ -732,10 +732,13 @@ export function LobbyBoardCarousel({
 
         <PodiumImage src={podiumImage} />
 
-        <div className="absolute left-1/2 top-[3%] z-40 flex h-10 min-w-72 -translate-x-1/2 items-center justify-center bg-[linear-gradient(90deg,transparent,rgba(22,18,17,0.78)_22%,rgba(22,18,17,0.86)_50%,rgba(22,18,17,0.78)_78%,transparent)] px-12 drop-shadow-[0_5px_6px_rgba(0,0,0,0.34)]">
-          <div className="font-display text-lg font-black uppercase tracking-[0.12em] text-[#ffe0a0] drop-shadow-[0_2px_0_rgba(0,0,0,0.45)]">
-            {selected.name}
-          </div>
+        {/* Board name — golden pill reusing the lock pill's gold treatment
+            (.gr-name-pill), centred at the top just below the balances notch. */}
+        <div
+          className="gr-name-pill font-display absolute left-1/2 top-[2%] z-40 -translate-x-1/2"
+          style={{ fontSize: 'clamp(0.8rem, 1.7vw, 1.3rem)' }}
+        >
+          {selected.name}
         </div>
 
         {/* Prev/Next navigation arrows removed per operator

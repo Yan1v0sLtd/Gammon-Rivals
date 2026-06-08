@@ -710,8 +710,10 @@ html, body, #root {
      clean morph. The short "Claim" label no longer fills the box, so the base
      font here sizes only the longer states (the HH:MM:SS timer and
      "Unavailable"); the Claim label gets a larger font below. */
-  min-width: clamp(4.6rem, 7.5vw, 6.9rem);
-  height: clamp(1.26rem, 2.16vw, 1.8rem);
+  /* -5% per operator review (shared base → all three states stay the same
+     size for a clean morph). */
+  min-width: clamp(4.37rem, 7.13vw, 6.56rem);
+  height: clamp(1.2rem, 2.05vw, 1.71rem);
   padding: 0 clamp(0.22rem, 0.45vw, 0.38rem);
   border: 1.8px solid rgba(255, 199, 79, 0.85);
   border-radius: 9999px;
@@ -739,8 +741,9 @@ button.lobby-hourly-bonus-pill.is-ready {
   border-color: rgba(180, 83, 9, 0.8);
   background: linear-gradient(180deg, #fbbf24 0%, #ea580c 100%);
   cursor: pointer;
-  /* "Claim" is short, so size it up to fill the pinned pill width. */
-  font-size: clamp(0.95rem, 1.7vw, 1.3rem);
+  /* "Claim" is short, so size it up to fill the pinned pill width.
+     -10% on the label per operator review. */
+  font-size: clamp(0.855rem, 1.53vw, 1.17rem);
 }
 
 button.lobby-hourly-bonus-pill.is-ready:hover {
@@ -1345,13 +1348,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        `top` so the board isn't stretched between both edges. Tune `bottom`
        once to seat the base on the rim; tune width for size. */
     top: auto;
-    bottom: calc(-25 * var(--lobby-u));
+    /* Net +10px from the -25u base. Pushed up to use the room freed by the
+       10%-smaller board. The Play button is a child of this element so it
+       rides up with the board; the podium stays put. */
+    bottom: calc(-25 * var(--lobby-u) + 10px);
     /* Top-down boards read larger than the old tilted art (no perspective
        foreshortening). Net width 69% (was 74% tilted): trimmed for top-down,
        then +10% back per operator review once the hourly-bonus icon was
        shrunk to free navigator room. Bottom-anchored, so it stays seated on
        the podium as it resizes. */
-    width: 69%;
+    /* 10% smaller (69% -> 62.1%) per operator review. Bottom-anchored, so it
+       shrinks toward its base on the podium rather than floating. */
+    width: 62.1%;
     height: auto;
   }
 
@@ -1371,14 +1379,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .lobby-carousel-viewport > img.pointer-events-none {
-    /* Podium: grown another 20 % (780 -> 936) to match the bigger boards,
-       dropped below its anchor so the board sits cleanly on the front
-       carving. */
-    /* Pure --lobby-u (was `- 40px`): a fixed px term made the podium drift
-       relative to the pure-u board as the stage scaled, so the board stopped
-       seating on the rim. Now both move in lockstep at every size. */
-    bottom: calc(-72 * var(--lobby-u));
-    width: calc(702 * var(--lobby-u));
+    /* Podium: +20 % (702 -> 842) for the new thinner US-of-A holder art, and
+       nudged 5px DOWN. The -5px MIRRORS the board's -5px (and the Play
+       button's) so board + podium + button shift down together — no relative
+       drift, board stays seated on the rim. */
+    bottom: calc(-72 * var(--lobby-u) - 15px);
+    width: calc(842 * var(--lobby-u));
     max-width: none;
     /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
        drop-shadow on the <img>); scales with --lobby-u. */
@@ -1414,9 +1420,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     animation: lobbyPodiumFadeOut 450ms ease forwards;
   }
 
-  .lobby-carousel-viewport > div[class*='top-'] {
-    display: none;
-  }
+  /* (Removed a `.lobby-carousel-viewport > div[class*='top-'] { display:none }`
+     rule that used to hide the deleted prev/next nav arrows — it ALSO matched
+     the board-name pill's `top-[2%]` class and silently hid it, which is why
+     the board name "disappeared". The name pill is shown again via
+     .gr-name-pill.) */
 
   .lobby-play-button {
     /* Halved from 80×350 — previously dominating the board centre.
@@ -1424,8 +1432,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        deck below the carved front); only the button's intrinsic
        size shrinks. */
     /* Pure --lobby-u (was `- 50px`) so the Play button stays locked to the
-       board + podium at every scale. */
-    bottom: calc(-85 * var(--lobby-u));
+       board + podium at every scale. The -5px matches the board + podium
+       nudge so the button stays on the deck. */
+    bottom: calc(-85 * var(--lobby-u) - 5px);
     height: calc(40 * var(--lobby-u));
     min-width: calc(175 * var(--lobby-u));
     padding: 0 calc(21 * var(--lobby-u));
@@ -9482,6 +9491,48 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border-radius: inherit;
   border: 0.013em solid rgba(255, 238, 157, 0.28);
   box-shadow: inset 0 0 0.205em rgba(255, 220, 95, 0.08);
+  pointer-events: none;
+}
+
+/* Static golden NAME pill — reuses the .gr-unlock-pill gold treatment (dark
+   core, gradient gold rim) but always shows its text and auto-sizes to fit.
+   Used for the board name above the carousel. Size it via font-size on the
+   element (inline style); everything else is em-relative. */
+.gr-name-pill {
+  --gold-light: #ffe98b;
+  --gold-mid: #d9a83a;
+  --gold-dark: #8a5d12;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34em 1.15em;
+  border-radius: 999px;
+  overflow: hidden;
+  color: var(--gold-light);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
+  box-shadow:
+    0 0 0 0.08em var(--gold-dark),
+    0 0 0 0.14em var(--gold-mid),
+    inset 0 0.06em 0.1em rgba(255, 255, 255, 0.08),
+    inset 0 -0.1em 0.18em rgba(0, 0, 0, 0.75),
+    0 0.16em 0.3em rgba(0, 0, 0, 0.45);
+  text-shadow: 0 0.06em 0.08em rgba(0, 0, 0, 0.55);
+}
+.gr-name-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 0.09em;
+  background: linear-gradient(135deg, #ffe98b 0%, #c78f25 34%, #fff0a0 52%, #8a5d12 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   pointer-events: none;
 }
 
