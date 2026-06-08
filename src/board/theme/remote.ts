@@ -3,6 +3,7 @@ import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 import type { Database, Json } from '../../types/database';
 import { getBoardTheme } from './boardThemes';
 import { premiumTheme } from './premium';
+import { getPersistedBoardId } from './selectedBoard';
 import type { Theme, ThemeLayout } from './types';
 
 export type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
@@ -196,40 +197,69 @@ export interface BoardThemeConfigResult {
 }
 
 export function useBoardThemeConfig(boardId: string | null | undefined): BoardThemeConfigResult {
-  const fallbackTheme = useMemo(() => getBoardTheme(boardId), [boardId]);
-  const [remoteTheme, setRemoteTheme] = useState<{ id: string; theme: Theme } | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(
-    () => isSupabaseConfigured && Boolean(boardId)
-  );
+  // Generic placeholder (premiumTheme). LAST resort only — once any real board
+  // resolves below it is never shown. Kept so there is always *something* to
+  // draw if Supabase is unconfigured or the DB has zero enabled boards.
+  const placeholderTheme = useMemo(() => getBoardTheme(boardId), [boardId]);
+  const [resolved, setResolved] = useState<Theme | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => isSupabaseConfigured);
+
+  // Which board to load: the explicit `?board=` param wins; otherwise fall
+  // back to the player's persisted lobby pick. Entry points like invite links,
+  // public/queue matches and cold loads omit `?board=` BY DESIGN — reading the
+  // persisted pick keeps the player on THEIR board (per-client, no coupling to
+  // matchmaking). If neither exists, the effect resolves the first enabled
+  // board from the back office. This is what prevents the generic placeholder
+  // board from ever reaching a player.
+  const requestedId = (boardId && boardId.trim()) || getPersistedBoardId() || null;
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!isSupabaseConfigured || !boardId) {
+    if (!isSupabaseConfigured) {
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    void supabase
-      .from('board_theme_configs')
-      .select('*')
-      .eq('id', boardId)
-      .eq('is_enabled', true)
-      .maybeSingle()
-      .then(({ data, error }) => {
+    setResolved(null);
+
+    void (async () => {
+      // 1. The specific board the player asked for (URL param or persisted pick).
+      if (requestedId) {
+        const { data } = await supabase
+          .from('board_theme_configs')
+          .select('*')
+          .eq('id', requestedId)
+          .eq('is_enabled', true)
+          .maybeSingle();
         if (cancelled) return;
-        setIsLoading(false);
-        if (error || !data) return;
-        setRemoteTheme({ id: boardId, theme: themeFromBoardConfig(data) });
-      });
+        if (data) {
+          setResolved(themeFromBoardConfig(data));
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2. No board requested, or it is missing / disabled / failed to load:
+      //    use the first ENABLED board in the back-office order as a REAL
+      //    default, so the player always lands on a legitimate themed board.
+      const { data: defaultRow } = await supabase
+        .from('board_theme_configs')
+        .select('*')
+        .eq('is_enabled', true)
+        .order('sort_order', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (defaultRow) setResolved(themeFromBoardConfig(defaultRow));
+      setIsLoading(false);
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [boardId]);
+  }, [requestedId]);
 
-  const theme =
-    remoteTheme && remoteTheme.id === boardId ? remoteTheme.theme : fallbackTheme;
-  return { theme, isLoading };
+  return { theme: resolved ?? placeholderTheme, isLoading };
 }

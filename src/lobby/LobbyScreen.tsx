@@ -14,6 +14,7 @@ import {
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { usePrefetchOnIdle } from '../lib/usePrefetchOnIdle';
+import { setPersistedBoardId } from '../board/theme/selectedBoard';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
 import { DailyBonusModal } from './DailyBonusModal';
@@ -369,6 +370,15 @@ export function LobbyScreen() {
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
     ? selectedBoardId
     : (boards[0]?.id ?? '');
+
+  // Persist the player's current board pick so match screens reached WITHOUT a
+  // `?board=` param (invite links, public/queue matches, cold loads) can
+  // recover it via useBoardThemeConfig and never fall through to the generic
+  // placeholder board.
+  useEffect(() => {
+    setPersistedBoardId(effectiveSelectedBoardId);
+  }, [effectiveSelectedBoardId]);
+
   // selectedBoard may be undefined briefly before useLobbyBoards's DB
   // fetch resolves (or if no boards are configured in the back office).
   // All downstream code now treats it as optional.
