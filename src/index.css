@@ -4152,7 +4152,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-panel-bottom {
-  margin-top: 0.8rem;
+  /* The premium player card is position:absolute (inset:0), so an in-flow
+     bottom slot would collapse to the panel's TOP (over the avatar). Pin it
+     just BELOW the card instead — i.e. directly under the player's details +
+     turn timer, which is where the secondary controls (Cube/Double/Auto)
+     belong. (The mobile-compact layout uses a different wrapper, so this
+     only affects the side-panel layout.) */
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  margin-top: 0.35rem;
+  z-index: 14;
 }
 
 .game-compact-panel {
@@ -5567,25 +5577,27 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    the right (local) player's details block. position:fixed = viewport-
    relative, so it ignores the old bottom action-bar box. */
 .game-controls-secondary {
-  position: fixed;
-  right: 1.4%;
-  bottom: 11%;
-  width: 16.5%;
+  /* Cube / x2 Double / Auto. Rendered in the local player's panel bottom
+     slot (under their details + turn timer), NOT over the board — so it
+     tracks the panel across aspect ratios with no magic offsets. A simple
+     centred row of square badges sized to fit the panel width. */
   display: flex;
-  align-items: stretch;
+  width: 100%;
+  align-items: center;
   justify-content: center;
-  gap: 4.5%;
+  gap: clamp(0.28rem, 1.1vw, 0.6rem);
   pointer-events: auto;
-  z-index: 270;
 }
 .game-controls-secondary > .game-cube-button,
 .game-controls-secondary > .game-double-button,
 .game-controls-secondary > .game-auto-slot {
   position: relative;
-  flex: 1 1 0;
+  flex: 0 0 auto;
+  /* vw-based so the badges scale with the (vw-relative) panel width and
+     three always fit in a row. */
+  width: clamp(1.6rem, 4.6vw, 2.7rem);
+  height: clamp(1.6rem, 4.6vw, 2.7rem);
   min-width: 0;
-  width: auto;
-  height: auto;
   aspect-ratio: 1 / 1;
 }
 

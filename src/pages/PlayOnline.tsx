@@ -4,7 +4,7 @@ import BoardCanvas from '../board/BoardCanvas';
 import DiceTray from '../components/DiceTray';
 import CubeOfferDecision from '../components/CubeOfferDecision';
 import BoardLayout from '../components/BoardLayout';
-import ActionButtons from '../components/ActionButtons';
+import ActionButtons, { MatchSecondaryControls } from '../components/ActionButtons';
 import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
@@ -392,22 +392,13 @@ export default function PlayOnline() {
           isLocalTurn && !showMatchOver && !game.betweenGames
             ? game.turnSecondsLeft ?? undefined
             : undefined,
-      }}
-      actionsOverlay={
-        showActions ? (
-          <ActionButtons
-            canRoll={game.canRoll}
-            onRoll={() => void game.rollDice()}
-            canEndTurn={game.canEndTurn}
-            onEndTurn={() => void game.endTurn()}
+        // Cube / Double / Auto live UNDER the local player's details (their
+        // panel's bottom slot), matching the reference layout.
+        bottomSlot: showActions ? (
+          <MatchSecondaryControls
             canDouble={game.canOfferDouble}
             onDouble={() => void game.offerDouble()}
             cubeValue={game.cubeValue}
-            // Online undo not supported (server-authoritative). We still
-            // render the row so DOUBLE/ROLL stay positioned; UNDO simply
-            // never shows.
-            canUndo={false}
-            onUndo={() => {}}
             autoRollSlot={
               !isSpectator ? (
                 <AutoRollToggle
@@ -417,6 +408,20 @@ export default function PlayOnline() {
                 />
               ) : null
             }
+          />
+        ) : undefined,
+      }}
+      actionsOverlay={
+        showActions ? (
+          <ActionButtons
+            canRoll={game.canRoll}
+            onRoll={() => void game.rollDice()}
+            canEndTurn={game.canEndTurn}
+            onEndTurn={() => void game.endTurn()}
+            // Online undo not supported (server-authoritative). We still
+            // render the row so ROLL stays positioned; UNDO simply never shows.
+            canUndo={false}
+            onUndo={() => {}}
           />
         ) : null
       }

@@ -6,7 +6,7 @@ import CubeOfferDecision from '../components/CubeOfferDecision';
 import EndOfGameModal from '../components/EndOfGameModal';
 import MatchHeader from '../components/MatchHeader';
 import BoardLayout from '../components/BoardLayout';
-import ActionButtons from '../components/ActionButtons';
+import ActionButtons, { MatchSecondaryControls } from '../components/ActionButtons';
 import AutoRollToggle from '../components/AutoRollToggle';
 import AlignmentPanel from '../components/AlignmentPanel';
 import { useGame, type AIConfig, type TurnRecord } from '../game/useGame';
@@ -577,6 +577,24 @@ export default function HotSeat() {
         isTurn: isLocalTurn && !showGameEndModal,
         timerProgress: isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
         timerSecondsLeft: isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined,
+        // Cube / Double / Auto live UNDER the local player's details (their
+        // panel's bottom slot), matching the reference layout. Gated the same
+        // way as the primary action overlay below.
+        bottomSlot:
+          !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (
+            <MatchSecondaryControls
+              canDouble={game.canOfferDouble}
+              onDouble={game.offerDouble}
+              cubeValue={game.match.cube.value}
+              autoRollSlot={
+                <AutoRollToggle
+                  enabled={autoRollOn}
+                  onChange={setAutoRollOn}
+                  variant="inline"
+                />
+              }
+            />
+          ) : undefined,
       }}
       actionsOverlay={
         !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (
@@ -585,18 +603,8 @@ export default function HotSeat() {
             onRoll={game.rollDice}
             canEndTurn={game.canEndTurn && humanCanInteract}
             onEndTurn={game.endTurn}
-            canDouble={game.canOfferDouble}
-            onDouble={game.offerDouble}
-            cubeValue={game.match.cube.value}
             canUndo={game.canUndo}
             onUndo={game.undoLastMove}
-            autoRollSlot={
-              <AutoRollToggle
-                enabled={autoRollOn}
-                onChange={setAutoRollOn}
-                variant="inline"
-              />
-            }
           />
         ) : null
       }

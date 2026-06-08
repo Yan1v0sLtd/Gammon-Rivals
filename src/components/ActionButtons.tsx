@@ -6,37 +6,26 @@ interface Props {
    *  nothing left to play but the turn isn't auto-ended). */
   canEndTurn: boolean;
   onEndTurn: () => void;
-  /** Show + enable the DOUBLE button. The smaller left-side action. */
-  canDouble: boolean;
-  onDouble: () => void;
-  cubeValue: number;
   /** Show + enable the UNDO button. Sits next to ROLL when relevant. */
   canUndo: boolean;
   onUndo: () => void;
-  /** Optional preference control rendered to the right of the primary action. */
-  autoRollSlot?: React.ReactNode;
 }
 
 /**
- * Floating row of action buttons that sits at the bottom of the board.
- * The reference uses two prominent pills (DOUBLE on the left, ROLL on
- * the right); we mirror that, with UNDO appearing as a smaller pill
- * between them when the player has just made a move.
+ * PRIMARY action control — Roll / Undo / End-turn. Rendered as the board's
+ * `actionsOverlay`; CSS positions it as circular button(s) on the right-middle
+ * of the board (see `.game-controls-primary` in index.css). The secondary
+ * controls (Cube / Double / Auto) live in the local player's panel instead —
+ * see {@link MatchSecondaryControls}.
  */
 export default function ActionButtons({
   canRoll,
   onRoll,
   canEndTurn,
   onEndTurn,
-  canDouble,
-  onDouble,
-  cubeValue,
   canUndo,
   onUndo,
-  autoRollSlot,
 }: Props) {
-  const nextCube = cubeValue * 2;
-
   // The roll slot morphs through three single-button states plus a
   // fourth dual-button state for the last move:
   //   1. ROLL                — pre-roll, or dice settled but no move yet
@@ -45,11 +34,6 @@ export default function ActionButtons({
   //   3. END TURN + UNDO     — all dice consumed / no legal moves left,
   //                            but the player should still be able to
   //                            undo the move that ended their turn.
-  //                            Renders both buttons side by side, each
-  //                            half the width of a single roll-slot
-  //                            button so the row stays proportional.
-  //
-  // Text is baked into the assets, so the buttons have no children.
   const showEndTurnPair = canEndTurn;
   const rollSlotState: 'roll' | 'undo' = canUndo && !canEndTurn ? 'undo' : 'roll';
   const rollSlotDisabled = rollSlotState === 'roll' && !canRoll;
@@ -59,36 +43,9 @@ export default function ActionButtons({
 
   return (
     <div className="game-action-row">
-      {/* SECONDARY controls — Cube / Double / Auto. Positioned by CSS as a
-          compact row under the right (local) player's details. */}
-      <div className="game-controls-secondary">
-        <button
-          type="button"
-          disabled
-          className="game-cube-button"
-          aria-label={`Cube value ${cubeValue}`}
-        >
-          <strong>{cubeValue}</strong>
-          <span>Cube</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={canDouble ? onDouble : undefined}
-          disabled={!canDouble}
-          className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
-        >
-          <strong>×{nextCube}</strong>
-          <span>Double</span>
-        </button>
-
-        {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
-      </div>
-
       {/* PRIMARY action — Roll / Undo / End-turn. Positioned by CSS as
           circular button(s) on the right-middle of the board. Text labels
-          render inside the CSS circles (the old baked-in-asset text is
-          dropped for the circular treatment). */}
+          render inside the CSS circles. */}
       <div className="game-controls-primary">
         {showEndTurnPair ? (
           <div className="game-end-turn-pair">
@@ -122,6 +79,57 @@ export default function ActionButtons({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+interface SecondaryProps {
+  /** Show + enable the DOUBLE button. */
+  canDouble: boolean;
+  onDouble: () => void;
+  cubeValue: number;
+  /** Optional preference control (auto-roll toggle) rendered after Double. */
+  autoRollSlot?: React.ReactNode;
+}
+
+/**
+ * SECONDARY controls — Cube / ×2 Double / Auto. Rendered in the LOCAL
+ * player's side panel via its `bottomSlot`, so they sit directly under that
+ * player's details + turn timer (matching the reference layout). Anchored to
+ * the panel DOM rather than positioned over the board, so they track the
+ * panel across aspect ratios with no magic offsets.
+ */
+export function MatchSecondaryControls({
+  canDouble,
+  onDouble,
+  cubeValue,
+  autoRollSlot,
+}: SecondaryProps) {
+  const nextCube = cubeValue * 2;
+
+  return (
+    <div className="game-controls-secondary">
+      <button
+        type="button"
+        disabled
+        className="game-cube-button"
+        aria-label={`Cube value ${cubeValue}`}
+      >
+        <strong>{cubeValue}</strong>
+        <span>Cube</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={canDouble ? onDouble : undefined}
+        disabled={!canDouble}
+        className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
+      >
+        <strong>×{nextCube}</strong>
+        <span>Double</span>
+      </button>
+
+      {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
     </div>
   );
 }
