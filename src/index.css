@@ -638,11 +638,12 @@ html, body, #root {
   position: relative;
   display: grid;
   place-items: center;
-  /* Hourly bonus shrunk again — now x0.85 then x0.95 on top of the
-   * original 0.9 pass. The wheel graphic + the negative margin that lifts
-   * it above the bar scale together so it keeps its proportions + seat. */
-  width: clamp(4rem, 7.13vw, 6.55rem);
-  margin-top: clamp(-2.47rem, -3.92vw, -1.75rem);
+  /* Hourly bonus shrunk again — an additional x0.8 (-20%) so the wheel no
+   * longer pops out above the navigator bar (operator review). The wheel
+   * graphic + the negative margin that lifts it above the bar scale together
+   * so it keeps its proportions + seat. */
+  width: clamp(3.2rem, 5.7vw, 5.24rem);
+  margin-top: clamp(-1.98rem, -3.14vw, -1.4rem);
   padding: 0;
   background: none;
   border: 0;
@@ -1032,9 +1033,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        utility classes via source order. */
     position: absolute;
     left: 50%;
-    /* Nudged up 5px from the design grid's 32u, clamped so it can never
+    /* Nudged up from the design grid's 32u (now 18u) so the balances clear
+       the top edge of the (smaller, top-down) board. Clamped so it can never
        cross the top of the lobby canvas (the phone's screen frame). */
-    top: max(0px, calc(32 * var(--lobby-u) - 5px));
+    top: max(0px, calc(18 * var(--lobby-u) - 5px));
     transform: translateX(-50%);
     display: grid;
     width: calc(472 * var(--lobby-u));
@@ -1344,7 +1346,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        once to seat the base on the rim; tune width for size. */
     top: auto;
     bottom: calc(-25 * var(--lobby-u));
-    width: 74%;
+    /* Top-down boards read larger than the old tilted art (no perspective
+       foreshortening). Net width 69% (was 74% tilted): trimmed for top-down,
+       then +10% back per operator review once the hourly-bonus icon was
+       shrunk to free navigator room. Bottom-anchored, so it stays seated on
+       the podium as it resizes. */
+    width: 69%;
     height: auto;
   }
 
@@ -1370,8 +1377,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     /* Pure --lobby-u (was `- 40px`): a fixed px term made the podium drift
        relative to the pure-u board as the stage scaled, so the board stopped
        seating on the rim. Now both move in lockstep at every size. */
-    bottom: calc(-56 * var(--lobby-u));
-    width: calc(936 * var(--lobby-u));
+    bottom: calc(-72 * var(--lobby-u));
+    width: calc(702 * var(--lobby-u));
     max-width: none;
     /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
        drop-shadow on the <img>); scales with --lobby-u. */
@@ -3669,10 +3676,25 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-match-hud {
-  display: grid;
+  /* Score / "MATCH TO N" capsule HIDDEN — match-to-N scoring isn't a live
+     feature yet, so the notch was pure clutter; hiding it lets the board
+     reclaim the top space. Pip counts live on the side panels and the active
+     player's highlight + timer show whose turn it is. Re-enable (restore
+     display: grid, ideally gated on match.target > 1) when tournaments /
+     match play ship. !important because the notch is re-styled across ~8
+     aspect-ratio blocks that would otherwise win over this base rule. */
+  display: none !important;
   min-width: min(43vw, 43rem);
   justify-items: center;
   color: #f5d27c;
+}
+
+.game-match-hud-row {
+  /* Top score notch shrunk 15% for the top-down board layout so it no longer
+     crowds the board's top edge. Scaled from the top so it stays pinned to
+     the top of the screen. */
+  transform: scale(0.85);
+  transform-origin: top center;
 }
 
 .game-match-label {
@@ -5531,17 +5553,111 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-action-row {
-  display: grid;
+  /* No longer a bottom grid bar. The two control groups inside are pinned
+     to the right side with position:fixed, so they escape this box; this
+     element only needs to stop imposing the old 4-column grid. */
+  display: block;
   width: 100%;
-  max-width: none;
   height: 100%;
-  min-height: 0;
-  grid-template-columns: 13.2% 13.2% minmax(0, 38%) 24%;
+  filter: none;
+  transform: none;
+}
+
+/* SECONDARY controls — Cube / ×2 Double / Auto — a compact row pinned under
+   the right (local) player's details block. position:fixed = viewport-
+   relative, so it ignores the old bottom action-bar box. */
+.game-controls-secondary {
+  position: fixed;
+  right: 1.4%;
+  bottom: 11%;
+  width: 16.5%;
+  display: flex;
   align-items: stretch;
   justify-content: center;
-  gap: 3.4%;
-  filter: drop-shadow(0 0.7rem 0.9rem rgba(0, 0, 0, 0.52));
-  transform: none;
+  gap: 4.5%;
+  pointer-events: auto;
+  z-index: 270;
+}
+.game-controls-secondary > .game-cube-button,
+.game-controls-secondary > .game-double-button,
+.game-controls-secondary > .game-auto-slot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 1 / 1;
+}
+
+/* PRIMARY action — Roll / Undo / End-turn — circular CSS buttons stacked on
+   the board's right-middle (replaces the wide pill assets). */
+.game-controls-primary {
+  position: fixed;
+  right: 17.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+  z-index: 270;
+}
+.game-controls-primary .game-end-turn-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+.game-controls-primary .game-roll-button,
+.game-controls-primary .game-end-turn-pair-button {
+  width: clamp(3.5rem, 13dvh, 5.2rem);
+  height: clamp(3.5rem, 13dvh, 5.2rem);
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  /* Clear the old pill asset (roll.webp/undo.webp/etc.) WITHOUT !important so
+     the per-state gradient rules below can paint the fill. */
+  background: none;
+  border: 0.16rem solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 0.3rem 0.7rem rgba(0, 0, 0, 0.55),
+    inset 0 0.12rem 0 rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: filter 140ms ease, transform 120ms ease;
+}
+.game-controls-primary .game-roll-button span,
+.game-controls-primary .game-end-turn-pair-button span {
+  font-size: clamp(0.62rem, 1.7dvh, 1rem);
+  line-height: 1;
+  text-shadow: 0 0.08rem 0.16rem rgba(0, 0, 0, 0.6);
+}
+/* Green = Roll / Done (advance); Orange = Undo. */
+.game-controls-primary .game-roll-button--roll,
+.game-controls-primary .game-end-turn-pair-button--end {
+  background: radial-gradient(circle at 50% 30%, #74e571, #2f9d35 68%, #1b6c22);
+}
+.game-controls-primary .game-roll-button--undo,
+.game-controls-primary .game-end-turn-pair-button--undo {
+  background: radial-gradient(circle at 50% 30%, #ffc64f, #e8862a 68%, #b9531a);
+}
+.game-controls-primary button:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+.game-controls-primary button:not(:disabled):active {
+  transform: translateY(1px) scale(0.97);
+}
+.game-controls-primary button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .game-cube-button,
@@ -6842,11 +6958,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        56.35% width, pulling the side panels in and pushing the action
        bar closer to the viewport bottom so the board owns more of the
        screen. */
-    left: 17.5%;
-    top: 13.5%;
-    width: 65%;
-    height: auto;
-    aspect-ratio: 1686 / 933;
+    /* Top-down board at its NATURAL 4:3 proportions (board art is 1448x1086).
+       The old 1686/933 (1.81:1) container — which actually matched the BACKDROP
+       image, not the board — was stretching the board wide. Now height-
+       constrained + centred so the correctly-proportioned board fills the
+       freed vertical space (notch + bottom bar are gone). */
+    left: 50%;
+    transform: translateX(-50%);
+    top: 5.5%;
+    height: 89%;
+    width: auto;
+    aspect-ratio: 4 / 3;
   }
 
   .game-side-slot {
@@ -6876,7 +6998,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     right: 17.5%;
     bottom: 3.5%;
     inset-inline: 17.5%;
-    height: 12.1%;
+    /* Action buttons shrunk ~10% (12.1% -> 10.9%) per operator review. */
+    height: 10.9%;
     width: auto;
   }
 

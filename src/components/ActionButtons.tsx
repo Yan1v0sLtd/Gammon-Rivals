@@ -59,57 +59,69 @@ export default function ActionButtons({
 
   return (
     <div className="game-action-row">
-      <button
-        type="button"
-        disabled
-        className="game-cube-button"
-        aria-label={`Cube value ${cubeValue}`}
-      >
-        <strong>{cubeValue}</strong>
-        <span>Cube</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={canDouble ? onDouble : undefined}
-        disabled={!canDouble}
-        className={`game-double-button ${
-          canDouble
-            ? 'is-enabled'
-            : 'is-disabled'
-        }`}
-      >
-        <strong>×{nextCube}</strong>
-        <span>Double</span>
-      </button>
-
-      {showEndTurnPair ? (
-        <div className="game-end-turn-pair">
-          <button
-            type="button"
-            onClick={canUndo ? onUndo : undefined}
-            disabled={!canUndo}
-            className="game-end-turn-pair-button game-end-turn-pair-button--undo"
-            aria-label="Undo last move"
-          />
-          <button
-            type="button"
-            onClick={onEndTurn}
-            className="game-end-turn-pair-button game-end-turn-pair-button--end"
-            aria-label="End turn"
-          />
-        </div>
-      ) : (
+      {/* SECONDARY controls — Cube / Double / Auto. Positioned by CSS as a
+          compact row under the right (local) player's details. */}
+      <div className="game-controls-secondary">
         <button
           type="button"
-          onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
-          disabled={rollSlotDisabled}
-          className={`game-roll-button game-roll-button--${rollSlotState}`}
-          aria-label={rollSlotLabel}
-        />
-      )}
+          disabled
+          className="game-cube-button"
+          aria-label={`Cube value ${cubeValue}`}
+        >
+          <strong>{cubeValue}</strong>
+          <span>Cube</span>
+        </button>
 
-      {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
+        <button
+          type="button"
+          onClick={canDouble ? onDouble : undefined}
+          disabled={!canDouble}
+          className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
+        >
+          <strong>×{nextCube}</strong>
+          <span>Double</span>
+        </button>
+
+        {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
+      </div>
+
+      {/* PRIMARY action — Roll / Undo / End-turn. Positioned by CSS as
+          circular button(s) on the right-middle of the board. Text labels
+          render inside the CSS circles (the old baked-in-asset text is
+          dropped for the circular treatment). */}
+      <div className="game-controls-primary">
+        {showEndTurnPair ? (
+          <div className="game-end-turn-pair">
+            <button
+              type="button"
+              onClick={canUndo ? onUndo : undefined}
+              disabled={!canUndo}
+              className="game-end-turn-pair-button game-end-turn-pair-button--undo"
+              aria-label="Undo last move"
+            >
+              <span>Undo</span>
+            </button>
+            <button
+              type="button"
+              onClick={onEndTurn}
+              className="game-end-turn-pair-button game-end-turn-pair-button--end"
+              aria-label="End turn"
+            >
+              <span>Done</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
+            disabled={rollSlotDisabled}
+            className={`game-roll-button game-roll-button--${rollSlotState}`}
+            aria-label={rollSlotLabel}
+          >
+            <span>{rollSlotState === 'undo' ? 'Undo' : 'Roll'}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
