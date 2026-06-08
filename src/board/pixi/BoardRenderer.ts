@@ -713,11 +713,10 @@ export class BoardRenderer {
         const n = reverse ? point.count - 1 - k : k;
         if (skip?.pos === i && skip.owner === point.owner && n === point.count - 1) continue;
         const center = checkerCenter(this.layout, pos, n, point.count);
-        // Bottom-row base (n=0) sits flush against the wooden rail —
-        // its shadow would extend past the felt onto the wood frame
-        // and read as an artifact. Skip the shadow on that one.
-        const withShadow = !(pos.stackDir === -1 && n === 0);
-        this.drawChecker(center.x, center.y, point.owner, withShadow);
+        // Every checker gets the soft 2px all-around shadow now — it's small
+        // enough that even the bottom-row base (flush against the rail) won't
+        // artifact onto the wood frame, unlike the old half-disc puddle.
+        this.drawChecker(center.x, center.y, point.owner, true);
       }
     }
   }
@@ -752,24 +751,20 @@ export class BoardRenderer {
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
     if (withShadow) {
-      // Soft half-circle shadow tucked UNDERNEATH the checker. The chord
-      // sits inside the checker's lower portion so the upper half of the
-      // shadow is hidden behind the disc itself — the visible bottom
-      // half reads as the checker's cast shadow on the felt rather than
-      // a separate puddle floating below. Three concentric half-discs
-      // at falling alpha + decreasing radius fake the soft edge.
-      const cx = x;
-      const cy = y + ry * 0.35;
+      // Soft, even shadow around the ENTIRE checker (top-down view): a thin
+      // ~2px ring of concentric ellipses behind the disc, darkest at the rim
+      // and fading outward. Replaces the tilted-era half-disc puddle that was
+      // cast only below the checker. Stacked ellipses (no blur filter) keep it
+      // cheap, matching the rest of the renderer. Only the part beyond the
+      // disc's radius shows, so the visible shadow is a soft 2px halo.
       const shadow = new Graphics();
-      const drawHalfDisc = (radius: number, alpha: number) => {
-        shadow.moveTo(cx + radius, cy);
-        shadow.arc(cx, cy, radius, 0, Math.PI);
-        shadow.lineTo(cx + radius, cy);
+      const ring = (grow: number, alpha: number) => {
+        shadow.ellipse(x, y, r + grow, ry + grow);
         shadow.fill({ color: 0x000000, alpha });
       };
-      drawHalfDisc(r * 1.05, 0.18);
-      drawHalfDisc(r * 0.92, 0.28);
-      drawHalfDisc(r * 0.78, 0.38);
+      ring(2, 0.1);
+      ring(1.3, 0.16);
+      ring(0.6, 0.22);
       this.root.addChild(shadow);
     }
 
