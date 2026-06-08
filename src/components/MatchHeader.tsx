@@ -44,9 +44,18 @@ export default function MatchHeader({
   return (
     <header className="game-match-header">
       <div className="game-nav-home">
-        <button type="button" onClick={goHome} className="game-home-link">
-          <span className="game-home-icon" aria-hidden="true" />
-          <span>Home</span>
+        <button
+          type="button"
+          onClick={goHome}
+          className="game-home-link"
+          aria-label="Back to lobby"
+        >
+          <img
+            src="/gameplay/premium-purple/lobby.webp"
+            alt=""
+            className="game-home-image"
+            draggable={false}
+          />
         </button>
       </div>
 
@@ -97,14 +106,6 @@ export default function MatchHeader({
             </div>
           </div>
         </div>
-      </div>
-      <div className="game-header-actions">
-        <button type="button" className="game-header-icon-button" aria-label="Statistics">
-          <img src="/gameplay/premium-purple/stats.webp" alt="" draggable={false} />
-        </button>
-        <button type="button" className="game-header-icon-button" aria-label="Settings">
-          <img src="/gameplay/premium-purple/settings.webp" alt="" draggable={false} />
-        </button>
       </div>
     </header>
   );

@@ -5629,37 +5629,32 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: clamp(3.5rem, 13dvh, 5.2rem);
   min-width: 0;
   aspect-ratio: 1 / 1;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  /* Clear the old pill asset (roll.webp/undo.webp/etc.) WITHOUT !important so
-     the per-state gradient rules below can paint the fill. */
-  background: none;
-  border: 0.16rem solid rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 0.3rem 0.7rem rgba(0, 0, 0, 0.55),
-    inset 0 0.12rem 0 rgba(255, 255, 255, 0.35);
-  color: #fff;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  /* The circular button ART (gold ring + fill + label) is baked into each
+     image, so no CSS chrome — paint the asset and let it own the look.
+     `background` shorthand (no !important) lets the per-state image rules
+     below override the base pill asset. */
+  background: center / contain no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
   cursor: pointer;
   transition: filter 140ms ease, transform 120ms ease;
 }
+/* Labels are baked into the art — hide the fallback text spans. */
 .game-controls-primary .game-roll-button span,
 .game-controls-primary .game-end-turn-pair-button span {
-  font-size: clamp(0.62rem, 1.7dvh, 1rem);
-  line-height: 1;
-  text-shadow: 0 0.08rem 0.16rem rgba(0, 0, 0, 0.6);
+  display: none;
 }
-/* Green = Roll / Done (advance); Orange = Undo. */
-.game-controls-primary .game-roll-button--roll,
-.game-controls-primary .game-end-turn-pair-button--end {
-  background: radial-gradient(circle at 50% 30%, #74e571, #2f9d35 68%, #1b6c22);
+/* Roll (green) / Undo (orange) / End-turn (red) — supplied as circular art. */
+.game-controls-primary .game-roll-button--roll {
+  background-image: url('/gameplay/premium-purple/roll.webp');
 }
 .game-controls-primary .game-roll-button--undo,
 .game-controls-primary .game-end-turn-pair-button--undo {
-  background: radial-gradient(circle at 50% 30%, #ffc64f, #e8862a 68%, #b9531a);
+  background-image: url('/gameplay/premium-purple/undo.webp');
+}
+.game-controls-primary .game-end-turn-pair-button--end {
+  background-image: url('/gameplay/premium-purple/end-turn.webp');
 }
 .game-controls-primary button:not(:disabled):hover {
   filter: brightness(1.1);
@@ -5913,6 +5908,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-weight: 900;
   text-decoration: none;
   text-shadow: 0 0.08em 0.12em rgba(0, 0, 0, 0.72);
+}
+
+/* New lobby button is a self-contained square image (gold arrow + LOBBY
+   label baked in), so it replaces the CSS icon + text entirely. */
+.game-home-image {
+  display: block;
+  width: clamp(2.6rem, 5vw, 4.2rem);
+  height: auto;
 }
 
 .game-home-icon {
@@ -6977,8 +6980,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
        freed vertical space (notch + bottom bar are gone). */
     left: 50%;
     transform: translateX(-50%);
-    top: 5.5%;
-    height: 89%;
+    /* Enlarged a further ~5% (89% -> 93.5%) now the controls no longer sit
+       on the board; re-centred vertically (top = (100-93.5)/2). */
+    top: 3.3%;
+    height: 93.5%;
     width: auto;
     aspect-ratio: 4 / 3;
   }
