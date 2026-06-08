@@ -5653,6 +5653,29 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   line-height: 1;
 }
 
+/* Cube / Double badge text must fit the small square slot. At the 4K clamp
+   cap (~43px badge) the base value font (32px) and the wide "Double" label
+   overflowed the badge. Scale both down + centre + clip any residual spill. */
+.game-controls-secondary .game-cube-button,
+.game-controls-secondary .game-double-button {
+  display: grid;
+  place-items: center;
+  gap: 4%;
+  overflow: hidden;
+  line-height: 1;
+}
+.game-controls-secondary .game-cube-button > strong,
+.game-controls-secondary .game-double-button > strong {
+  font-size: clamp(0.5rem, 1.25vw, 0.92rem);
+  line-height: 1;
+}
+.game-controls-secondary .game-cube-button > span,
+.game-controls-secondary .game-double-button > span {
+  font-size: clamp(0.3rem, 0.7vw, 0.5rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 /* PRIMARY action — Roll / Undo / End-turn — circular CSS buttons stacked on
    the board's right-middle (replaces the wide pill assets). */
 .game-controls-primary {
@@ -7417,22 +7440,21 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    Width bumped from 18.7% → 20.6% per user feedback (10% bigger). */
 .game-side-slot {
   top: 15.3%;
-  width: 20.6%;
+  /* 20% + edge margin 1% => inner edge ~21%, a clear ~2.3% gap from the 4:3
+     board (left edge ~23.3% on desktop / tablet). Was 20.6% at 5.65% inset
+     (inner 26.25%) which overlapped the board on wide / 4K screens; then 2%
+     inset (inner 22.6%) which only just cleared it. Now a comfortable gap. */
+  width: 20%;
   height: auto;
   aspect-ratio: 174 / 252;
 }
 
-/* Pushed flush-er to the screen edge (was 5.65%) so the card's INNER edge
-   (~22.6%) clears the 4:3 board, whose left edge sits at ~23.3% on desktop /
-   tablet — the cards were overlapping the board on wide / 4K screens. Card
-   width is unchanged (20.6%); only the outer margin shrinks. The phone
-   override below keeps its own 1.2%. */
 .game-side-slot--left {
-  left: 2%;
+  left: 1%;
 }
 
 .game-side-slot--right {
-  right: 2%;
+  right: 1%;
 }
 
 /* Phone-landscape override: shrink slot width and push to screen edge so

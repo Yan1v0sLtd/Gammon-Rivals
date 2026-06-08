@@ -762,9 +762,9 @@ export class BoardRenderer {
         shadow.ellipse(x, y, r + grow, ry + grow);
         shadow.fill({ color: 0x000000, alpha });
       };
-      ring(2, 0.1);
-      ring(1.3, 0.16);
-      ring(0.6, 0.22);
+      ring(0.6, 0.1);
+      ring(0.4, 0.14);
+      ring(0.2, 0.18);
       this.root.addChild(shadow);
     }
 
