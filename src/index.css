@@ -7462,16 +7462,21 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    .game-side-slot{ width:20.6% } rule above to win on source order.
    Bumped 16% → 17.6% to track the same 10% increase. */
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  /* This is the MOBILE-LANDSCAPE / wide layout (phones are ~2.1-2.2 aspect).
+     Pushed the player cards further toward the screen edges so they clear the
+     4:3 board with a comfortable gap (inner edge 17.5% vs board edge ~20-21%).
+     Was 17.6% / 1.2% (inner 18.8%, only a small gap). Width barely changes so
+     the card text still fits on a phone. */
   .game-side-slot {
-    width: 17.6%;
+    width: 17%;
   }
 
   .game-side-slot--left {
-    left: 1.2%;
+    left: 0.5%;
   }
 
   .game-side-slot--right {
-    right: 1.2%;
+    right: 0.5%;
   }
 }
 
