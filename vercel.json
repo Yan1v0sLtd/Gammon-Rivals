@@ -1,6 +1,11 @@
 {
   "routes": [
     { "src": "^/$", "dest": "/landing.html" },
+    {
+      "src": "^/sw\\.js$",
+      "headers": { "cache-control": "no-store, no-cache, must-revalidate" },
+      "continue": true
+    },
     { "handle": "filesystem" },
     { "src": "^/(.*)$", "dest": "/index.html" }
   ]
