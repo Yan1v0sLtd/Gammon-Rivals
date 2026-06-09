@@ -751,21 +751,40 @@ export class BoardRenderer {
     const tex = this.texture(owner === 'white' ? 'whiteChecker' : 'blackChecker');
 
     if (withShadow) {
-      // Soft, even shadow around the ENTIRE checker (top-down view): a thin
-      // ~2px ring of concentric ellipses behind the disc, darkest at the rim
-      // and fading outward. Replaces the tilted-era half-disc puddle that was
-      // cast only below the checker. Stacked ellipses (no blur filter) keep it
-      // cheap, matching the rest of the renderer. Only the part beyond the
-      // disc's radius shows, so the visible shadow is a soft 2px halo.
-      const shadow = new Graphics();
-      const ring = (grow: number, alpha: number) => {
-        shadow.ellipse(x, y, r + grow, ry + grow);
-        shadow.fill({ color: 0x000000, alpha });
-      };
-      ring(0.6, 0.1);
-      ring(0.4, 0.14);
-      ring(0.2, 0.18);
-      this.root.addChild(shadow);
+      if (tex) {
+        // Themed checkers are sprites whose art usually does NOT fill the full
+        // r*2 box (the PNG has transparent padding around the disc). A shadow
+        // sized to radius r would then peek out across that whole padding gap
+        // as a THICK grey halo. Instead, draw the checker's OWN silhouette
+        // (same texture, tinted black) a few % larger behind it: the shadow
+        // then hugs the actual art shape and shows only a thin, even ~2px
+        // halo, independent of how much padding a given theme's sprite has.
+        const halo = (grow: number, alpha: number) => {
+          const s = new Sprite(tex);
+          s.anchor.set(0.5);
+          s.x = x;
+          s.y = y;
+          s.width = r * 2 * grow;
+          s.height = r * 2 * this.layout.checkerScaleY * grow;
+          s.tint = 0x000000;
+          s.alpha = alpha;
+          this.root.addChild(s);
+        };
+        halo(1.05, 0.14);
+        halo(1.025, 0.18);
+      } else {
+        // Procedural fallback checker: the disc fills radius r exactly, so the
+        // thin concentric-ellipse ring (only the part beyond r shows) is fine.
+        const shadow = new Graphics();
+        const ring = (grow: number, alpha: number) => {
+          shadow.ellipse(x, y, r + grow, ry + grow);
+          shadow.fill({ color: 0x000000, alpha });
+        };
+        ring(0.6, 0.1);
+        ring(0.4, 0.14);
+        ring(0.2, 0.18);
+        this.root.addChild(shadow);
+      }
     }
 
     if (tex) {

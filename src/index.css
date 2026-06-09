@@ -7061,8 +7061,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     /* Enlarged a further ~5% (89% -> 93.5%) now the controls no longer sit
        on the board; re-centred vertically (top = (100-93.5)/2). */
     top: 3.3%;
-    height: 93.5%;
-    width: auto;
+    /* Height-driven (93.5dvh) BUT capped at 59vw so the derived 4:3 width
+       cannot grow into the side panels on low-aspect windows. At ~1.95 aspect
+       (e.g. a maximized 2560x1440) 93.5dvh x 4:3 ≈ 64vw, which overlapped the
+       player cards (inner edge 18.2%); 59vw holds board-left at ~20.5% (a
+       ~60px gap @2560). min() preserves 4:3 — no stretch. Phones (aspect
+       >~2.11) are unaffected: their height-based width is already < 59vw. */
+    height: auto;
+    width: min(calc(93.5dvh * 4 / 3), 59vw);
     aspect-ratio: 4 / 3;
   }
 
