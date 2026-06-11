@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type SyntheticEvent,
 } from 'react';
 
 interface Props {
@@ -147,14 +146,6 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<HandleId | null>(null);
   const [hover, setHover] = useState<HandleId | null>(null);
-  const [imageAspect, setImageAspect] = useState<number>(2170 / 1000);
-
-  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-      setImageAspect(img.naturalWidth / img.naturalHeight);
-    }
-  };
 
   const apply = (next: Trays) => onMetadataChange(writeTrays(metadata, next));
 
@@ -230,19 +221,23 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
           Drag each tray’s top &amp; bottom dots onto its slot — white &amp; black are independent
         </span>
       </div>
+      {/* GAMEPLAY projection: 4:3 (matching .game-board-column) with the
+          image stretched to fill, exactly as BoardCanvas renders it in a
+          match — same rule as FeltCornersField / BoardPreview. Dragging
+          trays on any other projection lies to the operator whenever the
+          upload isn't exactly 4:3. */}
       <div
         ref={wrapRef}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ aspectRatio: String(imageAspect), touchAction: 'none' }}
+        style={{ aspectRatio: '4 / 3', touchAction: 'none' }}
         className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
       >
         {gameplayImage ? (
           <img
             src={gameplayImage}
             alt=""
-            onLoad={handleImageLoad}
             className="absolute inset-0 h-full w-full"
             draggable={false}
           />
