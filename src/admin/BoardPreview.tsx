@@ -42,10 +42,15 @@ function layoutFromMetadataString(metadata: string): Partial<ThemeLayout> {
  * position. Updates instantly as the user nudges felt corners /
  * point depth / stack spacing / checker radius.
  */
-// Render the preview at 75 % of the configured checker radius so the
-// proportion matches the in-game canvas (whose aspect is taller than
-// the preview's 2:1 frame and was visually shrinking the checkers).
-const PREVIEW_CHECKER_SCALE = 0.75;
+// The preview MUST render at the same aspect the gameplay canvas uses —
+// .game-board-column in index.css forces 4:3 on every viewport. Checker
+// radius derives from canvas WIDTH while point depth / stack spacing derive
+// from HEIGHT, so the same layout values produce different geometry at a
+// different aspect: the old 2:1 preview stretched the art and showed stacks
+// ~50% taller relative to the felt than the game (papered over by a 0.75
+// checker-size fudge). At 4:3 the preview is geometry-identical to gameplay
+// — what the operator tunes here is exactly what players see.
+const GAMEPLAY_BOARD_ASPECT = '4 / 3';
 
 export default function BoardPreview({
   gameplayImage,
@@ -73,15 +78,13 @@ export default function BoardPreview({
 
   // Layout is the part that changes on every tuning nudge. Passing it
   // through layoutOverride lets BoardCanvas hot-swap it without
-  // recreating the renderer.
+  // recreating the renderer. Merged over premiumTheme.layout EXACTLY like
+  // remote.ts themeFromBoardConfig does for gameplay — no preview-only
+  // scaling, so the values render identically in both places.
   const layoutOverride = useMemo<ThemeLayout>(() => {
-    const fromMetadata = layoutFromMetadataString(metadata);
-    const baseRadius =
-      fromMetadata.checkerRadiusRatio ?? premiumTheme.layout?.checkerRadiusRatio ?? 0.42;
     return {
       ...premiumTheme.layout,
-      ...fromMetadata,
-      checkerRadiusRatio: baseRadius * PREVIEW_CHECKER_SCALE,
+      ...layoutFromMetadataString(metadata),
     };
   }, [metadata]);
 
@@ -125,7 +128,7 @@ export default function BoardPreview({
       </div>
       <div
         className="relative w-full overflow-visible rounded-lg border border-white/10 bg-black/40"
-        style={{ aspectRatio: '2 / 1' }}
+        style={{ aspectRatio: GAMEPLAY_BOARD_ASPECT }}
       >
         {draftTheme ? (
           <div className="absolute inset-0">

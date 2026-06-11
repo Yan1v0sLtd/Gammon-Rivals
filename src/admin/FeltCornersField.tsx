@@ -3,7 +3,6 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type SyntheticEvent,
 } from 'react';
 
 interface Props {
@@ -113,19 +112,14 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Corner | null>(null);
   const [hover, setHover] = useState<Corner | null>(null);
-  // Container's aspect-ratio matches the loaded image's natural aspect
-  // so the image fills the box edge-to-edge (no letterboxing). That's
-  // critical: with letterboxing, the dots were positioned relative to
-  // the container while the engine reads them as image-relative — so
-  // a 2:1 board image in a 2.17:1 container would store corner ratios
-  // that the engine later misinterpreted at render time.
-  const [imageAspect, setImageAspect] = useState<number>(2170 / 1000);
-  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
-    const img = event.currentTarget;
-    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-      setImageAspect(img.naturalWidth / img.naturalHeight);
-    }
-  };
+  // The editor shows the image in the GAMEPLAY projection: a 4:3 box
+  // (matching .game-board-column in index.css) with the image stretched
+  // to fill, exactly like BoardCanvas renders it in a match. The dot
+  // ratios are image-relative either way, but displaying the image at
+  // its natural aspect (as this editor used to) lies to the operator
+  // whenever an upload isn't exactly 4:3 — the dots would sit on an
+  // image the player never sees. One projection everywhere: editor,
+  // live preview below, and gameplay are now the same picture.
 
   const updateCorner = (which: Corner, ratio: Pair) => {
     const next: Corners = { ...corners, [which]: ratio };
@@ -210,14 +204,13 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ aspectRatio: String(imageAspect), touchAction: 'none' }}
+        style={{ aspectRatio: '4 / 3', touchAction: 'none' }}
         className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
       >
         {gameplayImage ? (
           <img
             src={gameplayImage}
             alt=""
-            onLoad={handleImageLoad}
             className="absolute inset-0 h-full w-full"
             draggable={false}
           />
