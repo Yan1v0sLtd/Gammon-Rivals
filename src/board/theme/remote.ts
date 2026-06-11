@@ -22,7 +22,18 @@ function metadataText(metadata: Json, key: string): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
+/**
+ * Exported so the back-office BoardPreview parses metadata with THE SAME
+ * function gameplay uses. The explicit-undefined semantics matter: every
+ * known key is present (value or undefined), so spreading the result over
+ * premiumTheme.layout ERASES the premium placeholder's tilted-era per-point
+ * calibration (topPointCenterXRatios etc.) for keys the board's metadata
+ * doesn't set — letting the felt corners drive positions via computeLayout.
+ * A pass-through parser (the preview's old local copy) kept those premium
+ * arrays alive and pinned the preview's points to the old tilted board,
+ * ignoring the felt-corner dots entirely.
+ */
+export function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
   if (!isObject(metadata) || !isObject(metadata.layout)) return undefined;
   const source = metadata.layout;
   const layout: ThemeLayout = {

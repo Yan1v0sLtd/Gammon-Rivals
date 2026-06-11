@@ -2,17 +2,15 @@ import { useMemo, useState } from 'react';
 import BoardCanvas from '../board/BoardCanvas';
 import { initialBoard } from '../engine/board';
 import { premiumTheme } from '../board/theme/premium';
+import { layoutFromMetadata } from '../board/theme/remote';
 import type { Theme, ThemeLayout } from '../board/theme';
+import type { Json } from '../types/database';
 
 interface Props {
   gameplayImage: string;
   whiteChecker: string;
   blackChecker: string;
   metadata: string;
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
 function normalizeAsset(path: string | undefined): string | undefined {
@@ -22,16 +20,12 @@ function normalizeAsset(path: string | undefined): string | undefined {
   return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
 }
 
-function layoutFromMetadataString(metadata: string): Partial<ThemeLayout> {
-  if (!metadata.trim()) return {};
+function parseMetadata(metadata: string): Json | null {
+  if (!metadata.trim()) return null;
   try {
-    const parsed = JSON.parse(metadata) as unknown;
-    if (!isObject(parsed) || !isObject(parsed.layout)) return {};
-    // Pass the layout fields through without strict typing — anything
-    // the engine doesn't recognize is harmlessly ignored.
-    return parsed.layout as Partial<ThemeLayout>;
+    return JSON.parse(metadata) as Json;
   } catch {
-    return {};
+    return null;
   }
 }
 
@@ -78,13 +72,20 @@ export default function BoardPreview({
 
   // Layout is the part that changes on every tuning nudge. Passing it
   // through layoutOverride lets BoardCanvas hot-swap it without
-  // recreating the renderer. Merged over premiumTheme.layout EXACTLY like
-  // remote.ts themeFromBoardConfig does for gameplay — no preview-only
-  // scaling, so the values render identically in both places.
+  // recreating the renderer. Built with THE SAME parser + merge gameplay
+  // uses (remote.ts themeFromBoardConfig): layoutFromMetadata sets every
+  // known key (value or explicit undefined), so spreading it over the
+  // premium base ERASES the premium placeholder's tilted-era per-point
+  // arrays exactly like gameplay does — the felt corners drive positions
+  // here iff they drive them in a match. The preview's old local parser
+  // passed metadata.layout through as-is, which kept those premium arrays
+  // alive and pinned the preview's points to the old tilted board no
+  // matter where the operator dragged the corner dots.
   const layoutOverride = useMemo<ThemeLayout>(() => {
+    const parsed = parseMetadata(metadata);
     return {
       ...premiumTheme.layout,
-      ...layoutFromMetadataString(metadata),
+      ...(parsed !== null ? layoutFromMetadata(parsed) : undefined),
     };
   }, [metadata]);
 
