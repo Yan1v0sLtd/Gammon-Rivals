@@ -1,0 +1,30 @@
+name: CI
+
+# Quality gate for an auto-deploying repo: every push to main and every PR runs
+# a typecheck+build and the test suite. Configure Vercel (or branch protection)
+# to require the "verify" check before a production deploy so a broken commit
+# can't ship to gammonrivals.com. Lint runs but is non-blocking for now (there
+# is pre-existing lint debt — see the audit; tighten to blocking once cleaned).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck + build (blocking)
+        run: npm run build
+      - name: Tests (blocking)
+        run: npm test
+      - name: Lint (non-blocking — pre-existing debt)
+        run: npm run lint
+        continue-on-error: true

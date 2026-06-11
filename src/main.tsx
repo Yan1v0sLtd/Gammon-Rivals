@@ -7,6 +7,17 @@ import { AdminAuthProvider } from './lib/adminAuth';
 import { NavigationOverlayProvider } from './lib/navigationOverlay';
 import { installNativeAuthHandler } from './lib/nativeAuth';
 
+// Build stamp — log the deployed commit + build time and expose them on
+// window.__BUILD__ so "am I on the latest deploy?" is answerable in one glance
+// (values injected by vite.config.ts; 'dev' for local builds).
+const BUILD_INFO = { commit: __APP_BUILD_COMMIT__, time: __APP_BUILD_TIME__ };
+(window as unknown as { __BUILD__: typeof BUILD_INFO }).__BUILD__ = BUILD_INFO;
+console.info(
+  `%cGammon Rivals%c build ${BUILD_INFO.commit} · ${BUILD_INFO.time}`,
+  'font-weight:bold;color:#fcd34d',
+  'color:inherit'
+);
+
 // -----------------------------------------------------------------------------
 // Stale chunk auto-reload
 // -----------------------------------------------------------------------------
