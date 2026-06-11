@@ -81,6 +81,24 @@ export interface ThemeLayout {
   readonly feltInnerTopRightRatio?: readonly [number, number];
   readonly feltInnerBottomLeftRatio?: readonly [number, number];
   readonly feltInnerBottomRightRatio?: readonly [number, number];
+  /** PER-HALF felt quads — the fully art-agnostic positioning model.
+   *  Each half of the board (6 points left of the bar, 6 right) gets its
+   *  own four corners, so the painted bar's true width, unequal half
+   *  widths, vertical offsets and even per-half perspective all come from
+   *  measurement instead of assumption. When BOTH halves provide at least
+   *  TL + BR (TR / BL default axis-aligned, like the single-quad keys),
+   *  the engine positions each half's points inside its own quad and the
+   *  bar is simply the measured gap between the two — checkers can never
+   *  overlap the painted bar. When absent, the legacy single-quad model
+   *  above applies unchanged (bar width assumed via barWidthRatio). */
+  readonly feltLeftHalfTopLeftRatio?: readonly [number, number];
+  readonly feltLeftHalfTopRightRatio?: readonly [number, number];
+  readonly feltLeftHalfBottomLeftRatio?: readonly [number, number];
+  readonly feltLeftHalfBottomRightRatio?: readonly [number, number];
+  readonly feltRightHalfTopLeftRatio?: readonly [number, number];
+  readonly feltRightHalfTopRightRatio?: readonly [number, number];
+  readonly feltRightHalfBottomLeftRatio?: readonly [number, number];
+  readonly feltRightHalfBottomRightRatio?: readonly [number, number];
   /** Optional perspective depth-scale: checkers near the front of the
    *  felt (v=1) get scaled up by `1 + feltDepthScaleRatio`, checkers
    *  at the back (v=0) by `1 - feltDepthScaleRatio`. Defaults to 0

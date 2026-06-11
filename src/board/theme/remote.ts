@@ -143,6 +143,30 @@ export function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
     feltInnerBottomRightRatio: isPairOfNumbers(source.feltInnerBottomRightRatio)
       ? source.feltInnerBottomRightRatio
       : undefined,
+    feltLeftHalfTopLeftRatio: isPairOfNumbers(source.feltLeftHalfTopLeftRatio)
+      ? source.feltLeftHalfTopLeftRatio
+      : undefined,
+    feltLeftHalfTopRightRatio: isPairOfNumbers(source.feltLeftHalfTopRightRatio)
+      ? source.feltLeftHalfTopRightRatio
+      : undefined,
+    feltLeftHalfBottomLeftRatio: isPairOfNumbers(source.feltLeftHalfBottomLeftRatio)
+      ? source.feltLeftHalfBottomLeftRatio
+      : undefined,
+    feltLeftHalfBottomRightRatio: isPairOfNumbers(source.feltLeftHalfBottomRightRatio)
+      ? source.feltLeftHalfBottomRightRatio
+      : undefined,
+    feltRightHalfTopLeftRatio: isPairOfNumbers(source.feltRightHalfTopLeftRatio)
+      ? source.feltRightHalfTopLeftRatio
+      : undefined,
+    feltRightHalfTopRightRatio: isPairOfNumbers(source.feltRightHalfTopRightRatio)
+      ? source.feltRightHalfTopRightRatio
+      : undefined,
+    feltRightHalfBottomLeftRatio: isPairOfNumbers(source.feltRightHalfBottomLeftRatio)
+      ? source.feltRightHalfBottomLeftRatio
+      : undefined,
+    feltRightHalfBottomRightRatio: isPairOfNumbers(source.feltRightHalfBottomRightRatio)
+      ? source.feltRightHalfBottomRightRatio
+      : undefined,
     feltDepthScaleRatio:
       typeof source.feltDepthScaleRatio === 'number' ? source.feltDepthScaleRatio : undefined,
   };

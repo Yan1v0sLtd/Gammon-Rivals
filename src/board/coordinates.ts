@@ -1,5 +1,83 @@
 import type { ThemeLayout } from './theme';
 
+type RatioPair = readonly [number, number];
+
+/**
+ * One half of the board (6 points), positioned by its own four-corner
+ * quad — the art-agnostic model. Flat-space reference box = the
+ * configured TL/BR corners (same convention as the single felt quad);
+ * TR/BL default axis-aligned and only engage the bilinear transform
+ * when they deviate. With both halves configured, the bar is simply
+ * the measured gap between the two quads — nothing about the painted
+ * bar's width or the halves' relative size/offset is assumed.
+ */
+export interface HalfGeom {
+  readonly flatL: number;
+  readonly flatT: number;
+  readonly flatR: number;
+  readonly flatB: number;
+  readonly quadTL: RatioPair;
+  readonly quadTR: RatioPair;
+  readonly quadBL: RatioPair;
+  readonly quadBR: RatioPair;
+  readonly tilted: boolean;
+  /** This half's point column width: flat width / 6. */
+  readonly pointWidth: number;
+  /** Row anchors — the half's own felt edges, unless the global
+   *  top/bottomPointYRatio overrides are explicitly set. */
+  readonly topY: number;
+  readonly bottomY: number;
+}
+
+function buildHalf(
+  width: number,
+  height: number,
+  tlRatio: RatioPair,
+  brRatio: RatioPair,
+  trRatio: RatioPair | undefined,
+  blRatio: RatioPair | undefined,
+  themeLayout?: ThemeLayout
+): HalfGeom {
+  const flatL = width * tlRatio[0];
+  const flatT = height * tlRatio[1];
+  const flatR = width * brRatio[0];
+  const flatB = height * brRatio[1];
+  const quadTL: RatioPair = [flatL, flatT];
+  const quadBR: RatioPair = [flatR, flatB];
+  const quadTR: RatioPair = trRatio
+    ? [width * trRatio[0], height * trRatio[1]]
+    : [flatR, flatT];
+  const quadBL: RatioPair = blRatio
+    ? [width * blRatio[0], height * blRatio[1]]
+    : [flatL, flatB];
+  const tiltEps = 0.5; // px tolerance for "axis-aligned"
+  const tilted =
+    Math.abs(quadTR[0] - flatR) > tiltEps ||
+    Math.abs(quadTR[1] - flatT) > tiltEps ||
+    Math.abs(quadBL[0] - flatL) > tiltEps ||
+    Math.abs(quadBL[1] - flatB) > tiltEps;
+  return {
+    flatL,
+    flatT,
+    flatR,
+    flatB,
+    quadTL,
+    quadTR,
+    quadBL,
+    quadBR,
+    tilted,
+    pointWidth: Math.max(1, flatR - flatL) / 6,
+    topY:
+      themeLayout?.topPointYRatio !== undefined
+        ? Math.round(height * themeLayout.topPointYRatio)
+        : Math.round(flatT),
+    bottomY:
+      themeLayout?.bottomPointYRatio !== undefined
+        ? Math.round(height * themeLayout.bottomPointYRatio)
+        : Math.round(flatB),
+  };
+}
+
 export interface Layout {
   readonly width: number;
   readonly height: number;
@@ -52,6 +130,10 @@ export interface Layout {
   readonly feltBR: readonly [number, number];
   readonly feltTilted: boolean;
   readonly feltDepthScaleRatio: number;
+  /** Per-half quads (see HalfGeom). Both set or both null — null means
+   *  the theme uses the legacy single-quad model above. */
+  readonly leftHalf: HalfGeom | null;
+  readonly rightHalf: HalfGeom | null;
 }
 
 export function computeLayout(width: number, height: number, themeLayout?: ThemeLayout): Layout {
@@ -86,11 +168,55 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     Math.abs(feltBL[0] - feltL) > tiltEps ||
     Math.abs(feltBL[1] - feltB) > tiltEps;
   const feltDepthScaleRatio = themeLayout?.feltDepthScaleRatio ?? 0;
-  const playLeft = feltL;
-  const playWidth = Math.max(1, feltR - feltL);
-  const barWidth = Math.round(playWidth * (themeLayout?.barWidthRatio ?? 0.08));
-  const pointWidth = (playWidth - barWidth) / 12;
-  const barX = playLeft + 6 * pointWidth;
+  // PER-HALF QUADS — active only when BOTH halves provide TL + BR. The
+  // play area, bar and point widths are then MEASURED from the quads:
+  // the bar is the gap between the halves (checkers can never overlap
+  // the painted bar) and each half divides its own width into 6 points,
+  // so unequal / offset halves come straight from the art. Boards
+  // without half quads run the legacy single-quad math below unchanged.
+  const lTL = themeLayout?.feltLeftHalfTopLeftRatio;
+  const lBR = themeLayout?.feltLeftHalfBottomRightRatio;
+  const rTL = themeLayout?.feltRightHalfTopLeftRatio;
+  const rBR = themeLayout?.feltRightHalfBottomRightRatio;
+  const halvesConfigured = Boolean(lTL && lBR && rTL && rBR);
+  const leftHalf =
+    halvesConfigured && lTL && lBR
+      ? buildHalf(
+          width,
+          height,
+          lTL,
+          lBR,
+          themeLayout?.feltLeftHalfTopRightRatio,
+          themeLayout?.feltLeftHalfBottomLeftRatio,
+          themeLayout
+        )
+      : null;
+  const rightHalf =
+    halvesConfigured && rTL && rBR
+      ? buildHalf(
+          width,
+          height,
+          rTL,
+          rBR,
+          themeLayout?.feltRightHalfTopRightRatio,
+          themeLayout?.feltRightHalfBottomLeftRatio,
+          themeLayout
+        )
+      : null;
+  const halves = leftHalf && rightHalf ? { left: leftHalf, right: rightHalf } : null;
+  const playLeft = halves ? halves.left.flatL : feltL;
+  const playWidth = halves
+    ? Math.max(1, halves.right.flatR - halves.left.flatL)
+    : Math.max(1, feltR - feltL);
+  const barWidth = halves
+    ? Math.max(0, halves.right.flatL - halves.left.flatR)
+    : Math.round(playWidth * (themeLayout?.barWidthRatio ?? 0.08));
+  // With halves, the radius-driving point width is the NARROWER half's,
+  // so one global checker size fits both halves' points.
+  const pointWidth = halves
+    ? Math.min(halves.left.pointWidth, halves.right.pointWidth)
+    : (playWidth - barWidth) / 12;
+  const barX = halves ? halves.left.flatR : playLeft + 6 * pointWidth;
   const topPointWidth = themeLayout?.topPointWidthRatio
     ? width * themeLayout.topPointWidthRatio
     : pointWidth;
@@ -194,10 +320,36 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
   let derivedWhiteX = width * 0.925;
   let derivedWhiteTop = height * 0.61;
   let derivedWhiteHeight = height * 0.255;
-  if (feltTLRatio || feltBRRatio) {
-    const feltRightEdge = Math.max(feltTR[0], feltBR[0]);
-    const feltTopEdge = Math.min(feltTL[1], feltTR[1]);
-    const feltBottomEdge = Math.max(feltBL[1], feltBR[1]);
+  // Tray anchoring prefers the measured half quads (right half's outer
+  // edge + the two halves' combined vertical extent); single-quad boards
+  // keep deriving from their felt corners as before.
+  const trayFelt = halves
+    ? {
+        right: Math.max(halves.right.quadTR[0], halves.right.quadBR[0]),
+        top: Math.min(
+          halves.left.quadTL[1],
+          halves.left.quadTR[1],
+          halves.right.quadTL[1],
+          halves.right.quadTR[1]
+        ),
+        bottom: Math.max(
+          halves.left.quadBL[1],
+          halves.left.quadBR[1],
+          halves.right.quadBL[1],
+          halves.right.quadBR[1]
+        ),
+      }
+    : feltTLRatio || feltBRRatio
+      ? {
+          right: Math.max(feltTR[0], feltBR[0]),
+          top: Math.min(feltTL[1], feltTR[1]),
+          bottom: Math.max(feltBL[1], feltBR[1]),
+        }
+      : null;
+  if (trayFelt) {
+    const feltRightEdge = trayFelt.right;
+    const feltTopEdge = trayFelt.top;
+    const feltBottomEdge = trayFelt.bottom;
     const feltMid = (feltTopEdge + feltBottomEdge) / 2;
     const feltH = Math.max(1, feltBottomEdge - feltTopEdge);
     const railGap = Math.max(0, width - feltRightEdge);
@@ -278,6 +430,8 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
     feltBR,
     feltTilted,
     feltDepthScaleRatio,
+    leftHalf,
+    rightHalf,
   };
 }
 
@@ -292,10 +446,49 @@ export function computeLayout(width: number, height: number, themeLayout?: Theme
  */
 export function feltTransform(layout: Layout, x: number, y: number): { x: number; y: number } {
   if (!layout.feltTilted) return { x, y };
-  const aaLeft = layout.feltTL[0];
-  const aaTop = layout.feltTL[1];
-  const aaWidth = layout.feltBR[0] - layout.feltTL[0];
-  const aaHeight = layout.feltBR[1] - layout.feltTL[1];
+  return bilinearQuad(
+    layout.feltTL[0],
+    layout.feltTL[1],
+    layout.feltBR[0] - layout.feltTL[0],
+    layout.feltBR[1] - layout.feltTL[1],
+    layout.feltTL,
+    layout.feltTR,
+    layout.feltBL,
+    layout.feltBR,
+    x,
+    y
+  );
+}
+
+/** Same bilinear mapping as feltTransform, against ONE half's quad. */
+export function halfTransform(half: HalfGeom, x: number, y: number): { x: number; y: number } {
+  if (!half.tilted) return { x, y };
+  return bilinearQuad(
+    half.flatL,
+    half.flatT,
+    half.flatR - half.flatL,
+    half.flatB - half.flatT,
+    half.quadTL,
+    half.quadTR,
+    half.quadBL,
+    half.quadBR,
+    x,
+    y
+  );
+}
+
+function bilinearQuad(
+  aaLeft: number,
+  aaTop: number,
+  aaWidth: number,
+  aaHeight: number,
+  tl: RatioPair,
+  tr: RatioPair,
+  bl: RatioPair,
+  br: RatioPair,
+  x: number,
+  y: number
+): { x: number; y: number } {
   if (aaWidth <= 0 || aaHeight <= 0) return { x, y };
   const u = (x - aaLeft) / aaWidth;
   const v = (y - aaTop) / aaHeight;
@@ -303,11 +496,10 @@ export function feltTransform(layout: Layout, x: number, y: number): { x: number
   const b = u * (1 - v);
   const c = (1 - u) * v;
   const d = u * v;
-  const ax =
-    layout.feltTL[0] * a + layout.feltTR[0] * b + layout.feltBL[0] * c + layout.feltBR[0] * d;
-  const ay =
-    layout.feltTL[1] * a + layout.feltTR[1] * b + layout.feltBL[1] * c + layout.feltBR[1] * d;
-  return { x: ax, y: ay };
+  return {
+    x: tl[0] * a + tr[0] * b + bl[0] * c + br[0] * d,
+    y: tl[1] * a + tr[1] * b + bl[1] * c + br[1] * d,
+  };
 }
 
 /** Depth scale at a flat-space Y: 1.0 at the felt mid-line, scaled
@@ -342,6 +534,10 @@ export interface PointPos {
   readonly topCheckerOffsetX: number;
   readonly stackDir: -1 | 1;
   readonly column: number;
+  /** The half quad this point was positioned by, or null on the legacy
+   *  single-quad path. checkerCenter must transform stack positions
+   *  through the SAME quad the point's base/tip used. */
+  readonly half: HalfGeom | null;
 }
 
 export function pointCoords(layout: Layout, idx: number): PointPos {
@@ -356,20 +552,40 @@ export function pointCoords(layout: Layout, idx: number): PointPos {
   const pointTipXs = isBottom ? layout.bottomPointTipXs : layout.topPointTipXs;
   const checkerOffsetXs = isBottom ? layout.bottomCheckerOffsetXs : layout.topCheckerOffsetXs;
   const pointHeight = isBottom ? layout.bottomPointHeight : layout.topPointHeight;
-  const xFlat =
-    pointCenterXs
-      ? pointCenterXs[column]!
+  // Per-half quad path: when the theme configures both halves, this
+  // point's geometry comes from ITS half's quad — columns 0-5 from the
+  // left, 6-11 from the right. The per-point center/tip arrays keep
+  // absolute precedence (premium placeholder / alignment escape hatch).
+  const half =
+    layout.leftHalf && layout.rightHalf && !pointCenterXs
+      ? column < 6
+        ? layout.leftHalf
+        : layout.rightHalf
+      : null;
+  const xFlat = pointCenterXs
+    ? pointCenterXs[column]!
+    : half
+      ? half.flatL + ((column % 6) + 0.5) * half.pointWidth
       : column < 6
-      ? playLeft + (column + 0.5) * pointWidth
-      : playLeft + 6 * pointWidth + barWidth + (column - 6 + 0.5) * pointWidth;
+        ? playLeft + (column + 0.5) * pointWidth
+        : playLeft + 6 * pointWidth + barWidth + (column - 6 + 0.5) * pointWidth;
   const tipXFlat = pointTipXs ? pointTipXs[column]! : xFlat;
   const topCheckerOffsetX = checkerOffsetXs ? checkerOffsetXs[column]! : 0;
-  const yFlat = isBottom ? layout.bottomPointY : layout.topPointY;
+  const yFlat = half
+    ? isBottom
+      ? half.bottomY
+      : half.topY
+    : isBottom
+      ? layout.bottomPointY
+      : layout.topPointY;
   const tipYFlat = yFlat + stackDir * pointHeight;
-  // When the felt is tilted, map the base + tip through the bilinear
-  // transform so triangles and stack anchors follow the perspective.
-  const base = feltTransform(layout, xFlat, yFlat);
-  const tip = feltTransform(layout, tipXFlat, tipYFlat);
+  // When the quad is tilted, map the base + tip through the bilinear
+  // transform so triangles and stack anchors follow the perspective —
+  // against the point's own half quad when one is configured.
+  const base = half ? halfTransform(half, xFlat, yFlat) : feltTransform(layout, xFlat, yFlat);
+  const tip = half
+    ? halfTransform(half, tipXFlat, tipYFlat)
+    : feltTransform(layout, tipXFlat, tipYFlat);
   return {
     x: base.x,
     tipX: tip.x,
@@ -382,6 +598,7 @@ export function pointCoords(layout: Layout, idx: number): PointPos {
     topCheckerOffsetX,
     stackDir,
     column,
+    half,
   };
 }
 
@@ -409,11 +626,12 @@ export function checkerCenter(
   const progress = Math.max(0, Math.min(1, distanceFromBase / Math.max(1, pointHeight)));
   const topCheckerOffsetX = stackIndex === count - 1 ? pos.topCheckerOffsetX : 0;
   // Compute the stack position in flat (axis-aligned) space, then
-  // re-transform via feltTransform so tilted felts get perspective-
-  // correct stacks. For non-tilted boards this is the identity.
+  // re-transform so tilted quads get perspective-correct stacks — via
+  // the point's own half quad when one is configured, else the single
+  // felt quad. For non-tilted boards this is the identity.
   const xFlat = pos.xFlat + (pos.tipXFlat - pos.xFlat) * progress + topCheckerOffsetX;
   const yFlat = pos.yFlat + pos.stackDir * distanceFromBase;
-  return feltTransform(layout, xFlat, yFlat);
+  return pos.half ? halfTransform(pos.half, xFlat, yFlat) : feltTransform(layout, xFlat, yFlat);
 }
 
 export function checkerCenterY(
