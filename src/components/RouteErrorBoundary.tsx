@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { captureException } from '@sentry/react';
 
 interface Props {
   readonly children: ReactNode;
@@ -28,6 +29,11 @@ export class RouteErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
+    // React swallows render errors once a boundary catches them, so they
+    // never reach Sentry's global handlers — report explicitly.
+    captureException(error, {
+      contexts: { react: { componentStack: info.componentStack ?? undefined } },
+    });
     // eslint-disable-next-line no-console
     console.error('[RouteErrorBoundary] render crashed', error, info);
     this.setState({ info });
