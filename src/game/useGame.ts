@@ -28,6 +28,7 @@ import type {
 import { pickMoveAsync } from '../ai/client';
 import type { AILevel } from '../ai';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
+import { captureException } from '@sentry/react';
 
 /* Quick-match default: every match is a single 1-point game. The
  * engine still supports N-point matches with Crawford + the cube (see
@@ -440,11 +441,20 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
       aiActiveRef.current = true;
       queueMicrotask(() => setIsAIThinking(true));
       (async () => {
-        await sleep(AI_CUBE_DECISION_DELAY);
-        // v1: AI always accepts. Cube AI is a future improvement.
-        setMatch((m) => (m.cubeOffer !== null ? engineAcceptDouble(m) : m));
-        aiActiveRef.current = false;
-        setIsAIThinking(false);
+        try {
+          await sleep(AI_CUBE_DECISION_DELAY);
+          // v1: AI always accepts. Cube AI is a future improvement.
+          setMatch((m) => (m.cubeOffer !== null ? engineAcceptDouble(m) : m));
+        } catch (err) {
+          captureException(err);
+          // eslint-disable-next-line no-console
+          console.error('[useGame] AI cube response failed', err);
+        } finally {
+          // Always release the guard flags — if they stay set, this effect
+          // never runs again and the match is frozen on "AI thinking".
+          aiActiveRef.current = false;
+          setIsAIThinking(false);
+        }
       })();
       return;
     }
@@ -456,16 +466,23 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
       aiActiveRef.current = true;
       const aiPlayer = ai.player;
       (async () => {
-        await sleep(AI_ROLL_DELAY);
-        const r = rollDie();
-        setDiceRoll(r);
-        setRemaining(expandDice(r));
-        setSelectedFrom(null);
-        setHistory([]);
-        setUndoSnapshot(null);
-        setAiPreviewReady(false);
-        startTurnRecord(aiPlayer, r);
-        aiActiveRef.current = false;
+        try {
+          await sleep(AI_ROLL_DELAY);
+          const r = rollDie();
+          setDiceRoll(r);
+          setRemaining(expandDice(r));
+          setSelectedFrom(null);
+          setHistory([]);
+          setUndoSnapshot(null);
+          setAiPreviewReady(false);
+          startTurnRecord(aiPlayer, r);
+        } catch (err) {
+          captureException(err);
+          // eslint-disable-next-line no-console
+          console.error('[useGame] AI roll failed', err);
+        } finally {
+          aiActiveRef.current = false;
+        }
       })();
       return;
     }
@@ -475,24 +492,45 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
     // thinking time doesn't add on top of the dice animation.
     if (history.length === 0 && remaining.length > 0) {
       aiActiveRef.current = true;
+      const aiPlayer = ai.player;
       queueMicrotask(() => setIsAIThinking(true));
       (async () => {
-        const planPromise = pickMoveAsync(board, remaining, ai.level);
-        await sleep(AI_DICE_SETTLE_MS);
-        setAiPreviewReady(true);
-        const plan = await planPromise;
-        setIsAIThinking(false);
-        if (plan.length === 0) {
-          await sleep(AI_END_TURN_DELAY);
+        try {
+          const planPromise = pickMoveAsync(board, remaining, ai.level);
+          await sleep(AI_DICE_SETTLE_MS);
+          setAiPreviewReady(true);
+          const plan = await planPromise;
+          setIsAIThinking(false);
+          if (plan.length === 0) {
+            await sleep(AI_END_TURN_DELAY);
+            setAiPreviewReady(false);
+            setBoard((b) => engineEndTurn(b));
+            setDiceRoll(null);
+            setRemaining([]);
+            setHistory([]);
+          } else {
+            await playAISequence(plan);
+          }
+        } catch (err) {
+          // A failure here (planner crash, or applyMove rejecting a plan
+          // that raced a board update) used to reject unhandled, leaving
+          // aiActiveRef stuck and the match frozen on "AI thinking".
+          // Recover by forfeiting the rest of the AI's turn — only if it
+          // is still actually the AI's turn and the game has no winner.
+          captureException(err);
+          // eslint-disable-next-line no-console
+          console.error('[useGame] AI turn failed — ending AI turn to keep the match playable', err);
           setAiPreviewReady(false);
-          setBoard((b) => engineEndTurn(b));
+          setBoard((b) =>
+            b.turn === aiPlayer && !engineWinner(b) ? engineEndTurn(b) : b
+          );
           setDiceRoll(null);
           setRemaining([]);
           setHistory([]);
-        } else {
-          await playAISequence(plan);
+        } finally {
+          aiActiveRef.current = false;
+          setIsAIThinking(false);
         }
-        aiActiveRef.current = false;
       })();
     }
   }, [
