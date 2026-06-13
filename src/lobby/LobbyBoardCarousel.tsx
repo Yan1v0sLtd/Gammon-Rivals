@@ -686,6 +686,10 @@ export function LobbyBoardCarousel({
                     label="Play"
                     size="lg"
                     sparkles={false}
+                    // Spotlight anchor for the first-run onboarding tour
+                    // (OnboardingTour step 4). Only the centered, playable
+                    // board renders a PlayButton, so there's exactly one.
+                    data-tour="play"
                     aria-label={`Play on ${board.name}`}
                     onPointerDown={(event) => event.stopPropagation()}
                     onPointerUp={(event) => event.stopPropagation()}

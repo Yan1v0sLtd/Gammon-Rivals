@@ -31,6 +31,7 @@ export type Database = {
           deleted_by: string | null;
           delete_note: string | null;
           last_seen_at: string | null;
+          tutorial_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -52,6 +53,7 @@ export type Database = {
           deleted_by?: string | null;
           delete_note?: string | null;
           last_seen_at?: string | null;
+          tutorial_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -73,6 +75,7 @@ export type Database = {
           deleted_by?: string | null;
           delete_note?: string | null;
           last_seen_at?: string | null;
+          tutorial_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1162,6 +1165,10 @@ export type Database = {
       recompute_player_levels: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      mark_tutorial_complete: {
+        Args: Record<string, never>;
+        Returns: void;
       };
       set_active_podium: {
         Args: { p_id: string };
