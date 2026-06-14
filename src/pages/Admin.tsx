@@ -842,6 +842,16 @@ export default function Admin() {
     image_url: '',
   });
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  // Store Sale draft — one global, schedulable promo that boosts coin/gem
+  // grants. Numeric/date fields are strings so inputs can be cleared mid-edit.
+  const [saleDraft, setSaleDraft] = useState<{
+    id: string | null;
+    label: string;
+    bonus_percent: string;
+    is_active: boolean;
+    starts_at: string;
+    ends_at: string;
+  }>({ id: null, label: 'Store Sale', bonus_percent: '0', is_active: false, starts_at: '', ends_at: '' });
   const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   // RTP dashboard state — fetched lazily when the section is opened so
@@ -1301,6 +1311,24 @@ export default function Admin() {
       setTables(tableResult.data ?? []);
       setBoards(boardResult.data ?? []);
       setShopItems(shopResult.data ?? []);
+      // Store Sale (single global row). Loaded here so a save refreshes it too.
+      const saleResult = await supabase
+        .from('store_sales')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!saleResult.error && saleResult.data) {
+        const s = saleResult.data;
+        setSaleDraft({
+          id: s.id,
+          label: s.label,
+          bonus_percent: String(s.bonus_percent),
+          is_active: s.is_active,
+          starts_at: s.starts_at?.slice(0, 16) ?? '',
+          ends_at: s.ends_at?.slice(0, 16) ?? '',
+        });
+      }
       setAudit(auditResult.data ?? []);
       setAdminRoles(roleResult.data ?? []);
       setAdminEmailRoles(emailRoleResult.data ?? []);
@@ -2174,6 +2202,30 @@ export default function Admin() {
       const { error } = await supabase.from('shop_items').upsert(payload);
       if (error) throw error;
       setShopDraft(shopToDraft());
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveStoreSale() {
+    if (!canManage) return;
+    setSavingKey('store-sale');
+    setDataError(null);
+    try {
+      const payload = {
+        label: saleDraft.label.trim() || 'Store Sale',
+        bonus_percent: requiredNumber(saleDraft.bonus_percent, 'Bonus %'),
+        is_active: saleDraft.is_active,
+        starts_at: saleDraft.starts_at ? new Date(saleDraft.starts_at).toISOString() : null,
+        ends_at: saleDraft.ends_at ? new Date(saleDraft.ends_at).toISOString() : null,
+      };
+      const { error } = saleDraft.id
+        ? await supabase.from('store_sales').update(payload).eq('id', saleDraft.id)
+        : await supabase.from('store_sales').insert(payload);
+      if (error) throw error;
       await loadAdminData();
     } catch (err) {
       setError(err);
@@ -4037,8 +4089,28 @@ export default function Admin() {
           )}
 
           {activeSection === 'Shop' && (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
-              <ConfigTable title="Shop items" rows={shopItems.map((row) => [
+            <div className="space-y-4">
+              {/* Store Sale — one global bonus added to every pack's coin/gem
+                  grants. Players see a "+X% EXTRA" badge + the boosted amount;
+                  the boost is applied server-side at purchase. */}
+              <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
+                <h2 className="text-lg font-black text-[#ffd16f]">Store Sale</h2>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
+                  Adds extra coins &amp; gems to every pack. Players see a “+{saleDraft.bonus_percent || '0'}% EXTRA” badge and the boosted amount; the boost is enforced server-side at purchase. Leave the dates blank for a manual on/off sale.
+                </p>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Field label="Label" value={saleDraft.label} onChange={(label) => setSaleDraft((d) => ({ ...d, label }))} />
+                  <Field label="Bonus %" value={saleDraft.bonus_percent} onChange={(bonus_percent) => setSaleDraft((d) => ({ ...d, bonus_percent }))} />
+                  <Field type="datetime-local" label="Starts at (optional)" value={saleDraft.starts_at} onChange={(starts_at) => setSaleDraft((d) => ({ ...d, starts_at }))} />
+                  <Field type="datetime-local" label="Ends at (optional)" value={saleDraft.ends_at} onChange={(ends_at) => setSaleDraft((d) => ({ ...d, ends_at }))} />
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-4">
+                  <Toggle label="Sale active" checked={saleDraft.is_active} onChange={(is_active) => setSaleDraft((d) => ({ ...d, is_active }))} />
+                  <PrimaryButton onClick={() => void saveStoreSale()} disabled={!canManage || savingKey === 'store-sale'}>Save sale</PrimaryButton>
+                </div>
+              </div>
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
+                <ConfigTable title="Shop items" rows={shopItems.map((row) => [
                 row.display_name,
                 row.kind,
                 moneyFromCents(row.price_cents),
@@ -4081,6 +4153,7 @@ export default function Admin() {
                     <PrimaryButton onClick={() => void saveShop()} disabled={!canManage || savingKey === 'shop'}>Save shop item</PrimaryButton>
                     <SecondaryButton onClick={() => setShopDraft(shopToDraft())}>New</SecondaryButton>
                   </div>
+                </div>
                 </div>
               </div>
             </div>

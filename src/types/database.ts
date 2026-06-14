@@ -1002,6 +1002,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      store_sales: {
+        Row: {
+          id: string;
+          label: string;
+          bonus_percent: number;
+          is_active: boolean;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          label?: string;
+          bonus_percent?: number;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          label?: string;
+          bonus_percent?: number;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_xp_boosts: {
         Row: {
           id: string;
@@ -1157,6 +1190,10 @@ export type Database = {
       purchase_shop_item: {
         Args: { target_item_id: string };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
+      };
+      current_store_sale: {
+        Args: Record<string, never>;
+        Returns: { label: string; bonus_percent: number; ends_at: string | null }[];
       };
       admin_hard_delete_user: {
         Args: { target_id: string };

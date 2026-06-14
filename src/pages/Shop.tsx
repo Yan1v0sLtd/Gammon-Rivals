@@ -23,6 +23,9 @@ type Ribbon = 'best-value' | 'popular' | null;
 interface Reward {
   readonly kind: RewardKind;
   readonly label: string;
+  /** Numeric grant for coins/gems rewards (null for xp/chest); drives the
+   *  struck-base → boosted display when a Store Sale is running. */
+  readonly amount: number | null;
 }
 
 /** A featured bundle card (kind='bundle'). */
@@ -44,6 +47,9 @@ interface Pack {
   readonly headlineKind: HeadlineKind;
   readonly headlineLabel: string;
   readonly headlineSubLabel?: string;
+  /** Numeric grant of the headline currency (coins/gems), or null for
+   *  non-currency packs. Drives the struck-base → boosted sale display. */
+  readonly baseAmount: number | null;
   readonly priceUsd: number | null;
   readonly priceGems: number | null;
 }
@@ -63,6 +69,17 @@ function getPresentation(contents: Json): Presentation | null {
   const p = (contents as Record<string, unknown>).presentation;
   if (p === null || typeof p !== 'object' || Array.isArray(p)) return null;
   return p as Presentation;
+}
+
+/** Reads contents.grants[key] as a number (coins/gems amounts), else null.
+ *  This is the *base* the server multiplies during a sale, so the UI boosts the
+ *  same value the wallet will actually receive. */
+function numericGrant(contents: Json, key: 'coins' | 'gems'): number | null {
+  if (contents === null || typeof contents !== 'object' || Array.isArray(contents)) return null;
+  const grants = (contents as Record<string, unknown>).grants;
+  if (grants === null || typeof grants !== 'object' || Array.isArray(grants)) return null;
+  const v = (grants as Record<string, unknown>)[key];
+  return typeof v === 'number' ? v : null;
 }
 
 // -----------------------------------------------------------------------------
@@ -86,7 +103,11 @@ function rowToBundle(row: ShopItemRow): Bundle | null {
     title: row.display_name,
     ribbon: pres?.ribbon ?? null,
     headlineKind,
-    rewards: (pres?.rewards ?? []).map((r) => ({ kind: r.kind, label: r.label })),
+    rewards: (pres?.rewards ?? []).map((r) => ({
+      kind: r.kind,
+      label: r.label,
+      amount: r.kind === 'coins' || r.kind === 'gems' ? numericGrant(row.contents, r.kind) : null,
+    })),
     priceUsd,
     priceGems,
   };
@@ -98,13 +119,16 @@ function rowToPack(row: ShopItemRow): Pack | null {
   const priceGems = row.price_gems;
   if (priceUsd === null && priceGems === null) return null;
   const headline = pres?.headline ?? {};
+  const headlineKind = headline.kind ?? defaultPackHeadline(row);
+  const currency = headlineKind === 'coins' ? 'coins' : headlineKind === 'gems' ? 'gems' : null;
   return {
     id: row.id,
     kind: row.kind as ShopKind,
     title: row.display_name,
-    headlineKind: headline.kind ?? defaultPackHeadline(row),
+    headlineKind,
     headlineLabel: headline.label ?? row.display_name,
     headlineSubLabel: headline.subLabel,
+    baseAmount: currency ? numericGrant(row.contents, currency) : null,
     priceUsd,
     priceGems,
   };
@@ -217,17 +241,33 @@ function RewardSlotIcon({ kind, className }: { kind: RewardKind; className: stri
 // Cards
 // -----------------------------------------------------------------------------
 
-function RibbonBadge({ ribbon }: { ribbon: Ribbon }) {
-  if (!ribbon) return null;
+// Diagonal corner banner. Used for Popular/Best-Value and (in gold) the sale's
+// "X% BONUS" — when both show, the bonus sits left and the tag moves right.
+function CornerRibbon({ text, side = 'left', tone }: { text: string; side?: 'left' | 'right'; tone: 'gold' | 'violet' | 'rose' }) {
+  const toneCls =
+    tone === 'gold'
+      ? 'from-[#ffe08a] to-[#b8801f] text-[#3a2406]'
+      : tone === 'rose'
+        ? 'from-rose-500 to-rose-700 text-white'
+        : 'from-violet-500 to-violet-700 text-white';
   return (
-    <div className="pointer-events-none absolute -left-px -top-px h-24 w-24 overflow-hidden">
+    <div className={`pointer-events-none absolute ${side === 'left' ? '-left-px' : '-right-px'} -top-px h-24 w-24 overflow-hidden`}>
       <div
-        className={`absolute -left-8 top-4 origin-center -rotate-45 px-9 py-1 font-display text-[0.7rem] font-black uppercase tracking-[0.16em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
-          ribbon === 'best-value' ? 'bg-gradient-to-b from-rose-500 to-rose-700' : 'bg-gradient-to-b from-violet-500 to-violet-700'
+        className={`absolute top-4 origin-center px-9 py-1 bg-gradient-to-b ${toneCls} font-display text-[0.7rem] font-black uppercase tracking-[0.14em] shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
+          side === 'left' ? '-left-8 -rotate-45' : '-right-8 rotate-45'
         }`}
       >
-        {ribbon === 'best-value' ? 'Best Value!' : 'Popular'}
+        {text}
       </div>
+    </div>
+  );
+}
+
+// Small gold pill under a pack's icon advertising the running sale.
+function SaleBadge({ bonusPercent }: { bonusPercent: number }) {
+  return (
+    <div className="mx-auto mb-2 w-fit rounded-full border border-[#ffe08a]/70 bg-gradient-to-b from-[#ffe08a] to-[#b8801f] px-3 py-0.5 font-display text-[0.78rem] font-black uppercase tracking-wide text-[#3a2406] shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+      +{bonusPercent}% Extra
     </div>
   );
 }
@@ -251,7 +291,8 @@ const PLATE_TEXT = 'font-display font-black uppercase text-[#fff7dc] [text-shado
 // Dark shadow under the white price so it reads on the bright green button.
 const PRICE_SHADOW = '[text-shadow:0_2px_3px_rgba(0,0,0,0.55)]';
 
-function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean; onBuy: () => void }) {
+function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; isBusy: boolean; bonusPercent: number; onBuy: () => void }) {
+  const onSale = bonusPercent > 0;
   return (
     <article className="relative flex h-full min-h-[30rem] flex-1 flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
       {/* Title — gold name-plate. Will be BO-configurable in Phase B. */}
@@ -259,19 +300,35 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
         {bundle.title}
       </div>
       <div className="flex flex-1 flex-col p-5">
-        {/* Hero — the headline currency, scaled up. The ribbon sits here (over
-            the hero, below the title bar) so it never covers the title.
+        {/* Hero — the headline currency, scaled up. Ribbons sit here (over the
+            hero, below the title bar). On sale: gold "X% BONUS" left, the
+            Popular/Best-Value tag moves right; otherwise the tag stays left.
             data-fly-source anchors the reward-flight on a successful gem buy. */}
         <div className="relative flex h-44 items-center justify-center border-b border-white/10" data-fly-source={bundle.id}>
-          <RibbonBadge ribbon={bundle.ribbon} />
+          {onSale ? <CornerRibbon text={`${bonusPercent}% Bonus`} side="left" tone="gold" /> : null}
+          {bundle.ribbon ? (
+            <CornerRibbon
+              text={bundle.ribbon === 'best-value' ? 'Best Value!' : 'Popular'}
+              side={onSale ? 'right' : 'left'}
+              tone={bundle.ribbon === 'best-value' ? 'rose' : 'violet'}
+            />
+          ) : null}
           <HeadlineIcon kind={bundle.headlineKind} className="h-32 w-32" />
         </div>
-        {/* Reward currencies — centered, +70% larger icons + labels. */}
+        {/* Reward currencies — centered. On sale each currency reward shows the
+            struck base above the boosted amount. */}
         <div className="flex flex-wrap items-stretch justify-center gap-4 border-b border-white/10 py-6">
           {bundle.rewards.slice(0, 4).map((r, i) => (
             <div key={i} className="flex min-w-[7rem] flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-[#183763]/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
               <RewardSlotIcon kind={r.kind} className="h-[4.4rem] w-[4.4rem]" />
-              <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+              {onSale && r.amount !== null ? (
+                <div className="flex flex-col items-center leading-none">
+                  <span className="text-[0.95rem] font-bold text-[#9aabc5] line-through tabular-nums">{r.amount.toLocaleString()}</span>
+                  <span className="text-[1.38rem] font-black text-white tabular-nums">{Math.round(r.amount * (1 + bonusPercent / 100)).toLocaleString()}</span>
+                </div>
+              ) : (
+                <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+              )}
             </div>
           ))}
         </div>
@@ -288,11 +345,12 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
   );
 }
 
-function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy: () => void }) {
-  // The title bar carries the product NAME; the body shows the amount only when
-  // it's a numeric quantity (e.g. "10,000"), so name-style headlines (XP Boost,
-  // Lucky Dice…) don't print their name twice.
-  const amount = /^\d/.test(pack.headlineLabel.trim()) ? pack.headlineLabel : null;
+function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: boolean; bonusPercent: number; onBuy: () => void }) {
+  // baseAmount is the numeric headline-currency grant (null for non-currency
+  // packs). A running sale boosts it the same way the server boosts the grant.
+  const base = pack.baseAmount;
+  const onSale = bonusPercent > 0 && base !== null;
+  const boosted = base !== null ? Math.round(base * (1 + bonusPercent / 100)) : null;
   return (
     <article className="relative flex h-[18rem] flex-col overflow-hidden rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
       {/* Gold name-plate — same treatment as the bundle, fixed height so every
@@ -305,10 +363,20 @@ function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy:
         <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
           <HeadlineIcon kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
         </div>
-        {amount || pack.headlineSubLabel ? (
-          <div className="mb-2 text-center">
-            {amount ? <div className="font-display text-[1.79rem] font-black tabular-nums text-white">{amount}</div> : null}
-            {pack.headlineSubLabel ? <div className="text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+        {onSale ? <SaleBadge bonusPercent={bonusPercent} /> : null}
+        {base !== null || pack.headlineSubLabel ? (
+          <div className="mb-2 text-center leading-none">
+            {base !== null ? (
+              onSale ? (
+                <>
+                  <div className="text-base font-bold text-[#9aabc5] line-through tabular-nums">{base.toLocaleString()}</div>
+                  <div className="mt-1 font-display text-[1.79rem] font-black tabular-nums text-white">{boosted!.toLocaleString()}</div>
+                </>
+              ) : (
+                <div className="font-display text-[1.79rem] font-black tabular-nums text-white">{base.toLocaleString()}</div>
+              )
+            ) : null}
+            {pack.headlineSubLabel ? <div className="mt-1 text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
           </div>
         ) : null}
         <button
@@ -369,6 +437,9 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [data, setData] = useState<MappedShop>({ bundles: [], packs: [] });
+  // The running Store Sale (null when none). bonusPercent drives the badges +
+  // boosted amounts; the actual grant boost is enforced server-side.
+  const [sale, setSale] = useState<{ label: string; bonusPercent: number } | null>(null);
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
 
@@ -397,6 +468,10 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
         if (cancelled || error || !rows) return;
         setData(mapShop(rows));
       });
+    void supabase.rpc('current_store_sale').then(({ data: rows, error }) => {
+      if (cancelled || error || !rows || rows.length === 0) return;
+      setSale({ label: rows[0].label, bonusPercent: rows[0].bonus_percent });
+    });
     return () => {
       cancelled = true;
     };
@@ -604,6 +679,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                         key={b.id}
                         bundle={b}
                         isBusy={busyId === b.id}
+                        bonusPercent={sale?.bonusPercent ?? 0}
                         onBuy={() => buy({ id: b.id, label: b.title, priceUsd: b.priceUsd, priceGems: b.priceGems, flightKind: flightKindOf(b.headlineKind) })}
                       />
                     ))}
@@ -624,6 +700,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                         key={p.id}
                         pack={p}
                         isBusy={busyId === p.id}
+                        bonusPercent={sale?.bonusPercent ?? 0}
                         onBuy={() => buy({ id: p.id, label: p.headlineLabel, priceUsd: p.priceUsd, priceGems: p.priceGems, flightKind: flightKindOf(p.headlineKind) })}
                       />
                     ))}
