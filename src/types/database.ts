@@ -951,6 +951,7 @@ export type Database = {
           ends_at: string | null;
           max_purchases_per_user: number | null;
           is_enabled: boolean;
+          exclude_from_sale: boolean;
           sort_order: number;
           updated_by: string | null;
           created_at: string;
@@ -973,6 +974,7 @@ export type Database = {
           ends_at?: string | null;
           max_purchases_per_user?: number | null;
           is_enabled?: boolean;
+          exclude_from_sale?: boolean;
           sort_order?: number;
           updated_by?: string | null;
           created_at?: string;
@@ -995,6 +997,7 @@ export type Database = {
           ends_at?: string | null;
           max_purchases_per_user?: number | null;
           is_enabled?: boolean;
+          exclude_from_sale?: boolean;
           sort_order?: number;
           updated_by?: string | null;
           created_at?: string;
