@@ -244,11 +244,18 @@ function PriceLabel({ priceUsd, priceGems }: { priceUsd: number | null; priceGem
   return <span className="tabular-nums">${(priceUsd ?? 0).toFixed(2)}</span>;
 }
 
+// Shared gold "name-plate" gradient for the title bars (bundle + each pack).
+// Light text rides on top with a dark shadow so it stays legible on the gold.
+const GOLD_PLATE = 'bg-gradient-to-b from-[#f6cf5e] via-[#d9a531] to-[#a06f16]';
+const PLATE_TEXT = 'font-display font-black uppercase text-[#fff7dc] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]';
+// Dark shadow under the white price so it reads on the bright green button.
+const PRICE_SHADOW = '[text-shadow:0_2px_3px_rgba(0,0,0,0.55)]';
+
 function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean; onBuy: () => void }) {
   return (
-    <article className="relative flex min-h-[34rem] flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
-      {/* Title (+50%). Will be BO-configurable in Phase B. */}
-      <div className="bg-gradient-to-b from-[#bc8108] to-[#8d5d00] px-4 py-4 text-center font-display text-2xl font-black uppercase tracking-[0.12em] text-[#fff7dc]">
+    <article className="relative flex h-full min-h-[30rem] flex-1 flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
+      {/* Title — gold name-plate. Will be BO-configurable in Phase B. */}
+      <div className={`${GOLD_PLATE} ${PLATE_TEXT} px-4 py-4 text-center text-2xl tracking-[0.12em]`}>
         {bundle.title}
       </div>
       <div className="flex flex-1 flex-col p-5">
@@ -262,9 +269,9 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
         {/* Reward currencies — centered, +70% larger icons + labels. */}
         <div className="flex flex-wrap items-stretch justify-center gap-4 border-b border-white/10 py-6">
           {bundle.rewards.slice(0, 4).map((r, i) => (
-            <div key={i} className="flex w-24 flex-col items-center justify-center gap-2 rounded-xl bg-[#183763]/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <RewardSlotIcon kind={r.kind} className="h-[3.8rem] w-[3.8rem]" />
-              <span className="text-center text-[1.2rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+            <div key={i} className="flex min-w-[7rem] flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-[#183763]/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <RewardSlotIcon kind={r.kind} className="h-[4.4rem] w-[4.4rem]" />
+              <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
             </div>
           ))}
         </div>
@@ -272,7 +279,7 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
           type="button"
           onClick={onBuy}
           disabled={isBusy}
-          className="mt-auto h-16 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.5rem] font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
+          className={`mt-auto h-16 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.72rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
         >
           <PriceLabel priceUsd={bundle.priceUsd} priceGems={bundle.priceGems} />
         </button>
@@ -282,34 +289,55 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
 }
 
 function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy: () => void }) {
+  // The title bar carries the product NAME; the body shows the amount only when
+  // it's a numeric quantity (e.g. "10,000"), so name-style headlines (XP Boost,
+  // Lucky Dice…) don't print their name twice.
+  const amount = /^\d/.test(pack.headlineLabel.trim()) ? pack.headlineLabel : null;
   return (
-    <article className="flex h-[18rem] flex-col rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
-      {/* Icon −20% to free room for the (bigger) amount + price below. */}
-      <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
-        <HeadlineIcon kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
+    <article className="relative flex h-[18rem] flex-col overflow-hidden rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
+      {/* Gold name-plate — same treatment as the bundle, fixed height so every
+          card's body lines up even when a name wraps to two lines. */}
+      <div className={`${GOLD_PLATE} ${PLATE_TEXT} flex h-12 items-center justify-center px-2 text-center text-[0.9rem] leading-[1.05] tracking-[0.05em]`}>
+        {pack.title}
       </div>
-      <div className="mb-3 text-center">
-        <div className="font-display text-[1.56rem] font-black tabular-nums text-white">{pack.headlineLabel}</div>
-        {pack.headlineSubLabel ? <div className="text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+      <div className="flex flex-1 flex-col p-4">
+        {/* Icon −20% to free room for the (bigger) amount + price below. */}
+        <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
+          <HeadlineIcon kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
+        </div>
+        {amount || pack.headlineSubLabel ? (
+          <div className="mb-2 text-center">
+            {amount ? <div className="font-display text-[1.79rem] font-black tabular-nums text-white">{amount}</div> : null}
+            {pack.headlineSubLabel ? <div className="text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          onClick={onBuy}
+          disabled={isBusy}
+          className={`mt-auto h-14 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.55rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
+        >
+          <PriceLabel priceUsd={pack.priceUsd} priceGems={pack.priceGems} />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onBuy}
-        disabled={isBusy}
-        className="h-14 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.35rem] font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
-      >
-        <PriceLabel priceUsd={pack.priceUsd} priceGems={pack.priceGems} />
-      </button>
     </article>
   );
 }
 
-function SectionTitle({ children }: { children: ReactNode }) {
+function SectionTitle({ children, compact = false }: { children: ReactNode; compact?: boolean }) {
+  // `compact` shrinks the title (smaller font + tighter tracking + no-wrap) so a
+  // long label like "Featured Pack" stays on one line in the narrow column. The
+  // fixed height keeps both section titles the same height even at different font
+  // sizes, so the bundle and the packs grid below them start (and end) level.
   return (
-    <h2 className="mb-8 flex items-center justify-center gap-3 font-display text-[1.9rem] font-black uppercase tracking-[0.26em] text-[#ffc93d]">
-      <span className="text-xl">✦</span>
+    <h2
+      className={`mb-8 flex h-10 items-center justify-center gap-3 font-display font-black uppercase leading-none text-[#ffc93d] ${
+        compact ? 'whitespace-nowrap text-[1.2rem] tracking-[0.12em]' : 'text-[1.9rem] tracking-[0.26em]'
+      }`}
+    >
+      <span className={compact ? 'text-sm' : 'text-xl'}>✦</span>
       {children}
-      <span className="text-xl">✦</span>
+      <span className={compact ? 'text-sm' : 'text-xl'}>✦</span>
     </h2>
   );
 }
@@ -488,11 +516,47 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       <ScaleInModal onClose={onClose}>
         <div className="origin-center" style={{ transform: `scale(${scale})` }}>
           <main
-            className="flex flex-col overflow-hidden rounded-[22px] border border-[#ffc93d]/40 bg-gradient-to-b from-[#081429] to-[#071326] text-[#f6f0df] shadow-[0_26px_70px_rgba(0,0,0,0.45)]"
+            className="relative isolate flex flex-col overflow-hidden rounded-[22px] border border-[#ffc93d]/40 text-[#f6f0df] shadow-[0_26px_70px_rgba(0,0,0,0.55)]"
             style={{ width: PANEL_DESIGN_W }}
           >
+            {/* ---- Liquid-glass surface (replaces the flat blue panel) ----
+                A colourful base (stands in for the lobby behind the modal) gives
+                the refraction edges to bend; the effect layer blurs + distorts it;
+                the dark tint keeps it on-theme and the content readable; the
+                shine adds the glossy rim.
+                NOTE: backdrop-filter + the SVG displacement filter are GPU-heavy
+                and Chromium-centric — fine on web / Android WebView, but worth a
+                perf check on low-end devices. Tune via the inline values below. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-0"
+              style={{
+                background:
+                  'radial-gradient(38% 48% at 18% 22%, rgba(56,189,248,0.55), transparent 70%),' +
+                  'radial-gradient(42% 52% at 84% 16%, rgba(250,204,21,0.45), transparent 70%),' +
+                  'radial-gradient(48% 58% at 78% 86%, rgba(139,92,246,0.50), transparent 70%),' +
+                  'radial-gradient(44% 54% at 22% 88%, rgba(16,185,129,0.48), transparent 70%),' +
+                  '#03070d',
+              }}
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-0"
+              style={{
+                backdropFilter: 'blur(14px) saturate(1.35)',
+                WebkitBackdropFilter: 'blur(14px) saturate(1.35)',
+                filter: 'url(#shop-glass-distortion)',
+              }}
+            />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]" style={{ background: 'rgba(10,26,51,0.55)' }} />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 z-[2]"
+              style={{ boxShadow: 'inset 2px 2px 1px 0 rgba(255,255,255,0.5), inset -1px -1px 1px 1px rgba(255,255,255,0.22)' }}
+            />
+
             {/* Header */}
-            <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37] to-[#050d1c] px-10 py-5">
+            <header className="relative z-[3] grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/40 to-[#050d1c]/10 px-10 py-5">
               <span aria-hidden="true" />
               <h1 className="text-center font-display text-[2.9rem] font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
                 Store
@@ -517,19 +581,24 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                   type="button"
                   onClick={onClose}
                   aria-label="Close store"
-                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-3xl leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
+                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
                 >
-                  ×
+                  {/* SVG cross — the × glyph sits visually high; this is centered. */}
+                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+                    <path d="M7 7l10 10M17 7L7 17" />
+                  </svg>
                 </button>
               </div>
             </header>
 
-            {/* Content: Featured Packs | Packs grid */}
-            <div className="grid grid-cols-[340px_1fr] gap-8 p-10">
-              <section className="border-r border-[#9aabc5]/18 pr-8">
-                <SectionTitle>Featured Pack</SectionTitle>
+            {/* Content: Featured Pack | Packs grid */}
+            <div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
+              {/* No divider; the column is a flex stack so the bundle below the
+                  title stretches to the exact height of the two pack rows. */}
+              <section className="flex flex-col">
+                <SectionTitle compact>Featured Pack</SectionTitle>
                 {data.bundles.length > 0 ? (
-                  <div>
+                  <div className="flex flex-1 flex-col">
                     {data.bundles.slice(0, 1).map((b) => (
                       <BundleCard
                         key={b.id}
@@ -540,7 +609,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid h-64 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
+                  <div className="grid flex-1 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
                     No featured packs yet.
                   </div>
                 )}
@@ -569,6 +638,18 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
           </main>
         </div>
       </ScaleInModal>
+
+      {/* SVG displacement filter powering the liquid-glass refraction above.
+          Hidden; referenced by the effect layer via url(#shop-glass-distortion).
+          Trimmed to the 3 primitives that actually feed the output (the source
+          effect carried 3 dead ones); scale 150 matches the reference warp. */}
+      <svg aria-hidden="true" width="0" height="0" className="absolute">
+        <filter id="shop-glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="1" seed="5" result="turbulence" />
+          <feGaussianBlur in="turbulence" stdDeviation="3" result="softMap" />
+          <feDisplacementMap in="SourceGraphic" in2="softMap" scale="150" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
 
       {rewardFlights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
