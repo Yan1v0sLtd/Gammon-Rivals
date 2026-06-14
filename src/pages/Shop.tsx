@@ -1,192 +1,140 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScaleInModal } from '../components/ScaleInModal';
+import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
-import { formatCompactNumber } from '../lib/format';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
 import type { Database, Json } from '../types/database';
 
 // -----------------------------------------------------------------------------
-// View-layer shapes (consumed by the card components below). The DB row
-// `shop_items` is mapped into these in `mapShopItem` — keeping the cards
-// dumb means we can swap the data source without touching the markup.
+// Redesigned Store. Two sections, no category tabs (per current direction):
+//   • Featured Packs — bundles (shop_items.kind = 'bundle')
+//   • Packs grid     — every other purchasable single pack
+// Balances in the header reuse the lobby's CurrencyPill (same element + the
+// player's real wallet). Buy flow: gem-priced → purchase_shop_item; USD →
+// the admin test-purchase (so the whole flow is testable) until real billing.
 // -----------------------------------------------------------------------------
 
-type HeadlineKind = 'gems' | 'coins' | 'xp-boost' | 'lucky-dice';
-type BonusKind = 'gems' | 'coins' | 'chest';
-type Ribbon = 'best-value' | 'popular' | null;
 type ShopKind = 'coin_pack' | 'gem_pack' | 'board_theme' | 'cosmetic' | 'bundle' | 'special_offer';
+type HeadlineKind = 'coins' | 'gems' | 'xp-boost' | 'lucky-dice';
+type RewardKind = 'coins' | 'gems' | 'xp' | 'chest';
+type Ribbon = 'best-value' | 'popular' | null;
 
-interface TopOffer {
+interface Reward {
+  readonly kind: RewardKind;
+  readonly label: string;
+}
+
+/** A featured bundle card (kind='bundle'). */
+interface Bundle {
   readonly id: string;
-  /** Original shop_items.kind, used for sidebar-tab filtering. */
-  readonly kind: ShopKind;
+  readonly title: string;
   readonly ribbon: Ribbon;
-  readonly headlineLabel: string; // e.g., "10,000" — bold value
-  readonly headlineKind: HeadlineKind;
-  readonly headlineSubLabel?: string; // e.g., "7 Days"
-  readonly bonuses: ReadonlyArray<{ kind: BonusKind; amount: number }>;
-  /**
-   * Exactly one of priceUsd / priceGems is set. USD items render a
-   * dollar button and go through the stubbed buy flow; gem items
-   * render a gem button and go through the live purchase_shop_item
-   * RPC.
-   */
+  readonly headlineKind: 'coins' | 'gems';
+  readonly rewards: readonly Reward[];
   readonly priceUsd: number | null;
   readonly priceGems: number | null;
 }
 
-interface DailyDeal {
+/** A single pack in the right-hand grid. */
+interface Pack {
   readonly id: string;
+  readonly kind: ShopKind;
   readonly title: string;
-  readonly kind: HeadlineKind;
-  readonly amount: string; // display string e.g., "200", "5,000", "3 Days", "x2"
-  readonly priceGems: number;
+  readonly headlineKind: HeadlineKind;
+  readonly headlineLabel: string;
+  readonly headlineSubLabel?: string;
+  readonly priceUsd: number | null;
+  readonly priceGems: number | null;
 }
-
-interface MonthlyPass {
-  readonly id: string;
-  readonly title: string;
-  readonly description: string;
-  readonly priceUsd: number;
-}
-
-// -----------------------------------------------------------------------------
-// DB → view mapping. `contents.presentation` controls placement and visual
-// hints; `contents.grants` is consumed by the Buy flow (next PR). Anything
-// the mapper can't make sense of returns null and is skipped at render.
-// -----------------------------------------------------------------------------
 
 type ShopItemRow = Database['public']['Tables']['shop_items']['Row'];
 
-interface ShopItemPresentation {
-  readonly placement?: 'top_offer' | 'daily_deal' | 'monthly_pass';
+interface Presentation {
+  readonly placement?: string;
   readonly ribbon?: Ribbon;
-  readonly headline?: {
-    readonly kind?: HeadlineKind;
-    readonly label?: string;
-    readonly subLabel?: string;
-  };
-  readonly bonuses?: ReadonlyArray<{ readonly kind: BonusKind; readonly amount: number }>;
+  readonly headlineKind?: string;
+  readonly headline?: { readonly kind?: HeadlineKind; readonly label?: string; readonly subLabel?: string };
+  readonly rewards?: ReadonlyArray<{ readonly kind: RewardKind; readonly label: string }>;
 }
 
-function getPresentation(contents: Json): ShopItemPresentation | null {
+function getPresentation(contents: Json): Presentation | null {
   if (contents === null || typeof contents !== 'object' || Array.isArray(contents)) return null;
   const p = (contents as Record<string, unknown>).presentation;
   if (p === null || typeof p !== 'object' || Array.isArray(p)) return null;
-  return p as ShopItemPresentation;
+  return p as Presentation;
 }
 
-interface MappedItems {
-  readonly topOffers: readonly TopOffer[];
-  readonly dailyDeals: readonly DailyDeal[];
-  readonly monthlyPass: MonthlyPass | null;
-  /**
-   * Flat list of every enabled, presentable item — used by the
-   * sidebar tabs to filter by `kind` independent of placement.
-   * Daily-deal and top-offer items both appear here too so the
-   * GEMS / COINS / OFFERS tabs show the full catalogue of that
-   * category.
-   */
-  readonly allOffers: readonly TopOffer[];
-}
+// -----------------------------------------------------------------------------
+// DB → view mapping
+// -----------------------------------------------------------------------------
 
-/** Best-effort default for headline.kind when the seed doesn't specify it. */
-function defaultHeadlineKind(row: ShopItemRow): HeadlineKind {
+function defaultPackHeadline(row: ShopItemRow): HeadlineKind {
   if (row.kind === 'coin_pack') return 'coins';
+  if (row.kind === 'special_offer') return 'xp-boost';
   return 'gems';
 }
 
-function rowToTopOffer(row: ShopItemRow): TopOffer | null {
+function rowToBundle(row: ShopItemRow): Bundle | null {
   const pres = getPresentation(row.contents);
-  const headline = pres?.headline ?? {};
   const priceUsd = row.price_cents !== null ? row.price_cents / 100 : null;
   const priceGems = row.price_gems;
-  if (priceUsd === null && priceGems === null) return null; // not purchasable
+  if (priceUsd === null && priceGems === null) return null;
+  const headlineKind = pres?.headlineKind === 'gems' ? 'gems' : 'coins';
   return {
     id: row.id,
-    kind: row.kind as ShopKind,
+    title: row.display_name,
     ribbon: pres?.ribbon ?? null,
-    headlineKind: headline.kind ?? defaultHeadlineKind(row),
-    headlineLabel: headline.label ?? row.display_name,
-    headlineSubLabel: headline.subLabel,
-    bonuses: pres?.bonuses ?? [],
+    headlineKind,
+    rewards: (pres?.rewards ?? []).map((r) => ({ kind: r.kind, label: r.label })),
     priceUsd,
     priceGems,
   };
 }
 
-function mapShopItems(rows: readonly ShopItemRow[]): MappedItems {
-  const topOffers: TopOffer[] = [];
-  const dailyDeals: DailyDeal[] = [];
-  const allOffers: TopOffer[] = [];
-  let monthlyPass: MonthlyPass | null = null;
+function rowToPack(row: ShopItemRow): Pack | null {
+  const pres = getPresentation(row.contents);
+  const priceUsd = row.price_cents !== null ? row.price_cents / 100 : null;
+  const priceGems = row.price_gems;
+  if (priceUsd === null && priceGems === null) return null;
+  const headline = pres?.headline ?? {};
+  return {
+    id: row.id,
+    kind: row.kind as ShopKind,
+    title: row.display_name,
+    headlineKind: headline.kind ?? defaultPackHeadline(row),
+    headlineLabel: headline.label ?? row.display_name,
+    headlineSubLabel: headline.subLabel,
+    priceUsd,
+    priceGems,
+  };
+}
 
+interface MappedShop {
+  readonly bundles: readonly Bundle[];
+  readonly packs: readonly Pack[];
+}
+
+function mapShop(rows: readonly ShopItemRow[]): MappedShop {
+  const bundles: Bundle[] = [];
+  const packs: Pack[] = [];
   for (const row of rows) {
     if (!row.is_enabled) continue;
     const pres = getPresentation(row.contents);
-
-    // Build the unified TopOffer record up-front; we'll route it into
-    // the right featured slot AND/OR allOffers.
-    const offer = rowToTopOffer(row);
-    if (offer) allOffers.push(offer);
-
-    if (pres?.placement === 'top_offer' && row.price_cents !== null && offer) {
-      topOffers.push(offer);
-    } else if (pres?.placement === 'daily_deal' && row.price_gems !== null) {
-      const headline = pres.headline ?? {};
-      dailyDeals.push({
-        id: row.id,
-        title: row.display_name,
-        kind: headline.kind ?? defaultHeadlineKind(row),
-        amount: headline.label ?? '',
-        priceGems: row.price_gems,
-      });
-    } else if (
-      pres?.placement === 'monthly_pass' &&
-      row.price_cents !== null &&
-      monthlyPass === null
-    ) {
-      monthlyPass = {
-        id: row.id,
-        title: row.display_name,
-        description: row.description,
-        priceUsd: row.price_cents / 100,
-      };
+    const isFeatured = row.kind === 'bundle' || pres?.placement === 'featured';
+    if (isFeatured) {
+      const b = rowToBundle(row);
+      if (b) bundles.push(b);
+    } else {
+      const p = rowToPack(row);
+      if (p) packs.push(p);
     }
   }
-
-  return { topOffers, dailyDeals, monthlyPass, allOffers };
+  return { bundles, packs };
 }
-
-/** Maps a tab id to the set of shop_items.kind values it should display. */
-function kindsForTab(tab: TabId): readonly ShopKind[] {
-  switch (tab) {
-    case 'gems':
-      return ['gem_pack'];
-    case 'coins':
-      return ['coin_pack'];
-    case 'items':
-      return ['cosmetic', 'board_theme'];
-    case 'offers':
-      return ['special_offer', 'bundle'];
-    default:
-      return [];
-  }
-}
-
-type TabId = 'featured' | 'gems' | 'coins' | 'items' | 'offers';
-
-const TABS: ReadonlyArray<{ id: TabId; label: string; icon: string }> = [
-  { id: 'featured', label: 'Featured', icon: '★' },
-  { id: 'gems', label: 'Gems', icon: '◆' },
-  { id: 'coins', label: 'Coins', icon: '⊙' },
-  { id: 'items', label: 'Items', icon: '⛁' },
-  { id: 'offers', label: 'Offers', icon: '✦' },
-];
 
 // -----------------------------------------------------------------------------
-// Reusable bits
+// Icons (kept from the previous shop — art-light SVG/webp)
 // -----------------------------------------------------------------------------
 
 function GemIcon({ className = '' }: { className?: string }) {
@@ -211,37 +159,9 @@ function CoinIcon({ className = '' }: { className?: string }) {
   );
 }
 
-function ChestIcon({ className = '' }: { className?: string }) {
-  // Inline SVG treasure chest so we don't need yet another asset.
+function XpBadge({ className = '' }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className={`drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id="shop-chest-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a07237" />
-          <stop offset="100%" stopColor="#5a3d18" />
-        </linearGradient>
-        <linearGradient id="shop-chest-band" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fcd34d" />
-          <stop offset="100%" stopColor="#b45309" />
-        </linearGradient>
-      </defs>
-      <rect x="3" y="8" width="18" height="11" rx="1.5" fill="url(#shop-chest-body)" />
-      <path d="M3 8 Q3 4 7 4 H17 Q21 4 21 8 Z" fill="url(#shop-chest-body)" />
-      <rect x="3" y="11.5" width="18" height="2" fill="url(#shop-chest-band)" />
-      <rect x="11" y="11.5" width="2" height="6" fill="url(#shop-chest-band)" />
-      <circle cx="12" cy="14" r="0.9" fill="#fef3c7" />
-    </svg>
-  );
-}
-
-function XpBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const h = size === 'sm' ? 'h-8' : size === 'lg' ? 'h-20' : 'h-14';
-  return (
-    <svg viewBox="0 0 100 110" className={`${h} w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`} aria-hidden="true">
+    <svg viewBox="0 0 100 110" className={`w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`} aria-hidden="true">
       <defs>
         <linearGradient id="shop-xp-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#a855f7" />
@@ -254,38 +174,22 @@ function XpBadge({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
       </defs>
       <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="url(#shop-xp-rim)" />
       <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#shop-xp-fill)" />
-      <text
-        x="50"
-        y="68"
-        textAnchor="middle"
-        fontFamily="system-ui, sans-serif"
-        fontWeight="900"
-        fontSize="34"
-        fill="white"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth="1"
-      >
-        XP
-      </text>
+      <text x="50" y="68" textAnchor="middle" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34" fill="white" stroke="rgba(0,0,0,0.35)" strokeWidth="1">XP</text>
     </svg>
   );
 }
 
-function DiceIcon({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  // Two stacked dice via SVG. Simple but recognizable.
-  const h = size === 'sm' ? 'h-8' : size === 'lg' ? 'h-20' : 'h-14';
+function DiceIcon({ className = '' }: { className?: string }) {
   return (
-    <svg viewBox="0 0 100 80" className={`${h} w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)]`} aria-hidden="true">
+    <svg viewBox="0 0 100 80" className={`w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`} aria-hidden="true">
       <defs>
         <linearGradient id="shop-dice-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#fef9c3" />
           <stop offset="100%" stopColor="#e7d09a" />
         </linearGradient>
       </defs>
-      {/* Back die */}
       <rect x="42" y="6" width="42" height="42" rx="6" fill="url(#shop-dice-fill)" stroke="#3a1f08" strokeWidth="2" />
       <circle cx="63" cy="27" r="3" fill="#3a1f08" />
-      {/* Front die */}
       <rect x="14" y="28" width="46" height="46" rx="6" fill="url(#shop-dice-fill)" stroke="#3a1f08" strokeWidth="2" />
       <circle cx="25" cy="40" r="3" fill="#3a1f08" />
       <circle cx="49" cy="40" r="3" fill="#3a1f08" />
@@ -296,429 +200,124 @@ function DiceIcon({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   );
 }
 
+function HeadlineIcon({ kind, className }: { kind: HeadlineKind; className: string }) {
+  if (kind === 'coins') return <CoinIcon className={className} />;
+  if (kind === 'gems') return <GemIcon className={className} />;
+  if (kind === 'xp-boost') return <XpBadge className={className} />;
+  return <DiceIcon className={className} />;
+}
+
+function RewardSlotIcon({ kind, className }: { kind: RewardKind; className: string }) {
+  if (kind === 'coins') return <CoinIcon className={className} />;
+  if (kind === 'gems') return <GemIcon className={className} />;
+  return <XpBadge className={className} />; // 'xp' / 'chest' fallback
+}
+
 // -----------------------------------------------------------------------------
-// Top Offer card (real-money packages)
+// Cards
 // -----------------------------------------------------------------------------
 
-function TopOfferCard({
-  offer,
-  isBusy = false,
-  onBuy,
-}: {
-  offer: TopOffer;
-  isBusy?: boolean;
-  onBuy: () => void;
-}) {
-  const isGemPriced = offer.priceGems !== null && offer.priceUsd === null;
+function RibbonBadge({ ribbon }: { ribbon: Ribbon }) {
+  if (!ribbon) return null;
   return (
-    <div className="relative flex flex-col overflow-hidden rounded-2xl border border-amber-300/60 bg-gradient-to-b from-[#fdf6e3] to-[#f0e1b8] p-3 shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]">
-      {offer.ribbon ? (
-        <div className="pointer-events-none absolute -left-px -top-px h-24 w-24 overflow-hidden">
-          <div
-            className={`absolute -left-8 top-4 origin-center -rotate-45 px-9 py-1 font-display text-[clamp(0.55rem,1.1vw,0.75rem)] font-black uppercase tracking-[0.16em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
-              offer.ribbon === 'best-value'
-                ? 'bg-gradient-to-b from-rose-500 to-rose-700'
-                : 'bg-gradient-to-b from-violet-500 to-violet-700'
-            }`}
-          >
-            {offer.ribbon === 'best-value' ? 'Best Value!' : 'Popular'}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Hero icon. data-fly-source anchors the reward-flight on a
-       *  successful gem-priced buy. Safe to set unconditionally —
-       *  USD-priced items never spawn a flight. */}
+    <div className="pointer-events-none absolute -left-px -top-px h-24 w-24 overflow-hidden">
       <div
-        className="flex h-24 items-center justify-center"
-        data-fly-source={offer.id}
+        className={`absolute -left-8 top-4 origin-center -rotate-45 px-9 py-1 font-display text-[0.7rem] font-black uppercase tracking-[0.16em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
+          ribbon === 'best-value' ? 'bg-gradient-to-b from-rose-500 to-rose-700' : 'bg-gradient-to-b from-violet-500 to-violet-700'
+        }`}
       >
-        {offer.headlineKind === 'gems' && <GemIcon className="h-20 w-20" />}
-        {offer.headlineKind === 'coins' && <CoinIcon className="h-20 w-20" />}
-        {offer.headlineKind === 'xp-boost' && <XpBadge size="lg" />}
-        {offer.headlineKind === 'lucky-dice' && <DiceIcon size="lg" />}
+        {ribbon === 'best-value' ? 'Best Value!' : 'Popular'}
       </div>
-
-      {/* Headline */}
-      <div className="mt-2 flex items-center justify-center gap-2">
-        {(offer.headlineKind === 'gems' || offer.headlineKind === 'coins') ? (
-          <>
-            {offer.headlineKind === 'gems' ? <GemIcon className="h-5 w-5" /> : <CoinIcon className="h-5 w-5" />}
-            <span className="font-display text-2xl font-black tabular-nums text-[#1e40af]">
-              {offer.headlineLabel}
-            </span>
-          </>
-        ) : (
-          <span className="font-display text-lg font-black uppercase tracking-wide text-[#3a1f08]">
-            {offer.headlineLabel}
-          </span>
-        )}
-      </div>
-      {offer.headlineSubLabel ? (
-        <div className="mt-0.5 text-center text-sm font-bold text-amber-900/70">{offer.headlineSubLabel}</div>
-      ) : null}
-
-      {/* Bonuses row */}
-      <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm font-bold text-amber-950">
-        {offer.bonuses.map((b, i) => (
-          <span key={i} className="flex items-center gap-1 whitespace-nowrap">
-            {b.kind === 'gems' && <GemIcon className="h-4 w-4" />}
-            {b.kind === 'coins' && <CoinIcon className="h-4 w-4" />}
-            {b.kind === 'chest' && <ChestIcon className="h-4 w-4" />}
-            <span className="tabular-nums">+{b.amount.toLocaleString()}</span>
-          </span>
-        ))}
-      </div>
-
-      {/* Buy button — USD or gem-priced */}
-      <button
-        type="button"
-        onClick={onBuy}
-        disabled={isBusy}
-        className="mt-3 flex items-center justify-center gap-1.5 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-2 font-display text-base font-black tabular-nums text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
-      >
-        {isGemPriced ? (
-          <>
-            <GemIcon className="h-5 w-5" />
-            <span>{offer.priceGems!.toLocaleString()}</span>
-          </>
-        ) : (
-          <span>${offer.priceUsd!.toFixed(2)}</span>
-        )}
-      </button>
     </div>
   );
 }
 
-// -----------------------------------------------------------------------------
-// Daily Deal card (gem-priced)
-// -----------------------------------------------------------------------------
-
-function DailyDealCard({
-  deal,
-  isBusy,
-  onBuy,
-}: {
-  deal: DailyDeal;
-  isBusy: boolean;
-  onBuy: () => void;
-}) {
-  return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-amber-300/40 bg-[#fdf6e3]/80 px-2 py-2 shadow-[0_6px_10px_-3px_rgba(120,53,15,0.4)]">
-      <div className="whitespace-nowrap text-center font-display text-xs font-bold uppercase tracking-wide text-amber-900/80">
-        {deal.title}
-      </div>
-      {/* data-fly-source: anchor for the reward-flight animation on
-        * successful purchase. Keyed by deal.id so multiple cards on
-        * screen each have their own source coordinates. */}
-      <div className="flex h-16 items-center justify-center" data-fly-source={deal.id}>
-        {deal.kind === 'gems' && <GemIcon className="h-12 w-12" />}
-        {deal.kind === 'coins' && <CoinIcon className="h-12 w-12" />}
-        {deal.kind === 'xp-boost' && <XpBadge size="md" />}
-        {deal.kind === 'lucky-dice' && <DiceIcon size="md" />}
-      </div>
-      <div className="text-center font-display text-base font-black text-[#3a1f08]">{deal.amount}</div>
-      <button
-        type="button"
-        onClick={onBuy}
-        disabled={isBusy}
-        className="mt-1 flex items-center justify-center gap-1 rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] py-1 font-display text-sm font-black text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60 disabled:active:translate-y-0"
-      >
-        <GemIcon className="h-4 w-4" />
-        <span className="tabular-nums">{deal.priceGems}</span>
-      </button>
-    </div>
-  );
+function PriceLabel({ priceUsd, priceGems }: { priceUsd: number | null; priceGems: number | null }) {
+  if (priceGems !== null) {
+    return (
+      <span className="flex items-center justify-center gap-1.5">
+        <GemIcon className="h-5 w-5" />
+        <span className="tabular-nums">{priceGems.toLocaleString()}</span>
+      </span>
+    );
+  }
+  return <span className="tabular-nums">${(priceUsd ?? 0).toFixed(2)}</span>;
 }
 
-// -----------------------------------------------------------------------------
-// Monthly Gem Pass banner
-// -----------------------------------------------------------------------------
-
-function MonthlyPassBanner({ pass, onBuy }: { pass: MonthlyPass; onBuy: () => void }) {
+function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean; onBuy: () => void }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border-2 border-violet-700/60 bg-gradient-to-br from-[#3b1361] via-[#2a0e4a] to-[#1c0a36] p-4 shadow-[0_10px_14px_-4px_rgba(20,8,40,0.6)]">
-      <div className="flex items-center gap-4">
-        <ChestIcon className="h-16 w-16 shrink-0" />
-        <div className="min-w-0 flex-1">
-          <div className="font-display text-lg font-black uppercase tracking-wider text-amber-300 drop-shadow">
-            {pass.title}
-          </div>
-          <div className="mt-1 flex items-center gap-2 text-sm font-bold text-amber-100/80">
-            <span aria-hidden="true">🗓️</span>
-            <span>{pass.description}</span>
-          </div>
+    <article className="relative flex min-h-[34rem] flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
+      <div className="bg-gradient-to-b from-[#bc8108] to-[#8d5d00] px-4 py-4 text-center font-display text-base font-black uppercase tracking-[0.14em] text-[#fff7dc]">
+        {bundle.title}
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        {/* Hero — the headline currency, scaled up. The ribbon sits here (over
+            the hero, below the title bar) so it never covers the title.
+            data-fly-source anchors the reward-flight on a successful gem buy. */}
+        <div className="relative flex h-44 items-center justify-center border-b border-white/10" data-fly-source={bundle.id}>
+          <RibbonBadge ribbon={bundle.ribbon} />
+          <HeadlineIcon kind={bundle.headlineKind} className="h-32 w-32" />
+        </div>
+        {/* Reward slots */}
+        <div className="grid grid-cols-4 gap-3 border-b border-white/10 py-6">
+          {bundle.rewards.slice(0, 4).map((r, i) => (
+            <div key={i} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl bg-[#183763]/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <RewardSlotIcon kind={r.kind} className="h-9 w-9" />
+              <span className="text-center text-[0.7rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+            </div>
+          ))}
         </div>
         <button
           type="button"
           onClick={onBuy}
-          className="shrink-0 rounded-md border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 px-5 py-2 font-display text-base font-black text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
+          disabled={isBusy}
+          className="mt-auto h-14 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-xl font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
         >
-          ${pass.priceUsd.toFixed(2)}
+          <PriceLabel priceUsd={bundle.priceUsd} priceGems={bundle.priceGems} />
         </button>
       </div>
-    </div>
+    </article>
   );
 }
 
-// -----------------------------------------------------------------------------
-// Top bar (back / title / wallet pills / close)
-// -----------------------------------------------------------------------------
-
-function ShopTopBar({
-  gems,
-  coins,
-  onBack,
-  onClose,
-}: {
-  gems: number;
-  coins: number;
-  onBack: () => void;
-  onClose: () => void;
-}) {
+function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy: () => void }) {
   return (
-    <header className="relative flex items-center gap-4 px-4 py-3">
-      {/* Back arrow */}
+    <article className="flex h-[18rem] flex-col rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
+      <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
+        <HeadlineIcon kind={pack.headlineKind} className="h-24 w-24" />
+      </div>
+      <div className="mb-3 text-center">
+        <div className="font-display text-xl font-black tabular-nums text-white">{pack.headlineLabel}</div>
+        {pack.headlineSubLabel ? <div className="text-xs font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+      </div>
       <button
         type="button"
-        onClick={onBack}
-        aria-label="Back"
-        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
+        onClick={onBuy}
+        disabled={isBusy}
+        className="h-12 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-lg font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="15 5 8 12 15 19" />
-        </svg>
+        <PriceLabel priceUsd={pack.priceUsd} priceGems={pack.priceGems} />
       </button>
-
-      {/* Title block */}
-      <div className="min-w-0">
-        <h1 className="bg-gradient-to-b from-[#fcd34d] via-[#d97706] to-[#7c2d12] bg-clip-text font-display text-3xl font-black uppercase tracking-wider text-transparent md:text-4xl">
-          Shop
-        </h1>
-        <p className="text-xs font-bold text-amber-900/70 md:text-sm">Get gems, coins and exclusive items!</p>
-      </div>
-
-      {/* Wallet pills — fill the centre. data-fly-target hooks let the
-       *  reward-flight animation aim at the right pill on purchase. */}
-      <div className="ml-auto flex items-center gap-3">
-        <div
-          data-fly-target="gems"
-          className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3"
-        >
-          <GemIcon className="h-7 w-7" />
-          <span className="ml-2 min-w-[3rem] text-right font-display text-base font-black tabular-nums text-white">
-            {formatCompactNumber(gems)}
-          </span>
-          <button
-            type="button"
-            aria-label="Get more gems"
-            className="ml-2 grid h-7 w-7 place-items-center rounded-md bg-gradient-to-b from-emerald-400 to-emerald-700 text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
-          >
-            <span className="text-lg font-black leading-none">+</span>
-          </button>
-        </div>
-        <div
-          data-fly-target="coins"
-          className="flex h-10 items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] to-[#0c0908] pl-2 pr-3"
-        >
-          <CoinIcon className="h-7 w-7" />
-          <span className="ml-2 min-w-[3rem] text-right font-display text-base font-black tabular-nums text-white">
-            {formatCompactNumber(coins)}
-          </span>
-          <button
-            type="button"
-            aria-label="Get more coins"
-            className="ml-2 grid h-7 w-7 place-items-center rounded-md bg-gradient-to-b from-emerald-400 to-emerald-700 text-white shadow-md transition hover:brightness-110 active:translate-y-[1px]"
-          >
-            <span className="text-lg font-black leading-none">+</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Close X */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close shop"
-        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
-      >
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </header>
+    </article>
   );
 }
 
-// -----------------------------------------------------------------------------
-// Sidebar
-// -----------------------------------------------------------------------------
-
-function ShopSidebar({ active, onSelect }: { active: TabId; onSelect: (tab: TabId) => void }) {
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <aside className="flex w-44 shrink-0 flex-col gap-1 py-3 pl-3 pr-1">
-      {TABS.map((tab) => {
-        const isActive = tab.id === active;
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => onSelect(tab.id)}
-            className={`flex items-center gap-3 rounded-l-lg px-4 py-3 font-display text-sm font-black uppercase tracking-wider transition ${
-              isActive
-                ? 'bg-gradient-to-r from-[#fcd34d] to-[#d97706] text-white shadow-md'
-                : 'bg-[#1d1612]/85 text-amber-200/85 hover:bg-[#2b2421]'
-            }`}
-          >
-            <span className={`text-lg ${isActive ? 'text-white' : 'text-amber-400/90'}`}>{tab.icon}</span>
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
-    </aside>
+    <h2 className="mb-6 flex items-center justify-center gap-3 font-display text-lg font-black uppercase tracking-[0.32em] text-[#ffc93d]">
+      <span className="text-sm">✦</span>
+      {children}
+      <span className="text-sm">✦</span>
+    </h2>
   );
 }
 
 // -----------------------------------------------------------------------------
-// Featured view — assembles the 3 sections
+// Modal
 // -----------------------------------------------------------------------------
 
-function FeaturedView({
-  items,
-  busyDealId,
-  onBuyUsdOffer,
-  onBuyMonthlyPass,
-  onBuyDailyDeal,
-}: {
-  items: MappedItems;
-  busyDealId: string | null;
-  onBuyUsdOffer: (offer: TopOffer) => void;
-  onBuyMonthlyPass: (pass: MonthlyPass) => void;
-  onBuyDailyDeal: (deal: DailyDeal) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-4">
-      {/* Top Offers section */}
-      <section>
-        <div className="mb-3 flex items-center justify-center gap-3">
-          <span className="h-px flex-1 max-w-[6rem] bg-gradient-to-r from-transparent to-amber-500/60" />
-          <span className="text-amber-500">✦</span>
-          <h2 className="whitespace-nowrap font-display text-lg font-black uppercase tracking-[0.18em] text-[#3a1f08]">
-            Top Offers
-          </h2>
-          <span className="text-amber-500">✦</span>
-          <span className="h-px flex-1 max-w-[6rem] bg-gradient-to-l from-transparent to-amber-500/60" />
-        </div>
-        <div className="grid grid-cols-6 gap-3">
-          {items.topOffers.map((offer) => (
-            <TopOfferCard
-              key={offer.id}
-              offer={offer}
-              onBuy={() => onBuyUsdOffer(offer)}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Daily Deals + Monthly Pass row */}
-      <section className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-        {/* Daily Deals */}
-        <div className="rounded-xl border border-amber-300/60 bg-gradient-to-b from-[#fdf6e3] to-[#f0e1b8] p-3 shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]">
-          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-display text-base font-black uppercase tracking-[0.14em] text-[#3a1f08]">
-              ✦ Daily Deals
-            </h3>
-            <div className="flex items-center gap-1 text-xs font-bold text-amber-900/70">
-              <span aria-hidden="true">⏱</span>
-              <span>Refreshes in: 12h 45m</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-4 gap-2">
-            {items.dailyDeals.map((deal) => (
-              <DailyDealCard
-                key={deal.id}
-                deal={deal}
-                isBusy={busyDealId === deal.id}
-                onBuy={() => onBuyDailyDeal(deal)}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Monthly Pass */}
-        {items.monthlyPass ? (
-          <MonthlyPassBanner
-            pass={items.monthlyPass}
-            onBuy={() => onBuyMonthlyPass(items.monthlyPass!)}
-          />
-        ) : (
-          <div />
-        )}
-      </section>
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Tab grid view — used by GEMS / COINS / ITEMS / OFFERS sidebar entries
-// -----------------------------------------------------------------------------
-
-function TabGridView({
-  tab,
-  offers,
-  busyOfferId,
-  onBuyUsdOffer,
-  onBuyGemOffer,
-}: {
-  tab: TabId;
-  offers: readonly TopOffer[];
-  busyOfferId: string | null;
-  onBuyUsdOffer: (offer: TopOffer) => void;
-  onBuyGemOffer: (offer: TopOffer) => void;
-}) {
-  const kinds = kindsForTab(tab);
-  const filtered = offers.filter((o) => kinds.includes(o.kind));
-
-  if (filtered.length === 0) {
-    return (
-      <div className="grid place-items-center py-12 text-center text-amber-900/60">
-        <div className="font-display text-base font-bold uppercase tracking-widest">
-          No items in {tab} yet
-        </div>
-        <div className="mt-2 text-sm">
-          Check back soon — operators add new offers here from the Back Office.
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-4 gap-3">
-      {filtered.map((offer) => (
-        <TopOfferCard
-          key={offer.id}
-          offer={offer}
-          isBusy={busyOfferId === offer.id}
-          onBuy={() => {
-            if (offer.priceUsd !== null) onBuyUsdOffer(offer);
-            else if (offer.priceGems !== null) onBuyGemOffer(offer);
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Top-level Shop screen
-// -----------------------------------------------------------------------------
-
-// Natural design size of the shop panel. The scale-to-fit wrapper below
-// shrinks this to whatever the viewport allows. Bumping these means the
-// panel can render larger on big screens before getting capped at scale 1.
-const PANEL_DESIGN_W = 1280;
-const PANEL_DESIGN_H = 640;
+const PANEL_DESIGN_W = 1320;
+const PANEL_DESIGN_H = 860;
 
 type ToastKind = 'info' | 'success' | 'error';
 interface Toast {
@@ -726,47 +325,36 @@ interface Toast {
   readonly text: string;
 }
 
-/**
- * The shop, rendered as a scale-in popup over whatever screen opened it
- * (lobby, profile, deep link). Was a full-screen route; now a modal so it
- * shares the lobby's signature "emerge" open animation. `onClose` is
- * wired to the global ShopProvider — see useShop().
- */
+interface BuyDescriptor {
+  readonly id: string;
+  readonly label: string;
+  readonly priceUsd: number | null;
+  readonly priceGems: number | null;
+  readonly flightKind: FlightCurrency | null;
+}
+
 export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const { user, wallet, refreshWallet, refreshXpBoost } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>('featured');
   const [toast, setToast] = useState<Toast | null>(null);
-  const [busyDealId, setBusyDealId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  const [items, setItems] = useState<MappedItems>({
-    topOffers: [],
-    dailyDeals: [],
-    monthlyPass: null,
-    allOffers: [],
-  });
+  const [data, setData] = useState<MappedShop>({ bundles: [], packs: [] });
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
 
-  // Admin detection (player session). When the operator is an admin, the
-  // stubbed USD buy buttons become a no-money TEST purchase so the full
-  // grant → wallet → ledger → UI flow is exercisable before real billing
-  // exists. The server RPC is the real gate (private.can_manage_config);
-  // this flag only decides button behaviour. Normal players keep "coming soon".
+  // Admin → USD buttons become a no-money test purchase (see handleUsdPurchase).
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let cancelled = false;
-    void supabase.rpc('get_my_admin_role').then(({ data, error }) => {
-      if (!cancelled && !error && data) setIsAdmin(true);
+    void supabase.rpc('get_my_admin_role').then(({ data: role, error }) => {
+      if (!cancelled && !error && role) setIsAdmin(true);
     });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Fetch enabled shop_items once on mount. RLS allows read for everyone,
-  // so guests see the same shop as signed-in players. Ordering by
-  // sort_order lets the Back Office reorder cards without code changes.
   useEffect(() => {
     if (!isSupabaseConfigured) return;
     let cancelled = false;
@@ -775,31 +363,18 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       .select('*')
       .eq('is_enabled', true)
       .order('sort_order', { ascending: true })
-      .then(({ data, error }) => {
-        if (cancelled || error || !data) return;
-        setItems(mapShopItems(data));
+      .then(({ data: rows, error }) => {
+        if (cancelled || error || !rows) return;
+        setData(mapShop(rows));
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Compute the scale-to-fit factor on mount and on every resize. CSS
-  // `scale(calc(... vw / 1280))` doesn't work because `vw` is a length
-  // and `scale()` needs a unitless number — so we measure window
-  // dimensions in JS and pass a plain number into the transform.
   useEffect(() => {
     const update = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      // Leave a clear margin on every side (was 0.98 / 0.96, which let the
-      // panel bleed to the screen edges). 0.86 width / 0.90 height keeps the
-      // whole popup — borders included — comfortably inside the viewport.
-      const s = Math.min(
-        1,
-        (w * 0.86) / PANEL_DESIGN_W,
-        (h * 0.9) / PANEL_DESIGN_H
-      );
+      const s = Math.min(1, (window.innerWidth * 0.92) / PANEL_DESIGN_W, (window.innerHeight * 0.9) / PANEL_DESIGN_H);
       setScale(s);
     };
     update();
@@ -812,9 +387,6 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     window.setTimeout(() => setToast(null), ms);
   };
 
-  // Reward-flight orchestration. Same pattern as the Daily Bonus claim
-  // in LobbyScreen: a stream of small icons curves from a source
-  // element to the corresponding wallet pill in the top bar.
   const spawnFlights = (currency: FlightCurrency, sourceEl: Element, count: number) => {
     const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
     if (!target) return;
@@ -826,11 +398,13 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     const endY = dst.top + dst.height / 2;
     const additions: RewardFlightSpec[] = [];
     for (let i = 0; i < count; i++) {
+      // Deterministic per-token jitter (no Math.random — keeps the function
+      // pure-by-static-analysis; the spread reads the same to the eye).
       additions.push({
         id: nextFlightIdRef.current++,
         currency,
-        startX: startX + (Math.random() - 0.5) * 14,
-        startY: startY + (Math.random() - 0.5) * 14,
+        startX: startX + (((i * 37) % 15) - 7),
+        startY: startY + (((i * 53) % 15) - 7),
         endX,
         endY,
         delayMs: i * 70,
@@ -840,244 +414,161 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     setRewardFlights((prev) => [...prev, ...additions]);
   };
 
-  const removeFlight = (id: number) => {
-    setRewardFlights((prev) => prev.filter((f) => f.id !== id));
-  };
+  const removeFlight = (id: number) => setRewardFlights((prev) => prev.filter((f) => f.id !== id));
 
-  const onStubbedBuy = (label: string) => {
-    showToast('info', `${label} — coming soon`);
-  };
-
-  // Real purchase path for gem-priced daily deals. The RPC validates
-  // grants up front (raises `unsupported_grant:<key>` for daily deals
-  // we haven't built infra for yet, e.g. xp-boost / lucky-dice), debits
-  // gems atomically, and dispatches grants to user_wallets +
-  // user_board_inventory. On success refreshWallet() pulls the new
-  // balance into the auth context so the top-bar pills update.
-  const onBuyDailyDeal = async (deal: DailyDeal) => {
-    if (busyDealId !== null) return;
-    // Auth gate: `user` is the source of truth for "signed in". `wallet`
-    // can be null briefly while the auth context is still fetching the
-    // row, so we don't use it for the gate — only for the optional
-    // client-side affordability shortcut below.
-    if (!user) {
-      showToast('error', 'Sign in to make purchases');
-      return;
-    }
-    if (wallet && wallet.gems < deal.priceGems) {
-      showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
-      return;
-    }
-
-    // Snapshot the flight source BEFORE the RPC: the button enters its
-    // disabled/dimmed state while in flight, but the icon stays where
-    // it was, so this lookup is mostly defensive — we want the pre-RPC
-    // bounding box, not a re-rendered one.
-    const sourceEl = document.querySelector(`[data-fly-source="${deal.id}"]`);
-
-    setBusyDealId(deal.id);
-    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: deal.id });
-    setBusyDealId(null);
-    if (error) {
-      const msg = error.message ?? '';
-      if (msg.includes('unsupported_grant')) {
-        showToast('info', `${deal.title} — coming soon`);
-      } else if (msg.includes('insufficient_gems')) {
-        // Stale client wallet — server saw less than we thought.
-        showToast('info', 'Not enough gems — tap a Top Offer above to get more.');
-        void refreshWallet();
-      } else if (msg.includes('already_owned_board')) {
-        showToast('info', 'You already own that board.');
-      } else {
-        showToast('error', 'Purchase failed. Try again.');
-      }
-      return;
-    }
-
-    // Spawn flying tokens toward the matching pill so the player sees
-    // the reward travel, then refresh the wallet around the time the
-    // first tokens land so the pill ticks up mid-flight.
-    if (sourceEl && (deal.kind === 'gems' || deal.kind === 'coins')) {
-      spawnFlights(deal.kind, sourceEl, 6);
-    }
-    window.setTimeout(() => {
-      void refreshWallet();
-    }, 600);
-
-    // XP-boost grants don't fly anywhere — they just appear as the
-    // top-bar badge once auth re-fetches user_xp_boosts.
-    if (deal.kind === 'xp-boost') {
-      void refreshXpBoost();
-    }
-
-    showToast('success', `Got ${deal.title}!`);
-  };
-
-  // Buy handler for gem-priced offers in the sidebar tabs (GEMS /
-  // COINS / OFFERS that have price_gems set). Shares the RPC + flight
-  // logic with onBuyDailyDeal — kept as a small adapter rather than a
-  // refactor so the existing daily-deal flow stays untouched.
-  const onBuyGemOffer = async (offer: TopOffer) => {
-    if (offer.priceGems === null) return;
-    if (busyDealId !== null) return;
-    if (!user) {
-      showToast('error', 'Sign in to make purchases');
-      return;
-    }
-    if (wallet && wallet.gems < offer.priceGems) {
-      showToast('info', 'Not enough gems — tap a Top Offer to get more.');
-      return;
-    }
-
-    const sourceEl = document.querySelector(`[data-fly-source="${offer.id}"]`);
-
-    setBusyDealId(offer.id);
-    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: offer.id });
-    setBusyDealId(null);
-    if (error) {
-      const msg = error.message ?? '';
-      if (msg.includes('unsupported_grant')) {
-        showToast('info', `${offer.headlineLabel} — coming soon`);
-      } else if (msg.includes('insufficient_gems')) {
-        showToast('info', 'Not enough gems — tap a Top Offer to get more.');
-        void refreshWallet();
-      } else if (msg.includes('already_owned_board')) {
-        showToast('info', 'You already own that board.');
-      } else {
-        showToast('error', 'Purchase failed. Try again.');
-      }
-      return;
-    }
-
-    if (sourceEl && (offer.headlineKind === 'gems' || offer.headlineKind === 'coins')) {
-      spawnFlights(offer.headlineKind, sourceEl, 6);
-    }
-    window.setTimeout(() => {
-      void refreshWallet();
-    }, 600);
-
-    if (offer.headlineKind === 'xp-boost') {
-      void refreshXpBoost();
-    }
-
-    showToast('success', `Got ${offer.headlineLabel}!`);
-  };
-
-  // USD-priced offers (Featured top offers, Monthly Pass, tab grids). Real
-  // billing (Play Billing / Stripe) isn't wired yet, so normal players still
-  // get "coming soon". For ADMINS we route through test_purchase_shop_item —
-  // a no-money grant recorded as provider='test' — so the whole flow is
-  // testable now and exercises the exact grant core real billing will reuse.
-  const usdFlightKind = (k: HeadlineKind): FlightCurrency | null =>
-    k === 'gems' || k === 'coins' ? k : null;
-
-  const handleUsdPurchase = async (
-    itemId: string,
-    label: string,
-    flightKind: FlightCurrency | null
-  ) => {
+  // USD path. Real billing (Play Billing / Stripe) isn't wired yet; admins get
+  // the no-money test purchase so the full flow is exercisable.
+  const handleUsdPurchase = async (item: BuyDescriptor) => {
     if (!isAdmin) {
-      onStubbedBuy(label);
+      showToast('info', `${item.label} — coming soon`);
       return;
     }
-    if (busyDealId !== null) return;
-    setBusyDealId(itemId);
-    const { error } = await supabase.rpc('test_purchase_shop_item', { p_item_id: itemId });
-    setBusyDealId(null);
+    if (busyId !== null) return;
+    setBusyId(item.id);
+    const { error } = await supabase.rpc('test_purchase_shop_item', { p_item_id: item.id });
+    setBusyId(null);
     if (error) {
       const msg = error.message ?? '';
-      if (msg.includes('already_owned_board')) {
-        showToast('info', 'You already own that board.');
-      } else if (msg.includes('unsupported_grant')) {
-        showToast('error', `Test buy: ${label} has an unsupported grant.`);
-      } else if (msg.includes('not_authorized')) {
-        showToast('error', 'Admin only.');
-      } else {
-        showToast('error', 'Test purchase failed.');
-      }
+      if (msg.includes('already_owned_board')) showToast('info', 'You already own that board.');
+      else if (msg.includes('unsupported_grant')) showToast('error', `${item.label}: unsupported grant.`);
+      else if (msg.includes('not_authorized')) showToast('error', 'Admin only.');
+      else showToast('error', 'Test purchase failed.');
       return;
     }
-    const sourceEl = document.querySelector(`[data-fly-source="${itemId}"]`);
-    if (sourceEl && flightKind) spawnFlights(flightKind, sourceEl, 6);
-    window.setTimeout(() => {
-      void refreshWallet();
-    }, 600);
+    const sourceEl = document.querySelector(`[data-fly-source="${item.id}"]`);
+    if (sourceEl && item.flightKind) spawnFlights(item.flightKind, sourceEl, 6);
+    window.setTimeout(() => void refreshWallet(), 600);
     void refreshXpBoost();
-    showToast('success', `Test purchase: ${label} ✓`);
+    showToast('success', `Test purchase: ${item.label} ✓`);
   };
 
-  const onBuyUsdOffer = (offer: TopOffer) =>
-    handleUsdPurchase(
-      offer.id,
-      offer.headlineLabel || `$${offer.priceUsd?.toFixed(2) ?? '0.00'}`,
-      usdFlightKind(offer.headlineKind)
-    );
+  // Gem path — live for everyone via purchase_shop_item.
+  const buyWithGems = async (item: BuyDescriptor) => {
+    if (busyId !== null) return;
+    if (!user) {
+      showToast('error', 'Sign in to make purchases');
+      return;
+    }
+    if (wallet && item.priceGems !== null && wallet.gems < item.priceGems) {
+      showToast('info', 'Not enough gems — grab a gem pack first.');
+      return;
+    }
+    const sourceEl = document.querySelector(`[data-fly-source="${item.id}"]`);
+    setBusyId(item.id);
+    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: item.id });
+    setBusyId(null);
+    if (error) {
+      const msg = error.message ?? '';
+      if (msg.includes('unsupported_grant')) showToast('info', `${item.label} — coming soon`);
+      else if (msg.includes('insufficient_gems')) {
+        showToast('info', 'Not enough gems.');
+        void refreshWallet();
+      } else if (msg.includes('already_owned_board')) showToast('info', 'You already own that board.');
+      else if (msg.includes('purchase_limit_reached')) showToast('info', 'Purchase limit reached for this item.');
+      else showToast('error', 'Purchase failed. Try again.');
+      return;
+    }
+    if (sourceEl && item.flightKind) spawnFlights(item.flightKind, sourceEl, 6);
+    window.setTimeout(() => void refreshWallet(), 600);
+    void refreshXpBoost();
+    showToast('success', `Got ${item.label}!`);
+  };
 
-  const onBuyMonthlyPass = (pass: MonthlyPass) =>
-    handleUsdPurchase(pass.id, pass.title, null);
+  const buy = (item: BuyDescriptor) => {
+    if (item.priceGems !== null) return void buyWithGems(item);
+    if (item.priceUsd !== null) return void handleUsdPurchase(item);
+  };
+
+  const flightKindOf = (k: HeadlineKind): FlightCurrency | null => (k === 'coins' || k === 'gems' ? k : null);
 
   return (
     <>
       <ScaleInModal onClose={onClose}>
-        {/*
-         * Scale-to-fit wrapper, kept INSIDE the ScaleInModal entrance
-         * transform so the popup emerges at the right size. Panel is
-         * authored at its natural ~1280×620; on smaller viewports we
-         * shrink by min(vw/W, vh/H) so the whole shop is visible at once
-         * without scrolling. Clamps to 1 on big viewports.
-         */}
-        <div
-          className="origin-center text-white"
-          style={{
-            transform: `scale(${scale})`,
-          }}
-        >
-        <div className="w-[1280px]">
-          {/* Decorative parchment panel */}
-          <div className="relative overflow-hidden rounded-3xl border-[5px] border-[#c89a47] bg-gradient-to-b from-[#fef3c7] via-[#f7e9c8] to-[#e7d09a] shadow-[0_25px_60px_rgba(0,0,0,0.65)]">
-            <ShopTopBar
-              gems={wallet?.gems ?? 0}
-              coins={wallet?.coins ?? 0}
-              onBack={onClose}
-              onClose={onClose}
-            />
-
-            <div className="flex">
-              <ShopSidebar active={activeTab} onSelect={setActiveTab} />
-
-              <div className="min-w-0 flex-1 rounded-tl-2xl bg-gradient-to-b from-[#f7e9c8] to-[#e7d09a] p-4">
-                {activeTab === 'featured' ? (
-                  <FeaturedView
-                    items={items}
-                    busyDealId={busyDealId}
-                    onBuyUsdOffer={onBuyUsdOffer}
-                    onBuyMonthlyPass={onBuyMonthlyPass}
-                    onBuyDailyDeal={onBuyDailyDeal}
-                  />
-                ) : (
-                  <TabGridView
-                    tab={activeTab}
-                    offers={items.allOffers}
-                    busyOfferId={busyDealId}
-                    onBuyUsdOffer={onBuyUsdOffer}
-                    onBuyGemOffer={onBuyGemOffer}
-                  />
-                )}
+        <div className="origin-center" style={{ transform: `scale(${scale})` }}>
+          <main
+            className="flex flex-col overflow-hidden rounded-[22px] border border-[#ffc93d]/40 bg-gradient-to-b from-[#081429] to-[#071326] text-[#f6f0df] shadow-[0_26px_70px_rgba(0,0,0,0.45)]"
+            style={{ width: PANEL_DESIGN_W }}
+          >
+            {/* Header */}
+            <header className="flex items-center justify-between gap-6 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37] to-[#050d1c] px-10 py-5">
+              <h1 className="font-display text-4xl font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+                Store
+              </h1>
+              <div className="flex items-center gap-4">
+                {/* Same balance element as the lobby, with the real wallet. The
+                    lobby pill sizes itself off `--lobby-u` (defined on
+                    .lobby-shell); outside the lobby we scope a fixed unit + a
+                    definite height so it renders at the right size — the same
+                    trick the profile page (.profile-top-currency) uses. The
+                    "+" is a no-op here — you're already in the shop. */}
+                <div
+                  className="flex items-center gap-3"
+                  style={{ '--lobby-u': '0.82px', height: '3.1rem' } as CSSProperties}
+                >
+                  <CurrencyPill flyTarget="coins" label="Coins" value={wallet?.coins} icon="/lobby/icons/gold-coin.webp" onAdd={() => {}} />
+                  <CurrencyPill flyTarget="gems" label="Gems" value={wallet?.gems} icon="/lobby/icons/gem.webp" onAdd={() => {}} />
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close store"
+                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ff5751] to-[#c92222] text-3xl leading-none text-[#fff7dc] shadow-[inset_0_2px_0_rgba(255,255,255,0.25),0_5px_14px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:scale-95"
+                >
+                  ×
+                </button>
               </div>
+            </header>
+
+            {/* Content: Featured Packs | Packs grid */}
+            <div className="grid grid-cols-[600px_1fr] gap-8 p-10">
+              <section className="border-r border-[#9aabc5]/18 pr-8">
+                <SectionTitle>Featured Packs</SectionTitle>
+                {data.bundles.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-5">
+                    {data.bundles.map((b) => (
+                      <BundleCard
+                        key={b.id}
+                        bundle={b}
+                        isBusy={busyId === b.id}
+                        onBuy={() => buy({ id: b.id, label: b.title, priceUsd: b.priceUsd, priceGems: b.priceGems, flightKind: flightKindOf(b.headlineKind) })}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid h-64 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
+                    No featured packs yet.
+                  </div>
+                )}
+              </section>
+
+              <section className="min-w-0">
+                <SectionTitle>Packs</SectionTitle>
+                {data.packs.length > 0 ? (
+                  <div className="grid grid-cols-4 gap-6">
+                    {data.packs.map((p) => (
+                      <PackCard
+                        key={p.id}
+                        pack={p}
+                        isBusy={busyId === p.id}
+                        onBuy={() => buy({ id: p.id, label: p.headlineLabel, priceUsd: p.priceUsd, priceGems: p.priceGems, flightKind: flightKindOf(p.headlineKind) })}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid h-64 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
+                    No packs available.
+                  </div>
+                )}
+              </section>
             </div>
-          </div>
+          </main>
         </div>
-      </div>
       </ScaleInModal>
 
-      {/* Reward-flight overlay + toast render OUTSIDE the ScaleInModal
-       *  entrance transform (a transformed ancestor would break their
-       *  `position: fixed`), as siblings in the fragment. */}
       {rewardFlights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
 
-      {/* Toast — info (amber), success (emerald), error (rose) */}
       {toast ? (
         <div
           className={
