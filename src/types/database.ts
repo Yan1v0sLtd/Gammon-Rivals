@@ -1170,6 +1170,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: void;
       };
+      test_purchase_shop_item: {
+        Args: { p_item_id: string; p_target_profile_id?: string | null };
+        Returns: Database['public']['Tables']['user_wallets']['Row'];
+      };
       set_active_podium: {
         Args: { p_id: string };
         Returns: void;

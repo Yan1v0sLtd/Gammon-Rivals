@@ -587,12 +587,14 @@ function ShopSidebar({ active, onSelect }: { active: TabId; onSelect: (tab: TabI
 function FeaturedView({
   items,
   busyDealId,
-  onStubbedBuy,
+  onBuyUsdOffer,
+  onBuyMonthlyPass,
   onBuyDailyDeal,
 }: {
   items: MappedItems;
   busyDealId: string | null;
-  onStubbedBuy: (label: string) => void;
+  onBuyUsdOffer: (offer: TopOffer) => void;
+  onBuyMonthlyPass: (pass: MonthlyPass) => void;
   onBuyDailyDeal: (deal: DailyDeal) => void;
 }) {
   return (
@@ -613,7 +615,7 @@ function FeaturedView({
             <TopOfferCard
               key={offer.id}
               offer={offer}
-              onBuy={() => onStubbedBuy(`$${(offer.priceUsd ?? 0).toFixed(2)} purchase`)}
+              onBuy={() => onBuyUsdOffer(offer)}
             />
           ))}
         </div>
@@ -648,7 +650,7 @@ function FeaturedView({
         {items.monthlyPass ? (
           <MonthlyPassBanner
             pass={items.monthlyPass}
-            onBuy={() => onStubbedBuy(items.monthlyPass!.title)}
+            onBuy={() => onBuyMonthlyPass(items.monthlyPass!)}
           />
         ) : (
           <div />
@@ -744,6 +746,23 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   });
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
+
+  // Admin detection (player session). When the operator is an admin, the
+  // stubbed USD buy buttons become a no-money TEST purchase so the full
+  // grant → wallet → ledger → UI flow is exercisable before real billing
+  // exists. The server RPC is the real gate (private.can_manage_config);
+  // this flag only decides button behaviour. Normal players keep "coming soon".
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let cancelled = false;
+    void supabase.rpc('get_my_admin_role').then(({ data, error }) => {
+      if (!cancelled && !error && data) setIsAdmin(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Fetch enabled shop_items once on mount. RLS allows read for everyone,
   // so guests see the same shop as signed-in players. Ordering by
@@ -944,12 +963,58 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     showToast('success', `Got ${offer.headlineLabel}!`);
   };
 
-  // USD-priced offers across both the Featured row and the tab grids
-  // all go through the stubbed-buy toast for now. Centralised here so
-  // we only need one place to swap in real Stripe later.
-  const onBuyUsdOffer = (offer: TopOffer) => {
-    onStubbedBuy(`$${offer.priceUsd?.toFixed(2) ?? '0.00'} purchase`);
+  // USD-priced offers (Featured top offers, Monthly Pass, tab grids). Real
+  // billing (Play Billing / Stripe) isn't wired yet, so normal players still
+  // get "coming soon". For ADMINS we route through test_purchase_shop_item —
+  // a no-money grant recorded as provider='test' — so the whole flow is
+  // testable now and exercises the exact grant core real billing will reuse.
+  const usdFlightKind = (k: HeadlineKind): FlightCurrency | null =>
+    k === 'gems' || k === 'coins' ? k : null;
+
+  const handleUsdPurchase = async (
+    itemId: string,
+    label: string,
+    flightKind: FlightCurrency | null
+  ) => {
+    if (!isAdmin) {
+      onStubbedBuy(label);
+      return;
+    }
+    if (busyDealId !== null) return;
+    setBusyDealId(itemId);
+    const { error } = await supabase.rpc('test_purchase_shop_item', { p_item_id: itemId });
+    setBusyDealId(null);
+    if (error) {
+      const msg = error.message ?? '';
+      if (msg.includes('already_owned_board')) {
+        showToast('info', 'You already own that board.');
+      } else if (msg.includes('unsupported_grant')) {
+        showToast('error', `Test buy: ${label} has an unsupported grant.`);
+      } else if (msg.includes('not_authorized')) {
+        showToast('error', 'Admin only.');
+      } else {
+        showToast('error', 'Test purchase failed.');
+      }
+      return;
+    }
+    const sourceEl = document.querySelector(`[data-fly-source="${itemId}"]`);
+    if (sourceEl && flightKind) spawnFlights(flightKind, sourceEl, 6);
+    window.setTimeout(() => {
+      void refreshWallet();
+    }, 600);
+    void refreshXpBoost();
+    showToast('success', `Test purchase: ${label} ✓`);
   };
+
+  const onBuyUsdOffer = (offer: TopOffer) =>
+    handleUsdPurchase(
+      offer.id,
+      offer.headlineLabel || `$${offer.priceUsd?.toFixed(2) ?? '0.00'}`,
+      usdFlightKind(offer.headlineKind)
+    );
+
+  const onBuyMonthlyPass = (pass: MonthlyPass) =>
+    handleUsdPurchase(pass.id, pass.title, null);
 
   return (
     <>
@@ -985,7 +1050,8 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                   <FeaturedView
                     items={items}
                     busyDealId={busyDealId}
-                    onStubbedBuy={onStubbedBuy}
+                    onBuyUsdOffer={onBuyUsdOffer}
+                    onBuyMonthlyPass={onBuyMonthlyPass}
                     onBuyDailyDeal={onBuyDailyDeal}
                   />
                 ) : (
