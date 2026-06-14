@@ -555,6 +555,10 @@ function Field({
   disabled?: boolean;
   placeholder?: string;
 }) {
+  // Date/time inputs get the native calendar/clock picker: dark color-scheme so
+  // the indicator + popup are legible on the dark UI, and a click anywhere in
+  // the field opens it (showPicker) so the operator never has to type a date.
+  const isPicker = type === 'date' || type === 'datetime-local' || type === 'time' || type === 'month' || type === 'week';
   return (
     <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
       {label}
@@ -564,7 +568,20 @@ function Field({
         disabled={disabled}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+        onClick={
+          isPicker
+            ? (event) => {
+                try {
+                  (event.currentTarget as HTMLInputElement & { showPicker?: () => void }).showPicker?.();
+                } catch {
+                  /* showPicker unsupported / not user-activated — typing still works */
+                }
+              }
+            : undefined
+        }
+        className={`mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50${
+          isPicker ? ' cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer' : ''
+        }`}
       />
     </label>
   );
@@ -2226,6 +2243,25 @@ export default function Admin() {
         ? await supabase.from('store_sales').update(payload).eq('id', saleDraft.id)
         : await supabase.from('store_sales').insert(payload);
       if (error) throw error;
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deleteShop() {
+    if (!canManage) return;
+    const id = shopDraft.id.trim();
+    if (!id) return;
+    if (!window.confirm(`Delete shop item "${shopDraft.display_name.trim() || id}"? It's removed from the store immediately. Past purchases are kept.`)) return;
+    setSavingKey('shop-delete');
+    setDataError(null);
+    try {
+      const { error } = await supabase.from('shop_items').delete().eq('id', id);
+      if (error) throw error;
+      setShopDraft(shopToDraft());
       await loadAdminData();
     } catch (err) {
       setError(err);
@@ -4149,9 +4185,12 @@ export default function Admin() {
                     <Field type="datetime-local" label="Ends at" value={shopDraft.ends_at} onChange={(ends_at) => setShopDraft((d) => ({ ...d, ends_at }))} />
                   </div>
                   <Toggle label="Enabled" checked={shopDraft.is_enabled} onChange={(is_enabled) => setShopDraft((d) => ({ ...d, is_enabled }))} />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <PrimaryButton onClick={() => void saveShop()} disabled={!canManage || savingKey === 'shop'}>Save shop item</PrimaryButton>
                     <SecondaryButton onClick={() => setShopDraft(shopToDraft())}>New</SecondaryButton>
+                    {/* Delete is enabled only when an existing item is loaded into the draft.
+                        RLS (shop_items_delete_admin) gates it server-side; FKs are delete-safe. */}
+                    <DangerButton onClick={() => void deleteShop()} disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id) || savingKey === 'shop-delete'}>Delete</DangerButton>
                   </div>
                 </div>
                 </div>
