@@ -212,6 +212,7 @@ type ShopDraft = {
   ends_at: string;
   max_purchases_per_user: string;
   is_enabled: boolean;
+  exclude_from_sale: boolean;
   sort_order: string;
 };
 
@@ -808,8 +809,104 @@ function shopToDraft(row?: ShopItem): ShopDraft {
     ends_at: row?.ends_at?.slice(0, 16) ?? '',
     max_purchases_per_user: row?.max_purchases_per_user?.toString() ?? '',
     is_enabled: row?.is_enabled ?? false,
+    exclude_from_sale: row?.exclude_from_sale ?? false,
     sort_order: row?.sort_order.toString() ?? '0',
   };
+}
+
+// ---------------------------------------------------------------------------
+// Structured editing of a shop item's `contents` JSON. The raw string stays the
+// source of truth (so unknown keys — e.g. grant types not yet wired up — are
+// preserved), and these helpers read/write specific grant + presentation paths.
+// ---------------------------------------------------------------------------
+type ShopReward = { kind: string; label: string };
+
+function parseShopContents(text: string): Record<string, any> {
+  try {
+    const obj = JSON.parse(text);
+    return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
+  } catch {
+    return {};
+  }
+}
+function writeShopContents(obj: Record<string, any>): string {
+  return JSON.stringify(obj, null, 2);
+}
+function readGrant(text: string, key: string): string {
+  const v = parseShopContents(text).grants?.[key];
+  return typeof v === 'number' ? String(v) : '';
+}
+function writeGrantNumber(text: string, key: string, value: string): string {
+  const c = parseShopContents(text);
+  const grants = { ...(c.grants ?? {}) };
+  const n = Number(value);
+  if (value.trim() === '' || !Number.isFinite(n) || n === 0) delete grants[key];
+  else grants[key] = Math.trunc(n);
+  return writeShopContents({ ...c, grants });
+}
+function readXpBoost(text: string, field: 'days' | 'multiplier'): string {
+  const xb = parseShopContents(text).grants?.xpBoost;
+  const v = xb && typeof xb === 'object' ? xb[field] : undefined;
+  return typeof v === 'number' ? String(v) : '';
+}
+function writeXpBoost(text: string, field: 'days' | 'multiplier', value: string): string {
+  const c = parseShopContents(text);
+  const grants = { ...(c.grants ?? {}) };
+  const next: Record<string, any> = { ...(grants.xpBoost && typeof grants.xpBoost === 'object' ? grants.xpBoost : {}) };
+  const n = Number(value);
+  if (value.trim() === '' || !Number.isFinite(n)) delete next[field];
+  else next[field] = Math.trunc(n);
+  if (next.days === undefined && next.multiplier === undefined) delete grants.xpBoost;
+  else grants.xpBoost = next;
+  return writeShopContents({ ...c, grants });
+}
+function readBoardGrant(text: string): string {
+  const v = parseShopContents(text).grants?.boardThemeId;
+  return typeof v === 'string' ? v : '';
+}
+function writeBoardGrant(text: string, value: string): string {
+  const c = parseShopContents(text);
+  const grants = { ...(c.grants ?? {}) };
+  if (value.trim() === '') delete grants.boardThemeId;
+  else grants.boardThemeId = value.trim();
+  return writeShopContents({ ...c, grants });
+}
+function readPres(text: string): Record<string, any> {
+  const p = parseShopContents(text).presentation;
+  return p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+}
+function writePresField(text: string, key: string, value: string): string {
+  const c = parseShopContents(text);
+  const p = { ...(c.presentation ?? {}) };
+  if (value.trim() === '' || value === 'none') delete p[key];
+  else p[key] = value;
+  return writeShopContents({ ...c, presentation: p });
+}
+function readHeadline(text: string, field: 'kind' | 'label' | 'subLabel'): string {
+  const h = readPres(text).headline;
+  const v = h && typeof h === 'object' ? h[field] : undefined;
+  return typeof v === 'string' ? v : '';
+}
+function writeHeadline(text: string, field: 'kind' | 'label' | 'subLabel', value: string): string {
+  const c = parseShopContents(text);
+  const p = { ...(c.presentation ?? {}) };
+  const h: Record<string, any> = { ...(p.headline && typeof p.headline === 'object' ? p.headline : {}) };
+  if (value.trim() === '') delete h[field];
+  else h[field] = value;
+  if (Object.keys(h).length === 0) delete p.headline;
+  else p.headline = h;
+  return writeShopContents({ ...c, presentation: p });
+}
+function readRewards(text: string): ShopReward[] {
+  const r = readPres(text).rewards;
+  return Array.isArray(r) ? r.map((x: any) => ({ kind: String(x?.kind ?? 'coins'), label: String(x?.label ?? '') })) : [];
+}
+function writeRewards(text: string, rewards: ShopReward[]): string {
+  const c = parseShopContents(text);
+  const p = { ...(c.presentation ?? {}) };
+  if (rewards.length === 0) delete p.rewards;
+  else p.rewards = rewards;
+  return writeShopContents({ ...c, presentation: p });
 }
 
 export default function Admin() {
@@ -2213,6 +2310,7 @@ export default function Admin() {
         ends_at: shopDraft.ends_at ? new Date(shopDraft.ends_at).toISOString() : null,
         max_purchases_per_user: numberOrNull(shopDraft.max_purchases_per_user),
         is_enabled: shopDraft.is_enabled,
+        exclude_from_sale: shopDraft.exclude_from_sale,
         sort_order: requiredNumber(shopDraft.sort_order, 'Sort order'),
         updated_by: user?.id ?? null,
       };
@@ -4178,13 +4276,89 @@ export default function Admin() {
                   <Field label="Image URL" value={shopDraft.image_url} onChange={(image_url) => setShopDraft((d) => ({ ...d, image_url }))} />
                   <Field label="Apple product id" value={shopDraft.apple_product_id} onChange={(apple_product_id) => setShopDraft((d) => ({ ...d, apple_product_id }))} />
                   <Field label="Google product id" value={shopDraft.google_product_id} onChange={(google_product_id) => setShopDraft((d) => ({ ...d, google_product_id }))} />
-                  <TextArea label="Contents JSON object" value={shopDraft.contents} onChange={(contents) => setShopDraft((d) => ({ ...d, contents }))} />
+                  {/* Structured grants & presentation (Phase B). These edit
+                      specific paths in the contents JSON below — which stays the
+                      source of truth — so any other keys are preserved. */}
+                  <div className="space-y-3 rounded-lg border border-[#ffc93d]/25 bg-[#ffc93d]/[0.05] p-3">
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Grants — what the buyer receives</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Coins" value={readGrant(shopDraft.contents, 'coins')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeGrantNumber(d.contents, 'coins', v) }))} />
+                      <Field label="Gems" value={readGrant(shopDraft.contents, 'gems')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeGrantNumber(d.contents, 'gems', v) }))} />
+                      <Field label="XP boost — days" value={readXpBoost(shopDraft.contents, 'days')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeXpBoost(d.contents, 'days', v) }))} />
+                      <Field label="XP boost — multiplier (2-10)" value={readXpBoost(shopDraft.contents, 'multiplier')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeXpBoost(d.contents, 'multiplier', v) }))} />
+                      <Field label="Board theme id (unlock)" value={readBoardGrant(shopDraft.contents)} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeBoardGrant(d.contents, v) }))} />
+                    </div>
+
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Presentation</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                        Placement
+                        <select value={readPres(shopDraft.contents).placement === 'featured' ? 'featured' : 'grid'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writePresField(d.contents, 'placement', e.target.value === 'featured' ? 'featured' : '') }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
+                          <option value="grid">Packs grid</option>
+                          <option value="featured">Featured</option>
+                        </select>
+                      </label>
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                        Ribbon
+                        <select value={(readPres(shopDraft.contents).ribbon as string) || 'none'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writePresField(d.contents, 'ribbon', e.target.value) }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
+                          <option value="none">None</option>
+                          <option value="popular">Popular</option>
+                          <option value="best-value">Best Value</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    {shopDraft.kind === 'bundle' ? (
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                          Headline currency (hero icon)
+                          <select value={readPres(shopDraft.contents).headlineKind === 'gems' ? 'gems' : 'coins'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writePresField(d.contents, 'headlineKind', e.target.value) }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
+                            <option value="coins">Coins</option>
+                            <option value="gems">Gems</option>
+                          </select>
+                        </label>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">Reward chips</div>
+                        {readRewards(shopDraft.contents).map((rw, i) => (
+                          <div key={i} className="flex items-end gap-2">
+                            <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/30">
+                              Icon
+                              <select value={rw.kind} onChange={(e) => setShopDraft((d) => { const rows = readRewards(d.contents); rows[i] = { ...rows[i], kind: e.target.value }; return { ...d, contents: writeRewards(d.contents, rows) }; })} className="mt-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm normal-case tracking-normal text-white outline-none">
+                                <option value="coins">coins</option>
+                                <option value="gems">gems</option>
+                                <option value="xp">xp</option>
+                                <option value="chest">chest</option>
+                              </select>
+                            </label>
+                            <div className="flex-1"><Field label="Label" value={rw.label} onChange={(v) => setShopDraft((d) => { const rows = readRewards(d.contents); rows[i] = { ...rows[i], label: v }; return { ...d, contents: writeRewards(d.contents, rows) }; })} /></div>
+                            <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeRewards(d.contents, readRewards(d.contents).filter((_, j) => j !== i)) }))}>Remove</SecondaryButton>
+                          </div>
+                        ))}
+                        <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeRewards(d.contents, [...readRewards(d.contents), { kind: 'coins', label: '' }]) }))}>+ Add reward</SecondaryButton>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                          Headline icon
+                          <select value={readHeadline(shopDraft.contents, 'kind') || 'coins'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeadline(d.contents, 'kind', e.target.value) }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
+                            <option value="coins">coins</option>
+                            <option value="gems">gems</option>
+                            <option value="xp-boost">xp-boost</option>
+                            <option value="lucky-dice">lucky-dice</option>
+                          </select>
+                        </label>
+                        <Field label="Headline label (e.g. 10,000)" value={readHeadline(shopDraft.contents, 'label')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeHeadline(d.contents, 'label', v) }))} />
+                        <Field label="Headline sub-label (e.g. x3 · 7 Days)" value={readHeadline(shopDraft.contents, 'subLabel')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeHeadline(d.contents, 'subLabel', v) }))} />
+                      </div>
+                    )}
+                  </div>
+                  <TextArea label="Advanced — raw contents JSON" value={shopDraft.contents} onChange={(contents) => setShopDraft((d) => ({ ...d, contents }))} />
                   <TextArea label="Visibility rules JSON object" value={shopDraft.visibility_rules} onChange={(visibility_rules) => setShopDraft((d) => ({ ...d, visibility_rules }))} />
                   <div className="grid grid-cols-2 gap-3">
                     <Field type="datetime-local" label="Starts at" value={shopDraft.starts_at} onChange={(starts_at) => setShopDraft((d) => ({ ...d, starts_at }))} />
                     <Field type="datetime-local" label="Ends at" value={shopDraft.ends_at} onChange={(ends_at) => setShopDraft((d) => ({ ...d, ends_at }))} />
                   </div>
                   <Toggle label="Enabled" checked={shopDraft.is_enabled} onChange={(is_enabled) => setShopDraft((d) => ({ ...d, is_enabled }))} />
+                  <Toggle label="Exclude from Store Sale (no bonus on this item)" checked={shopDraft.exclude_from_sale} onChange={(exclude_from_sale) => setShopDraft((d) => ({ ...d, exclude_from_sale }))} />
                   <div className="flex flex-wrap gap-2">
                     <PrimaryButton onClick={() => void saveShop()} disabled={!canManage || savingKey === 'shop'}>Save shop item</PrimaryButton>
                     <SecondaryButton onClick={() => setShopDraft(shopToDraft())}>New</SecondaryButton>
