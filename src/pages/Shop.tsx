@@ -549,7 +549,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
               <section className="min-w-0">
                 <SectionTitle>Packs</SectionTitle>
                 {data.packs.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-6">
+                  <div className="grid grid-cols-4 gap-6">
                     {data.packs.map((p) => (
                       <PackCard
                         key={p.id}
