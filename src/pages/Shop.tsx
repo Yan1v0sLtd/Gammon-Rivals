@@ -236,7 +236,7 @@ function PriceLabel({ priceUsd, priceGems }: { priceUsd: number | null; priceGem
   if (priceGems !== null) {
     return (
       <span className="flex items-center justify-center gap-1.5">
-        <GemIcon className="h-5 w-5" />
+        <GemIcon className="h-7 w-7" />
         <span className="tabular-nums">{priceGems.toLocaleString()}</span>
       </span>
     );
@@ -247,7 +247,8 @@ function PriceLabel({ priceUsd, priceGems }: { priceUsd: number | null; priceGem
 function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean; onBuy: () => void }) {
   return (
     <article className="relative flex min-h-[34rem] flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
-      <div className="bg-gradient-to-b from-[#bc8108] to-[#8d5d00] px-4 py-4 text-center font-display text-base font-black uppercase tracking-[0.14em] text-[#fff7dc]">
+      {/* Title (+50%). Will be BO-configurable in Phase B. */}
+      <div className="bg-gradient-to-b from-[#bc8108] to-[#8d5d00] px-4 py-4 text-center font-display text-2xl font-black uppercase tracking-[0.12em] text-[#fff7dc]">
         {bundle.title}
       </div>
       <div className="flex flex-1 flex-col p-5">
@@ -258,12 +259,12 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
           <RibbonBadge ribbon={bundle.ribbon} />
           <HeadlineIcon kind={bundle.headlineKind} className="h-32 w-32" />
         </div>
-        {/* Reward slots */}
-        <div className="grid grid-cols-4 gap-3 border-b border-white/10 py-6">
+        {/* Reward currencies — centered, +70% larger icons + labels. */}
+        <div className="flex flex-wrap items-stretch justify-center gap-4 border-b border-white/10 py-6">
           {bundle.rewards.slice(0, 4).map((r, i) => (
-            <div key={i} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl bg-[#183763]/70 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <RewardSlotIcon kind={r.kind} className="h-9 w-9" />
-              <span className="text-center text-[0.7rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+            <div key={i} className="flex w-24 flex-col items-center justify-center gap-2 rounded-xl bg-[#183763]/70 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+              <RewardSlotIcon kind={r.kind} className="h-[3.8rem] w-[3.8rem]" />
+              <span className="text-center text-[1.2rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
             </div>
           ))}
         </div>
@@ -271,7 +272,7 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
           type="button"
           onClick={onBuy}
           disabled={isBusy}
-          className="mt-auto h-14 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-xl font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
+          className="mt-auto h-16 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.5rem] font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
         >
           <PriceLabel priceUsd={bundle.priceUsd} priceGems={bundle.priceGems} />
         </button>
@@ -283,18 +284,19 @@ function BundleCard({ bundle, isBusy, onBuy }: { bundle: Bundle; isBusy: boolean
 function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy: () => void }) {
   return (
     <article className="flex h-[18rem] flex-col rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
+      {/* Icon −20% to free room for the (bigger) amount + price below. */}
       <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
-        <HeadlineIcon kind={pack.headlineKind} className="h-24 w-24" />
+        <HeadlineIcon kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
       </div>
       <div className="mb-3 text-center">
-        <div className="font-display text-xl font-black tabular-nums text-white">{pack.headlineLabel}</div>
-        {pack.headlineSubLabel ? <div className="text-xs font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+        <div className="font-display text-[1.56rem] font-black tabular-nums text-white">{pack.headlineLabel}</div>
+        {pack.headlineSubLabel ? <div className="text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
       </div>
       <button
         type="button"
         onClick={onBuy}
         disabled={isBusy}
-        className="h-12 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-lg font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
+        className="h-14 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.35rem] font-black text-white shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60"
       >
         <PriceLabel priceUsd={pack.priceUsd} priceGems={pack.priceGems} />
       </button>
@@ -304,10 +306,10 @@ function PackCard({ pack, isBusy, onBuy }: { pack: Pack; isBusy: boolean; onBuy:
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="mb-6 flex items-center justify-center gap-3 font-display text-lg font-black uppercase tracking-[0.32em] text-[#ffc93d]">
-      <span className="text-sm">✦</span>
+    <h2 className="mb-8 flex items-center justify-center gap-3 font-display text-[1.9rem] font-black uppercase tracking-[0.26em] text-[#ffc93d]">
+      <span className="text-xl">✦</span>
       {children}
-      <span className="text-sm">✦</span>
+      <span className="text-xl">✦</span>
     </h2>
   );
 }
@@ -490,29 +492,32 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
             style={{ width: PANEL_DESIGN_W }}
           >
             {/* Header */}
-            <header className="flex items-center justify-between gap-6 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37] to-[#050d1c] px-10 py-5">
-              <h1 className="font-display text-4xl font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+            <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37] to-[#050d1c] px-10 py-5">
+              <span aria-hidden="true" />
+              <h1 className="text-center font-display text-[2.9rem] font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
                 Store
               </h1>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-end gap-4">
                 {/* Same balance element as the lobby, with the real wallet. The
                     lobby pill sizes itself off `--lobby-u` (defined on
                     .lobby-shell); outside the lobby we scope a fixed unit + a
                     definite height so it renders at the right size — the same
-                    trick the profile page (.profile-top-currency) uses. The
-                    "+" is a no-op here — you're already in the shop. */}
+                    trick the profile page (.profile-top-currency) uses. No "+"
+                    here — you're already in the shop. */}
                 <div
                   className="flex items-center gap-3"
                   style={{ '--lobby-u': '0.82px', height: '3.1rem' } as CSSProperties}
                 >
-                  <CurrencyPill flyTarget="coins" label="Coins" value={wallet?.coins} icon="/lobby/icons/gold-coin.webp" onAdd={() => {}} />
-                  <CurrencyPill flyTarget="gems" label="Gems" value={wallet?.gems} icon="/lobby/icons/gem.webp" onAdd={() => {}} />
+                  <CurrencyPill flyTarget="coins" label="Coins" value={wallet?.coins} icon="/lobby/icons/gold-coin.webp" onAdd={() => {}} showAdd={false} />
+                  <CurrencyPill flyTarget="gems" label="Gems" value={wallet?.gems} icon="/lobby/icons/gem.webp" onAdd={() => {}} showAdd={false} />
                 </div>
+                {/* App-standard close: golden frame, black fill (matches the
+                    board / other modals). */}
                 <button
                   type="button"
                   onClick={onClose}
                   aria-label="Close store"
-                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ff5751] to-[#c92222] text-3xl leading-none text-[#fff7dc] shadow-[inset_0_2px_0_rgba(255,255,255,0.25),0_5px_14px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:scale-95"
+                  className="grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-3xl leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
                 >
                   ×
                 </button>
