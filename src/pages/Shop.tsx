@@ -525,12 +525,12 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
             </header>
 
             {/* Content: Featured Packs | Packs grid */}
-            <div className="grid grid-cols-[600px_1fr] gap-8 p-10">
+            <div className="grid grid-cols-[340px_1fr] gap-8 p-10">
               <section className="border-r border-[#9aabc5]/18 pr-8">
-                <SectionTitle>Featured Packs</SectionTitle>
+                <SectionTitle>Featured Pack</SectionTitle>
                 {data.bundles.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-5">
-                    {data.bundles.map((b) => (
+                  <div>
+                    {data.bundles.slice(0, 1).map((b) => (
                       <BundleCard
                         key={b.id}
                         bundle={b}
@@ -549,7 +549,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
               <section className="min-w-0">
                 <SectionTitle>Packs</SectionTitle>
                 {data.packs.length > 0 ? (
-                  <div className="grid grid-cols-4 gap-6">
+                  <div className="grid grid-cols-3 gap-6">
                     {data.packs.map((p) => (
                       <PackCard
                         key={p.id}
