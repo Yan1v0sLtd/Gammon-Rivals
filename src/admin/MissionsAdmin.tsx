@@ -463,6 +463,11 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
                 className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
               />
+              <span className="mt-0.5 block text-[10px] text-white/35">
+                Title &amp; subtitle support tokens:{' '}
+                <span className="font-mono text-white/55">{'{goal}'}</span> = per-player goal,{' '}
+                <span className="font-mono text-white/55">{'{tier}'}</span> = difficulty tier.
+              </span>
             </Field>
             <Field label="Mission type">
               <select
