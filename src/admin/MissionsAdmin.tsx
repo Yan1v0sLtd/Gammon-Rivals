@@ -130,6 +130,7 @@ interface MissionTypeConfig {
   round_to: number;
   baseline_window_days: number;
   goal_round_to: number;
+  rollout_pct: number;
 }
 
 const COEFFICIENT_FIELDS: ReadonlyArray<{
@@ -706,6 +707,7 @@ function MissionTypesEditor({ canManage }: { readonly canManage: boolean }) {
           round_to: draft.round_to,
           baseline_window_days: draft.baseline_window_days,
           goal_round_to: draft.goal_round_to,
+          rollout_pct: draft.rollout_pct,
         })
         .eq('mission_type', draft.mission_type);
       if (e) throw e;
@@ -748,6 +750,9 @@ function MissionTypesEditor({ canManage }: { readonly canManage: boolean }) {
                 {r.supports_personalized && (
                   <span className="rounded bg-sky-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-200">personalized</span>
                 )}
+                {r.supports_personalized && r.rollout_pct > 0 && (
+                  <span className="rounded bg-emerald-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">{r.rollout_pct}% live</span>
+                )}
               </div>
               <div className="mt-0.5 font-mono text-xs text-white/50">{r.mission_type} → {r.metric_code}</div>
               {r.description && <div className="mt-1 text-xs text-white/60">{r.description}</div>}
@@ -782,6 +787,18 @@ function MissionTypesEditor({ canManage }: { readonly canManage: boolean }) {
                     {draft.supports_personalized ? 'Adaptive goal + reward' : 'Fixed/stretch only'}
                   </label>
                 </Field>
+                {draft.supports_personalized && (
+                  <Field label="Rollout %">
+                    <input
+                      type="number" min={0} max={100} value={draft.rollout_pct} disabled={!canManage}
+                      onChange={(e) => setDraft({ ...draft, rollout_pct: Math.max(0, Math.min(100, Number(e.target.value))) })}
+                      className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                    />
+                    <span className="mt-0.5 block text-[10px] text-white/35">
+                      % of players the nightly cron assigns this personalized mission (occupies one common slot). 0 = off.
+                    </span>
+                  </Field>
+                )}
                 <Field label="Description" wide>
                   <textarea
                     rows={2} value={draft.description ?? ''} disabled={!canManage}
