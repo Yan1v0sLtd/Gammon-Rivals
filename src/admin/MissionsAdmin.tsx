@@ -129,6 +129,7 @@ interface MissionTypeConfig {
   floor_reward: number;
   round_to: number;
   baseline_window_days: number;
+  goal_round_to: number;
 }
 
 const COEFFICIENT_FIELDS: ReadonlyArray<{
@@ -147,6 +148,7 @@ const COEFFICIENT_FIELDS: ReadonlyArray<{
   { key: 'floor_reward',         label: 'Floor reward',      step: 50,   hint: 'Minimum coin reward, before rounding.' },
   { key: 'round_to',             label: 'Round reward to',   step: 50,   hint: 'Reward is rounded to this multiple.' },
   { key: 'baseline_window_days', label: 'Baseline window (d)', step: 5,  hint: 'Days of history used for the baseline median.' },
+  { key: 'goal_round_to',        label: 'Goal rounding',       step: 1,    hint: 'Goal rounds to this multiple (1 for counts, e.g. 250 for coins).' },
 ];
 
 interface RewardRow {
@@ -703,6 +705,7 @@ function MissionTypesEditor({ canManage }: { readonly canManage: boolean }) {
           floor_reward: draft.floor_reward,
           round_to: draft.round_to,
           baseline_window_days: draft.baseline_window_days,
+          goal_round_to: draft.goal_round_to,
         })
         .eq('mission_type', draft.mission_type);
       if (e) throw e;
