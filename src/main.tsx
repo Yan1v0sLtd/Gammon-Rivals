@@ -1,11 +1,32 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './lib/auth';
 import { AdminAuthProvider } from './lib/adminAuth';
 import { NavigationOverlayProvider } from './lib/navigationOverlay';
 import { installNativeAuthHandler } from './lib/nativeAuth';
+
+// Crash reporting (audit D-OBS-1). The DSN is a public client key — safe in
+// a public repo. `release` is the injected build stamp, so every event maps
+// to the exact deployed commit. Dev builds don't report. The same bundle runs
+// inside the Capacitor WebView, so Android JS crashes report here too.
+// Stale-chunk errors are excluded: the reload handler below already recovers
+// them, and they'd otherwise flood Sentry on every deploy.
+Sentry.init({
+  dsn: 'https://0c5bff118503a96dd9dc942802f36821@o4511552133070848.ingest.us.sentry.io/4511552135036928',
+  release: `gammon-rivals@${__APP_BUILD_COMMIT__}`,
+  environment: import.meta.env.PROD ? 'production' : 'development',
+  enabled: import.meta.env.PROD,
+  ignoreErrors: [
+    'ChunkLoadError',
+    'is not a valid JavaScript MIME type',
+    'Failed to fetch dynamically imported module',
+    'error loading dynamically imported module',
+    'Importing a module script failed',
+  ],
+});
 
 // Build stamp — log the deployed commit + build time and expose them on
 // window.__BUILD__ so "am I on the latest deploy?" is answerable in one glance
