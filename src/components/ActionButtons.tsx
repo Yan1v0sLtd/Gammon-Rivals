@@ -88,6 +88,9 @@ interface SecondaryProps {
   canDouble: boolean;
   onDouble: () => void;
   cubeValue: number;
+  /** Show the cube + double buttons. False for single-game (target=1)
+   *  matches, where the cube is dead. Defaults true. */
+  showCube?: boolean;
   /** Optional preference control (auto-roll toggle) rendered after Double. */
   autoRollSlot?: React.ReactNode;
 }
@@ -103,31 +106,36 @@ export function MatchSecondaryControls({
   canDouble,
   onDouble,
   cubeValue,
+  showCube = true,
   autoRollSlot,
 }: SecondaryProps) {
   const nextCube = cubeValue * 2;
 
   return (
     <div className="game-controls-secondary">
-      <button
-        type="button"
-        disabled
-        className="game-cube-button"
-        aria-label={`Cube value ${cubeValue}`}
-      >
-        <strong>{cubeValue}</strong>
-        <span>Cube</span>
-      </button>
+      {showCube && (
+        <>
+          <button
+            type="button"
+            disabled
+            className="game-cube-button"
+            aria-label={`Cube value ${cubeValue}`}
+          >
+            <strong>{cubeValue}</strong>
+            <span>Cube</span>
+          </button>
 
-      <button
-        type="button"
-        onClick={canDouble ? onDouble : undefined}
-        disabled={!canDouble}
-        className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
-      >
-        <strong>×{nextCube}</strong>
-        <span>Double</span>
-      </button>
+          <button
+            type="button"
+            onClick={canDouble ? onDouble : undefined}
+            disabled={!canDouble}
+            className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
+          >
+            <strong>×{nextCube}</strong>
+            <span>Double</span>
+          </button>
+        </>
+      )}
 
       {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
     </div>

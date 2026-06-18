@@ -42,6 +42,15 @@ export function aiDisplayName(level: string): string {
 }
 
 /**
+ * Human-looking rank word for an AI opponent's status line — "Rookie" / "Pro"
+ * / "Master" rather than the raw difficulty ("EASY"/"MEDIUM"/"HARD"), so the
+ * opponent reads as a real player and the AI tier never leaks into the UI.
+ */
+export function aiRankLabel(level: string): string {
+  return AI_TITLE_BY_LEVEL[level] ?? 'Player';
+}
+
+/**
  * Build the URL for a DiceBear avatar. We use the `personas` style — flat
  * cartoon portraits that look like the photo-style avatars in the reference
  * mobile games. Background is given a warm tone so the avatar reads on
@@ -67,12 +76,16 @@ export interface PlayerIdentity {
   readonly badge?: string;
 }
 
-/** Make a fresh identity for an AI opponent at the given level. */
+/**
+ * Make a fresh identity for an AI opponent at the given level.
+ * Deliberately NO `badge` — AI opponents must be indistinguishable from
+ * humans, so the difficulty never leaks into the UI. The level only shapes
+ * the display name's title and the persona's level/coins, like a human rank.
+ */
 export function makeAIIdentity(level: string): PlayerIdentity {
   return {
     name: aiDisplayName(level),
     avatarSeed: randomAvatarSeed(),
-    badge: level.toUpperCase(),
   };
 }
 

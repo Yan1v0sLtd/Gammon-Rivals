@@ -211,7 +211,7 @@ export default function PlayOnline() {
       <main className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
         <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
           <Link to="/play" className="text-board-accent text-sm">← Home</Link>
-          <div className="text-xs text-board-felt/50">Online · to {match.target}</div>
+          <div className="text-xs text-board-felt/50">Online{match.target > 1 ? ` · to ${match.target}` : ''}</div>
           <Link to="/profile" className="text-xs text-board-felt/60 hover:text-board-accent">Profile</Link>
         </header>
         <div className="flex-1 flex flex-col items-center justify-center gap-6 max-w-md w-full p-6">
@@ -399,6 +399,7 @@ export default function PlayOnline() {
             canDouble={game.canOfferDouble}
             onDouble={() => void game.offerDouble()}
             cubeValue={game.cubeValue}
+            showCube={match.target > 1}
             autoRollSlot={
               !isSpectator ? (
                 <AutoRollToggle

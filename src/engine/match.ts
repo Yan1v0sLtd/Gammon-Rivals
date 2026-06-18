@@ -72,6 +72,10 @@ export function isCrawfordGame(match: MatchState): boolean {
 
 export function canOfferDouble(match: MatchState, player: Player): boolean {
   if (match.winner !== null) return false;
+  // 1-point match (single game): the cube is dead — you can never use more than
+  // the one point at stake, so doubling is meaningless. Keeps the cube out of
+  // quick single-game matches for both human and AI.
+  if (match.target <= 1) return false;
   if (match.cubeOffer !== null) return false;
   if (isCrawfordGame(match)) return false;
   if (match.cube.value >= 64) return false;
