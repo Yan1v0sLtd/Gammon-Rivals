@@ -5,7 +5,6 @@ import {
   initialBoard,
   legalMoves,
   winner as engineWinner,
-  computeBearOffResult,
 } from '../engine';
 import type {
   BoardState,
@@ -714,106 +713,68 @@ export function useOnlineGame(
     endTurnInFlightRef.current = true;
     setLastLocalActivityMs(Date.now());
     try {
-      // Compute the post-turn result client-side, then hand all the
-      // derived fields to finish_turn so it can persist them in one
-      // atomic transaction. This used to be three separate DB calls
-      // (INSERT moves, optional UPDATE games, UPDATE matches.
-      // current_turn=null) and the opponent could refresh between any
-      // two of them and see an inconsistent state — the moves row
-      // already inserted while match.current_turn still held the same
-      // submoves, leading to double-application of the submoves in
-      // deriveState and a thrown "no checker at point X" from
-      // applyMove. The single-RPC path makes the intermediate state
-      // unobservable.
-      const winnerNow = engineWinner(derived.board);
-      let gameWinner: Player | null = null;
-      let gameWinType: 'single' | 'gammon' | 'backgammon' | null = null;
-      let gamePoints: number | null = null;
-      let newWhite = match.white_score;
-      let newBlack = match.black_score;
-      let matchWinner: Player | null = null;
-      let newCrawford = match.crawford_game_number;
-
-      if (winnerNow) {
-        const result = computeBearOffResult(
-          {
-            target: match.target,
-            score: { white: match.white_score, black: match.black_score },
-            gameNumber: 1,
-            crawfordGameNumber: null,
-            cube: { value: cubeValue, owner: cubeOwner },
-            cubeOffer: null,
-            winner: null,
-          },
-          derived.board,
-          winnerNow
-        );
-        gameWinner = result.winner;
-        gameWinType = result.winType;
-        gamePoints = result.points;
-        newWhite = match.white_score + (result.winner === 'white' ? result.points : 0);
-        newBlack = match.black_score + (result.winner === 'black' ? result.points : 0);
-        const matchOver = newWhite >= match.target || newBlack >= match.target;
-
-        const oldMax = Math.max(match.white_score, match.black_score);
-        const newMax = Math.max(newWhite, newBlack);
-        newCrawford =
-          match.crawford_game_number === null &&
-          oldMax < match.target - 1 &&
-          newMax === match.target - 1
-            ? (currentGame?.game_number ?? 0) + 1
-            : match.crawford_game_number;
-
-        if (matchOver) matchWinner = result.winner;
-      }
-
-      const { error: rpcErr } = await supabase.rpc('finish_turn', {
-        p_match_id: matchId,
-        p_game_winner: gameWinner,
-        p_game_win_type: gameWinType,
-        p_game_points: gamePoints,
-        p_game_dropped_double: false,
-        p_new_white_score: newWhite,
-        p_new_black_score: newBlack,
-        p_match_winner: matchWinner,
-        p_crawford_game_number: newCrawford,
+      // Server-authoritative turn commit (Phase 2b). The client no longer
+      // computes or asserts the game outcome — it asks the server to commit
+      // the current turn. The finish_turn edge function replays the recorded
+      // moves + this turn's submoves through the shared engine, VALIDATES
+      // every sub-move, DERIVES the true winner / win type / points / scores /
+      // match winner / crawford, and writes them atomically via
+      // commit_turn_server. This closes the coin-minting hole where the old
+      // path trusted client-computed outcome fields (a client could finish a
+      // turn — or match — claiming a fabricated win). The atomicity the old
+      // finish_turn RPC provided is preserved inside commit_turn_server.
+      const { data, error: invErr } = await supabase.functions.invoke('finish_turn', {
+        body: { matchId },
       });
-      if (rpcErr) {
-        const msg = rpcErr.message ?? String(rpcErr);
-        // Benign races we can silently absorb:
-        //   - "no_turn_in_progress": some other path already cleared
-        //     current_turn (e.g., realtime delivered a sibling write).
-        //   - "match_already_finished" / "not_your_turn": the server
-        //     view advanced past us between our click and the RPC
-        //     round-trip.
-        // For all of these, a refresh will sync the local state.
+      if (invErr) {
+        // supabase-js wraps non-2xx responses in a FunctionsHttpError whose
+        // .message is generic; the server's real reason is in the response
+        // body. Crack it open to log the cause and to silence benign races.
+        let serverReason: string | null = null;
+        let status: number | null = null;
+        const ctx = (invErr as { context?: Response }).context;
+        if (ctx) {
+          status = ctx.status ?? null;
+          try {
+            const body = await ctx.clone().json();
+            if (body && typeof body === 'object' && 'error' in body) {
+              serverReason = String((body as { error: unknown }).error);
+            }
+          } catch {
+            try {
+              const text = await ctx.clone().text();
+              if (text) serverReason = text;
+            } catch { /* give up */ }
+          }
+        }
+        console.error('[useOnlineGame] finish_turn failed', {
+          status,
+          serverReason,
+          generic: invErr.message,
+        });
+        const detail = serverReason ?? invErr.message ?? 'end turn failed';
+        // Benign races we can silently absorb (the server view advanced past
+        // us, or another path already cleared current_turn). A refresh syncs.
         if (
-          msg.includes('no_turn_in_progress') ||
-          msg.includes('match_already_finished') ||
-          msg.includes('not_your_turn')
+          detail.includes('no_turn_in_progress') ||
+          detail.includes('match_already_finished') ||
+          detail.includes('not_your_turn')
         ) {
           void refresh();
           return;
         }
-        console.error('[useOnlineGame] finish_turn failed', msg, rpcErr);
-        setError(msg);
+        setError(detail);
+        return;
+      }
+      if (data && typeof data === 'object' && 'error' in data) {
+        setError(String((data as { error: unknown }).error));
         return;
       }
       void refresh();
     } finally {
       endTurnInFlightRef.current = false;
     }
-  }, [
-    matchId,
-    match,
-    currentTurn,
-    isLocalTurn,
-    derived.board,
-    cubeValue,
-    cubeOwner,
-    currentGame?.game_number,
-    refresh,
-  ]);
+  }, [matchId, match, currentTurn, isLocalTurn, refresh]);
 
   // ---- cube actions ----
   const offerDouble = useCallback(async () => {
