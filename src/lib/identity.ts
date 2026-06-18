@@ -35,10 +35,14 @@ export function randomDisplayName(): string {
   return FIRST_NAMES[idx]!;
 }
 
-/** Stable name for an AI opponent: "<Random first name> the <Tier>". */
-export function aiDisplayName(level: string): string {
-  const title = AI_TITLE_BY_LEVEL[level] ?? 'Bot';
-  return `${randomDisplayName()} the ${title}`;
+/**
+ * Display name for an AI opponent — a plain first name, exactly like a real
+ * player's free-form display name. No "the <Tier>" suffix, so the AI's
+ * difficulty never leaks through the name. (The tier still surfaces as a
+ * human-style rank on the status line via aiRankLabel.)
+ */
+export function aiDisplayName(): string {
+  return randomDisplayName();
 }
 
 /**
@@ -77,14 +81,14 @@ export interface PlayerIdentity {
 }
 
 /**
- * Make a fresh identity for an AI opponent at the given level.
- * Deliberately NO `badge` — AI opponents must be indistinguishable from
- * humans, so the difficulty never leaks into the UI. The level only shapes
- * the display name's title and the persona's level/coins, like a human rank.
+ * Make a fresh identity for an AI opponent. Deliberately indistinguishable
+ * from a human: a plain random name + avatar, NO `badge`, no tier in the name.
+ * The difficulty surfaces only as a human-style rank on the status line
+ * (via aiRankLabel), never in the identity itself.
  */
-export function makeAIIdentity(level: string): PlayerIdentity {
+export function makeAIIdentity(): PlayerIdentity {
   return {
-    name: aiDisplayName(level),
+    name: aiDisplayName(),
     avatarSeed: randomAvatarSeed(),
   };
 }

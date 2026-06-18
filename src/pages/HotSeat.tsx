@@ -227,7 +227,7 @@ export default function HotSeat() {
   }, [profile]);
 
   const opponentIdentity: PlayerIdentity = useMemo(
-    () => (aiConfig ? makeAIIdentity(aiConfig.level) : makeGuestIdentity()),
+    () => (aiConfig ? makeAIIdentity() : makeGuestIdentity()),
     [aiConfig]
   );
 
@@ -521,9 +521,10 @@ export default function HotSeat() {
     [aiConfig, matchId]
   );
   const opponentLevel = aiPersona ? aiPersona.level : 23;
-  const opponentCoinsLabel = aiPersona
-    ? formatCompactNumber(aiPersona.coins)
-    : '400';
+  // Opponent coins are hidden ("—") to match the PvP panel, which never
+  // reveals the opponent's balance. An AI opponent shows the same dash a real
+  // opponent does, instead of a persona coin count (which would be a tell).
+  const opponentCoinsLabel = '—';
   const opponentState = aiConfig ? aiRankLabel(aiConfig.level) : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
   // Only hand a real background URL to BoardLayout once the theme has
