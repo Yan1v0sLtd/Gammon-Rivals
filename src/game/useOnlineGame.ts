@@ -998,19 +998,11 @@ export function useOnlineGame(
       const newWhite = match.white_score + (winnerColor === 'white' ? points : 0);
       const newBlack = match.black_score + (winnerColor === 'black' ? points : 0);
 
-      // Close out the in-progress game row so the games table doesn't
-      // carry a dangling open game after the match finishes.
-      if (match.current_game_id) {
-        await supabase
-          .from('games')
-          .update({
-            winner: winnerColor,
-            win_type: 'single',
-            points_awarded: points,
-            finished_at: new Date().toISOString(),
-          })
-          .eq('id', match.current_game_id);
-      }
+      // The in-progress game row is no longer closed by the client. Online
+      // (PvP) games are RLS-locked to server-only writers (Phase 2b slice 4),
+      // so this UPDATE would be denied. finish_match closes the dangling game
+      // row when it finalizes (slice 5). The match still finalizes + pays via
+      // the RPC below — only the (cosmetic) open game row lingers until then.
 
       const { error: rpcErr } = await supabase.rpc('finish_match', {
         p_match_id: matchId,

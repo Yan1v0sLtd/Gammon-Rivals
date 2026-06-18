@@ -1,6 +1,12 @@
 // Server-authoritative dice roll for online matches.
 // v2 (Phase 5d): handles multi-game match continuation — when current_game_id
 // points to a finished game, lazy-create a new game and reset cube state.
+// v3 (Phase 2b slice 4): writes via the SERVICE ROLE. The caller is still
+// authenticated (and authorized below by the owner/opponent + turn checks), but
+// the DB writes no longer run as the caller — so slice 4 can revoke clients'
+// direct INSERT on `games`/`moves` for online matches (locking the PvP game
+// record to server-only writers) without breaking this function's game-row
+// creation.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -27,15 +33,21 @@ Deno.serve(async (req: Request) => {
 
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
     const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return json({ error: 'server misconfigured' }, 500);
+    const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SERVICE_KEY) {
+      return json({ error: 'server misconfigured' }, 500);
+    }
 
-    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // Authenticate the caller with their JWT; do all DB work with the service
+    // role. Authorization is enforced explicitly below (owner/opponent + turn).
+    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
-
-    const { data: userData, error: userErr } = await sb.auth.getUser();
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
     if (userErr || !userData?.user) return json({ error: 'unauthorized' }, 401);
     const user = userData.user;
+
+    const sb = createClient(SUPABASE_URL, SERVICE_KEY);
 
     const body = await req.json().catch(() => null);
     const matchId = body && typeof body.matchId === 'string' ? body.matchId : null;
@@ -47,14 +59,10 @@ Deno.serve(async (req: Request) => {
 
     if (match.mode !== 'online') return json({ error: 'not an online match' }, 400);
     if (match.finished_at) return json({ error: 'match finished' }, 400);
-    // current_turn may contain only the _abandonment side-channel
-    // object (written by replace_opponent_with_ai) with NONE of the
-    // engine fields. That's not a real turn — it's audit metadata.
-    // Treat it as "no turn in progress" so the next roll can land
-    // and clobber the metadata cleanly. The previous version's
-    // blanket `if (match.current_turn)` check rejected those rolls
-    // with 400 "turn already in progress", which locked the player
-    // out of their match.
+    // current_turn may contain only the _abandonment side-channel object
+    // (written by replace_opponent_with_ai) with NONE of the engine fields.
+    // That's not a real turn — it's audit metadata. Treat it as "no turn in
+    // progress" so the next roll can land and clobber the metadata cleanly.
     if (
       match.current_turn &&
       typeof match.current_turn === 'object' &&
