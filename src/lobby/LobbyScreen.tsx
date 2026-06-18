@@ -41,6 +41,7 @@ import { useDailyBonus } from './useDailyBonus';
 import { useLobbyBoards } from './useLobbyBoards';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
 import { useLobbyFeatureConfigs } from './useLobbyFeatureConfigs';
+import { OnboardingTour } from './OnboardingTour';
 
 // Static lobby assets — referenced unconditionally by sub-components,
 // so they're always part of the first-paint preload. Per-board imagery
@@ -170,6 +171,29 @@ export function LobbyScreen() {
   const autoOpenedDailyBonusRef = useRef(false);
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(0);
+
+  // First-run onboarding tour. Shows once: the source of truth is
+  // profiles.tutorial_completed_at (follows the account across devices and the
+  // guest→Google upgrade); a localStorage mirror suppresses it instantly after
+  // dismissal so it can't flash again before the profile row refetches.
+  const [tourDismissed, setTourDismissed] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('gr_tutorial_done') === '1'
+  );
+  const tourPending =
+    !!user && !!profile && profile.tutorial_completed_at == null && !tourDismissed;
+  const handleTourDone = useCallback(() => {
+    setTourDismissed(true);
+    try {
+      localStorage.setItem('gr_tutorial_done', '1');
+    } catch {
+      // Private mode / storage disabled — the DB flag below still persists it.
+    }
+    if (isSupabaseConfigured) {
+      void supabase.rpc('mark_tutorial_complete').then(({ error }) => {
+        if (error) console.warn('mark_tutorial_complete failed', error);
+      });
+    }
+  }, []);
 
   const boardStateOf = (board: LobbyBoard) =>
     computeBoardState({
@@ -362,11 +386,15 @@ export function LobbyScreen() {
   // the modal is now claim-only — never opens when there's nothing to do.
   useEffect(() => {
     if (autoOpenedDailyBonusRef.current) return;
+    // Let the first-run tour finish before the daily-bonus modal auto-opens —
+    // otherwise a brand-new player gets both at once. When the tour is
+    // dismissed tourPending flips false and this effect re-runs to open it.
+    if (tourPending) return;
     if (!user || !dailyBonus.canClaim || dailyBonus.isLoading) return;
     if (dailyBonus.configs.length === 0) return;
     autoOpenedDailyBonusRef.current = true;
     setDailyBonusOpen(true);
-  }, [user, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length]);
+  }, [user, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length, tourPending]);
   const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
     ? selectedBoardId
     : (boards[0]?.id ?? '');
@@ -842,6 +870,11 @@ export function LobbyScreen() {
       {rewardFlights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
+
+      {/* First-run onboarding tour — only once the lobby is fully painted
+          (balances loaded, board rendered) so the spotlight never lands on a
+          skeleton. Gated to brand-new players via profiles.tutorial_completed_at. */}
+      {lobbyReady && tourPending ? <OnboardingTour onDone={handleTourDone} /> : null}
     </main>
   );
 }

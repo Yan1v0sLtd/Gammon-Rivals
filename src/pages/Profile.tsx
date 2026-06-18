@@ -187,8 +187,9 @@ export default function Profile() {
     );
   }
 
-  const xpTarget = progression.nextLevelXp ?? Math.max(progression.xp, progression.currentLevelXp + 1000);
-  const xpText = `${formatCompactNumber(progression.xp)} / ${formatCompactNumber(xpTarget)} XP`;
+  // Canonical per-level label from getProfileProgression — same source the lobby
+  // card uses, so the two XP bars can't drift (was cumulative xp/target here).
+  const xpText = progression.xpBarLabel;
   const nextLevelLabel = progression.nextLevelXp ? progression.level + 1 : progression.level;
   // Show ALL match history rows (was capped at 3). The list
   // scrolls when > 4 entries thanks to the max-h + overflow-y-auto

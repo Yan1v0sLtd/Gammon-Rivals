@@ -31,6 +31,7 @@ export type Database = {
           deleted_by: string | null;
           delete_note: string | null;
           last_seen_at: string | null;
+          tutorial_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -52,6 +53,7 @@ export type Database = {
           deleted_by?: string | null;
           delete_note?: string | null;
           last_seen_at?: string | null;
+          tutorial_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -73,6 +75,7 @@ export type Database = {
           deleted_by?: string | null;
           delete_note?: string | null;
           last_seen_at?: string | null;
+          tutorial_completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -948,6 +951,7 @@ export type Database = {
           ends_at: string | null;
           max_purchases_per_user: number | null;
           is_enabled: boolean;
+          exclude_from_sale: boolean;
           sort_order: number;
           updated_by: string | null;
           created_at: string;
@@ -970,6 +974,7 @@ export type Database = {
           ends_at?: string | null;
           max_purchases_per_user?: number | null;
           is_enabled?: boolean;
+          exclude_from_sale?: boolean;
           sort_order?: number;
           updated_by?: string | null;
           created_at?: string;
@@ -992,8 +997,42 @@ export type Database = {
           ends_at?: string | null;
           max_purchases_per_user?: number | null;
           is_enabled?: boolean;
+          exclude_from_sale?: boolean;
           sort_order?: number;
           updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      store_sales: {
+        Row: {
+          id: string;
+          label: string;
+          bonus_percent: number;
+          is_active: boolean;
+          starts_at: string | null;
+          ends_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          label?: string;
+          bonus_percent?: number;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          label?: string;
+          bonus_percent?: number;
+          is_active?: boolean;
+          starts_at?: string | null;
+          ends_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1155,6 +1194,10 @@ export type Database = {
         Args: { target_item_id: string };
         Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
+      current_store_sale: {
+        Args: Record<string, never>;
+        Returns: { label: string; bonus_percent: number; ends_at: string | null }[];
+      };
       admin_hard_delete_user: {
         Args: { target_id: string };
         Returns: void;
@@ -1162,6 +1205,14 @@ export type Database = {
       recompute_player_levels: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      mark_tutorial_complete: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
+      test_purchase_shop_item: {
+        Args: { p_item_id: string; p_target_profile_id?: string | null };
+        Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
       set_active_podium: {
         Args: { p_id: string };

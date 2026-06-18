@@ -76,6 +76,12 @@ describe('doubling cube', () => {
     expect(canOfferDouble(m, 'black')).toBe(true);
   });
 
+  it('1-point match: cube is dead — neither player can offer', () => {
+    const m = newMatch(1);
+    expect(canOfferDouble(m, 'white')).toBe(false);
+    expect(canOfferDouble(m, 'black')).toBe(false);
+  });
+
   it('owned cube: only owner can offer', () => {
     const m: MatchState = { ...newMatch(5), cube: { value: 2, owner: 'white' } };
     expect(canOfferDouble(m, 'white')).toBe(true);

@@ -37,6 +37,9 @@ export default function EndOfGameModal({
 }: Props) {
   const verb = result.droppedDouble ? 'wins by drop' : winLabel[result.winType];
   const gameLine = `${result.winner} ${verb} +${result.points}`;
+  // Single-game (target=1) matches: the match IS the game, so use single-game
+  // language and drop the running match-score framing.
+  const singleGame = match.target <= 1;
   // Show reward chips only when something was actually awarded — losing
   // a difficulty match still calls finish_match, but xp/coins come
   // back as 0, and we don't want a "+0" chip.
@@ -50,11 +53,21 @@ export default function EndOfGameModal({
       <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-md">
         {matchOver ? (
           <>
-            <div className="font-display text-3xl uppercase tracking-wider mb-1">Match over</div>
-            <div className="capitalize text-xl mb-3 font-display">
-              {match.winner} wins {match.score.white}–{match.score.black}
+            <div className="font-display text-3xl uppercase tracking-wider mb-1">
+              {singleGame ? 'Game over' : 'Match over'}
             </div>
-            <div className="text-xs text-amber-900/80 mb-5 capitalize">{gameLine}</div>
+            {singleGame ? (
+              <div className="capitalize text-xl mb-5 font-display">
+                {result.winner} {verb}
+              </div>
+            ) : (
+              <>
+                <div className="capitalize text-xl mb-3 font-display">
+                  {match.winner} wins {match.score.white}–{match.score.black}
+                </div>
+                <div className="text-xs text-amber-900/80 mb-5 capitalize">{gameLine}</div>
+              </>
+            )}
             {showReward ? (
               <div className="mb-4 flex items-center justify-center gap-3 rounded-lg border border-amber-600/40 bg-amber-50/60 px-3 py-2">
                 {reward!.xpAwarded > 0 ? (
@@ -83,7 +96,7 @@ export default function EndOfGameModal({
               onClick={onNewMatch}
               className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium border border-amber-900 shadow hover:brightness-110 active:scale-95 transition"
             >
-              New match
+              {singleGame ? 'Play again' : 'New match'}
             </button>
           </>
         ) : (

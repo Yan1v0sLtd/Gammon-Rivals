@@ -1,4 +1,9 @@
-import type { BoardState, Player } from './types';
+// GENERATED FILE — DO NOT EDIT.
+// Deno mirror of src/engine for Supabase edge functions (server-side
+// move/outcome validation). src/engine is the single source of truth;
+// regenerate with:  npm run build:shared-engine
+
+import type { BoardState, Player } from './types.ts';
 
 export type CubeValue = 1 | 2 | 4 | 8 | 16 | 32 | 64;
 

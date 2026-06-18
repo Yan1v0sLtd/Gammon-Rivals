@@ -41,13 +41,14 @@ interface Props {
   readonly canManage: boolean;
 }
 
-type SubTab = 'templates' | 'chests' | 'reroll' | 'streak' | 'simulator';
+type SubTab = 'templates' | 'types' | 'chests' | 'reroll' | 'streak' | 'simulator';
 
 export function MissionsAdmin({ canManage }: Props) {
   const [tab, setTab] = useState<SubTab>('templates');
 
   const tabs: ReadonlyArray<{ readonly id: SubTab; readonly label: string }> = [
     { id: 'templates', label: 'Templates' },
+    { id: 'types',     label: 'Mission Types' },
     { id: 'chests',    label: 'Chests' },
     { id: 'reroll',    label: 'Reroll' },
     { id: 'streak',    label: 'Streak Chest' },
@@ -75,6 +76,7 @@ export function MissionsAdmin({ canManage }: Props) {
       </div>
 
       {tab === 'templates' && <TemplatesEditor canManage={canManage} />}
+      {tab === 'types'     && <MissionTypesEditor canManage={canManage} />}
       {tab === 'chests'    && <ChestsEditor canManage={canManage} />}
       {tab === 'reroll'    && <RerollEditor canManage={canManage} />}
       {tab === 'streak'    && <StreakEditor canManage={canManage} />}
@@ -92,7 +94,7 @@ interface MissionTemplate {
   mission_type: string;
   metric_code: string;
   rarity: 'common' | 'rare' | 'epic';
-  resolution_mode: 'fixed' | 'stretch';
+  resolution_mode: 'fixed' | 'stretch' | 'personalized';
   goal_value: number | null;
   stretch_factor: number | null;
   goal_min: number;
@@ -106,6 +108,49 @@ interface MissionTemplate {
   icon_url: string | null;
   enabled: boolean;
 }
+
+/** A row of mission_type_config — the registry that binds a mission type to its
+ *  progress metric, records whether that event is actually wired, and holds the
+ *  per-type adaptive-controller coefficients used by personalized missions. */
+interface MissionTypeConfig {
+  mission_type: string;
+  metric_code: string;
+  label: string;
+  description: string | null;
+  is_wired: boolean;
+  supports_personalized: boolean;
+  base_stretch: number;
+  up_step: number;
+  ease_after: number;
+  ease_factor: number;
+  floor_mult: number;
+  cap_mult: number;
+  reward_pct: number;
+  floor_reward: number;
+  round_to: number;
+  baseline_window_days: number;
+  goal_round_to: number;
+  rollout_pct: number;
+}
+
+const COEFFICIENT_FIELDS: ReadonlyArray<{
+  readonly key: keyof MissionTypeConfig;
+  readonly label: string;
+  readonly step: number;
+  readonly hint: string;
+}> = [
+  { key: 'base_stretch',         label: 'Base stretch',      step: 0.05, hint: 'Cold-start goal = ceil(baseline × this).' },
+  { key: 'up_step',              label: 'Ramp step (+)',     step: 1,    hint: 'Goal increase after a completed mission.' },
+  { key: 'ease_after',           label: 'Ease after N miss', step: 1,    hint: 'Misses before the goal eases.' },
+  { key: 'ease_factor',          label: 'Ease factor',       step: 0.05, hint: 'On ease: goal = last completed × this.' },
+  { key: 'floor_mult',           label: 'Floor ×baseline',   step: 0.05, hint: 'Lower clamp = ceil(baseline × this).' },
+  { key: 'cap_mult',             label: 'Cap ×baseline',     step: 0.5,  hint: 'Upper clamp = ceil(baseline × this).' },
+  { key: 'reward_pct',           label: 'Reward % of loss',  step: 0.01, hint: 'Reward = this × expected loss. Must stay < 1.' },
+  { key: 'floor_reward',         label: 'Floor reward',      step: 50,   hint: 'Minimum coin reward, before rounding.' },
+  { key: 'round_to',             label: 'Round reward to',   step: 50,   hint: 'Reward is rounded to this multiple.' },
+  { key: 'baseline_window_days', label: 'Baseline window (d)', step: 5,  hint: 'Days of history used for the baseline median.' },
+  { key: 'goal_round_to',        label: 'Goal rounding',       step: 1,    hint: 'Goal rounds to this multiple (1 for counts, e.g. 250 for coins).' },
+];
 
 interface RewardRow {
   id?: string;
@@ -121,6 +166,7 @@ interface RewardRow {
 
 function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
   const [templates, setTemplates] = useState<MissionTemplate[]>([]);
+  const [types, setTypes] = useState<MissionTypeConfig[]>([]);
   const [rewardsByTemplate, setRewardsByTemplate] = useState<Record<string, RewardRow[]>>({});
   const [draft, setDraft] = useState<MissionTemplate | null>(null);
   const [draftRewards, setDraftRewards] = useState<RewardRow[]>([]);
@@ -131,6 +177,12 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
 
   const load = useCallback(async () => {
     setError(null);
+    const { data: cfgs, error: cErr } = await sb.from('mission_type_config')
+      .select('*')
+      .order('label');
+    if (cErr) { setError(extractErrorMessage(cErr)); return; }
+    setTypes((cfgs ?? []) as MissionTypeConfig[]);
+
     const { data: tpls, error: tErr } = await sb.from('mission_templates')
       .select('*')
       .order('period')
@@ -160,6 +212,34 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
       (filterPeriod === 'all' || t.period === filterPeriod)
     );
   }, [templates, filterRarity, filterPeriod]);
+
+  const typeByCode = useMemo(() => {
+    const m = new Map<string, MissionTypeConfig>();
+    for (const t of types) m.set(t.mission_type, t);
+    return m;
+  }, [types]);
+
+  // The registry row backing the draft's selected mission type (may be undefined
+  // for a legacy type not yet in mission_type_config).
+  const draftType = draft ? typeByCode.get(draft.mission_type) : undefined;
+
+  /** Switch mission type: derive the metric from the registry, and if the new
+   *  type can't be personalized, fall back to a fixed goal. */
+  const onChangeMissionType = (code: string) => {
+    if (!draft) return;
+    const cfg = typeByCode.get(code);
+    const nextMode =
+      draft.resolution_mode === 'personalized' && !cfg?.supports_personalized
+        ? 'fixed'
+        : draft.resolution_mode;
+    setDraft({
+      ...draft,
+      mission_type: code,
+      metric_code: cfg?.metric_code ?? draft.metric_code,
+      resolution_mode: nextMode,
+      goal_value: nextMode === 'fixed' ? (draft.goal_value ?? 1) : draft.goal_value,
+    });
+  };
 
   const startEdit = (t: MissionTemplate | null) => {
     setError(null);
@@ -197,12 +277,16 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
     setError(null);
     try {
       const payload: Partial<MissionTemplate> = { ...draft };
-      // Clean up resolution-mode-specific fields so the check
-      // constraint passes.
+      // Clean up resolution-mode-specific fields so the check constraint passes.
+      // fixed → goal_value only; stretch → stretch_factor only; personalized →
+      // neither (goal + reward are generated per player at assignment).
       if (payload.resolution_mode === 'fixed') {
         payload.stretch_factor = null;
+      } else if (payload.resolution_mode === 'stretch') {
+        payload.goal_value = null;
       } else {
         payload.goal_value = null;
+        payload.stretch_factor = null;
       }
       delete (payload as { id?: string }).id;
 
@@ -312,7 +396,7 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 <th className="px-3 py-2 text-left">Title</th>
                 <th className="px-3 py-2 text-left">Rarity</th>
                 <th className="px-3 py-2 text-left">Period</th>
-                <th className="px-3 py-2 text-left">Metric</th>
+                <th className="px-3 py-2 text-left">Type</th>
                 <th className="px-3 py-2 text-right">Goal</th>
                 <th className="px-3 py-2 text-right">MP</th>
                 <th className="px-3 py-2 text-center">On</th>
@@ -330,11 +414,18 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                   <td className="px-3 py-2 text-white">{t.title}</td>
                   <td className="px-3 py-2 capitalize text-white/80">{t.rarity}</td>
                   <td className="px-3 py-2 capitalize text-white/80">{t.period}</td>
-                  <td className="px-3 py-2 font-mono text-xs text-white/60">{t.metric_code}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-white/60">
+                    {typeByCode.get(t.mission_type)?.label ?? t.mission_type}
+                    {typeByCode.get(t.mission_type)?.is_wired === false && (
+                      <span className="ml-1 rounded bg-rose-600/30 px-1 py-0.5 text-[9px] font-bold uppercase text-rose-200">dead</span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-right font-mono text-white/80">
                     {t.resolution_mode === 'fixed'
                       ? t.goal_value
-                      : `×${t.stretch_factor} [${t.goal_min}..${t.goal_max}]`}
+                      : t.resolution_mode === 'stretch'
+                        ? `×${t.stretch_factor} [${t.goal_min}..${t.goal_max}]`
+                        : 'auto'}
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-amber-200">{t.mission_points}</td>
                   <td className="px-3 py-2 text-center">{t.enabled ? '✓' : '–'}</td>
@@ -375,20 +466,43 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 onChange={(e) => setDraft({ ...draft, subtitle: e.target.value })}
                 className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
               />
+              <span className="mt-0.5 block text-[10px] text-white/35">
+                Title &amp; subtitle support tokens:{' '}
+                <span className="font-mono text-white/55">{'{goal}'}</span> = per-player goal,{' '}
+                <span className="font-mono text-white/55">{'{tier}'}</span> = difficulty tier.
+              </span>
             </Field>
             <Field label="Mission type">
-              <input
-                type="text" value={draft.mission_type} disabled={!canManage}
-                onChange={(e) => setDraft({ ...draft, mission_type: e.target.value })}
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm font-mono text-white ring-1 ring-white/10"
-              />
+              <select
+                value={draft.mission_type} disabled={!canManage}
+                onChange={(e) => onChangeMissionType(e.target.value)}
+                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              >
+                {/* keep a legacy type (not in the registry) selectable so it isn't silently lost */}
+                {!typeByCode.has(draft.mission_type) && (
+                  <option value={draft.mission_type}>{draft.mission_type} (legacy)</option>
+                )}
+                {types.map((t) => (
+                  <option key={t.mission_type} value={t.mission_type}>
+                    {t.label}{t.is_wired ? '' : ' — NOT WIRED'}
+                  </option>
+                ))}
+              </select>
+              {draftType && (
+                <div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+                  {draftType.is_wired
+                    ? <span className="rounded bg-emerald-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-emerald-200">● wired</span>
+                    : <span className="rounded bg-rose-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-rose-200">✗ not wired</span>}
+                  {draftType.supports_personalized && (
+                    <span className="rounded bg-sky-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-sky-200">personalized-capable</span>
+                  )}
+                </div>
+              )}
             </Field>
-            <Field label="Metric code">
-              <input
-                type="text" value={draft.metric_code} disabled={!canManage}
-                onChange={(e) => setDraft({ ...draft, metric_code: e.target.value })}
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm font-mono text-white ring-1 ring-white/10"
-              />
+            <Field label="Metric code (from type)">
+              <div className="w-full rounded bg-black/20 px-2 py-1 text-sm font-mono text-white/50 ring-1 ring-white/5">
+                {draft.metric_code || '—'}
+              </div>
             </Field>
             <Field label="Rarity">
               <select
@@ -418,7 +532,10 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
               >
                 <option value="fixed">Fixed</option>
-                <option value="stretch">Stretch</option>
+                <option value="stretch">Stretch (× baseline)</option>
+                <option value="personalized" disabled={!draftType?.supports_personalized}>
+                  Personalized{draftType?.supports_personalized ? '' : ' — type N/A'}
+                </option>
               </select>
             </Field>
             <Field label="Mission points">
@@ -428,37 +545,51 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
               />
             </Field>
-            {draft.resolution_mode === 'fixed' ? (
-              <Field label="Goal value (fixed)">
-                <input
-                  type="number" value={draft.goal_value ?? 0} disabled={!canManage}
-                  onChange={(e) => setDraft({ ...draft, goal_value: Number(e.target.value) })}
-                  className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
-                />
+            {draft.resolution_mode === 'personalized' ? (
+              <Field label="Goal & reward" wide>
+                <div className="rounded bg-sky-950/40 px-3 py-2 text-xs leading-relaxed text-sky-100/80 ring-1 ring-sky-400/20">
+                  Generated <span className="font-bold text-sky-200">per player</span> at assignment: the
+                  goal adapts to each player's habit (and eases if they keep missing), and the reward is a
+                  % of their expected loss. Tune the coefficients for this type in the{' '}
+                  <span className="font-bold text-sky-200">Mission Types</span> tab. The fixed/stretch goal
+                  and the reward bundle below are ignored for personalized missions.
+                </div>
               </Field>
             ) : (
-              <Field label="Stretch factor">
-                <input
-                  type="number" step="0.05" value={draft.stretch_factor ?? 1} disabled={!canManage}
-                  onChange={(e) => setDraft({ ...draft, stretch_factor: Number(e.target.value) })}
-                  className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
-                />
-              </Field>
+              <>
+                {draft.resolution_mode === 'fixed' ? (
+                  <Field label="Goal value (fixed)">
+                    <input
+                      type="number" value={draft.goal_value ?? 0} disabled={!canManage}
+                      onChange={(e) => setDraft({ ...draft, goal_value: Number(e.target.value) })}
+                      className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                    />
+                  </Field>
+                ) : (
+                  <Field label="Stretch factor">
+                    <input
+                      type="number" step="0.05" value={draft.stretch_factor ?? 1} disabled={!canManage}
+                      onChange={(e) => setDraft({ ...draft, stretch_factor: Number(e.target.value) })}
+                      className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                    />
+                  </Field>
+                )}
+                <Field label="Goal min (clamp)">
+                  <input
+                    type="number" value={draft.goal_min} disabled={!canManage}
+                    onChange={(e) => setDraft({ ...draft, goal_min: Number(e.target.value) })}
+                    className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                  />
+                </Field>
+                <Field label="Goal max (clamp)">
+                  <input
+                    type="number" value={draft.goal_max} disabled={!canManage}
+                    onChange={(e) => setDraft({ ...draft, goal_max: Number(e.target.value) })}
+                    className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                  />
+                </Field>
+              </>
             )}
-            <Field label="Goal min (clamp)">
-              <input
-                type="number" value={draft.goal_min} disabled={!canManage}
-                onChange={(e) => setDraft({ ...draft, goal_min: Number(e.target.value) })}
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
-              />
-            </Field>
-            <Field label="Goal max (clamp)">
-              <input
-                type="number" value={draft.goal_max} disabled={!canManage}
-                onChange={(e) => setDraft({ ...draft, goal_max: Number(e.target.value) })}
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
-              />
-            </Field>
             <Field label="Icon URL">
               <input
                 type="text" value={draft.icon_url ?? ''} disabled={!canManage}
@@ -523,6 +654,201 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Mission Types editor — registry + per-type coefficients            */
+/* ────────────────────────────────────────────────────────────────── */
+
+function MissionTypesEditor({ canManage }: { readonly canManage: boolean }) {
+  const [rows, setRows] = useState<MissionTypeConfig[]>([]);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState<MissionTypeConfig | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setError(null);
+    const { data, error: e } = await sb.from('mission_type_config').select('*').order('label');
+    if (e) { setError(extractErrorMessage(e)); return; }
+    setRows((data ?? []) as MissionTypeConfig[]);
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const startEdit = (r: MissionTypeConfig) => {
+    setEditing(r.mission_type);
+    setDraft({ ...r });
+    setError(null);
+  };
+
+  const save = async () => {
+    if (!draft) return;
+    setSaving(true);
+    setError(null);
+    try {
+      // mission_type is the PK; metric_code + is_wired are code-derived truth,
+      // not operator-editable here — so they're intentionally not in the update.
+      const { error: e } = await sb.from('mission_type_config')
+        .update({
+          label: draft.label,
+          description: draft.description,
+          supports_personalized: draft.supports_personalized,
+          base_stretch: draft.base_stretch,
+          up_step: draft.up_step,
+          ease_after: draft.ease_after,
+          ease_factor: draft.ease_factor,
+          floor_mult: draft.floor_mult,
+          cap_mult: draft.cap_mult,
+          reward_pct: draft.reward_pct,
+          floor_reward: draft.floor_reward,
+          round_to: draft.round_to,
+          baseline_window_days: draft.baseline_window_days,
+          goal_round_to: draft.goal_round_to,
+          rollout_pct: draft.rollout_pct,
+        })
+        .eq('mission_type', draft.mission_type);
+      if (e) throw e;
+      await load();
+      setEditing(null);
+      setDraft(null);
+    } catch (e) {
+      setError(extractErrorMessage(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="max-w-3xl text-xs leading-relaxed text-white/60">
+        The mission-type registry. Each type binds to a progress{' '}
+        <span className="font-mono text-white/80">metric</span>;{' '}
+        <span className="font-bold text-emerald-300">wired</span> means that event actually fires in the
+        game today (a <span className="font-bold text-rose-300">not-wired</span> type will never make
+        progress — fix the hook or retire it). For{' '}
+        <span className="font-bold text-sky-300">personalized</span> types, the coefficients drive the
+        adaptive goal + self-funding reward (design doc §G).
+      </p>
+
+      {rows.map((r) => (
+        <div
+          key={r.mission_type}
+          className={`rounded-xl border bg-white/[0.045] p-3 ${
+            editing === r.mission_type ? 'border-amber-500/60' : 'border-white/10'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-white">{r.label}</span>
+                {r.is_wired
+                  ? <span className="rounded bg-emerald-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">● wired</span>
+                  : <span className="rounded bg-rose-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-200">✗ not wired</span>}
+                {r.supports_personalized && (
+                  <span className="rounded bg-sky-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-200">personalized</span>
+                )}
+                {r.supports_personalized && r.rollout_pct > 0 && (
+                  <span className="rounded bg-emerald-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">{r.rollout_pct}% live</span>
+                )}
+              </div>
+              <div className="mt-0.5 font-mono text-xs text-white/50">{r.mission_type} → {r.metric_code}</div>
+              {r.description && <div className="mt-1 text-xs text-white/60">{r.description}</div>}
+            </div>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => (editing === r.mission_type ? setEditing(null) : startEdit(r))}
+                className="shrink-0 rounded bg-amber-500/20 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/30"
+              >
+                {editing === r.mission_type ? 'Close' : 'Edit'}
+              </button>
+            )}
+          </div>
+
+          {editing === r.mission_type && draft && (
+            <div className="mt-3 space-y-3 border-t border-white/10 pt-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Field label="Label">
+                  <input
+                    type="text" value={draft.label} disabled={!canManage}
+                    onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+                    className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                  />
+                </Field>
+                <Field label="Personalized">
+                  <label className="flex items-center gap-2 text-sm text-white">
+                    <input
+                      type="checkbox" checked={draft.supports_personalized} disabled={!canManage}
+                      onChange={(e) => setDraft({ ...draft, supports_personalized: e.target.checked })}
+                    />
+                    {draft.supports_personalized ? 'Adaptive goal + reward' : 'Fixed/stretch only'}
+                  </label>
+                </Field>
+                {draft.supports_personalized && (
+                  <Field label="Rollout %">
+                    <input
+                      type="number" min={0} max={100} value={draft.rollout_pct} disabled={!canManage}
+                      onChange={(e) => setDraft({ ...draft, rollout_pct: Math.max(0, Math.min(100, Number(e.target.value))) })}
+                      className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                    />
+                    <span className="mt-0.5 block text-[10px] text-white/35">
+                      % of players the nightly cron assigns this personalized mission (occupies one common slot). 0 = off.
+                    </span>
+                  </Field>
+                )}
+                <Field label="Description" wide>
+                  <textarea
+                    rows={2} value={draft.description ?? ''} disabled={!canManage}
+                    onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                    className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                  />
+                </Field>
+              </div>
+
+              {draft.supports_personalized && (
+                <div>
+                  <div className="mb-1 text-[10px] uppercase tracking-wider text-sky-200/70">
+                    Personalized coefficients
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {COEFFICIENT_FIELDS.map((f) => (
+                      <label key={String(f.key)} className="block">
+                        <span className="mb-0.5 block text-[10px] uppercase tracking-wider text-white/50">{f.label}</span>
+                        <input
+                          type="number" step={f.step}
+                          value={String(draft[f.key] as number)} disabled={!canManage}
+                          onChange={(e) => setDraft({ ...draft, [f.key]: Number(e.target.value) })}
+                          className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                        />
+                        <span className="mt-0.5 block text-[10px] text-white/35">{f.hint}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-amber-200/70">
+                    Reward % of loss must stay below 1 — the economy only remains a net sink while it does.
+                  </p>
+                </div>
+              )}
+
+              {error && <div className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+              {canManage && (
+                <button
+                  type="button" disabled={saving} onClick={save}
+                  className="rounded bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Save type'}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {rows.length === 0 && <div className="text-sm text-white/40">No mission types configured.</div>}
+      {error && editing === null && <div className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
     </div>
   );
 }
