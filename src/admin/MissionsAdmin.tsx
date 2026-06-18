@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // session and is what every other admin/* file uses.
 import { adminSupabase as supabase } from '../lib/adminSupabase';
 import { extractErrorMessage } from '../lib/errors';
+import ImageField from './ImageField';
 
 // The Daily Missions tables aren't in the generated Database type
 // (a full Supabase types regen would lose our hand-patched phantom
@@ -590,13 +591,16 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 </Field>
               </>
             )}
-            <Field label="Icon URL">
-              <input
-                type="text" value={draft.icon_url ?? ''} disabled={!canManage}
-                onChange={(e) => setDraft({ ...draft, icon_url: e.target.value || null })}
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            <div className="col-span-2">
+              <ImageField
+                label="Icon"
+                value={draft.icon_url ?? ''}
+                disabled={!canManage}
+                onChange={(v) => setDraft({ ...draft, icon_url: v || null })}
+                folder="missions"
+                kind={draft.mission_type}
               />
-            </Field>
+            </div>
             <Field label="Eligibility (JSON)" wide>
               <JsonField
                 value={draft.eligibility}
@@ -642,6 +646,15 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
               >
                 {saving ? 'Saving…' : 'Save'}
               </button>
+              {draft.id && (
+                <button
+                  type="button" disabled={saving}
+                  onClick={() => setDraft({ ...draft, id: '', title: `Copy of ${draft.title}` })}
+                  className="rounded bg-sky-700 px-4 py-2 font-bold text-white hover:bg-sky-600 disabled:opacity-50"
+                >
+                  Duplicate
+                </button>
+              )}
               {draft.id && (
                 <button
                   type="button" disabled={saving} onClick={remove}

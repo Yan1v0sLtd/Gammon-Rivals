@@ -103,7 +103,6 @@ type Section =
   | 'Daily Bonus'
   | 'Hourly Wheel'
   | 'Daily Missions'
-  | 'Tables / Rooms'
   | 'Difficulties'
   | 'RTP Analytics'
   | 'Board Themes'
@@ -236,7 +235,6 @@ const sections: readonly Section[] = [
   'Daily Bonus',
   'Hourly Wheel',
   'Daily Missions',
-  'Tables / Rooms',
   'Difficulties',
   'RTP Analytics',
   'Board Themes',
@@ -2527,7 +2525,7 @@ export default function Admin() {
   return (
     <main className="min-h-screen bg-[#061225] text-white">
       <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
-        <div className="mx-auto flex max-w-[96rem] items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <Link to="/play" className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
               ← Lobby
@@ -2541,7 +2539,7 @@ export default function Admin() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-[96rem] gap-5 px-4 py-5 lg:grid-cols-[14rem_1fr]">
+      <div className="grid gap-5 px-4 py-5 lg:px-6 lg:grid-cols-[14rem_1fr]">
         <aside className="rounded-xl border border-white/10 bg-white/[0.045] p-2 lg:sticky lg:top-5 lg:h-fit">
           {sections.map((section) => (
             <button
@@ -2975,7 +2973,7 @@ export default function Admin() {
                 <h2 className="text-lg font-black">Edit currency</h2>
                 <p className="mt-1 text-xs text-white/55">
                   USD value per single unit. The Hourly Wheel, Daily
-                  Bonus, Level Rewards, and Tables / Rooms sections use
+                  Bonus, and Level Rewards sections use
                   these rates to show a $ value column. Add a new code
                   (e.g. <code className="font-mono">chips</code>) when
                   introducing a new currency. Disable instead of
@@ -3471,52 +3469,11 @@ export default function Admin() {
             <MissionsAdmin canManage={canManage} />
           )}
 
-          {activeSection === 'Tables / Rooms' && (
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
-              {/* Filters to kind='standard' — the five difficulty tiers
-                * live in the dedicated "Difficulties" section to keep
-                * the two surfaces independent. */}
-              <ConfigTable title="Rooms" rows={tables.filter((row) => row.kind !== 'difficulty').map((row) => {
-                const entryMicros = usdMicrosFor(rateMap, 'coins', row.entry_fee_coins);
-                const prizeMicros = usdMicrosFor(rateMap, 'coins', row.prize_coins);
-                return [
-                  row.display_name,
-                  `${formatNumber(row.entry_fee_coins)} entry`,
-                  `Prize ${formatNumber(row.prize_coins)}`,
-                  `Entry ${formatUsdMicros(entryMicros)} · Prize ${formatUsdMicros(prizeMicros)}`,
-                  row.is_enabled ? 'Enabled' : 'Disabled',
-                ];
-              })} onRowClick={(index) => {
-                const standardRows = tables.filter((row) => row.kind !== 'difficulty');
-                setTableDraft(tableToDraft(standardRows[index]));
-              }} />
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h2 className="text-lg font-black">Edit room</h2>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field label="Room id" value={tableDraft.id} onChange={(id) => setTableDraft((d) => ({ ...d, id }))} />
-                  <Field label="Name" value={tableDraft.display_name} onChange={(display_name) => setTableDraft((d) => ({ ...d, display_name }))} />
-                  <Field label="Entry fee" value={tableDraft.entry_fee_coins} onChange={(entry_fee_coins) => setTableDraft((d) => ({ ...d, entry_fee_coins }))} />
-                  <Field label="Prize" value={tableDraft.prize_coins} onChange={(prize_coins) => setTableDraft((d) => ({ ...d, prize_coins }))} />
-                  <Field label="Required level" value={tableDraft.required_level} onChange={(required_level) => setTableDraft((d) => ({ ...d, required_level }))} />
-                  <Field label="Match target" value={tableDraft.match_target} onChange={(match_target) => setTableDraft((d) => ({ ...d, match_target }))} />
-                  <Field label="Sort order" value={tableDraft.sort_order} onChange={(sort_order) => setTableDraft((d) => ({ ...d, sort_order }))} />
-                </div>
-                <div className="mt-3 space-y-3">
-                  <Field label="Description" value={tableDraft.description} onChange={(description) => setTableDraft((d) => ({ ...d, description }))} />
-                  <TextArea label="Metadata JSON object" value={tableDraft.metadata} onChange={(metadata) => setTableDraft((d) => ({ ...d, metadata }))} />
-                  <div className="grid grid-cols-3 gap-2">
-                    <Toggle label="AI" checked={tableDraft.allow_ai} onChange={(allow_ai) => setTableDraft((d) => ({ ...d, allow_ai }))} />
-                    <Toggle label="Online" checked={tableDraft.allow_online} onChange={(allow_online) => setTableDraft((d) => ({ ...d, allow_online }))} />
-                    <Toggle label="Enabled" checked={tableDraft.is_enabled} onChange={(is_enabled) => setTableDraft((d) => ({ ...d, is_enabled }))} />
-                  </div>
-                  <div className="flex gap-2">
-                    <PrimaryButton onClick={() => void saveTable()} disabled={!canManage || savingKey === 'table'}>Save room</PrimaryButton>
-                    <SecondaryButton onClick={() => setTableDraft(tableToDraft())}>New</SecondaryButton>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* "Tables / Rooms" (kind='standard') section removed — the lobby only
+              surfaces difficulty tiers now (DifficultyModal queries kind='difficulty'),
+              so the standard-rooms editor was dead UI. The shared tableDraft / saveTable
+              / tableToDraft state stays in place for the Difficulties section below; the
+              underlying table_configs data is untouched. */}
 
           {activeSection === 'Difficulties' && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
@@ -4273,7 +4230,7 @@ export default function Admin() {
                 </div>
                 <div className="mt-3 space-y-3">
                   <Field label="Description" value={shopDraft.description} onChange={(description) => setShopDraft((d) => ({ ...d, description }))} />
-                  <Field label="Image URL" value={shopDraft.image_url} onChange={(image_url) => setShopDraft((d) => ({ ...d, image_url }))} />
+                  <ImageField label="Pack image" value={shopDraft.image_url} onChange={(image_url) => setShopDraft((d) => ({ ...d, image_url }))} folder="shop" kind={shopDraft.kind} disabled={!canManage} />
                   <Field label="Apple product id" value={shopDraft.apple_product_id} onChange={(apple_product_id) => setShopDraft((d) => ({ ...d, apple_product_id }))} />
                   <Field label="Google product id" value={shopDraft.google_product_id} onChange={(google_product_id) => setShopDraft((d) => ({ ...d, google_product_id }))} />
                   {/* Structured grants & presentation (Phase B). These edit
@@ -4362,6 +4319,13 @@ export default function Admin() {
                   <div className="flex flex-wrap gap-2">
                     <PrimaryButton onClick={() => void saveShop()} disabled={!canManage || savingKey === 'shop'}>Save shop item</PrimaryButton>
                     <SecondaryButton onClick={() => setShopDraft(shopToDraft())}>New</SecondaryButton>
+                    {/* Duplicate clones the loaded item into a NEW draft (suffixed id + "Copy of"
+                        name, every other field carried over) so you only edit what differs. Saving
+                        upserts the new id as a fresh row. Same load-an-existing-item guard as Delete. */}
+                    <SecondaryButton
+                      onClick={() => setShopDraft((d) => ({ ...d, id: d.id ? `${d.id}-copy` : '', display_name: d.display_name ? `Copy of ${d.display_name}` : d.display_name }))}
+                      disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id)}
+                    >Duplicate</SecondaryButton>
                     {/* Delete is enabled only when an existing item is loaded into the draft.
                         RLS (shop_items_delete_admin) gates it server-side; FKs are delete-safe. */}
                     <DangerButton onClick={() => void deleteShop()} disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id) || savingKey === 'shop-delete'}>Delete</DangerButton>
