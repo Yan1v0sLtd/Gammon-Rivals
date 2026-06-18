@@ -298,6 +298,10 @@ export default function HotSeat() {
   // coins"; for now we just refresh auth state so the lobby's top bar
   // is correct when the user navigates home.
   const [matchReward, setMatchReward] = useState<FinishMatchRewardResult | null>(null);
+  // Match-start "rolls first" banner — parity with the PvP (PlayOnline) intro
+  // so an AI match opens the same way. White (the opponent) starts by
+  // convention; tap to dismiss.
+  const [introVisible, setIntroVisible] = useState(true);
   useEffect(() => {
     if (!matchId) return;
     if (!game.matchOver) return;
@@ -449,6 +453,12 @@ export default function HotSeat() {
     !(aiConfig && game.pendingOffer !== aiConfig.player);
   const turnTimerActive =
     !alignmentEnabled && !showGameEndModal && !showCubeDecision && !game.matchOver && !game.lastGameResult;
+  const showIntroBanner =
+    introVisible &&
+    game.match.gameNumber === 1 &&
+    !game.lastGameResult &&
+    !game.matchOver &&
+    !alignmentEnabled;
   const [timerNow, setTimerNow] = useState(() => performance.now());
   const turnTimerKey = `${game.match.gameNumber}:${game.board.turn}:${game.pendingOffer ?? 'play'}:${game.lastGameResult ? 'done' : 'active'}`;
   const [turnTimerState, setTurnTimerState] = useState(() => ({
@@ -639,6 +649,18 @@ export default function HotSeat() {
               navigate('/play');
             }}
           />
+        ) : showIntroBanner ? (
+          <button
+            type="button"
+            onClick={() => setIntroVisible(false)}
+            className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
+          >
+            <div className="font-display text-2xl uppercase tracking-wider mb-1">
+              {opponentIdentity.name} rolls first
+            </div>
+            <div className="text-sm">{opponentIdentity.name} (white) starts the match.</div>
+            <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
+          </button>
         ) : null
       }
     >
