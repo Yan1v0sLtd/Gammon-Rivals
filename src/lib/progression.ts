@@ -16,6 +16,12 @@ export interface ProfileProgression {
   readonly progressPercent: number;
   readonly progressLabel: string;
   /**
+   * Canonical "X / Y XP" text for the XP progress bar — the SINGLE source of
+   * truth so the lobby card and profile page never drift. Per-level semantics:
+   * `<xp into this level> / <this level's span>`; `<total> XP` at max level.
+   */
+  readonly xpBarLabel: string;
+  /**
    * Coin / gem reward grant attached to the next level-up. Read from
    * the level_configs row for `level + 1` so the lobby's profile
    * card can surface the "Next Reward" line. `null` when there's no
@@ -130,6 +136,9 @@ export function getProfileProgression(
     progress,
     progressPercent,
     progressLabel: `${progressPercent}%`,
+    xpBarLabel: nextConfig === null
+      ? `${xp.toLocaleString()} XP`
+      : `${Math.max(0, xp - currentLevelXp).toLocaleString()} / ${span.toLocaleString()} XP`,
     nextLevelReward,
   };
 }

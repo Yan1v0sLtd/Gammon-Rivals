@@ -18,15 +18,6 @@ interface LobbyProfileCardProps {
  * page, which this widget links to.
  */
 export function LobbyProfileCard({ profile, progression }: LobbyProfileCardProps) {
-  // XP text mirrors the bar fill: `<into level> / <span>`, or total XP with
-  // "MAX" once the player tops the configured ladder (nextLevelXp === null).
-  const span =
-    progression.nextLevelXp !== null
-      ? Math.max(1, progression.nextLevelXp - progression.currentLevelXp)
-      : 0;
-  const xpIntoLevel = progression.xpIntoLevel;
-  const isMaxLevel = progression.nextLevelXp === null;
-
   return (
     <Link
       to="/profile"
@@ -70,18 +61,7 @@ export function LobbyProfileCard({ profile, progression }: LobbyProfileCardProps
             <span className="lobby-pp-xp-fill-bubbles" aria-hidden="true" />
           </div>
           <div className="lobby-pp-xp-text">
-            <span>
-              {isMaxLevel ? (
-                <>
-                  <b>{progression.xp.toLocaleString()}</b>&nbsp;XP
-                </>
-              ) : (
-                <>
-                  <b>{xpIntoLevel.toLocaleString()}</b>
-                  &nbsp;/ {span.toLocaleString()} XP
-                </>
-              )}
-            </span>
+            <span>{progression.xpBarLabel}</span>
           </div>
         </div>
       </div>

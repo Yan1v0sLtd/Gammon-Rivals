@@ -9090,7 +9090,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
     radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
     radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
-  background-size: 32px 100%, 32px 100%, 32px 100%;
+  /* tile width MUST match the keyframe shift (-42px) so the loop is seamless */
+  background-size: 42px 100%, 42px 100%, 42px 100%;
   background-repeat: repeat;
   animation: lobby-progress-flow-slow 4.5s linear infinite;
   will-change: background-position;
@@ -9103,7 +9104,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   background-image:
     radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
     radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
-  background-size: 20px 100%, 20px 100%;
+  /* tile width MUST match the keyframe shift (-26px) for a seamless loop */
+  background-size: 26px 100%, 26px 100%;
   background-repeat: repeat;
   animation: lobby-progress-flow-fast 2.6s linear infinite;
   will-change: background-position;
