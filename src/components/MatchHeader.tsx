@@ -87,9 +87,15 @@ export default function MatchHeader({
               <strong>{whitePip}</strong>
             </div>
             <div className="game-score-core">
-              <span>{match.score.white}</span>
-              <span className="game-score-separator">:</span>
-              <span>{match.score.black}</span>
+              {match.target > 1 ? (
+                <>
+                  <span>{match.score.white}</span>
+                  <span className="game-score-separator">:</span>
+                  <span>{match.score.black}</span>
+                </>
+              ) : (
+                <span className="game-score-separator">VS</span>
+              )}
             </div>
             <div
               className="game-score-player game-score-player--right"

@@ -29,6 +29,7 @@ import {
   type FinishMatchRewardResult,
 } from '../lib/persistence';
 import {
+  aiRankLabel,
   makeAIIdentity,
   makeGuestIdentity,
   type PlayerIdentity,
@@ -523,7 +524,7 @@ export default function HotSeat() {
   const opponentCoinsLabel = aiPersona
     ? formatCompactNumber(aiPersona.coins)
     : '400';
-  const opponentState = aiConfig ? aiConfig.level.toUpperCase() : 'Guest';
+  const opponentState = aiConfig ? aiRankLabel(aiConfig.level) : 'Guest';
   const doublesLabel = game.match.cube.value > 1 ? String(game.match.cube.value) : '0';
   // Only hand a real background URL to BoardLayout once the theme has
   // settled AND the image is preloaded. Before that we'd be passing the
@@ -586,6 +587,7 @@ export default function HotSeat() {
               canDouble={game.canOfferDouble}
               onDouble={game.offerDouble}
               cubeValue={game.match.cube.value}
+              showCube={game.match.target > 1}
               autoRollSlot={
                 <AutoRollToggle
                   enabled={autoRollOn}
