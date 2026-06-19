@@ -138,6 +138,21 @@ export async function cancelMatch(matchId: string): Promise<void> {
   if (error) throw error;
 }
 
+/**
+ * Permanently delete the signed-in user's account and all their data via the
+ * self-scoped delete_my_account RPC (server-side cascade through profiles to
+ * every player_ and user_ table). Irreversible. The caller should sign out after.
+ * delete_my_account isn't in the generated Database types yet, so the rpc call
+ * goes through a narrow cast.
+ */
+export async function deleteMyAccount(): Promise<void> {
+  const rpc = supabase.rpc as unknown as (
+    fn: 'delete_my_account'
+  ) => PromiseLike<{ error: { message?: string } | null }>;
+  const { error } = await rpc('delete_my_account');
+  if (error) throw new Error(error.message ?? 'Account deletion failed');
+}
+
 export interface CreateMatchArgs {
   ownerId: string;
   mode: MatchMode;
