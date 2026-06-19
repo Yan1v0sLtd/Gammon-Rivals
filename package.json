@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "build:shared-engine": "node scripts/build-shared-engine.mjs",
+    "build:shared-ai": "node scripts/build-shared-ai.mjs",
     "android:sync": "npm run build && npx cap sync android",
     "android:open": "npx cap open android",
     "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
