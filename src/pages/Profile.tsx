@@ -381,6 +381,16 @@ export default function Profile() {
               <span className="profile-logout-icon" aria-hidden="true" />
               {signingOut ? 'Logging out...' : 'Log Out'}
             </button>
+
+            {/* Account deletion (Google Play requirement + privacy commitment).
+                Links to the public /delete-account page, which handles the
+                confirm + delete flow. */}
+            <Link
+              to="/delete-account"
+              className="mt-2 block text-center text-xs font-semibold uppercase tracking-wide text-rose-300/50 transition hover:text-rose-300"
+            >
+              Delete account
+            </Link>
           </div>
 
           <section className="profile-history-panel">

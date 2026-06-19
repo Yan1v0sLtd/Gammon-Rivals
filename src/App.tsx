@@ -17,6 +17,7 @@ const Lobby = lazy(() => import('./pages/Lobby'));
 const Admin = lazy(() => import('./pages/Admin'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const AdminAuthCallback = lazy(() => import('./pages/AdminAuthCallback'));
+const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 
 /**
  * The shop is no longer a full-screen page — it's an app-wide scale-in
@@ -50,6 +51,10 @@ export default function App() {
                   game / lobby lives at `/play`. */}
               <Route path="/play" element={<AuthGate><Home /></AuthGate>} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              {/* Public + ungated: the in-app deletion target AND the
+                  account-deletion URL required by Google Play (must be reachable
+                  without signing in). */}
+              <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/hotseat" element={<AuthGate><HotSeat /></AuthGate>} />
               <Route path="/profile" element={<AuthGate><Profile /></AuthGate>} />
               <Route path="/replay/:gameId" element={<AuthGate><Replay /></AuthGate>} />
