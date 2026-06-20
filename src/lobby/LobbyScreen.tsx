@@ -533,10 +533,10 @@ export function LobbyScreen() {
       showOverlay();
       setDifficultyOpen(false);
       setMatchmaking(null);
-      // PvP routes to /play/:matchId per the existing online flow;
-      // AI fallbacks continue to /hotseat.
+      // Online matches (PvP, or a server-bot match: mode='online') route to
+      // /play/:matchId; legacy client-side AI fallbacks continue to /hotseat.
       navigate(
-        mode === 'pvp'
+        mode === 'pvp' || mode === 'online'
           ? `/play/${matchId}?${params.toString()}`
           : `/hotseat?${params.toString()}`
       );
@@ -589,7 +589,14 @@ export function LobbyScreen() {
       await cancelMatchmakingRpc().catch(() => undefined);
       const fallback = await enterRoomAiFallback({ tableConfigId: selection.tableConfigId });
       void refreshWallet();
-      routeIntoMatch(fallback.matchId, fallback.target, fallback.turnSeconds, fallback.aiLevel);
+      // Server-bot tiers come back as mode='online' (is_bot) → route to /play
+      // (server-authoritative). Legacy tiers route to /hotseat by ai level.
+      routeIntoMatch(
+        fallback.matchId,
+        fallback.target,
+        fallback.turnSeconds,
+        fallback.isBot ? 'online' : fallback.aiLevel
+      );
     } catch (err) {
       setMatchmaking(null);
       setDifficultyError(friendlyError(err));

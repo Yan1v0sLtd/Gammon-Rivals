@@ -96,6 +96,8 @@ export type Database = {
           cube_offer: string | null;
           is_public: boolean;
           mode: string;
+          is_bot: boolean;
+          bot_level: string | null;
           target: number;
           white_score: number;
           black_score: number;
@@ -120,6 +122,8 @@ export type Database = {
           cube_offer?: string | null;
           is_public?: boolean;
           mode: string;
+          is_bot?: boolean;
+          bot_level?: string | null;
           target: number;
           white_score?: number;
           black_score?: number;
@@ -144,6 +148,8 @@ export type Database = {
           cube_offer?: string | null;
           is_public?: boolean;
           mode?: string;
+          is_bot?: boolean;
+          bot_level?: string | null;
           target?: number;
           white_score?: number;
           black_score?: number;
@@ -697,6 +703,7 @@ export type Database = {
           ai_level: 'easy' | 'medium' | 'hard';
           target_rtp_pct: number;
           allow_online_pvp: boolean;
+          server_bot: boolean;
           metadata: Json;
           updated_by: string | null;
           created_at: string;
@@ -704,6 +711,7 @@ export type Database = {
         };
         Insert: {
           id: string;
+          server_bot?: boolean;
           kind?: 'standard' | 'difficulty';
           display_name: string;
           description?: string;
@@ -730,6 +738,7 @@ export type Database = {
         };
         Update: {
           id?: string;
+          server_bot?: boolean;
           kind?: 'standard' | 'difficulty';
           display_name?: string;
           description?: string;

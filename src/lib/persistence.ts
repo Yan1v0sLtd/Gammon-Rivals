@@ -274,6 +274,9 @@ export interface EnterRoomResult {
   mode: MatchMode;
   target: number;
   aiLevel: 'easy' | 'medium' | 'hard';
+  /** True when the tier routes AI through the server bot (mode='online' + is_bot). */
+  isBot: boolean;
+  botLevel: 'easy' | 'medium' | 'hard' | null;
   streakLen: number;
   wallet: { coins: number; gems: number };
 }
@@ -291,6 +294,8 @@ export async function enterRoomAiFallback(args: {
     mode: MatchMode;
     target: number;
     ai_level: 'easy' | 'medium' | 'hard';
+    is_bot?: boolean;
+    bot_level?: 'easy' | 'medium' | 'hard' | null;
     streak_len: number;
     wallet: { coins: number; gems: number };
   };
@@ -300,6 +305,8 @@ export async function enterRoomAiFallback(args: {
     mode: payload.mode,
     target: payload.target,
     aiLevel: payload.ai_level,
+    isBot: payload.is_bot ?? false,
+    botLevel: payload.bot_level ?? null,
     streakLen: payload.streak_len,
     wallet: payload.wallet,
   };

@@ -432,6 +432,46 @@ export function useOnlineGame(
     [betweenGames, currentGame?.winner, derived.board]
   );
 
+  // ── Server-bot opponent (Phase 2b layer 2) ──────────────────────────────
+  // A vs-AI match runs on this same online path (match.is_bot); no human posts
+  // the opponent's moves. So when it becomes the bot's turn, poke the ai_move
+  // edge function — the server rolls + picks + records the bot's move, which
+  // then arrives via the realtime `moves` subscription and animates exactly
+  // like a remote opponent. The owner is always white (created that way), so
+  // the human opens and the bot never has to move first.
+  const botPokeKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!match?.is_bot || matchFinished || betweenGames) return;
+    const botColor: Player = match.owner_color === 'white' ? 'black' : 'white';
+    if (effectiveTurn !== botColor) return;
+    // A turn with dice in progress is the human's — the bot commits its roll +
+    // move atomically via ai_move and leaves no current_turn behind.
+    if (currentTurn) return;
+    // Poke at most once per distinct board state so a transient ai_move failure
+    // can't spin a tight invoke loop. A reload resets this ref.
+    const key = `${match.current_game_id ?? ''}:${moves.length}`;
+    if (botPokeKeyRef.current === key) return;
+    botPokeKeyRef.current = key;
+    void (async () => {
+      const { error: aiErr } = await supabase.functions.invoke('ai_move', {
+        body: { matchId },
+      });
+      if (aiErr) console.error('[useOnlineGame] ai_move failed', aiErr);
+      void refresh();
+    })();
+  }, [
+    match?.is_bot,
+    match?.owner_color,
+    match?.current_game_id,
+    effectiveTurn,
+    currentTurn,
+    betweenGames,
+    matchFinished,
+    moves.length,
+    matchId,
+    refresh,
+  ]);
+
   // Cube state from match
   const cubeValue = (match?.cube_value ?? 1) as CubeValue;
   const cubeOwner = (match?.cube_owner ?? null) as Player | null;

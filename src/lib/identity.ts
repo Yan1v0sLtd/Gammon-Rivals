@@ -93,6 +93,22 @@ export function makeAIIdentity(): PlayerIdentity {
   };
 }
 
+/**
+ * Deterministic AI opponent identity from a stable seed (the matchId).
+ * Same seed → same name + avatar, so a server-bot opponent reads as one
+ * consistent "human" across reloads — unlike makeAIIdentity, which is random
+ * and only stays put if memoised. Used by PlayOnline for is_bot matches,
+ * where the component can re-mount mid-match (reload) and must not reshuffle
+ * the opponent's identity. djb2 hash → name index; matchId is the avatar seed.
+ */
+export function aiIdentityFromSeed(seed: string): PlayerIdentity {
+  let h = 5381 >>> 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h * 33) ^ seed.charCodeAt(i)) >>> 0;
+  }
+  return { name: FIRST_NAMES[h % FIRST_NAMES.length]!, avatarSeed: seed || 'no-seed' };
+}
+
 /** Local fallback identity when there's no server profile yet. */
 export function makeGuestIdentity(): PlayerIdentity {
   return {
