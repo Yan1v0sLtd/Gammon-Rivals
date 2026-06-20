@@ -18,7 +18,9 @@ import type { Position } from '../engine/types';
 import type { CubeValue, MatchState } from '../engine';
 import { useBoardThemeConfig } from '../board/theme';
 import type { Database } from '../types/database';
-import type { PlayerIdentity } from '../lib/identity';
+import { aiIdentityFromSeed, aiRankLabel, type PlayerIdentity } from '../lib/identity';
+import { generateAIPersona } from '../lib/aiPersona';
+import type { AILevel } from '../ai';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -203,7 +205,8 @@ export default function PlayOnline() {
   const isOwner = user.id === match.owner_id;
   const role: 'owner' | 'opponent' | 'spectator' =
     isOwner ? 'owner' : user.id === match.opponent_id ? 'opponent' : 'spectator';
-  const waiting = match.opponent_id === null;
+  // A server-bot match has no opponent_id by design — it is NOT "waiting".
+  const waiting = match.opponent_id === null && !match.is_bot;
 
   // ---------- Lobby UI when waiting ----------
   if (waiting) {
@@ -268,6 +271,15 @@ export default function PlayOnline() {
   const blackPip = pipCount(game.board, 'black');
   const isSpectator = role === 'spectator';
 
+  // Server-bot opponent: synthesize a stable, human-looking persona so the
+  // /play view reads identically to a PvP match (no "AI" tell). Deterministic
+  // from matchId so it doesn't reshuffle across reloads.
+  const isBotMatch = !!match.is_bot;
+  const botLvl: AILevel =
+    match.bot_level === 'easy' || match.bot_level === 'hard' ? match.bot_level : 'medium';
+  const botPersona = isBotMatch ? generateAIPersona(matchId ?? null, botLvl) : null;
+  const botIdentity = isBotMatch ? aiIdentityFromSeed(matchId ?? '') : null;
+
   // Map owner/opponent profiles to seats based on local color. The local
   // player sits on the right; the opponent on the left.
   const ownerColor = match.owner_color === 'black' ? 'black' : 'white';
@@ -287,7 +299,7 @@ export default function PlayOnline() {
       : getProfileProgression(selfProfile, levelConfigs, levelStatusTiers);
   const opponentProgression = getProfileProgression(opponentProf, levelConfigs, levelStatusTiers);
   const selfName = selfProfile?.display_name;
-  const oppName = opponentProf?.display_name;
+  const oppName = isBotMatch ? botIdentity!.name : opponentProf?.display_name;
 
   const turnLabel = game.matchFinished
     ? 'match over'
@@ -360,11 +372,11 @@ export default function PlayOnline() {
         />
       }
       opponent={{
-        identity: profileToIdentity(opponentProf),
+        identity: isBotMatch ? botIdentity : profileToIdentity(opponentProf),
         pipCount: oppPip,
         scoreLabel: `${oppColor === 'white' ? match.white_score : match.black_score} / ${match.target}`,
-        level: opponentProgression.level,
-        stateLabel: opponentProgression.statusLabel,
+        level: isBotMatch ? botPersona!.level : opponentProgression.level,
+        stateLabel: isBotMatch ? aiRankLabel(botLvl) : opponentProgression.statusLabel,
         coinsLabel: '—',
         isTurn: !isLocalTurn && !showMatchOver,
         timerProgress:
