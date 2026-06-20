@@ -1,6 +1,6 @@
 // Phase 2b layer 2 — server-authored AI turn.
 //
-// Given an AI match (mode like 'ai-%') where it is the bot's turn, the SERVER:
+// Given a bot match (matches.is_bot) where it is the bot's turn, the SERVER:
 //   1. replays the game's recorded moves to reconstruct the board,
 //   2. confirms it is actually the bot's turn,
 //   3. rolls the bot's dice server-side (crypto RNG),
@@ -65,8 +65,7 @@ function removeDie(dice: readonly Die[], die: Die): Die[] {
   return [...dice.slice(0, idx), ...dice.slice(idx + 1)];
 }
 
-function aiLevelFromMode(mode: string): AILevel {
-  const level = mode.replace(/^ai-/, '');
+function botLevel(level: unknown): AILevel {
   return level === 'easy' || level === 'medium' || level === 'hard' ? level : 'medium';
 }
 
@@ -100,14 +99,14 @@ Deno.serve(async (req: Request) => {
       .from('matches')
       .select(
         'id, owner_id, owner_color, target, white_score, black_score, ' +
-          'crawford_game_number, current_game_id, cube_value, cube_owner, finished_at, mode',
+          'crawford_game_number, current_game_id, cube_value, cube_owner, finished_at, is_bot, bot_level',
       )
       .eq('id', matchId)
       .single();
     if (mErr || !match) return json({ error: 'match_not_found' }, 404);
 
-    if (typeof match.mode !== 'string' || !match.mode.startsWith('ai-')) {
-      return json({ error: 'not_ai_match' }, 400);
+    if (!match.is_bot) {
+      return json({ error: 'not_bot_match' }, 400);
     }
     // Only the human owner can drive their AI opponent's turn.
     if (callerId !== match.owner_id) return json({ error: 'not_match_participant' }, 403);
@@ -116,7 +115,7 @@ Deno.serve(async (req: Request) => {
 
     const ownerColor: Player = match.owner_color === 'black' ? 'black' : 'white';
     const botColor: Player = ownerColor === 'white' ? 'black' : 'white';
-    const aiLevel = aiLevelFromMode(match.mode);
+    const aiLevel = botLevel(match.bot_level);
 
     const { data: game, error: gErr } = await sb
       .from('games')
