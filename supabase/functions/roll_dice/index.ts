@@ -71,7 +71,9 @@ Deno.serve(async (req: Request) => {
     ) {
       return json({ error: 'turn already in progress' }, 400);
     }
-    if (!match.opponent_id) return json({ error: 'waiting for opponent' }, 400);
+    // A bot match (is_bot) has no opponent_id by design — the server bot drives
+    // the other side via ai_move. Only block on a missing HUMAN opponent.
+    if (!match.opponent_id && !match.is_bot) return json({ error: 'waiting for opponent' }, 400);
 
     let callerColor: 'white' | 'black';
     if (user.id === match.owner_id) {
