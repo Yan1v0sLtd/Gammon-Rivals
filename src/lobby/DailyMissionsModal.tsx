@@ -38,6 +38,10 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
   const [armedRerollId, setArmedRerollId] = useState<string | null>(null);
+  // The most-recently-rerolled mission floats to the top of the list so the
+  // replacement is always visible up top (not buried mid-list). reroll_mission
+  // updates the row in place, so the id is stable across the refetch.
+  const [rerolledTopId, setRerolledTopId] = useState<string | null>(null);
   const [tab, setTab] = useState<'daily' | 'weekly'>('daily');
   const [now, setNow] = useState(Date.now());
 
@@ -85,6 +89,10 @@ export function DailyMissionsModal({ result, onClose }: Props) {
 
   const missionsList = state?.missions ?? [];
   const dailies = useMemo(() => missionsList.filter((m) => m.period === 'daily'), [missionsList]);
+  const orderedDailies = useMemo(
+    () => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)),
+    [dailies, rerolledTopId],
+  );
   const weeklies = useMemo(() => missionsList.filter((m) => m.period === 'weekly').slice(0, 2), [missionsList]);
   const claimableCount = useMemo(
     () => dailies.filter((m) => m.completed_at && !m.claimed_at).length,
@@ -160,7 +168,10 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     try {
       const { error: rpcErr } = await supabase.rpc('reroll_mission', { p_mission_id: missionId });
       if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-      else refetch();
+      else {
+        setRerolledTopId(missionId);
+        refetch();
+      }
     } catch (e) {
       setActionError(extractErrorMessage(e));
     } finally {
@@ -237,7 +248,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                     </div>
                   </div>
                   <div className="mission-list">
-                    {dailies.map((m) => (
+                    {orderedDailies.map((m) => (
                       <MissionCard
                         key={m.id}
                         mission={m}
@@ -352,24 +363,15 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                           <p>No weekly challenge active right now.</p>
                         </div>
                       ) : (
-                        <div className="mission-list">
-                          {weeklies.map((m) => (
-                            <MissionCard
-                              key={m.id}
-                              mission={m}
-                              isClaiming={claimingMissionId === m.id}
-                              isRerolling={false}
-                              canReroll={false}
-                              rerollCost={null}
-                              armed={false}
-                              onArm={() => undefined}
-                              onDisarm={() => undefined}
-                              onReroll={() => undefined}
-                              onClaim={(el) => handleClaim(m.id, el)}
-                              onGo={onClose}
-                            />
-                          ))}
-                        </div>
+                        weeklies.map((m) => (
+                          <WeeklyCard
+                            key={m.id}
+                            mission={m}
+                            isClaiming={claimingMissionId === m.id}
+                            onClaim={(el) => handleClaim(m.id, el)}
+                            onGo={onClose}
+                          />
+                        ))
                       )}
                     </section>
                   )}
@@ -423,7 +425,8 @@ function MissionCard({
   const isClaimed = !!mission.claimed_at;
   const isActive = !isCompleted && !isClaimed;
   const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
-  const showReroll = isActive && canReroll && rerollCost !== null;
+  // Only COMMON missions can be rerolled — rare/epic are fixed.
+  const showReroll = isActive && canReroll && rerollCost !== null && mission.rarity === 'common';
   const rerollFree = rerollCost === 0;
 
   return (
@@ -462,7 +465,7 @@ function MissionCard({
 
         <div className="mission-controls">
           {isActive ? (
-            <button className={`go-button ${mission.rarity === 'epic' ? 'is-purple' : ''}`} type="button" disabled={isRerolling} onClick={onGo}>
+            <button className="go-button" type="button" disabled={isRerolling} onClick={onGo}>
               Go
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -503,6 +506,65 @@ function MissionCard({
             ))}
         </div>
       </div>
+    </article>
+  );
+}
+
+function WeeklyCard({
+  mission,
+  isClaiming,
+  onClaim,
+  onGo,
+}: {
+  readonly mission: Mission;
+  readonly isClaiming: boolean;
+  readonly onClaim: (el: HTMLElement | null) => void;
+  readonly onGo: () => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const isCompleted = !!mission.completed_at && !mission.claimed_at;
+  const isClaimed = !!mission.claimed_at;
+  const isActive = !isCompleted && !isClaimed;
+  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
+  return (
+    <article className={`weekly-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+      <div className="wk-badge">
+        <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false} onError={hideImg} />
+      </div>
+      <h3 className="wk-title">{mission.title}</h3>
+      {mission.subtitle && <p className="wk-desc">{mission.subtitle}</p>}
+      <div className="wk-progress">
+        <div className="progress-track">
+          <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
+        </div>
+        <div className="progress-count">
+          {mission.progress} / {mission.resolved_goal}
+        </div>
+      </div>
+      <div className="wk-rewards">
+        {mission.rewards.map((r, i) => (
+          <div className="streak-reward-item" key={i}>
+            <RewardIcon reward={r} size="lg" />
+            <span>+{formatAmount(r.amount)}</span>
+          </div>
+        ))}
+      </div>
+      {isActive ? (
+        <button className="go-button wk-go" type="button" onClick={onGo}>
+          Go
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : isClaimed ? (
+        <button className="go-button is-claimed wk-go" type="button" disabled>
+          Claimed
+        </button>
+      ) : (
+        <button ref={btnRef} className="go-button wk-go" type="button" disabled={isClaiming} onClick={() => onClaim(btnRef.current)}>
+          {isClaiming ? '…' : 'Claim'}
+        </button>
+      )}
     </article>
   );
 }
@@ -598,7 +660,7 @@ const DM_STYLES = `
 .dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#8df257;
   --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
   position:relative; height:124px; border-radius:16px; display:grid;
-  grid-template-columns:112px minmax(220px,1fr) 1px 248px; align-items:center; padding:10px 20px 10px 14px;
+  grid-template-columns:112px minmax(170px,1fr) 1px 318px; align-items:center; padding:10px 20px 10px 14px;
   background:radial-gradient(circle at 12% 50%,rgba(var(--accent-rgb),.18),transparent 42%),
     linear-gradient(90deg,var(--card-start),var(--card-mid) 48%,var(--card-end));
   border:1px solid rgba(var(--accent-rgb),.82);
@@ -616,7 +678,7 @@ const DM_STYLES = `
 .dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; }
 .dmx .mission-name{ margin:0 0 7px; font-family:Georgia,"Times New Roman",serif; font-size:24px; line-height:1.05; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .dmx .mission-description{ margin:0 0 13px; font-size:16px; color:#d4daf1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dmx .progress-line{ display:flex; align-items:center; gap:14px; max-width:390px; }
+.dmx .progress-line{ display:flex; align-items:center; gap:14px; max-width:300px; }
 .dmx .progress-track{ position:relative; flex:1; height:15px; border-radius:999px; background:rgba(2,6,15,.72);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),0 4px 8px rgba(0,0,0,.18); overflow:hidden; }
 .dmx .progress-fill{ position:absolute; inset:2px auto 2px 2px; width:calc(var(--progress) * 1%); border-radius:inherit;
@@ -628,9 +690,9 @@ const DM_STYLES = `
   background:rgba(0,0,0,.25); color:#fff; font-weight:950; font-size:16px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 .dmx .mission-card.is-complete .progress-count{ color:#9cff75; }
 .dmx .mission-separator{ height:84px; background:linear-gradient(180deg,transparent,rgba(255,255,255,.22),transparent); }
-.dmx .mission-reward{ padding-left:24px; display:grid; grid-template-columns:minmax(82px,1fr) 130px; gap:16px; align-items:center; }
+.dmx .mission-reward{ padding-left:20px; display:grid; grid-template-columns:minmax(110px,1fr) 124px; gap:26px; align-items:center; }
 .dmx .reward-title{ margin-bottom:8px; color:#c9d3f4; font-size:13px; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
-.dmx .reward-icons{ display:flex; align-items:center; gap:13px; }
+.dmx .reward-icons{ display:flex; align-items:center; gap:18px; }
 .dmx .reward-item{ display:grid; justify-items:center; gap:3px; min-width:45px; }
 .dmx .ri{ width:38px; height:38px; object-fit:contain; filter:drop-shadow(0 5px 5px rgba(0,0,0,.35)); }
 .dmx .reward-amount{ font-size:17px; font-weight:950; color:#fff; letter-spacing:.02em; }
@@ -710,6 +772,21 @@ const DM_STYLES = `
   border:1px solid rgba(226,178,255,.72); box-shadow:inset 0 -4px 0 rgba(0,0,0,.16); color:#fff; font-weight:950; font-size:14px; letter-spacing:.02em; }
 .dmx .ri-lg.xp-token{ font-size:17px; }
 .dmx .weekly-tab{ border-radius:0 0 18px 18px; }
+.dmx .weekly-card{ flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  gap:18px; border-radius:18px; padding:26px; position:relative; overflow:hidden;
+  --accent-rgb:128,228,93; --fill:#99f35f; --card-mid:#0d3a25; --card-end:#081b14;
+  background:radial-gradient(circle at 50% 0%,rgba(var(--accent-rgb),.22),transparent 54%),linear-gradient(180deg,var(--card-mid),var(--card-end));
+  border:1px solid rgba(var(--accent-rgb),.82);
+  box-shadow:0 14px 30px rgba(0,0,0,.32),inset 0 0 26px rgba(var(--accent-rgb),.08),inset 0 1px 0 rgba(255,255,255,.1); }
+.dmx .weekly-card.is-rare{ --accent-rgb:42,191,255; --fill:#32c9ff; --card-mid:#0a345d; --card-end:#07172c; }
+.dmx .weekly-card.is-epic{ --accent-rgb:189,89,255; --fill:#d55cff; --card-mid:#3b1762; --card-end:#170927; }
+.dmx .wk-badge{ width:128px; height:138px; display:grid; place-items:center; }
+.dmx .wk-badge img{ width:128px; height:138px; object-fit:contain; filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
+.dmx .wk-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:30px; line-height:1.12; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); }
+.dmx .wk-desc{ margin:0; font-size:17px; color:#d4daf1; max-width:86%; line-height:1.4; }
+.dmx .wk-progress{ display:flex; align-items:center; gap:14px; width:min(440px,88%); }
+.dmx .wk-rewards{ display:flex; align-items:center; justify-content:center; gap:44px; }
+.dmx .wk-go{ width:210px; height:58px; margin-top:4px; }
 .dmx .weekly-empty{ margin:auto; text-align:center; color:#c6cfed; }
 .dmx .weekly-empty img{ width:60px; height:60px; object-fit:contain; opacity:.7; margin-bottom:10px; }
 `;
