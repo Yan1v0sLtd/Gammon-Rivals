@@ -298,10 +298,15 @@ export default function HotSeat() {
   // coins"; for now we just refresh auth state so the lobby's top bar
   // is correct when the user navigates home.
   const [matchReward, setMatchReward] = useState<FinishMatchRewardResult | null>(null);
-  // Match-start "rolls first" banner — parity with the PvP (PlayOnline) intro
-  // so an AI match opens the same way. White (the opponent) starts by
-  // convention; tap to dismiss.
+  // Match-start "rolls first" banner — parity with the PvP (PlayOnline) intro.
+  // The opening player is now RANDOM (randomFirstBoard in useGame), so the
+  // banner names whoever actually starts (you or the opponent). Auto-dismisses
+  // after a few seconds, or tap to dismiss.
   const [introVisible, setIntroVisible] = useState(true);
+  useEffect(() => {
+    const id = window.setTimeout(() => setIntroVisible(false), 4000);
+    return () => window.clearTimeout(id);
+  }, []);
   useEffect(() => {
     if (!matchId) return;
     if (!game.matchOver) return;
@@ -519,6 +524,13 @@ export default function HotSeat() {
   const opponentPip = opponentColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = game.board.turn === localColor && !game.isAITurn;
   const isRollForSelf = game.board.turn === localColor;
+  // Who opens THIS match (game 1). The opening turn is randomized per game in
+  // useGame; capture the first observed turn so the banner label stays correct
+  // even after the opener (esp. the AI) takes its turn and flips board.turn.
+  const starterColorRef = useRef<'white' | 'black' | null>(null);
+  if (starterColorRef.current === null) starterColorRef.current = game.board.turn;
+  const starterColor = starterColorRef.current ?? game.board.turn;
+  const starterIsLocal = starterColor === localColor;
   const selfLevel = progression.level;
   const selfCoins = formatCompactNumber(wallet?.coins);
   // AI opponent's display level + coin count are derived from the
@@ -656,9 +668,13 @@ export default function HotSeat() {
             className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
           >
             <div className="font-display text-2xl uppercase tracking-wider mb-1">
-              {opponentIdentity.name} rolls first
+              {starterIsLocal ? 'You roll first' : `${opponentIdentity.name} rolls first`}
             </div>
-            <div className="text-sm">{opponentIdentity.name} (white) starts the match.</div>
+            <div className="text-sm">
+              {starterIsLocal
+                ? `You start the match as ${starterColor}.`
+                : `${opponentIdentity.name} starts the match as ${starterColor}.`}
+            </div>
             <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
           </button>
         ) : null
