@@ -201,7 +201,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
               </div>
               <div className="brand-copy">
                 <h1 className="brand-title">Daily Missions</h1>
-                <p className="brand-subtitle">Complete missions. Earn rewards. Keep your streak alive!</p>
+                <p className="brand-subtitle">Complete missions to earn epic rewards!</p>
               </div>
               <div className="header-spacer" />
               <section className="refresh-box">
@@ -226,27 +226,6 @@ export function DailyMissionsModal({ result, onClose }: Props) {
             ) : (
               <section className="content">
                 <section className="panel missions-panel">
-                  <div className="panel-heading">
-                    <h2 className="panel-title">Daily Missions</h2>
-                    <div className="panel-actions">
-                      <span className="compact-button rerolls">
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                          <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                          <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <span>{rerollsLeft} left</span>
-                      </span>
-                      <button
-                        className="compact-button claim-all"
-                        type="button"
-                        data-claim-all-btn
-                        disabled={claimableCount === 0 || claimingMissionId !== null}
-                        onClick={handleClaimAll}
-                      >
-                        {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
-                      </button>
-                    </div>
-                  </div>
                   <div className="mission-list">
                     {orderedDailies.map((m) => (
                       <MissionCard
@@ -269,6 +248,24 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                     )}
                   </div>
                   {actionError && <div className="dmx-action-error">{actionError}</div>}
+                  <div className="missions-footer">
+                    <span className="compact-button rerolls">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <span>{rerollsLeft} left</span>
+                    </span>
+                    <button
+                      className="compact-button claim-all"
+                      type="button"
+                      data-claim-all-btn
+                      disabled={claimableCount === 0 || claimingMissionId !== null}
+                      onClick={handleClaimAll}
+                    >
+                      {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
+                    </button>
+                  </div>
                 </section>
 
                 <aside className="panel tabs-panel">
@@ -604,18 +601,11 @@ const DM_STYLES = `
 .dmx button{ font:inherit; color:inherit; border:0; cursor:pointer; }
 .dmx .screen{ position:relative; width:${DESIGN_W}px; height:${DESIGN_H}px; border-radius:24px; overflow:hidden;
   padding:26px 28px 28px;
-  background:linear-gradient(180deg,rgba(24,43,106,.94),rgba(2,10,28,.97)),#071433;
+  background:linear-gradient(rgba(10,26,51,.55),rgba(10,26,51,.55)),radial-gradient(38% 48% at 18% 22%,rgba(56,189,248,.55),transparent 70%),radial-gradient(42% 52% at 84% 16%,rgba(250,204,21,.45),transparent 70%),radial-gradient(48% 58% at 78% 86%,rgba(139,92,246,.5),transparent 70%),radial-gradient(44% 54% at 22% 88%,rgba(16,185,129,.48),transparent 70%),#03070d;
   border:1px solid rgba(116,168,255,.38);
   box-shadow:0 30px 90px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.045),inset 0 0 90px rgba(54,104,255,.16);
   isolation:isolate; }
-.dmx .screen::before{ content:""; position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(circle at 70% 12%,rgba(87,124,255,.18),transparent 30%),
-    radial-gradient(circle at 12% 68%,rgba(28,198,255,.08),transparent 34%),
-    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px),
-    linear-gradient(180deg,rgba(255,255,255,.035) 1px,transparent 1px);
-  background-size:auto,auto,74px 74px,74px 74px;
-  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 82%);
-  mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 82%); z-index:-1; }
+.dmx .screen::before{ display:none; }
 .dmx .topbar{ height:112px; display:flex; align-items:center; gap:22px; margin-bottom:16px; }
 .dmx .brand-mark{ width:92px; height:84px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
   background:radial-gradient(circle at 45% 28%,rgba(255,255,255,.18),transparent 26%),radial-gradient(circle,#0b1736 0%,#030814 72%);
@@ -646,6 +636,7 @@ const DM_STYLES = `
   background:linear-gradient(180deg,rgba(8,21,56,.78),rgba(3,10,29,.82));
   border:1px solid rgba(121,161,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.026),0 20px 42px rgba(0,0,0,.24); }
 .dmx .missions-panel{ padding:20px 20px 16px; display:flex; flex-direction:column; min-height:0; }
+.dmx .missions-footer{ margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:16px; }
 .dmx .panel-heading{ height:44px; display:flex; align-items:center; gap:14px; margin-bottom:14px; flex:0 0 auto; }
 .dmx .panel-title{ margin:0; font-size:25px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
 .dmx .panel-actions{ margin-left:auto; display:flex; gap:14px; align-items:center; }
