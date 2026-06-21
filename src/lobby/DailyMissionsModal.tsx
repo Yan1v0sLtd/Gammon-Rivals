@@ -566,10 +566,31 @@ function WeeklyCard({
   );
 }
 
+function XpHex({ size }: { readonly size: 'md' | 'lg' }) {
+  const h = size === 'lg' ? 48 : 38;
+  return (
+    <svg viewBox="0 0 100 110" style={{ height: h, width: 'auto', filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.4))' }} aria-hidden="true">
+      <defs>
+        <linearGradient id="dm-xp-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#581c87" />
+        </linearGradient>
+        <linearGradient id="dm-xp-rim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fcd34d" />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+      </defs>
+      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="url(#dm-xp-rim)" />
+      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#dm-xp-fill)" />
+      <text x="50" y="68" textAnchor="middle" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34" fill="white" stroke="rgba(0,0,0,0.35)" strokeWidth="1">XP</text>
+    </svg>
+  );
+}
+
 function RewardIcon({ reward, size }: { readonly reward: RewardItem; readonly size: 'md' | 'lg' }) {
   const cls = size === 'lg' ? 'ri ri-lg' : 'ri';
   if (reward.reward_kind === 'currency') {
-    if (reward.currency_code === 'xp') return <div className={`xp-token ${cls}`}>XP</div>;
+    if (reward.currency_code === 'xp') return <XpHex size={size} />;
     const src =
       reward.currency_code === 'coins'
         ? '/lobby/icons/gold-coin.webp'
@@ -607,11 +628,8 @@ const DM_STYLES = `
   isolation:isolate; }
 .dmx .screen::before{ display:none; }
 .dmx .topbar{ height:112px; display:flex; align-items:center; gap:22px; margin-bottom:16px; }
-.dmx .brand-mark{ width:92px; height:84px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
-  background:radial-gradient(circle at 45% 28%,rgba(255,255,255,.18),transparent 26%),radial-gradient(circle,#0b1736 0%,#030814 72%);
-  border:2px solid rgba(255,211,91,.9);
-  box-shadow:0 0 0 5px rgba(11,34,89,.8),0 16px 30px rgba(0,0,0,.42),0 0 26px rgba(255,205,74,.24),inset 0 0 18px rgba(78,132,255,.22); }
-.dmx .brand-mark img{ width:54px; height:54px; object-fit:contain; }
+.dmx .brand-mark{ flex:0 0 auto; display:grid; place-items:center; }
+.dmx .brand-mark img{ width:108px; height:108px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
 .dmx .brand-copy{ min-width:0; }
 .dmx .brand-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(42px,4.15vw,60px);
   line-height:.92; letter-spacing:.03em; color:#fff7dc; text-transform:uppercase;
@@ -688,14 +706,13 @@ const DM_STYLES = `
 .dmx .ri{ width:38px; height:38px; object-fit:contain; filter:drop-shadow(0 5px 5px rgba(0,0,0,.35)); }
 .dmx .reward-amount{ font-size:17px; font-weight:950; color:#fff; letter-spacing:.02em; }
 .dmx .mission-controls{ display:grid; justify-items:center; gap:8px; }
-.dmx .go-button{ width:122px; height:52px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
-  background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%),linear-gradient(180deg,#79dc4e,#208132);
-  border:1px solid rgba(177,255,135,.9);
-  box-shadow:0 8px 14px rgba(0,0,0,.36),inset 0 2px 0 rgba(255,255,255,.24),inset 0 -4px 0 rgba(0,0,0,.18);
-  font-family:Georgia,"Times New Roman",serif; font-size:24px; font-weight:900; letter-spacing:.025em; text-transform:uppercase;
-  text-shadow:0 2px 2px rgba(0,0,0,.42); transition:transform .12s ease,filter .12s ease; }
-.dmx .go-button:not(:disabled):hover{ filter:brightness(1.08); transform:translateY(-1px); }
-.dmx .go-button:not(:disabled):active{ transform:translateY(1px) scale(.99); }
+.dmx .go-button{ width:122px; height:52px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  background:linear-gradient(180deg,#27db74,#079044); border:0;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 8px 18px rgba(0,0,0,.35);
+  font-family:"Segoe UI",Inter,system-ui,sans-serif; color:#fff; font-size:24px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;
+  text-shadow:0 2px 3px rgba(0,0,0,.55); transition:transform .12s ease,filter .12s ease; }
+.dmx .go-button:not(:disabled):hover{ filter:brightness(1.1); }
+.dmx .go-button:not(:disabled):active{ transform:translateY(1px); }
 .dmx .go-button svg{ width:19px; height:19px; }
 .dmx .go-button.is-purple{ background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%),linear-gradient(180deg,#bc61ff,#6b24c5); border-color:rgba(223,152,255,.92); }
 .dmx .go-button.is-claimed{ background:linear-gradient(180deg,rgba(255,255,255,.13),transparent 36%),linear-gradient(180deg,#386db8,#1c3a67);
