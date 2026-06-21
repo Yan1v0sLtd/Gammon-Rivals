@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { extractErrorMessage } from '../lib/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
-import { CHESTS_ENABLED } from './lobbyData';
-import { PlayButton } from '../components/PlayButton';
 import { ScaleInModal } from '../components/ScaleInModal';
 import {
   formatCountdown,
@@ -11,7 +9,6 @@ import {
   type Mission,
   type MissionsResult,
   type RewardItem,
-  type ChestMilestone,
 } from './useDailyMissions';
 
 interface Props {
@@ -20,30 +17,30 @@ interface Props {
 }
 
 /**
- * Daily Missions full-screen modal (redesign v2 — reference-driven).
- *   - Header: dice badge + title + refresh countdown + close.
- *   - Left: daily mission cards (badge | title+desc+progress | REWARD
- *     block | GO/CLAIM), with an inline ↻ reroll on each active card.
- *   - Right: a tabbed rail — DAILY (7-day streak timeline + how-it-works)
- *     and WEEKLY (the weekly challenge(s)), with a dot on the WEEKLY tab
- *     when a weekly reward is claimable.
- *   - Mission Points + chest track stay gated behind CHESTS_ENABLED
- *     (server still accrues mp_earned; the UI just doesn't surface it).
+ * Daily Missions modal — restyle v2 (game-ready mockup).
  *
- * Whole panel scales-to-fit so it's fully visible on a landscape phone.
+ * The visual design is ported from the operator's CSS mockup; the styling
+ * lives in a single scoped <style> block (every selector prefixed with the
+ * `.dmx` root so nothing leaks into the global/Tailwind cascade). The mockup's
+ * inline SVGs are swapped for our REAL webp art — mission-type rarity badges,
+ * the chest, coin/gem, and the header dice — per the existing asset set.
+ * Mission Points + the chest-milestone track stay gated behind CHESTS_ENABLED.
+ *
+ * Data + behaviour (claim / claim-all / reroll / streak / countdown / reward
+ * flights) are unchanged — only the markup + CSS are new.
  */
+const DESIGN_W = 1536;
+const DESIGN_H = 812;
+
 export function DailyMissionsModal({ result, onClose }: Props) {
   const { state, isLoading, error, refetch } = result;
   const [actionError, setActionError] = useState<string | null>(null);
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
-  const [claimingChestIdx, setClaimingChestIdx] = useState<number | null>(null);
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
+  const [armedRerollId, setArmedRerollId] = useState<string | null>(null);
   const [tab, setTab] = useState<'daily' | 'weekly'>('daily');
   const [now, setNow] = useState(Date.now());
 
-  // Reward-flight animation state (mirrors WheelModal): capture the
-  // source button rect at claim-time, find the wallet pill via
-  // [data-fly-target], spawn N tokens per currency with a stagger.
   const [flights, setFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(0);
 
@@ -71,36 +68,24 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     }
     setFlights((prev) => [...prev, ...additions]);
   };
-  const removeFlight = (id: number) => {
-    setFlights((prev) => prev.filter((f) => f.id !== id));
-  };
+  const removeFlight = (id: number) => setFlights((prev) => prev.filter((f) => f.id !== id));
 
-  // Tick the header countdown once a second.
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
-  // ESC closes when no async op is in flight.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !claimingMissionId && !claimingChestIdx && !rerollingMissionId) {
-        onClose();
-      }
+      if (e.key === 'Escape' && !claimingMissionId && !rerollingMissionId) onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, claimingMissionId, claimingChestIdx, rerollingMissionId]);
+  }, [onClose, claimingMissionId, rerollingMissionId]);
 
   const missionsList = state?.missions ?? [];
-  const dailies = useMemo(
-    () => missionsList.filter((m) => m.period === 'daily'),
-    [missionsList],
-  );
-  const weeklies = useMemo(
-    () => missionsList.filter((m) => m.period === 'weekly').slice(0, 2),
-    [missionsList],
-  );
+  const dailies = useMemo(() => missionsList.filter((m) => m.period === 'daily'), [missionsList]);
+  const weeklies = useMemo(() => missionsList.filter((m) => m.period === 'weekly').slice(0, 2), [missionsList]);
   const claimableCount = useMemo(
     () => dailies.filter((m) => m.completed_at && !m.claimed_at).length,
     [dailies],
@@ -110,15 +95,10 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     [weeklies],
   );
 
-  // Scale-to-fit wrapper. Design size 1500 × 800.
-  const PANEL_DESIGN_W = 1500;
-  const PANEL_DESIGN_H = 800;
   const [scale, setScale] = useState(1);
   useEffect(() => {
     const update = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const s = Math.min(1, (w * 0.98) / PANEL_DESIGN_W, (h * 0.96) / PANEL_DESIGN_H);
+      const s = Math.min(1, (window.innerWidth * 0.98) / DESIGN_W, (window.innerHeight * 0.96) / DESIGN_H);
       setScale(s);
     };
     update();
@@ -131,8 +111,9 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     return nextResetMs(state);
   }, [state, now]);
 
-  const rerollsLeft = state ? state.reroll.daily_cap - state.reroll.rerolls_today : 0;
+  const rerollsLeft = state ? Math.max(0, state.reroll.daily_cap - state.reroll.rerolls_today) : 0;
   const canRerollAny = rerollsLeft > 0;
+  const rerollCost = state?.reroll.next_cost ?? null;
 
   const handleClaim = async (missionId: string, srcEl: HTMLElement | null) => {
     setClaimingMissionId(missionId);
@@ -145,15 +126,9 @@ export function DailyMissionsModal({ result, onClose }: Props) {
         return;
       }
       const credited = data as { credited_coins?: number; credited_gems?: number; credited_xp?: number };
-      if (credited?.credited_coins && credited.credited_coins > 0) {
-        spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
-      }
-      if (credited?.credited_gems && credited.credited_gems > 0) {
-        spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
-      }
-      if (credited?.credited_xp && credited.credited_xp > 0) {
-        spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
-      }
+      if (credited?.credited_coins) spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
+      if (credited?.credited_gems) spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
+      if (credited?.credited_xp) spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
       if (!credited?.credited_coins && !credited?.credited_gems && !credited?.credited_xp && mission) {
         for (const r of mission.rewards) {
           if (r.reward_kind !== 'currency' || !r.currency_code) continue;
@@ -173,12 +148,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   const handleClaimAll = async () => {
     const claimables = dailies.filter((m) => m.completed_at && !m.claimed_at);
     for (const m of claimables) {
-      const claimAllBtn = document.querySelector<HTMLElement>('[data-claim-all-btn]');
-      await handleClaim(m.id, claimAllBtn);
+      const btn = document.querySelector<HTMLElement>('[data-claim-all-btn]');
+      await handleClaim(m.id, btn);
     }
   };
 
   const handleReroll = async (missionId: string) => {
+    setArmedRerollId(null);
     setRerollingMissionId(missionId);
     setActionError(null);
     try {
@@ -192,175 +168,215 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     }
   };
 
-  const handleClaimChest = async (milestoneIndex: number) => {
-    setClaimingChestIdx(milestoneIndex);
+  const handleClaimStreak = async () => {
     setActionError(null);
-    try {
-      const { error: rpcErr } = await supabase.rpc('claim_chest', { p_milestone_index: milestoneIndex });
-      if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-      else refetch();
-    } catch (e) {
-      setActionError(extractErrorMessage(e));
-    } finally {
-      setClaimingChestIdx(null);
-    }
+    const { error: rpcErr } = await supabase.rpc('claim_streak_chest');
+    if (rpcErr) setActionError(extractErrorMessage(rpcErr));
+    else refetch();
   };
+
+  const daysDone = Math.min(7, state?.streak.current_streak_days ?? 0);
+  const streakClaimable = (state?.streak.current_streak_days ?? 0) >= 7;
 
   return (
     <>
       <ScaleInModal closeOnBackdropClick={false} closeOnEscape={false}>
-        <div className="origin-center" style={{ transform: `scale(${scale})` }}>
-          <div
-            className="relative flex flex-col rounded-3xl bg-gradient-to-b from-[#162C73] to-[#09051D] p-4 shadow-[0_25px_60px_rgba(0,0,0,0.7)] ring-2 ring-[#D89A2B]/80"
-            style={{ width: `${PANEL_DESIGN_W}px`, height: `${PANEL_DESIGN_H}px` }}
-          >
-            {/* Header */}
-            <div className="mb-3 flex shrink-0 items-center gap-3">
-              <div className="grid h-20 w-20 shrink-0 place-items-center rounded-full border-2 border-[#D89A2B] bg-gradient-to-b from-[#1D2460] to-[#09051D] shadow-[0_4px_8px_rgba(0,0,0,0.45)]">
-                <img
-                  src="/lobby/missions/dice-icon.webp"
-                  alt=""
-                  draggable={false}
-                  className="h-12 w-12 object-contain"
-                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-                />
+        <div className="dmx" style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}>
+          <style>{DM_STYLES}</style>
+          <main className="screen" aria-label="Daily Missions">
+            <header className="topbar">
+              <div className="brand-mark">
+                <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg} />
               </div>
-
-              <div className="flex shrink-0 flex-col justify-center pr-1">
-                <h2 className="font-display text-4xl font-black tracking-wider text-[#FFD25C] leading-none">
-                  DAILY MISSIONS
-                </h2>
-                <p className="mt-1 text-base leading-tight text-[#C6B7D8]" style={{ maxWidth: '20rem' }}>
-                  Complete missions. Earn rewards. Keep your streak alive!
-                </p>
+              <div className="brand-copy">
+                <h1 className="brand-title">Daily Missions</h1>
+                <p className="brand-subtitle">Complete missions. Earn rewards. Keep your streak alive!</p>
               </div>
-
-              {/* Chest track (gated off — server still accrues mp_earned). */}
-              {CHESTS_ENABLED && state ? (
-                <ChestTrackStrip
-                  mpEarned={state.weekly_pass.mp_earned}
-                  milestones={state.chest_milestones}
-                  chestsClaimed={state.weekly_pass.chests_claimed}
-                  claimingIdx={claimingChestIdx}
-                  onClaimChest={handleClaimChest}
-                />
-              ) : (
-                <div className="flex-1" />
-              )}
-
-              <div className="flex shrink-0 flex-col items-end gap-2">
-                <div className="rounded-lg bg-[#1D2460]/80 px-3 py-1.5 text-right ring-1 ring-[#D89A2B]/40">
-                  <div className="text-xs uppercase tracking-wider text-[#FFD25C]/80">Refreshes in</div>
-                  <div className="font-mono text-base font-bold text-[#FFF6E9]">
-                    {formatCountdown(countdownMs)}
-                  </div>
+              <div className="header-spacer" />
+              <section className="refresh-box">
+                <div>
+                  <div className="refresh-label">Refreshes in</div>
+                  <div className="refresh-time">{formatCountdown(countdownMs)}</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close"
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:brightness-110 active:scale-95"
-                >
-                  <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+              </section>
+              <button className="close-button" type="button" aria-label="Close" onClick={onClose}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" />
+                </svg>
+              </button>
+            </header>
 
             {isLoading && !state ? (
-              <div className="py-12 text-center text-amber-200/70">Loading missions…</div>
+              <div className="dmx-status">Loading missions…</div>
             ) : error ? (
-              <div className="rounded-lg bg-rose-950/60 px-4 py-3 text-rose-200">{error}</div>
+              <div className="dmx-status dmx-error">{error}</div>
             ) : !state ? (
-              <div className="py-12 text-center text-amber-200/70">No missions today.</div>
+              <div className="dmx-status">No missions today.</div>
             ) : (
-              <>
-                <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-4">
-                  {/* Left — daily missions */}
-                  <div className="flex min-h-0 flex-col overflow-hidden">
-                    <div className="mb-3 flex items-center justify-between">
-                      <h3 className="font-display text-2xl font-bold tracking-wide text-[#FFF6E9]">
-                        DAILY MISSIONS
-                      </h3>
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1 rounded-md bg-[#1C4A13]/70 px-2.5 py-1 text-sm font-bold text-[#9BF584] ring-1 ring-[#64FF57]/40">
-                          <span className="text-base leading-none">⟳</span>
-                          {rerollsLeft} left
-                        </span>
-                        <button
-                          type="button"
-                          data-claim-all-btn
-                          disabled={claimableCount === 0 || claimingMissionId !== null}
-                          onClick={handleClaimAll}
-                          className="rounded-md bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-5 py-2 text-base font-bold text-[#3a1f08] shadow-md transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {claimableCount > 0 ? `CLAIM ALL (${claimableCount})` : 'CLAIM ALL'}
-                        </button>
-                      </div>
+              <section className="content">
+                <section className="panel missions-panel">
+                  <div className="panel-heading">
+                    <h2 className="panel-title">Daily Missions</h2>
+                    <div className="panel-actions">
+                      <span className="compact-button rerolls">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                          <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span>{rerollsLeft} left</span>
+                      </span>
+                      <button
+                        className="compact-button claim-all"
+                        type="button"
+                        data-claim-all-btn
+                        disabled={claimableCount === 0 || claimingMissionId !== null}
+                        onClick={handleClaimAll}
+                      >
+                        {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
+                      </button>
                     </div>
+                  </div>
+                  <div className="mission-list">
+                    {dailies.map((m) => (
+                      <MissionCard
+                        key={m.id}
+                        mission={m}
+                        isClaiming={claimingMissionId === m.id}
+                        isRerolling={rerollingMissionId === m.id}
+                        canReroll={canRerollAny}
+                        rerollCost={rerollCost}
+                        armed={armedRerollId === m.id}
+                        onArm={() => setArmedRerollId(m.id)}
+                        onDisarm={() => setArmedRerollId(null)}
+                        onReroll={() => handleReroll(m.id)}
+                        onClaim={(el) => handleClaim(m.id, el)}
+                        onGo={onClose}
+                      />
+                    ))}
+                    {dailies.length === 0 && (
+                      <div className="dmx-empty">No active missions. Come back at midnight UTC.</div>
+                    )}
+                  </div>
+                  {actionError && <div className="dmx-action-error">{actionError}</div>}
+                </section>
 
-                    <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden pb-px">
-                      {dailies.map((m) => (
-                        <MissionCard
-                          key={m.id}
-                          mission={m}
-                          isClaiming={claimingMissionId === m.id}
-                          isRerolling={rerollingMissionId === m.id}
-                          rerollCost={state.reroll.next_cost}
-                          canReroll={canRerollAny}
-                          onClaim={(el) => handleClaim(m.id, el)}
-                          onReroll={() => handleReroll(m.id)}
-                          onGo={onClose}
-                        />
-                      ))}
-                      {dailies.length === 0 && (
-                        <div className="rounded-lg bg-[#1D2460]/60 py-6 text-center text-sm text-[#C6B7D8]">
-                          No active missions. Come back at midnight UTC.
+                <aside className="panel tabs-panel">
+                  <nav className="tabs">
+                    <button
+                      className={`tab-button ${tab === 'daily' ? 'is-active' : ''}`}
+                      type="button"
+                      onClick={() => setTab('daily')}
+                    >
+                      Daily
+                    </button>
+                    <button
+                      className={`tab-button ${tab === 'weekly' ? 'is-active' : ''}`}
+                      type="button"
+                      onClick={() => setTab('weekly')}
+                    >
+                      Weekly{weeklyClaimable && <i className="tab-dot" />}
+                    </button>
+                  </nav>
+
+                  {tab === 'daily' ? (
+                    <section className="streak-panel">
+                      <div className="streak-header">
+                        <h2 className="streak-title">Daily Streak</h2>
+                        <div className="streak-days">
+                          {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? '' : 's'}
+                        </div>
+                      </div>
+                      <p className="streak-description">
+                        Complete all daily missions every day. Hit 7 days to open the streak chest.
+                      </p>
+
+                      <div className="streak-track">
+                        {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                          <div className="track-day" key={day}>
+                            <span>Day {day}</span>
+                            {day === 7 ? (
+                              <div className={`chest-node ${daysDone >= 7 ? 'is-lit' : ''}`}>
+                                <img src="/lobby/missions/chest-3.webp" alt="" draggable={false} onError={hideImg} />
+                              </div>
+                            ) : (
+                              <div
+                                className={`day-node ${day <= daysDone ? 'is-done' : ''} ${day === daysDone + 1 ? 'is-current' : ''}`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="streak-rewards">
+                        {state.streak_chest_rewards.map((r, i) => (
+                          <div className="streak-reward-item" key={i}>
+                            <RewardIcon reward={r} size="lg" />
+                            <span>+{formatAmount(r.amount)}</span>
+                          </div>
+                        ))}
+                        {streakClaimable ? (
+                          <button className="streak-claim" type="button" onClick={handleClaimStreak}>
+                            Claim
+                          </button>
+                        ) : (
+                          <div className="to-go">{7 - daysDone} to go</div>
+                        )}
+                      </div>
+
+                      <div className="how-panel">
+                        <h3 className="how-title">How it works</h3>
+                        <div className="how-line">
+                          <div className="how-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z" />
+                            </svg>
+                          </div>
+                          <div>Finish every daily mission to advance your streak and bank the chest.</div>
+                        </div>
+                        <div className="how-line">
+                          <div className="how-icon">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                              <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                              <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </div>
+                          <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
+                        </div>
+                      </div>
+                    </section>
+                  ) : (
+                    <section className="streak-panel weekly-tab">
+                      {weeklies.length === 0 ? (
+                        <div className="weekly-empty">
+                          <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg} />
+                          <p>No weekly challenge active right now.</p>
+                        </div>
+                      ) : (
+                        <div className="mission-list">
+                          {weeklies.map((m) => (
+                            <MissionCard
+                              key={m.id}
+                              mission={m}
+                              isClaiming={claimingMissionId === m.id}
+                              isRerolling={false}
+                              canReroll={false}
+                              rerollCost={null}
+                              armed={false}
+                              onArm={() => undefined}
+                              onDisarm={() => undefined}
+                              onReroll={() => undefined}
+                              onClaim={(el) => handleClaim(m.id, el)}
+                              onGo={onClose}
+                            />
+                          ))}
                         </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Right — tabbed rail */}
-                  <div className="flex min-h-0 flex-col overflow-hidden">
-                    <div className="flex shrink-0 gap-1.5">
-                      <TabButton active={tab === 'daily'} onClick={() => setTab('daily')} label="DAILY" />
-                      <TabButton
-                        active={tab === 'weekly'}
-                        onClick={() => setTab('weekly')}
-                        label="WEEKLY"
-                        dot={weeklyClaimable}
-                      />
-                    </div>
-
-                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-2xl rounded-tr-2xl border border-[#D89A2B]/55 bg-gradient-to-b from-[#101A4D] to-[#070C25] p-4">
-                      {tab === 'daily' ? (
-                        <StreakTab
-                          streak={state.streak}
-                          streakChestRewards={state.streak_chest_rewards}
-                        />
-                      ) : (
-                        <WeeklyTab
-                          weeklies={weeklies}
-                          claimingMissionId={claimingMissionId}
-                          onClaim={handleClaim}
-                          onGo={onClose}
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {actionError && (
-                  <div className="mt-3 rounded-lg bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
-                    {actionError}
-                  </div>
-                )}
-              </>
+                    </section>
+                  )}
+                </aside>
+              </section>
             )}
-          </div>
+          </main>
         </div>
       </ScaleInModal>
 
@@ -373,585 +389,327 @@ export function DailyMissionsModal({ result, onClose }: Props) {
 
 /* ───────────────────────── sub-components ───────────────────────── */
 
-function TabButton({
-  active,
-  onClick,
-  label,
-  dot = false,
-}: {
-  readonly active: boolean;
-  readonly onClick: () => void;
-  readonly label: string;
-  readonly dot?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`relative flex-1 rounded-t-xl px-4 py-2.5 font-display text-lg font-black tracking-wider transition ${
-        active
-          ? 'bg-gradient-to-b from-[#101A4D] to-[#0B123A] text-[#FFD25C] ring-1 ring-[#D89A2B]/55'
-          : 'bg-[#0C1237]/90 text-[#999FC2] ring-1 ring-[#5A5BA0]/30 hover:text-[#C6B7D8]'
-      }`}
-    >
-      {label}
-      {dot && (
-        <span className="absolute right-3 top-1.5 h-2.5 w-2.5 rounded-full bg-[#E9482F] ring-1 ring-[#ff9d6a]" />
-      )}
-    </button>
-  );
+function hideImg(e: SyntheticEvent<HTMLImageElement>) {
+  (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
 }
-
-function ChestTrackStrip({
-  mpEarned,
-  milestones,
-  chestsClaimed,
-  claimingIdx,
-  onClaimChest,
-}: {
-  readonly mpEarned: number;
-  readonly milestones: readonly ChestMilestone[];
-  readonly chestsClaimed: readonly number[];
-  readonly claimingIdx: number | null;
-  readonly onClaimChest: (idx: number) => void;
-}) {
-  const maxThreshold = Math.max(...milestones.map((m) => m.threshold_mp), 100);
-  const progressPct = Math.min(100, (mpEarned / maxThreshold) * 100);
-  const chestSizes = ['h-10', 'h-12', 'h-14', 'h-16'];
-
-  return (
-    <div className="flex flex-1 items-center gap-4 rounded-2xl bg-gradient-to-b from-[#1D2460] to-[#162C73] px-4 py-2 ring-1 ring-[#D89A2B]/60">
-      <div className="flex shrink-0 flex-col items-center">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-b from-[#FFD25C] to-[#B67816] text-xl text-[#3a1f08] shadow-md ring-2 ring-[#FFD25C]/70">
-          ⚡
-        </div>
-        <div className="mt-1 flex items-baseline gap-1">
-          <span className="font-display text-2xl font-black text-[#FFF6E9]">{mpEarned}</span>
-          <span className="text-sm text-[#C6B7D8]">/ {maxThreshold}</span>
-        </div>
-        <span className="text-[10px] uppercase tracking-wider text-[#FFD25C]/80">Mission Points</span>
-      </div>
-
-      <div className="relative flex-1">
-        <div className="absolute left-0 right-0 top-[40%] z-0 h-1.5 -translate-y-1/2 rounded-full bg-[#1B1635]">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#FFD25C] to-[#F3C55B] shadow-[0_0_8px_rgba(255,210,92,0.55)]"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-
-        <div className="relative z-[1] grid grid-cols-4 items-end">
-          {milestones.map((m, i) => {
-            const claimed = chestsClaimed.includes(m.milestone_index);
-            const unlocked = mpEarned >= m.threshold_mp;
-            const ready = unlocked && !claimed;
-            const sizeClass = chestSizes[i] ?? 'h-16';
-            return (
-              <button
-                key={`chest-${m.milestone_index}`}
-                type="button"
-                disabled={!ready || claimingIdx !== null}
-                onClick={() => onClaimChest(m.milestone_index)}
-                className={`flex justify-center transition ${ready ? 'animate-pulse' : ''} ${!unlocked ? 'opacity-50 grayscale' : ''}`}
-                aria-label={`${m.display_name} chest at ${m.threshold_mp} MP`}
-              >
-                <img
-                  src={`/lobby/missions/chest-${m.milestone_index}.webp`}
-                  alt=""
-                  draggable={false}
-                  className={`${sizeClass} object-contain drop-shadow-lg`}
-                  onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-1.5 grid grid-cols-4">
-          {milestones.map((m) => {
-            const claimed = chestsClaimed.includes(m.milestone_index);
-            const unlocked = mpEarned >= m.threshold_mp;
-            const ready = unlocked && !claimed;
-            return (
-              <div key={`thr-${m.milestone_index}`} className="flex flex-col items-center gap-0.5">
-                <span className="font-display text-sm font-bold text-[#FFF6E9]">{m.threshold_mp}</span>
-                <span
-                  className={`grid h-3.5 w-3.5 place-items-center rounded-full text-[9px] ring-1 ${
-                    claimed
-                      ? 'bg-emerald-500 text-white ring-emerald-300'
-                      : ready
-                        ? 'bg-[#FFD25C] text-[#3a1f08] ring-[#FFF6E9]/60'
-                        : 'bg-[#1B1635] text-transparent ring-[#D89A2B]/40'
-                  }`}
-                >
-                  {claimed ? '✓' : ''}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const RARITY_CARD_BG: Record<string, string> = {
-  common: 'bg-gradient-to-b from-[#35296A] to-[#19183B]',
-  rare: 'bg-gradient-to-b from-[#2C2E86] to-[#19183B]',
-  epic: 'bg-gradient-to-b from-[#4A216F] to-[#19183B]',
-};
-const RARITY_BORDER: Record<string, string> = {
-  common: 'border-[#3BC8FF]',
-  rare: 'border-[#2AAEFF]',
-  epic: 'border-[#D447FF]',
-};
-const RARITY_FILL: Record<string, string> = {
-  common: 'bg-[#7DFF4D] shadow-[0_0_12px_rgba(120,255,120,0.55)]',
-  rare: 'bg-[#35C8FF] shadow-[0_0_14px_rgba(60,190,255,0.55)]',
-  epic: 'bg-[#C85CFF] shadow-[0_0_14px_rgba(210,80,255,0.55)]',
-};
 
 function MissionCard({
   mission,
   isClaiming,
   isRerolling,
-  rerollCost,
   canReroll,
-  onClaim,
+  rerollCost,
+  armed,
+  onArm,
+  onDisarm,
   onReroll,
+  onClaim,
   onGo,
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
   readonly isRerolling: boolean;
-  readonly rerollCost: number | null;
   readonly canReroll: boolean;
-  readonly onClaim: (sourceEl: HTMLElement | null) => void;
+  readonly rerollCost: number | null;
+  readonly armed: boolean;
+  readonly onArm: () => void;
+  readonly onDisarm: () => void;
   readonly onReroll: () => void;
-  readonly onGo?: () => void;
+  readonly onClaim: (el: HTMLElement | null) => void;
+  readonly onGo: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
-  const [rerollArmed, setRerollArmed] = useState(false);
   const isCompleted = !!mission.completed_at && !mission.claimed_at;
   const isClaimed = !!mission.claimed_at;
   const isActive = !isCompleted && !isClaimed;
-  const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
+  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
   const showReroll = isActive && canReroll && rerollCost !== null;
   const rerollFree = rerollCost === 0;
 
   return (
-    <div
-      className={`flex flex-1 items-center gap-3 rounded-xl border p-3 shadow-[0_4px_8px_rgba(0,0,0,0.4)] ${
-        RARITY_CARD_BG[mission.rarity] ?? RARITY_CARD_BG.common
-      } ${RARITY_BORDER[mission.rarity] ?? RARITY_BORDER.common}`}
-    >
-      {/* Badge (rarity + icon baked into the webp art) */}
-      <div className="shrink-0">
-        <img
-          src={`/lobby/missions/badge-${mission.rarity}.webp`}
-          alt={`${mission.rarity} mission`}
-          draggable={false}
-          className="h-24 w-24 object-contain"
-          onError={(e) => ((e.currentTarget as HTMLImageElement).style.visibility = 'hidden')}
-        />
+    <article className={`mission-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+      <div className="mission-badge">
+        <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false} onError={hideImg} />
       </div>
 
-      {/* Title + subtitle + progress */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <div className="truncate font-display text-2xl font-bold text-[#FFF6E9]">{mission.title}</div>
-          {CHESTS_ENABLED && mission.mission_points > 0 && (
-            <span className="rounded-md bg-[#1D2460]/80 px-2 py-0.5 text-sm font-bold text-[#FFD25C] ring-1 ring-[#D89A2B]/40">
-              +{mission.mission_points} MP
-            </span>
-          )}
-        </div>
-        {mission.subtitle && <div className="truncate text-base text-[#C6B7D8]">{mission.subtitle}</div>}
-        <div className="mt-2.5 flex items-center gap-2.5">
-          <div className="relative h-2.5 max-w-[260px] flex-1 overflow-hidden rounded-full bg-[#17122D]">
-            <div
-              className={`absolute inset-y-0 left-0 rounded-full ${RARITY_FILL[mission.rarity] ?? RARITY_FILL.common}`}
-              style={{ width: `${progressPct}%` }}
-            />
+      <div className="mission-copy">
+        <h3 className="mission-name">{mission.title}</h3>
+        {mission.subtitle && <p className="mission-description">{mission.subtitle}</p>}
+        <div className="progress-line">
+          <div className="progress-track">
+            <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
           </div>
-          <span className={`font-mono text-base font-bold ${isCompleted || isClaimed ? 'text-[#7DFF45]' : 'text-[#FFF6E9]'}`}>
+          <div className="progress-count">
             {mission.progress} / {mission.resolved_goal}
-          </span>
+          </div>
         </div>
       </div>
 
-      {/* REWARD block */}
-      <div className="hidden shrink-0 flex-col items-center gap-1 self-stretch justify-center border-l border-[#5C87E1]/35 pl-4 sm:flex">
-        <span className="text-xs uppercase tracking-wider text-[#AEBDFF]">Reward</span>
-        <div className="flex items-center gap-2.5">
-          {mission.rewards.map((r, i) => (
-            <div key={i} className="flex flex-col items-center gap-0.5">
-              <RewardIcon reward={r} large />
-              <span className="text-sm font-bold text-[#FFF6E9]">+{formatAmount(r.amount)}</span>
-            </div>
-          ))}
+      <div className="mission-separator" aria-hidden="true" />
+
+      <div className="mission-reward">
+        <div>
+          <div className="reward-title">Reward</div>
+          <div className="reward-icons">
+            {mission.rewards.map((r, i) => (
+              <div className="reward-item" key={i}>
+                <RewardIcon reward={r} size="md" />
+                <div className="reward-amount">+{formatAmount(r.amount)}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Action — GO / CLAIM + inline reroll */}
-      <div className="flex w-[120px] shrink-0 flex-col items-center gap-1.5">
-        {isActive ? (
-          <PlayButton label="GO" size="sm" disabled={isRerolling} onClick={() => onGo?.()} wrapStyle={{ fontSize: '20px' }} />
-        ) : (
-          <button
-            ref={btnRef}
-            type="button"
-            disabled={isClaimed || isClaiming}
-            onClick={() => {
-              if (isCompleted) onClaim(btnRef.current);
-            }}
-            className={`w-full rounded-lg px-4 py-2.5 text-lg font-bold text-white shadow-md transition ${
-              isClaimed
-                ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
-                : 'bg-gradient-to-b from-emerald-400 to-emerald-600 hover:brightness-110'
-            }`}
-          >
-            {isClaimed ? 'CLAIMED' : isClaiming ? '…' : 'CLAIM'}
-          </button>
-        )}
-
-        {showReroll &&
-          (rerollArmed ? (
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setRerollArmed(false)}
-                aria-label="Cancel reroll"
-                className="grid h-7 w-7 place-items-center rounded-md bg-[#2A1230] text-sm text-[#E59AB8] ring-1 ring-[#D94CFF]/40 hover:brightness-110"
-              >
-                ✕
-              </button>
-              <button
-                type="button"
-                disabled={isRerolling}
-                onClick={() => {
-                  setRerollArmed(false);
-                  onReroll();
-                }}
-                className="flex items-center gap-1 rounded-md bg-gradient-to-b from-[#5BE52A] to-[#1D8300] px-2.5 py-1 text-xs font-bold text-white shadow-md transition hover:brightness-110 disabled:opacity-50"
-              >
-                {isRerolling ? (
-                  '…'
-                ) : rerollFree ? (
-                  <span>Reroll · Free</span>
-                ) : (
-                  <>
-                    <span>Reroll · {rerollCost}</span>
-                    <img
-                      src="/lobby/icons/gem.webp"
-                      alt="gems"
-                      draggable={false}
-                      className="h-3.5 w-3.5 object-contain"
-                      onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-                    />
-                  </>
-                )}
-              </button>
-            </div>
+        <div className="mission-controls">
+          {isActive ? (
+            <button className={`go-button ${mission.rarity === 'epic' ? 'is-purple' : ''}`} type="button" disabled={isRerolling} onClick={onGo}>
+              Go
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          ) : isClaimed ? (
+            <button className="go-button is-claimed" type="button" disabled>
+              Claimed
+            </button>
           ) : (
             <button
+              ref={btnRef}
+              className="go-button"
               type="button"
-              onClick={() => setRerollArmed(true)}
-              className="flex items-center gap-1 text-xs font-bold text-[#9BC0FF] transition hover:text-[#FFD25C]"
-              aria-label="Reroll this mission"
+              disabled={isClaiming}
+              onClick={() => onClaim(btnRef.current)}
             >
-              <span className="text-sm leading-none">⟳</span>
-              {rerollFree ? 'Reroll free' : 'Reroll'}
+              {isClaiming ? '…' : 'Claim'}
             </button>
-          ))}
-      </div>
-    </div>
-  );
-}
-
-function StreakTab({
-  streak,
-  streakChestRewards,
-}: {
-  readonly streak: { current_streak_days: number; total_streak_chests_claimed: number };
-  readonly streakChestRewards: readonly RewardItem[];
-}) {
-  const daysDone = Math.min(7, streak.current_streak_days);
-  const canClaim = streak.current_streak_days >= 7;
-
-  const handleClaim = async () => {
-    await supabase.rpc('claim_streak_chest');
-  };
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="mb-1 flex items-center gap-3">
-        <span className="font-display text-2xl font-black tracking-wider text-[#FFD25C]">DAILY STREAK</span>
-        <span className="rounded-md bg-[#1A1028]/80 px-2.5 py-0.5 font-display text-lg font-black text-[#FFD25C] ring-1 ring-[#E2A93B]/60">
-          {streak.current_streak_days} day{streak.current_streak_days === 1 ? '' : 's'}
-        </span>
-      </div>
-      <p className="text-sm leading-snug text-[#C6B7D8]">
-        Complete all daily missions every day. Hit 7 days to open the streak chest.
-      </p>
-
-      <StreakTimeline daysDone={daysDone} />
-
-      {/* Streak chest rewards */}
-      <div className="mt-4 flex items-center justify-between rounded-2xl border border-[#9153FF]/55 bg-gradient-to-b from-[#322264]/95 to-[#10103799] px-5 py-3">
-        <div className="flex items-center gap-5">
-          {streakChestRewards.length > 0 ? (
-            streakChestRewards.map((r, i) => (
-              <div key={i} className="flex flex-col items-center gap-0.5">
-                <RewardIcon reward={r} large />
-                <span className="text-base font-bold text-[#FFF6E9]">+{formatAmount(r.amount)}</span>
-              </div>
-            ))
-          ) : (
-            <span className="text-sm text-[#C6B7D8]">7-day chest rewards</span>
           )}
-        </div>
-        {canClaim ? (
-          <button
-            type="button"
-            onClick={handleClaim}
-            className="rounded-lg bg-gradient-to-b from-[#F3C55B] to-[#B67816] px-6 py-2 text-base font-bold text-[#3a1f08] shadow-md hover:brightness-110"
-          >
-            CLAIM
-          </button>
-        ) : (
-          <span className="text-sm font-bold text-[#AEBDFF]">{7 - daysDone} to go</span>
-        )}
-      </div>
 
-      {/* How it works */}
-      <div className="mt-auto pt-4">
-        <div className="mb-2 font-display text-base font-bold uppercase tracking-wider text-[#FFF6E9]">
-          How it works
-        </div>
-        <div className="flex flex-col gap-2 text-sm leading-snug text-[#C6B7D8]">
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#7E31FF] to-[#33126B] text-xs font-black text-white ring-1 ring-[#BA71FF]/60">
-              ★
-            </span>
-            Finish every daily mission to advance your streak and bank the chest.
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#168BFF] to-[#06346C] text-xs font-black text-white ring-1 ring-[#65B8FF]/60">
-              ⟳
-            </span>
-            Don’t like a mission? Reroll it — the first one each day is free.
-          </div>
+          {showReroll &&
+            (armed ? (
+              <div className="reroll-confirm">
+                <button type="button" className="rc-no" onClick={onDisarm} aria-label="Cancel reroll">✕</button>
+                <button type="button" className="rc-yes" disabled={isRerolling} onClick={onReroll}>
+                  {isRerolling ? '…' : rerollFree ? 'Reroll · Free' : `Reroll · ${rerollCost}💎`}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="reroll-note" onClick={onArm}>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                  <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
+              </button>
+            ))}
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 
-function StreakTimeline({ daysDone }: { readonly daysDone: number }) {
-  const days = [1, 2, 3, 4, 5, 6];
-  return (
-    <div className="mt-5 grid grid-cols-7 items-end gap-1">
-      {days.map((d) => {
-        const done = d <= daysDone;
-        return (
-          <div key={d} className="relative flex flex-col items-center">
-            <span className="mb-2 text-xs font-bold text-[#FFE25C]">DAY {d}</span>
-            {/* connector to the next day */}
-            <span
-              className={`absolute right-[-50%] top-[34px] z-0 h-1 w-full ${
-                d < daysDone ? 'bg-[#66DF33]' : 'bg-[#FFDE76]/30'
-              }`}
-            />
-            <span
-              className={`relative z-[1] grid h-11 w-11 place-items-center rounded-full border-[3px] text-lg font-black ${
-                done
-                  ? 'border-[#95FB6A] bg-gradient-to-b from-[#66DF33] to-[#147E0B] text-white shadow-[0_0_14px_rgba(73,255,55,0.4)]'
-                  : 'border-[#555967] bg-[#111931] text-transparent'
-              }`}
-            >
-              {done ? '✓' : ''}
-            </span>
-          </div>
-        );
-      })}
-      {/* Day 7 — the chest milestone */}
-      <div className="relative flex flex-col items-center">
-        <span className="mb-2 text-xs font-bold text-[#FFE25C]">DAY 7</span>
-        <span
-          className={`relative z-[1] grid h-12 w-12 place-items-center rounded-xl border-[3px] ${
-            daysDone >= 7
-              ? 'animate-pulse border-[#FFE066] bg-gradient-to-b from-[#FFD25C] to-[#B67816] shadow-[0_0_16px_rgba(255,210,92,0.6)]'
-              : 'border-[#7A5A1E] bg-gradient-to-b from-[#3A2A0C] to-[#1A1228]'
-          }`}
-        >
-          <img
-            src="/lobby/missions/chest-3.webp"
-            alt="streak chest"
-            draggable={false}
-            className="h-8 w-8 object-contain"
-            onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-          />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function WeeklyTab({
-  weeklies,
-  claimingMissionId,
-  onClaim,
-  onGo,
-}: {
-  readonly weeklies: readonly Mission[];
-  readonly claimingMissionId: string | null;
-  readonly onClaim: (missionId: string, srcEl: HTMLElement | null) => void;
-  readonly onGo: () => void;
-}) {
-  if (weeklies.length === 0) {
-    return (
-      <div className="grid flex-1 place-items-center text-center text-[#C6B7D8]">
-        <div>
-          <img
-            src="/lobby/missions/dice-icon.webp"
-            alt=""
-            draggable={false}
-            className="mx-auto mb-3 h-14 w-14 object-contain opacity-70"
-            onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-          />
-          No weekly challenge active right now.
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      {weeklies.map((m) => (
-        <WeeklyChallengeCard
-          key={m.id}
-          mission={m}
-          isClaiming={claimingMissionId === m.id}
-          onClaim={(el) => onClaim(m.id, el)}
-          onGo={onGo}
-        />
-      ))}
-    </div>
-  );
-}
-
-function WeeklyChallengeCard({
-  mission,
-  isClaiming,
-  onClaim,
-  onGo,
-}: {
-  readonly mission: Mission;
-  readonly isClaiming: boolean;
-  readonly onClaim: (sourceEl: HTMLElement | null) => void;
-  readonly onGo?: () => void;
-}) {
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-  const isCompleted = !!mission.completed_at && !mission.claimed_at;
-  const isClaimed = !!mission.claimed_at;
-  const progressPct = Math.min(100, (mission.progress / mission.resolved_goal) * 100);
-
-  return (
-    <div className="relative flex w-full flex-1 items-stretch gap-4 rounded-2xl border border-[#E2A93B] bg-gradient-to-b from-[#5C1B8A] to-[#34105D] p-4 shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2">
-        <div className="text-center font-display text-xl font-black uppercase leading-tight tracking-wider text-[#FFD25C]">
-          Weekly
-          <br />
-          Challenge
-        </div>
-        <img
-          src="/lobby/missions/dice-icon.webp"
-          alt=""
-          draggable={false}
-          className="h-14 w-14 object-contain opacity-95"
-          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
-        />
-      </div>
-
-      <div className="relative z-[1] flex min-w-0 flex-1 flex-col justify-center gap-2">
-        <div>
-          <h3 className="font-display text-2xl font-bold leading-tight text-[#FFF6E9]">{mission.title}</h3>
-          {mission.subtitle && <p className="mt-1 text-base leading-snug text-[#C6B7D8]">{mission.subtitle}</p>}
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-[#1A1028]">
-            <div
-              className={`absolute inset-y-0 left-0 rounded-full ${
-                isCompleted
-                  ? 'bg-emerald-400 shadow-[0_0_12px_rgba(120,255,120,0.45)]'
-                  : 'bg-[#B54CFF] shadow-[0_0_14px_rgba(210,80,255,0.5)]'
-              }`}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <span className="font-mono text-lg font-bold text-[#FFF6E9]">
-            {mission.progress} / {mission.resolved_goal}
-          </span>
-        </div>
-      </div>
-
-      <div className="relative z-[1] flex shrink-0 flex-col items-center justify-center gap-2 border-l border-[#E2A93B]/35 pl-4">
-        <span className="text-xs uppercase tracking-wider text-[#E9C77A]">Reward</span>
-        <div className="flex items-center gap-3">
-          {mission.rewards.map((r, i) => (
-            <div key={i} className="flex flex-col items-center gap-0.5">
-              <RewardIcon reward={r} large />
-              <span className="text-base font-bold text-[#FFF6E9]">+{formatAmount(r.amount)}</span>
-            </div>
-          ))}
-        </div>
-
-        {!isCompleted && !isClaimed ? (
-          <PlayButton label="GO" size="sm" onClick={() => onGo?.()} wrapStyle={{ fontSize: '22px' }} />
-        ) : (
-          <button
-            ref={btnRef}
-            type="button"
-            disabled={isClaimed || isClaiming}
-            onClick={() => {
-              if (isCompleted) onClaim(btnRef.current);
-            }}
-            className={`rounded-lg px-7 py-2 text-xl font-bold text-white shadow-md transition ${
-              isClaimed
-                ? 'cursor-default bg-gradient-to-b from-emerald-600 to-emerald-800 opacity-90'
-                : 'bg-gradient-to-b from-emerald-400 to-emerald-600'
-            }`}
-          >
-            {isClaimed ? 'CLAIMED' : isClaiming ? '…' : 'CLAIM'}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RewardIcon({ reward, large = false }: { readonly reward: RewardItem; readonly large?: boolean }) {
-  const sizeClass = large ? 'h-10 w-10' : 'h-7 w-7';
-  const xpFontSize = large ? 'text-[12px]' : 'text-[9px]';
+function RewardIcon({ reward, size }: { readonly reward: RewardItem; readonly size: 'md' | 'lg' }) {
+  const cls = size === 'lg' ? 'ri ri-lg' : 'ri';
   if (reward.reward_kind === 'currency') {
-    const iconMap: Record<string, string> = {
-      coins: '/lobby/icons/gold-coin.webp',
-      gems: '/lobby/icons/gem.webp',
-    };
-    const src = iconMap[reward.currency_code ?? ''];
-    if (reward.currency_code === 'xp') {
-      return (
-        <div className={`grid ${sizeClass} place-items-center rounded bg-gradient-to-b from-violet-400 to-violet-700 ${xpFontSize} font-black text-white`}>
-          XP
-        </div>
-      );
-    }
-    if (src) return <img src={src} alt="" className={`${sizeClass} object-contain`} draggable={false} />;
+    if (reward.currency_code === 'xp') return <div className={`xp-token ${cls}`}>XP</div>;
+    const src =
+      reward.currency_code === 'coins'
+        ? '/lobby/icons/gold-coin.webp'
+        : reward.currency_code === 'gems'
+          ? '/lobby/icons/gem.webp'
+          : null;
+    if (src) return <img className={cls} src={src} alt="" draggable={false} onError={hideImg} />;
   }
-  return <div className={`grid ${sizeClass} place-items-center rounded bg-stone-700 ${xpFontSize} text-white`}>?</div>;
+  return <div className={`xp-token ${cls}`}>?</div>;
 }
 
 function formatAmount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
   return String(n);
 }
+
+/* ───────────────────────── scoped styles ───────────────────────── */
+// Ported from the operator's mockup. Every selector is prefixed with `.dmx`
+// so it never leaks into the global / Tailwind cascade. Inline SVG art from the
+// mockup is replaced by our webp <img> in the markup above; sizing rules here
+// target those images. The MP / chest-milestone strip is intentionally NOT
+// rendered in this design (chests stay hidden, per the product decision).
+
+const DM_STYLES = `
+.dmx { --gold:#ffd864; --green:#80e45d; --blue:#32baff; --purple:#b85cff; --muted:#b8c2e4;
+  font-synthesis:none; color:#f7f8ff;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+.dmx *{ box-sizing:border-box; }
+.dmx button{ font:inherit; color:inherit; border:0; cursor:pointer; }
+.dmx .screen{ position:relative; width:${DESIGN_W}px; height:${DESIGN_H}px; border-radius:24px; overflow:hidden;
+  padding:26px 28px 28px;
+  background:linear-gradient(180deg,rgba(24,43,106,.94),rgba(2,10,28,.97)),#071433;
+  border:1px solid rgba(116,168,255,.38);
+  box-shadow:0 30px 90px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.045),inset 0 0 90px rgba(54,104,255,.16);
+  isolation:isolate; }
+.dmx .screen::before{ content:""; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(circle at 70% 12%,rgba(87,124,255,.18),transparent 30%),
+    radial-gradient(circle at 12% 68%,rgba(28,198,255,.08),transparent 34%),
+    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px),
+    linear-gradient(180deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:auto,auto,74px 74px,74px 74px;
+  -webkit-mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 82%);
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.65),transparent 82%); z-index:-1; }
+.dmx .topbar{ height:112px; display:flex; align-items:center; gap:22px; margin-bottom:16px; }
+.dmx .brand-mark{ width:92px; height:84px; border-radius:50%; flex:0 0 auto; display:grid; place-items:center;
+  background:radial-gradient(circle at 45% 28%,rgba(255,255,255,.18),transparent 26%),radial-gradient(circle,#0b1736 0%,#030814 72%);
+  border:2px solid rgba(255,211,91,.9);
+  box-shadow:0 0 0 5px rgba(11,34,89,.8),0 16px 30px rgba(0,0,0,.42),0 0 26px rgba(255,205,74,.24),inset 0 0 18px rgba(78,132,255,.22); }
+.dmx .brand-mark img{ width:54px; height:54px; object-fit:contain; }
+.dmx .brand-copy{ min-width:0; }
+.dmx .brand-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(42px,4.15vw,60px);
+  line-height:.92; letter-spacing:.03em; color:#fff7dc; text-transform:uppercase;
+  text-shadow:0 2px 0 rgba(69,40,8,.85),0 7px 18px rgba(0,0,0,.48); }
+.dmx .brand-subtitle{ margin:12px 0 0; color:#cbd4fa; font-size:clamp(16px,1.28vw,19px); letter-spacing:.01em; }
+.dmx .header-spacer{ flex:1; }
+.dmx .refresh-box{ width:214px; height:72px; display:grid; place-items:center; border-radius:14px;
+  background:linear-gradient(180deg,rgba(17,35,83,.96),rgba(8,16,42,.92));
+  border:1px solid rgba(124,168,255,.42); box-shadow:inset 0 0 18px rgba(50,115,255,.12),0 12px 24px rgba(0,0,0,.22); }
+.dmx .refresh-label{ color:var(--gold); font-size:14px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
+.dmx .refresh-time{ margin-top:4px; color:#fff; font-size:22px; font-weight:900; letter-spacing:.03em; font-variant-numeric:tabular-nums; }
+.dmx .close-button{ width:68px; height:68px; border-radius:50%; display:grid; place-items:center;
+  background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.2),transparent 22%),linear-gradient(180deg,#24283a,#070913 68%);
+  border:2px solid rgba(255,211,91,.88); color:#ffe084;
+  box-shadow:0 12px 22px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.08); transition:filter .12s ease, transform .12s ease; }
+.dmx .close-button:hover{ filter:brightness(1.1); } .dmx .close-button:active{ transform:scale(.95); }
+.dmx .close-button svg{ width:32px; height:32px; }
+.dmx .dmx-status{ padding:60px 0; text-align:center; color:rgba(255,228,160,.7); font-size:18px; }
+.dmx .dmx-error{ color:#ffb3b3; }
+.dmx .content{ height:calc(100% - 128px); display:grid; grid-template-columns:minmax(760px,1.52fr) minmax(500px,1fr); gap:20px; }
+.dmx .panel{ min-width:0; min-height:0; border-radius:22px;
+  background:linear-gradient(180deg,rgba(8,21,56,.78),rgba(3,10,29,.82));
+  border:1px solid rgba(121,161,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.026),0 20px 42px rgba(0,0,0,.24); }
+.dmx .missions-panel{ padding:20px 20px 16px; display:flex; flex-direction:column; min-height:0; }
+.dmx .panel-heading{ height:44px; display:flex; align-items:center; gap:14px; margin-bottom:14px; flex:0 0 auto; }
+.dmx .panel-title{ margin:0; font-size:25px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
+.dmx .panel-actions{ margin-left:auto; display:flex; gap:14px; align-items:center; }
+.dmx .compact-button{ height:36px; min-width:96px; padding:0 16px; border-radius:9px; font-size:16px; font-weight:950;
+  letter-spacing:.02em; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 8px 16px rgba(0,0,0,.24); }
+.dmx .compact-button.rerolls{ background:linear-gradient(180deg,#11571f,#082f12); border:1px solid rgba(95,255,115,.55); color:#a8ff88; }
+.dmx .compact-button.claim-all{ background:linear-gradient(180deg,#4f5668,#2d3342); border:1px solid rgba(179,190,219,.34); color:#cbd2e5; transition:filter .12s ease; }
+.dmx .compact-button.claim-all:not(:disabled):hover{ filter:brightness(1.12); }
+.dmx .compact-button.claim-all:disabled{ opacity:.5; cursor:not-allowed; }
+.dmx .mission-list{ display:grid; gap:10px; align-content:start; min-height:0; }
+.dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#8df257;
+  --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
+  position:relative; height:124px; border-radius:16px; display:grid;
+  grid-template-columns:112px minmax(220px,1fr) 1px 248px; align-items:center; padding:10px 20px 10px 14px;
+  background:radial-gradient(circle at 12% 50%,rgba(var(--accent-rgb),.18),transparent 42%),
+    linear-gradient(90deg,var(--card-start),var(--card-mid) 48%,var(--card-end));
+  border:1px solid rgba(var(--accent-rgb),.82);
+  box-shadow:0 10px 22px rgba(0,0,0,.25),inset 0 0 18px rgba(var(--accent-rgb),.07),inset 0 1px 0 rgba(255,255,255,.09);
+  overflow:hidden; }
+.dmx .mission-card::before{ content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.09),transparent 34%,rgba(0,0,0,.10)),
+    linear-gradient(115deg,transparent 0 45%,rgba(255,255,255,.055) 50%,transparent 57%); opacity:.9; }
+.dmx .mission-card>*{ position:relative; z-index:1; }
+.dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#99f35f; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
+.dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#32c9ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
+.dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#d55cff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
+.dmx .mission-badge{ width:96px; height:104px; justify-self:center; display:grid; place-items:center; }
+.dmx .mission-badge img{ width:96px; height:104px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; }
+.dmx .mission-name{ margin:0 0 7px; font-family:Georgia,"Times New Roman",serif; font-size:24px; line-height:1.05; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dmx .mission-description{ margin:0 0 13px; font-size:16px; color:#d4daf1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dmx .progress-line{ display:flex; align-items:center; gap:14px; max-width:390px; }
+.dmx .progress-track{ position:relative; flex:1; height:15px; border-radius:999px; background:rgba(2,6,15,.72);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),0 4px 8px rgba(0,0,0,.18); overflow:hidden; }
+.dmx .progress-fill{ position:absolute; inset:2px auto 2px 2px; width:calc(var(--progress) * 1%); border-radius:inherit;
+  background:linear-gradient(90deg,rgba(255,255,255,.14),transparent 28%),linear-gradient(90deg,var(--fill),#c7ff8c);
+  box-shadow:0 0 12px rgba(var(--accent-rgb),.46); transition:width .4s ease; }
+.dmx .is-rare .progress-fill{ background:linear-gradient(90deg,#24bdff,#73e6ff); }
+.dmx .is-epic .progress-fill{ background:linear-gradient(90deg,#b84cff,#f06bff); }
+.dmx .progress-count{ min-width:62px; display:inline-flex; justify-content:center; padding:4px 9px; border-radius:8px;
+  background:rgba(0,0,0,.25); color:#fff; font-weight:950; font-size:16px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+.dmx .mission-card.is-complete .progress-count{ color:#9cff75; }
+.dmx .mission-separator{ height:84px; background:linear-gradient(180deg,transparent,rgba(255,255,255,.22),transparent); }
+.dmx .mission-reward{ padding-left:24px; display:grid; grid-template-columns:minmax(82px,1fr) 130px; gap:16px; align-items:center; }
+.dmx .reward-title{ margin-bottom:8px; color:#c9d3f4; font-size:13px; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
+.dmx .reward-icons{ display:flex; align-items:center; gap:13px; }
+.dmx .reward-item{ display:grid; justify-items:center; gap:3px; min-width:45px; }
+.dmx .ri{ width:38px; height:38px; object-fit:contain; filter:drop-shadow(0 5px 5px rgba(0,0,0,.35)); }
+.dmx .reward-amount{ font-size:17px; font-weight:950; color:#fff; letter-spacing:.02em; }
+.dmx .mission-controls{ display:grid; justify-items:center; gap:8px; }
+.dmx .go-button{ width:122px; height:52px; border-radius:11px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%),linear-gradient(180deg,#79dc4e,#208132);
+  border:1px solid rgba(177,255,135,.9);
+  box-shadow:0 8px 14px rgba(0,0,0,.36),inset 0 2px 0 rgba(255,255,255,.24),inset 0 -4px 0 rgba(0,0,0,.18);
+  font-family:Georgia,"Times New Roman",serif; font-size:24px; font-weight:900; letter-spacing:.025em; text-transform:uppercase;
+  text-shadow:0 2px 2px rgba(0,0,0,.42); transition:transform .12s ease,filter .12s ease; }
+.dmx .go-button:not(:disabled):hover{ filter:brightness(1.08); transform:translateY(-1px); }
+.dmx .go-button:not(:disabled):active{ transform:translateY(1px) scale(.99); }
+.dmx .go-button svg{ width:19px; height:19px; }
+.dmx .go-button.is-purple{ background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%),linear-gradient(180deg,#bc61ff,#6b24c5); border-color:rgba(223,152,255,.92); }
+.dmx .go-button.is-claimed{ background:linear-gradient(180deg,rgba(255,255,255,.13),transparent 36%),linear-gradient(180deg,#386db8,#1c3a67);
+  border-color:rgba(108,164,255,.62); color:#dce9ff; font-family:inherit; font-size:18px; letter-spacing:.02em;
+  box-shadow:0 7px 12px rgba(0,0,0,.27),inset 0 1px 0 rgba(255,255,255,.18); cursor:default; }
+.dmx .reroll-note{ display:inline-flex; align-items:center; gap:6px; color:#c6cfed; font-size:14px; font-weight:700; white-space:nowrap; background:none; transition:color .12s ease; }
+.dmx .reroll-note:hover{ color:var(--gold); } .dmx .reroll-note svg{ width:16px; height:16px; color:var(--gold); }
+.dmx .reroll-confirm{ display:inline-flex; align-items:center; gap:6px; }
+.dmx .reroll-confirm .rc-no{ width:26px; height:26px; border-radius:7px; background:#2a1230; color:#e59ab8; border:1px solid rgba(217,76,255,.4); font-size:13px; }
+.dmx .reroll-confirm .rc-yes{ height:26px; padding:0 10px; border-radius:7px; background:linear-gradient(180deg,#5be52a,#1d8300); color:#fff; font-size:12px; font-weight:900; border:1px solid rgba(177,255,135,.7); }
+.dmx .dmx-empty,.dmx .dmx-action-error{ border-radius:10px; padding:14px; text-align:center; font-size:14px; }
+.dmx .dmx-empty{ background:rgba(29,36,96,.6); color:#c6b7d8; }
+.dmx .dmx-action-error{ margin-top:10px; background:rgba(80,20,20,.5); color:#ffb3b3; }
+.dmx .tabs-panel{ padding:0 16px 16px; display:grid; grid-template-rows:62px 1fr; }
+.dmx .tabs{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-self:end; }
+.dmx .tab-button{ position:relative; height:56px; border-radius:15px 15px 0 0; background:rgba(5,12,35,.74);
+  border:1px solid rgba(116,160,255,.24); border-bottom:0; color:rgba(222,228,252,.56); font-size:22px; font-weight:950;
+  letter-spacing:.05em; text-transform:uppercase; box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
+.dmx .tab-button.is-active{ color:#fff; background:linear-gradient(180deg,rgba(43,120,255,.96),rgba(23,55,171,.94));
+  border-color:rgba(94,168,255,.85); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 20px rgba(50,120,255,.24); }
+.dmx .tab-dot{ position:absolute; top:10px; right:18px; width:11px; height:11px; border-radius:50%; background:#e9482f; border:1px solid #ff9d6a; box-shadow:0 0 8px rgba(255,75,45,.7); }
+.dmx .streak-panel{ border-radius:0 0 18px 18px; border:1px solid rgba(116,160,255,.33);
+  background:radial-gradient(circle at 82% 16%,rgba(41,92,203,.22),transparent 42%),linear-gradient(180deg,rgba(8,19,52,.92),rgba(2,8,25,.9));
+  box-shadow:0 18px 42px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.025); padding:24px 30px 22px; min-height:0; display:flex; flex-direction:column; gap:14px; }
+.dmx .streak-header{ display:flex; align-items:center; gap:16px; }
+.dmx .streak-title{ margin:0; font-size:31px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
+.dmx .streak-days{ height:38px; display:inline-flex; align-items:center; padding:0 14px; border-radius:9px;
+  background:rgba(12,37,95,.78); border:1px solid rgba(50,129,255,.64); color:#5db4ff; font-size:20px; font-weight:950; white-space:nowrap; }
+.dmx .streak-description{ margin:-4px 0 0; color:#cfd7f5; font-size:16px; line-height:1.45; }
+.dmx .streak-track{ position:relative; display:grid; grid-template-columns:repeat(7,1fr); align-items:start; height:104px; flex:0 0 104px; }
+.dmx .streak-track::before{ content:""; position:absolute; left:7%; right:7%; top:50px; height:5px; border-radius:999px;
+  background:linear-gradient(90deg,rgba(72,97,142,.9),rgba(107,114,137,.78)); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
+.dmx .track-day{ position:relative; z-index:1; display:grid; justify-items:center; gap:10px; color:#dce3ff; font-size:14px; font-weight:900; letter-spacing:.035em; text-transform:uppercase; }
+.dmx .day-node{ width:42px; height:42px; border-radius:50%;
+  background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.13),transparent 24%),linear-gradient(180deg,#17223c,#0a1021);
+  border:4px solid rgba(116,121,139,.82); box-shadow:0 6px 10px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.035); }
+.dmx .day-node.is-done{ border-color:#5ee27a; background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.2),transparent 26%),linear-gradient(180deg,#39c45a,#15772f);
+  box-shadow:0 0 14px rgba(73,255,55,.4),inset 0 0 0 1px rgba(255,255,255,.1); }
+.dmx .day-node.is-current{ border-color:#2fc9ff; box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 22px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
+.dmx .chest-node{ width:52px; height:52px; border-radius:11px; display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 0%,rgba(255,216,100,.18),transparent 44%),linear-gradient(180deg,#241032,#12091c);
+  border:2px solid rgba(255,216,100,.92); box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); }
+.dmx .chest-node.is-lit{ animation:dmxPulse 1.6s ease-in-out infinite; }
+@keyframes dmxPulse{ 0%,100%{ box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); } 50%{ box-shadow:0 0 28px rgba(255,200,70,.7),inset 0 0 14px rgba(178,87,255,.3); } }
+.dmx .chest-node img{ width:44px; height:44px; object-fit:contain; }
+.dmx .streak-rewards{ height:104px; flex:0 0 104px; border-radius:16px; display:flex; align-items:center; gap:34px; padding:0 26px;
+  background:radial-gradient(circle at 18% 30%,rgba(54,118,255,.18),transparent 46%),linear-gradient(180deg,rgba(22,39,88,.86),rgba(11,20,49,.9));
+  border:1px solid rgba(119,155,238,.34); box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 10px 20px rgba(0,0,0,.18); }
+.dmx .streak-reward-item{ min-width:58px; display:grid; justify-items:center; gap:5px; font-weight:950; color:#fff; }
+.dmx .ri-lg{ width:48px; height:48px; filter:drop-shadow(0 6px 6px rgba(0,0,0,.36)); }
+.dmx .streak-reward-item span{ font-size:19px; }
+.dmx .to-go{ margin-left:auto; color:#55b0ff; font-size:18px; font-weight:950; white-space:nowrap; }
+.dmx .streak-claim{ margin-left:auto; height:44px; padding:0 22px; border-radius:11px; font-size:18px; font-weight:950; text-transform:uppercase;
+  background:linear-gradient(180deg,#ffd864,#bf8124); color:#3a1f08; border:1px solid rgba(255,230,140,.8); box-shadow:0 8px 14px rgba(0,0,0,.3); }
+.dmx .how-panel{ align-self:stretch; margin-top:auto; border-radius:16px; padding:17px 22px; background:rgba(2,9,27,.44); border:1px solid rgba(119,155,238,.22); box-shadow:inset 0 0 0 1px rgba(255,255,255,.02); }
+.dmx .how-title{ margin:0 0 12px; font-size:17px; font-weight:950; letter-spacing:.07em; text-transform:uppercase; }
+.dmx .how-line{ display:grid; grid-template-columns:28px 1fr; gap:12px; align-items:center; color:#d3d9f1; font-size:15px; line-height:1.35; }
+.dmx .how-line + .how-line{ margin-top:10px; }
+.dmx .how-icon{ width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
+  background:radial-gradient(circle at 40% 28%,rgba(255,255,255,.28),transparent 24%),linear-gradient(180deg,#548cff,#1658d6);
+  box-shadow:0 5px 10px rgba(0,0,0,.26),inset 0 0 0 1px rgba(255,255,255,.16); }
+.dmx .how-icon svg{ width:16px; height:16px; color:#fff; }
+.dmx .xp-token{ display:grid; place-items:center; border-radius:9px;
+  background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 30%),linear-gradient(180deg,#b466ff,#7430d0);
+  border:1px solid rgba(226,178,255,.72); box-shadow:inset 0 -4px 0 rgba(0,0,0,.16); color:#fff; font-weight:950; font-size:14px; letter-spacing:.02em; }
+.dmx .ri-lg.xp-token{ font-size:17px; }
+.dmx .weekly-tab{ border-radius:0 0 18px 18px; }
+.dmx .weekly-empty{ margin:auto; text-align:center; color:#c6cfed; }
+.dmx .weekly-empty img{ width:60px; height:60px; object-fit:contain; opacity:.7; margin-bottom:10px; }
+`;
