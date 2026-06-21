@@ -48,6 +48,16 @@ const AI_DICE_SETTLE_MS = DICE_ANIMATION_MS;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+/** Fresh game board with a RANDOM opening player. Real backgammon decides who
+ *  moves first by a roll-off; we model that as a coin-flip on the starting turn
+ *  so the human doesn't always open (and the AI sometimes does). When black (the
+ *  AI) opens, the AI orchestration effect below auto-plays it — board.turn ===
+ *  ai.player on mount, so no human action is needed for the AI's first turn. */
+function randomFirstBoard(): BoardState {
+  const b = initialBoard();
+  return Math.random() < 0.5 ? b : { ...b, turn: 'black' };
+}
+
 export interface AIConfig {
   readonly player: Player;
   readonly level: AILevel;
@@ -138,7 +148,7 @@ interface MoveSnapshot {
 export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameActions {
   const initialTarget = opts.initialTarget ?? DEFAULT_TARGET;
   const [match, setMatch] = useState<MatchState>(() => newMatchState(initialTarget));
-  const [board, setBoard] = useState<BoardState>(initialBoard);
+  const [board, setBoard] = useState<BoardState>(randomFirstBoard);
   const [diceRoll, setDiceRoll] = useState<DiceRoll | null>(null);
   const [remaining, setRemaining] = useState<readonly Die[]>([]);
   const [selectedFrom, setSelectedFrom] = useState<Position | null>(null);
@@ -349,7 +359,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   const nextGame = useCallback(() => {
     if (lastGameResult === null) return;
     if (matchOver) return;
-    setBoard(initialBoard());
+    setBoard(randomFirstBoard());
     setDiceRoll(null);
     setRemaining([]);
     setSelectedFrom(null);
@@ -363,7 +373,7 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
   const newMatch = useCallback(
     (target: number = match.target, nextAi: AIConfig | null = ai) => {
       setMatch(newMatchState(target));
-      setBoard(initialBoard());
+      setBoard(randomFirstBoard());
       setDiceRoll(null);
       setRemaining([]);
       setSelectedFrom(null);
