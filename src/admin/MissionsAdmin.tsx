@@ -173,6 +173,11 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
   const [draftRewards, setDraftRewards] = useState<RewardRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Inline delete confirmation. We deliberately do NOT use window.confirm():
+  // it's synchronous and blocks the main thread for the whole time the dialog
+  // is open, which the browser attributes to the click handler and reports as
+  // a multi-second INP / "blocked UI updates" spike.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [filterRarity, setFilterRarity] = useState<string>('all');
   const [filterPeriod, setFilterPeriod] = useState<string>('all');
 
@@ -244,6 +249,7 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
 
   const startEdit = (t: MissionTemplate | null) => {
     setError(null);
+    setConfirmingDelete(false);
     if (t) {
       setDraft({ ...t });
       setDraftRewards(rewardsByTemplate[t.id] ?? []);
@@ -342,7 +348,7 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
 
   const remove = async () => {
     if (!draft || !draft.id) return;
-    if (!window.confirm(`Delete template "${draft.title}"? This cannot be undone.`)) return;
+    setConfirmingDelete(false);
     setSaving(true);
     const { error: e } = await sb.from('mission_templates')
       .delete()
@@ -655,13 +661,30 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                   Duplicate
                 </button>
               )}
-              {draft.id && (
+              {draft.id && !confirmingDelete && (
                 <button
-                  type="button" disabled={saving} onClick={remove}
+                  type="button" disabled={saving} onClick={() => setConfirmingDelete(true)}
                   className="rounded bg-rose-700 px-4 py-2 font-bold text-white hover:bg-rose-600 disabled:opacity-50"
                 >
                   Delete
                 </button>
+              )}
+              {draft.id && confirmingDelete && (
+                <div className="flex items-center gap-2 rounded bg-rose-950/50 px-2 py-1 ring-1 ring-rose-500/40">
+                  <span className="px-1 text-xs font-semibold text-rose-100">Delete permanently?</span>
+                  <button
+                    type="button" disabled={saving} onClick={remove}
+                    className="rounded bg-rose-700 px-3 py-1.5 text-sm font-bold text-white hover:bg-rose-600 disabled:opacity-50"
+                  >
+                    {saving ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                  <button
+                    type="button" disabled={saving} onClick={() => setConfirmingDelete(false)}
+                    className="rounded bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               )}
             </div>
           )}
