@@ -37,7 +37,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
-  const [armedRerollId, setArmedRerollId] = useState<string | null>(null);
+  const [rerollConfirmId, setRerollConfirmId] = useState<string | null>(null);
   // The most-recently-rerolled mission floats to the top of the list so the
   // replacement is always visible up top (not buried mid-list). reroll_mission
   // updates the row in place, so the id is stable across the refetch.
@@ -163,7 +163,6 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   };
 
   const handleReroll = async (missionId: string) => {
-    setArmedRerollId(null);
     setRerollingMissionId(missionId);
     setActionError(null);
     try {
@@ -171,6 +170,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
       if (rpcErr) setActionError(extractErrorMessage(rpcErr));
       else {
         setRerolledTopId(missionId);
+        setRerollConfirmId(null);
         refetch();
       }
     } catch (e) {
@@ -233,13 +233,9 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                         key={m.id}
                         mission={m}
                         isClaiming={claimingMissionId === m.id}
-                        isRerolling={rerollingMissionId === m.id}
                         canReroll={canRerollAny}
                         rerollCost={rerollCost}
-                        armed={armedRerollId === m.id}
-                        onArm={() => setArmedRerollId(m.id)}
-                        onDisarm={() => setArmedRerollId(null)}
-                        onReroll={() => handleReroll(m.id)}
+                        onRerollClick={() => setRerollConfirmId(m.id)}
                         onClaim={(el) => handleClaim(m.id, el)}
                         onGo={onClose}
                       />
@@ -396,6 +392,19 @@ export function DailyMissionsModal({ result, onClose }: Props) {
         </div>
       </ScaleInModal>
 
+      {rerollConfirmId && state && (
+        <RerollConfirmModal
+          priceGems={state.reroll.next_cost ?? 0}
+          isBusy={rerollingMissionId !== null}
+          errorMessage={actionError}
+          onConfirm={() => handleReroll(rerollConfirmId)}
+          onCancel={() => {
+            setRerollConfirmId(null);
+            setActionError(null);
+          }}
+        />
+      )}
+
       {flights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
@@ -409,28 +418,248 @@ function hideImg(e: SyntheticEvent<HTMLImageElement>) {
   (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
 }
 
+/** Reroll confirmation popup — carnival/gold style matching BoardPurchaseModal,
+ *  asking the player to confirm spending gems (or a free reroll). */
+function RerollConfirmModal({
+  priceGems,
+  isBusy,
+  errorMessage,
+  onConfirm,
+  onCancel,
+}: {
+  readonly priceGems: number;
+  readonly isBusy: boolean;
+  readonly errorMessage: string | null;
+  readonly onConfirm: () => void;
+  readonly onCancel: () => void;
+}) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  const free = priceGems <= 0;
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      style={{
+        background: 'radial-gradient(circle at center, rgba(92,48,14,0.35), rgba(0,0,0,0.78))',
+        backdropFilter: 'blur(4px)',
+        opacity: entered ? 1 : 0,
+        transition: 'opacity 220ms ease',
+      }}
+    >
+      <div
+        className="relative text-center"
+        style={{
+          width: 'min(92vw, 26rem)',
+          padding: 'clamp(1.6rem,5vmin,2.3rem) clamp(1.5rem,5vmin,2.6rem) clamp(1.4rem,4.5vmin,2rem)',
+          borderRadius: '22px',
+          background:
+            'linear-gradient(rgba(255,255,255,0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%)',
+          border: '5px solid #ffd057',
+          color: '#4b2108',
+          boxShadow:
+            '0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)',
+          transformOrigin: 'center',
+          transform: entered ? 'scale(1)' : 'scale(0.16)',
+          opacity: entered ? 1 : 0,
+          transition: 'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
+          transitionDelay: entered ? '120ms' : '0ms',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isBusy}
+          aria-label="Cancel"
+          className="absolute z-10 grid place-items-center transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            right: '-1.1rem',
+            top: '-1.1rem',
+            width: '3.2rem',
+            height: '3.2rem',
+            borderRadius: '50%',
+            border: '4px solid #ffe06c',
+            background:
+              'radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%)',
+            color: '#fff2a5',
+            fontSize: '2rem',
+            fontWeight: 900,
+            lineHeight: 1,
+            textShadow: '0 3px 0 #8a1608',
+            boxShadow:
+              '0 6px 0 #6b2106, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.55)',
+          }}
+        >
+          ×
+        </button>
+
+        <h2
+          className="relative font-display whitespace-nowrap"
+          style={{
+            margin: 0,
+            marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
+            fontSize: 'clamp(1.2rem,4.2vmin,1.8rem)',
+            fontWeight: 900,
+            letterSpacing: '0.03em',
+            color: '#ffd45f',
+            textShadow: '0 2px 0 #fff2a6, 0 4px 0 #9a4708, 0 7px 0 #5d2605, 0 10px 12px rgba(0,0,0,0.45)',
+          }}
+        >
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>✦</span>
+          REROLL MISSION
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>✦</span>
+        </h2>
+
+        {!free && (
+          <div
+            className="relative mx-auto flex items-center justify-center"
+            style={{
+              width: 'min(82%, 18rem)',
+              height: 'clamp(4.4rem,12vmin,6rem)',
+              marginBottom: 'clamp(1rem,3vmin,1.5rem)',
+              borderRadius: '18px',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)',
+              border: '4px solid #e39a19',
+              boxShadow:
+                '0 0 0 2px #ffdc60, 0 8px 14px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.65), inset 0 -5px 0 rgba(107,48,8,0.22)',
+              gap: 'clamp(0.8rem,2.5vmin,1.5rem)',
+            }}
+          >
+            <img
+              src="/lobby/carousel/gem.webp"
+              alt=""
+              draggable={false}
+              style={{
+                width: 'clamp(2.6rem,7vmin,3.8rem)',
+                height: 'clamp(2.6rem,7vmin,3.8rem)',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(0,210,255,0.5))',
+              }}
+            />
+            <span
+              className="font-display tabular-nums"
+              style={{
+                fontSize: 'clamp(2.2rem,7vmin,3.4rem)',
+                fontWeight: 900,
+                color: '#3c1704',
+                lineHeight: 1,
+                textShadow: '0 2px 0 #fff3ad, 0 5px 6px rgba(0,0,0,0.28)',
+              }}
+            >
+              {priceGems.toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        <p
+          className="relative font-bold"
+          style={{
+            margin: 0,
+            marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
+            fontSize: 'clamp(0.95rem,2.8vmin,1.25rem)',
+            color: '#572607',
+            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+          }}
+        >
+          {free ? (
+            'Reroll this mission for free?'
+          ) : (
+            <>
+              Reroll this mission for{' '}
+              <strong style={{ fontWeight: 900 }}>{priceGems.toLocaleString()} Gems?</strong>
+            </>
+          )}
+        </p>
+
+        {errorMessage ? (
+          <div
+            className="relative mx-auto"
+            style={{
+              maxWidth: '85%',
+              marginBottom: 'clamp(0.8rem,2vmin,1.2rem)',
+              borderRadius: '8px',
+              border: '1px solid rgba(190,18,60,0.4)',
+              background: '#fff1f1',
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: '#9f1239',
+            }}
+          >
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <div className="relative flex justify-center" style={{ gap: 'clamp(1.5rem,5vmin,2.6rem)' }}>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={onConfirm}
+            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              width: 'clamp(7rem,22vmin,9rem)',
+              height: 'clamp(2.8rem,7vmin,3.4rem)',
+              borderRadius: '9999px',
+              border: '2px solid rgba(224,255,143,0.95)',
+              color: '#132109',
+              fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              textShadow: '0 1px 0 rgba(255,255,255,0.28)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
+              boxShadow:
+                '0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)',
+            }}
+          >
+            {isBusy ? '…' : 'Yes'}
+          </button>
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={onCancel}
+            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              width: 'clamp(7rem,22vmin,9rem)',
+              height: 'clamp(2.8rem,7vmin,3.4rem)',
+              borderRadius: '9999px',
+              border: '2px solid rgba(220,220,220,0.95)',
+              color: '#1a1a1a',
+              fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+              fontWeight: 900,
+              letterSpacing: '0.04em',
+              textShadow: '0 1px 0 rgba(255,255,255,0.4)',
+              background:
+                'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)',
+              boxShadow:
+                '0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)',
+            }}
+          >
+            No
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MissionCard({
   mission,
   isClaiming,
-  isRerolling,
   canReroll,
   rerollCost,
-  armed,
-  onArm,
-  onDisarm,
-  onReroll,
+  onRerollClick,
   onClaim,
   onGo,
 }: {
   readonly mission: Mission;
   readonly isClaiming: boolean;
-  readonly isRerolling: boolean;
   readonly canReroll: boolean;
   readonly rerollCost: number | null;
-  readonly armed: boolean;
-  readonly onArm: () => void;
-  readonly onDisarm: () => void;
-  readonly onReroll: () => void;
+  readonly onRerollClick: () => void;
   readonly onClaim: (el: HTMLElement | null) => void;
   readonly onGo: () => void;
 }) {
@@ -478,7 +707,7 @@ function MissionCard({
 
         <div className="mission-controls">
           {isActive ? (
-            <button className="go-button" type="button" disabled={isRerolling} onClick={onGo}>
+            <button className="go-button" type="button" onClick={onGo}>
               Go
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -500,23 +729,15 @@ function MissionCard({
             </button>
           )}
 
-          {showReroll &&
-            (armed ? (
-              <div className="reroll-confirm">
-                <button type="button" className="rc-no" onClick={onDisarm} aria-label="Cancel reroll">✕</button>
-                <button type="button" className="rc-yes" disabled={isRerolling} onClick={onReroll}>
-                  {isRerolling ? '…' : rerollFree ? 'Reroll · Free' : `Reroll · ${rerollCost}💎`}
-                </button>
-              </div>
-            ) : (
-              <button type="button" className="reroll-note" onClick={onArm}>
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                  <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
-              </button>
-            ))}
+          {showReroll && (
+            <button type="button" className="reroll-note" onClick={onRerollClick}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
+            </button>
+          )}
         </div>
       </div>
     </article>
@@ -647,10 +868,10 @@ const DM_STYLES = `
 .dmx .brand-mark{ flex:0 0 auto; display:grid; place-items:center; }
 .dmx .brand-mark img{ width:72px; height:72px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
 .dmx .brand-copy{ min-width:0; }
-.dmx .brand-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:42px;
+.dmx .brand-title{ margin:0; font-family:inherit; font-size:42px;
   line-height:.92; letter-spacing:.03em; color:#fff7dc; text-transform:uppercase;
   text-shadow:0 2px 0 rgba(69,40,8,.85),0 7px 18px rgba(0,0,0,.48); }
-.dmx .brand-subtitle{ margin:6px 0 0; color:#cbd4fa; font-size:15px; letter-spacing:.01em; }
+.dmx .brand-subtitle{ margin:6px 0 0; color:#cbd4fa; font-size:17px; letter-spacing:.01em; }
 .dmx .header-spacer{ flex:1; }
 .dmx .refresh-box{ width:214px; height:72px; display:grid; place-items:center; border-radius:14px;
   background:linear-gradient(180deg,rgba(17,35,83,.96),rgba(8,16,42,.92));
@@ -670,7 +891,7 @@ const DM_STYLES = `
   background:linear-gradient(180deg,rgba(8,21,56,.78),rgba(3,10,29,.82));
   border:1px solid rgba(121,161,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.026),0 20px 42px rgba(0,0,0,.24); }
 .dmx .missions-panel{ padding:20px 20px 16px; display:flex; flex-direction:column; min-height:0; }
-.dmx .missions-footer{ margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:16px; }
+.dmx .missions-footer{ margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:12px; }
 .dmx .panel-heading{ height:44px; display:flex; align-items:center; gap:14px; margin-bottom:14px; flex:0 0 auto; }
 .dmx .panel-title{ margin:0; font-size:25px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
 .dmx .panel-actions{ margin-left:auto; display:flex; gap:14px; align-items:center; }
@@ -681,11 +902,11 @@ const DM_STYLES = `
 .dmx .compact-button.claim-all{ background:linear-gradient(180deg,#4f5668,#2d3342); border:1px solid rgba(179,190,219,.34); color:#cbd2e5; transition:filter .12s ease; }
 .dmx .compact-button.claim-all:not(:disabled):hover{ filter:brightness(1.12); }
 .dmx .compact-button.claim-all:disabled{ opacity:.5; cursor:not-allowed; }
-.dmx .mission-list{ display:grid; gap:10px; align-content:start; min-height:0; }
+.dmx .mission-list{ display:grid; gap:8px; align-content:start; min-height:0; }
 .dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#8df257;
   --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
-  position:relative; height:146px; border-radius:16px; display:grid;
-  grid-template-columns:138px minmax(160px,1fr) 1px 318px; align-items:center; padding:10px 20px 10px 14px;
+  position:relative; height:134px; border-radius:16px; display:grid;
+  grid-template-columns:138px minmax(160px,1fr) 1px 318px; align-items:center; padding:6px 20px 6px 14px;
   background:radial-gradient(circle at 12% 50%,rgba(var(--accent-rgb),.18),transparent 42%),
     linear-gradient(90deg,var(--card-start),var(--card-mid) 48%,var(--card-end));
   border:1px solid rgba(var(--accent-rgb),.82);
@@ -698,8 +919,8 @@ const DM_STYLES = `
 .dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#99f35f; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
 .dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#32c9ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
 .dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#d55cff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
-.dmx .mission-badge{ width:118px; height:128px; justify-self:center; display:grid; place-items:center; }
-.dmx .mission-badge img{ width:118px; height:128px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.dmx .mission-badge{ width:116px; height:122px; justify-self:center; display:grid; place-items:center; }
+.dmx .mission-badge img{ width:116px; height:122px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
 .dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; display:flex; flex-direction:column; justify-content:center; }
 .dmx .mission-description{ margin:0 0 16px; font-size:24px; line-height:1.2; font-weight:600; color:#eef1ff;
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
@@ -816,7 +1037,7 @@ const DM_STYLES = `
 .dmx .weekly-card.is-epic{ --accent-rgb:189,89,255; --fill:#d55cff; --card-mid:#3b1762; --card-end:#170927; }
 .dmx .wk-badge{ width:128px; height:138px; display:grid; place-items:center; }
 .dmx .wk-badge img{ width:128px; height:138px; object-fit:contain; filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
-.dmx .wk-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:30px; line-height:1.12; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); }
+.dmx .wk-title{ margin:0; font-family:inherit; font-size:30px; font-weight:800; line-height:1.12; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); }
 .dmx .wk-desc{ margin:0; font-size:17px; color:#d4daf1; max-width:86%; line-height:1.4; }
 .dmx .wk-progress{ display:flex; align-items:center; gap:14px; width:min(440px,88%); }
 .dmx .wk-rewards{ display:flex; align-items:center; justify-content:center; gap:44px; }
