@@ -43,6 +43,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
   // updates the row in place, so the id is stable across the refetch.
   const [rerolledTopId, setRerolledTopId] = useState<string | null>(null);
   const [tab, setTab] = useState<'daily' | 'weekly'>('daily');
+  const [howOpen, setHowOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   const [flights, setFlights] = useState<readonly RewardFlightSpec[]>([]);
@@ -293,6 +294,15 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                         <div className="streak-days">
                           {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? '' : 's'}
                         </div>
+                        <button
+                          className="dm-info-btn"
+                          type="button"
+                          aria-label="How it works"
+                          aria-expanded={howOpen}
+                          onClick={() => setHowOpen((v) => !v)}
+                        >
+                          i
+                        </button>
                       </div>
                       <p className="streak-description">
                         Complete all daily missions every day. Hit 7 days to open the streak chest.
@@ -331,26 +341,33 @@ export function DailyMissionsModal({ result, onClose }: Props) {
                         )}
                       </div>
 
-                      <div className="how-panel">
-                        <h3 className="how-title">How it works</h3>
-                        <div className="how-line">
-                          <div className="how-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                              <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z" />
-                            </svg>
-                          </div>
-                          <div>Finish every daily mission to advance your streak and bank the chest.</div>
-                        </div>
-                        <div className="how-line">
-                          <div className="how-icon">
+                      {howOpen && (
+                        <div className="dm-how-popover" role="dialog" aria-label="How it works">
+                          <button className="dm-how-close" type="button" aria-label="Close" onClick={() => setHowOpen(false)}>
                             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                              <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
                             </svg>
+                          </button>
+                          <h3 className="how-title">How it works</h3>
+                          <div className="how-line">
+                            <div className="how-icon">
+                              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z" />
+                              </svg>
+                            </div>
+                            <div>Finish every daily mission to advance your streak and bank the chest.</div>
                           </div>
-                          <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
+                          <div className="how-line">
+                            <div className="how-icon">
+                              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                                <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </div>
+                            <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </section>
                   ) : (
                     <section className="streak-panel weekly-tab">
@@ -433,8 +450,7 @@ function MissionCard({
       </div>
 
       <div className="mission-copy">
-        <h3 className="mission-name">{mission.title}</h3>
-        {mission.subtitle && <p className="mission-description">{mission.subtitle}</p>}
+        <p className="mission-description">{mission.subtitle || mission.title}</p>
         <div className="progress-line">
           <div className="progress-track">
             <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
@@ -627,14 +643,14 @@ const DM_STYLES = `
   box-shadow:0 30px 90px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.045),inset 0 0 90px rgba(54,104,255,.16);
   isolation:isolate; }
 .dmx .screen::before{ display:none; }
-.dmx .topbar{ height:112px; display:flex; align-items:center; gap:22px; margin-bottom:16px; }
+.dmx .topbar{ height:84px; display:flex; align-items:center; gap:18px; margin-bottom:12px; }
 .dmx .brand-mark{ flex:0 0 auto; display:grid; place-items:center; }
-.dmx .brand-mark img{ width:108px; height:108px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
+.dmx .brand-mark img{ width:72px; height:72px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
 .dmx .brand-copy{ min-width:0; }
-.dmx .brand-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:clamp(42px,4.15vw,60px);
+.dmx .brand-title{ margin:0; font-family:Georgia,"Times New Roman",serif; font-size:42px;
   line-height:.92; letter-spacing:.03em; color:#fff7dc; text-transform:uppercase;
   text-shadow:0 2px 0 rgba(69,40,8,.85),0 7px 18px rgba(0,0,0,.48); }
-.dmx .brand-subtitle{ margin:12px 0 0; color:#cbd4fa; font-size:clamp(16px,1.28vw,19px); letter-spacing:.01em; }
+.dmx .brand-subtitle{ margin:6px 0 0; color:#cbd4fa; font-size:15px; letter-spacing:.01em; }
 .dmx .header-spacer{ flex:1; }
 .dmx .refresh-box{ width:214px; height:72px; display:grid; place-items:center; border-radius:14px;
   background:linear-gradient(180deg,rgba(17,35,83,.96),rgba(8,16,42,.92));
@@ -649,7 +665,7 @@ const DM_STYLES = `
 .dmx .close-button svg{ width:32px; height:32px; }
 .dmx .dmx-status{ padding:60px 0; text-align:center; color:rgba(255,228,160,.7); font-size:18px; }
 .dmx .dmx-error{ color:#ffb3b3; }
-.dmx .content{ height:calc(100% - 128px); display:grid; grid-template-columns:minmax(760px,1.52fr) minmax(500px,1fr); gap:20px; }
+.dmx .content{ height:calc(100% - 96px); display:grid; grid-template-columns:minmax(760px,1.52fr) minmax(500px,1fr); gap:20px; }
 .dmx .panel{ min-width:0; min-height:0; border-radius:22px;
   background:linear-gradient(180deg,rgba(8,21,56,.78),rgba(3,10,29,.82));
   border:1px solid rgba(121,161,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.026),0 20px 42px rgba(0,0,0,.24); }
@@ -668,8 +684,8 @@ const DM_STYLES = `
 .dmx .mission-list{ display:grid; gap:10px; align-content:start; min-height:0; }
 .dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#8df257;
   --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
-  position:relative; height:124px; border-radius:16px; display:grid;
-  grid-template-columns:112px minmax(170px,1fr) 1px 318px; align-items:center; padding:10px 20px 10px 14px;
+  position:relative; height:146px; border-radius:16px; display:grid;
+  grid-template-columns:138px minmax(160px,1fr) 1px 318px; align-items:center; padding:10px 20px 10px 14px;
   background:radial-gradient(circle at 12% 50%,rgba(var(--accent-rgb),.18),transparent 42%),
     linear-gradient(90deg,var(--card-start),var(--card-mid) 48%,var(--card-end));
   border:1px solid rgba(var(--accent-rgb),.82);
@@ -682,11 +698,11 @@ const DM_STYLES = `
 .dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#99f35f; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
 .dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#32c9ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
 .dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#d55cff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
-.dmx .mission-badge{ width:96px; height:104px; justify-self:center; display:grid; place-items:center; }
-.dmx .mission-badge img{ width:96px; height:104px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
-.dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; }
-.dmx .mission-name{ margin:0 0 7px; font-family:Georgia,"Times New Roman",serif; font-size:24px; line-height:1.05; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dmx .mission-description{ margin:0 0 13px; font-size:16px; color:#d4daf1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dmx .mission-badge{ width:118px; height:128px; justify-self:center; display:grid; place-items:center; }
+.dmx .mission-badge img{ width:118px; height:128px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; display:flex; flex-direction:column; justify-content:center; }
+.dmx .mission-description{ margin:0 0 16px; font-size:24px; line-height:1.2; font-weight:600; color:#eef1ff;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
 .dmx .progress-line{ display:flex; align-items:center; gap:14px; max-width:300px; }
 .dmx .progress-track{ position:relative; flex:1; height:15px; border-radius:999px; background:rgba(2,6,15,.72);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),0 4px 8px rgba(0,0,0,.18); overflow:hidden; }
@@ -734,36 +750,46 @@ const DM_STYLES = `
 .dmx .tab-button.is-active{ color:#fff; background:linear-gradient(180deg,rgba(43,120,255,.96),rgba(23,55,171,.94));
   border-color:rgba(94,168,255,.85); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 20px rgba(50,120,255,.24); }
 .dmx .tab-dot{ position:absolute; top:10px; right:18px; width:11px; height:11px; border-radius:50%; background:#e9482f; border:1px solid #ff9d6a; box-shadow:0 0 8px rgba(255,75,45,.7); }
-.dmx .streak-panel{ border-radius:0 0 18px 18px; border:1px solid rgba(116,160,255,.33);
+.dmx .streak-panel{ position:relative; border-radius:0 0 18px 18px; border:1px solid rgba(116,160,255,.33);
   background:radial-gradient(circle at 82% 16%,rgba(41,92,203,.22),transparent 42%),linear-gradient(180deg,rgba(8,19,52,.92),rgba(2,8,25,.9));
-  box-shadow:0 18px 42px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.025); padding:24px 30px 22px; min-height:0; display:flex; flex-direction:column; gap:14px; }
+  box-shadow:0 18px 42px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.025); padding:28px 30px 26px; min-height:0; display:flex; flex-direction:column; gap:22px; }
 .dmx .streak-header{ display:flex; align-items:center; gap:16px; }
 .dmx .streak-title{ margin:0; font-size:31px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
 .dmx .streak-days{ height:38px; display:inline-flex; align-items:center; padding:0 14px; border-radius:9px;
   background:rgba(12,37,95,.78); border:1px solid rgba(50,129,255,.64); color:#5db4ff; font-size:20px; font-weight:950; white-space:nowrap; }
-.dmx .streak-description{ margin:-4px 0 0; color:#cfd7f5; font-size:16px; line-height:1.45; }
-.dmx .streak-track{ position:relative; display:grid; grid-template-columns:repeat(7,1fr); align-items:start; height:104px; flex:0 0 104px; }
-.dmx .streak-track::before{ content:""; position:absolute; left:7%; right:7%; top:50px; height:5px; border-radius:999px;
+.dmx .dm-info-btn{ margin-left:auto; width:36px; height:36px; flex:0 0 auto; border-radius:50%; display:grid; place-items:center;
+  background:rgba(12,37,95,.82); border:1px solid rgba(50,129,255,.64); color:#5db4ff; font-family:Georgia,serif; font-style:italic; font-size:22px; font-weight:900; line-height:1; transition:filter .12s ease; }
+.dmx .dm-info-btn:hover{ filter:brightness(1.25); }
+.dmx .dm-how-popover{ position:absolute; top:74px; right:24px; z-index:6; width:380px; max-width:82%;
+  border-radius:14px; padding:18px 18px 18px; background:linear-gradient(180deg,#11214f,#070f29);
+  border:1px solid rgba(119,155,238,.45); box-shadow:0 22px 46px rgba(0,0,0,.62); }
+.dmx .dm-how-popover .how-line{ font-size:16px; }
+.dmx .dm-how-popover .how-line + .how-line{ margin-top:12px; }
+.dmx .dm-how-close{ position:absolute; top:8px; right:9px; width:28px; height:28px; display:grid; place-items:center; background:none; color:#9fb0d8; }
+.dmx .dm-how-close svg{ width:18px; height:18px; }
+.dmx .streak-description{ margin:-2px 0 0; color:#dde4ff; font-size:20px; line-height:1.4; }
+.dmx .streak-track{ position:relative; display:grid; grid-template-columns:repeat(7,1fr); align-items:start; height:120px; flex:0 0 120px; }
+.dmx .streak-track::before{ content:""; position:absolute; left:7%; right:7%; top:56px; height:5px; border-radius:999px;
   background:linear-gradient(90deg,rgba(72,97,142,.9),rgba(107,114,137,.78)); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
 .dmx .track-day{ position:relative; z-index:1; display:grid; justify-items:center; gap:10px; color:#dce3ff; font-size:14px; font-weight:900; letter-spacing:.035em; text-transform:uppercase; }
-.dmx .day-node{ width:42px; height:42px; border-radius:50%;
+.dmx .day-node{ width:48px; height:48px; border-radius:50%;
   background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.13),transparent 24%),linear-gradient(180deg,#17223c,#0a1021);
   border:4px solid rgba(116,121,139,.82); box-shadow:0 6px 10px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.035); }
 .dmx .day-node.is-done{ border-color:#5ee27a; background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.2),transparent 26%),linear-gradient(180deg,#39c45a,#15772f);
   box-shadow:0 0 14px rgba(73,255,55,.4),inset 0 0 0 1px rgba(255,255,255,.1); }
 .dmx .day-node.is-current{ border-color:#2fc9ff; box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 22px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
-.dmx .chest-node{ width:52px; height:52px; border-radius:11px; display:grid; place-items:center;
+.dmx .chest-node{ width:58px; height:58px; border-radius:12px; display:grid; place-items:center;
   background:radial-gradient(circle at 50% 0%,rgba(255,216,100,.18),transparent 44%),linear-gradient(180deg,#241032,#12091c);
   border:2px solid rgba(255,216,100,.92); box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); }
 .dmx .chest-node.is-lit{ animation:dmxPulse 1.6s ease-in-out infinite; }
 @keyframes dmxPulse{ 0%,100%{ box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); } 50%{ box-shadow:0 0 28px rgba(255,200,70,.7),inset 0 0 14px rgba(178,87,255,.3); } }
-.dmx .chest-node img{ width:44px; height:44px; object-fit:contain; }
-.dmx .streak-rewards{ height:104px; flex:0 0 104px; border-radius:16px; display:flex; align-items:center; gap:34px; padding:0 26px;
+.dmx .chest-node img{ width:50px; height:50px; object-fit:contain; }
+.dmx .streak-rewards{ height:118px; flex:0 0 118px; border-radius:16px; display:flex; align-items:center; gap:36px; padding:0 28px;
   background:radial-gradient(circle at 18% 30%,rgba(54,118,255,.18),transparent 46%),linear-gradient(180deg,rgba(22,39,88,.86),rgba(11,20,49,.9));
   border:1px solid rgba(119,155,238,.34); box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 10px 20px rgba(0,0,0,.18); }
 .dmx .streak-reward-item{ min-width:58px; display:grid; justify-items:center; gap:5px; font-weight:950; color:#fff; }
-.dmx .ri-lg{ width:48px; height:48px; filter:drop-shadow(0 6px 6px rgba(0,0,0,.36)); }
-.dmx .streak-reward-item span{ font-size:19px; }
+.dmx .ri-lg{ width:54px; height:54px; filter:drop-shadow(0 6px 6px rgba(0,0,0,.36)); }
+.dmx .streak-reward-item span{ font-size:22px; }
 .dmx .to-go{ margin-left:auto; color:#55b0ff; font-size:18px; font-weight:950; white-space:nowrap; }
 .dmx .streak-claim{ margin-left:auto; height:44px; padding:0 22px; border-radius:11px; font-size:18px; font-weight:950; text-transform:uppercase;
   background:linear-gradient(180deg,#ffd864,#bf8124); color:#3a1f08; border:1px solid rgba(255,230,140,.8); box-shadow:0 8px 14px rgba(0,0,0,.3); }
