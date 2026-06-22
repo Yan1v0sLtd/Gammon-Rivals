@@ -26,6 +26,7 @@ import BoardPreview from '../admin/BoardPreview';
 import { WheelAdmin } from '../admin/WheelAdmin';
 import { LevelCurveProposal } from '../admin/LevelCurveProposal';
 import { MissionsAdmin } from '../admin/MissionsAdmin';
+import { useConfirm } from '../admin/useConfirm';
 import { resolveStatusLabel } from '../lib/progression';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
@@ -1007,6 +1008,9 @@ export default function Admin() {
   const [boardMessage, setBoardMessage] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // Non-blocking confirm/prompt dialogs (replaces window.confirm/prompt, which
+  // freeze the main thread and trip the INP monitor). Render {confirmUI} once.
+  const { confirm, prompt, confirmUI } = useConfirm();
 
   const canManage = role === 'owner' || role === 'admin';
   const selectedUser = users.find((row) => row.id === selectedUserId) ?? null;
@@ -1121,7 +1125,11 @@ export default function Admin() {
       setDataError('Set another podium active before deleting the active one.');
       return;
     }
-    const confirmed = window.confirm(`Delete podium "${podium.name}"?`);
+    const confirmed = await confirm({
+      title: `Delete podium "${podium.name}"?`,
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
     if (!confirmed) return;
     setSavingKey(`podium-delete-${podium.id}`);
     setDataError(null);
@@ -1606,18 +1614,17 @@ export default function Admin() {
       return;
     }
 
-    const word = window.prompt(
-      `HARD DELETE ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}?\n\n` +
+    const confirmed = await confirm({
+      title: `Hard delete ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}?`,
+      message:
         `This is IRREVERSIBLE — the auth.users row is removed and all related ` +
         `wallet / inventory / match data is cascade-deleted from the database.\n\n` +
         `Type DELETE to confirm.`,
-      ''
-    );
-    if (word === null) return;
-    if (word.trim().toUpperCase() !== 'DELETE') {
-      setDataError('Hard delete aborted — confirmation text did not match.');
-      return;
-    }
+      requireWord: 'DELETE',
+      confirmLabel: 'Hard delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
 
     setSavingKey('user-delete');
     setDataError(null);
@@ -1649,12 +1656,15 @@ export default function Admin() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Delete ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}? They will be removed from the live user list, but their data will remain recoverable in the database.`
-    );
-    if (!confirmed) return;
-
-    const note = window.prompt('Delete note', 'Back Office soft delete');
+    const note = await prompt({
+      title: `Delete ${uniqueIds.length === 1 ? 'this user' : `${uniqueIds.length} users`}?`,
+      message:
+        'They will be removed from the live user list, but their data remains ' +
+        'recoverable in the database. Add an optional note for the audit trail:',
+      defaultValue: 'Back Office soft delete',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
     if (note === null) return;
 
     setSavingKey('user-delete');
@@ -2236,7 +2246,12 @@ export default function Admin() {
 
   async function deleteBoard(board: BoardThemeConfig) {
     if (!canManage) return;
-    const confirmed = window.confirm(`Delete ${board.display_name}? This removes it from the live board list.`);
+    const confirmed = await confirm({
+      title: `Delete ${board.display_name}?`,
+      message: 'This removes it from the live board list.',
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
     if (!confirmed) return;
     setSavingKey(`board-delete-${board.id}`);
     setDataError(null);
@@ -2351,7 +2366,12 @@ export default function Admin() {
     if (!canManage) return;
     const id = shopDraft.id.trim();
     if (!id) return;
-    if (!window.confirm(`Delete shop item "${shopDraft.display_name.trim() || id}"? It's removed from the store immediately. Past purchases are kept.`)) return;
+    if (!(await confirm({
+      title: `Delete shop item "${shopDraft.display_name.trim() || id}"?`,
+      message: "It's removed from the store immediately. Past purchases are kept.",
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    }))) return;
     setSavingKey('shop-delete');
     setDataError(null);
     try {
@@ -2438,7 +2458,11 @@ export default function Admin() {
       setDataError("You can't remove the admin email you are currently using.");
       return;
     }
-    const confirmed = window.confirm(`Remove admin access for ${row.email}?`);
+    const confirmed = await confirm({
+      title: `Remove admin access for ${row.email}?`,
+      confirmLabel: 'Remove access',
+      tone: 'danger',
+    });
     if (!confirmed) return;
 
     setSavingKey(`email-role-delete-${row.email}`);
@@ -2524,6 +2548,7 @@ export default function Admin() {
 
   return (
     <main className="min-h-screen bg-[#061225] text-white">
+      {confirmUI}
       <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between gap-4">
           <div>

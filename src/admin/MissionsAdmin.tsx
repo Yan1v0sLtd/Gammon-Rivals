@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminSupabase as supabase } from '../lib/adminSupabase';
 import { extractErrorMessage } from '../lib/errors';
 import ImageField from './ImageField';
+import { useConfirm } from './useConfirm';
 
 // The Daily Missions tables aren't in the generated Database type
 // (a full Supabase types regen would lose our hand-patched phantom
@@ -1272,6 +1273,7 @@ function SimulatorTab({ canManage }: { readonly canManage: boolean }) {
   const [state, setState] = useState<TestUserState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { confirm, confirmUI } = useConfirm();
 
   // New-profile form
   const [newName, setNewName] = useState('');
@@ -1357,7 +1359,12 @@ function SimulatorTab({ canManage }: { readonly canManage: boolean }) {
   };
 
   const cleanupAll = async () => {
-    if (!window.confirm(`Delete ALL ${profiles.length} synthetic test profiles? Cannot be undone.`)) return;
+    if (!(await confirm({
+      title: 'Delete all test profiles?',
+      message: `Permanently removes all ${profiles.length} synthetic test profiles. This cannot be undone.`,
+      confirmLabel: 'Delete all',
+      tone: 'danger',
+    }))) return;
     setBusy(true); setError(null);
     try {
       const { error: e } = await supabase.rpc('simulate_cleanup_all');
@@ -1370,6 +1377,7 @@ function SimulatorTab({ canManage }: { readonly canManage: boolean }) {
 
   return (
     <div className="grid gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]">
+      {confirmUI}
       {/* Left column: profile list + new-profile form + bulk spawn */}
       <div className="space-y-3">
         <div className="rounded-xl border border-white/10 bg-white/[0.045] p-3">

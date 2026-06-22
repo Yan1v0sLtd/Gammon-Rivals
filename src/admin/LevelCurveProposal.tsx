@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { adminSupabase as supabase } from '../lib/adminSupabase';
+import { useConfirm } from './useConfirm';
 import { formatUsdMicros } from '../lib/currency';
 import type { Database } from '../types/database';
 
@@ -207,6 +208,7 @@ export function LevelCurveProposal({
   const [applying, setApplying] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, confirmUI } = useConfirm();
   const [message, setMessage] = useState<string | null>(null);
 
   const proposed = useMemo(() => generateCurve(params), [params]);
@@ -263,12 +265,16 @@ export function LevelCurveProposal({
 
   const apply = async () => {
     if (!canManage || applying) return;
-    const confirmed = window.confirm(
-      `Apply this curve? This will REPLACE level_configs rows L1..L${params.max_level}.\n\n` +
+    const confirmed = await confirm({
+      title: 'Apply this curve?',
+      message:
+        `This will REPLACE level_configs rows L1..L${params.max_level}.\n\n` +
         `Existing rows L${params.max_level + 1}+ will be deleted (cap).\n\n` +
         `Total: ${proposed.length} rows · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems in rewards.\n\n` +
         `Players already at higher levels will keep their level (this only changes the XP gates).`,
-    );
+      confirmLabel: 'Apply curve',
+      tone: 'danger',
+    });
     if (!confirmed) return;
 
     setApplying(true);
@@ -345,6 +351,7 @@ export function LevelCurveProposal({
 
   return (
     <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+      {confirmUI}
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-black">Curve Proposal — Cap & Plateau</h2>
         <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
