@@ -716,6 +716,9 @@ function MissionCard({
           ) : isClaimed ? (
             <button className="go-button is-claimed" type="button" disabled>
               Claimed
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </button>
           ) : (
             <button
@@ -793,6 +796,9 @@ function WeeklyCard({
       ) : isClaimed ? (
         <button className="go-button is-claimed wk-go" type="button" disabled>
           Claimed
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       ) : (
         <button ref={btnRef} className="go-button wk-go" type="button" disabled={isClaiming} onClick={() => onClaim(btnRef.current)}>
@@ -903,7 +909,7 @@ const DM_STYLES = `
 .dmx .compact-button.claim-all:not(:disabled):hover{ filter:brightness(1.12); }
 .dmx .compact-button.claim-all:disabled{ opacity:.5; cursor:not-allowed; }
 .dmx .mission-list{ display:grid; gap:8px; align-content:start; min-height:0; }
-.dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#8df257;
+.dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d;
   --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
   position:relative; height:134px; border-radius:16px; display:grid;
   grid-template-columns:138px minmax(160px,1fr) 1px 318px; align-items:center; padding:6px 20px 6px 14px;
@@ -916,9 +922,9 @@ const DM_STYLES = `
   background:linear-gradient(180deg,rgba(255,255,255,.09),transparent 34%,rgba(0,0,0,.10)),
     linear-gradient(115deg,transparent 0 45%,rgba(255,255,255,.055) 50%,transparent 57%); opacity:.9; }
 .dmx .mission-card>*{ position:relative; z-index:1; }
-.dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#99f35f; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
-.dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#32c9ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
-.dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#d55cff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
+.dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
+.dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#23c4ff; --fill-b:#7be7ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
+.dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#b445ff; --fill-b:#ef71ff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
 .dmx .mission-badge{ width:116px; height:122px; justify-self:center; display:grid; place-items:center; }
 .dmx .mission-badge img{ width:116px; height:122px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
 .dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; display:flex; flex-direction:column; justify-content:center; }
@@ -928,10 +934,8 @@ const DM_STYLES = `
 .dmx .progress-track{ position:relative; flex:1; height:15px; border-radius:999px; background:rgba(2,6,15,.72);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),0 4px 8px rgba(0,0,0,.18); overflow:hidden; }
 .dmx .progress-fill{ position:absolute; inset:2px auto 2px 2px; width:calc(var(--progress) * 1%); border-radius:inherit;
-  background:linear-gradient(90deg,rgba(255,255,255,.14),transparent 28%),linear-gradient(90deg,var(--fill),#c7ff8c);
-  box-shadow:0 0 12px rgba(var(--accent-rgb),.46); transition:width .4s ease; }
-.dmx .is-rare .progress-fill{ background:linear-gradient(90deg,#24bdff,#73e6ff); }
-.dmx .is-epic .progress-fill{ background:linear-gradient(90deg,#b84cff,#f06bff); }
+  background:linear-gradient(180deg,rgba(255,255,255,.45),transparent 45%),linear-gradient(90deg,var(--fill),var(--fill-b));
+  box-shadow:0 0 11px rgba(var(--accent-rgb),.66),inset 0 -2px 0 rgba(0,0,0,.18); transition:width .4s ease; }
 .dmx .progress-count{ min-width:62px; display:inline-flex; justify-content:center; padding:4px 9px; border-radius:8px;
   background:rgba(0,0,0,.25); color:#fff; font-weight:950; font-size:16px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 .dmx .mission-card.is-complete .progress-count{ color:#9cff75; }
@@ -955,6 +959,7 @@ const DM_STYLES = `
 .dmx .go-button.is-claimed{ background:linear-gradient(180deg,rgba(255,255,255,.13),transparent 36%),linear-gradient(180deg,#386db8,#1c3a67);
   border-color:rgba(108,164,255,.62); color:#dce9ff; font-family:inherit; font-size:18px; letter-spacing:.02em;
   box-shadow:0 7px 12px rgba(0,0,0,.27),inset 0 1px 0 rgba(255,255,255,.18); cursor:default; }
+.dmx .go-button.is-claimed svg{ width:21px; height:21px; color:#46e6ff; filter:drop-shadow(0 0 4px rgba(70,230,255,.55)); }
 .dmx .reroll-note{ display:inline-flex; align-items:center; gap:6px; color:#c6cfed; font-size:14px; font-weight:700; white-space:nowrap; background:none; transition:color .12s ease; }
 .dmx .reroll-note:hover{ color:var(--gold); } .dmx .reroll-note svg{ width:16px; height:16px; color:var(--gold); }
 .dmx .reroll-confirm{ display:inline-flex; align-items:center; gap:6px; }
@@ -999,6 +1004,10 @@ const DM_STYLES = `
 .dmx .day-node.is-done{ border-color:#5ee27a; background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.2),transparent 26%),linear-gradient(180deg,#39c45a,#15772f);
   box-shadow:0 0 14px rgba(73,255,55,.4),inset 0 0 0 1px rgba(255,255,255,.1); }
 .dmx .day-node.is-current{ border-color:#2fc9ff; box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 22px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
+@media (prefers-reduced-motion: no-preference){ .dmx .day-node.is-current{ animation:dmxDayPulse 2.2s ease-in-out infinite; } }
+@keyframes dmxDayPulse{
+  0%,100%{ box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 20px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
+  50%{ box-shadow:0 0 0 8px rgba(47,201,255,.10),0 0 34px rgba(47,201,255,1),inset 0 0 15px rgba(47,201,255,.28); } }
 .dmx .chest-node{ width:58px; height:58px; border-radius:12px; display:grid; place-items:center;
   background:radial-gradient(circle at 50% 0%,rgba(255,216,100,.18),transparent 44%),linear-gradient(180deg,#241032,#12091c);
   border:2px solid rgba(255,216,100,.92); box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); }
@@ -1029,12 +1038,12 @@ const DM_STYLES = `
 .dmx .weekly-tab{ border-radius:0 0 18px 18px; }
 .dmx .weekly-card{ flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
   gap:18px; border-radius:18px; padding:26px; position:relative; overflow:hidden;
-  --accent-rgb:128,228,93; --fill:#99f35f; --card-mid:#0d3a25; --card-end:#081b14;
+  --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d; --card-mid:#0d3a25; --card-end:#081b14;
   background:radial-gradient(circle at 50% 0%,rgba(var(--accent-rgb),.22),transparent 54%),linear-gradient(180deg,var(--card-mid),var(--card-end));
   border:1px solid rgba(var(--accent-rgb),.82);
   box-shadow:0 14px 30px rgba(0,0,0,.32),inset 0 0 26px rgba(var(--accent-rgb),.08),inset 0 1px 0 rgba(255,255,255,.1); }
-.dmx .weekly-card.is-rare{ --accent-rgb:42,191,255; --fill:#32c9ff; --card-mid:#0a345d; --card-end:#07172c; }
-.dmx .weekly-card.is-epic{ --accent-rgb:189,89,255; --fill:#d55cff; --card-mid:#3b1762; --card-end:#170927; }
+.dmx .weekly-card.is-rare{ --accent-rgb:42,191,255; --fill:#23c4ff; --fill-b:#7be7ff; --card-mid:#0a345d; --card-end:#07172c; }
+.dmx .weekly-card.is-epic{ --accent-rgb:189,89,255; --fill:#b445ff; --fill-b:#ef71ff; --card-mid:#3b1762; --card-end:#170927; }
 .dmx .wk-badge{ width:128px; height:138px; display:grid; place-items:center; }
 .dmx .wk-badge img{ width:128px; height:138px; object-fit:contain; filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
 .dmx .wk-title{ margin:0; font-family:inherit; font-size:30px; font-weight:800; line-height:1.12; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); }
