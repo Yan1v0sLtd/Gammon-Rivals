@@ -503,13 +503,13 @@ function RerollConfirmModal({
             fontSize: 'clamp(1.2rem,4.2vmin,1.8rem)',
             fontWeight: 900,
             letterSpacing: '0.03em',
-            color: '#ffd45f',
-            textShadow: '0 2px 0 #fff2a6, 0 4px 0 #9a4708, 0 7px 0 #5d2605, 0 10px 12px rgba(0,0,0,0.45)',
+            color: '#5d3208',
+            textShadow: '0 1px 0 rgba(255,251,222,0.8), 0 2px 2px rgba(255,247,200,0.3), 0 -1px 1px rgba(35,14,2,0.45)',
           }}
         >
-          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>✦</span>
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#8a5410' }}>✦</span>
           REROLL MISSION
-          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#ffdf69' }}>✦</span>
+          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#8a5410' }}>✦</span>
         </h2>
 
         {!free && (
