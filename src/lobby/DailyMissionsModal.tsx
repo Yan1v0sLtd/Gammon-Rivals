@@ -846,8 +846,9 @@ function RewardIcon({ reward, size }: { readonly reward: RewardItem; readonly si
 }
 
 function formatAmount(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
-  return String(n);
+  // Full number with thousands separators (e.g. 11100 -> "11,100"). Easier to
+  // read than K-abbreviation for the larger cashback coin rewards.
+  return n.toLocaleString('en-US');
 }
 
 /* ───────────────────────── scoped styles ───────────────────────── */

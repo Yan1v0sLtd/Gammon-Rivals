@@ -137,7 +137,8 @@ function previewCashback(d: MissionTemplate) {
   if (!isWager && !tier) return { reward: 0, goal, investment: 0, tier: null as string | null, needsTier: true };
   const edge = 1 - (tier?.rtp ?? 90) / 100;
   const investment = isWager ? goal : goal * (tier?.fee ?? 0);
-  const reward = Math.round((pct * investment * edge) / 50) * 50;
+  // Round UP to the next 100 (matches mp_cashback_reward server-side).
+  const reward = Math.ceil((pct * investment * edge) / 100) * 100;
   return { reward, goal, investment, tier: (tier?.name ?? null) as string | null, needsTier: false };
 }
 
