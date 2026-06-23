@@ -77,12 +77,67 @@ export function MissionsAdmin({ canManage }: Props) {
         ))}
       </div>
 
+      <RefreshMissionsTool canManage={canManage} />
+
       {tab === 'templates' && <TemplatesEditor canManage={canManage} />}
       {tab === 'types'     && <MissionTypesEditor canManage={canManage} />}
       {tab === 'chests'    && <ChestsEditor canManage={canManage} />}
       {tab === 'reroll'    && <RerollEditor canManage={canManage} />}
       {tab === 'streak'    && <StreakEditor canManage={canManage} />}
       {tab === 'simulator' && <SimulatorTab canManage={canManage} />}
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────── */
+/* Testing helper: refresh a real player's daily missions on demand   */
+/* ────────────────────────────────────────────────────────────────── */
+
+function RefreshMissionsTool({ canManage }: { readonly canManage: boolean }) {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!canManage) return null;
+
+  const run = async () => {
+    const e = email.trim();
+    if (!e || busy) return;
+    setBusy(true); setMsg(null); setErr(null);
+    try {
+      const { data, error } = await sb.rpc('admin_refresh_player_missions', { p_email: e });
+      if (error) throw error;
+      const d = (data ?? {}) as { deleted?: number; assigned?: number };
+      setMsg(`Refreshed — cleared ${d.deleted ?? 0}, assigned ${d.assigned ?? 0} daily mission(s). Reload the player's lobby.`);
+    } catch (ex) {
+      setErr(extractErrorMessage(ex));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2">
+      <span className="text-xs font-bold uppercase tracking-wider text-amber-200/80">Testing · Refresh missions</span>
+      <input
+        type="email"
+        placeholder="player email"
+        value={email}
+        onChange={(ev) => setEmail(ev.target.value)}
+        onKeyDown={(ev) => { if (ev.key === 'Enter') run(); }}
+        className="min-w-[200px] flex-1 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+      />
+      <button
+        type="button"
+        disabled={busy || !email.trim()}
+        onClick={run}
+        className="rounded bg-amber-600 px-3 py-1.5 text-sm font-bold text-white transition hover:bg-amber-500 disabled:opacity-50"
+      >
+        {busy ? 'Refreshing…' : 'Refresh'}
+      </button>
+      {msg && <span className="text-xs text-emerald-300">{msg}</span>}
+      {err && <span className="text-xs text-rose-300">{err}</span>}
     </div>
   );
 }
