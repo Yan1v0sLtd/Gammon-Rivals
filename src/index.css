@@ -8076,6 +8076,19 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
+/* Winning-wedge glow — pulses the whole winning slice's brightness while the
+   wheel celebrates (the overlay element is built in WheelModal.tsx). */
+@keyframes wheel-winning-wedge-glow {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+.wheel-winning-wedge {
+  animation: wheel-winning-wedge-glow 0.75s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wheel-winning-wedge { animation: none; opacity: 0.9; }
+}
+
 /* ──────────────────────────────────────────────────────────────────
    DiceTray v4 — pure HTML+CSS 3D dice.
 
