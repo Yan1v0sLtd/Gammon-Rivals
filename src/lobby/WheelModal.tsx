@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { ModalCloseButton } from '../components/ModalCloseButton';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import type { WheelSlot, WheelStateResult } from './useWheelState';
 
@@ -204,11 +205,21 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
 
   const conicBg = useMemo(() => conicGradientFromSlots(slots), [slots]);
 
-  /** Five full turns plus the slot-specific delta to bring the
-   *  chosen slot's centre under the top pointer. Pulled into a
-   *  helper so the math is easy to read and test. */
-  const targetDelta = (slotIndex: number) =>
-    5 * 360 + (360 - SLOT_ANGLE * slotIndex - SLOT_HALF);
+  /** Final rotation (deg) that lands slot `slotIndex`'s CENTRE under the top
+   *  pointer, given the disc's current rotation. Slot i's centre sits at screen
+   *  angle i×SLOT_ANGLE (the conic starts at -SLOT_HALF), so the pointer (0°)
+   *  aligns when rotation ≡ -i×SLOT_ANGLE (mod 360). We compute the smallest
+   *  forward delta from the current angle to that target, then add 5 full
+   *  turns. Crucially this reads the *current* rotation (it accumulates across
+   *  spins) instead of assuming a multiple of 360 — the old version did, so the
+   *  2nd+ spin (and a stale -SLOT_HALF offset) landed on a wedge boundary. */
+  const landingRotation = (startRot: number, slotIndex: number) => {
+    const targetMod = (((-SLOT_ANGLE * slotIndex) % 360) + 360) % 360;
+    const startMod = ((startRot % 360) + 360) % 360;
+    let delta = targetMod - startMod;
+    if (delta < 0) delta += 360;
+    return startRot + 5 * 360 + delta;
+  };
 
   const spawnFlights = (currency: FlightCurrency, count: number) => {
     const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
@@ -266,7 +277,7 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
     const disc = discRef.current;
     if (disc) {
       const startRot = currentRotRef.current;
-      const endRot = startRot + targetDelta(result.slot_index);
+      const endRot = landingRotation(startRot, result.slot_index);
       const startTime = performance.now();
       // Wedge index just BEFORE the start; new crossings have an
       // index strictly greater than this. Using Math.floor preserves
@@ -408,32 +419,16 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
             ✦ HOURLY BONUS ✦
           </div>
 
-          {/* Close orb — sits fully outside the plate's right edge.
-              Sized down proportionally; right offset moves in to
-              match the narrower plate. */}
-          <button
-            type="button"
-            onClick={onClose}
+          {/* Close — the shared app-standard dark/gold disc (ModalCloseButton,
+              same as the shop), sitting just outside the title plate's right
+              edge. Disabled mid-spin so the player can't bail before the
+              reward animation lands. */}
+          <ModalCloseButton
+            onClose={onClose}
+            ariaLabel="Close"
             disabled={phase !== 'idle'}
-            aria-label="Close"
-            className="absolute grid place-items-center rounded-full font-display font-black leading-none text-amber-50 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
-            style={{
-              top: '50%',
-              right: 'clamp(-2.4rem, -5.5vmin, -1.8rem)',
-              width: 'clamp(1.9rem, 5.4vmin, 2.5rem)',
-              height: 'clamp(1.9rem, 5.4vmin, 2.5rem)',
-              fontSize: 'clamp(0.95rem, 2.7vmin, 1.25rem)',
-              transform: 'translateY(-50%)',
-              background:
-                'radial-gradient(circle at 35% 25%, #ffec8a, #f47b20 55%, #9a210d)',
-              border: '2px solid #ffd35a',
-              textShadow: '0 2px 0 #8b180b',
-              boxShadow:
-                '0 3px 0 #702207, 0 6px 12px rgba(0,0,0,0.45)',
-            }}
-          >
-            ×
-          </button>
+            className="absolute top-1/2 right-[-1.9rem] -translate-y-1/2"
+          />
         </div>
 
         {/* Wheel frame — thick gold ring around the spinning disc.
@@ -584,6 +579,27 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
                 'inset 0 0 0 3px #5b2506, inset 0 0 35px rgba(0,0,0,0.32)',
             }}
           >
+                  {/* Winning-wedge glow — the WHOLE slice lights up (not just
+                   *  the prize icons). A full-disc conic overlay that's bright
+                   *  only across the winning slot's 36° arc (same `from
+                   *  -SLOT_HALF` origin as the wheel so it aligns exactly),
+                   *  screen-blended to brighten that wedge, with a pulsing
+                   *  opacity (see .wheel-winning-wedge in index.css). Rendered
+                   *  first + no z-index so it sits above the gradient but below
+                   *  the dividers + icons, which stay crisp on top. */}
+                  {phase === 'celebrating' && spinResult != null ? (
+                    <div
+                      aria-hidden
+                      className="wheel-winning-wedge absolute inset-0 rounded-full"
+                      style={{
+                        background: `conic-gradient(from -${SLOT_HALF}deg, transparent 0 ${spinResult.slot_index * SLOT_ANGLE}deg, rgba(255,247,184,0.92) ${spinResult.slot_index * SLOT_ANGLE}deg ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg, transparent ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg 360deg)`,
+                        mixBlendMode: 'screen',
+                        pointerEvents: 'none',
+                        filter: 'drop-shadow(0 0 calc(var(--wheel-d) * 0.045) rgba(255,238,150,0.95))',
+                      }}
+                    />
+                  ) : null}
+
                   {/* Wedge dividers — radial lines from center to rim,
                    *  one per slot boundary. They sit ON TOP of the
                    *  conic gradient and rotate with the disc. */}
@@ -756,9 +772,12 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
             background:
               'linear-gradient(180deg, #fff070 0%, #ffbd24 35%, #f2730d 72%, #b73808 100%)',
             color: 'white',
-            fontSize: 'clamp(1.15rem, 3.3vmin, 1.9rem)',
+            // "SPINNING…" is much longer than "SPIN"; shrink the font + tracking
+            // (and never wrap) so it stays inside the pill instead of overflowing.
+            fontSize: phase === 'idle' ? 'clamp(1.15rem, 3.3vmin, 1.9rem)' : 'clamp(0.85rem, 2.5vmin, 1.3rem)',
             fontWeight: 900,
-            letterSpacing: '0.1em',
+            letterSpacing: phase === 'idle' ? '0.1em' : '0.04em',
+            whiteSpace: 'nowrap',
             textShadow: '0 3px 0 #8e3308',
             boxShadow:
               '0 5px 0 #793006, 0 10px 16px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
