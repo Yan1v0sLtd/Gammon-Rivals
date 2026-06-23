@@ -109,6 +109,36 @@ interface MissionTemplate {
   subtitle: string | null;
   icon_url: string | null;
   enabled: boolean;
+  reward_mode: 'manual' | 'cashback';
+  cashback_pct: number | null;
+}
+
+// Per-tier entry fee + target RTP, mirrored from table_configs for the BO
+// cashback PREVIEW only (the server recomputes authoritatively at assignment via
+// mp_cashback_reward). Keep loosely in sync with table_configs.
+const TIER_INFO: Record<string, { fee: number; rtp: number; name: string }> = {
+  beginner: { fee: 1000, rtp: 90, name: 'Beginner' },
+  advanced: { fee: 3000, rtp: 87, name: 'Advanced' },
+  pro: { fee: 10000, rtp: 85, name: 'Pro' },
+  expert: { fee: 30000, rtp: 82, name: 'Expert' },
+  'grand-master': { fee: 100000, rtp: 80, name: 'Grand Master' },
+};
+
+/** Estimate the cashback coin reward for the editor preview; mirrors the
+ *  server's mp_cashback_reward(). Returns null when there's nothing to show. */
+function previewCashback(d: MissionTemplate) {
+  const pct = d.cashback_pct ?? 0;
+  if (pct <= 0) return null;
+  const goal = d.resolution_mode === 'fixed' ? (d.goal_value ?? 0) : d.goal_min;
+  if (goal <= 0) return null;
+  const tierId = (d.params?.difficulty_id as string | undefined) ?? '';
+  const tier = TIER_INFO[tierId];
+  const isWager = d.metric_code === 'coins_wagered_per_day';
+  if (!isWager && !tier) return { reward: 0, goal, investment: 0, tier: null as string | null, needsTier: true };
+  const edge = 1 - (tier?.rtp ?? 90) / 100;
+  const investment = isWager ? goal : goal * (tier?.fee ?? 0);
+  const reward = Math.round((pct * investment * edge) / 50) * 50;
+  return { reward, goal, investment, tier: (tier?.name ?? null) as string | null, needsTier: false };
 }
 
 /** A row of mission_type_config — the registry that binds a mission type to its
@@ -274,6 +304,8 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
         subtitle: '',
         icon_url: null,
         enabled: false,
+        reward_mode: 'manual',
+        cashback_pct: null,
       });
       setDraftRewards([]);
     }
@@ -296,6 +328,8 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
         payload.goal_value = null;
         payload.stretch_factor = null;
       }
+      // Cashback % only applies in cashback mode; null it otherwise.
+      if (payload.reward_mode !== 'cashback') payload.cashback_pct = null;
       delete (payload as { id?: string }).id;
 
       let templateId: string;
@@ -557,6 +591,30 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
                 className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
               />
             </Field>
+            <Field label="Difficulty tier">
+              <select
+                value={(draft.params?.difficulty_id as string | undefined) ?? ''}
+                disabled={!canManage}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  const next = { ...(draft.params ?? {}) };
+                  if (v) next.difficulty_id = v; else delete next.difficulty_id;
+                  setDraft({ ...draft, params: next });
+                }}
+                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              >
+                <option value="">None (any tier)</option>
+                <option value="beginner">Beginner</option>
+                <option value="advanced">Advanced</option>
+                <option value="pro">Pro</option>
+                <option value="expert">Expert</option>
+                <option value="grand-master">Grand Master</option>
+              </select>
+              <span className="mt-0.5 block text-[10px] text-white/35">
+                Pins the mission to a tier: fills <span className="font-mono text-white/55">{'{tier}'}</span>,
+                scopes progress, and sets the wager the cashback reward is based on.
+              </span>
+            </Field>
             {draft.resolution_mode === 'personalized' ? (
               <Field label="Goal & reward" wide>
                 <div className="rounded bg-sky-950/40 px-3 py-2 text-xs leading-relaxed text-sky-100/80 ring-1 ring-sky-400/20">
@@ -637,14 +695,53 @@ function TemplatesEditor({ canManage }: { readonly canManage: boolean }) {
             </Field>
           </div>
 
-          {/* Reward bundle */}
+          {/* Reward */}
           <div className="mt-4">
-            <div className="mb-1 text-xs uppercase tracking-wider text-amber-100/70">Reward bundle</div>
-            <RewardBundleEditor
-              rows={draftRewards}
-              onChange={setDraftRewards}
-              disabled={!canManage}
-            />
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <span className="text-xs uppercase tracking-wider text-amber-100/70">Reward</span>
+              <select
+                value={draft.reward_mode}
+                disabled={!canManage}
+                onChange={(e) => setDraft({ ...draft, reward_mode: e.target.value as MissionTemplate['reward_mode'] })}
+                className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+              >
+                <option value="manual">Manual bundle</option>
+                <option value="cashback">Cashback — % of house edge</option>
+              </select>
+            </div>
+            {draft.reward_mode === 'cashback' ? (
+              <div className="rounded bg-amber-950/30 px-3 py-3 ring-1 ring-amber-400/20">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-amber-100/80">Cashback</label>
+                  <input
+                    type="number" step="0.5" min="0" disabled={!canManage}
+                    value={draft.cashback_pct != null ? +(draft.cashback_pct * 100).toFixed(2) : ''}
+                    onChange={(e) => setDraft({ ...draft, cashback_pct: e.target.value === '' ? null : Number(e.target.value) / 100 })}
+                    className="w-24 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                  />
+                  <span className="text-sm text-white/70">% of house edge</span>
+                </div>
+                {(() => {
+                  const p = previewCashback(draft);
+                  if (!p) return <div className="mt-2 text-xs text-white/45">Enter a cashback % to preview the reward.</div>;
+                  if (p.needsTier) return <div className="mt-2 text-xs text-rose-200/90">Pin a difficulty tier above to size the cashback — the entry fee sets the wager.</div>;
+                  return (
+                    <div className="mt-2 text-xs leading-relaxed text-amber-100/85">
+                      ≈ <span className="font-bold text-amber-200">{p.reward.toLocaleString()} coins</span> at goal {p.goal}
+                      {' '}· {(draft.cashback_pct! * 100).toFixed(1)}% of edge on {p.investment.toLocaleString()} coins wagered
+                      {p.tier ? ` in ${p.tier}` : ''}
+                      <div className="mt-1 text-white/40">Sized per player at assignment from the live tier fee/RTP; this is an estimate.</div>
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <RewardBundleEditor
+                rows={draftRewards}
+                onChange={setDraftRewards}
+                disabled={!canManage}
+              />
+            )}
           </div>
 
           {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
