@@ -685,7 +685,7 @@ function MissionCard({
             <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
           </div>
           <div className="progress-count">
-            {mission.progress} / {mission.resolved_goal}
+            {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
           </div>
         </div>
       </div>
@@ -775,7 +775,7 @@ function WeeklyCard({
           <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
         </div>
         <div className="progress-count">
-          {mission.progress} / {mission.resolved_goal}
+          {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
         </div>
       </div>
       <div className="wk-rewards">
