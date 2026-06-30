@@ -3,6 +3,7 @@ import { ScaleInModal } from '../components/ScaleInModal';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getBilling } from '../lib/billing';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
 import type { Database, Json } from '../types/database';
 
@@ -521,8 +522,10 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
 
   const removeFlight = (id: number) => setRewardFlights((prev) => prev.filter((f) => f.id !== id));
 
-  // USD path. Real billing (Play Billing / Stripe) isn't wired yet; admins get
-  // the no-money test purchase so the full flow is exercisable.
+  // USD path → the billing seam. On web/dev (admins) it grants via the no-money
+  // test purchase; the native build routes the SAME call through Play Billing
+  // (cordova-plugin-purchase). Non-admins see "coming soon" until the native
+  // store flow is live.
   const handleUsdPurchase = async (item: BuyDescriptor) => {
     if (!isAdmin) {
       showToast('info', `${item.label} — coming soon`);
@@ -530,14 +533,18 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     }
     if (busyId !== null) return;
     setBusyId(item.id);
-    const { error } = await supabase.rpc('test_purchase_shop_item', { p_item_id: item.id });
+    const billing = await getBilling();
+    const outcome = await billing.purchase({ itemId: item.id, label: item.label });
     setBusyId(null);
-    if (error) {
-      const msg = error.message ?? '';
-      if (msg.includes('already_owned_board')) showToast('info', 'You already own that board.');
-      else if (msg.includes('unsupported_grant')) showToast('error', `${item.label}: unsupported grant.`);
-      else if (msg.includes('not_authorized')) showToast('error', 'Admin only.');
-      else showToast('error', 'Test purchase failed.');
+    if (outcome.status !== 'granted') {
+      if (outcome.status === 'error') {
+        const { code } = outcome;
+        if (code === 'already_owned') showToast('info', 'You already own that board.');
+        else if (code === 'unsupported_grant') showToast('error', `${item.label}: unsupported grant.`);
+        else if (code === 'not_authorized') showToast('error', 'Admin only.');
+        else showToast('error', 'Purchase failed.');
+      }
+      // cancelled / pending: stay silent.
       return;
     }
     const sourceEl = document.querySelector(`[data-fly-source="${item.id}"]`);
