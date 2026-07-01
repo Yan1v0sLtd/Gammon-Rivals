@@ -35,6 +35,9 @@ interface Bundle {
   readonly title: string;
   readonly ribbon: Ribbon;
   readonly headlineKind: 'coins' | 'gems';
+  /** Operator-uploaded pack art (shop_items.image_url); falls back to the
+   *  headline-currency icon when null. */
+  readonly imageUrl: string | null;
   readonly rewards: readonly Reward[];
   readonly priceUsd: number | null;
   readonly priceGems: number | null;
@@ -48,6 +51,9 @@ interface Pack {
   readonly headlineKind: HeadlineKind;
   readonly headlineLabel: string;
   readonly headlineSubLabel?: string;
+  /** Operator-uploaded pack art (shop_items.image_url); falls back to the
+   *  headline icon when null. */
+  readonly imageUrl: string | null;
   /** Numeric grant of the headline currency (coins/gems), or null for
    *  non-currency packs. Drives the struck-base → boosted sale display. */
   readonly baseAmount: number | null;
@@ -104,6 +110,7 @@ function rowToBundle(row: ShopItemRow): Bundle | null {
     title: row.display_name,
     ribbon: pres?.ribbon ?? null,
     headlineKind,
+    imageUrl: row.image_url,
     rewards: (pres?.rewards ?? []).map((r) => ({
       kind: r.kind,
       label: r.label,
@@ -129,6 +136,7 @@ function rowToPack(row: ShopItemRow): Pack | null {
     headlineKind,
     headlineLabel: headline.label ?? row.display_name,
     headlineSubLabel: headline.subLabel,
+    imageUrl: row.image_url,
     baseAmount: currency ? numericGrant(row.contents, currency) : null,
     priceUsd,
     priceGems,
@@ -232,6 +240,24 @@ function HeadlineIcon({ kind, className }: { kind: HeadlineKind; className: stri
   return <DiceIcon className={className} />;
 }
 
+/** Pack/bundle hero: the operator-uploaded art (shop_items.image_url) when set,
+ *  otherwise the headline-currency icon. A broken image URL hides itself rather
+ *  than showing a broken-image glyph. */
+function HeroArt({ imageUrl, kind, className }: { imageUrl: string | null; kind: HeadlineKind; className: string }) {
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt=""
+        className={`select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+        draggable={false}
+        onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+      />
+    );
+  }
+  return <HeadlineIcon kind={kind} className={className} />;
+}
+
 function RewardSlotIcon({ kind, className }: { kind: RewardKind; className: string }) {
   if (kind === 'coins') return <CoinIcon className={className} />;
   if (kind === 'gems') return <GemIcon className={className} />;
@@ -314,7 +340,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
               tone={bundle.ribbon === 'best-value' ? 'rose' : 'violet'}
             />
           ) : null}
-          <HeadlineIcon kind={bundle.headlineKind} className="h-32 w-32" />
+          <HeroArt imageUrl={bundle.imageUrl} kind={bundle.headlineKind} className="h-32 w-32" />
         </div>
         {/* Reward currencies — centered. On sale each currency reward shows the
             struck base above the boosted amount. */}
@@ -362,7 +388,7 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
       <div className="flex flex-1 flex-col p-4">
         {/* Icon −20% to free room for the (bigger) amount + price below. */}
         <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
-          <HeadlineIcon kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
+          <HeroArt imageUrl={pack.imageUrl} kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
         </div>
         {onSale ? <SaleBadge bonusPercent={bonusPercent} /> : null}
         {base !== null || pack.headlineSubLabel ? (
