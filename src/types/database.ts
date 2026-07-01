@@ -1047,6 +1047,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      store_config: {
+        Row: {
+          id: boolean;
+          title: string;
+          bg_image_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: boolean;
+          title?: string;
+          bg_image_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: boolean;
+          title?: string;
+          bg_image_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       user_xp_boosts: {
         Row: {
           id: string;
