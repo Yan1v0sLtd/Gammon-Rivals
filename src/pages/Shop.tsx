@@ -302,6 +302,35 @@ function SaleBadge({ bonusPercent }: { bonusPercent: number }) {
   );
 }
 
+// Total remaining time as HH:MM:SS, where HH is the *total* hours (can exceed
+// 24 — a 2-day sale shows "48:00:00"), matching the requested format.
+function formatCountdown(msRemaining: number): string {
+  const total = Math.max(0, Math.floor(msRemaining / 1000));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+}
+
+// Ticks once a second toward the sale's end. Renders nothing once elapsed (or if
+// endsAt is unparseable), so a finished sale simply drops the footer.
+function SaleCountdown({ endsAt }: { endsAt: string }) {
+  const target = new Date(endsAt).getTime();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const remaining = target - now;
+  if (!Number.isFinite(target) || remaining <= 0) return null;
+  return (
+    <div className="relative z-[3] flex items-center justify-center gap-2.5 border-t border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/10 to-[#050d1c]/45 px-10 py-3">
+      <span className="font-display text-sm font-bold uppercase tracking-[0.14em] text-[#f6e6b8]/75">Sale ends in</span>
+      <span className="font-display text-lg font-black tabular-nums tracking-[0.1em] text-[#ffc93d] drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+        {formatCountdown(remaining)}
+      </span>
+    </div>
+  );
+}
+
 function PriceLabel({ priceUsd, priceGems }: { priceUsd: number | null; priceGems: number | null }) {
   if (priceGems !== null) {
     return (
@@ -471,8 +500,13 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const [scale, setScale] = useState(1);
   const [data, setData] = useState<MappedShop>({ bundles: [], packs: [] });
   // The running Store Sale (null when none). bonusPercent drives the badges +
-  // boosted amounts; the actual grant boost is enforced server-side.
-  const [sale, setSale] = useState<{ label: string; bonusPercent: number } | null>(null);
+  // boosted amounts; the actual grant boost is enforced server-side. endsAt (when
+  // the sale has a scheduled end) drives the live countdown at the modal footer.
+  const [sale, setSale] = useState<{ label: string; bonusPercent: number; endsAt: string | null } | null>(null);
+  // Storefront presentation config (BO-editable): header title + an optional
+  // blurred themed background. Defaults keep the current look until an operator
+  // sets them. See store_config (singleton, public read).
+  const [storeConfig, setStoreConfig] = useState<{ title: string; bgImageUrl: string | null }>({ title: 'Store', bgImageUrl: null });
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
 
@@ -503,8 +537,17 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       });
     void supabase.rpc('current_store_sale').then(({ data: rows, error }) => {
       if (cancelled || error || !rows || rows.length === 0) return;
-      setSale({ label: rows[0].label, bonusPercent: rows[0].bonus_percent });
+      setSale({ label: rows[0].label, bonusPercent: rows[0].bonus_percent, endsAt: rows[0].ends_at });
     });
+    void supabase
+      .from('store_config')
+      .select('title, bg_image_url')
+      .eq('id', true)
+      .maybeSingle()
+      .then(({ data: row, error }) => {
+        if (cancelled || error || !row) return;
+        setStoreConfig({ title: row.title || 'Store', bgImageUrl: row.bg_image_url });
+      });
     return () => {
       cancelled = true;
     };
@@ -662,6 +705,18 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                 filter: 'url(#shop-glass-distortion)',
               }}
             />
+            {/* Optional themed background (BO-set). Blurred + slightly zoomed so
+                its soft edges never reveal a gap; painted above the glass but
+                below the dark tint + shine so text stays readable. */}
+            {storeConfig.bgImageUrl ? (
+              <img
+                aria-hidden="true"
+                src={storeConfig.bgImageUrl}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-60"
+                style={{ filter: 'blur(18px)', transform: 'scale(1.1)' }}
+              />
+            ) : null}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]" style={{ background: 'rgba(10,26,51,0.55)' }} />
             <div
               aria-hidden="true"
@@ -673,7 +728,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
             <header className="relative z-[3] grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/40 to-[#050d1c]/10 px-10 py-5">
               <span aria-hidden="true" />
               <h1 className="text-center font-display text-[2.9rem] font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
-                Store
+                {storeConfig.title || 'Store'}
               </h1>
               <div className="flex items-center justify-end gap-4">
                 {/* Same balance element as the lobby, with the real wallet. The
@@ -751,6 +806,9 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                 )}
               </section>
             </div>
+
+            {/* Live sale countdown — only when a running sale has a scheduled end. */}
+            {sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt} /> : null}
           </main>
         </div>
       </ScaleInModal>

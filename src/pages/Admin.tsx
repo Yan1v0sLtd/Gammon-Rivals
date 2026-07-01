@@ -965,6 +965,9 @@ export default function Admin() {
     starts_at: string;
     ends_at: string;
   }>({ id: null, label: 'Store Sale', bonus_percent: '0', is_active: false, starts_at: '', ends_at: '' });
+  // Storefront presentation (singleton store_config): the shop popup's header
+  // title + an optional blurred themed background. Independent of the sale.
+  const [storeConfigDraft, setStoreConfigDraft] = useState<{ title: string; bg_image_url: string }>({ title: 'Store', bg_image_url: '' });
   const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([]);
   const [audit, setAudit] = useState<AuditEntry[]>([]);
   // RTP dashboard state — fetched lazily when the section is opened so
@@ -1447,6 +1450,18 @@ export default function Admin() {
           is_active: s.is_active,
           starts_at: s.starts_at?.slice(0, 16) ?? '',
           ends_at: s.ends_at?.slice(0, 16) ?? '',
+        });
+      }
+      // Storefront presentation (singleton, seeded on migrate — always one row).
+      const storeConfigResult = await supabase
+        .from('store_config')
+        .select('title, bg_image_url')
+        .eq('id', true)
+        .maybeSingle();
+      if (!storeConfigResult.error && storeConfigResult.data) {
+        setStoreConfigDraft({
+          title: storeConfigResult.data.title ?? 'Store',
+          bg_image_url: storeConfigResult.data.bg_image_url ?? '',
         });
       }
       setAudit(auditResult.data ?? []);
@@ -2353,6 +2368,26 @@ export default function Admin() {
       const { error } = saleDraft.id
         ? await supabase.from('store_sales').update(payload).eq('id', saleDraft.id)
         : await supabase.from('store_sales').insert(payload);
+      if (error) throw error;
+      await loadAdminData();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function saveStoreConfig() {
+    if (!canManage) return;
+    setSavingKey('store-config');
+    setDataError(null);
+    try {
+      const payload = {
+        id: true,
+        title: storeConfigDraft.title.trim() || 'Store',
+        bg_image_url: storeConfigDraft.bg_image_url.trim() || null,
+      };
+      const { error } = await supabase.from('store_config').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
       await loadAdminData();
     } catch (err) {
@@ -4206,6 +4241,23 @@ export default function Admin() {
 
           {activeSection === 'Shop' && (
             <div className="space-y-4">
+              {/* Storefront appearance — the shop popup's header title + an
+                  optional blurred themed background. Independent of the sale, so
+                  an operator can re-theme the shop (e.g. "Shop Sale!" + a themed
+                  background for a promo) with or without a running sale. */}
+              <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
+                <h2 className="text-lg font-black text-[#ffd16f]">Storefront appearance</h2>
+                <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
+                  Sets the shop popup’s title and an optional blurred background image. Use them to theme a promo — e.g. title “Shop Sale!” with an “American” background for a 4th-of-July sale. Leave the background empty for the default look.
+                </p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <Field label="Shop title" value={storeConfigDraft.title} onChange={(title) => setStoreConfigDraft((d) => ({ ...d, title }))} />
+                  <ImageField label="Background image (optional)" value={storeConfigDraft.bg_image_url} onChange={(bg_image_url) => setStoreConfigDraft((d) => ({ ...d, bg_image_url }))} folder="store" kind="background" disabled={!canManage} />
+                </div>
+                <div className="mt-3 flex items-center gap-4">
+                  <PrimaryButton onClick={() => void saveStoreConfig()} disabled={!canManage || savingKey === 'store-config'}>Save appearance</PrimaryButton>
+                </div>
+              </div>
               {/* Store Sale — one global bonus added to every pack's coin/gem
                   grants. Players see a "+X% EXTRA" badge + the boosted amount;
                   the boost is applied server-side at purchase. */}
