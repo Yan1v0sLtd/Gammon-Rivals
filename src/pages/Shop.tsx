@@ -278,7 +278,7 @@ function CornerRibbon({ text, side = 'left', tone }: { text: string; side?: 'lef
         ? 'from-rose-500 to-rose-700 text-white'
         : 'from-violet-500 to-violet-700 text-white';
   return (
-    <div className={`pointer-events-none absolute ${side === 'left' ? '-left-px' : '-right-px'} -top-px h-28 w-28 overflow-hidden`}>
+    <div className={`pointer-events-none absolute z-20 ${side === 'left' ? '-left-px' : '-right-px'} -top-px h-28 w-28 overflow-hidden`}>
       {/* Wide, centred diagonal band whose ends run past the clip box, so it
           reads as a corner ribbon touching BOTH edges. whitespace-nowrap +
           text-center keep "Best Value!" on one line instead of clipping. */}
@@ -334,7 +334,10 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
             hero, below the title bar). On sale: gold "X% BONUS" left, the
             Popular/Best-Value tag moves right; otherwise the tag stays left.
             data-fly-source anchors the reward-flight on a successful gem buy. */}
-        <div className="relative flex h-72 items-center justify-center border-b border-white/10" data-fly-source={bundle.id}>
+        {/* -mx-5 -mt-5 bleeds the hero back out to the card frame, cancelling the
+            body's p-5 for THIS block only, so the corner ribbon reaches the edges
+            (the rest of the body keeps its padding). */}
+        <div className="relative -mx-5 -mt-5 flex h-72 items-center justify-center overflow-hidden border-b border-white/10" data-fly-source={bundle.id}>
           {onSale ? <CornerRibbon text={`${bonusPercent}% Bonus`} side="left" tone="gold" /> : null}
           {bundle.ribbon ? (
             <CornerRibbon
