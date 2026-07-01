@@ -278,10 +278,13 @@ function CornerRibbon({ text, side = 'left', tone }: { text: string; side?: 'lef
         ? 'from-rose-500 to-rose-700 text-white'
         : 'from-violet-500 to-violet-700 text-white';
   return (
-    <div className={`pointer-events-none absolute ${side === 'left' ? '-left-px' : '-right-px'} -top-px h-24 w-24 overflow-hidden`}>
+    <div className={`pointer-events-none absolute ${side === 'left' ? '-left-px' : '-right-px'} -top-px h-28 w-28 overflow-hidden`}>
+      {/* Wide, centred diagonal band whose ends run past the clip box, so it
+          reads as a corner ribbon touching BOTH edges. whitespace-nowrap +
+          text-center keep "Best Value!" on one line instead of clipping. */}
       <div
-        className={`absolute top-4 origin-center px-9 py-1 bg-gradient-to-b ${toneCls} font-display text-[0.7rem] font-black uppercase tracking-[0.14em] shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
-          side === 'left' ? '-left-8 -rotate-45' : '-right-8 rotate-45'
+        className={`absolute left-[-34%] top-[17%] w-[168%] py-1 bg-gradient-to-b ${toneCls} font-display text-center text-[0.62rem] font-black uppercase leading-tight tracking-[0.06em] whitespace-nowrap shadow-[0_2px_4px_rgba(0,0,0,0.35)] ${
+          side === 'left' ? '-rotate-45' : 'rotate-45'
         }`}
       >
         {text}
@@ -331,7 +334,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
             hero, below the title bar). On sale: gold "X% BONUS" left, the
             Popular/Best-Value tag moves right; otherwise the tag stays left.
             data-fly-source anchors the reward-flight on a successful gem buy. */}
-        <div className="relative flex h-44 items-center justify-center border-b border-white/10" data-fly-source={bundle.id}>
+        <div className="relative flex h-72 items-center justify-center border-b border-white/10" data-fly-source={bundle.id}>
           {onSale ? <CornerRibbon text={`${bonusPercent}% Bonus`} side="left" tone="gold" /> : null}
           {bundle.ribbon ? (
             <CornerRibbon
@@ -340,7 +343,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
               tone={bundle.ribbon === 'best-value' ? 'rose' : 'violet'}
             />
           ) : null}
-          <HeroArt imageUrl={bundle.imageUrl} kind={bundle.headlineKind} className="h-32 w-32" />
+          <HeroArt imageUrl={bundle.imageUrl} kind={bundle.headlineKind} className="h-64 w-64" />
         </div>
         {/* Reward currencies — centered. On sale each currency reward shows the
             struck base above the boosted amount. */}
@@ -354,7 +357,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
                   <span className="text-[1.38rem] font-black text-white tabular-nums">{Math.round(r.amount * (1 + bonusPercent / 100)).toLocaleString()}</span>
                 </div>
               ) : (
-                <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.label}</span>
+                <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.amount !== null ? r.amount.toLocaleString() : r.label}</span>
               )}
             </div>
           ))}
