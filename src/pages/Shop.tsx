@@ -113,6 +113,14 @@ function nonEmptyStr(v: unknown): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v : null;
 }
 
+// Compact coin/gem amount for the cards, so big values don't overrun the price
+// button: 1,725,000 → "1.73M", 504,000 → "504K", 78,750 → "78.75K", 750 → "750".
+// Prices (USD / gem cost) are intentionally left exact — this is grant amounts only.
+const AMOUNT_FMT = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 2 });
+function formatAmount(n: number): string {
+  return AMOUNT_FMT.format(n);
+}
+
 function defaultPackHeadline(row: ShopItemRow): HeadlineKind {
   if (row.kind === 'coin_pack') return 'coins';
   if (row.kind === 'special_offer') return 'xp-boost';
@@ -324,7 +332,7 @@ function CornerRibbon({ text, side = 'left', tone }: { text: string; side?: 'lef
 // Small gold pill under a pack's icon advertising the running sale.
 function SaleBadge({ bonusPercent }: { bonusPercent: number }) {
   return (
-    <div className="mx-auto mb-2 w-fit rounded-full border border-[#ffe08a]/70 bg-gradient-to-b from-[#ffe08a] to-[#b8801f] px-3 py-0.5 font-display text-[0.95rem] font-black uppercase tracking-wide text-[#3a2406] shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+    <div className="mx-auto mb-2 w-fit rounded-full border border-[#ffe08a]/70 bg-gradient-to-b from-[#ffe08a] to-[#b8801f] px-3.5 py-1 font-display text-[1.1rem] font-black uppercase tracking-wide text-[#3a2406] shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
       +{bonusPercent}% Extra
     </div>
   );
@@ -423,11 +431,11 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
               <RewardSlotIcon kind={r.kind} className="h-[3.7rem] w-[3.7rem]" />
               {onSale && r.amount !== null ? (
                 <div className="flex flex-col items-center leading-none">
-                  <span className="text-[1.05rem] font-bold text-[#9aabc5] line-through tabular-nums">{r.amount.toLocaleString()}</span>
-                  <span className="text-[1.6rem] font-black text-white tabular-nums">{Math.round(r.amount * (1 + bonusPercent / 100)).toLocaleString()}</span>
+                  <span className="text-[1.05rem] font-bold text-[#9aabc5] line-through tabular-nums">{formatAmount(r.amount)}</span>
+                  <span className="text-[1.6rem] font-black text-white tabular-nums">{formatAmount(Math.round(r.amount * (1 + bonusPercent / 100)))}</span>
                 </div>
               ) : (
-                <span className="text-center text-[1.6rem] font-black leading-tight text-white tabular-nums">{r.amount !== null ? r.amount.toLocaleString() : r.label}</span>
+                <span className="text-center text-[1.6rem] font-black leading-tight text-white tabular-nums">{r.amount !== null ? formatAmount(r.amount) : r.label}</span>
               )}
             </div>
           ))}
@@ -471,7 +479,7 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
       <div className="flex flex-1 flex-col p-4">
         {/* Icon −20% to free room for the (bigger) amount + price below. */}
         <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
-          <HeroArt imageUrl={pack.imageUrl} kind={pack.headlineKind} className="h-[3.9rem] w-[3.9rem]" />
+          <HeroArt imageUrl={pack.imageUrl} kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
         </div>
         {onSale ? <SaleBadge bonusPercent={bonusPercent} /> : null}
         {base !== null || pack.headlineSubLabel ? (
@@ -479,11 +487,11 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
             {base !== null ? (
               onSale ? (
                 <>
-                  <div className="text-[1.1rem] font-bold text-[#9aabc5] line-through tabular-nums">{base.toLocaleString()}</div>
-                  <div className="mt-1 font-display text-[2.05rem] font-black tabular-nums text-white">{boosted!.toLocaleString()}</div>
+                  <div className="text-[1.1rem] font-bold text-[#9aabc5] line-through tabular-nums">{formatAmount(base)}</div>
+                  <div className="mt-1 font-display text-[2.05rem] font-black tabular-nums text-white">{formatAmount(boosted!)}</div>
                 </>
               ) : (
-                <div className="font-display text-[2.05rem] font-black tabular-nums text-white">{base.toLocaleString()}</div>
+                <div className="font-display text-[2.05rem] font-black tabular-nums text-white">{formatAmount(base)}</div>
               )
             ) : null}
             {pack.headlineSubLabel ? <div className="mt-1 text-[0.95rem] font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
@@ -510,7 +518,7 @@ function SectionTitle({ children, compact = false }: { children: ReactNode; comp
   return (
     <h2
       className={`mb-8 flex h-10 items-center justify-center gap-3 font-display font-black uppercase leading-none text-[#ffc93d] ${
-        compact ? 'whitespace-nowrap text-[1.2rem] tracking-[0.12em]' : 'text-[1.9rem] tracking-[0.26em]'
+        compact ? 'whitespace-nowrap text-[1.5rem] tracking-[0.12em]' : 'text-[2.4rem] tracking-[0.26em]'
       }`}
     >
       <span className={compact ? 'text-sm' : 'text-xl'}>✦</span>
@@ -844,7 +852,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                     here — you're already in the shop. */}
                 <div
                   className="flex items-center gap-3"
-                  style={{ '--lobby-u': '0.82px', height: '3.1rem' } as CSSProperties}
+                  style={{ '--lobby-u': '1.02px', height: '3.7rem' } as CSSProperties}
                 >
                   <CurrencyPill flyTarget="coins" label="Coins" value={wallet?.coins} icon="/lobby/icons/gold-coin.webp" onAdd={() => {}} showAdd={false} />
                   <CurrencyPill flyTarget="gems" label="Gems" value={wallet?.gems} icon="/lobby/icons/gem.webp" onAdd={() => {}} showAdd={false} />
