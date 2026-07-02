@@ -9,6 +9,30 @@ with Google → `fulfill_google_purchase` grants → client `finish()` acknowled
 
 ---
 
+> **STATUS — updated 2026-07-02.** Most of this is DONE; the sections below are
+> reference. What's actually left is **step 4 (build the release AAB) + step 5
+> (on-device test-buy)**.
+> - ✅ **9** one-time products live on the internal track — the coins ladder, NOT
+>   the old 6-SKU list below. Play product IDs = `shop_items.google_product_id`,
+>   all Play-valid unique slugs (`small_coin_pack_099` … `mega_coin_vault_9999`).
+> - ✅ Service account `gammon-play-billing@gammon-rivals-501215.iam.gserviceaccount.com`
+>   created + invited under **Users and permissions** with *View financial data* +
+>   *Manage orders* (the old standalone "API access" page is gone from the
+>   console); Google Play Android Developer API enabled on project
+>   `gammon-rivals-501215`.
+> - ✅ Supabase secrets set: `GOOGLE_SERVICE_ACCOUNT_JSON` + `ANDROID_PACKAGE_NAME`.
+> - ✅ `src/lib/billing/nativeBilling.ts` implemented (first draft) + wired into
+>   `getBilling()`. It sources the SKU list from `shop_items` (DATA — not the
+>   hardcoded map in §3 below) and posts the token to the edge fn. **Its store
+>   event lifecycle + validator payload still want an on-device test-license buy
+>   to confirm** — that's why it's a draft.
+> - ⚠️ Correction to §3: the client key env var is **`VITE_SUPABASE_PUBLISHABLE_KEY`**,
+>   not `VITE_SUPABASE_ANON_KEY`. `handleUsdPurchase` is also still admin-gated, so
+>   the first on-device test buy is done as an admin (regular-user un-gating is a
+>   later launch step).
+
+---
+
 ## 0. Prereqs (Play Console — gated on Google identity verification)
 - App created (`com.gammonrivals.app`).
 - 6 in-app products created, IDs matching `shop_items.google_product_id`:
