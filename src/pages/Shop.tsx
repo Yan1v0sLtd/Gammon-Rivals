@@ -55,6 +55,10 @@ interface Pack {
   readonly id: string;
   readonly kind: ShopKind;
   readonly title: string;
+  /** Title-bar text; null hides the bar. Colours override the gold plate. */
+  readonly headerText: string | null;
+  readonly headerBg: string | null;
+  readonly headerFg: string | null;
   readonly headlineKind: HeadlineKind;
   readonly headlineLabel: string;
   readonly headlineSubLabel?: string;
@@ -103,6 +107,12 @@ function numericGrant(contents: Json, key: 'coins' | 'gems'): number | null {
 // DB → view mapping
 // -----------------------------------------------------------------------------
 
+/** A trimmed non-empty string, or null — used for optional presentation fields
+ *  (header text / colours) where empty means "unset / hide / use default". */
+function nonEmptyStr(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() !== '' ? v : null;
+}
+
 function defaultPackHeadline(row: ShopItemRow): HeadlineKind {
   if (row.kind === 'coin_pack') return 'coins';
   if (row.kind === 'special_offer') return 'xp-boost';
@@ -116,13 +126,12 @@ function rowToBundle(row: ShopItemRow): Bundle | null {
   if (priceUsd === null && priceGems === null) return null;
   const headlineKind = pres?.headlineKind === 'gems' ? 'gems' : 'coins';
   const header = pres?.header;
-  const nonEmpty = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
   return {
     id: row.id,
     title: row.display_name,
-    headerText: nonEmpty(header?.text),
-    headerBg: nonEmpty(header?.bg),
-    headerFg: nonEmpty(header?.fg),
+    headerText: nonEmptyStr(header?.text),
+    headerBg: nonEmptyStr(header?.bg),
+    headerFg: nonEmptyStr(header?.fg),
     ribbon: pres?.ribbon ?? null,
     headlineKind,
     imageUrl: row.image_url,
@@ -144,10 +153,14 @@ function rowToPack(row: ShopItemRow): Pack | null {
   const headline = pres?.headline ?? {};
   const headlineKind = headline.kind ?? defaultPackHeadline(row);
   const currency = headlineKind === 'coins' ? 'coins' : headlineKind === 'gems' ? 'gems' : null;
+  const header = pres?.header;
   return {
     id: row.id,
     kind: row.kind as ShopKind,
     title: row.display_name,
+    headerText: nonEmptyStr(header?.text),
+    headerBg: nonEmptyStr(header?.bg),
+    headerFg: nonEmptyStr(header?.fg),
     headlineKind,
     headlineLabel: headline.label ?? row.display_name,
     headlineSubLabel: headline.subLabel,
@@ -440,11 +453,21 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
   const boosted = base !== null ? Math.round(base * (1 + bonusPercent / 100)) : null;
   return (
     <article className="relative flex h-[18rem] flex-col overflow-hidden rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
-      {/* Gold name-plate — same treatment as the bundle, fixed height so every
-          card's body lines up even when a name wraps to two lines. */}
-      <div className={`${GOLD_PLATE} ${PLATE_TEXT} flex h-12 items-center justify-center px-2 text-center text-[0.9rem] leading-[1.05] tracking-[0.05em]`}>
-        {pack.title}
-      </div>
+      {/* Title bar — optional. Hidden when no header text is configured; the
+          card is a fixed-height flex column, so the body just fills the freed
+          space and the grid stays aligned. Colours are BO-overridable (unset →
+          the default gold plate + cream text). */}
+      {pack.headerText ? (
+        <div
+          className={`${pack.headerBg ? '' : GOLD_PLATE} ${PLATE_TEXT} flex h-12 items-center justify-center px-2 text-center text-[0.9rem] leading-[1.05] tracking-[0.05em]`}
+          style={{
+            ...(pack.headerBg ? { background: pack.headerBg } : {}),
+            ...(pack.headerFg ? { color: pack.headerFg } : {}),
+          }}
+        >
+          {pack.headerText}
+        </div>
+      ) : null}
       <div className="flex flex-1 flex-col p-4">
         {/* Icon −20% to free room for the (bigger) amount + price below. */}
         <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
