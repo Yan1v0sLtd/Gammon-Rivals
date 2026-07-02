@@ -639,14 +639,15 @@ export function LobbyScreen() {
     if (lobbyReady) hideOverlay();
   }, [lobbyReady, hideOverlay]);
 
-  // Best-effort cleanup of any difficulty-room matches that were
-  // orphaned in a previous session — closed tab, crash, etc. The RPC
-  // gates by table_config_id IS NOT NULL + started_at older than 60
-  // minutes, so an active match the player just left for a quick
-  // shop run won't be touched. Lobby-load is the right trigger
-  // because it's the natural "back to home base" moment; we refresh
-  // the wallet afterwards so any lose-prize or risk-free refund the
-  // cleanup minted shows up in the top bar.
+  // Finalise any difficulty-room match the player left unfinished (bailed
+  // mid-game, closed the tab, crashed). Lobby-load is the natural "back to home
+  // base" moment and this screen re-mounts on every return from a match, so a
+  // just-abandoned match gets forfeit-finalised here — which also fires the
+  // matches_progress_missions trigger, so "Play N matches" finally counts it.
+  // Age floor of 1 minute (the RPC's minimum): there's no resume-a-match flow,
+  // and this only runs while the player is ON the lobby (never mid-play), so a
+  // short window is safe — it just settles the already-paid entry-fee stake.
+  // Refresh the wallet afterwards so any lose-prize shows in the top bar.
   const abandonRanForUserRef = useRef<string | null>(null);
   useEffect(() => {
     if (!user) return;
@@ -655,7 +656,7 @@ export function LobbyScreen() {
     abandonRanForUserRef.current = user.id;
     (async () => {
       try {
-        const count = await abandonStaleMatches();
+        const count = await abandonStaleMatches(1);
         if (count > 0) void refreshWallet();
       } catch (err) {
         console.warn('abandonStaleMatches failed', err);

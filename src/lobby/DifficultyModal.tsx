@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useImagePreloader } from '../lib/useImagePreloader';
 import { formatCompactNumber } from '../lib/format';
 import { PlayButton } from '../components/PlayButton';
 import type { Database, Json } from '../types/database';
@@ -188,6 +189,15 @@ function metadataText(metadata: Json, key: string): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+/** Per-tier hero image URL: the operator override (metadata.heroImage) or the
+ *  `/lobby/difficulties/<slug>.webp` convention (id with the `difficulty-`
+ *  prefix stripped). Shared by the card and the modal's preload gate. */
+function heroPathFor(row: TableConfigRow): string {
+  const override = metadataText(row.metadata, 'heroImage');
+  const slug = row.id.startsWith('difficulty-') ? row.id.slice('difficulty-'.length) : row.id;
+  return override ?? `/lobby/difficulties/${slug}.webp`;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Card                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -203,22 +213,9 @@ interface CardProps {
 
 function DifficultyCard({ row, affordable, levelLocked, busy, onPlay, onGetCoins }: CardProps) {
   const palette = paletteFor(row.accent_color);
-  const heroOverride = metadataText(row.metadata, 'heroImage');
-  // Layer the per-tier image OVER the tier gradient. If the .webp
-  // file is missing, the browser silently drops the image layer and
-  // the gradient shows — no broken-image icon. Operators can swap
-  // images per tier without redeploying by setting
-  // metadata.heroImage in the BO Difficulties section.
-  //
-  // Path convention: strip the `difficulty-` prefix so the seed's
-  // row.id `difficulty-grand-master` resolves to the cleaner asset
-  // path `/lobby/difficulties/grand-master.webp`. Operators
-  // creating custom tiers without that prefix get their bare id
-  // used as-is.
-  const heroSlug = row.id.startsWith('difficulty-')
-    ? row.id.slice('difficulty-'.length)
-    : row.id;
-  const heroPath = heroOverride ?? `/lobby/difficulties/${heroSlug}.webp`;
+  // Per-tier hero image (metadata.heroImage override, else the slug convention),
+  // layered OVER the tier gradient so a missing .webp silently falls back.
+  const heroPath = heroPathFor(row);
   const heroStyle: React.CSSProperties = {
     backgroundImage: `url("${heroPath}"), ${palette.heroGrad}`,
     backgroundSize: 'cover',
@@ -488,6 +485,12 @@ export function DifficultyModal({
     };
   }, [open]);
 
+  // Preload the per-tier hero art so the cards reveal fully-formed instead of
+  // the room images popping in a beat after the frame. Errors don't block the
+  // gate (a missing .webp just shows the gradient), so it never hangs.
+  const heroUrls = useMemo(() => rows.map(heroPathFor), [rows]);
+  const { ready: heroImagesReady } = useImagePreloader(heroUrls);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent) => {
@@ -546,7 +549,7 @@ export function DifficultyModal({
 
         {error ? (
           <div className="grid place-items-center py-12 text-amber-200/80">{error}</div>
-        ) : loading ? (
+        ) : loading || (rows.length > 0 && !heroImagesReady) ? (
           <div className="grid place-items-center py-12 text-amber-200/60">Loading…</div>
         ) : rows.length === 0 ? (
           <div className="grid place-items-center py-12 text-amber-200/60">
@@ -609,7 +612,10 @@ export function DifficultyModal({
             while the parent polls find_match_in_tier. */}
         {matchmaking?.searchingForTier ? (
           <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-black/85 backdrop-blur-sm">
-            <div className="flex flex-col items-center gap-4 px-6 text-center">
+            {/* Compact self-contained dialog — the matchmaking state has little
+                content, so it reads as a small popup rather than filling the
+                whole room frame. */}
+            <div className="flex w-[min(86vw,20rem)] flex-col items-center gap-4 rounded-2xl border border-emerald-400/25 bg-gradient-to-b from-[#0c1c1a] to-[#050d10] px-7 py-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
               <div className="relative grid h-16 w-16 place-items-center">
                 <span className="absolute inset-0 animate-ping rounded-full border-2 border-emerald-300/40" />
                 <span className="absolute inset-2 animate-pulse rounded-full border-2 border-emerald-400/60" />
@@ -621,7 +627,7 @@ export function DifficultyModal({
                 </div>
                 <div className="mt-1 text-sm font-bold text-emerald-100/70">
                   {matchmaking.tierDisplayName} room ·{' '}
-                  {Math.max(0, matchmaking.maxSeconds - matchmaking.elapsedSeconds)}s
+                  {Math.ceil(Math.max(0, matchmaking.maxSeconds - matchmaking.elapsedSeconds))}s
                 </div>
               </div>
               <div className="h-1 w-48 overflow-hidden rounded-full bg-emerald-900/50">
