@@ -324,7 +324,7 @@ function CornerRibbon({ text, side = 'left', tone }: { text: string; side?: 'lef
 // Small gold pill under a pack's icon advertising the running sale.
 function SaleBadge({ bonusPercent }: { bonusPercent: number }) {
   return (
-    <div className="mx-auto mb-2 w-fit rounded-full border border-[#ffe08a]/70 bg-gradient-to-b from-[#ffe08a] to-[#b8801f] px-3 py-0.5 font-display text-[0.78rem] font-black uppercase tracking-wide text-[#3a2406] shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+    <div className="mx-auto mb-2 w-fit rounded-full border border-[#ffe08a]/70 bg-gradient-to-b from-[#ffe08a] to-[#b8801f] px-3 py-0.5 font-display text-[0.95rem] font-black uppercase tracking-wide text-[#3a2406] shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
       +{bonusPercent}% Extra
     </div>
   );
@@ -351,8 +351,8 @@ function SaleCountdown({ endsAt }: { endsAt: string }) {
   if (!Number.isFinite(target) || remaining <= 0) return null;
   return (
     <div className="relative z-[3] flex items-center justify-center gap-2.5 border-t border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/10 to-[#050d1c]/45 px-10 py-3">
-      <span className="font-display text-sm font-bold uppercase tracking-[0.14em] text-[#f6e6b8]/75">Sale ends in</span>
-      <span className="font-display text-lg font-black tabular-nums tracking-[0.1em] text-[#ffc93d] drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
+      <span className="font-display text-[0.95rem] font-bold uppercase tracking-[0.14em] text-[#f6e6b8]/75">Sale ends in</span>
+      <span className="font-display text-xl font-black tabular-nums tracking-[0.1em] text-[#ffc93d] drop-shadow-[0_1px_0_rgba(0,0,0,0.4)]">
         {formatCountdown(remaining)}
       </span>
     </div>
@@ -420,14 +420,14 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
         <div className="flex flex-wrap items-stretch justify-center gap-4 border-b border-white/10 py-6">
           {bundle.rewards.slice(0, 4).map((r, i) => (
             <div key={i} className="flex min-w-[7rem] flex-1 flex-col items-center justify-center gap-2 rounded-xl bg-[#183763]/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-              <RewardSlotIcon kind={r.kind} className="h-[4.4rem] w-[4.4rem]" />
+              <RewardSlotIcon kind={r.kind} className="h-[3.7rem] w-[3.7rem]" />
               {onSale && r.amount !== null ? (
                 <div className="flex flex-col items-center leading-none">
-                  <span className="text-[0.95rem] font-bold text-[#9aabc5] line-through tabular-nums">{r.amount.toLocaleString()}</span>
-                  <span className="text-[1.38rem] font-black text-white tabular-nums">{Math.round(r.amount * (1 + bonusPercent / 100)).toLocaleString()}</span>
+                  <span className="text-[1.05rem] font-bold text-[#9aabc5] line-through tabular-nums">{r.amount.toLocaleString()}</span>
+                  <span className="text-[1.6rem] font-black text-white tabular-nums">{Math.round(r.amount * (1 + bonusPercent / 100)).toLocaleString()}</span>
                 </div>
               ) : (
-                <span className="text-center text-[1.38rem] font-black leading-tight text-white tabular-nums">{r.amount !== null ? r.amount.toLocaleString() : r.label}</span>
+                <span className="text-center text-[1.6rem] font-black leading-tight text-white tabular-nums">{r.amount !== null ? r.amount.toLocaleString() : r.label}</span>
               )}
             </div>
           ))}
@@ -436,7 +436,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
           type="button"
           onClick={onBuy}
           disabled={isBusy}
-          className={`mt-auto h-16 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.72rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
+          className={`mt-auto h-16 w-full rounded-xl bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.9rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_8px_18px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
         >
           <PriceLabel priceUsd={bundle.priceUsd} priceGems={bundle.priceGems} />
         </button>
@@ -459,7 +459,7 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
           the default gold plate + cream text). */}
       {pack.headerText ? (
         <div
-          className={`${pack.headerBg ? '' : GOLD_PLATE} ${PLATE_TEXT} flex h-12 items-center justify-center px-2 text-center text-[0.9rem] leading-[1.05] tracking-[0.05em]`}
+          className={`${pack.headerBg ? '' : GOLD_PLATE} ${PLATE_TEXT} flex h-12 items-center justify-center px-2 text-center text-[1.05rem] leading-[1.05] tracking-[0.05em]`}
           style={{
             ...(pack.headerBg ? { background: pack.headerBg } : {}),
             ...(pack.headerFg ? { color: pack.headerFg } : {}),
@@ -471,7 +471,7 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
       <div className="flex flex-1 flex-col p-4">
         {/* Icon −20% to free room for the (bigger) amount + price below. */}
         <div className="flex flex-1 items-center justify-center" data-fly-source={pack.id}>
-          <HeroArt imageUrl={pack.imageUrl} kind={pack.headlineKind} className="h-[4.8rem] w-[4.8rem]" />
+          <HeroArt imageUrl={pack.imageUrl} kind={pack.headlineKind} className="h-[3.9rem] w-[3.9rem]" />
         </div>
         {onSale ? <SaleBadge bonusPercent={bonusPercent} /> : null}
         {base !== null || pack.headlineSubLabel ? (
@@ -479,21 +479,21 @@ function PackCard({ pack, isBusy, bonusPercent, onBuy }: { pack: Pack; isBusy: b
             {base !== null ? (
               onSale ? (
                 <>
-                  <div className="text-base font-bold text-[#9aabc5] line-through tabular-nums">{base.toLocaleString()}</div>
-                  <div className="mt-1 font-display text-[1.79rem] font-black tabular-nums text-white">{boosted!.toLocaleString()}</div>
+                  <div className="text-[1.1rem] font-bold text-[#9aabc5] line-through tabular-nums">{base.toLocaleString()}</div>
+                  <div className="mt-1 font-display text-[2.05rem] font-black tabular-nums text-white">{boosted!.toLocaleString()}</div>
                 </>
               ) : (
-                <div className="font-display text-[1.79rem] font-black tabular-nums text-white">{base.toLocaleString()}</div>
+                <div className="font-display text-[2.05rem] font-black tabular-nums text-white">{base.toLocaleString()}</div>
               )
             ) : null}
-            {pack.headlineSubLabel ? <div className="mt-1 text-sm font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
+            {pack.headlineSubLabel ? <div className="mt-1 text-[0.95rem] font-bold text-[#9aabc5]">{pack.headlineSubLabel}</div> : null}
           </div>
         ) : null}
         <button
           type="button"
           onClick={onBuy}
           disabled={isBusy}
-          className={`mt-auto h-14 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.55rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
+          className={`mt-auto h-14 w-full rounded-lg bg-gradient-to-b from-[#27db74] to-[#079044] font-display text-[1.72rem] font-black text-white ${PRICE_SHADOW} shadow-[inset_0_2px_0_rgba(255,255,255,0.22),0_6px_14px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-wait disabled:opacity-60`}
         >
           <PriceLabel priceUsd={pack.priceUsd} priceGems={pack.priceGems} />
         </button>
