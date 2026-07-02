@@ -18,10 +18,12 @@ let cached: BillingService | null = null;
 export async function getBilling(): Promise<BillingService> {
   if (cached) return cached;
   if (Capacitor.isNativePlatform()) {
-    // TODO(billing P3-native): wire cordova-plugin-purchase here.
-    //   const { NativeBillingService } = await import('./nativeBilling');
-    //   cached = new NativeBillingService();
-    cached = new MockBillingService();
+    // Native Play Billing (cordova-plugin-purchase). Dynamic import keeps the
+    // plugin runtime out of the web bundle. First draft — the plugin lifecycle
+    // still needs an on-device test-license buy to confirm; see
+    // docs/billing/native-wiring.md.
+    const { NativeBillingService } = await import('./nativeBilling');
+    cached = new NativeBillingService();
   } else {
     cached = new MockBillingService();
   }
