@@ -404,7 +404,7 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
         {/* -mx-5 -mt-5 bleeds the hero back out to the card frame, cancelling the
             body's p-5 for THIS block only, so the corner ribbon reaches the edges
             (the rest of the body keeps its padding). */}
-        <div className="relative -mx-5 -mt-5 flex h-72 items-center justify-center overflow-hidden border-b border-white/10" data-fly-source={bundle.id}>
+        <div className="relative -mx-5 -mt-5 flex min-h-0 flex-1 items-center justify-center overflow-hidden border-b border-white/10" data-fly-source={bundle.id}>
           {onSale ? <CornerRibbon text={`${bonusPercent}% Bonus`} side="left" tone="gold" /> : null}
           {bundle.ribbon ? (
             <CornerRibbon
@@ -810,18 +810,6 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                 filter: 'url(#shop-glass-distortion)',
               }}
             />
-            {/* Optional themed background (BO-set). Blurred + slightly zoomed so
-                its soft edges never reveal a gap; painted above the glass but
-                below the dark tint + shine so text stays readable. */}
-            {storeConfig.bgImageUrl ? (
-              <img
-                aria-hidden="true"
-                src={storeConfig.bgImageUrl}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover opacity-60"
-                style={{ filter: 'blur(18px)', transform: 'scale(1.1)' }}
-              />
-            ) : null}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]" style={{ background: 'rgba(10,26,51,0.55)' }} />
             <div
               aria-hidden="true"
@@ -829,8 +817,20 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
               style={{ boxShadow: 'inset 2px 2px 1px 0 rgba(255,255,255,0.5), inset -1px -1px 1px 1px rgba(255,255,255,0.22)' }}
             />
 
-            {/* Header */}
-            <header className="relative z-[3] grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/40 to-[#050d1c]/10 px-10 py-5">
+            {/* Header — the only place the BO themed background shows: behind the
+                title + balances, clipped to the header band down to the separator.
+                Full-opacity, gentle 2px blur; negative z keeps it under the header
+                content (which stays static and paints on top). */}
+            <header className="relative z-[3] grid grid-cols-[1fr_auto_1fr] items-center gap-4 overflow-hidden border-b border-[#ffc93d]/25 bg-gradient-to-b from-[#0c1c37]/40 to-[#050d1c]/10 px-10 py-5">
+              {storeConfig.bgImageUrl ? (
+                <img
+                  aria-hidden="true"
+                  src={storeConfig.bgImageUrl}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  className="pointer-events-none absolute inset-0 -z-10 h-full w-full object-cover"
+                  style={{ filter: 'blur(2px)', transform: 'scale(1.06)' }}
+                />
+              ) : null}
               <span aria-hidden="true" />
               <h1 className="text-center font-display text-[2.9rem] font-black uppercase tracking-[0.18em] text-[#ffc93d] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
                 {storeConfig.title || 'Store'}
