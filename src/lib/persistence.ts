@@ -379,8 +379,11 @@ export interface FinishMatchRewardResult {
  * Failures are intentionally swallowed by the caller — this is data
  * hygiene, not a user-facing flow.
  */
-export async function abandonStaleMatches(): Promise<number> {
-  const { data, error } = await supabase.rpc('abandon_stale_matches', {});
+export async function abandonStaleMatches(maxAgeMinutes?: number): Promise<number> {
+  const { data, error } = await supabase.rpc(
+    'abandon_stale_matches',
+    maxAgeMinutes === undefined ? {} : { p_max_age_minutes: maxAgeMinutes },
+  );
   if (error) throw error;
   const payload = data as { abandoned_count: number };
   return payload?.abandoned_count ?? 0;

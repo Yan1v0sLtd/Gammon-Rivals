@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScaleInModal } from '../components/ScaleInModal';
+import { useImagePreloader } from '../lib/useImagePreloader';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -612,6 +613,17 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
+  // Gate the reveal on the operator-uploaded pack art + themed background so the
+  // store appears fully-formed instead of images popping in after the frame.
+  // (Static currency icons are already cached from the lobby; only these remote
+  // BO images pop in.) Errors don't block the gate — a missing image can't hang it.
+  const shopImageUrls = useMemo(
+    () => [...data.bundles.map((b) => b.imageUrl), ...data.packs.map((p) => p.imageUrl), storeConfig.bgImageUrl],
+    [data, storeConfig],
+  );
+  const { ready: shopImagesReady } = useImagePreloader(shopImageUrls);
+  const contentReady = status === 'ready' && shopImagesReady;
+
   // Admin → USD buttons become a no-money test purchase (see handleUsdPurchase).
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
@@ -875,10 +887,10 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
 
             {/* Content: Featured Pack | Packs grid — skeleton while the catalog
                 loads, a retry on failure, otherwise the two sections. */}
-            {status === 'loading' ? (
-              <ShopSkeleton />
-            ) : status === 'error' ? (
+            {status === 'error' ? (
               <ShopError onRetry={() => void loadShop()} />
+            ) : !contentReady ? (
+              <ShopSkeleton />
             ) : (
             <div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
               {/* No divider; the column is a flex stack so the bundle below the
@@ -928,7 +940,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
             )}
 
             {/* Live sale countdown — only when a running sale has a scheduled end. */}
-            {status === 'ready' && sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt} /> : null}
+            {contentReady && sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt} /> : null}
           </main>
         </div>
       </ScaleInModal>
