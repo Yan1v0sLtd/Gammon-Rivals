@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScaleInModal } from '../components/ScaleInModal';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
@@ -472,6 +472,46 @@ function SectionTitle({ children, compact = false }: { children: ReactNode; comp
   );
 }
 
+// Placeholder catalog shown while shop_items loads — mirrors the real layout
+// (one featured column + an 8-card grid) so nothing jumps when data arrives.
+function ShopSkeleton() {
+  return (
+    <div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10" aria-hidden="true">
+      <section className="flex flex-col">
+        <SectionTitle compact>Featured Pack</SectionTitle>
+        <div className="min-h-[30rem] flex-1 animate-pulse rounded-2xl border border-[#ffc93d]/20 bg-[#0c1e39]/60" />
+      </section>
+      <section className="min-w-0">
+        <SectionTitle>Packs</SectionTitle>
+        <div className="grid grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-[18rem] animate-pulse rounded-2xl border border-[#4a7ecc]/25 bg-[#0c1e39]/60" />
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Shown when the catalog fetch fails, so a network error surfaces as a retry
+// instead of masquerading as an empty store on the screen where players pay.
+function ShopError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="relative z-[3] flex flex-col items-center justify-center gap-5 px-10 py-24 text-center">
+      <p className="max-w-md font-display text-lg font-bold text-[#f6e6b8]">
+        The store couldn’t load. Check your connection and try again.
+      </p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-xl border border-[#ffc93d]/60 bg-gradient-to-b from-[#f6cf5e] to-[#a06f16] px-6 py-3 font-display text-lg font-black uppercase tracking-[0.06em] text-[#3a2406] shadow-[0_4px_10px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px]"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
 // -----------------------------------------------------------------------------
 // Modal
 // -----------------------------------------------------------------------------
@@ -509,6 +549,12 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const [storeConfig, setStoreConfig] = useState<{ title: string; bgImageUrl: string | null }>({ title: 'Store', bgImageUrl: null });
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
+  // Catalog load state. The shop_items query is the gating fetch (the sale +
+  // store_config are best-effort enhancements). 'error' shows a retry rather than
+  // an empty store, so a network failure never masquerades as "no packs".
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   // Admin → USD buttons become a no-money test purchase (see handleUsdPurchase).
   const [isAdmin, setIsAdmin] = useState(false);
@@ -523,35 +569,46 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     };
   }, []);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    let cancelled = false;
-    void supabase
+  const loadShop = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setStatus('ready');
+      return;
+    }
+    setStatus('loading');
+    // Catalog is the gating fetch — its failure is what becomes the retry state.
+    // An empty result set is a legitimately empty store, not an error.
+    const { data: rows, error } = await supabase
       .from('shop_items')
       .select('*')
       .eq('is_enabled', true)
-      .order('sort_order', { ascending: true })
-      .then(({ data: rows, error }) => {
-        if (cancelled || error || !rows) return;
-        setData(mapShop(rows));
-      });
-    void supabase.rpc('current_store_sale').then(({ data: rows, error }) => {
-      if (cancelled || error || !rows || rows.length === 0) return;
-      setSale({ label: rows[0].label, bonusPercent: rows[0].bonus_percent, endsAt: rows[0].ends_at });
+      .order('sort_order', { ascending: true });
+    if (!mountedRef.current) return;
+    if (error || !rows) {
+      setStatus('error');
+      return;
+    }
+    setData(mapShop(rows));
+    setStatus('ready');
+    // Sale + storefront config are best-effort enhancements: a failure here must
+    // never block the store, so they don't touch `status`.
+    void supabase.rpc('current_store_sale').then(({ data: saleRows, error: saleErr }) => {
+      if (!mountedRef.current || saleErr || !saleRows || saleRows.length === 0) return;
+      setSale({ label: saleRows[0].label, bonusPercent: saleRows[0].bonus_percent, endsAt: saleRows[0].ends_at });
     });
     void supabase
       .from('store_config')
       .select('title, bg_image_url')
       .eq('id', true)
       .maybeSingle()
-      .then(({ data: row, error }) => {
-        if (cancelled || error || !row) return;
+      .then(({ data: row, error: cfgErr }) => {
+        if (!mountedRef.current || cfgErr || !row) return;
         setStoreConfig({ title: row.title || 'Store', bgImageUrl: row.bg_image_url });
       });
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    void loadShop();
+  }, [loadShop]);
 
   useEffect(() => {
     const update = () => {
@@ -760,7 +817,13 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
               </div>
             </header>
 
-            {/* Content: Featured Pack | Packs grid */}
+            {/* Content: Featured Pack | Packs grid — skeleton while the catalog
+                loads, a retry on failure, otherwise the two sections. */}
+            {status === 'loading' ? (
+              <ShopSkeleton />
+            ) : status === 'error' ? (
+              <ShopError onRetry={() => void loadShop()} />
+            ) : (
             <div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
               {/* No divider; the column is a flex stack so the bundle below the
                   title stretches to the exact height of the two pack rows. */}
@@ -806,9 +869,10 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                 )}
               </section>
             </div>
+            )}
 
             {/* Live sale countdown — only when a running sale has a scheduled end. */}
-            {sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt} /> : null}
+            {status === 'ready' && sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt} /> : null}
           </main>
         </div>
       </ScaleInModal>
