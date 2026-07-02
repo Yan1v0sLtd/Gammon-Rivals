@@ -4357,25 +4357,28 @@ export default function Admin() {
                       </label>
                     </div>
 
+                    {/* Card header (title bar) — applies to every card (bundle +
+                        packs). Empty text hides the bar entirely; the colours
+                        override the default gold plate + cream text. */}
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Card header (title bar)</div>
+                    <div className="space-y-2 rounded-md border border-white/10 bg-black/10 p-2">
+                      <Field label="Header text (leave empty for no header bar)" value={readHeader(shopDraft.contents, 'text')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'text', v) }))} />
+                      <div className="flex flex-wrap items-end gap-3">
+                        <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                          Background
+                          <input type="color" value={readHeader(shopDraft.contents, 'bg') || '#d9a531'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
+                        </label>
+                        <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', '') }))}>Default gold</SecondaryButton>
+                        <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                          Text color
+                          <input type="color" value={readHeader(shopDraft.contents, 'fg') || '#fff7dc'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
+                        </label>
+                        <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', '') }))}>Default</SecondaryButton>
+                      </div>
+                    </div>
+
                     {shopDraft.kind === 'bundle' ? (
                       <div className="space-y-2">
-                        {/* Title bar — optional. Empty text hides the bar; the
-                            colours override the default gold plate. */}
-                        <div className="space-y-2 rounded-md border border-white/10 bg-black/10 p-2">
-                          <Field label="Header text (leave empty for no header bar)" value={readHeader(shopDraft.contents, 'text')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'text', v) }))} />
-                          <div className="flex flex-wrap items-end gap-3">
-                            <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                              Background
-                              <input type="color" value={readHeader(shopDraft.contents, 'bg') || '#d9a531'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
-                            </label>
-                            <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', '') }))}>Default gold</SecondaryButton>
-                            <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                              Text color
-                              <input type="color" value={readHeader(shopDraft.contents, 'fg') || '#fff7dc'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
-                            </label>
-                            <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', '') }))}>Default</SecondaryButton>
-                          </div>
-                        </div>
                         <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
                           Headline currency (hero icon)
                           <select value={readPres(shopDraft.contents).headlineKind === 'gems' ? 'gems' : 'coins'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writePresField(d.contents, 'headlineKind', e.target.value) }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
