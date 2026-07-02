@@ -32,7 +32,14 @@ interface Reward {
 /** A featured bundle card (kind='bundle'). */
 interface Bundle {
   readonly id: string;
+  /** Canonical name — used for the purchase toast + admin, not necessarily shown
+   *  on the card (the visible title bar is `headerText`). */
   readonly title: string;
+  /** Title-bar text; null hides the bar entirely. */
+  readonly headerText: string | null;
+  /** Optional CSS colours for the title bar (null → default gold plate / cream). */
+  readonly headerBg: string | null;
+  readonly headerFg: string | null;
   readonly ribbon: Ribbon;
   readonly headlineKind: 'coins' | 'gems';
   /** Operator-uploaded pack art (shop_items.image_url); falls back to the
@@ -67,6 +74,9 @@ interface Presentation {
   readonly placement?: string;
   readonly ribbon?: Ribbon;
   readonly headlineKind?: string;
+  /** Bundle title bar. Rendered only when `text` is non-empty; `bg`/`fg` are
+   *  optional CSS colours overriding the default gold gradient / cream text. */
+  readonly header?: { readonly text?: string; readonly bg?: string; readonly fg?: string };
   readonly headline?: { readonly kind?: HeadlineKind; readonly label?: string; readonly subLabel?: string };
   readonly rewards?: ReadonlyArray<{ readonly kind: RewardKind; readonly label: string }>;
 }
@@ -105,9 +115,14 @@ function rowToBundle(row: ShopItemRow): Bundle | null {
   const priceGems = row.price_gems;
   if (priceUsd === null && priceGems === null) return null;
   const headlineKind = pres?.headlineKind === 'gems' ? 'gems' : 'coins';
+  const header = pres?.header;
+  const nonEmpty = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
   return {
     id: row.id,
     title: row.display_name,
+    headerText: nonEmpty(header?.text),
+    headerBg: nonEmpty(header?.bg),
+    headerFg: nonEmpty(header?.fg),
     ribbon: pres?.ribbon ?? null,
     headlineKind,
     imageUrl: row.image_url,
@@ -354,10 +369,20 @@ function BundleCard({ bundle, isBusy, bonusPercent, onBuy }: { bundle: Bundle; i
   const onSale = bonusPercent > 0;
   return (
     <article className="relative flex h-full min-h-[30rem] flex-1 flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
-      {/* Title — gold name-plate. Will be BO-configurable in Phase B. */}
-      <div className={`${GOLD_PLATE} ${PLATE_TEXT} px-4 py-4 text-center text-2xl tracking-[0.12em]`}>
-        {bundle.title}
-      </div>
+      {/* Title bar — optional. Hidden entirely when no header text is configured
+          in the BO. Background/text colours are BO-overridable; unset falls back
+          to the default gold plate + cream text. */}
+      {bundle.headerText ? (
+        <div
+          className={`${bundle.headerBg ? '' : GOLD_PLATE} ${PLATE_TEXT} px-4 py-4 text-center text-2xl tracking-[0.12em]`}
+          style={{
+            ...(bundle.headerBg ? { background: bundle.headerBg } : {}),
+            ...(bundle.headerFg ? { color: bundle.headerFg } : {}),
+          }}
+        >
+          {bundle.headerText}
+        </div>
+      ) : null}
       <div className="flex flex-1 flex-col p-5">
         {/* Hero — the headline currency, scaled up. Ribbons sit here (over the
             hero, below the title bar). On sale: gold "X% BONUS" left, the

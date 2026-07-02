@@ -896,6 +896,21 @@ function writeHeadline(text: string, field: 'kind' | 'label' | 'subLabel', value
   else p.headline = h;
   return writeShopContents({ ...c, presentation: p });
 }
+function readHeader(text: string, field: 'text' | 'bg' | 'fg'): string {
+  const h = readPres(text).header;
+  const v = h && typeof h === 'object' ? h[field] : undefined;
+  return typeof v === 'string' ? v : '';
+}
+function writeHeader(text: string, field: 'text' | 'bg' | 'fg', value: string): string {
+  const c = parseShopContents(text);
+  const p = { ...(c.presentation ?? {}) };
+  const h: Record<string, any> = { ...(p.header && typeof p.header === 'object' ? p.header : {}) };
+  if (value.trim() === '') delete h[field];
+  else h[field] = value;
+  if (Object.keys(h).length === 0) delete p.header;
+  else p.header = h;
+  return writeShopContents({ ...c, presentation: p });
+}
 function readRewards(text: string): ShopReward[] {
   const r = readPres(text).rewards;
   return Array.isArray(r) ? r.map((x: any) => ({ kind: String(x?.kind ?? 'coins'), label: String(x?.label ?? '') })) : [];
@@ -4344,6 +4359,23 @@ export default function Admin() {
 
                     {shopDraft.kind === 'bundle' ? (
                       <div className="space-y-2">
+                        {/* Title bar — optional. Empty text hides the bar; the
+                            colours override the default gold plate. */}
+                        <div className="space-y-2 rounded-md border border-white/10 bg-black/10 p-2">
+                          <Field label="Header text (leave empty for no header bar)" value={readHeader(shopDraft.contents, 'text')} onChange={(v) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'text', v) }))} />
+                          <div className="flex flex-wrap items-end gap-3">
+                            <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                              Background
+                              <input type="color" value={readHeader(shopDraft.contents, 'bg') || '#d9a531'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
+                            </label>
+                            <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'bg', '') }))}>Default gold</SecondaryButton>
+                            <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                              Text color
+                              <input type="color" value={readHeader(shopDraft.contents, 'fg') || '#fff7dc'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', e.target.value) }))} className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20" />
+                            </label>
+                            <SecondaryButton onClick={() => setShopDraft((d) => ({ ...d, contents: writeHeader(d.contents, 'fg', '') }))}>Default</SecondaryButton>
+                          </div>
+                        </div>
                         <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
                           Headline currency (hero icon)
                           <select value={readPres(shopDraft.contents).headlineKind === 'gems' ? 'gems' : 'coins'} onChange={(e) => setShopDraft((d) => ({ ...d, contents: writePresField(d.contents, 'headlineKind', e.target.value) }))} className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none">
