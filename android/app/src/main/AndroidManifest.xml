@@ -49,4 +49,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Play Billing — required for in-app purchases. Declaring it here also
+         satisfies Play Console's "add the BILLING permission to your APK" gate:
+         an uploaded AAB carrying this permission is what unlocks one-time-product
+         creation in the console. The cordova-plugin-purchase plugin (Phase 2)
+         declares the same permission, so this stays correct once it's installed. -->
+    <uses-permission android:name="com.android.vending.BILLING" />
 </manifest>
