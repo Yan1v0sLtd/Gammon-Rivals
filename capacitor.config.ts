@@ -35,18 +35,14 @@ const config: CapacitorConfig = {
   appId: 'com.gammonrivals.app',
   appName: 'Gammon Rivals',
   webDir: 'dist',
-  server: {
-    // Production canonical domain, pointed at /play. The apex (/) now
-    // serves the public "Coming Soon" marketing landing after the
-    // domain cutover, so the native app must launch into the game
-    // lobby directly — otherwise the WebView shows the landing page
-    // instead of the game.
-    url: 'https://gammonrivals.com/play',
-    // Force the WebView to use https so window.location.origin
-    // matches Vercel and Supabase auth redirects stay consistent
-    // between web and native.
-    androidScheme: 'https',
-  },
+  // server block DISABLED for the self-contained test/release AAB: this bundles
+  // dist/ INSIDE the app so the cordova-plugin-purchase global (CdvPurchase) is
+  // present (it isn't reachable over a remote server.url). Re-enable to restore
+  // the "Vercel-for-mobile" live-reload dev workflow.
+  // server: {
+  //   url: 'https://gammonrivals.com/play',
+  //   androidScheme: 'https',
+  // },
   plugins: {
     // @capgo/capacitor-social-login defaults to bundling ALL providers
     // (Google, Facebook, Apple, Twitter). We only do Google sign-in, so

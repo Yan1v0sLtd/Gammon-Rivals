@@ -60,13 +60,20 @@ export default function BoardCanvas({
     };
 
     (async () => {
+      // Mobile GPUs choke on a full-DPR board: a DPR-3 phone would render ~9x
+      // the pixels of a DPR-1 desktop, and MSAA antialias piles on more fill
+      // cost. Cap the render resolution at 2x (imperceptible on a phone-sized
+      // board, but ~2.25x less fill than DPR 3) and skip antialias on hi-DPI
+      // screens, where the pixel density already smooths edges. Desktop
+      // (DPR 1) keeps antialias for crisp edges.
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const [, loaded] = await Promise.all([
         app.init({
           resizeTo: container,
           backgroundAlpha: 0,
-          antialias: true,
+          antialias: dpr < 2,
           autoDensity: true,
-          resolution: window.devicePixelRatio || 1,
+          resolution: dpr,
         }),
         loadTheme(theme),
       ]);

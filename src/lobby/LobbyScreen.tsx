@@ -84,30 +84,86 @@ const LOBBY_SECONDARY_ASSETS: readonly string[] = [
 // now-removed startMatch handler (Play Friends + Tournaments
 // cards). Kept commented so a re-add is one line.
 
+/**
+ * One full-screen background layer. THE FLICKER RULE: the screen must be
+ * covered by a fully-painted layer at every frame of a board switch. Two
+ * things used to break that on phones (fine on desktop, where decode is
+ * ~instant from cache):
+ *   1. Layers were keyed by ROLE (`entering-${id}` / `leaving-${id}`), so
+ *      the board that switched from entering→leaving REMOUNTED as a fresh
+ *      <img> — which a memory-pressured phone re-DECODES, painting blank
+ *      for a few frames → dark flash.
+ *   2. The incoming layer began its fade before its image was decoded.
+ * Now layers are keyed by BOARD id (the element survives role changes, so
+ * its img stays painted), and an entering layer holds at opacity 0 until
+ * its image is decoded (`--entering-pending`), only then fading in over
+ * the still-opaque previous board. `onEntered` fires on animationend so
+ * the parent prunes the old layer exactly when it's fully covered.
+ */
 function LobbyBackgroundLayer({
   board,
-  state,
+  mode,
+  onEntered,
 }: {
   readonly board: LobbyBoard;
-  readonly state: 'entering' | 'leaving';
+  readonly mode: 'current' | 'leaving' | 'entering';
+  readonly onEntered?: (boardId: LobbyBoard['id']) => void;
 }) {
+  // Decode gate — only the entering role waits; current/leaving are
+  // already-painted layers (or the initial board behind the loader).
+  const [ready, setReady] = useState(mode !== 'entering');
+  useEffect(() => {
+    if (mode !== 'entering' || ready) return;
+    let cancelled = false;
+    const markReady = () => {
+      if (!cancelled) setReady(true);
+    };
+    const img = new Image();
+    img.src = board.background;
+    if (typeof img.decode === 'function') {
+      img.decode().then(markReady, markReady);
+    } else if (img.complete) {
+      markReady();
+    } else {
+      img.onload = markReady;
+      img.onerror = markReady;
+    }
+    // Failsafe: never hold the new board hostage to a stuck decode.
+    const failsafe = window.setTimeout(markReady, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(failsafe);
+    };
+  }, [mode, ready, board.background]);
+
+  const stateClass =
+    mode === 'leaving'
+      ? 'lobby-background-layer--leaving'
+      : mode === 'entering'
+        ? ready
+          ? 'lobby-background-layer--entering'
+          : 'lobby-background-layer--entering-pending'
+        : 'lobby-background-layer--current';
+
   return (
     <div
-      className={`lobby-background-layer fixed inset-0 ${
-        state === 'leaving'
-          ? 'lobby-background-layer--leaving'
-          : 'lobby-background-layer--entering'
-      }`}
+      className={`lobby-background-layer fixed inset-0 ${stateClass}`}
       aria-hidden="true"
+      onAnimationEnd={
+        mode === 'entering' && ready
+          ? (event) => {
+              if (event.target === event.currentTarget) onEntered?.(board.id);
+            }
+          : undefined
+      }
     >
       <img
         src={board.background}
         alt=""
         className="h-full w-full object-cover"
-        // Very light 2 px blur — just barely softens the
-        // foreground edge against the busy lobby art without
-        // making the scenery feel out of focus.
-        style={{ filter: 'blur(2px)' }}
+        // No CSS blur here (mobile perf): a filter on a FULL-SCREEN image
+        // forces the GPU to hold + re-filter a huge offscreen surface. The
+        // tone overlay below already softens the art.
         draggable={false}
       />
       <div className="absolute inset-0" style={{ background: board.backgroundTone }} />
@@ -413,18 +469,47 @@ export function LobbyScreen() {
   const selectedBoard = boards.find((board) => board.id === effectiveSelectedBoardId) ?? boards[0];
   const previousBoardRef = useRef<LobbyBoard | null>(selectedBoard ?? null);
   const [fadingBoard, setFadingBoard] = useState<LobbyBoard | null>(null);
+  // Board ids whose background has actually painted at full opacity at
+  // least once. Only such boards may serve as the opaque "leaving" layer —
+  // promoting a never-painted board there would flash the dark base
+  // through (the exact flicker this crossfade exists to prevent).
+  const paintedBoardsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!selectedBoard) return;
     const previousBoard = previousBoardRef.current;
-    if (previousBoard && previousBoard.id === selectedBoard.id) return;
+    if (!previousBoard || previousBoard.id === selectedBoard.id) {
+      // Initial board (or no-op change): it renders as the always-opaque
+      // 'current' layer, so count it as painted.
+      paintedBoardsRef.current.add(selectedBoard.id);
+      previousBoardRef.current = selectedBoard;
+      return;
+    }
 
-    if (previousBoard) setFadingBoard(previousBoard);
+    // Keep the OLD board on screen (fully opaque) while the new one decodes
+    // + fades in above it. If the previous board never finished painting
+    // (rapid scrolling past boards), keep whatever fully-painted board is
+    // already serving as the backdrop instead.
+    if (paintedBoardsRef.current.has(previousBoard.id)) {
+      setFadingBoard(previousBoard);
+    }
     previousBoardRef.current = selectedBoard;
-
-    const clearPrevious = window.setTimeout(() => setFadingBoard(null), 560);
-    return () => window.clearTimeout(clearPrevious);
   }, [selectedBoard]);
+
+  // The entering layer finished its fade-in at full opacity → it now fully
+  // covers the old board, which can be pruned with zero visual change.
+  const handleBackgroundEntered = useCallback((boardId: LobbyBoard['id']) => {
+    paintedBoardsRef.current.add(boardId);
+    setFadingBoard(null);
+  }, []);
+
+  // Failsafe prune: animationend can be missed (tab hidden pauses CSS
+  // animations). By 3s the crossfade is long over — or invisible anyway.
+  useEffect(() => {
+    if (!fadingBoard) return;
+    const id = window.setTimeout(() => setFadingBoard(null), 3000);
+    return () => window.clearTimeout(id);
+  }, [fadingBoard]);
 
   // startMatch was the click handler for Play Friends (hotseat)
   // and Tournaments (AI). Both cards were removed from the
@@ -681,14 +766,19 @@ export function LobbyScreen() {
 
   return (
     <main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
-      {fadingBoard ? (
-        <LobbyBackgroundLayer key={`leaving-${fadingBoard.id}`} board={fadingBoard} state="leaving" />
+      {/* Keys are the BOARD id (not the role) so a board switching from
+          entering→leaving keeps its DOM element — its already-painted img
+          never remounts/re-decodes (the old remount was the mobile dark
+          flicker). DOM order puts the leaving layer first = painted below. */}
+      {fadingBoard && fadingBoard.id !== selectedBoard?.id ? (
+        <LobbyBackgroundLayer key={`bg-${fadingBoard.id}`} board={fadingBoard} mode="leaving" />
       ) : null}
       {selectedBoard ? (
         <LobbyBackgroundLayer
-          key={`entering-${selectedBoard.id}`}
+          key={`bg-${selectedBoard.id}`}
           board={selectedBoard}
-          state="entering"
+          mode={fadingBoard && fadingBoard.id !== selectedBoard.id ? 'entering' : 'current'}
+          onEntered={handleBackgroundEntered}
         />
       ) : null}
 

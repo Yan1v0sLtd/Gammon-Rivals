@@ -78,6 +78,7 @@ type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row
 type TableConfig = Database['public']['Tables']['table_configs']['Row'];
 type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
 type PodiumImage = Database['public']['Tables']['podium_images']['Row'];
+type LoadingScreenImage = Database['public']['Tables']['loading_screen_images']['Row'];
 type AuditEntry = Database['public']['Tables']['admin_audit_log']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
 type WalletTransaction = Database['public']['Tables']['wallet_transactions']['Row'];
@@ -969,6 +970,11 @@ export default function Admin() {
     name: '',
     image_url: '',
   });
+  const [loadingScreens, setLoadingScreens] = useState<LoadingScreenImage[]>([]);
+  const [loadingScreenDraft, setLoadingScreenDraft] = useState<{ name: string; image_url: string }>({
+    name: '',
+    image_url: '',
+  });
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   // Store Sale draft — one global, schedulable promo that boosts coin/gem
   // grants. Numeric/date fields are strings so inputs can be cleared mid-edit.
@@ -1166,11 +1172,109 @@ export default function Admin() {
     }
   }
 
-  // Load the podium library when the operator opens Board Themes.
+  // Loading-screen library (the full-art cover shown while the app loads).
+  // Same model as the podium: many rows, exactly one active.
+  const loadLoadingScreens = useCallback(async (successMessage?: string) => {
+    const { data, error } = await withRequestTimeout(
+      supabase
+        .from('loading_screen_images')
+        .select('*')
+        .order('sort_order', { ascending: false })
+        .order('created_at', { ascending: false }),
+      'Loading loading screens'
+    );
+    if (error) throw error;
+    setLoadingScreens(data ?? []);
+    if (successMessage) setBoardMessage(successMessage);
+  }, []);
+
+  async function addLoadingScreen() {
+    if (!canManage) return;
+    const image_url = loadingScreenDraft.image_url.trim();
+    if (!image_url) {
+      setDataError('Upload or paste a loading-screen image first.');
+      return;
+    }
+    setSavingKey('loading-screen-add');
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase
+          .from('loading_screen_images')
+          .insert({
+            name: loadingScreenDraft.name.trim() || 'Loading screen',
+            image_url,
+            updated_by: user?.id ?? null,
+          })
+          .select('id'),
+        'Adding loading screen'
+      );
+      if (error) throw error;
+      setLoadingScreenDraft({ name: '', image_url: '' });
+      await loadLoadingScreens('Loading screen added.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function activateLoadingScreen(screen: LoadingScreenImage) {
+    if (!canManage || screen.is_active) return;
+    setSavingKey(`loading-screen-active-${screen.id}`);
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase.rpc('set_active_loading_screen', { p_id: screen.id }),
+        'Activating loading screen'
+      );
+      if (error) throw error;
+      await loadLoadingScreens('Loading screen activated.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function deleteLoadingScreen(screen: LoadingScreenImage) {
+    if (!canManage) return;
+    if (screen.is_active) {
+      setDataError('Set another loading screen active before deleting the active one.');
+      return;
+    }
+    const confirmed = await confirm({
+      title: `Delete loading screen "${screen.name}"?`,
+      confirmLabel: 'Delete',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    setSavingKey(`loading-screen-delete-${screen.id}`);
+    setDataError(null);
+    setBoardMessage(null);
+    try {
+      const { error } = await withRequestTimeout(
+        supabase.from('loading_screen_images').delete().eq('id', screen.id).select('id'),
+        'Deleting loading screen'
+      );
+      if (error) throw error;
+      await loadLoadingScreens('Loading screen deleted.');
+    } catch (err) {
+      setError(err);
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  // Load the podium + loading-screen libraries when the operator opens
+  // Board Themes (both panels live in that section).
   useEffect(() => {
     if (activeSection !== 'Board Themes') return;
     void loadPodiums().catch(setError);
-  }, [activeSection, loadPodiums, setError]);
+    void loadLoadingScreens().catch(setError);
+  }, [activeSection, loadPodiums, loadLoadingScreens, setError]);
 
   // Load bottom-nav feature lock levels when the operator opens Lobby Features.
   useEffect(() => {
@@ -3999,6 +4103,112 @@ export default function Admin() {
                       disabled={!canManage || !podiumDraft.image_url.trim() || savingKey === 'podium-add'}
                     >
                       {savingKey === 'podium-add' ? 'Adding...' : 'Add podium'}
+                    </PrimaryButton>
+                  </div>
+                </div>
+              </div>
+
+              {/* Loading screen — the full-art cover shown while routes /
+                  assets load. Same library model as the podium: many rows,
+                  exactly one active (the client caches the active URL). */}
+              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+                <div>
+                  <h3 className="text-base font-black">Loading screen</h3>
+                  <p className="mt-1 text-sm text-white/50">
+                    The full-screen art players see while the game loads. Upload themed
+                    variants (holidays, promos) and pick the live one. Landscape ~2:1 WebP
+                    works best — the gold progress bar is drawn on top near the bottom.
+                  </p>
+                </div>
+
+                {loadingScreens.length > 0 && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {loadingScreens.map((s) => (
+                      <div
+                        key={s.id}
+                        className={`overflow-hidden rounded-lg border p-3 transition ${
+                          s.is_active
+                            ? 'border-amber-300/60 bg-amber-300/[0.06]'
+                            : 'border-white/10 bg-black/20'
+                        }`}
+                      >
+                        <div className="grid aspect-video place-items-center overflow-hidden rounded bg-black/40">
+                          <img
+                            src={s.image_url}
+                            alt={s.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-bold">{s.name}</span>
+                          {s.is_active && (
+                            <span className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={!canManage || s.is_active || savingKey === `loading-screen-active-${s.id}`}
+                            onClick={() => void activateLoadingScreen(s)}
+                            className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            {s.is_active
+                              ? 'Active'
+                              : savingKey === `loading-screen-active-${s.id}`
+                              ? 'Activating...'
+                              : 'Set active'}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canManage || s.is_active || savingKey === `loading-screen-delete-${s.id}`}
+                            onClick={() => void deleteLoadingScreen(s)}
+                            className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
+                  <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                    Add a loading screen
+                  </div>
+                  <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+                        Name
+                        <input
+                          type="text"
+                          value={loadingScreenDraft.name}
+                          disabled={!canManage}
+                          onChange={(event) =>
+                            setLoadingScreenDraft((draft) => ({ ...draft, name: event.target.value }))
+                          }
+                          placeholder="e.g. Winter 2026"
+                          className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+                        />
+                      </label>
+                      <ImageField
+                        label="Loading screen image"
+                        value={loadingScreenDraft.image_url}
+                        onChange={(url) =>
+                          setLoadingScreenDraft((draft) => ({ ...draft, image_url: url }))
+                        }
+                        folder="loading-screens"
+                        disabled={!canManage}
+                      />
+                    </div>
+                    <PrimaryButton
+                      onClick={() => void addLoadingScreen()}
+                      disabled={!canManage || !loadingScreenDraft.image_url.trim() || savingKey === 'loading-screen-add'}
+                    >
+                      {savingKey === 'loading-screen-add' ? 'Adding...' : 'Add loading screen'}
                     </PrimaryButton>
                   </div>
                 </div>

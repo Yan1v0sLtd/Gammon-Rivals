@@ -68,10 +68,11 @@ export function ScaleInModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={handleBackdrop}
       style={{
+        // Full-screen backdrop-filter blur was removed for mobile perf (a live
+        // blur over the whole animating lobby every time a modal opens). The
+        // slightly deeper dim compensates so content behind still recedes.
         background:
-          'radial-gradient(circle at center, rgba(28,20,46,0.45), rgba(0,0,0,0.82))',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+          'radial-gradient(circle at center, rgba(28,20,46,0.58), rgba(0,0,0,0.87))',
         opacity: entered ? 1 : 0,
         transition: 'opacity 220ms ease',
       }}

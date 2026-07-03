@@ -40,9 +40,9 @@ export function BoardPurchaseModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{
+        // backdrop-filter blur removed for mobile perf; deeper dim compensates.
         background:
-          'radial-gradient(circle at center, rgba(92,48,14,0.35), rgba(0,0,0,0.78))',
-        backdropFilter: 'blur(4px)',
+          'radial-gradient(circle at center, rgba(92,48,14,0.45), rgba(0,0,0,0.84))',
         opacity: entered ? 1 : 0,
         transition: 'opacity 220ms ease',
       }}

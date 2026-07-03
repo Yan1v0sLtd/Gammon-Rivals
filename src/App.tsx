@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import AuthGate from './components/AuthGate';
 import { LoadingScreen } from './components/LoadingScreen';
+import { refreshLoadingScreenImage } from './lib/loadingScreenImage';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { ShopProvider, useShop } from './components/ShopProvider';
 import Home from './pages/Home';
@@ -40,15 +41,27 @@ function ShopRoute() {
 }
 
 export default function App() {
+  // Sync the BO-managed loading-screen art into the localStorage cache
+  // (fire-and-forget; the CURRENT loading screen already painted from the
+  // cache/bundled default — this warms the art for the next one).
+  useEffect(() => {
+    refreshLoadingScreenImage();
+  }, []);
+
   return (
     <BrowserRouter>
       <ShopProvider>
         <RouteErrorBoundary>
           <Suspense fallback={<LoadingScreen />}>
             <Routes>
-              {/* `/` is the marketing landing page (public/landing.html,
-                  served via the Vercel rewrite in vercel.json). The
-                  game / lobby lives at `/play`. */}
+              {/* On the web, `/` is the marketing landing page
+                  (public/landing.html, served via the vercel.json rewrite)
+                  and never reaches this router. Inside the Capacitor bundle
+                  there is NO rewrite: the WebView boots at `/`, so without
+                  this redirect the router matches no route and renders a
+                  black screen. Send the native app straight to the lobby. */}
+              <Route path="/" element={<Navigate to="/play" replace />} />
+              {/* The game / lobby lives at `/play`. */}
               <Route path="/play" element={<AuthGate><Home /></AuthGate>} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               {/* Public + ungated: the in-app deletion target AND the
@@ -64,6 +77,10 @@ export default function App() {
               <Route path="/shop" element={<AuthGate><ShopRoute /></AuthGate>} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/auth/callback" element={<AdminAuthCallback />} />
+              {/* Any unmatched path (e.g. a stale native deep link, or a
+                  future bundle boot path) bounces to the lobby instead of a
+                  blank screen. Defined routes above still win over this. */}
+              <Route path="*" element={<Navigate to="/play" replace />} />
             </Routes>
           </Suspense>
         </RouteErrorBoundary>

@@ -27,12 +27,22 @@
  *   npm run android:assets   -- renders PNGs + runs @capacitor/assets
  */
 import sharp from 'sharp';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ASSETS_DIR = join(__dirname, '..', 'assets');
+
+/** True if a file exists (icon-art override check). */
+async function exists(path) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Render an SVG file at a given square dimension.
@@ -54,37 +64,77 @@ async function svgToPng({ svgPath, outPath, size, background }) {
 async function main() {
   await mkdir(ASSETS_DIR, { recursive: true });
 
-  console.log('Rendering icon-only.png (full icon, 1024 px)...');
-  await svgToPng({
-    svgPath: join(ASSETS_DIR, 'icon-source.svg'),
-    outPath: join(ASSETS_DIR, 'icon-only.png'),
-    size: 1024,
-    // Background bakes into the PNG so it works with non-adaptive
-    // legacy launchers too.
-    background: { r: 10, g: 14, b: 43, alpha: 1 },
-  });
+  // Art-based icon override: when assets/icon-art.png exists (a full-bleed
+  // 1024px square render of the brand icon artwork), it takes precedence
+  // over the SVG sources. Layering for Android adaptive icons:
+  //   • icon-background.png = the art, full-bleed. The launcher mask
+  //     (circle / squircle / rounded square) crops its edges — the art is
+  //     designed to survive that (scene continues to the edges).
+  //   • icon-foreground.png = fully transparent. All the visual detail is
+  //     in the background layer, so the parallax float effect on some
+  //     launchers simply doesn't shift the art (safe default).
+  //   • icon-only.png       = the same art, used by legacy launchers as-is.
+  const iconArt = join(ASSETS_DIR, 'icon-art.png');
+  if (await exists(iconArt)) {
+    console.log('Using icon-art.png override (full-art icon)...');
+    await sharp(iconArt)
+      .resize(1024, 1024, { fit: 'cover' })
+      .flatten({ background: { r: 10, g: 14, b: 43 } })
+      .png({ compressionLevel: 9 })
+      .toFile(join(ASSETS_DIR, 'icon-only.png'));
+    console.log('  wrote assets/icon-only.png (1024 px, from art)');
 
-  console.log('Rendering icon-foreground.png (transparent bg, 1024 px)...');
-  await svgToPng({
-    svgPath: join(ASSETS_DIR, 'icon-foreground.svg'),
-    outPath: join(ASSETS_DIR, 'icon-foreground.png'),
-    size: 1024,
-  });
+    await sharp(iconArt)
+      .resize(1024, 1024, { fit: 'cover' })
+      .flatten({ background: { r: 10, g: 14, b: 43 } })
+      .png({ compressionLevel: 9 })
+      .toFile(join(ASSETS_DIR, 'icon-background.png'));
+    console.log('  wrote assets/icon-background.png (1024 px, from art)');
 
-  console.log('Rendering icon-background.png (solid navy, 1024 px)...');
-  // Background layer is just a solid color. No need for an SVG;
-  // generate a 1024x1024 flat color image directly.
-  await sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
+    await sharp({
+      create: {
+        width: 1024,
+        height: 1024,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .png({ compressionLevel: 9 })
+      .toFile(join(ASSETS_DIR, 'icon-foreground.png'));
+    console.log('  wrote assets/icon-foreground.png (transparent, from art)');
+  } else {
+    console.log('Rendering icon-only.png (full icon, 1024 px)...');
+    await svgToPng({
+      svgPath: join(ASSETS_DIR, 'icon-source.svg'),
+      outPath: join(ASSETS_DIR, 'icon-only.png'),
+      size: 1024,
+      // Background bakes into the PNG so it works with non-adaptive
+      // legacy launchers too.
       background: { r: 10, g: 14, b: 43, alpha: 1 },
-    },
-  })
-    .png({ compressionLevel: 9 })
-    .toFile(join(ASSETS_DIR, 'icon-background.png'));
-  console.log('  wrote assets/icon-background.png (1024 px)');
+    });
+
+    console.log('Rendering icon-foreground.png (transparent bg, 1024 px)...');
+    await svgToPng({
+      svgPath: join(ASSETS_DIR, 'icon-foreground.svg'),
+      outPath: join(ASSETS_DIR, 'icon-foreground.png'),
+      size: 1024,
+    });
+
+    console.log('Rendering icon-background.png (solid navy, 1024 px)...');
+    // Background layer is just a solid color. No need for an SVG;
+    // generate a 1024x1024 flat color image directly.
+    await sharp({
+      create: {
+        width: 1024,
+        height: 1024,
+        channels: 4,
+        background: { r: 10, g: 14, b: 43, alpha: 1 },
+      },
+    })
+      .png({ compressionLevel: 9 })
+      .toFile(join(ASSETS_DIR, 'icon-background.png'));
+    console.log('  wrote assets/icon-background.png (1024 px)');
+  }
 
   console.log('Rendering splash.png (2732 px)...');
   await svgToPng({

@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { LoadingScreen } from './LoadingScreen';
 
 // Test-user login is gated by two build-time env vars so the button
 // renders only on preview / dev builds. Production builds leave both
@@ -177,11 +178,11 @@ export default function AuthGate({ children }: { readonly children: ReactNode })
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-[#071120] text-white/60">
-        Loading…
-      </main>
-    );
+    // Same branded loading screen as the Suspense fallback / navigation
+    // overlay — this is the FIRST thing a cold app start shows (auth
+    // resolving), so the plain "Loading…" text here used to flash before
+    // the art appeared.
+    return <LoadingScreen />;
   }
 
   if (!user) return <AuthScreen />;
