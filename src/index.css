@@ -9843,9 +9843,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   padding: 3px;
 }
 
-/* Inner clip layer so the sliding fill keeps the track's dark inset gap. */
-.gr-loadingscreen-track::before {
-  content: none;
+/* Inner clip layer: the sliding fill is clipped HERE (a static rounded
+   box inside the track's 3px inset). It cannot be clipped on the fill
+   itself — clip-path travels with the element's transform, so the fill
+   used to slide in visibly OUTSIDE the track frame. */
+.gr-loadingscreen-clip {
+  height: 100%;
+  border-radius: 999px;
+  overflow: hidden;
 }
 .gr-loadingscreen-fill {
   height: 100%;
@@ -9857,8 +9862,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   box-shadow: 0 0 10px rgba(255, 190, 70, 0.4);
   /* Indeterminate: slide in from the left once, easing out near "90%".
      LoadingScreen overrides transform+animation inline when it has real
-     progress to show. clip-path keeps the slide inside the rounded track. */
-  clip-path: inset(0 round 999px);
+     progress to show. */
   transform: translateX(-93%);
   animation: gr-loadingscreen-fill 2.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s forwards;
   will-change: transform;

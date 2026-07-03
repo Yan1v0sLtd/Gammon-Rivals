@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AuthGate from './components/AuthGate';
 import { LoadingScreen } from './components/LoadingScreen';
 import { refreshLoadingScreenImage } from './lib/loadingScreenImage';
@@ -40,6 +40,32 @@ function ShopRoute() {
   return null;
 }
 
+/**
+ * Suspense fallback for lazy route chunks. The Back Office is a different
+ * product surface — flashing the game's branded loading art there (title,
+ * gold progress bar) reads as a glitch, so /admin gets a neutral minimal
+ * loader instead. Rendered inside BrowserRouter, so useLocation works.
+ */
+function RouteFallback() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/admin')) {
+    return (
+      <main
+        className="fixed inset-0 z-[999] grid place-items-center bg-[#0a0f1c]"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading"
+      >
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-white/60"
+          aria-hidden="true"
+        />
+      </main>
+    );
+  }
+  return <LoadingScreen />;
+}
+
 export default function App() {
   // Sync the BO-managed loading-screen art into the localStorage cache
   // (fire-and-forget; the CURRENT loading screen already painted from the
@@ -52,7 +78,7 @@ export default function App() {
     <BrowserRouter>
       <ShopProvider>
         <RouteErrorBoundary>
-          <Suspense fallback={<LoadingScreen />}>
+          <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* On the web, `/` is the marketing landing page
                   (public/landing.html, served via the vercel.json rewrite)
