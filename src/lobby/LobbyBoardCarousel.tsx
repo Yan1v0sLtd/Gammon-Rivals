@@ -36,14 +36,12 @@ function PodiumImage({ src }: { readonly src: string }) {
       {layers.map((layer, i) => {
         const isNewest = i === layers.length - 1;
         const animating = layers.length > 1;
-        // True cross-fade: the newest layer fades IN while the older
-        // layer(s) fade OUT at the same time (same 450ms). Prune to the
-        // newest once its fade-in ends.
-        const fadeClass = animating
-          ? isNewest
-            ? ' lobby-podium-fade-in'
-            : ' lobby-podium-fade-out'
-          : '';
+        // The newest layer fades IN over the older one(s); the older layers
+        // stay FULLY OPAQUE underneath until the prune. (They used to fade
+        // out simultaneously — a "true" cross-fade — but two half-opaque
+        // layers only cover ~75% at the midpoint, so the background dipped
+        // through the podium: visible flicker on every board switch.)
+        const fadeClass = animating && isNewest ? ' lobby-podium-fade-in' : '';
         return (
           <img
             key={layer.id}

@@ -1,12 +1,21 @@
 import type { FC } from 'react';
+import { getLoadingScreenImage } from '../lib/loadingScreenImage';
 
 interface Props {
-  /** Optional 0..1 progress fraction. When provided, a percentage is
-   *  shown after the label. */
+  /** Optional 0..1 progress fraction. When provided the bar is
+   *  deterministic; otherwise it eases toward ~90% on its own. */
   readonly progress?: number;
   readonly label?: string;
 }
 
+/**
+ * Full-art loading screen: BO-managed background image (see
+ * lib/loadingScreenImage.ts — localStorage-cached, bundled fallback) with
+ * the gold striped progress bar from the brand mockup overlaid near the
+ * bottom. Used as the Suspense fallback and inside NavigationOverlay, so
+ * it must render instantly with zero network — the image getter is
+ * synchronous and the bar is pure CSS (composited transform animation).
+ */
 export const LoadingScreen: FC<Props> = ({ progress, label = 'Loading' }) => {
   const pct =
     typeof progress === 'number'
@@ -15,24 +24,43 @@ export const LoadingScreen: FC<Props> = ({ progress, label = 'Loading' }) => {
 
   return (
     <main
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)]"
+      className="fixed inset-0 z-[999] bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)]"
       role="status"
       aria-busy="true"
       aria-live="polite"
+      aria-label={pct !== null ? `${label} ${pct}%` : label}
     >
-      <div className="flex flex-col items-center">
-        <h1 className="font-display text-3xl font-black uppercase tracking-[0.32em] text-[#ffd16f] drop-shadow-[0_4px_18px_rgba(255,200,80,0.45)] md:text-5xl">
-          Gammon Rivals
-        </h1>
-        <div className="mt-10 flex flex-col items-center gap-3">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-[3px] border-[#ffd16f]/25 border-t-[#ffd16f]"
-            aria-hidden="true"
-          />
-          <div className="text-xs font-bold uppercase tracking-[0.32em] text-[#ffe0a0]/80">
+      <img
+        src={getLoadingScreenImage()}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        className="absolute inset-0 h-full w-full select-none object-cover"
+      />
+
+      {/* Bar block — sits in the art's dark bottom band, mockup-style. */}
+      <div className="gr-loadingscreen-hud">
+        <div className="gr-loadingscreen-label" aria-hidden="true">
+          <span className="gr-loadingscreen-tail gr-loadingscreen-tail--l" />
+          <span>
             {label}
-            {pct !== null ? <span className="ml-1">{pct}%</span> : null}
-          </div>
+            {pct !== null ? <span className="ml-2">{pct}%</span> : null}
+          </span>
+          <span className="gr-loadingscreen-tail gr-loadingscreen-tail--r" />
+        </div>
+        <div className="gr-loadingscreen-track">
+          <div
+            className="gr-loadingscreen-fill"
+            style={
+              pct !== null
+                ? {
+                    // Deterministic: driven by the caller's real progress.
+                    animation: 'none',
+                    transform: `translateX(-${100 - Math.max(pct, 4)}%)`,
+                  }
+                : undefined
+            }
+          />
         </div>
       </div>
     </main>

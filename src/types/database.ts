@@ -648,6 +648,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      loading_screen_images: {
+        Row: {
+          id: string;
+          name: string;
+          image_url: string;
+          is_active: boolean;
+          sort_order: number;
+          updated_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string;
+          image_url: string;
+          is_active?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          image_url?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          updated_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       podium_images: {
         Row: {
           id: string;
@@ -1245,6 +1278,10 @@ export type Database = {
         Returns: Database['public']['Tables']['user_wallets']['Row'];
       };
       set_active_podium: {
+        Args: { p_id: string };
+        Returns: void;
+      };
+      set_active_loading_screen: {
         Args: { p_id: string };
         Returns: void;
       };

@@ -5,6 +5,7 @@ import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { getBilling } from '../lib/billing';
+import { getShopCatalogCache, updateShopCatalogCache } from '../lib/shopCache';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
 import type { Database, Json } from '../types/database';
 
@@ -595,21 +596,32 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const [toast, setToast] = useState<Toast | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  const [data, setData] = useState<MappedShop>({ bundles: [], packs: [] });
+  // Seed from the warm cache (prefetched by ShopProvider while the app was
+  // idle) so a warmed open renders the full catalog on its FIRST frame — no
+  // skeleton, no pack art popping in seconds later on the phone. loadShop()
+  // still refetches in the background to stay fresh.
+  const warmCache = getShopCatalogCache();
+  const [data, setData] = useState<MappedShop>(() =>
+    warmCache ? mapShop(warmCache.rows) : { bundles: [], packs: [] },
+  );
   // The running Store Sale (null when none). bonusPercent drives the badges +
   // boosted amounts; the actual grant boost is enforced server-side. endsAt (when
   // the sale has a scheduled end) drives the live countdown at the modal footer.
-  const [sale, setSale] = useState<{ label: string; bonusPercent: number; endsAt: string | null } | null>(null);
+  const [sale, setSale] = useState<{ label: string; bonusPercent: number; endsAt: string | null } | null>(
+    warmCache?.sale ?? null,
+  );
   // Storefront presentation config (BO-editable): header title + an optional
   // blurred themed background. Defaults keep the current look until an operator
   // sets them. See store_config (singleton, public read).
-  const [storeConfig, setStoreConfig] = useState<{ title: string; bgImageUrl: string | null }>({ title: 'Store', bgImageUrl: null });
+  const [storeConfig, setStoreConfig] = useState<{ title: string; bgImageUrl: string | null }>(
+    warmCache?.config ?? { title: 'Store', bgImageUrl: null },
+  );
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
   // Catalog load state. The shop_items query is the gating fetch (the sale +
   // store_config are best-effort enhancements). 'error' shows a retry rather than
   // an empty store, so a network failure never masquerades as "no packs".
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(warmCache ? 'ready' : 'loading');
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
@@ -642,7 +654,9 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       setStatus('ready');
       return;
     }
-    setStatus('loading');
+    // Keep showing the warm-cached catalog (no skeleton) while refreshing;
+    // only a cold open goes through the loading state.
+    setStatus((s) => (s === 'ready' ? s : 'loading'));
     // Catalog is the gating fetch — its failure is what becomes the retry state.
     // An empty result set is a legitimately empty store, not an error.
     const { data: rows, error } = await supabase
@@ -652,16 +666,21 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       .order('sort_order', { ascending: true });
     if (!mountedRef.current) return;
     if (error || !rows) {
-      setStatus('error');
+      // A refresh failure with a warm catalog on screen shouldn't nuke the
+      // store into the retry state — only a cold load does.
+      setStatus((s) => (s === 'ready' ? s : 'error'));
       return;
     }
     setData(mapShop(rows));
     setStatus('ready');
+    updateShopCatalogCache({ rows });
     // Sale + storefront config are best-effort enhancements: a failure here must
     // never block the store, so they don't touch `status`.
     void supabase.rpc('current_store_sale').then(({ data: saleRows, error: saleErr }) => {
       if (!mountedRef.current || saleErr || !saleRows || saleRows.length === 0) return;
-      setSale({ label: saleRows[0].label, bonusPercent: saleRows[0].bonus_percent, endsAt: saleRows[0].ends_at });
+      const nextSale = { label: saleRows[0].label, bonusPercent: saleRows[0].bonus_percent, endsAt: saleRows[0].ends_at };
+      setSale(nextSale);
+      updateShopCatalogCache({ sale: nextSale });
     });
     void supabase
       .from('store_config')
@@ -670,7 +689,9 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
       .maybeSingle()
       .then(({ data: row, error: cfgErr }) => {
         if (!mountedRef.current || cfgErr || !row) return;
-        setStoreConfig({ title: row.title || 'Store', bgImageUrl: row.bg_image_url });
+        const nextConfig = { title: row.title || 'Store', bgImageUrl: row.bg_image_url };
+        setStoreConfig(nextConfig);
+        updateShopCatalogCache({ config: nextConfig });
       });
   }, []);
 
@@ -821,15 +842,12 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
                   '#03070d',
               }}
             />
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{
-                backdropFilter: 'blur(14px) saturate(1.35)',
-                WebkitBackdropFilter: 'blur(14px) saturate(1.35)',
-                filter: 'url(#shop-glass-distortion)',
-              }}
-            />
+            {/* The frosted-glass layer (backdrop-filter blur(14px)+saturate +
+                an SVG displacement filter) was REMOVED for mobile perf — it was
+                the single heaviest surface in the app, and all it blurred was
+                the static gradient layer above (already smooth, so the visual
+                delta is tiny). If the glass texture is ever missed, bake it
+                into a static overlay image instead of a live filter. */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]" style={{ background: 'rgba(10,26,51,0.55)' }} />
             <div
               aria-hidden="true"

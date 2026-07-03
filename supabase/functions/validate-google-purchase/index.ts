@@ -98,14 +98,31 @@ async function getGoogleAccessToken(): Promise<string> {
 }
 
 // purchaseState: 0 = purchased, 1 = cancelled, 2 = pending.
-async function verifyPurchase(accessToken: string, productId: string, token: string): Promise<boolean> {
+// Returns { valid, detail }: detail carries Google's HTTP status + body on
+// failure (or the purchaseState), so the caller logs exactly why a token was
+// rejected instead of a silent `false` (which hid the real error before).
+async function verifyPurchase(
+  accessToken: string,
+  productId: string,
+  token: string,
+): Promise<{ valid: boolean; detail: string }> {
   const url =
     `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PACKAGE_NAME}` +
     `/purchases/products/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(token)}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) return false;
-  const data = await res.json() as { purchaseState?: number };
-  return data.purchaseState === 0;
+  const bodyText = await res.text();
+  if (!res.ok) {
+    console.error(`verifyPurchase ${PACKAGE_NAME}/${productId}: HTTP ${res.status} — ${bodyText}`);
+    return { valid: false, detail: `google_http_${res.status}: ${bodyText.slice(0, 400)}` };
+  }
+  let purchaseState: number | undefined;
+  try {
+    purchaseState = (JSON.parse(bodyText) as { purchaseState?: number }).purchaseState;
+  } catch {
+    /* body wasn't JSON */
+  }
+  console.log(`verifyPurchase ${productId}: purchaseState=${purchaseState}`);
+  return { valid: purchaseState === 0, detail: `purchaseState=${purchaseState}` };
 }
 
 Deno.serve(async (req) => {
@@ -144,16 +161,35 @@ Deno.serve(async (req) => {
     if (itemErr || !item?.google_product_id) return json({ error: 'item_not_found' }, 404);
 
     // Verify the token with Google.
-    let valid = false;
+    let verification: { valid: boolean; detail: string };
     try {
       const accessToken = await getGoogleAccessToken();
-      valid = await verifyPurchase(accessToken, item.google_product_id, purchaseToken);
+      verification = await verifyPurchase(accessToken, item.google_product_id, purchaseToken);
     } catch (e) {
       const msg = (e as Error).message;
       if (msg === 'billing_not_configured') return json({ error: 'billing_not_configured' }, 503);
+      console.error(`validation_failed: ${msg}`);
+      // TEMP debug: console output isn't reachable via our tooling, so mirror
+      // the failure reason into a table we can query. Remove once diagnosed.
+      try {
+        await admin.from('billing_debug_log').insert({
+          detail: `validation_failed sku=${item.google_product_id}: ${msg}`,
+        });
+      } catch { /* debug only */ }
       return json({ error: 'validation_failed', detail: msg }, 502);
     }
-    if (!valid) return json({ status: 'invalid' }, 200);
+    if (!verification.valid) {
+      console.error(
+        `purchase rejected — item=${shopItemId} sku=${item.google_product_id}: ${verification.detail}`,
+      );
+      // TEMP debug (see above).
+      try {
+        await admin.from('billing_debug_log').insert({
+          detail: `invalid sku=${item.google_product_id}: ${verification.detail}`,
+        });
+      } catch { /* debug only */ }
+      return json({ status: 'invalid', detail: verification.detail }, 200);
+    }
 
     // Grant (idempotent, service_role-only).
     const { data: result, error: grantErr } = await admin.rpc('fulfill_google_purchase', {

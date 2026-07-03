@@ -48,6 +48,12 @@ export function Sunbeam() {
 
     let beams: Beam[] = [];
     let rafId = 0;
+    // Throttle the ambient glow to ~30fps. It's a slow rotation, so halving the
+    // frame rate is imperceptible but halves the per-frame cost (90 gradients +
+    // a canvas blur() every frame). Rotation is time-based below so the visual
+    // speed stays identical regardless of the frame rate.
+    const FRAME_MS = 1000 / 30;
+    let lastDraw = -Infinity;
 
     const generateBeams = () => {
       beams = [];
@@ -64,7 +70,11 @@ export function Sunbeam() {
 
     const resizeCanvas = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      // This is a soft, blurred glow, so a full DPR-3 backing store is wasted
+      // fill — every frame redraws 90 gradient beams through a canvas blur()
+      // filter over the whole canvas. Cap at 1.5x: invisible on a blur, but
+      // ~4x fewer pixels than DPR 3, which is a big win on mobile GPUs.
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -94,19 +104,27 @@ export function Sunbeam() {
     };
 
     const renderFrame = () => {
+      if (!reduceMotion) rafId = requestAnimationFrame(renderFrame);
+      const nowMs = performance.now();
+      if (nowMs - lastDraw < FRAME_MS) return;
+      // Frames elapsed since the last DRAW, normalised to a 60fps frame, so the
+      // rotation advances at the same visual speed whether we draw at 30 or 60.
+      const rotFrames = lastDraw === -Infinity ? 1 : (nowMs - lastDraw) / (1000 / 60);
+      lastDraw = nowMs;
+
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
       const cx = w / 2;
       const cy = h / 2;
       const k = Math.min(w, h) / BASE || 1;
-      const time = performance.now() / 1000;
+      const time = nowMs / 1000;
 
       ctx.clearRect(0, 0, w, h);
 
       ctx.save();
       ctx.filter = `blur(${CONFIG.blurStrength * k}px)`;
       for (const beam of beams) {
-        beam.angle += CONFIG.rotationSpeed;
+        beam.angle += CONFIG.rotationSpeed * rotFrames;
         const pulse = (Math.sin((time * Math.PI) / CONFIG.fadeInOutTime + beam.phase) + 1) / 2;
         drawBeam(beam, cx, cy, 0.45 + pulse * 0.75, k);
       }
@@ -136,7 +154,6 @@ export function Sunbeam() {
       ctx.arc(cx, cy, CONFIG.circleRadius * k, 0, Math.PI * 2);
       ctx.fill();
 
-      if (!reduceMotion) rafId = requestAnimationFrame(renderFrame);
     };
 
     resizeCanvas();

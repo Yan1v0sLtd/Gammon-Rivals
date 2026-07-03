@@ -4,9 +4,11 @@ import {
   Suspense,
   useCallback,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from 'react';
+import { prefetchShopCatalog } from '../lib/shopCache';
 
 // Lazy so the (large) shop bundle is only fetched the first time the
 // popup opens, not in the initial app payload.
@@ -34,6 +36,29 @@ export function ShopProvider({ children }: { readonly children: ReactNode }) {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const openShop = useCallback(() => setIsShopOpen(true), []);
   const closeShop = useCallback(() => setIsShopOpen(false), []);
+
+  // Warm the store while the app is idle so the FIRST open is instant.
+  // Without this, tapping the Store stacked three costs at tap time on a
+  // phone: lazy-load+parse the shop JS chunk, query the catalog, then
+  // download every pack's art (the reveal gate) — seconds of "bundles pop
+  // in late". requestIdleCallback keeps the warm-up out of the lobby's
+  // own startup work; the timeout fallback covers WebViews without it.
+  useEffect(() => {
+    const warm = () => {
+      void import('../pages/Shop');
+      void prefetchShopCatalog();
+    };
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof w.requestIdleCallback === 'function') {
+      const id = w.requestIdleCallback(warm, { timeout: 4000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(id);
+  }, []);
 
   return (
     <ShopContext.Provider value={{ openShop, closeShop, isShopOpen }}>

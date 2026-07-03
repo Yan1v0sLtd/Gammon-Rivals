@@ -280,7 +280,29 @@ html, body, #root {
 }
 
 .lobby-background-layer--leaving {
-  animation: lobby-background-fade-out 520ms ease-out both;
+  /* Do NOT fade the outgoing board out. Crossfading BOTH layers dipped their
+     combined opacity below 1 at the midpoint (~0.5 over ~0.5 composites to only
+     ~0.75 coverage), letting the dark base (#071120) bleed through — that was
+     the flicker when scrolling between boards. Instead the outgoing board stays
+     fully opaque UNDERNEATH while the new one fades in ON TOP (--entering is the
+     later DOM element, so it paints above at equal z-index). The screen is thus
+     always fully covered. LobbyScreen prunes this layer on the entering layer's
+     animationend — invisible, since the new board fully covers it by then. */
+  opacity: 1;
+}
+
+/* The steady-state background (no crossfade in progress). */
+.lobby-background-layer--current {
+  opacity: 1;
+}
+
+/* An incoming board whose image hasn't DECODED yet. It waits invisible while
+   the previous board (fully opaque below) keeps covering the screen; once the
+   image is ready the class flips to --entering and the fade-in runs. Without
+   this hold, phones started the fade on a still-decoding image — blank frames
+   over the dark base = the carousel flicker. */
+.lobby-background-layer--entering-pending {
+  opacity: 0;
 }
 
 .lobby-carousel-board {
@@ -677,22 +699,39 @@ html, body, #root {
    pillKind === 'ready'; cooldown / unavailable states get no halo
    so the navigator only glows when there's actually something to
    collect. */
+/* PERF: the old halo animated stacked drop-shadow() filters, which cannot be
+   GPU-composited — the phone re-rasterized the multi-pass filter every frame,
+   forever, while the bonus was claimable. Same warm pulsing look now comes
+   from a radial-gradient ::before pulsing opacity/transform (compositor-only,
+   near-zero cost). The img keeps a STATIC lit glow so it still reads "ready". */
 .lobby-hourly-bonus-image.is-ready img {
+  position: relative;
+  z-index: 1;
+  filter:
+    drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 0.7rem rgba(255, 205, 80, 0.7));
+}
+
+.lobby-hourly-bonus-image.is-ready::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    circle,
+    rgba(255, 215, 100, 0.55) 0%,
+    rgba(255, 173, 60, 0.28) 45%,
+    transparent 70%
+  );
   animation: lobby-hourly-bonus-halo 1.6s ease-in-out infinite;
+  will-change: opacity, transform;
 }
 
 @keyframes lobby-hourly-bonus-halo {
-  0%, 100% {
-    filter:
-      drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
-      drop-shadow(0 0 0.5rem rgba(255, 196, 78, 0.55));
-  }
-  50% {
-    filter:
-      drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
-      drop-shadow(0 0 1.2rem rgba(255, 215, 100, 0.95))
-      drop-shadow(0 0 1.8rem rgba(255, 173, 60, 0.55));
-  }
+  0%, 100% { opacity: 0.35; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.12); }
 }
 
 .lobby-hourly-bonus-image:not(:disabled):active {
@@ -1409,6 +1448,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     animation: lobbyPodiumFade 450ms ease forwards;
   }
 
+  /* NOTE: .lobby-podium-fade-out is no longer applied — the outgoing podium
+     stays fully opaque under the fading-in one (see PodiumImage in
+     LobbyBoardCarousel: double-fading dipped combined opacity below 1 and
+     flashed the background through the podium). Kept for reference. */
   @keyframes lobbyPodiumFadeOut {
     from {
       opacity: 1;
@@ -9722,3 +9765,107 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
+
+/* ============================================================
+   Loading screen HUD — the gold striped progress bar + LOADING
+   label overlaid on the BO-managed loading art (see
+   components/LoadingScreen.tsx). Perf notes: the fill animates
+   TRANSFORM only (composited, runs once with `forwards`), and
+   there are no filters/blurs here — this screen shows while the
+   phone is busiest (route mount + asset decode), so it must be
+   near-free to render.
+   ============================================================ */
+
+.gr-loadingscreen-hud {
+  position: absolute;
+  left: 50%;
+  bottom: max(7vh, calc(env(safe-area-inset-bottom, 0px) + 5vh));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1.6vh, 0.9rem);
+}
+
+.gr-loadingscreen-label {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6rem, 2vw, 1rem);
+  color: #f6c453;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  /* Optically recenter: letter-spacing adds a trailing gap. */
+  padding-left: 0.34em;
+  font-size: clamp(0.8rem, 2.6vh, 1.1rem);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+/* The —◆ tails flanking LOADING, per the brand mockup. */
+.gr-loadingscreen-tail {
+  position: relative;
+  height: 2px;
+  width: clamp(2.2rem, 7vw, 4rem);
+}
+.gr-loadingscreen-tail::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  background: #f6c453;
+  transform: translateY(-50%) rotate(45deg);
+}
+.gr-loadingscreen-tail--l {
+  background: linear-gradient(to right, transparent, #f6c453);
+}
+.gr-loadingscreen-tail--l::after {
+  right: -3px;
+}
+.gr-loadingscreen-tail--r {
+  background: linear-gradient(to left, transparent, #f6c453);
+}
+.gr-loadingscreen-tail--r::after {
+  left: -3px;
+}
+
+.gr-loadingscreen-track {
+  width: min(72vw, 30rem);
+  height: clamp(16px, 3.6vh, 25px);
+  border-radius: 999px;
+  border: 2px solid #edb64f;
+  background: linear-gradient(#0d0802, #1c1206);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(240, 180, 70, 0.22),
+    inset 0 2px 6px rgba(0, 0, 0, 0.85);
+  padding: 3px;
+}
+
+/* Inner clip layer so the sliding fill keeps the track's dark inset gap. */
+.gr-loadingscreen-track::before {
+  content: none;
+}
+.gr-loadingscreen-fill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
+    repeating-linear-gradient(55deg, #ffdf8a 0 12px, #f3b445 12px 24px);
+  box-shadow: 0 0 10px rgba(255, 190, 70, 0.4);
+  /* Indeterminate: slide in from the left once, easing out near "90%".
+     LoadingScreen overrides transform+animation inline when it has real
+     progress to show. clip-path keeps the slide inside the rounded track. */
+  clip-path: inset(0 round 999px);
+  transform: translateX(-93%);
+  animation: gr-loadingscreen-fill 2.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s forwards;
+  will-change: transform;
+}
+
+@keyframes gr-loadingscreen-fill {
+  to {
+    transform: translateX(-10%);
+  }
+}
