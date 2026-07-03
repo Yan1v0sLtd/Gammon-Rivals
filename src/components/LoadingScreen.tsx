@@ -49,18 +49,24 @@ export const LoadingScreen: FC<Props> = ({ progress, label = 'Loading' }) => {
           <span className="gr-loadingscreen-tail gr-loadingscreen-tail--r" />
         </div>
         <div className="gr-loadingscreen-track">
-          <div
-            className="gr-loadingscreen-fill"
-            style={
-              pct !== null
-                ? {
-                    // Deterministic: driven by the caller's real progress.
-                    animation: 'none',
-                    transform: `translateX(-${100 - Math.max(pct, 4)}%)`,
-                  }
-                : undefined
-            }
-          />
+          {/* The clip wrapper is what keeps the sliding fill INSIDE the
+              rounded track — clip-path on the fill itself travels with its
+              transform, so it never clipped anything (the bar visibly slid
+              in from outside the frame). */}
+          <div className="gr-loadingscreen-clip">
+            <div
+              className="gr-loadingscreen-fill"
+              style={
+                pct !== null
+                  ? {
+                      // Deterministic: driven by the caller's real progress.
+                      animation: 'none',
+                      transform: `translateX(-${100 - Math.max(pct, 4)}%)`,
+                    }
+                  : undefined
+              }
+            />
+          </div>
         </div>
       </div>
     </main>
