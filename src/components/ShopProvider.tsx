@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { prefetchShopCatalog } from '../lib/shopCache';
+import { useBodyModalFlag } from '../lib/bodyModalFlag';
 
 // Lazy so the (large) shop bundle is only fetched the first time the
 // popup opens, not in the initial app payload.
@@ -36,6 +37,8 @@ export function ShopProvider({ children }: { readonly children: ReactNode }) {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const openShop = useCallback(() => setIsShopOpen(true), []);
   const closeShop = useCallback(() => setIsShopOpen(false), []);
+  // Pause the lobby's ambient animations while the shop covers them.
+  useBodyModalFlag(isShopOpen);
 
   // Warm the store while the app is idle so the FIRST open is instant.
   // Without this, tapping the Store stacked three costs at tap time on a
