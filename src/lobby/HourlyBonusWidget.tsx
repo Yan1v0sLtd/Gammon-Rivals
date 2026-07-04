@@ -1,4 +1,4 @@
-import { formatCooldown, type WheelStateResult } from './useWheelState';
+import { formatCooldown, useCountdownSeconds, type WheelStateResult } from './useWheelState';
 
 interface Props {
   readonly result: WheelStateResult;
@@ -22,7 +22,11 @@ interface Props {
  * the lobby modals.
  */
 export function HourlyBonusWidget({ result, onClaim }: Props) {
-  const { state, secondsUntilSpin, canSpin } = result;
+  const { state, canSpin } = result;
+  // The 1 Hz countdown ticks HERE (a few DOM nodes), not in useWheelState —
+  // that hook is consumed by LobbyScreen, and ticking it re-rendered the
+  // entire lobby tree every second (a permanent CPU tax on phones).
+  const secondsUntilSpin = useCountdownSeconds(state?.next_spin_at ?? null);
 
   const pillKind: 'ready' | 'cooldown' | 'unavailable' =
     !state || !state.is_enabled

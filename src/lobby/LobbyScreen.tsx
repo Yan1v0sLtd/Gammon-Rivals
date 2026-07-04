@@ -14,6 +14,7 @@ import {
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { usePrefetchOnIdle } from '../lib/usePrefetchOnIdle';
+import { useBodyModalFlag } from '../lib/bodyModalFlag';
 import { setPersistedBoardId } from '../board/theme/selectedBoard';
 import { BoardLockTooltip } from './BoardLockTooltip';
 import { BoardPurchaseModal } from './BoardPurchaseModal';
@@ -213,6 +214,17 @@ export function LobbyScreen() {
   const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
   const [howToPlayOpen, setHowToPlayOpen] = useState(false);
   const [missionsModalOpen, setMissionsModalOpen] = useState(false);
+  // While ANY full-screen lobby modal is up, flag <body> so the ambient
+  // lobby animations (Sunbeam, XP flow, shimmer, halo) pause — they're
+  // invisible behind the backdrop but phones still paid for every frame.
+  useBodyModalFlag(
+    difficultyOpen ||
+      !!purchaseTarget ||
+      wheelModalOpen ||
+      howToPlayOpen ||
+      missionsModalOpen ||
+      dailyBonusOpen,
+  );
   const missionsResult = useDailyMissions(profile?.id);
   const missionsClaimableBadge =
     missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0;

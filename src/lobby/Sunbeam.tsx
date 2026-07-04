@@ -106,6 +106,12 @@ export function Sunbeam() {
     const renderFrame = () => {
       if (!reduceMotion) rafId = requestAnimationFrame(renderFrame);
       const nowMs = performance.now();
+      // A full-screen modal covers the glow — skip the 90-gradient redraw
+      // entirely while <body data-gr-modal> is set (see lib/bodyModalFlag).
+      if (document.body.dataset.grModal) {
+        lastDraw = nowMs;
+        return;
+      }
       if (nowMs - lastDraw < FRAME_MS) return;
       // Frames elapsed since the last DRAW, normalised to a 60fps frame, so the
       // rotation advances at the same visual speed whether we draw at 30 or 60.

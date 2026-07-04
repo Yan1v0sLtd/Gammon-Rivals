@@ -9873,3 +9873,20 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     transform: translateX(-10%);
   }
 }
+
+/* ============================================================
+   Modal-open animation pause. While any full-screen modal is up
+   (<body data-gr-modal>, ref-counted in lib/bodyModalFlag), the
+   lobby's ambient infinite animations pause: they're invisible
+   behind the dimmed backdrop, but phones still paid style/paint/
+   composite for every frame of them — while ALSO rendering the
+   modal. The Sunbeam canvas pauses its own rAF loop the same way.
+   ============================================================ */
+body[data-gr-modal] .lobby-profile-progress-bubbles,
+body[data-gr-modal] .lobby-profile-progress-bubbles::after,
+body[data-gr-modal] .lobby-hourly-bonus-image.is-ready::before,
+body[data-gr-modal] .gr-play-shimmer,
+body[data-gr-modal] .gr-play-shimmer::before,
+body[data-gr-modal] .gr-play-shimmer::after {
+  animation-play-state: paused;
+}
