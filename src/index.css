@@ -4061,7 +4061,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-player-identity h2 {
-  max-width: 9.5rem;
+  /* 100% of the grid cell (identity has min-width: 0), NOT a fixed rem —
+     a fixed max-width wider than the card let long names paint past the
+     card frame before the ellipsis kicked in. */
+  max-width: 100%;
   overflow: hidden;
   margin: 0 0 0.2rem;
   color: #fffaf0;
@@ -4329,7 +4332,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-compact-name {
-  max-width: 8.5rem;
+  /* See .game-player-identity h2 — cell-relative so names can never bleed
+     past the card frame; ellipsis below handles the truncation. */
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   color: #fffaf0;
   font-family: "Segoe UI", Inter, system-ui, sans-serif;
@@ -4978,8 +4984,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .game-board-stage {
-    width: min(57vw, 68rem, calc((100dvh - 13.3rem) * 1.333));
-    max-height: calc(100dvh - 13.3rem);
+    width: min(57vw, 68rem, calc((100dvh - 12.1rem) * 1.333));
+    max-height: calc(100dvh - 12.1rem);
   }
 
   .game-actions-layer {
@@ -4993,8 +4999,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .game-board-stage {
-    width: min(57vw, 68rem, calc((100dvh - 16.2rem) * 1.333));
-    max-height: calc(100dvh - 16.2rem);
+    width: min(57vw, 68rem, calc((100dvh - 14.9rem) * 1.333));
+    max-height: calc(100dvh - 14.9rem);
   }
 
   .game-board-column {
@@ -5175,7 +5181,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .game-compact-panel {
     width: clamp(7.2rem, 18vw, 8.45rem);
-    height: clamp(8.8rem, 64dvh, 12.7rem);
+    /* Taller to fit the +30% stat rows (operator pass, 2026-07). */
+    height: clamp(10.4rem, 68dvh, 14.2rem);
     max-width: none !important;
     border-radius: 0.55rem;
     gap: 0 !important;
@@ -5204,7 +5211,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .game-compact-name {
-    max-width: 5rem !important;
+    max-width: 100% !important;
     font-size: clamp(0.48rem, 1.65vw, 0.64rem) !important;
     text-shadow: 0 0.12rem 0.2rem #000;
   }
@@ -5228,43 +5235,46 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     margin-top: 0.16rem;
   }
 
+  /* Pip/Score/Doubles rows +30% (operator pass: they read too small on
+     phones). Same structure + gaps; only text, icons and row height grow. */
   .game-compact-stat-row {
-    min-height: clamp(1.9rem, 13dvh, 2.42rem);
-    grid-template-columns: 1.05rem minmax(0, 1fr);
+    min-height: clamp(2.35rem, 13dvh, 2.95rem);
+    grid-template-columns: 1.35rem minmax(0, 1fr);
     gap: 0.38rem;
     padding: 0 0.52rem;
   }
 
   .game-player-panel--right.game-compact-panel .game-compact-stat-row {
-    grid-template-columns: minmax(0, 1fr) 1.05rem;
+    grid-template-columns: minmax(0, 1fr) 1.35rem;
   }
 
   .game-compact-stat-icon {
-    width: 0.95rem;
-    height: 0.95rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   .game-compact-stat-icon::before {
-    font-size: 0.52rem;
+    font-size: 0.68rem;
   }
 
   .game-compact-stat-copy span {
-    font-size: clamp(0.36rem, 1.12vw, 0.46rem);
+    font-size: clamp(0.47rem, 1.46vw, 0.6rem);
   }
 
   .game-compact-stat-copy strong {
-    font-size: clamp(0.62rem, 2vw, 0.78rem);
+    font-size: clamp(0.81rem, 2.6vw, 1.01rem);
   }
 
+  /* Turn countdown +30%, matching the stat-row bump above. */
   .game-mobile-players .game-turn-timer {
     width: calc(100% - 0.7rem);
     max-width: none;
-    grid-template-columns: 0.55rem minmax(0, 1fr) auto;
-    gap: 0.18rem;
+    grid-template-columns: 0.72rem minmax(0, 1fr) auto;
+    gap: 0.24rem;
     margin: auto auto 0.34rem;
     border-color: rgba(150, 86, 241, 0.72);
     background: rgba(4, 7, 14, 0.78);
-    padding: 0.12rem 0.28rem;
+    padding: 0.16rem 0.36rem;
   }
 
   .game-mobile-players .game-player-panel--right .game-turn-timer {
@@ -5277,13 +5287,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .game-mobile-players .game-turn-timer-icon {
-    width: 0.48rem;
-    height: 0.48rem;
-    border-width: 0.09rem;
+    width: 0.62rem;
+    height: 0.62rem;
+    border-width: 0.12rem;
   }
 
   .game-mobile-players .game-turn-timer-track {
-    height: 0.3rem;
+    height: 0.39rem;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   }
 
@@ -5294,7 +5304,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
   .game-mobile-players .game-turn-timer strong {
     color: #ffe7a4;
-    font-size: clamp(0.38rem, 1.22vw, 0.48rem);
+    font-size: clamp(0.49rem, 1.59vw, 0.62rem);
     line-height: 1;
   }
 
@@ -5305,9 +5315,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .game-board-stage {
-    width: min(68vw, 38rem, calc((100dvh - 5.9rem) * 1.333));
+    /* Board enlarged (operator pass): the height reserve dropped from
+       5.9rem → 4.2rem (+~8-10% board on phone heights). The 68vw cap is
+       what guarantees clearance from the side player cards — do NOT
+       raise it without checking 68vw + 2×18vw card columns still fit. */
+    width: min(68vw, 41rem, calc((100dvh - 4.2rem) * 1.333));
     max-width: none;
-    max-height: calc(100dvh - 5.9rem);
+    max-height: calc(100dvh - 4.2rem);
   }
 
   .game-actions-layer {
@@ -5374,6 +5388,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     width: clamp(1.35rem, 4.3vw, 1.85rem);
     height: clamp(0.75rem, 2.35vw, 1rem);
   }
+
 }
 
 @keyframes lobby-background-fade-in {
@@ -5694,6 +5709,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .game-controls-secondary .game-auto-label {
   font-size: clamp(0.38rem, 1.05vw, 0.6rem);
   line-height: 1;
+}
+
+/* AUTO doubled (operator pass, 2026-07): the shared square-slot size above
+   made the toggle a fiddly tap target, especially on phones. Only the AUTO
+   slot doubles — Cube/Double keep the shared size. The switch/label scale
+   with the slot (percentage-based). */
+.game-controls-secondary > .game-auto-slot {
+  width: clamp(3.2rem, 9.2vw, 5.4rem);
+  height: clamp(3.2rem, 9.2vw, 5.4rem);
+}
+.game-controls-secondary .game-auto-label {
+  font-size: clamp(0.76rem, 2.1vw, 1.2rem);
 }
 
 /* Cube / Double badge text must fit the small square slot. At the 4K clamp
