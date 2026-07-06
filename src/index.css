@@ -5709,16 +5709,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   line-height: 1;
 }
 
-/* AUTO doubled (operator pass, 2026-07): the shared square-slot size above
+/* AUTO enlarged (operator pass, 2026-07): the shared square-slot size above
    made the toggle a fiddly tap target, especially on phones. Only the AUTO
-   slot doubles — Cube/Double keep the shared size. The switch/label scale
-   with the slot (percentage-based). */
+   slot grows — Cube/Double keep the shared size. The switch/label scale
+   with the slot (percentage-based). First doubled, then pulled back 20%
+   ("too big" on-device review) → net 1.6× the shared slot. */
 .game-controls-secondary > .game-auto-slot {
-  width: clamp(3.2rem, 9.2vw, 5.4rem);
-  height: clamp(3.2rem, 9.2vw, 5.4rem);
+  width: clamp(2.56rem, 7.36vw, 4.32rem);
+  height: clamp(2.56rem, 7.36vw, 4.32rem);
 }
 .game-controls-secondary .game-auto-label {
-  font-size: clamp(0.76rem, 2.1vw, 1.2rem);
+  font-size: clamp(0.61rem, 1.68vw, 0.96rem);
 }
 
 /* Cube / Double badge text must fit the small square slot. At the 4K clamp
@@ -8004,17 +8005,45 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     font-size: clamp(1.09rem, 1.89vw, 1.89rem);
   }
 
-  /* Countdown pill: +30% bar height (the 22% inner track and the digits
-     scale with it). bottom drops 3.5%→2.1% so the taller pill's top edge
-     still meets the stat list's 14.5% bottom edge instead of overlapping
-     the Doubles row. */
+  /* Name row must stay inside the painted pill. The design offsets the
+     identity column above the pill (top: -9%) for optical centring, and
+     with phone font metrics (Roboto/SF render taller line boxes than the
+     desktop's Segoe UI) the centred content grows past the pill's top
+     edge — the name painted over the frame on real devices while fitting
+     in desktop Chrome at the same viewport. Pin the column to the pill's
+     box (identity already has overflow:hidden, so worst case is a clipped
+     descender, never a name over the frame) and tighten the row gap to
+     buy back the lost slack. */
+  .game-player-identity {
+    top: 0;
+    gap: 3.5%;
+  }
+
+  .game-player-identity h2 {
+    line-height: 1.12;
+  }
+
+  /* Level / rank / coins meta lines were the smallest text on screen
+     (~8.8px on a phone) — +25% for legibility. */
+  .game-player-line {
+    font-size: clamp(0.69rem, 0.98vw, 1.06rem);
+  }
+
+  /* Countdown pill: raised twice on operator review — net ~+70% height vs
+     the base 9.5% (the 22% inner track and the digits scale with it). The
+     stat list's bottom edge moves 14.5%→17% so the taller pill still fits
+     under the Doubles row (pill spans 0.9%..17.0%). */
+  .game-stat-list {
+    bottom: 17%;
+  }
+
   .game-turn-timer {
-    height: 12.4%;
-    bottom: 2.1%;
+    height: 16.1%;
+    bottom: 0.9%;
   }
 
   .game-turn-timer strong {
-    font-size: clamp(0.62rem, 1.09vw, 1.07rem);
+    font-size: clamp(0.81rem, 1.42vw, 1.39rem);
   }
 }
 
