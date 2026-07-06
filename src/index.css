@@ -8030,20 +8030,28 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   /* Countdown pill: raised twice on operator review — net ~+70% height vs
-     the base 9.5% (the 22% inner track and the digits scale with it). The
-     stat list's bottom edge moves 14.5%→17% so the taller pill still fits
-     under the Doubles row (pill spans 0.9%..17.0%). */
+     the base 9.5% (the 22% inner track scales with it). The stat list's
+     bottom edge moves 14.5%→17% so the taller pill still fits under the
+     Doubles row (pill spans 0.9%..17.0%). Width grows 58%→76% to match:
+     height alone left the pill narrow and the +30% digits overflowed
+     their fixed 25% grid slice past the pill's right edge (on-device
+     review) — the digits column now auto-sizes to its content. */
   .game-stat-list {
     bottom: 17%;
   }
 
   .game-turn-timer {
+    width: 76%;
     height: 16.1%;
     bottom: 0.9%;
+    grid-template-columns: 16% minmax(0, 1fr) auto;
+    gap: 3%;
+    padding: 0 5.5%;
   }
 
   .game-turn-timer strong {
     font-size: clamp(0.81rem, 1.42vw, 1.39rem);
+    white-space: nowrap;
   }
 }
 
