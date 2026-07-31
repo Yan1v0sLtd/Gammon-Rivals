@@ -26,6 +26,7 @@ supabase/.temp/
 *.sw?
 .vercel
 .env*.local
+.pi
 
 # Generated brand asset PNG masters (rebuild via `npm run android:assets`).
 # The SVG sources in assets/ ARE committed; the PNGs are regenerable.
