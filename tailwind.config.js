@@ -1,6 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: [
+    './apps/game/index.html',
+    './apps/game/src/**/*.{ts,tsx}',
+    './packages/board-renderer/src/**/*.{ts,tsx}',
+  ],
   theme: {
     extend: {
       colors: {
