@@ -636,19 +636,6 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   const { ready: shopImagesReady } = useImagePreloader(shopImageUrls);
   const contentReady = status === 'ready' && shopImagesReady;
 
-  // Admin → USD buttons become a no-money test purchase (see handleUsdPurchase).
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    let cancelled = false;
-    void supabase.rpc('get_my_admin_role').then(({ data: role, error }) => {
-      if (!cancelled && !error && role) setIsAdmin(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const loadShop = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setStatus('ready');
@@ -743,15 +730,8 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
 
   const removeFlight = (id: number) => setRewardFlights((prev) => prev.filter((f) => f.id !== id));
 
-  // USD path → the billing seam. On web/dev (admins) it grants via the no-money
-  // test purchase; the native build routes the SAME call through Play Billing
-  // (cordova-plugin-purchase). Non-admins see "coming soon" until the native
-  // store flow is live.
+  // Native uses Play Billing. The web mock remains server-gated for test accounts.
   const handleUsdPurchase = async (item: BuyDescriptor) => {
-    if (!isAdmin) {
-      showToast('info', `${item.label} — coming soon`);
-      return;
-    }
     if (busyId !== null) return;
     setBusyId(item.id);
     const billing = await getBilling();
@@ -762,7 +742,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
         const { code } = outcome;
         if (code === 'already_owned') showToast('info', 'You already own that board.');
         else if (code === 'unsupported_grant') showToast('error', `${item.label}: unsupported grant.`);
-        else if (code === 'not_authorized') showToast('error', 'Admin only.');
+        else if (code === 'not_authorized') showToast('info', 'Purchases are available in the app.');
         else showToast('error', 'Purchase failed.');
       }
       // cancelled / pending: stay silent.
@@ -772,7 +752,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     if (sourceEl && item.flightKind) spawnFlights(item.flightKind, sourceEl, 6);
     window.setTimeout(() => void refreshWallet(), 600);
     void refreshXpBoost();
-    showToast('success', `Test purchase: ${item.label} ✓`);
+    showToast('success', `${item.label} purchased ✓`);
   };
 
   // Gem path — live for everyone via purchase_shop_item.

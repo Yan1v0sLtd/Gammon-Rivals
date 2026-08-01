@@ -15,9 +15,7 @@ const Replay = lazy(() => import('./pages/Replay'));
 const PlayOnline = lazy(() => import('./pages/PlayOnline'));
 const JoinMatch = lazy(() => import('./pages/JoinMatch'));
 const Lobby = lazy(() => import('./pages/Lobby'));
-const Admin = lazy(() => import('./pages/Admin'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
-const AdminAuthCallback = lazy(() => import('./pages/AdminAuthCallback'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 
 /**
@@ -26,6 +24,19 @@ const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
  * pops the shop open and bounces to the lobby so the popup floats over
  * the game like every other entry point.
  */
+function AdminRedirect() {
+  const location = useLocation();
+  const adminOrigin = import.meta.env.VITE_ADMIN_APP_URL?.trim().replace(/\/+$/, '');
+
+  useEffect(() => {
+    if (!adminOrigin) return;
+    const path = location.pathname.replace(/^\/admin(?=\/|$)/, '') || '/';
+    window.location.replace(`${adminOrigin}${path}${location.search}${location.hash}`);
+  }, [adminOrigin, location]);
+
+  return adminOrigin ? <LoadingScreen /> : <Navigate to="/play" replace />;
+}
+
 function ShopRoute() {
   const { openShop } = useShop();
   const navigate = useNavigate();
@@ -40,29 +51,7 @@ function ShopRoute() {
   return null;
 }
 
-/**
- * Suspense fallback for lazy route chunks. The Back Office is a different
- * product surface — flashing the game's branded loading art there (title,
- * gold progress bar) reads as a glitch, so /admin gets a neutral minimal
- * loader instead. Rendered inside BrowserRouter, so useLocation works.
- */
 function RouteFallback() {
-  const { pathname } = useLocation();
-  if (pathname.startsWith('/admin')) {
-    return (
-      <main
-        className="fixed inset-0 z-[999] grid place-items-center bg-[#0a0f1c]"
-        role="status"
-        aria-busy="true"
-        aria-label="Loading"
-      >
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-white/60"
-          aria-hidden="true"
-        />
-      </main>
-    );
-  }
   return <LoadingScreen />;
 }
 
@@ -101,8 +90,7 @@ export default function App() {
               <Route path="/join/:code" element={<AuthGate><JoinMatch /></AuthGate>} />
               <Route path="/lobby" element={<AuthGate><Lobby /></AuthGate>} />
               <Route path="/shop" element={<AuthGate><ShopRoute /></AuthGate>} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/auth/callback" element={<AdminAuthCallback />} />
+              <Route path="/admin/*" element={<AdminRedirect />} />
               {/* Any unmatched path (e.g. a stale native deep link, or a
                   future bundle boot path) bounces to the lobby instead of a
                   blank screen. Defined routes above still win over this. */}

@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useOnlineUsersWatcher } from '../lib/useOnlineUsersWatcher';
-import { Link } from 'react-router-dom';
+import { useOnlineUsersWatcher } from './lib/useOnlineUsersWatcher';
 // The BO uses its own independent Supabase session (adminSupabase) so
 // the operator can be signed in as admin here while the game tab is
 // running as a guest or a different account. Aliased to `supabase`
@@ -9,25 +8,30 @@ import { Link } from 'react-router-dom';
 import {
   adminSupabase as supabase,
   isAdminSupabaseConfigured as isSupabaseConfigured,
-} from '../lib/adminSupabase';
-import { useAdminAuth } from '../lib/adminAuth';
+} from './lib/adminSupabase';
+import { useAdminAuth } from './lib/adminAuth';
 import {
   buildCurrencyRateMap,
   formatUsdMicros,
   usdMicrosFor,
   type CurrencyConfigRow,
-} from '../lib/currency';
-import type { Database, Json } from '../types/database';
-import ImageField from '../admin/ImageField';
-import FeltCornersField from '../admin/FeltCornersField';
-import BearOffTraysField from '../admin/BearOffTraysField';
-import BoardTuningField from '../admin/BoardTuningField';
-import BoardPreview from '../admin/BoardPreview';
-import { WheelAdmin } from '../admin/WheelAdmin';
-import { LevelCurveProposal } from '../admin/LevelCurveProposal';
-import { MissionsAdmin } from '../admin/MissionsAdmin';
-import { useConfirm } from '../admin/useConfirm';
-import { resolveStatusLabel } from '../lib/progression';
+} from '@shared/lib/currency';
+import type { Database, Json } from '@shared/types/database';
+import ImageField from './components/ImageField';
+import FeltCornersField from './components/FeltCornersField';
+import BearOffTraysField from './components/BearOffTraysField';
+import BoardTuningField from './components/BoardTuningField';
+import BoardPreview from './components/BoardPreview';
+import { WheelAdmin } from './components/WheelAdmin';
+import { LevelCurveProposal } from './components/LevelCurveProposal';
+import { MissionsAdmin } from './components/MissionsAdmin';
+import { useConfirm } from './components/useConfirm';
+import { resolveStatusLabel } from '@shared/lib/progression';
+
+const gameOrigin =
+  import.meta.env.VITE_GAME_APP_URL?.trim() ||
+  (import.meta.env.DEV ? 'http://127.0.0.1:5174' : window.location.origin);
+const gameLobbyUrl = new URL('/play', gameOrigin).toString();
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
@@ -2660,9 +2664,9 @@ export default function Admin() {
     return (
       <main className="min-h-screen bg-[#061225] text-white">
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
-          <Link to="/play" className="text-sm font-semibold text-amber-200/80 hover:text-amber-100">
+          <a href={gameLobbyUrl} className="text-sm font-semibold text-amber-200/80 hover:text-amber-100">
             ← Back to lobby
-          </Link>
+          </a>
           <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
             <div className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200/70">
               Gammon Rivals
@@ -2706,9 +2710,9 @@ export default function Admin() {
       <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <Link to="/play" className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
+            <a href={gameLobbyUrl} className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
               ← Lobby
-            </Link>
+            </a>
             <h1 className="mt-1 text-2xl font-black tracking-tight">Back Office</h1>
           </div>
           <div className="text-right text-xs text-white/55">

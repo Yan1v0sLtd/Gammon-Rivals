@@ -9,7 +9,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { adminSupabase, isAdminSupabaseConfigured } from './adminSupabase';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/types/database';
 
 /**
  * Auth context for the Back Office. Mirrors the shape of the game's
@@ -109,7 +109,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!isAdminSupabaseConfigured) throw new Error(missingConfigMessage);
-    const redirectTo = `${window.location.origin}/admin/auth/callback`;
+    const redirectTo = `${window.location.origin}/auth/callback`;
     const { data, error } = await adminSupabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

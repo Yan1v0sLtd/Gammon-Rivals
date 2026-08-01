@@ -1,8 +1,5 @@
-// Plugin-agnostic billing seam. The Shop talks to a BillingService; the concrete
-// impl is chosen at runtime — a native Play Billing service (cordova-plugin-
-// purchase) on device, or a Mock (admin test-purchase RPC) on web/dev. This lets
-// the buy UX be built + exercised in the browser before the native plugin and the
-// on-device store exist, and keeps the plugin choice behind one interface.
+// Plugin-agnostic billing seam. The native app uses Play Billing; web builds
+// use an unavailable implementation so operator grants stay in the Back Office.
 
 export interface BillingPurchaseRequest {
   /** shop_items.id, e.g. "starter-bundle". */
@@ -21,7 +18,6 @@ export type BillingOutcome =
   | { status: 'error'; code: string; message: string };
 
 export interface BillingService {
-  /** Run the purchase. On 'granted' the player's wallet has already been credited
-   *  server-side (mock: the test RPC; native: a Google-validated token → grant). */
+  /** On 'granted', the server has already credited the player's wallet. */
   purchase(req: BillingPurchaseRequest): Promise<BillingOutcome>;
 }

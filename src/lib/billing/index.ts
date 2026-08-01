@@ -6,14 +6,11 @@ let cached: BillingService | null = null;
 
 /**
  * Pick the billing implementation for this platform:
- *   • native (Android)  → real Play Billing via cordova-plugin-purchase
- *   • web / dev         → MockBillingService (admin test-purchase RPC)
+ *   • native (Android) → Play Billing via cordova-plugin-purchase
+ *   • web / dev        → unavailable billing implementation
  *
- * The native module will be loaded with a dynamic import() so its plugin code
- * never enters the web bundle. It's not wired yet — the native flow (order →
- * validated token → grant via the P2 edge function → finish) needs the AAB on an
- * internal-testing track to verify, so until then native falls back to the mock
- * and the build stays healthy.
+ * The native module is loaded dynamically so its plugin code stays out of the
+ * web bundle.
  */
 export async function getBilling(): Promise<BillingService> {
   if (cached) return cached;

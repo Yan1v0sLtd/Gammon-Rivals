@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import BoardCanvas from '../board/BoardCanvas';
-import { initialBoard } from '../engine/board';
-import { premiumTheme } from '../board/theme/premium';
-import { layoutFromMetadata } from '../board/theme/remote';
-import type { Theme, ThemeLayout } from '../board/theme';
-import type { Json } from '../types/database';
+import BoardCanvas from '@shared/board/BoardCanvas';
+import { initialBoard } from '@shared/engine/board';
+import { premiumTheme } from '@shared/board/theme/premium';
+import { layoutFromMetadata } from '@shared/board/theme/metadata';
+import type { Theme, ThemeLayout } from '@shared/board/theme/types';
+import type { Json } from '@shared/types/database';
 
 interface Props {
   gameplayImage: string;

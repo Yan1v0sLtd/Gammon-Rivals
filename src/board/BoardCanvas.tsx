@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { Application } from 'pixi.js';
 import type { BoardState, Position } from '../engine/types';
 import { BoardRenderer, type RenderSelection } from './pixi/BoardRenderer';
-import { defaultTheme, loadTheme, type Theme, type ThemeLayout } from './theme';
+import { defaultTheme } from './theme/default';
+import { loadTheme } from './theme/loader';
+import type { Theme, ThemeLayout } from './theme/types';
 
 interface Props {
   state: BoardState;

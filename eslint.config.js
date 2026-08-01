@@ -8,6 +8,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores([
     'dist',
+    'dist-admin',
     'android/.gradle',
     'android/.idea',
     'android/app/build',

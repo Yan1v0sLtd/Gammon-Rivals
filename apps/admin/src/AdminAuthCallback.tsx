@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminSupabase } from '../lib/adminSupabase';
+import { adminSupabase } from './lib/adminSupabase';
 
 /**
- * OAuth callback for the BO. Mounted at /admin/auth/callback. The
+ * OAuth callback for the BO. Mounted at /auth/callback and the legacy
+ * /admin/auth/callback path. The
  * adminSupabase client was constructed with `detectSessionInUrl: true`
  * + flowType 'pkce', so once this page mounts the library picks up the
  * ?code= parameter from the URL, exchanges it via the verifier sitting
  * in localStorage under `sb-admin-auth-token-code-verifier`, and writes
  * the resulting session into adminSupabase's storage. We just wait for
- * that to settle, then bounce to /admin.
+ * that to settle, then bounce to the Back Office root.
  *
  * Kept separate from the game's /auth/callback so the two sessions
  * never get crossed — the game's callback wouldn't have the admin
@@ -28,14 +29,14 @@ export default function AdminAuthCallback() {
         const { data } = await adminSupabase.auth.getSession();
         if (cancelled) return;
         if (data.session) {
-          navigate('/admin', { replace: true });
+          navigate('/', { replace: true });
           return;
         }
         await new Promise((r) => setTimeout(r, 100));
       }
       if (cancelled) return;
       setError(
-        'Could not complete sign-in. Try again, or refresh the /admin page.'
+        'Could not complete sign-in. Try again, or refresh the Back Office.'
       );
     })();
     return () => {
@@ -55,7 +56,7 @@ export default function AdminAuthCallback() {
         {error ? (
           <button
             type="button"
-            onClick={() => navigate('/admin', { replace: true })}
+            onClick={() => navigate('/', { replace: true })}
             className="mt-4 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/10"
           >
             Back to Back Office

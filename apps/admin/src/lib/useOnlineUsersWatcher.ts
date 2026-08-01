@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isSupabaseConfigured, supabase } from './supabase';
+import { adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured } from './adminSupabase';
 
 /**
  * Counts derived from the live `online-users` presence channel,
