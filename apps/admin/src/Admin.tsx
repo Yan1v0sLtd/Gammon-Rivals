@@ -824,39 +824,44 @@ function shopToDraft(row?: ShopItem): ShopDraft {
 // preserved), and these helpers read/write specific grant + presentation paths.
 // ---------------------------------------------------------------------------
 type ShopReward = { kind: string; label: string };
+type ShopJsonObject = Record<string, Json>;
 
-function parseShopContents(text: string): Record<string, any> {
+function asShopJsonObject(value: unknown): ShopJsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as ShopJsonObject
+    : {};
+}
+function parseShopContents(text: string): ShopJsonObject {
   try {
-    const obj = JSON.parse(text);
-    return obj && typeof obj === 'object' && !Array.isArray(obj) ? obj : {};
+    return asShopJsonObject(JSON.parse(text));
   } catch {
     return {};
   }
 }
-function writeShopContents(obj: Record<string, any>): string {
+function writeShopContents(obj: ShopJsonObject): string {
   return JSON.stringify(obj, null, 2);
 }
 function readGrant(text: string, key: string): string {
-  const v = parseShopContents(text).grants?.[key];
+  const v = asShopJsonObject(parseShopContents(text).grants)[key];
   return typeof v === 'number' ? String(v) : '';
 }
 function writeGrantNumber(text: string, key: string, value: string): string {
   const c = parseShopContents(text);
-  const grants = { ...(c.grants ?? {}) };
+  const grants = { ...asShopJsonObject(c.grants) };
   const n = Number(value);
   if (value.trim() === '' || !Number.isFinite(n) || n === 0) delete grants[key];
   else grants[key] = Math.trunc(n);
   return writeShopContents({ ...c, grants });
 }
 function readXpBoost(text: string, field: 'days' | 'multiplier'): string {
-  const xb = parseShopContents(text).grants?.xpBoost;
-  const v = xb && typeof xb === 'object' ? xb[field] : undefined;
+  const grants = asShopJsonObject(parseShopContents(text).grants);
+  const v = asShopJsonObject(grants.xpBoost)[field];
   return typeof v === 'number' ? String(v) : '';
 }
 function writeXpBoost(text: string, field: 'days' | 'multiplier', value: string): string {
   const c = parseShopContents(text);
-  const grants = { ...(c.grants ?? {}) };
-  const next: Record<string, any> = { ...(grants.xpBoost && typeof grants.xpBoost === 'object' ? grants.xpBoost : {}) };
+  const grants = { ...asShopJsonObject(c.grants) };
+  const next = { ...asShopJsonObject(grants.xpBoost) };
   const n = Number(value);
   if (value.trim() === '' || !Number.isFinite(n)) delete next[field];
   else next[field] = Math.trunc(n);
@@ -865,36 +870,34 @@ function writeXpBoost(text: string, field: 'days' | 'multiplier', value: string)
   return writeShopContents({ ...c, grants });
 }
 function readBoardGrant(text: string): string {
-  const v = parseShopContents(text).grants?.boardThemeId;
+  const v = asShopJsonObject(parseShopContents(text).grants).boardThemeId;
   return typeof v === 'string' ? v : '';
 }
 function writeBoardGrant(text: string, value: string): string {
   const c = parseShopContents(text);
-  const grants = { ...(c.grants ?? {}) };
+  const grants = { ...asShopJsonObject(c.grants) };
   if (value.trim() === '') delete grants.boardThemeId;
   else grants.boardThemeId = value.trim();
   return writeShopContents({ ...c, grants });
 }
-function readPres(text: string): Record<string, any> {
-  const p = parseShopContents(text).presentation;
-  return p && typeof p === 'object' && !Array.isArray(p) ? p : {};
+function readPres(text: string): ShopJsonObject {
+  return asShopJsonObject(parseShopContents(text).presentation);
 }
 function writePresField(text: string, key: string, value: string): string {
   const c = parseShopContents(text);
-  const p = { ...(c.presentation ?? {}) };
+  const p = { ...asShopJsonObject(c.presentation) };
   if (value.trim() === '' || value === 'none') delete p[key];
   else p[key] = value;
   return writeShopContents({ ...c, presentation: p });
 }
 function readHeadline(text: string, field: 'kind' | 'label' | 'subLabel'): string {
-  const h = readPres(text).headline;
-  const v = h && typeof h === 'object' ? h[field] : undefined;
+  const v = asShopJsonObject(readPres(text).headline)[field];
   return typeof v === 'string' ? v : '';
 }
 function writeHeadline(text: string, field: 'kind' | 'label' | 'subLabel', value: string): string {
   const c = parseShopContents(text);
-  const p = { ...(c.presentation ?? {}) };
-  const h: Record<string, any> = { ...(p.headline && typeof p.headline === 'object' ? p.headline : {}) };
+  const p = { ...asShopJsonObject(c.presentation) };
+  const h = { ...asShopJsonObject(p.headline) };
   if (value.trim() === '') delete h[field];
   else h[field] = value;
   if (Object.keys(h).length === 0) delete p.headline;
@@ -902,14 +905,13 @@ function writeHeadline(text: string, field: 'kind' | 'label' | 'subLabel', value
   return writeShopContents({ ...c, presentation: p });
 }
 function readHeader(text: string, field: 'text' | 'bg' | 'fg'): string {
-  const h = readPres(text).header;
-  const v = h && typeof h === 'object' ? h[field] : undefined;
+  const v = asShopJsonObject(readPres(text).header)[field];
   return typeof v === 'string' ? v : '';
 }
 function writeHeader(text: string, field: 'text' | 'bg' | 'fg', value: string): string {
   const c = parseShopContents(text);
-  const p = { ...(c.presentation ?? {}) };
-  const h: Record<string, any> = { ...(p.header && typeof p.header === 'object' ? p.header : {}) };
+  const p = { ...asShopJsonObject(c.presentation) };
+  const h = { ...asShopJsonObject(p.header) };
   if (value.trim() === '') delete h[field];
   else h[field] = value;
   if (Object.keys(h).length === 0) delete p.header;
@@ -917,14 +919,22 @@ function writeHeader(text: string, field: 'text' | 'bg' | 'fg', value: string): 
   return writeShopContents({ ...c, presentation: p });
 }
 function readRewards(text: string): ShopReward[] {
-  const r = readPres(text).rewards;
-  return Array.isArray(r) ? r.map((x: any) => ({ kind: String(x?.kind ?? 'coins'), label: String(x?.label ?? '') })) : [];
+  const rewards = readPres(text).rewards;
+  return Array.isArray(rewards)
+    ? rewards.map((value) => {
+        const reward = asShopJsonObject(value);
+        return {
+          kind: String(reward.kind ?? 'coins'),
+          label: String(reward.label ?? ''),
+        };
+      })
+    : [];
 }
 function writeRewards(text: string, rewards: ShopReward[]): string {
   const c = parseShopContents(text);
-  const p = { ...(c.presentation ?? {}) };
+  const p = { ...asShopJsonObject(c.presentation) };
   if (rewards.length === 0) delete p.rewards;
-  else p.rewards = rewards;
+  else p.rewards = rewards.map(({ kind, label }) => ({ kind, label }));
   return writeShopContents({ ...c, presentation: p });
 }
 
@@ -1302,7 +1312,7 @@ export default function Admin() {
           })),
         );
       });
-  }, [activeSection]);
+  }, [activeSection, setError]);
 
   // Once we've verified the signed-in admin's access once, we don't
   // want to blank the page back to a "Checking access" placeholder on
@@ -1395,7 +1405,7 @@ export default function Admin() {
     return () => {
       cancelled = true;
     };
-  }, [isLoading, user?.id]);
+  }, [isLoading, user]);
 
   const loadSelectedUser = useCallback(
     async (profileId: string) => {

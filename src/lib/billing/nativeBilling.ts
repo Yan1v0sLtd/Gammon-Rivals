@@ -30,7 +30,6 @@ import type { BillingService, BillingPurchaseRequest, BillingOutcome } from './t
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Cdv = any;
 function cdv(): Cdv {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const g = (globalThis as unknown as { CdvPurchase?: Cdv }).CdvPurchase;
   if (!g) throw new Error('CdvPurchase unavailable — native (Play) build only');
   return g;

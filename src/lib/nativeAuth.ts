@@ -155,7 +155,7 @@ export async function installNativeAuthHandler(): Promise<void> {
     // We only care about URLs landing on our auth host. Ignore
     // anything else (e.g. share intents, future deep links into
     // other sections of the app).
-    let url: URL | null = null;
+    let url: URL;
     try {
       url = new URL(event.url);
     } catch {

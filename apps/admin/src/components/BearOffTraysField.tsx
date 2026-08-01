@@ -145,6 +145,7 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
   const trays = useMemo(() => readTrays(metadata), [metadata]);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<HandleId | null>(null);
+  const [dragging, setDragging] = useState<HandleId | null>(null);
   const [hover, setHover] = useState<HandleId | null>(null);
 
   const apply = (next: Trays) => onMetadataChange(writeTrays(metadata, next));
@@ -163,6 +164,7 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
     event.stopPropagation();
     (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
     dragRef.current = id;
+    setDragging(id);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -178,6 +180,7 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
 
   const handlePointerUp = () => {
     dragRef.current = null;
+    setDragging(null);
   };
 
   const numberInput = (label: string, value: number, onChange: (next: number) => void) => (
@@ -280,7 +283,7 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
                 yPct={y * 100}
                 color={TRAY_COLORS[owner].color}
                 title={`${TRAY_COLORS[owner].label} ${edge}`}
-                active={hover === id || dragRef.current === id}
+                active={hover === id || dragging === id}
                 onPointerDown={handlePointerDown(id)}
                 onPointerEnter={() => setHover(id)}
                 onPointerLeave={() => setHover(null)}

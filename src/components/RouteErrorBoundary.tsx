@@ -34,7 +34,6 @@ export class RouteErrorBoundary extends Component<Props, State> {
     captureException(error, {
       contexts: { react: { componentStack: info.componentStack ?? undefined } },
     });
-    // eslint-disable-next-line no-console
     console.error('[RouteErrorBoundary] render crashed', error, info);
     this.setState({ info });
   }

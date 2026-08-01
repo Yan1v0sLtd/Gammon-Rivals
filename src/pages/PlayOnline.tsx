@@ -8,7 +8,7 @@ import ActionButtons, { MatchSecondaryControls } from '../components/ActionButto
 import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
-import { useNavigationOverlay } from '../lib/navigationOverlay';
+import { useNavigationOverlay } from '../lib/navigationOverlayContext';
 import { supabase } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
 import { getProfileProgression } from '@shared/progression';

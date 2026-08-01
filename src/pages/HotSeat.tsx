@@ -19,7 +19,7 @@ import type { AlignmentDebugSelection } from '../board/pixi/BoardRenderer';
 import { AI_LEVELS, type AILevel } from '../ai';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
-import { useNavigationOverlay } from '../lib/navigationOverlay';
+import { useNavigationOverlay } from '../lib/navigationOverlayContext';
 import {
   createMatch,
   finishMatch,
@@ -527,9 +527,7 @@ export default function HotSeat() {
   // Who opens THIS match (game 1). The opening turn is randomized per game in
   // useGame; capture the first observed turn so the banner label stays correct
   // even after the opener (esp. the AI) takes its turn and flips board.turn.
-  const starterColorRef = useRef<'white' | 'black' | null>(null);
-  if (starterColorRef.current === null) starterColorRef.current = game.board.turn;
-  const starterColor = starterColorRef.current ?? game.board.turn;
+  const [starterColor] = useState(game.board.turn);
   const starterIsLocal = starterColor === localColor;
   const selfLevel = progression.level;
   const selfCoins = formatCompactNumber(wallet?.coins);

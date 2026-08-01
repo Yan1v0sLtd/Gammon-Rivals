@@ -251,6 +251,7 @@ export function LobbyBoardCarousel({
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<DragState | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const lastNotifiedRef = useRef<LobbyBoardId>(selectedId);
   // True while an external selectedId change is being animated. Suppresses
   // mid-animation notifications back to the parent (which would otherwise
   // briefly report an id we're animating through, not toward).
@@ -292,6 +293,16 @@ export function LobbyBoardCarousel({
     }
   }, []);
 
+  const syncLastNotified = useCallback(
+    (id: LobbyBoardId, notifyParent: boolean): boolean => {
+      if (id === lastNotifiedRef.current) return false;
+      lastNotifiedRef.current = id;
+      if (notifyParent) onSelectedIdChange(id);
+      return true;
+    },
+    [onSelectedIdChange]
+  );
+
   // Animate `position` from current value to `target` over `duration` ms.
   // The optional `notifyOnLand` flag controls whether the parent is told
   // about the new selection when the animation lands. External-source
@@ -318,10 +329,7 @@ export function LobbyBoardCarousel({
       if (notifyOnLand && boards.length > 0) {
         const targetIdx = modulo(Math.round(target), boards.length);
         const targetId = boards[targetIdx]!.id;
-        if (targetId !== lastNotifiedRef.current) {
-          lastNotifiedRef.current = targetId;
-          onSelectedIdChange(targetId);
-        }
+        syncLastNotified(targetId, true);
       }
 
       const start = performance.now();
@@ -340,7 +348,7 @@ export function LobbyBoardCarousel({
       };
       animFrameRef.current = requestAnimationFrame(tick);
     },
-    [cancelAnimation, setPosition, boards, onSelectedIdChange]
+    [cancelAnimation, setPosition, boards, syncLastNotified]
   );
 
   useEffect(() => () => cancelAnimation(), [cancelAnimation]);
@@ -366,16 +374,13 @@ export function LobbyBoardCarousel({
 
   // ----- Parent <-> position sync -----
 
-  const lastNotifiedRef = useRef<LobbyBoardId>(selectedId);
-
   // When parent flips selectedId externally (e.g. URL nav), animate the
   // carousel to that board along the shortest path around the loop.
   useEffect(() => {
     if (boards.length === 0) return;
     const idx = boards.findIndex((b) => b.id === selectedId);
     if (idx < 0) return;
-    if (selectedId === lastNotifiedRef.current) return;
-    lastNotifiedRef.current = selectedId;
+    if (!syncLastNotified(selectedId, false)) return;
     if (dragRef.current) return; // user is mid-drag; their pointer wins.
     const len = boards.length;
     const candidates = [idx, idx - len, idx + len];
@@ -386,7 +391,7 @@ export function LobbyBoardCarousel({
     );
     if (Math.abs(target - current) < 0.001) return;
     animateTo(target, SNAP_DURATION_MS, false);
-  }, [selectedId, boards, animateTo]);
+  }, [selectedId, boards, animateTo, syncLastNotified]);
 
   // When position lands on a new integer slot, tell the parent. Skipped
   // during external animations (otherwise we'd echo the same id back).
@@ -400,10 +405,8 @@ export function LobbyBoardCarousel({
     if (distanceToInteger > 0.001) return;
     const idx = modulo(Math.round(position), boards.length);
     const id = boards[idx]!.id;
-    if (id === lastNotifiedRef.current) return;
-    lastNotifiedRef.current = id;
-    onSelectedIdChange(id);
-  }, [position, boards, onSelectedIdChange]);
+    syncLastNotified(id, true);
+  }, [position, boards, syncLastNotified]);
 
   // ----- Pointer handlers -----
 

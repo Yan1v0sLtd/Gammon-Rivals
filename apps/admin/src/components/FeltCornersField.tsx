@@ -233,6 +233,7 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
   const hasHalves = halves !== null;
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragTarget | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
 
   const updateSingleCorner = (which: Corner, ratio: Pair) => {
@@ -251,6 +252,7 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
     event.stopPropagation();
     (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
     dragRef.current = target;
+    setDraggingId(target.id);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -267,6 +269,7 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
 
   const handlePointerUp = () => {
     dragRef.current = null;
+    setDraggingId(null);
   };
 
   const handleSplit = () => {
@@ -432,7 +435,7 @@ export default function FeltCornersField({ gameplayImage, metadata, onMetadataCh
             color={CORNER_COLORS[handle.target.corner].color}
             shape={handle.shape}
             title={handle.label}
-            active={hover === handle.id || dragRef.current?.id === handle.id}
+            active={hover === handle.id || draggingId === handle.id}
             onPointerDown={handlePointerDown(handle.target)}
             onPointerEnter={() => setHover(handle.id)}
             onPointerLeave={() => setHover(null)}

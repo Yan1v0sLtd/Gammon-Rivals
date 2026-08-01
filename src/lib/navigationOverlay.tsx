@@ -1,29 +1,11 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
 } from 'react';
 import { LoadingScreen } from '../components/LoadingScreen';
-
-interface NavigationOverlayCtx {
-  /** Show the loader overlay immediately. Call this *before* triggering
-   *  a navigation so the overlay is up before the old route unmounts. */
-  show: () => void;
-  /** Fade the loader overlay out. Called by the destination route once
-   *  its asset preload finishes. */
-  hide: () => void;
-}
-
-const Ctx = createContext<NavigationOverlayCtx | null>(null);
-
-export function useNavigationOverlay(): NavigationOverlayCtx {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('useNavigationOverlay() outside NavigationOverlayProvider');
-  return ctx;
-}
+import { NavigationOverlayContext } from './navigationOverlayContext';
 
 const FADE_OUT_MS = 260;
 
@@ -54,7 +36,7 @@ export function NavigationOverlayProvider({ children }: { children: ReactNode })
   }, []);
 
   return (
-    <Ctx.Provider value={{ show, hide }}>
+    <NavigationOverlayContext.Provider value={{ show, hide }}>
       {children}
       {phase !== 'hidden' ? (
         <div
@@ -69,6 +51,6 @@ export function NavigationOverlayProvider({ children }: { children: ReactNode })
           <LoadingScreen />
         </div>
       ) : null}
-    </Ctx.Provider>
+    </NavigationOverlayContext.Provider>
   );
 }

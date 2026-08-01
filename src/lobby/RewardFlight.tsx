@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useEffectEvent, useRef } from 'react';
 
 export type FlightCurrency = 'coins' | 'gems' | 'xp';
 
@@ -67,12 +67,7 @@ interface Props {
  */
 export function RewardFlight({ spec, onLanded }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
-  // Stash the latest onLanded in a ref so we can reference it from the
-  // mount-only effect without listing it as a dep (which would cause
-  // the effect to re-run on every parent render and cancel the flight
-  // mid-flight).
-  const onLandedRef = useRef(onLanded);
-  onLandedRef.current = onLanded;
+  const notifyLanded = useEffectEvent(onLanded);
 
   useEffect(() => {
     const el = ref.current;
@@ -108,10 +103,10 @@ export function RewardFlight({ spec, onLanded }: Props) {
     let cancelled = false;
     anim.finished
       .then(() => {
-        if (!cancelled) onLandedRef.current(spec.id);
+        if (!cancelled) notifyLanded(spec.id);
       })
       .catch(() => {
-        if (!cancelled) onLandedRef.current(spec.id);
+        if (!cancelled) notifyLanded(spec.id);
       });
     return () => {
       cancelled = true;

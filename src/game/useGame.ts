@@ -457,7 +457,6 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
           setMatch((m) => (m.cubeOffer !== null ? engineAcceptDouble(m) : m));
         } catch (err) {
           captureException(err);
-          // eslint-disable-next-line no-console
           console.error('[useGame] AI cube response failed', err);
         } finally {
           // Always release the guard flags — if they stay set, this effect
@@ -488,7 +487,6 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
           startTurnRecord(aiPlayer, r);
         } catch (err) {
           captureException(err);
-          // eslint-disable-next-line no-console
           console.error('[useGame] AI roll failed', err);
         } finally {
           aiActiveRef.current = false;
@@ -528,7 +526,6 @@ export function useGame(opts: UseGameOptions = {}): MatchGameState & MatchGameAc
           // Recover by forfeiting the rest of the AI's turn — only if it
           // is still actually the AI's turn and the game has no winner.
           captureException(err);
-          // eslint-disable-next-line no-console
           console.error('[useGame] AI turn failed — ending AI turn to keep the match playable', err);
           setAiPreviewReady(false);
           setBoard((b) =>

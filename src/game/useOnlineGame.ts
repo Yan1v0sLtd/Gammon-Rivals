@@ -244,7 +244,7 @@ export function useOnlineGame(
   // lastLocalActivityMs without a use-before-declare issue. The
   // matching effects + derivations live below in the "activity
   // timers" section.
-  const mountedAtRef = useRef(Date.now());
+  const [mountedAt] = useState(() => Date.now());
   const [lastLocalActivityMs, setLastLocalActivityMs] = useState(() => Date.now());
   const [lastOpponentActivityMs, setLastOpponentActivityMs] = useState(() => Date.now());
 
@@ -485,13 +485,16 @@ export function useOnlineGame(
   // bug). HotSeat's useGame keeps roll in useState so it doesn't
   // hit this; useOnlineGame derives from currentTurn so we need to
   // memoise explicitly.
-  const roll = useMemo<DiceRoll | null>(
-    () => (currentTurn ? ([currentTurn.dice[0], currentTurn.dice[1]] as DiceRoll) : null),
-    // Depend on the primitive dice values, not the parent
-    // currentTurn object — a re-derive of currentTurn from match
-    // jsonb produces a new object even when the dice didn't change.
-    [currentTurn?.dice[0], currentTurn?.dice[1], currentTurn?.player]
-  );
+  const firstDie = currentTurn?.dice[0];
+  const secondDie = currentTurn?.dice[1];
+  const rollPlayer = currentTurn?.player;
+  const roll = useMemo<DiceRoll | null>(() => {
+    // Changing player must restart the animation even if both rolls match.
+    void rollPlayer;
+    return firstDie !== undefined && secondDie !== undefined
+      ? ([firstDie, secondDie] as DiceRoll)
+      : null;
+  }, [firstDie, secondDie, rollPlayer]);
   const remaining = useMemo<readonly Die[]>(
     () => (currentTurn?.remaining ?? []) as readonly Die[],
     [currentTurn?.remaining]
@@ -954,8 +957,8 @@ export function useOnlineGame(
     setLastOpponentActivityMs(Date.now());
   }, [opponentSignature]);
 
-  const localClockBaseMs = Math.max(lastLocalActivityMs, mountedAtRef.current);
-  const opponentClockBaseMs = Math.max(lastOpponentActivityMs, mountedAtRef.current);
+  const localClockBaseMs = Math.max(lastLocalActivityMs, mountedAt);
+  const opponentClockBaseMs = Math.max(lastOpponentActivityMs, mountedAt);
 
   const secondsSinceLocalActivity = Math.max(
     0,

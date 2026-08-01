@@ -61,6 +61,7 @@ const SPIN_DURATION_MS = 5000;
  *  flights launch. Needs to cover the longest flight delay + flight
  *  duration so no token vanishes mid-arc when the modal unmounts. */
 const POST_SPIN_HOLD_MS = 1500;
+const EMPTY_SLOTS: readonly WheelSlot[] = [];
 
 /** Per-accent gradient pair. The first hex shades the conic-gradient
  *  wedge; the second is used for darker rim/glow accents. Unknown
@@ -157,7 +158,7 @@ function shortAmount(n: number): string {
 
 export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdated }: Props) {
   const state = wheel.state;
-  const slots = state?.slots ?? [];
+  const slots = state?.slots ?? EMPTY_SLOTS;
 
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'celebrating'>('idle');
   const [error, setError] = useState<string | null>(null);

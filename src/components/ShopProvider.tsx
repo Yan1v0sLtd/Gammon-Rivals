@@ -1,29 +1,20 @@
 import {
-  createContext,
   lazy,
   Suspense,
   useCallback,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
 } from 'react';
 import { prefetchShopCatalog } from '../lib/shopCache';
 import { useBodyModalFlag } from '../lib/bodyModalFlag';
+import { ShopContext } from './shopContext';
 
 // Lazy so the (large) shop bundle is only fetched the first time the
 // popup opens, not in the initial app payload.
 const ShopModal = lazy(() =>
   import('../pages/Shop').then((m) => ({ default: m.ShopModal }))
 );
-
-interface ShopContextValue {
-  readonly openShop: () => void;
-  readonly closeShop: () => void;
-  readonly isShopOpen: boolean;
-}
-
-const ShopContext = createContext<ShopContextValue | null>(null);
 
 /**
  * App-wide shop popup controller. Mount once near the app root (inside
@@ -73,12 +64,4 @@ export function ShopProvider({ children }: { readonly children: ReactNode }) {
       ) : null}
     </ShopContext.Provider>
   );
-}
-
-export function useShop(): ShopContextValue {
-  const ctx = useContext(ShopContext);
-  if (!ctx) {
-    throw new Error('useShop must be used within a ShopProvider');
-  }
-  return ctx;
 }

@@ -4,7 +4,8 @@ import AuthGate from './components/AuthGate';
 import { LoadingScreen } from './components/LoadingScreen';
 import { refreshLoadingScreenImage } from './lib/loadingScreenImage';
 import { RouteErrorBoundary } from './components/RouteErrorBoundary';
-import { ShopProvider, useShop } from './components/ShopProvider';
+import { ShopProvider } from './components/ShopProvider';
+import { useShop } from './components/shopContext';
 import Home from './pages/Home';
 
 // Code-split everything except Home (the landing page) so the initial JS

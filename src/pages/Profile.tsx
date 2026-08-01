@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../lib/auth';
-import { useShop } from '../components/ShopProvider';
+import { useShop } from '../components/shopContext';
 import { formatCompactNumber } from '../lib/format';
 import {
   getOwnerStats,

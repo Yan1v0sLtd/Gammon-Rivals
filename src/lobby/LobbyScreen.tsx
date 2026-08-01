@@ -2,9 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate } from 'react-router-dom';
 // AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
-import { useShop } from '../components/ShopProvider';
+import { useShop } from '../components/shopContext';
 import { extractErrorMessage } from '@shared/errors';
-import { useNavigationOverlay } from '../lib/navigationOverlay';
+import { useNavigationOverlay } from '../lib/navigationOverlayContext';
 import {
   abandonStaleMatches,
   cancelMatchmakingRpc,
