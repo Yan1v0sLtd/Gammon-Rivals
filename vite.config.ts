@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { buildDefines, projectRoot } from './vite.shared.ts';
+import { buildDefines, projectRoot, vendorChunkGroups } from './vite.shared.ts';
 
 export default defineConfig({
   plugins: [react()],
@@ -14,5 +14,14 @@ export default defineConfig({
   server: { port: 5174, host: '127.0.0.1' },
   optimizeDeps: {
     include: ['cannon-es', 'three'],
+  },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: vendorChunkGroups(),
+        },
+      },
+    },
   },
 });

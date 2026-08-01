@@ -1,7 +1,7 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { buildDefines, projectRoot } from './vite.shared.ts';
+import { buildDefines, projectRoot, vendorChunkGroups } from './vite.shared.ts';
 
 export default defineConfig({
   root: path.join(projectRoot, 'apps/admin'),
@@ -27,5 +27,12 @@ export default defineConfig({
   build: {
     outDir: path.join(projectRoot, 'dist-admin'),
     emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: vendorChunkGroups(),
+        },
+      },
+    },
   },
 });
