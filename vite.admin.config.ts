@@ -5,6 +5,10 @@ import { buildDefines, projectRoot } from './vite.shared.ts';
 
 export default defineConfig({
   root: path.join(projectRoot, 'apps/admin'),
+  // Load env from the project root so the admin app sees the same
+  // VITE_* vars as the game (apps/admin/.env would otherwise be the
+  // lookup dir, and it doesn't exist).
+  envDir: projectRoot,
   publicDir: path.join(projectRoot, 'public'),
   plugins: [react()],
   resolve: {
