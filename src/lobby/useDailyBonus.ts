@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/database';
 
 export type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 export type UserDailyBonus = Database['public']['Tables']['user_daily_bonuses']['Row'];

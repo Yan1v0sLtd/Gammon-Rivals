@@ -15,18 +15,18 @@ import {
   formatUsdMicros,
   usdMicrosFor,
   type CurrencyConfigRow,
-} from '@shared/lib/currency';
-import type { Database, Json } from '@shared/types/database';
+} from '@shared/currency';
+import type { Database, Json } from '@shared/database';
 import ImageField from './components/ImageField';
 import FeltCornersField from './components/FeltCornersField';
 import BearOffTraysField from './components/BearOffTraysField';
 import BoardTuningField from './components/BoardTuningField';
-import BoardPreview from './components/BoardPreview';
+import BoardPreview from '@board-preview/BoardPreview';
 import { WheelAdmin } from './components/WheelAdmin';
 import { LevelCurveProposal } from './components/LevelCurveProposal';
 import { MissionsAdmin } from './components/MissionsAdmin';
 import { useConfirm } from './components/useConfirm';
-import { resolveStatusLabel } from '@shared/lib/progression';
+import { resolveStatusLabel } from '@shared/progression';
 
 const gameOrigin =
   import.meta.env.VITE_GAME_APP_URL?.trim() ||
@@ -2569,7 +2569,7 @@ export default function Admin() {
     setSavingKey('admin-login');
     setDataError(null);
     try {
-      // adminAuth.signInWithGoogle bakes in the /admin/auth/callback
+      // adminAuth.signInWithGoogle owns the canonical /auth/callback
       // redirect — no need to compute it here. The BO session lives
       // in its own storageKey, so the game's session (if any) is
       // untouched by this flow.

@@ -3,7 +3,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { formatCompactNumber } from '../lib/format';
 import { PlayButton } from '../components/PlayButton';
-import type { Database, Json } from '../types/database';
+import type { Database, Json } from '@shared/database';
 
 /**
  * Server row shape we need. We only read enabled difficulty rows

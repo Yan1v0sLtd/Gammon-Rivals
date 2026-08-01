@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@shared/types/database';
+import type { Database } from '@shared/database';
 
 /**
  * Independent Supabase client used exclusively by the Back Office.
@@ -14,8 +14,8 @@ import type { Database } from '@shared/types/database';
  * Other differences from the game client:
  *   - Always uses localStorage (no hybrid session-vs-local switching).
  *     The BO is an operator tool — no anonymous-session story to handle.
- *   - `detectSessionInUrl: true` so the /admin/auth/callback page can
- *     simply mount and supabase-js picks up the PKCE code automatically.
+ *   - `detectSessionInUrl: true` so either supported callback route can
+ *     mount directly and let supabase-js read the PKCE code in place.
  *
  * The PKCE code-verifier is stored under `${storageKey}-code-verifier`,
  * also in localStorage, so the verifier the BO writes when initiating

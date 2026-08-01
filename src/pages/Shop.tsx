@@ -7,7 +7,7 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { getBilling } from '../lib/billing';
 import { getShopCatalogCache, updateShopCatalogCache } from '../lib/shopCache';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
-import type { Database, Json } from '../types/database';
+import type { Database, Json } from '@shared/database';
 
 // -----------------------------------------------------------------------------
 // Redesigned Store. Two sections, no category tabs (per current direction):

@@ -1,3 +1,8 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+export const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
 export function buildDefines(): Record<string, string> {
   const commit = (process.env.VERCEL_GIT_COMMIT_SHA ?? 'dev').slice(0, 7);
   return {

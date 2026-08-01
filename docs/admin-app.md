@@ -2,6 +2,12 @@
 
 The Back Office is built separately from the player game while sharing the same repository and Supabase project.
 
+Shared ownership is explicit:
+
+- `packages/shared/` contains database types and pure client utilities.
+- `packages/board-preview/` is the only board-rendering entry available to admin UI.
+- `npm run check:boundaries` rejects direct admin imports of the game renderer or engine.
+
 ## Local development
 
 Run each app in its own terminal:
@@ -14,6 +20,7 @@ npm run dev:admin
 - Game: `http://127.0.0.1:5174`
 - Back Office: `http://127.0.0.1:5175`
 - Admin OAuth callback: `http://127.0.0.1:5175/auth/callback`
+- Legacy `/admin/auth/callback` mounts the same callback component, preserving PKCE query/hash values.
 
 ## Production builds
 

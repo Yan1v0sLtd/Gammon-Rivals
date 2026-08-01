@@ -1,5 +1,5 @@
 import { isSupabaseConfigured, supabase } from './supabase';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/database';
 
 type ShopItemRow = Database['public']['Tables']['shop_items']['Row'];
 

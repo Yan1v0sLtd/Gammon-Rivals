@@ -1,4 +1,4 @@
-import type { Database } from '../types/database';
+import type { Database } from './database';
 
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export type LevelConfig = Database['public']['Tables']['level_configs']['Row'];

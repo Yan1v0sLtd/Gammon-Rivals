@@ -4,7 +4,7 @@ import { computeHitRects } from '../hit-areas';
 import { layoutFromMetadata } from '../theme/remote';
 import { premiumTheme } from '../theme/premium';
 import { BAR } from '../../engine/types';
-import type { Json } from '../../types/database';
+import type { Json } from '@shared/database';
 
 /**
  * Pins the layout-merge semantics that BOTH gameplay (remote.ts

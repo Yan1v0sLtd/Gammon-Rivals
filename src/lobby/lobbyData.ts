@@ -1,5 +1,5 @@
 import type { BoardThemeConfig, BoardThemeId } from '../board/theme';
-import type { Json } from '../types/database';
+import type { Json } from '@shared/database';
 
 export type LobbyBoardId = BoardThemeId;
 

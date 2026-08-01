@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 import type { GameResult, Move } from '../engine';
 import type { AILevel } from '../ai';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/database';
 
 type MatchRow = Database['public']['Tables']['matches']['Row'];
 

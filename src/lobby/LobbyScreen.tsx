@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 // AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
 import { useShop } from '../components/ShopProvider';
-import { extractErrorMessage } from '../lib/errors';
+import { extractErrorMessage } from '@shared/errors';
 import { useNavigationOverlay } from '../lib/navigationOverlay';
 import {
   abandonStaleMatches,

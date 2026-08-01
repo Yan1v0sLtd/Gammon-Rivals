@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/database';
 
 export type MatchRow = Database['public']['Tables']['matches']['Row'];
 export type GameRow = Database['public']['Tables']['games']['Row'];

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import { extractErrorMessage } from '../lib/errors';
+import { extractErrorMessage } from '@shared/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import { ScaleInModal } from '../components/ScaleInModal';
 import {

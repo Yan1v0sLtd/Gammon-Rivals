@@ -1,10 +1,7 @@
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { buildDefines } from './vite.shared.ts';
-
-const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+import { buildDefines, projectRoot } from './vite.shared.ts';
 
 export default defineConfig({
   root: path.join(projectRoot, 'apps/admin'),
@@ -12,7 +9,10 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@shared': path.join(projectRoot, 'src'),
+      '@shared': path.join(projectRoot, 'packages/shared/src'),
+      '@board-preview': path.join(projectRoot, 'packages/board-preview/src'),
+      '@board': path.join(projectRoot, 'src/board'),
+      '@engine': path.join(projectRoot, 'src/engine'),
     },
   },
   define: buildDefines(),

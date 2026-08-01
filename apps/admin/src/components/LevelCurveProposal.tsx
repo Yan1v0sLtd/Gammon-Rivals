@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { adminSupabase as supabase } from '../lib/adminSupabase';
 import { useConfirm } from './useConfirm';
-import { formatUsdMicros } from '@shared/lib/currency';
-import type { Database } from '@shared/types/database';
+import { formatUsdMicros } from '@shared/currency';
+import type { Database } from '@shared/database';
 
 type LevelConfigInsert = Database['public']['Tables']['level_configs']['Insert'];
 

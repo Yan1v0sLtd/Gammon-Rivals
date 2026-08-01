@@ -5,6 +5,7 @@ export default {
   content: [
     './apps/admin/index.html',
     './apps/admin/src/**/*.{ts,tsx}',
+    './packages/board-preview/src/**/*.{ts,tsx}',
     './src/board/**/*.{ts,tsx}',
   ],
 };

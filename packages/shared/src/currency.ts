@@ -1,4 +1,4 @@
-import type { Database } from '../types/database';
+import type { Database } from './database';
 
 export type CurrencyConfigRow = Database['public']['Tables']['currency_configs']['Row'];
 

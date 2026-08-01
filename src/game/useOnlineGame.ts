@@ -18,7 +18,7 @@ import { BAR, OFF } from '../engine/types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useMatchPresence } from '../lib/useMatchPresence';
-import type { Database } from '../types/database';
+import type { Database } from '@shared/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
 

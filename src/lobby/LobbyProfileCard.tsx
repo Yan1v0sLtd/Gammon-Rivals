@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar';
-import type { ProfileProgression } from '../lib/progression';
-import type { Database } from '../types/database';
+import type { ProfileProgression } from '@shared/progression';
+import type { Database } from '@shared/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 

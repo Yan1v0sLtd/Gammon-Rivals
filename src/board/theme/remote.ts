@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
-import type { Database, Json } from '../../types/database';
+import type { Database, Json } from '@shared/database';
 import { getBoardTheme } from './boardThemes';
 import { premiumTheme } from './premium';
 import { getPersistedBoardId } from './selectedBoard';
