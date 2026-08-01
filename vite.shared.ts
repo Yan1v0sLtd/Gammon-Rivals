@@ -3,41 +3,51 @@ import { fileURLToPath } from 'node:url';
 
 export const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+const VENDOR_PACKAGES = [
+  'pixi.js',
+  'react',
+  'react-dom',
+  'react-router',
+  'react-router-dom',
+  'scheduler',
+  '@supabase/supabase-js',
+  '@supabase/auth-js',
+  '@supabase/functions-js',
+  '@supabase/postgrest-js',
+  '@supabase/realtime-js',
+  '@supabase/storage-js',
+  '@supabase/phoenix',
+  '@sentry/react',
+  '@sentry/browser',
+  '@sentry/core',
+  '@sentry-internal/browser-utils',
+  '@capacitor/core',
+  '@capacitor/app',
+  '@capacitor/browser',
+  '@capgo/capacitor-social-login',
+  'capacitor-plugin-cdv-purchase',
+  'cordova-plugin-purchase',
+  '@pixi/colord',
+  'earcut',
+  'eventemitter3',
+  'iceberg-js',
+  'ismobilejs',
+  'parse-svg-path',
+  'tiny-lru',
+  'tslib',
+] as const;
+
+function isPackageModule(id: string, packageName: string): boolean {
+  const normalizedId = id.replaceAll('\\', '/');
+  return normalizedId.includes(`/node_modules/${packageName}/`);
+}
+
 export function vendorChunkGroups() {
-  return [
-    {
-      name: 'vendor-pixi-rendering',
-      test: /node_modules[\\/]pixi\.js[\\/]lib[\\/]rendering[\\/]/,
-    },
-    {
-      name: 'vendor-pixi-scene',
-      test: /node_modules[\\/]pixi\.js[\\/]lib[\\/]scene[\\/]/,
-    },
-    {
-      name: 'vendor-pixi-core',
-      test: /node_modules[\\/](?:pixi\.js|earcut)[\\/]/,
-    },
-    {
-      name: 'vendor-react',
-      test: /node_modules[\\/](?:react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
-    },
-    {
-      name: 'vendor-supabase',
-      test: /node_modules[\\/]@supabase[\\/]/,
-    },
-    {
-      name: 'vendor-billing',
-      test: /node_modules[\\/](?:cordova-plugin-purchase|capacitor-plugin-cdv-purchase)[\\/]/,
-    },
-    {
-      name: 'vendor-sentry',
-      test: /node_modules[\\/]@sentry(?:-internal)?[\\/]/,
-    },
-    {
-      name: 'vendor-capacitor',
-      test: /node_modules[\\/](?:@capacitor|@capgo)[\\/]/,
-    },
-  ];
+  return VENDOR_PACKAGES.map((packageName) => ({
+    name: `vendor-${packageName.replaceAll('/', '-')}`,
+    test: (id: string) => isPackageModule(id, packageName),
+    includeDependenciesRecursively: false,
+  }));
 }
 
 export function buildDefines(): Record<string, string> {
