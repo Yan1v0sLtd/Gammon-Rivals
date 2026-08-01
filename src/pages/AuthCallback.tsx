@@ -51,14 +51,12 @@ export default function AuthCallback() {
   const [params] = useSearchParams();
   const { completeOAuthProfile } = useAuth();
   const [error, setError] = useState<string | null>(null);
-  const handledRef = useRef(false);
+  const completionRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
-    if (handledRef.current) return;
-    handledRef.current = true;
     let cancelled = false;
-    (async () => {
-      try {
+    if (!completionRef.current) {
+      completionRef.current = (async () => {
         const authError =
           readCallbackParam(params, 'error_description') ?? readCallbackParam(params, 'error');
         if (authError) throw new Error(authError);
@@ -75,13 +73,22 @@ export default function AuthCallback() {
           }
         }
         await completeOAuthProfile();
+      })();
+    }
+
+    void completionRef.current.then(
+      () => {
         if (!cancelled) {
           navigate(safeNextPath(readCallbackParam(params, 'next')), { replace: true });
         }
-      } catch (err) {
-        if (!cancelled) setError(formatAuthError(err instanceof Error ? err.message : String(err)));
+      },
+      (err: unknown) => {
+        if (!cancelled) {
+          setError(formatAuthError(err instanceof Error ? err.message : String(err)));
+        }
       }
-    })();
+    );
+
     return () => {
       cancelled = true;
     };
