@@ -1,5 +1,5 @@
-import { applyMove, legalMoves } from '../../../../packages/engine/src/rules';
-import type { BoardState, Die, Move } from '../../../../packages/engine/src/types';
+import { applyMove, legalMoves } from '../../engine/src/rules';
+import type { BoardState, Die, Move } from '../../engine/src/types';
 
 export interface MoveSequence {
   readonly finalState: BoardState;

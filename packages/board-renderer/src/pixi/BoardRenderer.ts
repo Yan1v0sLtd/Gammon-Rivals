@@ -1094,11 +1094,10 @@ export class BoardRenderer {
     if (!cb) return;
     void state;
 
-    // All hit-area math lives in packages/board-renderer/src/hit-areas.ts so the same
-    // function powers the Pixi renderer AND the test suite that
-    // simulates every point on every theme. If you're tempted to
-    // tweak this loop, edit the pure function instead so the tests
-    // catch regressions.
+    // All hit-area math lives in packages/board-renderer/src/hit-areas.ts as a pure
+    // function, kept separate from this imperative loop so it stays readable and
+    // reusable across themes/orientations. If you're tempted to tweak this loop,
+    // edit the pure function instead.
     const rects = computeHitRects(this.layout);
     for (const rect of rects) {
       const g = new Graphics();

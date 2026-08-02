@@ -7,14 +7,14 @@
  * Determinism: pass a seeded Rng; both the dice (roll) and the AI's random
  * choices (easy level) draw from it, so a (seed) fully reproduces a run.
  */
-import { classifyWin, WIN_MULTIPLIER, type WinType } from '../../../../packages/engine/src/match';
-import { applyMove, endTurn, winner } from '../../../../packages/engine/src/rules';
-import { expandDice, roll, type Rng } from '../../../../packages/engine/src/dice';
-import { initialBoard } from '../../../../packages/engine/src/board';
-import type { BoardState, Die, Move, Player } from '../../../../packages/engine/src/types';
-import { pickMove } from '../ai/picker';
-import { pickMoveSoftmax } from '../ai/strength';
-import type { AILevel } from '../ai/types';
+import { classifyWin, WIN_MULTIPLIER, type WinType } from '../../engine/src/match';
+import { applyMove, endTurn, winner } from '../../engine/src/rules';
+import { expandDice, roll, type Rng } from '../../engine/src/dice';
+import { initialBoard } from '../../engine/src/board';
+import type { BoardState, Die, Move, Player } from '../../engine/src/types';
+import { pickMove } from '../../ai/src/picker';
+import { pickMoveSoftmax } from '../../ai/src/strength';
+import type { AILevel } from '../../ai/src/types';
 
 /** A turn policy: given the board + this turn's remaining dice, return the moves to play. */
 export type Picker = (

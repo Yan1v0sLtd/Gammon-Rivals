@@ -1,6 +1,6 @@
 import { enumerateSequences } from './sequence';
 import { evaluate } from './evaluator';
-import type { BoardState, Die, Move } from '../../../../packages/engine/src/types';
+import type { BoardState, Die, Move } from '../../engine/src/types';
 
 export interface Rng {
   next(): number;

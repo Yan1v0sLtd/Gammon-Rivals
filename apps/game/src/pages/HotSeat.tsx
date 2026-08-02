@@ -17,7 +17,7 @@ import { useBoardThemeConfig } from '../board/theme/remote';
 import type { ThemeLayout } from '../../../../packages/board-renderer/src/theme/types';
 import { premiumTheme } from '../../../../packages/board-renderer/src/theme/premium';
 import type { AlignmentDebugSelection } from '../../../../packages/board-renderer/src/pixi/BoardRenderer';
-import { AI_LEVELS, type AILevel } from '../ai/types';
+import { AI_LEVELS, type AILevel } from '../../../../packages/ai/src/types';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
 import { useNavigationOverlay } from '../lib/navigationOverlayContext';

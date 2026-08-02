@@ -20,7 +20,7 @@ import { useBoardThemeConfig } from '../board/theme/remote';
 import type { Database } from '../../../../packages/shared/src/database';
 import { aiIdentityFromSeed, aiRankLabel, type PlayerIdentity } from '../lib/identity';
 import { generateAIPersona } from '../lib/aiPersona';
-import type { AILevel } from '../ai/types';
+import type { AILevel } from '../../../../packages/ai/src/types';
 import { useAutoRoll, useAutoRollEffect } from '../lib/useAutoRoll';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];

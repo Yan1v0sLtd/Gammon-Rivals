@@ -4,10 +4,10 @@ import {
   endTurn,
   legalMoves,
   winner,
-} from '../../../../../packages/engine/src/rules';
-import { expandDice, roll, seededRng } from '../../../../../packages/engine/src/dice';
-import { initialBoard } from '../../../../../packages/engine/src/board';
-import type { BoardState, Die } from '../../../../../packages/engine/src/types';
+} from '../../../engine/src/rules';
+import { expandDice, roll, seededRng } from '../../../engine/src/dice';
+import { initialBoard } from '../../../engine/src/board';
+import type { BoardState, Die } from '../../../engine/src/types';
 import { pickMove } from '../picker';
 
 /** Drive a hot-seat-style turn for whoever's turn it is, using the AI picker. */

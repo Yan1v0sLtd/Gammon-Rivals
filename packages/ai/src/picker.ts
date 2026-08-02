@@ -1,4 +1,4 @@
-import type { BoardState, Die, Move, Player } from '../../../../packages/engine/src/types';
+import type { BoardState, Die, Move, Player } from '../../engine/src/types';
 import { enumerateSequences, type MoveSequence } from './sequence';
 import { evaluate } from './evaluator';
 import type { AILevel } from './types';

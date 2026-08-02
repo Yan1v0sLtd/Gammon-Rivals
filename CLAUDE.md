@@ -57,10 +57,14 @@ apps/
 └── admin/src/                     → Independent Back Office application
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests
+├── ai/src/                        → Pure AI decision logic (picker/evaluator/strength) + Worker bridge
+├── sim/src/                       → Headless economy + AI-ladder simulator (`npm run sim`)
 ├── board-renderer/src/            → Shared Pixi renderer and geometry
 ├── board-preview/src/             → Back Office board preview
 └── shared/src/                    → Shared database types and pure utilities
 ```
+
+**`packages/` is shared logic; `apps/` is UI and client state.** Nothing under `packages/` may import from `apps/` — `scripts/check-app-boundaries.mjs` enforces it. `engine`, `ai` and `sim` are additionally *dependency-free*: engine + siblings only, no npm imports (the checker rejects bare specifiers there). That's what lets `build-shared-ai.mjs` mirror `packages/ai/src` verbatim into a Deno edge function for server-side bots. Two exceptions to headlessness live in `packages/`: `ai/client.ts` + `ai/worker.ts` (Web Worker bridge) and all of `board-renderer` (Pixi) — both are browser code, and neither is tested.
 
 **New page checklist:**
 - Imports engine through a relative path to the specific module in `packages/engine/src`
@@ -113,9 +117,12 @@ If anything in the rules code seems backwards, run the engine tests first — th
 
 ## Tests
 
-- `npm test` runs the full Vitest suite once.
-- `npm run test:watch` for TDD on engine work.
-- **React components are not tested.** Coverage targets the pure engine, Redux reducers/selectors, listener middleware, and RTK Query endpoints (e.g. `apps/game/src/features/replay/*.test.ts`).
+- `npm test` runs the Vitest suite once. `npm run test:watch` for TDD on engine work.
+- **Packages are tested; apps are not.** `vitest.config.ts` is scoped to `packages/**`. What's covered is the pure deterministic logic: engine rules, AI decision logic, the economy sim, and board hit-area geometry. `fuzz.test.ts` guards the `legalMoves`/`applyMove` invariant that would otherwise surface as a mid-match desync in live PvP; `hit-areas.test.ts` guards click routing across every theme and aspect ratio (it carries a regression case for a shipped bug where a point centre resolved to the bear-off tray).
+- The browser code inside `packages/` — the Pixi renderer, `ai/client.ts`, `ai/worker.ts` — is **not** tested, same as `apps/`. Test pure functions, not the things that draw or thread them.
+- **Client code is deliberately not tested.** No tests for React components, Pixi/renderer, Redux slices/selectors, listener middleware, or RTK Query endpoints. These churned faster than they caught bugs. Do not add them back, and do not widen the Vitest glob to `apps/**`, without discussing it first.
+- The split is mechanical, not a convention to remember: if logic deserves a test, it belongs in `packages/`, and the boundary checker guarantees `packages/` can never reach into `apps/`.
+- `npm run sim` runs the Monte-Carlo economy + AI-ladder harness (`scripts/run-economy-sim.mjs` → `packages/sim/src/runSim.ts`) — `SIM_GAMES=4000 npm run sim` for a longer run.
 
 ---
 

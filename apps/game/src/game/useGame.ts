@@ -26,8 +26,8 @@ import type {
   Player,
   Position,
 } from '../../../../packages/engine/src/types';
-import { pickMoveAsync } from '../ai/client';
-import type { AILevel } from '../ai/types';
+import { pickMoveAsync } from '../../../../packages/ai/src/client';
+import type { AILevel } from '../../../../packages/ai/src/types';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
 import { captureException } from '@sentry/react';
 
