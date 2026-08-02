@@ -19,7 +19,7 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 | 1 | Pure TS rules engine, board UI in PixiJS, dice physics, hot-seat 2-player, single games | 🟢 Done |
 | 2 | Match play, Crawford rule, doubling cube offer/accept/drop | 🟢 Engine + UI done — `packages/engine/src/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
 | 3 | AI opponent (3 tiers), Web Worker eval | 🟡 Mostly done — AI plays online matches as a **fallback** when matchmaking can't find a human opponent. Pure PvP is the primary mode. |
-| 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | 🟢 Auth + guests + profile done; replays / ELO TBD |
+| 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | 🟢 Auth + guests + profile done; replays shipped as the Redux Toolkit/RTK Query pilot; ELO TBD |
 | 5 | Online multiplayer — server-authoritative dice, Realtime moves, private invites, reconnect | 🟢 Done |
 | 6 | Public lobby, ELO matchmaking, spectator mode | 🟡 Matchmaking RPC wired; ELO + spectator TBD |
 | 7 | Variants — Nackgammon, hyper-gammon, acey-deucey | ⬜ |
@@ -34,7 +34,7 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 2. **Dice are server-authoritative in online play.** Phase 5 onward, clients NEVER roll their own dice. Edge Function generates the roll, writes it to the match record, broadcasts via Realtime. The seeded `Rng` in `dice.ts` is only for local play and tests.
 3. **Pixi never holds game state.** `BoardRenderer` has an imperative `render(state)` API. It's a view function. If you find yourself storing turn/move/dice in Pixi code, stop.
 4. **Stake/match-value framing, not bet/winnings.** Virtual chips only. No real-money chip purchases, no cash-out path. This keeps us out of "simulated gambling" regulatory territory.
-5. **No premature abstractions.** No TanStack Query, no Redux, no form library, no `@pixi/react`. Plain hooks + controlled components + imperative Pixi. Ask before adding any of these.
+5. **Application state lives in Redux Toolkit; server data lives in RTK Query.** The store (`apps/game/src/store/`) is the only place app state lives, and `baseApi.ts` is the one shared RTK Query API — features inject endpoints into it. No other state/server-cache library (TanStack Query, Zustand, …), no form library, no `@pixi/react`. Ask before adding new libraries.
 6. **Doubling cube needs a confirm step.** Single-tap cube offers caused user complaints in the reference app (Lord of the Board). Long-press or two-tap.
 7. **No client barrel files or re-exports.** Import each source module directly.
 
@@ -47,6 +47,8 @@ apps/
 ├── game/src/                      → Player application
 │   ├── game/                      → React-side session state
 │   ├── board/                     → Player board data adapters
+│   ├── store/                     → Redux store, typed hooks, listener middleware, shared RTK Query API
+│   ├── features/                  → Per-feature slices, injected endpoints, selectors (one dir per feature)
 │   ├── components/
 │   ├── pages/
 │   ├── lib/
@@ -99,11 +101,21 @@ If anything in the rules code seems backwards, run the engine tests first — th
 
 ---
 
+## Redux state management rules
+
+- **Redux Toolkit is the application-state framework; RTK Query is the only server cache.** `store/store.ts` configures the store strictly: default immutable + serializable checks stay enabled, no ignored paths, no broad exceptions. `store/baseApi.ts` is the single shared `createApi` with `fakeBaseQuery<ApiError>()`; features inject endpoints into it from `features/<feature>/` (never a second `createApi`).
+- **Never copy RTK Query results into an ordinary slice.** Server data stays in the `api` reducer. Slices hold only serializable UI state (replay keeps only `ply` + `playing`). Query data, errors, boards, and totals are read via selectors.
+- **Listener middleware owns workflows.** Async orchestration — timers, polling, Realtime subscriptions, delayed transitions, cross-feature reactions — lives in `store/listenerMiddleware.ts` as cancellable listener effects. Components never own timers/polling; the workflow is cancelled by dispatching a matched control action.
+- **Redux state must be serializable.** No `Set`, `Map`, class instances, Pixi objects, Realtime channels, promises, abort controllers, DOM elements, or values that can be reliably derived. Route params (`gameId`), totals, and boards are derived via memoized selectors (`createSelector`), never stored.
+- **Mount one `<Provider>` at the root** (`main.tsx`, inside `StrictMode`, wrapping existing providers). Use the typed hooks from `store/hooks.ts` (`useAppDispatch`/`useAppSelector`); feature API hooks are exported from their feature module. No barrels.
+
+---
+
 ## Tests
 
-- `npm test` runs the engine suite once.
+- `npm test` runs the full Vitest suite once.
 - `npm run test:watch` for TDD on engine work.
-- UI is tested via the Pixi snapshot tooling (TBD in Phase 1) and React Testing Library for non-canvas components.
+- **React components are not tested.** Coverage targets the pure engine, Redux reducers/selectors, listener middleware, and RTK Query endpoints (e.g. `apps/game/src/features/replay/*.test.ts`).
 
 ---
 
