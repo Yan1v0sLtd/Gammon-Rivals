@@ -38,49 +38,42 @@ export default function ActionButtons({
   const rollSlotState: 'roll' | 'undo' = canUndo && !canEndTurn ? 'undo' : 'roll';
   const rollSlotDisabled = rollSlotState === 'roll' && !canRoll;
   const rollSlotOnClick = rollSlotState === 'undo' ? onUndo : onRoll;
-  const rollSlotLabel =
-    rollSlotState === 'undo' ? 'Undo last move' : 'Roll the dice';
+  const rollSlotLabel = rollSlotState === 'undo' ? 'Undo last move' : 'Roll the dice';
 
-  return (
-    <div className="game-action-row">
-      {/* PRIMARY action — Roll / Undo / End-turn. Positioned by CSS as
+  return (<div className="game-action-row">
+    {/* PRIMARY action — Roll / Undo / End-turn. Positioned by CSS as
           circular button(s) on the right-middle of the board. Text labels
           render inside the CSS circles. */}
-      <div className="game-controls-primary">
-        {showEndTurnPair ? (
-          <div className="game-end-turn-pair">
-            <button
-              type="button"
-              onClick={canUndo ? onUndo : undefined}
-              disabled={!canUndo}
-              className="game-end-turn-pair-button game-end-turn-pair-button--undo"
-              aria-label="Undo last move"
-            >
-              <span>Undo</span>
-            </button>
-            <button
-              type="button"
-              onClick={onEndTurn}
-              className="game-end-turn-pair-button game-end-turn-pair-button--end"
-              aria-label="End turn"
-            >
-              <span>Done</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
-            disabled={rollSlotDisabled}
-            className={`game-roll-button game-roll-button--${rollSlotState}`}
-            aria-label={rollSlotLabel}
-          >
-            <span>{rollSlotState === 'undo' ? 'Undo' : 'Roll'}</span>
-          </button>
-        )}
-      </div>
+    <div className="game-controls-primary">
+      {showEndTurnPair ? (<div className="game-end-turn-pair">
+        <button
+          type="button"
+          onClick={canUndo ? onUndo : undefined}
+          disabled={!canUndo}
+          className="game-end-turn-pair-button game-end-turn-pair-button--undo"
+          aria-label="Undo last move"
+        >
+          <span>Undo</span>
+        </button>
+        <button
+          type="button"
+          onClick={onEndTurn}
+          className="game-end-turn-pair-button game-end-turn-pair-button--end"
+          aria-label="End turn"
+        >
+          <span>Done</span>
+        </button>
+      </div>) : (<button
+        type="button"
+        onClick={rollSlotDisabled ? undefined : rollSlotOnClick}
+        disabled={rollSlotDisabled}
+        className={`game-roll-button game-roll-button--${rollSlotState}`}
+        aria-label={rollSlotLabel}
+      >
+        <span>{rollSlotState === 'undo' ? 'Undo' : 'Roll'}</span>
+      </button>)}
     </div>
-  );
+  </div>);
 }
 
 interface SecondaryProps {
@@ -111,33 +104,29 @@ export function MatchSecondaryControls({
 }: SecondaryProps) {
   const nextCube = cubeValue * 2;
 
-  return (
-    <div className="game-controls-secondary">
-      {showCube && (
-        <>
-          <button
-            type="button"
-            disabled
-            className="game-cube-button"
-            aria-label={`Cube value ${cubeValue}`}
-          >
-            <strong>{cubeValue}</strong>
-            <span>Cube</span>
-          </button>
+  return (<div className="game-controls-secondary">
+    {showCube && (<>
+      <button
+        type="button"
+        disabled
+        className="game-cube-button"
+        aria-label={`Cube value ${cubeValue}`}
+      >
+        <strong>{cubeValue}</strong>
+        <span>Cube</span>
+      </button>
 
-          <button
-            type="button"
-            onClick={canDouble ? onDouble : undefined}
-            disabled={!canDouble}
-            className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
-          >
-            <strong>×{nextCube}</strong>
-            <span>Double</span>
-          </button>
-        </>
-      )}
+      <button
+        type="button"
+        onClick={canDouble ? onDouble : undefined}
+        disabled={!canDouble}
+        className={`game-double-button ${canDouble ? 'is-enabled' : 'is-disabled'}`}
+      >
+        <strong>×{nextCube}</strong>
+        <span>Double</span>
+      </button>
+    </>)}
 
-      {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
-    </div>
-  );
+    {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
+  </div>);
 }

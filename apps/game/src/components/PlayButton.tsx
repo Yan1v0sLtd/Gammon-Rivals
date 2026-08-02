@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, CSSProperties } from 'react';
+import type {ButtonHTMLAttributes, CSSProperties} from 'react';
 
 /**
  * Shared premium "Play" button — the standardized affirmative-action
@@ -47,22 +47,18 @@ export function PlayButton({
   ...buttonProps
 }: PlayButtonProps) {
   const showSparkles = sparkles ?? size === 'lg';
-  return (
-    <div
-      className={`gr-play-wrap gr-play-${size} ${block ? 'gr-play-block' : ''} ${wrapClassName}`}
-      style={wrapStyle}
-    >
-      {showSparkles ? (
-        <>
-          <i className="gr-play-sparkle" aria-hidden="true" />
-          <i className="gr-play-sparkle" aria-hidden="true" />
-          <i className="gr-play-sparkle" aria-hidden="true" />
-        </>
-      ) : null}
-      <button className={`gr-play-button ${className}`} type={type} {...buttonProps}>
-        <span className="gr-play-shimmer" aria-hidden="true" />
-        <span className="gr-play-text">{label}</span>
-      </button>
-    </div>
-  );
+  return (<div
+    className={`gr-play-wrap gr-play-${size} ${block ? 'gr-play-block' : ''} ${wrapClassName}`}
+    style={wrapStyle}
+  >
+    {showSparkles ? (<>
+      <i className="gr-play-sparkle" aria-hidden="true"/>
+      <i className="gr-play-sparkle" aria-hidden="true"/>
+      <i className="gr-play-sparkle" aria-hidden="true"/>
+    </>) : null}
+    <button className={`gr-play-button ${className}`} type={type} {...buttonProps}>
+      <span className="gr-play-shimmer" aria-hidden="true"/>
+      <span className="gr-play-text">{label}</span>
+    </button>
+  </div>);
 }

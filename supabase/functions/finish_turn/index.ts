@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
       .single();
     if (mErr || !match) return json({ error: 'match_not_found' }, 404);
 
-    // --- Guards (mirror the RPC; fail fast before the replay) ---
+
     const isParticipant =
       callerId === match.owner_id ||
       (match.opponent_id != null && callerId === match.opponent_id);
@@ -160,7 +160,7 @@ Deno.serve(async (req: Request) => {
           : 'white';
     if (callerColor !== ctPlayer) return json({ error: 'not_your_turn' }, 409);
 
-    // --- Load the current game's recorded prior moves + game number ---
+
     const { data: game, error: gErr } = await sb
       .from('games')
       .select('id, game_number')
@@ -175,7 +175,7 @@ Deno.serve(async (req: Request) => {
       .order('ply', { ascending: true });
     if (pmErr) return json({ error: 'moves_read_failed: ' + pmErr.message }, 500);
 
-    // --- Replay prior moves to reconstruct the board before this turn ---
+
     let board: BoardState = initialBoard();
     for (const mv of priorMoves ?? []) {
       let remaining: Die[] = expandDice([mv.dice[0] as Die, mv.dice[1] as Die]);
@@ -205,7 +205,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'turn_desync', detail: `board on ${board.turn}, current_turn ${ctPlayer}` }, 409);
     }
 
-    // --- Validate + apply THIS turn's submoves ---
+
     const subMoves = (ct.subMoves ?? []) as SubMoveJSON[];
     let remaining: Die[] = expandDice([ct.dice[0] as Die, ct.dice[1] as Die]);
     for (let i = 0; i < subMoves.length; i++) {
@@ -218,7 +218,7 @@ Deno.serve(async (req: Request) => {
       remaining = removeDie(remaining, move.die);
     }
 
-    // --- Derive the outcome with the engine's own functions ---
+
     const gameWinner = winner(board);
     const out: DerivedOutcome = {
       gameWinner,
@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
       return json({ dryRun: true, matchId, priorPlies: (priorMoves ?? []).length, derived: out });
     }
 
-    // --- Commit via the service-role-only RPC (atomic 3-write) ---
+
     const { data: commit, error: cErr } = await sb.rpc('commit_turn_server', {
       p_match_id: matchId,
       p_caller_id: callerId,

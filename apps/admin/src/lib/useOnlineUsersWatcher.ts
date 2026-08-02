@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured } from './adminSupabase';
+import {useEffect, useState} from 'react';
+import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from './adminSupabase';
 
 /**
  * Counts derived from the live `online-users` presence channel,
@@ -42,9 +42,7 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
     if (!isSupabaseConfigured) return;
 
     // Shared helper: compute counts from any presence-state snapshot.
-    const computeFromState = (
-      state: Record<string, Array<{ profile_id?: string; is_guest?: boolean }>>
-    ) => {
+    const computeFromState = (state: Record<string, Array<{ profile_id?: string; is_guest?: boolean }>>) => {
       const seen = new Map<string, boolean>(); // profile_id -> is_guest
       for (const presences of Object.values(state)) {
         for (const p of presences) {
@@ -60,8 +58,7 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
       let registered = 0;
       let guests = 0;
       for (const isGuest of seen.values()) {
-        if (isGuest) guests += 1;
-        else registered += 1;
+        if (isGuest) guests += 1; else registered += 1;
       }
       setCounts({
         total: seen.size,
@@ -73,9 +70,10 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
 
     // CRITICAL: supabase-js's `client.channel(topic)` returns the
     // EXISTING channel if one already exists for that topic in this
-    // client. AuthProvider's useOnlinePresence subscribes to
-    // 'online-users' as soon as a session exists — which is true by
-    // the time the BO Users tab opens. If we then call
+    // client. The game app's auth listener in
+    // features/auth/authListeners.ts owns the 'online-users' channel —
+    // which is already subscribed when the BO Users tab opens.
+    // If we then call
     // `supabase.channel('online-users', ...)` here we get the SAME
     // already-subscribed channel back, and any `.on('presence', ...)`
     // calls throw "cannot add presence callbacks ... after
@@ -93,10 +91,7 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
       // Polling mode. 1500ms is fine — operators don't need
       // sub-second precision on this counter.
       const tick = () => {
-        const state = existing.presenceState() as Record<
-          string,
-          Array<{ profile_id?: string; is_guest?: boolean }>
-        >;
+        const state = existing.presenceState() as Record<string, Array<{ profile_id?: string; is_guest?: boolean }>>;
         computeFromState(state);
       };
       tick();
@@ -121,17 +116,14 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
     });
 
     const recompute = () => {
-      const state = channel.presenceState() as Record<
-        string,
-        Array<{ profile_id?: string; is_guest?: boolean }>
-      >;
+      const state = channel.presenceState() as Record<string, Array<{ profile_id?: string; is_guest?: boolean }>>;
       computeFromState(state);
     };
 
     channel
-      .on('presence', { event: 'sync' }, recompute)
-      .on('presence', { event: 'join' }, recompute)
-      .on('presence', { event: 'leave' }, recompute)
+      .on('presence', {event: 'sync'}, recompute)
+      .on('presence', {event: 'join'}, recompute)
+      .on('presence', {event: 'leave'}, recompute)
       .subscribe();
 
     return () => {

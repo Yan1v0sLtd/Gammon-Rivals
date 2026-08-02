@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from 'react';
-import { supabase } from '../lib/supabase';
-import { extractErrorMessage } from '../../../../packages/shared/src/errors';
-import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
-import { ScaleInModal } from '../components/ScaleInModal';
+import {type CSSProperties, type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
+import {useAppSelector} from '../store/hooks';
+import {selectAuthUserId} from '../features/auth/authSelectors';
 import {
-  formatCountdown,
-  nextResetMs,
-  type Mission,
-  type MissionsResult,
-  type RewardItem,
-} from './useDailyMissions';
+  useClaimMissionMutation, useClaimStreakChestMutation, useRerollMissionMutation,
+} from '../features/lobby/lobbyApi';
+import {extractErrorMessage} from '../../../../packages/shared/src/errors';
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from './RewardFlight';
+import {ScaleInModal} from '../components/ScaleInModal';
+import type {Mission, RewardItem} from '../features/lobby/lobbyData';
+import {formatCountdown, type MissionsResult, nextResetMs} from '../features/lobby/lobbySelectors';
+import {createEmptyArray} from "../lib/constants.ts";
 
 interface Props {
   readonly result: MissionsResult;
@@ -31,10 +31,20 @@ interface Props {
  */
 const DESIGN_W = 1536;
 const DESIGN_H = 812;
-const EMPTY_MISSIONS: readonly Mission[] = [];
 
-export function DailyMissionsModal({ result, onClose }: Props) {
-  const { state, isLoading, error, refetch } = result;
+export function DailyMissionsModal({
+  result,
+  onClose
+}: Props) {
+  const {
+    state,
+    isLoading,
+    error
+  } = result;
+  const userId = useAppSelector(selectAuthUserId);
+  const [claimMission] = useClaimMissionMutation();
+  const [rerollMission] = useRerollMissionMutation();
+  const [claimStreakChest] = useClaimStreakChestMutation();
   const [actionError, setActionError] = useState<string | null>(null);
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
@@ -89,21 +99,12 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, claimingMissionId, rerollingMissionId]);
 
-  const missionsList = state?.missions ?? EMPTY_MISSIONS;
+  const missionsList = state?.missions ?? createEmptyArray<Mission>();
   const dailies = useMemo(() => missionsList.filter((m) => m.period === 'daily'), [missionsList]);
-  const orderedDailies = useMemo(
-    () => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)),
-    [dailies, rerolledTopId],
-  );
+  const orderedDailies = useMemo(() => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)), [dailies, rerolledTopId],);
   const weeklies = useMemo(() => missionsList.filter((m) => m.period === 'weekly').slice(0, 2), [missionsList]);
-  const claimableCount = useMemo(
-    () => dailies.filter((m) => m.completed_at && !m.claimed_at).length,
-    [dailies],
-  );
-  const weeklyClaimable = useMemo(
-    () => weeklies.some((m) => m.completed_at && !m.claimed_at),
-    [weeklies],
-  );
+  const claimableCount = useMemo(() => dailies.filter((m) => m.completed_at && !m.claimed_at).length, [dailies],);
+  const weeklyClaimable = useMemo(() => weeklies.some((m) => m.completed_at && !m.claimed_at), [weeklies],);
 
   const [scale, setScale] = useState(1);
   useEffect(() => {
@@ -130,27 +131,31 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     setActionError(null);
     const mission = missionsList.find((m) => m.id === missionId);
     try {
-      const { data, error: rpcErr } = await supabase.rpc('claim_mission', { p_mission_id: missionId });
-      if (rpcErr) {
-        setActionError(extractErrorMessage(rpcErr));
+      if (!userId) {
+        setActionError('Sign in to claim mission rewards.');
         return;
       }
-      const credited = data as { credited_coins?: number; credited_gems?: number; credited_xp?: number };
+      const credited = await claimMission({
+        missionId,
+        userId
+      }).unwrap();
       if (credited?.credited_coins) spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
       if (credited?.credited_gems) spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
       if (credited?.credited_xp) spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
       if (!credited?.credited_coins && !credited?.credited_gems && !credited?.credited_xp && mission) {
         for (const r of mission.rewards) {
           if (r.reward_kind !== 'currency' || !r.currency_code) continue;
-          if (r.currency_code === 'coins') spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(r.amount / 75))), srcEl);
-          else if (r.currency_code === 'gems') spawnFlights('gems', Math.min(6, Math.max(2, r.amount)), srcEl);
-          else if (r.currency_code === 'xp') spawnFlights('xp', Math.min(5, Math.max(2, r.amount)), srcEl);
+          if (r.currency_code === 'coins') spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(r.amount / 75))), srcEl); else if (r.currency_code === 'gems') spawnFlights('gems', Math.min(6, Math.max(2, r.amount)), srcEl); else if (r.currency_code === 'xp') spawnFlights('xp', Math.min(5, Math.max(2, r.amount)), srcEl);
         }
       }
-      refetch();
-    } catch (e) {
+      // claimMission invalidates the aggregate missions tag, and the
+      // endpoint's Realtime channel patches follow-ups — the modal's
+      // list and streak panels refresh through the query subscription.
+    }
+    catch (e) {
       setActionError(extractErrorMessage(e));
-    } finally {
+    }
+    finally {
       setClaimingMissionId(null);
     }
   };
@@ -167,250 +172,232 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     setRerollingMissionId(missionId);
     setActionError(null);
     try {
-      const { error: rpcErr } = await supabase.rpc('reroll_mission', { p_mission_id: missionId });
-      if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-      else {
-        setRerolledTopId(missionId);
-        setRerollConfirmId(null);
-        refetch();
+      if (!userId) {
+        setActionError('Sign in to reroll missions.');
+        return;
       }
-    } catch (e) {
+      await rerollMission({
+        missionId,
+        userId
+      }).unwrap();
+      setRerolledTopId(missionId);
+      setRerollConfirmId(null);
+    }
+    catch (e) {
       setActionError(extractErrorMessage(e));
-    } finally {
+    }
+    finally {
       setRerollingMissionId(null);
     }
   };
 
   const handleClaimStreak = async () => {
     setActionError(null);
-    const { error: rpcErr } = await supabase.rpc('claim_streak_chest');
-    if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-    else refetch();
+    try {
+      if (!userId) {
+        setActionError('Sign in to claim the streak chest.');
+        return;
+      }
+      await claimStreakChest({userId}).unwrap();
+    }
+    catch (e) {
+      setActionError(extractErrorMessage(e));
+    }
   };
 
   const daysDone = Math.min(7, state?.streak.current_streak_days ?? 0);
   const streakClaimable = (state?.streak.current_streak_days ?? 0) >= 7;
 
-  return (
-    <>
-      <ScaleInModal closeOnBackdropClick={false} closeOnEscape={false}>
-        <div className="dmx" style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}>
-          <style>{DM_STYLES}</style>
-          <main className="screen" aria-label="Daily Missions">
-            <header className="topbar">
-              <div className="brand-mark">
-                <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg} />
+  return (<>
+    <ScaleInModal closeOnBackdropClick={false} closeOnEscape={false}>
+      <div className="dmx" style={{
+        transform: `scale(${scale})`,
+        transformOrigin: 'center'
+      }}>
+        <style>{DM_STYLES}</style>
+        <main className="screen" aria-label="Daily Missions">
+          <header className="topbar">
+            <div className="brand-mark">
+              <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg}/>
+            </div>
+            <div className="brand-copy">
+              <h1 className="brand-title">Daily Missions</h1>
+              <p className="brand-subtitle">Complete missions to earn epic rewards!</p>
+            </div>
+            <div className="header-spacer"/>
+            <section className="refresh-box">
+              <div>
+                <div className="refresh-label">Refreshes in</div>
+                <div className="refresh-time">{formatCountdown(countdownMs)}</div>
               </div>
-              <div className="brand-copy">
-                <h1 className="brand-title">Daily Missions</h1>
-                <p className="brand-subtitle">Complete missions to earn epic rewards!</p>
-              </div>
-              <div className="header-spacer" />
-              <section className="refresh-box">
-                <div>
-                  <div className="refresh-label">Refreshes in</div>
-                  <div className="refresh-time">{formatCountdown(countdownMs)}</div>
-                </div>
-              </section>
-              <button className="close-button" type="button" aria-label="Close" onClick={onClose}>
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round" />
-                </svg>
-              </button>
-            </header>
+            </section>
+            <button className="close-button" type="button" aria-label="Close" onClick={onClose}>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </header>
 
-            {isLoading && !state ? (
-              <div className="dmx-status">Loading missions…</div>
-            ) : error ? (
-              <div className="dmx-status dmx-error">{error}</div>
-            ) : !state ? (
-              <div className="dmx-status">No missions today.</div>
-            ) : (
-              <section className="content">
-                <section className="panel missions-panel">
-                  <div className="mission-list">
-                    {orderedDailies.map((m) => (
-                      <MissionCard
-                        key={m.id}
-                        mission={m}
-                        isClaiming={claimingMissionId === m.id}
-                        canReroll={canRerollAny}
-                        rerollCost={rerollCost}
-                        onRerollClick={() => setRerollConfirmId(m.id)}
-                        onClaim={(el) => handleClaim(m.id, el)}
-                        onGo={onClose}
-                      />
-                    ))}
-                    {dailies.length === 0 && (
-                      <div className="dmx-empty">No active missions. Come back at midnight UTC.</div>
-                    )}
-                  </div>
-                  {actionError && <div className="dmx-action-error">{actionError}</div>}
-                  <div className="missions-footer">
+          {isLoading && !state ? (<div className="dmx-status">Loading missions…</div>) : error ? (
+            <div className="dmx-status dmx-error">{error}</div>) : !state ? (
+            <div className="dmx-status">No missions today.</div>) : (<section className="content">
+            <section className="panel missions-panel">
+              <div className="mission-list">
+                {orderedDailies.map((m) => (<MissionCard
+                  key={m.id}
+                  mission={m}
+                  isClaiming={claimingMissionId === m.id}
+                  canReroll={canRerollAny}
+                  rerollCost={rerollCost}
+                  onRerollClick={() => setRerollConfirmId(m.id)}
+                  onClaim={(el) => handleClaim(m.id, el)}
+                  onGo={onClose}
+                />))}
+                {dailies.length === 0 && (
+                  <div className="dmx-empty">No active missions. Come back at midnight UTC.</div>)}
+              </div>
+              {actionError && <div className="dmx-action-error">{actionError}</div>}
+              <div className="missions-footer">
                     <span className="compact-button rerolls">
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4"
+                              strokeLinecap="round"/>
+                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
+                              strokeLinejoin="round"/>
                       </svg>
                       <span>{rerollsLeft} left</span>
                     </span>
-                    <button
-                      className="compact-button claim-all"
-                      type="button"
-                      data-claim-all-btn
-                      disabled={claimableCount === 0 || claimingMissionId !== null}
-                      onClick={handleClaimAll}
-                    >
-                      {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
-                    </button>
+                <button
+                  className="compact-button claim-all"
+                  type="button"
+                  data-claim-all-btn
+                  disabled={claimableCount === 0 || claimingMissionId !== null}
+                  onClick={handleClaimAll}
+                >
+                  {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
+                </button>
+              </div>
+            </section>
+
+            <aside className="panel tabs-panel">
+              <nav className="tabs">
+                <button
+                  className={`tab-button ${tab === 'daily' ? 'is-active' : ''}`}
+                  type="button"
+                  onClick={() => setTab('daily')}
+                >
+                  Daily
+                </button>
+                <button
+                  className={`tab-button ${tab === 'weekly' ? 'is-active' : ''}`}
+                  type="button"
+                  onClick={() => setTab('weekly')}
+                >
+                  Weekly{weeklyClaimable && <i className="tab-dot"/>}
+                </button>
+              </nav>
+
+              {tab === 'daily' ? (<section className="streak-panel">
+                <div className="streak-header">
+                  <h2 className="streak-title">Daily Streak</h2>
+                  <div className="streak-days">
+                    {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? '' : 's'}
                   </div>
-                </section>
+                  <button
+                    className="dm-info-btn"
+                    type="button"
+                    aria-label="How it works"
+                    aria-expanded={howOpen}
+                    onClick={() => setHowOpen((v) => !v)}
+                  >
+                    i
+                  </button>
+                </div>
+                <p className="streak-description">
+                  Complete all daily missions every day. Hit 7 days to open the streak chest.
+                </p>
 
-                <aside className="panel tabs-panel">
-                  <nav className="tabs">
-                    <button
-                      className={`tab-button ${tab === 'daily' ? 'is-active' : ''}`}
-                      type="button"
-                      onClick={() => setTab('daily')}
-                    >
-                      Daily
-                    </button>
-                    <button
-                      className={`tab-button ${tab === 'weekly' ? 'is-active' : ''}`}
-                      type="button"
-                      onClick={() => setTab('weekly')}
-                    >
-                      Weekly{weeklyClaimable && <i className="tab-dot" />}
-                    </button>
-                  </nav>
+                <div className="streak-track">
+                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (<div className="track-day" key={day}>
+                    <span>Day {day}</span>
+                    {day === 7 ? (<div className={`chest-node ${daysDone >= 7 ? 'is-lit' : ''}`}>
+                      <img src="/lobby/missions/chest-3.webp" alt="" draggable={false} onError={hideImg}/>
+                    </div>) : (<div
+                      className={`day-node ${day <= daysDone ? 'is-done' : ''} ${day === daysDone + 1 ? 'is-current' : ''}`}
+                    />)}
+                  </div>))}
+                </div>
 
-                  {tab === 'daily' ? (
-                    <section className="streak-panel">
-                      <div className="streak-header">
-                        <h2 className="streak-title">Daily Streak</h2>
-                        <div className="streak-days">
-                          {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? '' : 's'}
-                        </div>
-                        <button
-                          className="dm-info-btn"
-                          type="button"
-                          aria-label="How it works"
-                          aria-expanded={howOpen}
-                          onClick={() => setHowOpen((v) => !v)}
-                        >
-                          i
-                        </button>
-                      </div>
-                      <p className="streak-description">
-                        Complete all daily missions every day. Hit 7 days to open the streak chest.
-                      </p>
+                <div className="streak-rewards">
+                  {state.streak_chest_rewards.map((r, i) => (<div className="streak-reward-item" key={i}>
+                    <RewardIcon reward={r} size="lg"/>
+                    <span>+{formatAmount(r.amount)}</span>
+                  </div>))}
+                  {streakClaimable ? (<button className="streak-claim" type="button" onClick={handleClaimStreak}>
+                    Claim
+                  </button>) : (<div className="to-go">{7 - daysDone} to go</div>)}
+                </div>
 
-                      <div className="streak-track">
-                        {[1, 2, 3, 4, 5, 6, 7].map((day) => (
-                          <div className="track-day" key={day}>
-                            <span>Day {day}</span>
-                            {day === 7 ? (
-                              <div className={`chest-node ${daysDone >= 7 ? 'is-lit' : ''}`}>
-                                <img src="/lobby/missions/chest-3.webp" alt="" draggable={false} onError={hideImg} />
-                              </div>
-                            ) : (
-                              <div
-                                className={`day-node ${day <= daysDone ? 'is-done' : ''} ${day === daysDone + 1 ? 'is-current' : ''}`}
-                              />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                {howOpen && (<div className="dm-how-popover" role="dialog" aria-label="How it works">
+                  <button className="dm-how-close" type="button" aria-label="Close"
+                          onClick={() => setHowOpen(false)}>
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.6"
+                            strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                  <h3 className="how-title">How it works</h3>
+                  <div className="how-line">
+                    <div className="how-icon">
+                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z"/>
+                      </svg>
+                    </div>
+                    <div>Finish every daily mission to advance your streak and bank the chest.</div>
+                  </div>
+                  <div className="how-line">
+                    <div className="how-icon">
+                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4"
+                              strokeLinecap="round"/>
+                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
+                              strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
+                  </div>
+                </div>)}
+              </section>) : (<section className="streak-panel weekly-tab">
+                {weeklies.length === 0 ? (<div className="weekly-empty">
+                  <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg}/>
+                  <p>No weekly challenge active right now.</p>
+                </div>) : (weeklies.map((m) => (<WeeklyCard
+                  key={m.id}
+                  mission={m}
+                  isClaiming={claimingMissionId === m.id}
+                  onClaim={(el) => handleClaim(m.id, el)}
+                  onGo={onClose}
+                />)))}
+              </section>)}
+            </aside>
+          </section>)}
+        </main>
+      </div>
+    </ScaleInModal>
 
-                      <div className="streak-rewards">
-                        {state.streak_chest_rewards.map((r, i) => (
-                          <div className="streak-reward-item" key={i}>
-                            <RewardIcon reward={r} size="lg" />
-                            <span>+{formatAmount(r.amount)}</span>
-                          </div>
-                        ))}
-                        {streakClaimable ? (
-                          <button className="streak-claim" type="button" onClick={handleClaimStreak}>
-                            Claim
-                          </button>
-                        ) : (
-                          <div className="to-go">{7 - daysDone} to go</div>
-                        )}
-                      </div>
+    {rerollConfirmId && state && (<RerollConfirmModal
+      priceGems={state.reroll.next_cost ?? 0}
+      isBusy={rerollingMissionId !== null}
+      errorMessage={actionError}
+      onConfirm={() => handleReroll(rerollConfirmId)}
+      onCancel={() => {
+        setRerollConfirmId(null);
+        setActionError(null);
+      }}
+    />)}
 
-                      {howOpen && (
-                        <div className="dm-how-popover" role="dialog" aria-label="How it works">
-                          <button className="dm-how-close" type="button" aria-label="Close" onClick={() => setHowOpen(false)}>
-                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-                            </svg>
-                          </button>
-                          <h3 className="how-title">How it works</h3>
-                          <div className="how-line">
-                            <div className="how-icon">
-                              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z" />
-                              </svg>
-                            </div>
-                            <div>Finish every daily mission to advance your streak and bank the chest.</div>
-                          </div>
-                          <div className="how-line">
-                            <div className="how-icon">
-                              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                                <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </div>
-                            <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
-                          </div>
-                        </div>
-                      )}
-                    </section>
-                  ) : (
-                    <section className="streak-panel weekly-tab">
-                      {weeklies.length === 0 ? (
-                        <div className="weekly-empty">
-                          <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg} />
-                          <p>No weekly challenge active right now.</p>
-                        </div>
-                      ) : (
-                        weeklies.map((m) => (
-                          <WeeklyCard
-                            key={m.id}
-                            mission={m}
-                            isClaiming={claimingMissionId === m.id}
-                            onClaim={(el) => handleClaim(m.id, el)}
-                            onGo={onClose}
-                          />
-                        ))
-                      )}
-                    </section>
-                  )}
-                </aside>
-              </section>
-            )}
-          </main>
-        </div>
-      </ScaleInModal>
-
-      {rerollConfirmId && state && (
-        <RerollConfirmModal
-          priceGems={state.reroll.next_cost ?? 0}
-          isBusy={rerollingMissionId !== null}
-          errorMessage={actionError}
-          onConfirm={() => handleReroll(rerollConfirmId)}
-          onCancel={() => {
-            setRerollConfirmId(null);
-            setActionError(null);
-          }}
-        />
-      )}
-
-      {flights.map((spec) => (
-        <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
-      ))}
-    </>
-  );
+    {flights.map((spec) => (<RewardFlight key={spec.id} spec={spec} onLanded={removeFlight}/>))}
+  </>);
 }
 
 /* ───────────────────────── sub-components ───────────────────────── */
@@ -440,211 +427,199 @@ function RerollConfirmModal({
     return () => cancelAnimationFrame(raf);
   }, []);
   const free = priceGems <= 0;
-  return (
+  return (<div
+    className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+    style={{
+      // backdrop-filter blur removed for mobile perf; deeper dim compensates.
+      background: 'radial-gradient(circle at center, rgba(92,48,14,0.45), rgba(0,0,0,0.84))',
+      opacity: entered ? 1 : 0,
+      transition: 'opacity 220ms ease',
+    }}
+  >
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      className="relative text-center"
       style={{
-        // backdrop-filter blur removed for mobile perf; deeper dim compensates.
-        background: 'radial-gradient(circle at center, rgba(92,48,14,0.45), rgba(0,0,0,0.84))',
+        width: 'min(92vw, 26rem)',
+        padding: 'clamp(1.6rem,5vmin,2.3rem) clamp(1.5rem,5vmin,2.6rem) clamp(1.4rem,4.5vmin,2rem)',
+        borderRadius: '22px',
+        background: 'linear-gradient(rgba(255,255,255,0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%)',
+        border: '5px solid #ffd057',
+        color: '#4b2108',
+        boxShadow: '0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)',
+        transformOrigin: 'center',
+        transform: entered ? 'scale(1)' : 'scale(0.16)',
         opacity: entered ? 1 : 0,
-        transition: 'opacity 220ms ease',
+        transition: 'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
+        transitionDelay: entered ? '120ms' : '0ms',
       }}
     >
-      <div
-        className="relative text-center"
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={isBusy}
+        aria-label="Cancel"
+        className="absolute z-10 grid place-items-center transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
         style={{
-          width: 'min(92vw, 26rem)',
-          padding: 'clamp(1.6rem,5vmin,2.3rem) clamp(1.5rem,5vmin,2.6rem) clamp(1.4rem,4.5vmin,2rem)',
-          borderRadius: '22px',
-          background:
-            'linear-gradient(rgba(255,255,255,0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%)',
-          border: '5px solid #ffd057',
-          color: '#4b2108',
-          boxShadow:
-            '0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)',
-          transformOrigin: 'center',
-          transform: entered ? 'scale(1)' : 'scale(0.16)',
-          opacity: entered ? 1 : 0,
-          transition: 'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
-          transitionDelay: entered ? '120ms' : '0ms',
+          right: '-1.1rem',
+          top: '-1.1rem',
+          width: '3.2rem',
+          height: '3.2rem',
+          borderRadius: '50%',
+          border: '4px solid #ffe06c',
+          background: 'radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%)',
+          color: '#fff2a5',
+          fontSize: '2rem',
+          fontWeight: 900,
+          lineHeight: 1,
+          textShadow: '0 3px 0 #8a1608',
+          boxShadow: '0 6px 0 #6b2106, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.55)',
         }}
       >
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isBusy}
-          aria-label="Cancel"
-          className="absolute z-10 grid place-items-center transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+        ×
+      </button>
+
+      <h2
+        className="relative font-display whitespace-nowrap"
+        style={{
+          margin: 0,
+          marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
+          fontSize: 'clamp(1.2rem,4.2vmin,1.8rem)',
+          fontWeight: 900,
+          letterSpacing: '0.03em',
+          color: '#5d3208',
+          textShadow: '0 1px 0 rgba(255,251,222,0.8), 0 2px 2px rgba(255,247,200,0.3), 0 -1px 1px rgba(35,14,2,0.45)',
+        }}
+      >
+        <span style={{
+          fontSize: '0.6em',
+          margin: '0 0.5rem',
+          color: '#8a5410'
+        }}>✦</span>
+        REROLL MISSION
+        <span style={{
+          fontSize: '0.6em',
+          margin: '0 0.5rem',
+          color: '#8a5410'
+        }}>✦</span>
+      </h2>
+
+      {!free && (<div
+        className="relative mx-auto flex items-center justify-center"
+        style={{
+          width: 'min(82%, 18rem)',
+          height: 'clamp(4.4rem,12vmin,6rem)',
+          marginBottom: 'clamp(1rem,3vmin,1.5rem)',
+          borderRadius: '18px',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)',
+          border: '4px solid #e39a19',
+          boxShadow: '0 0 0 2px #ffdc60, 0 8px 14px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.65), inset 0 -5px 0 rgba(107,48,8,0.22)',
+          gap: 'clamp(0.8rem,2.5vmin,1.5rem)',
+        }}
+      >
+        <img
+          src="/lobby/carousel/gem.webp"
+          alt=""
+          draggable={false}
           style={{
-            right: '-1.1rem',
-            top: '-1.1rem',
-            width: '3.2rem',
-            height: '3.2rem',
-            borderRadius: '50%',
-            border: '4px solid #ffe06c',
-            background:
-              'radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%)',
-            color: '#fff2a5',
-            fontSize: '2rem',
+            width: 'clamp(2.6rem,7vmin,3.8rem)',
+            height: 'clamp(2.6rem,7vmin,3.8rem)',
+            objectFit: 'contain',
+            filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(0,210,255,0.5))',
+          }}
+        />
+        <span
+          className="font-display tabular-nums"
+          style={{
+            fontSize: 'clamp(2.2rem,7vmin,3.4rem)',
             fontWeight: 900,
+            color: '#3c1704',
             lineHeight: 1,
-            textShadow: '0 3px 0 #8a1608',
-            boxShadow:
-              '0 6px 0 #6b2106, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.55)',
+            textShadow: '0 2px 0 #fff3ad, 0 5px 6px rgba(0,0,0,0.28)',
           }}
         >
-          ×
-        </button>
-
-        <h2
-          className="relative font-display whitespace-nowrap"
-          style={{
-            margin: 0,
-            marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
-            fontSize: 'clamp(1.2rem,4.2vmin,1.8rem)',
-            fontWeight: 900,
-            letterSpacing: '0.03em',
-            color: '#5d3208',
-            textShadow: '0 1px 0 rgba(255,251,222,0.8), 0 2px 2px rgba(255,247,200,0.3), 0 -1px 1px rgba(35,14,2,0.45)',
-          }}
-        >
-          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#8a5410' }}>✦</span>
-          REROLL MISSION
-          <span style={{ fontSize: '0.6em', margin: '0 0.5rem', color: '#8a5410' }}>✦</span>
-        </h2>
-
-        {!free && (
-          <div
-            className="relative mx-auto flex items-center justify-center"
-            style={{
-              width: 'min(82%, 18rem)',
-              height: 'clamp(4.4rem,12vmin,6rem)',
-              marginBottom: 'clamp(1rem,3vmin,1.5rem)',
-              borderRadius: '18px',
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)',
-              border: '4px solid #e39a19',
-              boxShadow:
-                '0 0 0 2px #ffdc60, 0 8px 14px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.65), inset 0 -5px 0 rgba(107,48,8,0.22)',
-              gap: 'clamp(0.8rem,2.5vmin,1.5rem)',
-            }}
-          >
-            <img
-              src="/lobby/carousel/gem.webp"
-              alt=""
-              draggable={false}
-              style={{
-                width: 'clamp(2.6rem,7vmin,3.8rem)',
-                height: 'clamp(2.6rem,7vmin,3.8rem)',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(0,210,255,0.5))',
-              }}
-            />
-            <span
-              className="font-display tabular-nums"
-              style={{
-                fontSize: 'clamp(2.2rem,7vmin,3.4rem)',
-                fontWeight: 900,
-                color: '#3c1704',
-                lineHeight: 1,
-                textShadow: '0 2px 0 #fff3ad, 0 5px 6px rgba(0,0,0,0.28)',
-              }}
-            >
               {priceGems.toLocaleString()}
             </span>
-          </div>
-        )}
+      </div>)}
 
-        <p
-          className="relative font-bold"
+      <p
+        className="relative font-bold"
+        style={{
+          margin: 0,
+          marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
+          fontSize: 'clamp(0.95rem,2.8vmin,1.25rem)',
+          color: '#572607',
+          textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+        }}
+      >
+        {free ? ('Reroll this mission for free?') : (<>
+          Reroll this mission for{' '}
+          <strong style={{fontWeight: 900}}>{priceGems.toLocaleString()} Gems?</strong>
+        </>)}
+      </p>
+
+      {errorMessage ? (<div
+        className="relative mx-auto"
+        style={{
+          maxWidth: '85%',
+          marginBottom: 'clamp(0.8rem,2vmin,1.2rem)',
+          borderRadius: '8px',
+          border: '1px solid rgba(190,18,60,0.4)',
+          background: '#fff1f1',
+          padding: '0.5rem 0.75rem',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+          color: '#9f1239',
+        }}
+      >
+        {errorMessage}
+      </div>) : null}
+
+      <div className="relative flex justify-center" style={{gap: 'clamp(1.5rem,5vmin,2.6rem)'}}>
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={onConfirm}
+          className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
           style={{
-            margin: 0,
-            marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
-            fontSize: 'clamp(0.95rem,2.8vmin,1.25rem)',
-            color: '#572607',
-            textShadow: '0 1px 0 rgba(255,255,255,0.35)',
+            width: 'clamp(7rem,22vmin,9rem)',
+            height: 'clamp(2.8rem,7vmin,3.4rem)',
+            borderRadius: '9999px',
+            border: '2px solid rgba(224,255,143,0.95)',
+            color: '#132109',
+            fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+            fontWeight: 900,
+            letterSpacing: '0.04em',
+            textShadow: '0 1px 0 rgba(255,255,255,0.28)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
+            boxShadow: '0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)',
           }}
         >
-          {free ? (
-            'Reroll this mission for free?'
-          ) : (
-            <>
-              Reroll this mission for{' '}
-              <strong style={{ fontWeight: 900 }}>{priceGems.toLocaleString()} Gems?</strong>
-            </>
-          )}
-        </p>
-
-        {errorMessage ? (
-          <div
-            className="relative mx-auto"
-            style={{
-              maxWidth: '85%',
-              marginBottom: 'clamp(0.8rem,2vmin,1.2rem)',
-              borderRadius: '8px',
-              border: '1px solid rgba(190,18,60,0.4)',
-              background: '#fff1f1',
-              padding: '0.5rem 0.75rem',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              color: '#9f1239',
-            }}
-          >
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div className="relative flex justify-center" style={{ gap: 'clamp(1.5rem,5vmin,2.6rem)' }}>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onConfirm}
-            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              width: 'clamp(7rem,22vmin,9rem)',
-              height: 'clamp(2.8rem,7vmin,3.4rem)',
-              borderRadius: '9999px',
-              border: '2px solid rgba(224,255,143,0.95)',
-              color: '#132109',
-              fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
-              fontWeight: 900,
-              letterSpacing: '0.04em',
-              textShadow: '0 1px 0 rgba(255,255,255,0.28)',
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
-              boxShadow:
-                '0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)',
-            }}
-          >
-            {isBusy ? '…' : 'Yes'}
-          </button>
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={onCancel}
-            className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
-            style={{
-              width: 'clamp(7rem,22vmin,9rem)',
-              height: 'clamp(2.8rem,7vmin,3.4rem)',
-              borderRadius: '9999px',
-              border: '2px solid rgba(220,220,220,0.95)',
-              color: '#1a1a1a',
-              fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
-              fontWeight: 900,
-              letterSpacing: '0.04em',
-              textShadow: '0 1px 0 rgba(255,255,255,0.4)',
-              background:
-                'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)',
-              boxShadow:
-                '0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)',
-            }}
-          >
-            No
-          </button>
-        </div>
+          {isBusy ? '…' : 'Yes'}
+        </button>
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={onCancel}
+          className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+          style={{
+            width: 'clamp(7rem,22vmin,9rem)',
+            height: 'clamp(2.8rem,7vmin,3.4rem)',
+            borderRadius: '9999px',
+            border: '2px solid rgba(220,220,220,0.95)',
+            color: '#1a1a1a',
+            fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+            fontWeight: 900,
+            letterSpacing: '0.04em',
+            textShadow: '0 1px 0 rgba(255,255,255,0.4)',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)',
+            boxShadow: '0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)',
+          }}
+        >
+          No
+        </button>
       </div>
     </div>
-  );
+  </div>);
 }
 
 function MissionCard({
@@ -673,79 +648,71 @@ function MissionCard({
   const showReroll = isActive && canReroll && rerollCost !== null && mission.rarity === 'common';
   const rerollFree = rerollCost === 0;
 
-  return (
-    <article className={`mission-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
-      <div className="mission-badge">
-        <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false} onError={hideImg} />
-      </div>
+  return (<article className={`mission-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+    <div className="mission-badge">
+      <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false}
+           onError={hideImg}/>
+    </div>
 
-      <div className="mission-copy">
-        <p className="mission-description">{mission.subtitle || mission.title}</p>
-        <div className="progress-line">
-          <div className="progress-track">
-            <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
-          </div>
-          <div className="progress-count">
-            {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
-          </div>
+    <div className="mission-copy">
+      <p className="mission-description">{mission.subtitle || mission.title}</p>
+      <div className="progress-line">
+        <div className="progress-track">
+          <div className="progress-fill" style={{'--progress': pct} as CSSProperties}/>
+        </div>
+        <div className="progress-count">
+          {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
+        </div>
+      </div>
+    </div>
+
+    <div className="mission-separator" aria-hidden="true"/>
+
+    <div className="mission-reward">
+      <div>
+        <div className="reward-title">Reward</div>
+        <div className="reward-icons">
+          {mission.rewards.map((r, i) => (<div className="reward-item" key={i}>
+            <RewardIcon reward={r} size="md"/>
+            <div className="reward-amount">+{formatAmount(r.amount)}</div>
+          </div>))}
         </div>
       </div>
 
-      <div className="mission-separator" aria-hidden="true" />
+      <div className="mission-controls">
+        {isActive ? (<button className="go-button" type="button" onClick={onGo}>
+          Go
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"
+                  strokeLinejoin="round"/>
+          </svg>
+        </button>) : isClaimed ? (<button className="go-button is-claimed" type="button" disabled>
+          Claimed
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round"
+                  strokeLinejoin="round"/>
+          </svg>
+        </button>) : (<button
+          ref={btnRef}
+          className="go-button"
+          type="button"
+          disabled={isClaiming}
+          onClick={() => onClaim(btnRef.current)}
+        >
+          {isClaiming ? '…' : 'Claim'}
+        </button>)}
 
-      <div className="mission-reward">
-        <div>
-          <div className="reward-title">Reward</div>
-          <div className="reward-icons">
-            {mission.rewards.map((r, i) => (
-              <div className="reward-item" key={i}>
-                <RewardIcon reward={r} size="md" />
-                <div className="reward-amount">+{formatAmount(r.amount)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mission-controls">
-          {isActive ? (
-            <button className="go-button" type="button" onClick={onGo}>
-              Go
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          ) : isClaimed ? (
-            <button className="go-button is-claimed" type="button" disabled>
-              Claimed
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          ) : (
-            <button
-              ref={btnRef}
-              className="go-button"
-              type="button"
-              disabled={isClaiming}
-              onClick={() => onClaim(btnRef.current)}
-            >
-              {isClaiming ? '…' : 'Claim'}
-            </button>
-          )}
-
-          {showReroll && (
-            <button type="button" className="reroll-note" onClick={onRerollClick}>
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
-                <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
-            </button>
-          )}
-        </div>
+        {showReroll && (<button type="button" className="reroll-note" onClick={onRerollClick}>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
+            <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
+                  strokeLinejoin="round"/>
+          </svg>
+          <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
+        </button>)}
       </div>
-    </article>
-  );
+    </div>
+  </article>);
 }
 
 function WeeklyCard({
@@ -764,84 +731,81 @@ function WeeklyCard({
   const isClaimed = !!mission.claimed_at;
   const isActive = !isCompleted && !isClaimed;
   const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
-  return (
-    <article className={`weekly-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
-      <div className="wk-badge">
-        <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false} onError={hideImg} />
+  return (<article className={`weekly-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+    <div className="wk-badge">
+      <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false}
+           onError={hideImg}/>
+    </div>
+    <h3 className="wk-title">{mission.title}</h3>
+    {mission.subtitle && <p className="wk-desc">{mission.subtitle}</p>}
+    <div className="wk-progress">
+      <div className="progress-track">
+        <div className="progress-fill" style={{'--progress': pct} as CSSProperties}/>
       </div>
-      <h3 className="wk-title">{mission.title}</h3>
-      {mission.subtitle && <p className="wk-desc">{mission.subtitle}</p>}
-      <div className="wk-progress">
-        <div className="progress-track">
-          <div className="progress-fill" style={{ '--progress': pct } as CSSProperties} />
-        </div>
-        <div className="progress-count">
-          {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
-        </div>
+      <div className="progress-count">
+        {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
       </div>
-      <div className="wk-rewards">
-        {mission.rewards.map((r, i) => (
-          <div className="streak-reward-item" key={i}>
-            <RewardIcon reward={r} size="lg" />
-            <span>+{formatAmount(r.amount)}</span>
-          </div>
-        ))}
-      </div>
-      {isActive ? (
-        <button className="go-button wk-go" type="button" onClick={onGo}>
-          Go
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : isClaimed ? (
-        <button className="go-button is-claimed wk-go" type="button" disabled>
-          Claimed
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : (
-        <button ref={btnRef} className="go-button wk-go" type="button" disabled={isClaiming} onClick={() => onClaim(btnRef.current)}>
-          {isClaiming ? '…' : 'Claim'}
-        </button>
-      )}
-    </article>
-  );
+    </div>
+    <div className="wk-rewards">
+      {mission.rewards.map((r, i) => (<div className="streak-reward-item" key={i}>
+        <RewardIcon reward={r} size="lg"/>
+        <span>+{formatAmount(r.amount)}</span>
+      </div>))}
+    </div>
+    {isActive ? (<button className="go-button wk-go" type="button" onClick={onGo}>
+      Go
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"
+              strokeLinejoin="round"/>
+      </svg>
+    </button>) : isClaimed ? (<button className="go-button is-claimed wk-go" type="button" disabled>
+      Claimed
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round"
+              strokeLinejoin="round"/>
+      </svg>
+    </button>) : (<button ref={btnRef} className="go-button wk-go" type="button" disabled={isClaiming}
+                          onClick={() => onClaim(btnRef.current)}>
+      {isClaiming ? '…' : 'Claim'}
+    </button>)}
+  </article>);
 }
 
-function XpHex({ size }: { readonly size: 'md' | 'lg' }) {
+function XpHex({size}: { readonly size: 'md' | 'lg' }) {
   const h = size === 'lg' ? 48 : 38;
-  return (
-    <svg viewBox="0 0 100 110" style={{ height: h, width: 'auto', filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.4))' }} aria-hidden="true">
-      <defs>
-        <linearGradient id="dm-xp-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#581c87" />
-        </linearGradient>
-        <linearGradient id="dm-xp-rim" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#fcd34d" />
-          <stop offset="100%" stopColor="#b45309" />
-        </linearGradient>
-      </defs>
-      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="url(#dm-xp-rim)" />
-      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#dm-xp-fill)" />
-      <text x="50" y="68" textAnchor="middle" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34" fill="white" stroke="rgba(0,0,0,0.35)" strokeWidth="1">XP</text>
-    </svg>
-  );
+  return (<svg viewBox="0 0 100 110" style={{
+    height: h,
+    width: 'auto',
+    filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.4))'
+  }}
+               aria-hidden="true">
+    <defs>
+      <linearGradient id="dm-xp-fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#a855f7"/>
+        <stop offset="100%" stopColor="#581c87"/>
+      </linearGradient>
+      <linearGradient id="dm-xp-rim" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fcd34d"/>
+        <stop offset="100%" stopColor="#b45309"/>
+      </linearGradient>
+    </defs>
+    <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="url(#dm-xp-rim)"/>
+    <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#dm-xp-fill)"/>
+    <text x="50" y="68" textAnchor="middle" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34"
+          fill="white" stroke="rgba(0,0,0,0.35)" strokeWidth="1">XP
+    </text>
+  </svg>);
 }
 
-function RewardIcon({ reward, size }: { readonly reward: RewardItem; readonly size: 'md' | 'lg' }) {
+function RewardIcon({
+  reward,
+  size
+}: { readonly reward: RewardItem; readonly size: 'md' | 'lg' }) {
   const cls = size === 'lg' ? 'ri ri-lg' : 'ri';
   if (reward.reward_kind === 'currency') {
-    if (reward.currency_code === 'xp') return <XpHex size={size} />;
-    const src =
-      reward.currency_code === 'coins'
-        ? '/lobby/icons/gold-coin.webp'
-        : reward.currency_code === 'gems'
-          ? '/lobby/icons/gem.webp'
-          : null;
-    if (src) return <img className={cls} src={src} alt="" draggable={false} onError={hideImg} />;
+    if (reward.currency_code === 'xp') return <XpHex size={size}/>;
+    const src = reward.currency_code === 'coins' ? '/lobby/icons/gold-coin.webp' : reward.currency_code === 'gems' ? '/lobby/icons/gem.webp' : null;
+    if (src) return <img className={cls} src={src} alt="" draggable={false} onError={hideImg}/>;
   }
   return <div className={`xp-token ${cls}`}>?</div>;
 }

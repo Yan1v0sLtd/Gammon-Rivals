@@ -1,5 +1,5 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../../../packages/shared/src/database';
+import {createClient, type SupabaseClient} from '@supabase/supabase-js';
+import type {Database} from '../../../../packages/shared/src/database';
 
 /**
  * Independent Supabase client used exclusively by the Back Office.
@@ -24,31 +24,25 @@ import type { Database } from '../../../../packages/shared/src/database';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const missingConfigMessage =
-  'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office.';
+const missingConfigMessage = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office.';
 
 function createMissingSupabaseClient(): SupabaseClient<Database> {
-  return new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(missingConfigMessage);
-      },
-    }
-  ) as SupabaseClient<Database>;
+  return new Proxy({}, {
+    get() {
+      throw new Error(missingConfigMessage);
+    },
+  }) as SupabaseClient<Database>;
 }
 
 export const isAdminSupabaseConfigured = Boolean(url && key);
 
-export const adminSupabase: SupabaseClient<Database> = isAdminSupabaseConfigured
-  ? createClient<Database>(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-        storageKey: 'sb-admin-auth-token',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      },
-    })
-  : createMissingSupabaseClient();
+export const adminSupabase: SupabaseClient<Database> = isAdminSupabaseConfigured ? createClient<Database>(url, key, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storageKey: 'sb-admin-auth-token',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  },
+}) : createMissingSupabaseClient();

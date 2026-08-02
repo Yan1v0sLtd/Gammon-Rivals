@@ -1,12 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AlignmentDebugSelection } from '../../../../packages/board-renderer/src/pixi/BoardRenderer';
-import type { ThemeLayout } from '../../../../packages/board-renderer/src/theme/types';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import type {AlignmentDebugSelection} from '../../../../packages/board-renderer/src/pixi/BoardRenderer';
+import type {ThemeLayout} from '../../../../packages/board-renderer/src/theme/types';
 
-type RatioKey =
-  | 'topPointCenterXRatios'
-  | 'bottomPointCenterXRatios'
-  | 'topPointTipXRatios'
-  | 'bottomPointTipXRatios';
+type RatioKey = | 'topPointCenterXRatios' | 'bottomPointCenterXRatios' | 'topPointTipXRatios' | 'bottomPointTipXRatios';
 type OffsetKey = 'topCheckerOffsetXRatios' | 'bottomCheckerOffsetXRatios';
 type EdgeKey = 'topPointYRatio' | 'bottomPointYRatio';
 
@@ -49,12 +45,12 @@ function offsetKey(side: AlignmentDebugSelection['side']): OffsetKey {
 
 function ratiosFor(layout: ThemeLayout, key: RatioKey): number[] {
   const source = layout[key] ?? [];
-  return Array.from({ length: 12 }, (_, idx) => Number(source[idx] ?? 0));
+  return Array.from({length: 12}, (_, idx) => Number(source[idx] ?? 0));
 }
 
 function offsetsFor(layout: ThemeLayout, key: OffsetKey): number[] {
   const source = layout[key] ?? [];
-  return Array.from({ length: 12 }, (_, idx) => Number(source[idx] ?? 0));
+  return Array.from({length: 12}, (_, idx) => Number(source[idx] ?? 0));
 }
 
 function roundRatio(value: number): number {
@@ -157,11 +153,15 @@ export default function AlignmentPanel({
         ref.lastLocalX = x - ref.opLeft;
         ref.lastLocalY = y - ref.opTop;
       }
-      setDragPos({ x: ref.lastLocalX, y: ref.lastLocalY });
+      setDragPos({
+        x: ref.lastLocalX,
+        y: ref.lastLocalY
+      });
       if (ref.captureTarget) {
         try {
           ref.captureTarget.releasePointerCapture(event.pointerId);
-        } catch {
+        }
+        catch {
           // pointer already released
         }
       }
@@ -169,7 +169,7 @@ export default function AlignmentPanel({
       document.body.style.userSelect = '';
     };
     // passive: false so preventDefault inside onMove is honored.
-    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointermove', onMove, {passive: false});
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
     return () => {
@@ -217,7 +217,8 @@ export default function AlignmentPanel({
     const captureTarget = event.currentTarget as HTMLElement;
     try {
       captureTarget.setPointerCapture(event.pointerId);
-    } catch {
+    }
+    catch {
       // pointer capture not supported; fall back to window listeners
     }
     dragRef.current = {
@@ -237,19 +238,18 @@ export default function AlignmentPanel({
     };
     // Seed dragPos so the panel switches from corner-anchored to
     // absolute-positioned (so a click without movement still works).
-    setDragPos({ x: seedLocalX, y: seedLocalY });
+    setDragPos({
+      x: seedLocalX,
+      y: seedLocalY
+    });
     document.body.style.userSelect = 'none';
   };
   const key = ratioKey(debug.side, debug.anchor === 'tip' ? 'tip' : 'base');
   const checkerOffsetKey = offsetKey(debug.side);
   const currentRatios = ratiosFor(layout, key);
   const currentOffsets = offsetsFor(layout, checkerOffsetKey);
-  const currentValue =
-    debug.anchor === 'topChecker'
-      ? currentOffsets[debug.column] ?? 0
-      : currentRatios[debug.column] ?? 0;
-  const sidePaddingKey =
-    debug.side === 'top' ? 'topCheckerPaddingRatio' : 'bottomCheckerPaddingRatio';
+  const currentValue = debug.anchor === 'topChecker' ? currentOffsets[debug.column] ?? 0 : currentRatios[debug.column] ?? 0;
+  const sidePaddingKey = debug.side === 'top' ? 'topCheckerPaddingRatio' : 'bottomCheckerPaddingRatio';
   const sidePaddingValue = layout[sidePaddingKey] ?? 1;
   const sideEdgeKey: EdgeKey = debug.side === 'top' ? 'topPointYRatio' : 'bottomPointYRatio';
   const sideEdgeValue = layout[sideEdgeKey] ?? (debug.side === 'top' ? 0 : 1);
@@ -257,78 +257,45 @@ export default function AlignmentPanel({
   // legacy fields when the per-row override isn't set yet.
   const sharedPointHeight = layout.pointHeightRatio ?? 0.44;
   const sharedSpacing = layout.checkerStackSpacingRatio ?? 1;
-  const pointHeightKey =
-    debug.side === 'top' ? 'topPointHeightRatio' : 'bottomPointHeightRatio';
-  const spacingKey =
-    debug.side === 'top' ? 'topCheckerStackSpacingRatio' : 'bottomCheckerStackSpacingRatio';
+  const pointHeightKey = debug.side === 'top' ? 'topPointHeightRatio' : 'bottomPointHeightRatio';
+  const spacingKey = debug.side === 'top' ? 'topCheckerStackSpacingRatio' : 'bottomCheckerStackSpacingRatio';
   const pointHeightValue = layout[pointHeightKey] ?? sharedPointHeight;
   const spacingValue = layout[spacingKey] ?? sharedSpacing;
 
-  const exportText = useMemo(
-    () =>
-      JSON.stringify(
-        {
-          topPointCenterXRatios: layout.topPointCenterXRatios,
-          topPointTipXRatios: layout.topPointTipXRatios,
-          bottomPointCenterXRatios: layout.bottomPointCenterXRatios,
-          bottomPointTipXRatios: layout.bottomPointTipXRatios,
-          topCheckerOffsetXRatios: layout.topCheckerOffsetXRatios,
-          bottomCheckerOffsetXRatios: layout.bottomCheckerOffsetXRatios,
-          pointHeightRatio: layout.pointHeightRatio,
-          topPointHeightRatio: layout.topPointHeightRatio,
-          bottomPointHeightRatio: layout.bottomPointHeightRatio,
-          topPointYRatio: layout.topPointYRatio,
-          bottomPointYRatio: layout.bottomPointYRatio,
-          checkerStackSpacingRatio: layout.checkerStackSpacingRatio,
-          topCheckerStackSpacingRatio: layout.topCheckerStackSpacingRatio,
-          bottomCheckerStackSpacingRatio: layout.bottomCheckerStackSpacingRatio,
-          topCheckerPaddingRatio: layout.topCheckerPaddingRatio,
-          bottomCheckerPaddingRatio: layout.bottomCheckerPaddingRatio,
-          blackOffTrayXRatio: layout.blackOffTrayXRatio,
-          blackOffTrayTopRatio: layout.blackOffTrayTopRatio,
-          blackOffTrayHeightRatio: layout.blackOffTrayHeightRatio,
-          whiteOffTrayXRatio: layout.whiteOffTrayXRatio,
-          whiteOffTrayTopRatio: layout.whiteOffTrayTopRatio,
-          whiteOffTrayHeightRatio: layout.whiteOffTrayHeightRatio,
-          offCheckerStackSpacingRatio: layout.offCheckerStackSpacingRatio,
-          blackOffTrayTiltDeg: layout.blackOffTrayTiltDeg,
-          whiteOffTrayTiltDeg: layout.whiteOffTrayTiltDeg,
-        },
-        null,
-        2
-      ),
-    [
-      layout.bottomPointCenterXRatios,
-      layout.bottomPointTipXRatios,
-      layout.bottomCheckerOffsetXRatios,
-      layout.bottomPointYRatio,
-      layout.bottomCheckerPaddingRatio,
-      layout.checkerStackSpacingRatio,
-      layout.topCheckerStackSpacingRatio,
-      layout.bottomCheckerStackSpacingRatio,
-      layout.pointHeightRatio,
-      layout.topPointHeightRatio,
-      layout.bottomPointHeightRatio,
-      layout.topCheckerOffsetXRatios,
-      layout.topPointCenterXRatios,
-      layout.topPointTipXRatios,
-      layout.topPointYRatio,
-      layout.topCheckerPaddingRatio,
-      layout.blackOffTrayXRatio,
-      layout.blackOffTrayTopRatio,
-      layout.blackOffTrayHeightRatio,
-      layout.whiteOffTrayXRatio,
-      layout.whiteOffTrayTopRatio,
-      layout.whiteOffTrayHeightRatio,
-      layout.offCheckerStackSpacingRatio,
-      layout.blackOffTrayTiltDeg,
-      layout.whiteOffTrayTiltDeg,
-    ]
-  );
+  const exportText = useMemo(() => JSON.stringify({
+    topPointCenterXRatios: layout.topPointCenterXRatios,
+    topPointTipXRatios: layout.topPointTipXRatios,
+    bottomPointCenterXRatios: layout.bottomPointCenterXRatios,
+    bottomPointTipXRatios: layout.bottomPointTipXRatios,
+    topCheckerOffsetXRatios: layout.topCheckerOffsetXRatios,
+    bottomCheckerOffsetXRatios: layout.bottomCheckerOffsetXRatios,
+    pointHeightRatio: layout.pointHeightRatio,
+    topPointHeightRatio: layout.topPointHeightRatio,
+    bottomPointHeightRatio: layout.bottomPointHeightRatio,
+    topPointYRatio: layout.topPointYRatio,
+    bottomPointYRatio: layout.bottomPointYRatio,
+    checkerStackSpacingRatio: layout.checkerStackSpacingRatio,
+    topCheckerStackSpacingRatio: layout.topCheckerStackSpacingRatio,
+    bottomCheckerStackSpacingRatio: layout.bottomCheckerStackSpacingRatio,
+    topCheckerPaddingRatio: layout.topCheckerPaddingRatio,
+    bottomCheckerPaddingRatio: layout.bottomCheckerPaddingRatio,
+    blackOffTrayXRatio: layout.blackOffTrayXRatio,
+    blackOffTrayTopRatio: layout.blackOffTrayTopRatio,
+    blackOffTrayHeightRatio: layout.blackOffTrayHeightRatio,
+    whiteOffTrayXRatio: layout.whiteOffTrayXRatio,
+    whiteOffTrayTopRatio: layout.whiteOffTrayTopRatio,
+    whiteOffTrayHeightRatio: layout.whiteOffTrayHeightRatio,
+    offCheckerStackSpacingRatio: layout.offCheckerStackSpacingRatio,
+    blackOffTrayTiltDeg: layout.blackOffTrayTiltDeg,
+    whiteOffTrayTiltDeg: layout.whiteOffTrayTiltDeg,
+  }, null, 2), [layout.bottomPointCenterXRatios, layout.bottomPointTipXRatios, layout.bottomCheckerOffsetXRatios, layout.bottomPointYRatio, layout.bottomCheckerPaddingRatio, layout.checkerStackSpacingRatio, layout.topCheckerStackSpacingRatio, layout.bottomCheckerStackSpacingRatio, layout.pointHeightRatio, layout.topPointHeightRatio, layout.bottomPointHeightRatio, layout.topCheckerOffsetXRatios, layout.topPointCenterXRatios, layout.topPointTipXRatios, layout.topPointYRatio, layout.topCheckerPaddingRatio, layout.blackOffTrayXRatio, layout.blackOffTrayTopRatio, layout.blackOffTrayHeightRatio, layout.whiteOffTrayXRatio, layout.whiteOffTrayTopRatio, layout.whiteOffTrayHeightRatio, layout.offCheckerStackSpacingRatio, layout.blackOffTrayTiltDeg, layout.whiteOffTrayTiltDeg,]);
 
   const updateDebug = (patch: Partial<AlignmentDebugSelection>) => {
     setCopyState('');
-    onDebugChange({ ...debug, ...patch, enabled: true });
+    onDebugChange({
+      ...debug, ...patch,
+      enabled: true
+    });
   };
 
   const setSelectedX = (value: number) => {
@@ -337,29 +304,39 @@ export default function AlignmentPanel({
     if (debug.anchor === 'topChecker') {
       const nextOffsets = [...currentOffsets];
       nextOffsets[debug.column] = roundRatio(clamp(value, -0.25, 0.25));
-      onLayoutChange({ ...layout, [checkerOffsetKey]: nextOffsets });
+      onLayoutChange({
+        ...layout,
+        [checkerOffsetKey]: nextOffsets
+      });
       return;
     }
 
     const nextRatios = [...currentRatios];
     nextRatios[debug.column] = roundRatio(value);
-    onLayoutChange({ ...layout, [key]: nextRatios });
+    onLayoutChange({
+      ...layout,
+      [key]: nextRatios
+    });
   };
 
   const nudge = (delta: number) => {
     setCopyState('');
     if (debug.anchor === 'topChecker') {
       const nextOffsets = [...currentOffsets];
-      nextOffsets[debug.column] = roundRatio(
-        clamp((currentOffsets[debug.column] ?? 0) + delta, -0.25, 0.25)
-      );
-      onLayoutChange({ ...layout, [checkerOffsetKey]: nextOffsets });
+      nextOffsets[debug.column] = roundRatio(clamp((currentOffsets[debug.column] ?? 0) + delta, -0.25, 0.25));
+      onLayoutChange({
+        ...layout,
+        [checkerOffsetKey]: nextOffsets
+      });
       return;
     }
 
     const nextRatios = [...currentRatios];
     nextRatios[debug.column] = roundRatio(currentValue + delta);
-    onLayoutChange({ ...layout, [key]: nextRatios });
+    onLayoutChange({
+      ...layout,
+      [key]: nextRatios
+    });
   };
 
   const nudgePadding = (delta: number) => {
@@ -400,9 +377,7 @@ export default function AlignmentPanel({
     setCopyState('');
     onLayoutChange({
       ...layout,
-      [pointHeightKey]: roundRatio(
-        clamp(pointHeightValue + delta, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)
-      ),
+      [pointHeightKey]: roundRatio(clamp(pointHeightValue + delta, POINT_HEIGHT_MIN, POINT_HEIGHT_MAX)),
     });
   };
 
@@ -436,7 +411,8 @@ export default function AlignmentPanel({
     try {
       await navigator.clipboard.writeText(exportText);
       setCopyState('Copied');
-    } catch {
+    }
+    catch {
       setCopyState('Select the text below');
     }
   };
@@ -444,118 +420,91 @@ export default function AlignmentPanel({
   const panelPosition = panelSide === 'left' ? 'left-3' : 'right-3';
   // While the user has manually dragged the panel, anchor it to (x, y)
   // via inline styles. Otherwise let the Tailwind corner classes pin it.
-  const dragStyle: React.CSSProperties | undefined = dragPos
-    ? { left: dragPos.x, top: dragPos.y, right: 'auto', bottom: 'auto' }
-    : undefined;
+  const dragStyle: React.CSSProperties | undefined = dragPos ? {
+    left: dragPos.x,
+    top: dragPos.y,
+    right: 'auto',
+    bottom: 'auto'
+  } : undefined;
 
-  return (
+  return (<div
+    ref={panelEl}
+    style={dragStyle}
+    className={`fixed top-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}
+  >
     <div
-      ref={panelEl}
-      style={dragStyle}
-      className={`fixed top-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}
+      onPointerDown={startDrag}
+      className="mb-2 flex cursor-grab items-center justify-between gap-3 active:cursor-grabbing select-none"
+      style={{touchAction: 'none'}}
+      title="Drag to move"
     >
-      <div
-        onPointerDown={startDrag}
-        className="mb-2 flex cursor-grab items-center justify-between gap-3 active:cursor-grabbing select-none"
-        style={{ touchAction: 'none' }}
-        title="Drag to move"
+      <div className="font-semibold text-cyan-100">⋮⋮ Alignment mode</div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          // "Reset to corner" if the panel was dragged; otherwise
+          // flip the corner side.
+          if (dragPos) setDragPos(null); else setPanelSide(panelSide === 'left' ? 'right' : 'left');
+        }}
+        className="rounded border border-cyan-300/30 px-2 py-1 text-xs text-cyan-100"
       >
-        <div className="font-semibold text-cyan-100">⋮⋮ Alignment mode</div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            // "Reset to corner" if the panel was dragged; otherwise
-            // flip the corner side.
-            if (dragPos) setDragPos(null);
-            else setPanelSide(panelSide === 'left' ? 'right' : 'left');
-          }}
-          className="rounded border border-cyan-300/30 px-2 py-1 text-xs text-cyan-100"
-        >
-          {dragPos ? 'Snap corner' : 'Move panel'}
-        </button>
-      </div>
-      <div className="mb-2 text-xs text-cyan-200/70">
-        {(debug.target ?? 'point') === 'point'
-          ? `${debug.side} ${debug.column + 1} · ${debug.anchor === 'topChecker' ? 'top checker' : debug.anchor}`
-          : `${debug.target === 'offWhite' ? 'white' : 'black'} off-tray`}
-      </div>
+        {dragPos ? 'Snap corner' : 'Move panel'}
+      </button>
+    </div>
+    <div className="mb-2 text-xs text-cyan-200/70">
+      {(debug.target ?? 'point') === 'point' ? `${debug.side} ${debug.column + 1} · ${debug.anchor === 'topChecker' ? 'top checker' : debug.anchor}` : `${debug.target === 'offWhite' ? 'white' : 'black'} off-tray`}
+    </div>
 
-      <div className="mb-3">
-        <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Target</div>
-        <div className="grid grid-cols-3 gap-1">
-          {(
-            [
-              ['point', 'Point'],
-              ['offWhite', 'Off (white)'],
-              ['offBlack', 'Off (black)'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => updateDebug({ target: value })}
-              className={`rounded border px-2 py-1 text-xs ${
-                (debug.target ?? 'point') === value
-                  ? 'border-emerald-300 bg-emerald-300 text-slate-950'
-                  : 'border-slate-600 bg-slate-900 text-slate-200'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+    <div className="mb-3">
+      <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Target</div>
+      <div className="grid grid-cols-3 gap-1">
+        {([['point', 'Point'], ['offWhite', 'Off (white)'], ['offBlack', 'Off (black)'],] as const).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => updateDebug({target: value})}
+            className={`rounded border px-2 py-1 text-xs ${(debug.target ?? 'point') === value ? 'border-emerald-300 bg-emerald-300 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-200'}`}
+          >
+            {label}
+          </button>))}
       </div>
+    </div>
 
-      {(debug.target ?? 'point') !== 'point' ? (
-        <OffTrayControls
-          owner={debug.target === 'offWhite' ? 'white' : 'black'}
-          layout={layout}
-          onLayoutChange={(next) => {
-            setCopyState('');
-            onLayoutChange(next);
-          }}
-        />
-      ) : (
-      <>
+    {(debug.target ?? 'point') !== 'point' ? (<OffTrayControls
+      owner={debug.target === 'offWhite' ? 'white' : 'black'}
+      layout={layout}
+      onLayoutChange={(next) => {
+        setCopyState('');
+        onLayoutChange(next);
+      }}
+    />) : (<>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Row</div>
           <div className="grid grid-cols-2 gap-1">
-            {(['bottom', 'top'] as const).map((side) => (
-              <button
-                key={side}
-                type="button"
-                onClick={() => updateDebug({ side })}
-                className={`rounded border px-2 py-1 ${
-                  debug.side === side
-                    ? 'border-cyan-300 bg-cyan-300 text-slate-950'
-                    : 'border-slate-600 bg-slate-900 text-slate-200'
-                }`}
-              >
-                {side}
-              </button>
-            ))}
+            {(['bottom', 'top'] as const).map((side) => (<button
+              key={side}
+              type="button"
+              onClick={() => updateDebug({side})}
+              className={`rounded border px-2 py-1 ${debug.side === side ? 'border-cyan-300 bg-cyan-300 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-200'}`}
+            >
+              {side}
+            </button>))}
           </div>
         </div>
 
         <div>
           <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Anchor</div>
           <div className="grid grid-cols-3 gap-1">
-            {(['base', 'tip', 'topChecker'] as const).map((anchor) => (
-              <button
-                key={anchor}
-                type="button"
-                onClick={() => updateDebug({ anchor })}
-                className={`rounded border px-2 py-1 ${
-                  debug.anchor === anchor
-                    ? 'border-fuchsia-300 bg-fuchsia-300 text-slate-950'
-                    : 'border-slate-600 bg-slate-900 text-slate-200'
-                }`}
-              >
-                {anchor === 'topChecker' ? 'top checker' : anchor}
-              </button>
-            ))}
+            {(['base', 'tip', 'topChecker'] as const).map((anchor) => (<button
+              key={anchor}
+              type="button"
+              onClick={() => updateDebug({anchor})}
+              className={`rounded border px-2 py-1 ${debug.anchor === anchor ? 'border-fuchsia-300 bg-fuchsia-300 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-200'}`}
+            >
+              {anchor === 'topChecker' ? 'top checker' : anchor}
+            </button>))}
           </div>
         </div>
       </div>
@@ -563,20 +512,14 @@ export default function AlignmentPanel({
       <div className="mt-3">
         <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Point</div>
         <div className="grid grid-cols-12 gap-1">
-          {Array.from({ length: 12 }, (_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => updateDebug({ column: idx })}
-              className={`h-7 rounded border text-xs ${
-                debug.column === idx
-                  ? 'border-amber-300 bg-amber-300 text-slate-950'
-                  : 'border-slate-600 bg-slate-900 text-slate-200'
-              }`}
-            >
-              {idx + 1}
-            </button>
-          ))}
+          {Array.from({length: 12}, (_, idx) => (<button
+            key={idx}
+            type="button"
+            onClick={() => updateDebug({column: idx})}
+            className={`h-7 rounded border text-xs ${debug.column === idx ? 'border-amber-300 bg-amber-300 text-slate-950' : 'border-slate-600 bg-slate-900 text-slate-200'}`}
+          >
+            {idx + 1}
+          </button>))}
         </div>
       </div>
 
@@ -595,7 +538,8 @@ export default function AlignmentPanel({
         </button>
       </div>
 
-      <div className="mt-2 grid grid-cols-[1fr_8rem] items-center gap-2 rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-300">
+      <div
+        className="mt-2 grid grid-cols-[1fr_8rem] items-center gap-2 rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-300">
         <span>{debug.anchor === 'topChecker' ? `${checkerOffsetKey}[${debug.column}]` : `${key}[${debug.column}]`}</span>
         <input
           type="number"
@@ -642,13 +586,16 @@ export default function AlignmentPanel({
             Point depth ({debug.side})
           </div>
           <div className="grid grid-cols-4 gap-1">
-            <button type="button" onClick={() => nudgePointHeight(-0.03)} className="rounded bg-slate-800 px-2 py-2">
+            <button type="button" onClick={() => nudgePointHeight(-0.03)}
+                    className="rounded bg-slate-800 px-2 py-2">
               -big
             </button>
-            <button type="button" onClick={() => nudgePointHeight(-0.006)} className="rounded bg-slate-800 px-2 py-2">
+            <button type="button" onClick={() => nudgePointHeight(-0.006)}
+                    className="rounded bg-slate-800 px-2 py-2">
               -
             </button>
-            <button type="button" onClick={() => nudgePointHeight(0.006)} className="rounded bg-slate-800 px-2 py-2">
+            <button type="button" onClick={() => nudgePointHeight(0.006)}
+                    className="rounded bg-slate-800 px-2 py-2">
               +
             </button>
             <button type="button" onClick={() => nudgePointHeight(0.03)} className="rounded bg-slate-800 px-2 py-2">
@@ -728,30 +675,28 @@ export default function AlignmentPanel({
         </div>
       </div>
 
-      </>
-      )}
+    </>)}
 
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={copy}
-          className="flex-1 rounded bg-cyan-300 px-3 py-2 font-semibold text-slate-950"
-        >
-          Copy numbers
-        </button>
-        <button type="button" onClick={onReset} className="rounded border border-slate-600 px-3 py-2">
-          Reset
-        </button>
-      </div>
-      {copyState && <div className="mt-2 text-xs text-cyan-200">{copyState}</div>}
-
-      <textarea
-        readOnly
-        value={exportText}
-        className="mt-2 h-24 w-full resize-none rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-300"
-      />
+    <div className="mt-3 flex gap-2">
+      <button
+        type="button"
+        onClick={copy}
+        className="flex-1 rounded bg-cyan-300 px-3 py-2 font-semibold text-slate-950"
+      >
+        Copy numbers
+      </button>
+      <button type="button" onClick={onReset} className="rounded border border-slate-600 px-3 py-2">
+        Reset
+      </button>
     </div>
-  );
+    {copyState && <div className="mt-2 text-xs text-cyan-200">{copyState}</div>}
+
+    <textarea
+      readOnly
+      value={exportText}
+      className="mt-2 h-24 w-full resize-none rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-300"
+    />
+  </div>);
 }
 
 type OffOwner = 'white' | 'black';
@@ -766,11 +711,14 @@ interface OffTrayProps {
   onLayoutChange: (next: ThemeLayout) => void;
 }
 
-function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
+function OffTrayControls({
+  owner,
+  layout,
+  onLayoutChange
+}: OffTrayProps) {
   const xKey: OffXKey = owner === 'white' ? 'whiteOffTrayXRatio' : 'blackOffTrayXRatio';
   const topKey: OffTopKey = owner === 'white' ? 'whiteOffTrayTopRatio' : 'blackOffTrayTopRatio';
-  const heightKey: OffHeightKey =
-    owner === 'white' ? 'whiteOffTrayHeightRatio' : 'blackOffTrayHeightRatio';
+  const heightKey: OffHeightKey = owner === 'white' ? 'whiteOffTrayHeightRatio' : 'blackOffTrayHeightRatio';
   const tiltKey: OffTiltKey = owner === 'white' ? 'whiteOffTrayTiltDeg' : 'blackOffTrayTiltDeg';
 
   const x = layout[xKey] ?? 0.925;
@@ -779,34 +727,19 @@ function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
   const spacing = layout.offCheckerStackSpacingRatio ?? 0.56;
   const tilt = layout[tiltKey] ?? 0;
 
-  const update = (patch: Partial<ThemeLayout>) => onLayoutChange({ ...layout, ...patch });
-  const setX = (value: number) =>
-    update({ [xKey]: roundRatio(clamp(value, OFF_X_MIN, OFF_X_MAX)) });
+  const update = (patch: Partial<ThemeLayout>) => onLayoutChange({...layout, ...patch});
+  const setX = (value: number) => update({[xKey]: roundRatio(clamp(value, OFF_X_MIN, OFF_X_MAX))});
   const nudgeX = (delta: number) => setX(x + delta);
-  const setTop = (value: number) =>
-    update({ [topKey]: roundRatio(clamp(value, OFF_TOP_MIN, OFF_TOP_MAX)) });
+  const setTop = (value: number) => update({[topKey]: roundRatio(clamp(value, OFF_TOP_MIN, OFF_TOP_MAX))});
   const nudgeTop = (delta: number) => setTop(top + delta);
-  const setHeight = (value: number) =>
-    update({ [heightKey]: roundRatio(clamp(value, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)) });
+  const setHeight = (value: number) => update({[heightKey]: roundRatio(clamp(value, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX))});
   const nudgeHeight = (delta: number) => setHeight(height + delta);
-  const setSpacing = (value: number) =>
-    update({ offCheckerStackSpacingRatio: roundRatio(clamp(value, OFF_SPACING_MIN, OFF_SPACING_MAX)) });
+  const setSpacing = (value: number) => update({offCheckerStackSpacingRatio: roundRatio(clamp(value, OFF_SPACING_MIN, OFF_SPACING_MAX))});
   const nudgeSpacing = (delta: number) => setSpacing(spacing + delta);
-  const setTilt = (value: number) =>
-    update({ [tiltKey]: Math.round(clamp(value, OFF_TILT_MIN, OFF_TILT_MAX) * 10) / 10 });
+  const setTilt = (value: number) => update({[tiltKey]: Math.round(clamp(value, OFF_TILT_MIN, OFF_TILT_MAX) * 10) / 10});
   const nudgeTilt = (delta: number) => setTilt(tilt + delta);
 
-  const row = (
-    label: string,
-    value: number,
-    onNudge: (d: number) => void,
-    onSet: (v: number) => void,
-    bigStep: number,
-    smallStep: number,
-    min: number,
-    max: number,
-    decimals = 4
-  ) => (
+  const row = (label: string, value: number, onNudge: (d: number) => void, onSet: (v: number) => void, bigStep: number, smallStep: number, min: number, max: number, decimals = 4) => (
     <div>
       <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">{label}</div>
       <div className="grid grid-cols-4 gap-1">
@@ -836,16 +769,13 @@ function OffTrayControls({ owner, layout, onLayoutChange }: OffTrayProps) {
         className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
         aria-label={label}
       />
-    </div>
-  );
+    </div>);
 
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      {row('Tray X', x, nudgeX, setX, 0.02, 0.004, OFF_X_MIN, OFF_X_MAX)}
-      {row('Tray top', top, nudgeTop, setTop, 0.02, 0.004, OFF_TOP_MIN, OFF_TOP_MAX)}
-      {row('Tray height', height, nudgeHeight, setHeight, 0.02, 0.004, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)}
-      {row('Stack spacing', spacing, nudgeSpacing, setSpacing, 0.08, 0.02, OFF_SPACING_MIN, OFF_SPACING_MAX, 2)}
-      {row('Stack tilt (°)', tilt, nudgeTilt, setTilt, 5, 0.5, OFF_TILT_MIN, OFF_TILT_MAX, 1)}
-    </div>
-  );
+  return (<div className="grid grid-cols-2 gap-2">
+    {row('Tray X', x, nudgeX, setX, 0.02, 0.004, OFF_X_MIN, OFF_X_MAX)}
+    {row('Tray top', top, nudgeTop, setTop, 0.02, 0.004, OFF_TOP_MIN, OFF_TOP_MAX)}
+    {row('Tray height', height, nudgeHeight, setHeight, 0.02, 0.004, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)}
+    {row('Stack spacing', spacing, nudgeSpacing, setSpacing, 0.08, 0.02, OFF_SPACING_MIN, OFF_SPACING_MAX, 2)}
+    {row('Stack tilt (°)', tilt, nudgeTilt, setTilt, 5, 0.5, OFF_TILT_MIN, OFF_TILT_MAX, 1)}
+  </div>);
 }

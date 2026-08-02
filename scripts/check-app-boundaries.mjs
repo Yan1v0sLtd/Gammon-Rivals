@@ -6,9 +6,23 @@ const roots = [
   'apps/admin/src',
   'packages/shared/src',
   'packages/engine/src',
+  'packages/ai/src',
+  'packages/sim/src',
   'packages/board-renderer/src',
   'packages/board-preview/src',
 ];
+// Packages that must stay dependency-free. `allowed` lists the only local roots
+// they may reach into; the test runner is the sole permitted bare specifier.
+const PURE_PACKAGE_EXTERNALS = new Set(['vitest']);
+const PURE_PACKAGES = [
+  { root: 'packages/ai/src/', label: 'ai', allowed: ['packages/ai/src/', 'packages/engine/'] },
+  {
+    root: 'packages/sim/src/',
+    label: 'sim',
+    allowed: ['packages/sim/src/', 'packages/ai/', 'packages/engine/'],
+  },
+];
+
 const sourceFiles = roots.flatMap(walk);
 const violations = [];
 
@@ -63,6 +77,23 @@ for (const file of sourceFiles) {
       !resolved.startsWith('packages/engine/src/')
     ) {
       violations.push(`${file}: engine imports outside its package (${specifier})`);
+    }
+    // The AI and the sim are dependency-free by contract, and that contract has
+    // teeth: build-shared-ai.mjs copies packages/ai/src verbatim into a Deno edge
+    // function, so a stray npm import would land server-side and fail at runtime
+    // with no local build error. Bare specifiers are therefore rejected too — a
+    // check on relative paths alone would miss `import x from 'lodash'`.
+    for (const pure of PURE_PACKAGES) {
+      if (!file.startsWith(pure.root)) continue;
+      if (isExternal(specifier)) {
+        if (!PURE_PACKAGE_EXTERNALS.has(specifier)) {
+          violations.push(
+            `${file}: ${pure.label} imports an external dependency (${specifier}) — must stay dependency-free`
+          );
+        }
+      } else if (resolved === null || !pure.allowed.some((root) => resolved.startsWith(root))) {
+        violations.push(`${file}: ${pure.label} imports an unapproved boundary (${specifier})`);
+      }
     }
     if (
       file.startsWith('packages/board-renderer/src/') &&

@@ -1,6 +1,6 @@
-import { SocialLogin } from '@capgo/capacitor-social-login';
-import { isNativePlatform } from './nativeAuth';
-import { supabase } from './supabase';
+import {SocialLogin} from '@capgo/capacitor-social-login';
+import {isNativePlatform} from './nativeAuth';
+import {supabase} from './supabase';
 
 /**
  * Native Google sign-in for the Android (Capacitor) app.
@@ -19,24 +19,18 @@ import { supabase } from './supabase';
  *      Supabase Google provider) supplied here as VITE_GOOGLE_WEB_CLIENT_ID.
  *      We request the token for THAT audience so Supabase trusts it.
  */
-const WEB_CLIENT_ID =
-  (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() || undefined;
+const WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() || undefined;
 
 let initPromise: Promise<void> | null = null;
 
 function ensureInitialized(): Promise<void> {
   if (!WEB_CLIENT_ID) {
-    return Promise.reject(
-      new Error(
-        'Google sign-in is not configured on this build: set VITE_GOOGLE_WEB_CLIENT_ID ' +
-          '(the Web OAuth client ID from your Supabase Google provider).'
-      )
-    );
+    return Promise.reject(new Error('Google sign-in is not configured on this build: set VITE_GOOGLE_WEB_CLIENT_ID ' + '(the Web OAuth client ID from your Supabase Google provider).'));
   }
   // Initialize the native SDK once. webClientId is the SERVER (Web) OAuth
   // client — the same ID Supabase validates against — so the returned ID
   // token's audience matches and Supabase accepts it.
-  initPromise ??= SocialLogin.initialize({ google: { webClientId: WEB_CLIENT_ID } });
+  initPromise ??= SocialLogin.initialize({google: {webClientId: WEB_CLIENT_ID}});
   return initPromise;
 }
 
@@ -67,7 +61,7 @@ export async function signInWithGoogleNative(): Promise<void> {
     throw new Error('Google sign-in did not return an ID token.');
   }
 
-  const { error } = await supabase.auth.signInWithIdToken({
+  const {error} = await supabase.auth.signInWithIdToken({
     provider: 'google',
     token: idToken,
   });

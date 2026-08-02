@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { adminSupabase } from './lib/adminSupabase';
+import {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {adminSupabase} from './lib/adminSupabase';
 
 /**
  * OAuth callback for the BO. Mounted at /auth/callback. The
@@ -25,43 +25,37 @@ export default function AdminAuthCallback() {
       // Poll briefly: detectSessionInUrl fires once on mount, but the
       // session takes a moment to settle. We wait up to ~3s.
       for (let i = 0; i < 30; i++) {
-        const { data } = await adminSupabase.auth.getSession();
+        const {data} = await adminSupabase.auth.getSession();
         if (cancelled) return;
         if (data.session) {
-          navigate('/', { replace: true });
+          navigate('/', {replace: true});
           return;
         }
         await new Promise((r) => setTimeout(r, 100));
       }
       if (cancelled) return;
-      setError(
-        'Could not complete sign-in. Try again, or refresh the Back Office.'
-      );
+      setError('Could not complete sign-in. Try again, or refresh the Back Office.');
     })();
     return () => {
       cancelled = true;
     };
   }, [navigate]);
 
-  return (
-    <div className="grid min-h-dvh place-items-center bg-[#070a14] text-white">
-      <div className="text-center">
-        <div className="font-display text-2xl font-black uppercase tracking-wider text-amber-200">
-          Back Office sign-in
-        </div>
-        <div className="mt-2 text-sm text-white/60">
-          {error ?? 'Finishing sign-in…'}
-        </div>
-        {error ? (
-          <button
-            type="button"
-            onClick={() => navigate('/', { replace: true })}
-            className="mt-4 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/10"
-          >
-            Back to Back Office
-          </button>
-        ) : null}
+  return (<div className="grid min-h-dvh place-items-center bg-[#070a14] text-white">
+    <div className="text-center">
+      <div className="font-display text-2xl font-black uppercase tracking-wider text-amber-200">
+        Back Office sign-in
       </div>
+      <div className="mt-2 text-sm text-white/60">
+        {error ?? 'Finishing sign-in…'}
+      </div>
+      {error ? (<button
+        type="button"
+        onClick={() => navigate('/', {replace: true})}
+        className="mt-4 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/10"
+      >
+        Back to Back Office
+      </button>) : null}
     </div>
-  );
+  </div>);
 }

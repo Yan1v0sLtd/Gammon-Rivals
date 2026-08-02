@@ -11,10 +11,7 @@ export interface BillingPurchaseRequest {
   label: string;
 }
 
-export type BillingOutcome =
-  | { status: 'granted' }
-  | { status: 'cancelled' }
-  | { status: 'pending' } // store accepted; grant will land asynchronously
+export type BillingOutcome = | { status: 'granted' } | { status: 'cancelled' } | { status: 'pending' } // store accepted; grant will land asynchronously
   | { status: 'error'; code: string; message: string };
 
 export interface BillingService {

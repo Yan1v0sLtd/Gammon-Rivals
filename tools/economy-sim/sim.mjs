@@ -126,7 +126,7 @@ function perTierAnalytic(a = 10, b = 60) {
   });
 }
 
-// ---- run sweep --------------------------------------------------------------
+
 const N = Number(process.argv[2] || 5000);
 const POP = (() => { const a = []; for (const x of C.ARCHETYPES) for (let i = 0; i < Math.round(N * x.weight); i++) a.push(x); return a; })();
 const tierTable = perTierAnalytic();
@@ -142,7 +142,7 @@ const scenarios = C.MISSIONS_REFILL_PCTS.map((refill) => {
 // recommended = smallest refill that is solvent (not declining, low bankruptcy)
 const recommended = scenarios.find((s) => s.trend !== 'declining' && s.overall.pctBankrupt <= 25) || scenarios[scenarios.length - 1];
 
-// ---- output -----------------------------------------------------------------
+
 mkdirSync(OUT, { recursive: true });
 writeFileSync(join(OUT, 'summary.json'), JSON.stringify({ meta: { nPlayers: N, horizonDays: C.HORIZON_DAYS, coreRtp: C.CORE_RTP_OVERRIDE, xpFormula: 'base*(1+boost%)', levelBonusPpRange: [bonusLo, bonusHi] }, recommendedRefillPct: recommended.refill, scenarios, perTierAnalytic: tierTable }, null, 2));
 writeFileSync(join(OUT, 'missions-sweep.csv'), 'refill_pct,bal_d30,bal_d90,bal_d180,trend,pct_bankrupt,level_d180,l10_pct_reached,l10_median_day,realized_rtp_pct,level_bonus_pp\n' +
@@ -205,7 +205,7 @@ const log = (s) => console.log(s);
 log('\n=== Missions-sizing sweep ===');
 log(`${N} players · ${C.HORIZON_DAYS}d · core RTP ${Math.round(C.CORE_RTP_OVERRIDE * 100)}% · XP base50+boost (Beg 50..GM 300) · level-coin bonus +${bonusLo}pp(GM)..+${bonusHi}pp(Beg)`);
 log(`XP/match by tier: ` + DIFFICULTY_TIERS.map((t) => `${t.label.split(' ')[0]} ${xpPerMatch(t)}`).join(' · '));
-// --- FTUE pace (deterministic): matches to reach a level, Beginner-only vs climbing ---
+
 function matchesToLevel(target, climb) {
   let xp = 0, m = 0, lvl = 1;
   while (lvl < target && m < 100000) {

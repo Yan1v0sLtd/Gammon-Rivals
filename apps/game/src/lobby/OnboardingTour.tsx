@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ONBOARDING_STEPS, type TourStep } from './onboardingSteps';
+import {type CSSProperties, useCallback, useEffect, useRef, useState} from 'react';
+import {ONBOARDING_STEPS, type TourStep} from './onboardingSteps';
 
 /**
  * First-run onboarding tour. A dimmed overlay with a spotlight cutout that
@@ -32,26 +32,25 @@ function readRect(selector: string | undefined): Rect | null {
   const r = el.getBoundingClientRect();
   // Treat a zero-size / off-screen element as "not there yet".
   if (r.width === 0 && r.height === 0) return null;
-  return { top: r.top, left: r.left, width: r.width, height: r.height };
+  return {
+    top: r.top,
+    left: r.left,
+    width: r.width,
+    height: r.height
+  };
 }
 
 function rectsEqual(a: Rect | null, b: Rect | null): boolean {
   if (a === b) return true;
   if (!a || !b) return false;
-  return (
-    Math.abs(a.top - b.top) < 0.5 &&
-    Math.abs(a.left - b.left) < 0.5 &&
-    Math.abs(a.width - b.width) < 0.5 &&
-    Math.abs(a.height - b.height) < 0.5
-  );
+  return (Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5);
 }
 
 export function OnboardingTour({
   steps = ONBOARDING_STEPS,
   onDone,
 }: {
-  readonly steps?: readonly TourStep[];
-  /** Fires once when the tour is dismissed — via Skip or the final CTA. */
+  readonly steps?: readonly TourStep[]; /** Fires once when the tour is dismissed — via Skip or the final CTA. */
   readonly onDone: () => void;
 }) {
   const [index, setIndex] = useState(0);
@@ -106,7 +105,8 @@ export function OnboardingTour({
       if (e.key === 'Escape') {
         e.preventDefault();
         finish();
-      } else if (e.key === 'Enter' || e.key === ' ') {
+      }
+      else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         next();
       }
@@ -128,10 +128,17 @@ export function OnboardingTour({
     const left = Math.max(12, Math.min(centerX - cardMaxW / 2, vw - cardMaxW - 12));
     const spaceBelow = vh - (rect.top + rect.height);
     const placeBelow = spaceBelow > 220 || spaceBelow > rect.top;
-    cardStyle = placeBelow
-      ? { left, top: rect.top + rect.height + PAD + 12, maxWidth: cardMaxW }
-      : { left, bottom: vh - rect.top + PAD + 12, maxWidth: cardMaxW };
-  } else {
+    cardStyle = placeBelow ? {
+      left,
+      top: rect.top + rect.height + PAD + 12,
+      maxWidth: cardMaxW
+    } : {
+      left,
+      bottom: vh - rect.top + PAD + 12,
+      maxWidth: cardMaxW
+    };
+  }
+  else {
     cardStyle = {
       left: '50%',
       top: '50%',
@@ -140,77 +147,73 @@ export function OnboardingTour({
     };
   }
 
-  return (
-    <div className="fixed inset-0 z-[120]" aria-live="polite" role="dialog" aria-modal="true">
-      {/* Full-screen click absorber: blocks interaction with the lobby beneath
+  return (<div className="fixed inset-0 z-[120]" aria-live="polite" role="dialog" aria-modal="true">
+    {/* Full-screen click absorber: blocks interaction with the lobby beneath
           for the duration of the tour. Transparent when a spotlight is shown
           (the cutout's box-shadow does the dimming); dimmed itself otherwise. */}
-      <div
-        className="absolute inset-0"
-        style={{ background: rect ? 'transparent' : 'rgba(3,9,20,0.82)', pointerEvents: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      />
+    <div
+      className="absolute inset-0"
+      style={{
+        background: rect ? 'transparent' : 'rgba(3,9,20,0.82)',
+        pointerEvents: 'auto'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    />
 
-      {/* Spotlight cutout — a transparent rect whose giant box-shadow dims
+    {/* Spotlight cutout — a transparent rect whose giant box-shadow dims
           everything around it, revealing the anchored element. */}
-      {rect ? (
-        <div
-          className="pointer-events-none absolute rounded-xl"
-          style={{
-            top: rect.top - PAD,
-            left: rect.left - PAD,
-            width: rect.width + PAD * 2,
-            height: rect.height + PAD * 2,
-            boxShadow: '0 0 0 9999px rgba(3,9,20,0.82)',
-            outline: '2px solid rgba(252,211,77,0.9)',
-            outlineOffset: '2px',
-            transition: 'top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease',
-          }}
-        />
-      ) : null}
+    {rect ? (<div
+      className="pointer-events-none absolute rounded-xl"
+      style={{
+        top: rect.top - PAD,
+        left: rect.left - PAD,
+        width: rect.width + PAD * 2,
+        height: rect.height + PAD * 2,
+        boxShadow: '0 0 0 9999px rgba(3,9,20,0.82)',
+        outline: '2px solid rgba(252,211,77,0.9)',
+        outlineOffset: '2px',
+        transition: 'top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease',
+      }}
+    />) : null}
 
-      {/* Step card */}
-      <div
-        className="absolute flex flex-col gap-3 rounded-2xl border border-amber-300/30 bg-gradient-to-b from-[#0c2c4d] to-[#071a30] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
-        style={{ ...cardStyle, pointerEvents: 'auto' }}
-      >
-        <div className="flex items-center gap-2">
+    {/* Step card */}
+    <div
+      className="absolute flex flex-col gap-3 rounded-2xl border border-amber-300/30 bg-gradient-to-b from-[#0c2c4d] to-[#071a30] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+      style={{
+        ...cardStyle,
+        pointerEvents: 'auto'
+      }}
+    >
+      <div className="flex items-center gap-2">
           <span className="text-[0.7rem] font-bold uppercase tracking-widest text-amber-300/70">
             {index + 1} / {steps.length}
           </span>
-        </div>
-        <h2 className="font-display text-2xl font-black leading-tight text-amber-200 drop-shadow">
-          {step.title}
-        </h2>
-        <div className="flex flex-col gap-2">
-          {step.body.map((p, i) => (
-            <p key={i} className="text-sm leading-relaxed text-white/85">
-              {p}
-            </p>
-          ))}
-        </div>
-        <div className="mt-1 flex items-center justify-between gap-3">
-          {!isLast ? (
-            <button
-              type="button"
-              onClick={finish}
-              className="text-sm font-semibold text-white/55 transition hover:text-white/80"
-            >
-              Skip
-            </button>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            onClick={next}
-            className="rounded-lg bg-gradient-to-b from-[#ffd96a] via-[#f4c23a] to-[#e09a17] px-5 py-2 font-display text-base font-black text-[#3a2406] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_0_#a86a0e] transition hover:brightness-110 active:translate-y-[1px]"
-          >
-            {step.cta}
-            {!isLast ? ' →' : ''}
-          </button>
-        </div>
+      </div>
+      <h2 className="font-display text-2xl font-black leading-tight text-amber-200 drop-shadow">
+        {step.title}
+      </h2>
+      <div className="flex flex-col gap-2">
+        {step.body.map((p, i) => (<p key={i} className="text-sm leading-relaxed text-white/85">
+          {p}
+        </p>))}
+      </div>
+      <div className="mt-1 flex items-center justify-between gap-3">
+        {!isLast ? (<button
+          type="button"
+          onClick={finish}
+          className="text-sm font-semibold text-white/55 transition hover:text-white/80"
+        >
+          Skip
+        </button>) : (<span/>)}
+        <button
+          type="button"
+          onClick={next}
+          className="rounded-lg bg-gradient-to-b from-[#ffd96a] via-[#f4c23a] to-[#e09a17] px-5 py-2 font-display text-base font-black text-[#3a2406] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_0_#a86a0e] transition hover:brightness-110 active:translate-y-[1px]"
+        >
+          {step.cta}
+          {!isLast ? ' →' : ''}
+        </button>
       </div>
     </div>
-  );
+  </div>);
 }

@@ -1,5 +1,5 @@
 import SidePanel from './SidePanel';
-import type { PlayerIdentity } from '../lib/identity';
+import type {PlayerIdentity} from '../lib/identity';
 
 interface PlayerSeat {
   identity: PlayerIdentity | null;
@@ -47,56 +47,48 @@ export default function BoardLayout({
   centerOverlay,
   backgroundImage,
 }: Props) {
-  return (
-    <main className="game-screen">
-      {backgroundImage && (
-        <>
-          <img
-            src={backgroundImage}
-            alt=""
-            className="game-background-image"
-            draggable={false}
-          />
-        </>
-      )}
-      <div className="game-background-tone" />
+  return (<main className="game-screen">
+    {backgroundImage && (<>
+      <img
+        src={backgroundImage}
+        alt=""
+        className="game-background-image"
+        draggable={false}
+      />
+    </>)}
+    <div className="game-background-tone"/>
 
-      <div className="game-content">
-        {header}
+    <div className="game-content">
+      {header}
 
-        <div className="game-stage">
-          <div className="game-mobile-players">
-            <SidePanel side="left" compact {...opponent} />
-            <SidePanel side="right" compact {...self} />
+      <div className="game-stage">
+        <div className="game-mobile-players">
+          <SidePanel side="left" compact {...opponent} />
+          <SidePanel side="right" compact {...self} />
+        </div>
+
+        <div className="game-side-slot game-side-slot--left">
+          <SidePanel side="left" {...opponent} />
+        </div>
+
+        <div className="game-board-column">
+          <div className="game-board-stage">
+            <div className="game-board-shell">{children}</div>
           </div>
 
-          <div className="game-side-slot game-side-slot--left">
-            <SidePanel side="left" {...opponent} />
-          </div>
+          {actionsOverlay && (<div className="game-actions-layer">
+            <div className="game-actions-inner">{actionsOverlay}</div>
+          </div>)}
 
-          <div className="game-board-column">
-            <div className="game-board-stage">
-              <div className="game-board-shell">{children}</div>
-            </div>
+          {centerOverlay && (<div className="game-center-layer">
+            <div className="game-center-inner">{centerOverlay}</div>
+          </div>)}
+        </div>
 
-            {actionsOverlay && (
-              <div className="game-actions-layer">
-                <div className="game-actions-inner">{actionsOverlay}</div>
-              </div>
-            )}
-
-            {centerOverlay && (
-              <div className="game-center-layer">
-                <div className="game-center-inner">{centerOverlay}</div>
-              </div>
-            )}
-          </div>
-
-          <div className="game-side-slot game-side-slot--right">
-            <SidePanel side="right" {...self} />
-          </div>
+        <div className="game-side-slot game-side-slot--right">
+          <SidePanel side="right" {...self} />
         </div>
       </div>
-    </main>
-  );
+    </div>
+  </main>);
 }

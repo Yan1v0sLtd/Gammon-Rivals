@@ -1,13 +1,9 @@
-import {
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import {type PointerEvent as ReactPointerEvent, useMemo, useRef, useState,} from 'react';
 
 interface Props {
   gameplayImage: string;
   metadata: string;
+
   onMetadataChange(next: string): void;
 }
 
@@ -24,6 +20,7 @@ interface TrayLine {
   top: number; // 0..1 of board height — top edge
   bottom: number; // 0..1 of board height — bottom edge
 }
+
 type Trays = Record<Owner, TrayLine>;
 
 const MIN_SPAN = 0.03; // keep at least a sliver of height so the line stays grabbable
@@ -31,20 +28,19 @@ const MIN_SPAN = 0.03; // keep at least a sliver of height so the line stays gra
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
+
 function isPair(value: unknown): value is [number, number] {
-  return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    typeof value[0] === 'number' &&
-    typeof value[1] === 'number'
-  );
+  return (Array.isArray(value) && value.length === 2 && typeof value[0] === 'number' && typeof value[1] === 'number');
 }
+
 function num(value: unknown): number | undefined {
   return typeof value === 'number' ? value : undefined;
 }
+
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
 }
+
 function round(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
@@ -64,7 +60,8 @@ function readTrays(metadata: string): Trays {
     try {
       const parsed = JSON.parse(metadata);
       if (isObject(parsed) && isObject(parsed.layout)) layout = parsed.layout as Record<string, unknown>;
-    } catch {
+    }
+    catch {
       layout = {};
     }
   }
@@ -91,14 +88,30 @@ function readTrays(metadata: string): Trays {
     const halfGap = (h * 0.22) / 2;
     void fL;
     derived = {
-      black: { x, top: topEdge + margin, bottom: mid - halfGap },
-      white: { x, top: mid + halfGap, bottom: bottomEdge - margin },
+      black: {
+        x,
+        top: topEdge + margin,
+        bottom: mid - halfGap
+      },
+      white: {
+        x,
+        top: mid + halfGap,
+        bottom: bottomEdge - margin
+      },
     };
   }
 
   const legacy: Trays = {
-    black: { x: 0.925, top: 0.145, bottom: 0.145 + 0.255 },
-    white: { x: 0.925, top: 0.61, bottom: 0.61 + 0.255 },
+    black: {
+      x: 0.925,
+      top: 0.145,
+      bottom: 0.145 + 0.255
+    },
+    white: {
+      x: 0.925,
+      top: 0.61,
+      bottom: 0.61 + 0.255
+    },
   };
 
   const lineFor = (owner: Owner): TrayLine => {
@@ -106,12 +119,19 @@ function readTrays(metadata: string): Trays {
     const top = num(layout[`${owner}OffTrayTopRatio`]);
     const height = num(layout[`${owner}OffTrayHeightRatio`]);
     if (x !== undefined && top !== undefined && height !== undefined) {
-      return { x, top, bottom: top + height };
+      return {
+        x,
+        top,
+        bottom: top + height
+      };
     }
     return derived ? derived[owner] : legacy[owner];
   };
 
-  return { white: lineFor('white'), black: lineFor('black') };
+  return {
+    white: lineFor('white'),
+    black: lineFor('black')
+  };
 }
 
 function writeTrays(metadata: string, trays: Trays): string {
@@ -119,13 +139,14 @@ function writeTrays(metadata: string, trays: Trays): string {
   if (metadata.trim()) {
     try {
       parsed = JSON.parse(metadata);
-    } catch {
+    }
+    catch {
       parsed = {};
     }
   }
   if (!isObject(parsed)) parsed = {};
   const root = parsed as Record<string, unknown>;
-  const layout = isObject(root.layout) ? { ...root.layout } : {};
+  const layout = isObject(root.layout) ? {...root.layout} : {};
   for (const owner of ['white', 'black'] as const) {
     const line = trays[owner];
     layout[`${owner}OffTrayXRatio`] = round(line.x);
@@ -137,11 +158,21 @@ function writeTrays(metadata: string, trays: Trays): string {
 }
 
 const TRAY_COLORS: Record<Owner, { color: string; label: string }> = {
-  white: { color: '#67e8f9', label: 'White tray' }, // cyan-300
-  black: { color: '#fda4af', label: 'Black tray' }, // rose-300
+  white: {
+    color: '#67e8f9',
+    label: 'White tray'
+  }, // cyan-300
+  black: {
+    color: '#fda4af',
+    label: 'Black tray'
+  }, // rose-300
 };
 
-export default function BearOffTraysField({ gameplayImage, metadata, onMetadataChange }: Props) {
+export default function BearOffTraysField({
+  gameplayImage,
+  metadata,
+  onMetadataChange
+}: Props) {
   const trays = useMemo(() => readTrays(metadata), [metadata]);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<HandleId | null>(null);
@@ -152,11 +183,13 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
 
   const moveHandle = (id: HandleId, x: number, y: number) => {
     const [owner, edge] = id.split('-') as [Owner, Edge];
-    const line = { ...trays[owner] };
+    const line = {...trays[owner]};
     line.x = x; // both dots of a tray share X — drag either to move the line
-    if (edge === 'top') line.top = Math.min(y, line.bottom - MIN_SPAN);
-    else line.bottom = Math.max(y, line.top + MIN_SPAN);
-    apply({ ...trays, [owner]: line });
+    if (edge === 'top') line.top = Math.min(y, line.bottom - MIN_SPAN); else line.bottom = Math.max(y, line.top + MIN_SPAN);
+    apply({
+      ...trays,
+      [owner]: line
+    });
   };
 
   const handlePointerDown = (id: HandleId) => (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -198,106 +231,98 @@ export default function BearOffTraysField({ gameplayImage, metadata, onMetadataC
         }}
         className="w-16 rounded border border-white/15 bg-black/30 px-1.5 py-1 text-right font-mono text-[11px] normal-case tracking-normal text-white/85 outline-none focus:border-amber-200/60"
       />
-    </label>
-  );
+    </label>);
 
   const trayRow = (owner: Owner) => {
     const palette = TRAY_COLORS[owner];
     const line = trays[owner];
-    const setLine = (patch: Partial<TrayLine>) => apply({ ...trays, [owner]: { ...line, ...patch } });
-    return (
-      <div key={owner} className="flex flex-wrap items-center gap-2">
-        <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: palette.color }} />
-        <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
-        {numberInput('X%', line.x, (x) => setLine({ x }))}
-        {numberInput('Top%', line.top, (top) => setLine({ top: Math.min(top, line.bottom - MIN_SPAN) }))}
-        {numberInput('Bottom%', line.bottom, (bottom) => setLine({ bottom: Math.max(bottom, line.top + MIN_SPAN) }))}
-      </div>
-    );
+    const setLine = (patch: Partial<TrayLine>) => apply({
+      ...trays,
+      [owner]: {...line, ...patch}
+    });
+    return (<div key={owner} className="flex flex-wrap items-center gap-2">
+      <span className="inline-block h-2 w-2 rounded-full" style={{backgroundColor: palette.color}}/>
+      <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
+      {numberInput('X%', line.x, (x) => setLine({x}))}
+      {numberInput('Top%', line.top, (top) => setLine({top: Math.min(top, line.bottom - MIN_SPAN)}))}
+      {numberInput('Bottom%', line.bottom, (bottom) => setLine({bottom: Math.max(bottom, line.top + MIN_SPAN)}))}
+    </div>);
   };
 
-  return (
-    <div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-      <div className="mb-1.5 flex items-center justify-between">
-        <span>Bear-off trays</span>
-        <span className="text-[10px] normal-case tracking-normal text-white/35">
+  return (<div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+    <div className="mb-1.5 flex items-center justify-between">
+      <span>Bear-off trays</span>
+      <span className="text-[10px] normal-case tracking-normal text-white/35">
           Drag each tray’s top &amp; bottom dots onto its slot — white &amp; black are independent
         </span>
-      </div>
-      {/* GAMEPLAY projection: 4:3 (matching .game-board-column) with the
+    </div>
+    {/* GAMEPLAY projection: 4:3 (matching .game-board-column) with the
           image stretched to fill, exactly as BoardCanvas renders it in a
           match — same rule as FeltCornersField / BoardPreview. Dragging
           trays on any other projection lies to the operator whenever the
           upload isn't exactly 4:3. */}
-      <div
-        ref={wrapRef}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{ aspectRatio: '4 / 3', touchAction: 'none' }}
-        className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
+    <div
+      ref={wrapRef}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      style={{
+        aspectRatio: '4 / 3',
+        touchAction: 'none'
+      }}
+      className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
+    >
+      {gameplayImage ? (<img
+        src={gameplayImage}
+        alt=""
+        className="absolute inset-0 h-full w-full"
+        draggable={false}
+      />) : (<div
+        className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
+        Upload the Gameplay image above to position the bear-off trays.
+      </div>)}
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="pointer-events-none absolute inset-0 h-full w-full"
       >
-        {gameplayImage ? (
-          <img
-            src={gameplayImage}
-            alt=""
-            className="absolute inset-0 h-full w-full"
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
-            Upload the Gameplay image above to position the bear-off trays.
-          </div>
-        )}
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 h-full w-full"
-        >
-          {(['white', 'black'] as const).map((owner) => {
-            const line = trays[owner];
-            return (
-              <line
-                key={owner}
-                x1={line.x * 100}
-                y1={line.top * 100}
-                x2={line.x * 100}
-                y2={line.bottom * 100}
-                stroke={TRAY_COLORS[owner].color}
-                strokeWidth={0.5}
-                strokeOpacity={0.85}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
-        </svg>
-        {(['white', 'black'] as const).flatMap((owner) =>
-          (['top', 'bottom'] as const).map((edge) => {
-            const id: HandleId = `${owner}-${edge}`;
-            const line = trays[owner];
-            const y = edge === 'top' ? line.top : line.bottom;
-            return (
-              <Handle
-                key={id}
-                xPct={line.x * 100}
-                yPct={y * 100}
-                color={TRAY_COLORS[owner].color}
-                title={`${TRAY_COLORS[owner].label} ${edge}`}
-                active={hover === id || dragging === id}
-                onPointerDown={handlePointerDown(id)}
-                onPointerEnter={() => setHover(id)}
-                onPointerLeave={() => setHover(null)}
-              />
-            );
-          })
-        )}
-      </div>
-      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {trayRow('black')}
-        {trayRow('white')}
-      </div>
+        {(['white', 'black'] as const).map((owner) => {
+          const line = trays[owner];
+          return (<line
+            key={owner}
+            x1={line.x * 100}
+            y1={line.top * 100}
+            x2={line.x * 100}
+            y2={line.bottom * 100}
+            stroke={TRAY_COLORS[owner].color}
+            strokeWidth={0.5}
+            strokeOpacity={0.85}
+            vectorEffect="non-scaling-stroke"
+          />);
+        })}
+      </svg>
+      {(['white', 'black'] as const).flatMap((owner) => (['top', 'bottom'] as const).map((edge) => {
+        const id: HandleId = `${owner}-${edge}`;
+        const line = trays[owner];
+        const y = edge === 'top' ? line.top : line.bottom;
+        return (<Handle
+          key={id}
+          xPct={line.x * 100}
+          yPct={y * 100}
+          color={TRAY_COLORS[owner].color}
+          title={`${TRAY_COLORS[owner].label} ${edge}`}
+          active={hover === id || dragging === id}
+          onPointerDown={handlePointerDown(id)}
+          onPointerEnter={() => setHover(id)}
+          onPointerLeave={() => setHover(null)}
+        />);
+      }))}
     </div>
-  );
+    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {trayRow('black')}
+      {trayRow('white')}
+    </div>
+  </div>);
 }
 
 interface HandleProps {
@@ -306,28 +331,36 @@ interface HandleProps {
   color: string;
   title: string;
   active: boolean;
+
   onPointerDown(event: ReactPointerEvent<HTMLDivElement>): void;
+
   onPointerEnter(): void;
+
   onPointerLeave(): void;
 }
 
-function Handle({ xPct, yPct, color, title, active, onPointerDown, onPointerEnter, onPointerLeave }: HandleProps) {
-  return (
-    <div
-      onPointerDown={onPointerDown}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
-      title={title}
-      style={{
-        left: `${xPct}%`,
-        top: `${yPct}%`,
-        touchAction: 'none',
-        backgroundColor: color,
-        borderColor: color,
-      }}
-      className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${
-        active ? 'scale-150' : 'scale-100'
-      }`}
-    />
-  );
+function Handle({
+  xPct,
+  yPct,
+  color,
+  title,
+  active,
+  onPointerDown,
+  onPointerEnter,
+  onPointerLeave
+}: HandleProps) {
+  return (<div
+    onPointerDown={onPointerDown}
+    onPointerEnter={onPointerEnter}
+    onPointerLeave={onPointerLeave}
+    title={title}
+    style={{
+      left: `${xPct}%`,
+      top: `${yPct}%`,
+      touchAction: 'none',
+      backgroundColor: color,
+      borderColor: color,
+    }}
+    className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${active ? 'scale-150' : 'scale-100'}`}
+  />);
 }

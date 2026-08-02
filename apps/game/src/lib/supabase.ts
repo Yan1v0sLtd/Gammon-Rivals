@@ -1,18 +1,18 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../../../packages/shared/src/database';
+import {createClient, type SupabaseClient} from '@supabase/supabase-js';
+import type {Database} from '../../../../packages/shared/src/database';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const missingConfigMessage =
-  'Supabase is not configured. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use auth, profiles, online play, lobby, and replays.';
+const missingConfigMessage = 'Supabase is not configured. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use auth, profiles, online play, lobby, and replays.';
 
 type StorageValueKind = 'guest-session' | 'persistent-session' | 'other';
 
 function readStorage(storage: Storage, key: string): string | null {
   try {
     return storage.getItem(key);
-  } catch {
+  }
+  catch {
     return null;
   }
 }
@@ -20,7 +20,8 @@ function readStorage(storage: Storage, key: string): string | null {
 function writeStorage(storage: Storage, key: string, value: string): void {
   try {
     storage.setItem(key, value);
-  } catch {
+  }
+  catch {
     // Storage can be blocked in private modes. Supabase will still keep the
     // in-memory session for the current page lifetime.
   }
@@ -29,7 +30,8 @@ function writeStorage(storage: Storage, key: string, value: string): void {
 function removeStorage(storage: Storage, key: string): void {
   try {
     storage.removeItem(key);
-  } catch {
+  }
+  catch {
     // Best-effort cleanup.
   }
 }
@@ -45,13 +47,11 @@ function classifySupabaseStorageValue(value: string): StorageValueKind {
       session?: { user?: { is_anonymous?: boolean } };
       user?: { is_anonymous?: boolean };
     };
-    const user =
-      parsed.currentSession?.user ??
-      parsed.session?.user ??
-      parsed.user;
+    const user = parsed.currentSession?.user ?? parsed.session?.user ?? parsed.user;
     if (!user) return 'other';
     return user.is_anonymous ? 'guest-session' : 'persistent-session';
-  } catch {
+  }
+  catch {
     return 'other';
   }
 }
@@ -130,26 +130,21 @@ function createHybridAuthStorage() {
 }
 
 function createMissingSupabaseClient(): SupabaseClient<Database> {
-  return new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(missingConfigMessage);
-      },
-    }
-  ) as SupabaseClient<Database>;
+  return new Proxy({}, {
+    get() {
+      throw new Error(missingConfigMessage);
+    },
+  }) as SupabaseClient<Database>;
 }
 
 export const isSupabaseConfigured = Boolean(url && key);
 
-export const supabase: SupabaseClient<Database> = isSupabaseConfigured
-  ? createClient<Database>(url, key, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-        flowType: 'pkce',
-        storage: createHybridAuthStorage(),
-      },
-    })
-  : createMissingSupabaseClient();
+export const supabase: SupabaseClient<Database> = isSupabaseConfigured ? createClient<Database>(url, key, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+    flowType: 'pkce',
+    storage: createHybridAuthStorage(),
+  },
+}) : createMissingSupabaseClient();

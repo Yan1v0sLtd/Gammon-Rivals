@@ -151,6 +151,6 @@ export interface Theme {
    *  when omitted.
    *
    *  Sourced from board_theme_configs.dice_image (see
-   *  apps/game/src/board/theme/remote.ts → themeFromBoardConfig). */
+   *  apps/game/src/features/lobby/boardTheme.ts). */
   readonly diceImage?: string;
 }

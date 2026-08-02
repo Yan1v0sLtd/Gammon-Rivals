@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../lib/auth';
+import {useEffect, useState} from 'react';
+import {useAppDispatch, useAppSelector} from '../store/hooks';
+import {selectActiveXpBoost} from '../features/auth/authSelectors';
+import {authRefreshRequested} from '../features/auth/authActions';
 
 /**
  * Formats milliseconds-remaining into the most useful coarse unit.
@@ -40,7 +42,8 @@ function pickInterval(ms: number): number {
 }
 
 export function XpBoostBadge() {
-  const { activeXpBoost, refreshXpBoost } = useAuth();
+  const activeXpBoost = useAppSelector(selectActiveXpBoost);
+  const dispatch = useAppDispatch();
   const expiresAtMs = activeXpBoost ? new Date(activeXpBoost.expiresAt).getTime() : 0;
   const [now, setNow] = useState(() => Date.now());
 
@@ -54,27 +57,25 @@ export function XpBoostBadge() {
       // Already expired — clear it from auth context. Server-side, the
       // multiplier is already gone (current_xp_multiplier filters by
       // expires_at > now()), so this is purely a UI refresh.
-      void refreshXpBoost();
+      dispatch(authRefreshRequested({scope: 'xpBoost'}));
       return;
     }
     const interval = pickInterval(remaining);
     const handle = window.setInterval(() => setNow(Date.now()), interval);
     return () => window.clearInterval(handle);
-  }, [activeXpBoost, expiresAtMs, refreshXpBoost]);
+  }, [activeXpBoost, expiresAtMs, dispatch]);
 
   if (!activeXpBoost) return null;
   const remaining = expiresAtMs - now;
   if (remaining <= 0) return null;
 
-  return (
-    <span
-      title={`Active XP boost expires ${new Date(activeXpBoost.expiresAt).toLocaleString()}`}
-      className="inline-flex items-center gap-1 rounded-full border border-violet-400/60 bg-gradient-to-b from-[#7c3aed]/85 to-[#4c1d95]/95 px-2 py-0.5 text-[0.62rem] font-black uppercase tracking-wider text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_4px_rgba(0,0,0,0.45)]"
-    >
+  return (<span
+    title={`Active XP boost expires ${new Date(activeXpBoost.expiresAt).toLocaleString()}`}
+    className="inline-flex items-center gap-1 rounded-full border border-violet-400/60 bg-gradient-to-b from-[#7c3aed]/85 to-[#4c1d95]/95 px-2 py-0.5 text-[0.62rem] font-black uppercase tracking-wider text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_4px_rgba(0,0,0,0.45)]"
+  >
       <span className="text-amber-300">×{activeXpBoost.multiplier}</span>
       <span className="text-white/80">XP</span>
       <span aria-hidden="true" className="text-amber-300/70">·</span>
       <span className="tabular-nums text-white/90">{formatRemaining(remaining)}</span>
-    </span>
-  );
+    </span>);
 }

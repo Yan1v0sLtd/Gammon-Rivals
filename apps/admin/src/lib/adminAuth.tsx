@@ -1,15 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { adminSupabase, isAdminSupabaseConfigured } from './adminSupabase';
-import type { Database } from '../../../../packages/shared/src/database';
+import {createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState,} from 'react';
+import type {Session, User} from '@supabase/supabase-js';
+import {adminSupabase, isAdminSupabaseConfigured} from './adminSupabase';
+import type {Database} from '../../../../packages/shared/src/database';
 
 /**
  * Auth context for the Back Office. Mirrors the shape of the game's
@@ -36,17 +28,19 @@ export interface AdminAuthContextValue {
   readonly isLoading: boolean;
   readonly canManage: boolean;
   readonly isReady: boolean;
+
   signInWithGoogle(): Promise<void>;
+
   signOut(): Promise<void>;
+
   refresh(): Promise<void>;
 }
 
-const missingConfigMessage =
-  'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office.';
+const missingConfigMessage = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office.';
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
 
-export function AdminAuthProvider({ children }: { children: ReactNode }) {
+export function AdminAuthProvider({children}: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [role, setRole] = useState<AdminRole | null>(null);
@@ -54,10 +48,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfileAndRole = useCallback(async (userId: string) => {
     if (!isAdminSupabaseConfigured) return;
-    const [profileRes, roleRes] = await Promise.all([
-      adminSupabase.from('profiles').select('*').eq('id', userId).maybeSingle(),
-      adminSupabase.from('admin_roles').select('role').eq('profile_id', userId).maybeSingle(),
-    ]);
+    const [profileRes, roleRes] = await Promise.all([adminSupabase.from('profiles').select('*').eq('id', userId).maybeSingle(), adminSupabase.from('admin_roles').select('role').eq('profile_id', userId).maybeSingle(),]);
     if (profileRes.error) {
       console.warn('admin profile fetch error', profileRes.error);
     }
@@ -77,7 +68,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     // placeholder.
     let lastFetchedUserId: string | null = null;
     (async () => {
-      const { data } = await adminSupabase.auth.getSession();
+      const {data} = await adminSupabase.auth.getSession();
       if (cancelled) return;
       setSession(data.session);
       if (data.session?.user) {
@@ -88,13 +79,14 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     })();
 
-    const { data: sub } = adminSupabase.auth.onAuthStateChange((_event, s) => {
+    const {data: sub} = adminSupabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       const nextUserId = s?.user?.id ?? null;
       if (nextUserId && nextUserId !== lastFetchedUserId) {
         lastFetchedUserId = nextUserId;
         void fetchProfileAndRole(nextUserId);
-      } else if (!nextUserId) {
+      }
+      else if (!nextUserId) {
         lastFetchedUserId = null;
         setProfile(null);
         setRole(null);
@@ -110,11 +102,14 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     if (!isAdminSupabaseConfigured) throw new Error(missingConfigMessage);
     const redirectTo = `${window.location.origin}/auth/callback`;
-    const { data, error } = await adminSupabase.auth.signInWithOAuth({
+    const {
+      data,
+      error
+    } = await adminSupabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: { prompt: 'select_account' },
+        queryParams: {prompt: 'select_account'},
         skipBrowserRedirect: true,
       },
     });
@@ -133,21 +128,18 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     await fetchProfileAndRole(session.user.id);
   }, [session, fetchProfileAndRole]);
 
-  const value = useMemo<AdminAuthContextValue>(
-    () => ({
-      session,
-      user: session?.user ?? null,
-      profile,
-      role,
-      isLoading,
-      canManage: role === 'owner' || role === 'admin',
-      isReady: !isLoading,
-      signInWithGoogle,
-      signOut,
-      refresh,
-    }),
-    [session, profile, role, isLoading, signInWithGoogle, signOut, refresh]
-  );
+  const value = useMemo<AdminAuthContextValue>(() => ({
+    session,
+    user: session?.user ?? null,
+    profile,
+    role,
+    isLoading,
+    canManage: role === 'owner' || role === 'admin',
+    isReady: !isLoading,
+    signInWithGoogle,
+    signOut,
+    refresh,
+  }), [session, profile, role, isLoading, signInWithGoogle, signOut, refresh]);
 
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }

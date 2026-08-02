@@ -15,41 +15,27 @@ export interface TourStep {
 
 // Ordered. Anchors map to live hooks: the currency pills in LobbyTopBar carry
 // data-fly-target; the board carousel's PLAY button carries data-tour="play".
-export const ONBOARDING_STEPS: readonly TourStep[] = [
-  {
-    id: 'welcome',
-    title: 'Welcome to Gammon Rivals',
-    body: [
-      'Master the board, challenge rivals worldwide, and rise through the ranks.',
-      "Let's take a quick tour before your first match.",
-    ],
-    cta: "Let's Go",
-  },
-  {
-    id: 'gold',
-    anchor: '[data-fly-target="coins"]',
-    title: 'Gold',
-    body: [
-      'Gold is used to enter matches and compete for bigger rewards.',
-      'Win games and unlock higher stakes competition.',
-    ],
-    cta: 'Next',
-  },
-  {
-    id: 'gems',
-    anchor: '[data-fly-target="gems"]',
-    title: 'Gems',
-    body: [
-      'Gems unlock exclusive boards and premium content.',
-      'Earn them through Daily Missions, bonuses, events, and special sales in the Shop.',
-    ],
-    cta: 'Next',
-  },
-  {
-    id: 'play',
-    anchor: '[data-tour="play"]',
-    title: 'Your First Match Awaits',
-    body: ['Choose a board and tap Play to enter the arena.'],
-    cta: "Let's Play!",
-  },
-];
+export const ONBOARDING_STEPS: readonly TourStep[] = [{
+  id: 'welcome',
+  title: 'Welcome to Gammon Rivals',
+  body: ['Master the board, challenge rivals worldwide, and rise through the ranks.', "Let's take a quick tour before your first match.",],
+  cta: "Let's Go",
+}, {
+  id: 'gold',
+  anchor: '[data-fly-target="coins"]',
+  title: 'Gold',
+  body: ['Gold is used to enter matches and compete for bigger rewards.', 'Win games and unlock higher stakes competition.',],
+  cta: 'Next',
+}, {
+  id: 'gems',
+  anchor: '[data-fly-target="gems"]',
+  title: 'Gems',
+  body: ['Gems unlock exclusive boards and premium content.', 'Earn them through Daily Missions, bonuses, events, and special sales in the Shop.',],
+  cta: 'Next',
+}, {
+  id: 'play',
+  anchor: '[data-tour="play"]',
+  title: 'Your First Match Awaits',
+  body: ['Choose a board and tap Play to enter the arena.'],
+  cta: "Let's Play!",
+},];

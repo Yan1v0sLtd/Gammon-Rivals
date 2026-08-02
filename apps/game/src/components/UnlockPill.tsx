@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react';
+import {type CSSProperties, useId} from 'react';
 
 /**
  * Locked-content pill — collapsed it's a round gold-rimmed badge
@@ -52,40 +52,36 @@ export function UnlockPill({
   const isExpanded = mode === 'expand' && open;
   const expandText = text ?? (level != null ? `Reach level ${level} to unlock` : '');
 
-  return (
-    <div className={`gr-unlock-wrap ${wrapClassName}`} style={wrapStyle}>
-      <button
-        type="button"
-        className={`gr-unlock-pill ${isExpanded ? 'is-open' : ''}`}
-        aria-label={isExpanded ? expandText : ariaLabel}
-        onPointerDown={(e) => e.stopPropagation()}
-        onPointerUp={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-        onTouchEnd={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          onOpen();
-        }}
-        style={{ touchAction: 'manipulation' }}
-      >
+  return (<div className={`gr-unlock-wrap ${wrapClassName}`} style={wrapStyle}>
+    <button
+      type="button"
+      className={`gr-unlock-pill ${isExpanded ? 'is-open' : ''}`}
+      aria-label={isExpanded ? expandText : ariaLabel}
+      onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      style={{touchAction: 'manipulation'}}
+    >
         <span className="gr-unlock-icon" aria-hidden="true">
-          {variant === 'gem' ? (
-            <img src="/lobby/carousel/gem.webp" alt="" draggable={false} />
-          ) : (
+          {variant === 'gem' ? (<img src="/lobby/carousel/gem.webp" alt="" draggable={false}/>) : (
             <svg viewBox="0 0 24 24" fill={`url(#${gradientId})`} aria-hidden="true">
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fff2a2" />
-                  <stop offset="45%" stopColor="#f3c14c" />
-                  <stop offset="100%" stopColor="#b97918" />
+                  <stop offset="0%" stopColor="#fff2a2"/>
+                  <stop offset="45%" stopColor="#f3c14c"/>
+                  <stop offset="100%" stopColor="#b97918"/>
                 </linearGradient>
               </defs>
-              <path d="M12 1.5a5 5 0 0 0-5 5V10H6.5A2.5 2.5 0 0 0 4 12.5v8A2.5 2.5 0 0 0 6.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 10H17V6.5a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3V10H9V6.5a3 3 0 0 1 3-3zm0 11a2 2 0 0 1 .8 3.83V20.5a.8.8 0 0 1-1.6 0v-2.17A2 2 0 0 1 12 14.5z" />
-            </svg>
-          )}
+              <path
+                d="M12 1.5a5 5 0 0 0-5 5V10H6.5A2.5 2.5 0 0 0 4 12.5v8A2.5 2.5 0 0 0 6.5 23h11a2.5 2.5 0 0 0 2.5-2.5v-8A2.5 2.5 0 0 0 17.5 10H17V6.5a5 5 0 0 0-5-5zm0 2a3 3 0 0 1 3 3V10H9V6.5a3 3 0 0 1 3-3zm0 11a2 2 0 0 1 .8 3.83V20.5a.8.8 0 0 1-1.6 0v-2.17A2 2 0 0 1 12 14.5z"/>
+            </svg>)}
         </span>
-        {mode === 'expand' ? <span className="gr-unlock-text">{expandText}</span> : null}
-      </button>
-    </div>
-  );
+      {mode === 'expand' ? <span className="gr-unlock-text">{expandText}</span> : null}
+    </button>
+  </div>);
 }

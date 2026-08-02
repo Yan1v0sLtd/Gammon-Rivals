@@ -1,4 +1,4 @@
-import type { BillingService, BillingOutcome } from './types';
+import type {BillingOutcome, BillingService} from './types';
 
 /** Web billing is unavailable; operator grants belong to the Back Office. */
 export class MockBillingService implements BillingService {

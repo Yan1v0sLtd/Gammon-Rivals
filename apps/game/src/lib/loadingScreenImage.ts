@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from './supabase';
+import {isSupabaseConfigured, supabase} from './supabase';
 
 /**
  * BO-managed loading-screen art (see the `loading_screen_images` table —
@@ -25,7 +25,8 @@ const CACHE_KEY = 'gr-loading-screen-url';
 export function getLoadingScreenImage(): string {
   try {
     return window.localStorage.getItem(CACHE_KEY) || FALLBACK_URL;
-  } catch {
+  }
+  catch {
     return FALLBACK_URL;
   }
 }
@@ -41,10 +42,13 @@ export function refreshLoadingScreenImage(): void {
     .from('loading_screen_images')
     .select('image_url')
     .eq('is_active', true)
-    .order('sort_order', { ascending: false })
+    .order('sort_order', {ascending: false})
     .limit(1)
     .maybeSingle()
-    .then(({ data, error }) => {
+    .then(({
+      data,
+      error
+    }) => {
       if (error || !data?.image_url) return;
       const url = data.image_url;
       if (url === getLoadingScreenImage()) return;
@@ -55,7 +59,8 @@ export function refreshLoadingScreenImage(): void {
       img.onload = () => {
         try {
           window.localStorage.setItem(CACHE_KEY, url);
-        } catch {
+        }
+        catch {
           // Storage full/blocked — keep using the previous art.
         }
       };

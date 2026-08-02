@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import {useEffect, useRef} from 'react';
 
 interface Beam {
   angle: number;
@@ -42,9 +42,7 @@ export function Sunbeam() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const reduceMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     let beams: Beam[] = [];
     let rafId = 0;
@@ -172,5 +170,5 @@ export function Sunbeam() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="lobby-sunbeam-canvas" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className="lobby-sunbeam-canvas" aria-hidden="true"/>;
 }

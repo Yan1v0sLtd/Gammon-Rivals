@@ -1,7 +1,7 @@
 /**
  * The player's currently-selected board id, persisted client-side.
  *
- * Board theme is a PER-CLIENT cosmetic (see {@link useBoardThemeConfig}) — it
+ * Board theme is a PER-CLIENT cosmetic (see features/lobby/boardTheme) — it
  * is never stored on the match row. The lobby writes the player's pick here;
  * match screens that are reached WITHOUT a `?board=` URL param (invite links,
  * public/queue matches, cold loads) read it back so the player still sees
@@ -16,7 +16,8 @@ export function getPersistedBoardId(): string | null {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
     return value && value.trim() ? value.trim() : null;
-  } catch {
+  }
+  catch {
     // Storage unavailable (private mode / SSR / sandbox) — non-fatal.
     return null;
   }
@@ -26,7 +27,8 @@ export function setPersistedBoardId(id: string | null | undefined): void {
   try {
     // Never clobber a real stored pick with an empty/placeholder value.
     if (id && id.trim()) localStorage.setItem(STORAGE_KEY, id.trim());
-  } catch {
+  }
+  catch {
     // Storage unavailable — non-fatal.
   }
 }

@@ -1,18 +1,10 @@
-import {
-  Application,
-  Container,
-  FillGradient,
-  Graphics,
-  Sprite,
-  TilingSprite,
-  Texture,
-} from 'pixi.js';
-import { BAR, OFF } from '../../../engine/src/types';
-import type { BoardState, Player, Position } from '../../../engine/src/types';
-import { checkerCenter, computeLayout, pointCoords, type Layout } from '../coordinates';
-import { computeHitRects } from '../hit-areas';
-import type { LoadedTheme } from '../theme/loader';
-import type { ThemeAssetKey, ThemeColors, ThemeLayout } from '../theme/types';
+import {Application, Container, FillGradient, Graphics, Sprite, Texture, TilingSprite,} from 'pixi.js';
+import type {BoardState, Player, Position} from '../../../engine/src/types';
+import {BAR, OFF} from '../../../engine/src/types';
+import {checkerCenter, computeLayout, type Layout, pointCoords} from '../coordinates';
+import {computeHitRects} from '../hit-areas';
+import type {LoadedTheme} from '../theme/loader';
+import type {ThemeAssetKey, ThemeColors, ThemeLayout} from '../theme/types';
 
 export interface RenderSelection {
   readonly selectedFrom: Position | null;
@@ -138,7 +130,8 @@ export class BoardRenderer {
     const hasBoardTexture = Boolean(this.texture('board'));
     if (hasBoardTexture) {
       this.drawBoardTexture();
-    } else {
+    }
+    else {
       this.drawFrame();
       this.drawRails();
       this.drawFelt();
@@ -150,7 +143,8 @@ export class BoardRenderer {
     const dealAnimation = this.currentDealAnimation();
     if (dealAnimation) {
       this.drawDealCheckers(dealAnimation);
-    } else {
+    }
+    else {
       this.drawCheckers(state, animation?.skip ?? null);
     }
     this.drawBarCheckers(state, animation?.skip ?? null);
@@ -174,7 +168,7 @@ export class BoardRenderer {
   private clearRoot() {
     const children = this.root.removeChildren();
     for (const child of children) {
-      child.destroy({ children: true, texture: false, textureSource: false });
+      child.destroy({children: true, texture: false, textureSource: false});
     }
   }
 
@@ -236,7 +230,7 @@ export class BoardRenderer {
       const point = state.points[pos];
       if (!point || !point.owner || point.count <= 0) continue;
       stacks.push(
-        Array.from({ length: point.count }, (_, stackIndex) => ({
+        Array.from({length: point.count}, (_, stackIndex) => ({
           owner: point.owner!,
           pos,
           stackIndex,
@@ -290,7 +284,7 @@ export class BoardRenderer {
   private detectMoveAnimation(previous: BoardState, next: BoardState): MoveAnimation | null {
     const owner = previous.turn;
     const positions: Position[] = [
-      ...Array.from({ length: 24 }, (_, idx) => idx),
+      ...Array.from({length: 24}, (_, idx) => idx),
       BAR,
       OFF,
     ];
@@ -304,10 +298,12 @@ export class BoardRenderer {
       if (delta === -1) {
         if (from !== null) return null;
         from = pos;
-      } else if (delta === 1) {
+      }
+      else if (delta === 1) {
         if (to !== null) return null;
         to = pos;
-      } else if (delta !== 0) {
+      }
+      else if (delta !== 0) {
         return null;
       }
     }
@@ -322,7 +318,7 @@ export class BoardRenderer {
       owner,
       from: fromAnchor,
       to: toAnchor,
-      skip: to === BAR ? null : { pos: to, owner },
+      skip: to === BAR ? null : {pos: to, owner},
       start: performance.now(),
       duration: 340,
     };
@@ -354,14 +350,14 @@ export class BoardRenderer {
   }
 
   private barCheckerAnchor(owner: Player, stackIndex: number): { x: number; y: number } {
-    const { barX, barWidth, height, checkerRadius } = this.layout;
+    const {barX, barWidth, height, checkerRadius} = this.layout;
     const cx = barX + barWidth / 2;
     const diameter = 2 * checkerRadius;
     const cy =
       owner === 'white'
         ? height / 2 + checkerRadius + 6 + stackIndex * diameter
         : height / 2 - checkerRadius - 6 - stackIndex * diameter;
-    return { x: cx, y: cy };
+    return {x: cx, y: cy};
   }
 
   private offTrayMetrics(owner: Player) {
@@ -399,7 +395,7 @@ export class BoardRenderer {
   }
 
   private offCheckerAnchor(owner: Player, stackIndex = 0): { x: number; y: number } {
-    const { checkerRadius } = this.layout;
+    const {checkerRadius} = this.layout;
     const tray = this.offTrayMetrics(owner);
     const baseY =
       owner === 'black'
@@ -426,7 +422,7 @@ export class BoardRenderer {
   private drawBoardTexture() {
     const tex = this.texture('board');
     if (!tex) return;
-    const { width, height } = this.layout;
+    const {width, height} = this.layout;
     const sprite = new Sprite(tex);
     sprite.width = width;
     sprite.height = height;
@@ -459,18 +455,19 @@ export class BoardRenderer {
       const color = dark ? 0x000000 : 0xffffff;
 
       if (direction === 'horizontal') {
-        g.rect(x, y + offset, w, thickness).fill({ color, alpha });
-      } else {
-        g.rect(x + offset, y, thickness, h).fill({ color, alpha });
+        g.rect(x, y + offset, w, thickness).fill({color, alpha});
+      }
+      else {
+        g.rect(x + offset, y, thickness, h).fill({color, alpha});
       }
     }
   }
 
   private drawFrame() {
-    const { width, height } = this.layout;
+    const {width, height} = this.layout;
     const tex = this.texture('frame');
     if (tex) {
-      const sprite = new TilingSprite({ texture: tex, width, height });
+      const sprite = new TilingSprite({texture: tex, width, height});
       this.root.addChild(sprite);
       return;
     }
@@ -484,16 +481,16 @@ export class BoardRenderer {
     this.drawWoodGrain(g, 0, 0, width, height, 7919, 'horizontal');
 
     // Bevel highlights — top/bottom edges
-    g.rect(0, 0, width, 3).fill({ color: this.colors.frameBevel, alpha: 0.7 });
-    g.rect(0, height - 3, width, 3).fill({ color: 0x000000, alpha: 0.5 });
+    g.rect(0, 0, width, 3).fill({color: this.colors.frameBevel, alpha: 0.7});
+    g.rect(0, height - 3, width, 3).fill({color: 0x000000, alpha: 0.5});
     this.root.addChild(g);
   }
 
   private drawRails() {
-    const { width, height, railWidth } = this.layout;
+    const {width, height, railWidth} = this.layout;
     const tex = this.texture('rail');
     if (tex) {
-      const left = new TilingSprite({ texture: tex, width: railWidth, height });
+      const left = new TilingSprite({texture: tex, width: railWidth, height});
       const right = new TilingSprite({
         texture: tex,
         width: railWidth,
@@ -523,10 +520,10 @@ export class BoardRenderer {
   }
 
   private drawFelt() {
-    const { playLeft, playWidth, height } = this.layout;
+    const {playLeft, playWidth, height} = this.layout;
     const tex = this.texture('felt');
     if (tex) {
-      const sprite = new TilingSprite({ texture: tex, width: playWidth, height, x: playLeft });
+      const sprite = new TilingSprite({texture: tex, width: playWidth, height, x: playLeft});
       this.root.addChild(sprite);
       return;
     }
@@ -537,11 +534,11 @@ export class BoardRenderer {
     const edge = 14;
     const vigTop = new FillGradient(playLeft, 0, playLeft, edge);
     vigTop.addColorStop(0, this.colors.feltVignette);
-    vigTop.addColorStop(1, { r: 0, g: 0, b: 0, a: 0 });
+    vigTop.addColorStop(1, {r: 0, g: 0, b: 0, a: 0});
     g.rect(playLeft, 0, playWidth, edge).fill(vigTop);
 
     const vigBot = new FillGradient(playLeft, height - edge, playLeft, height);
-    vigBot.addColorStop(0, { r: 0, g: 0, b: 0, a: 0 });
+    vigBot.addColorStop(0, {r: 0, g: 0, b: 0, a: 0});
     vigBot.addColorStop(1, this.colors.feltVignette);
     g.rect(playLeft, height - edge, playWidth, edge).fill(vigBot);
 
@@ -550,13 +547,13 @@ export class BoardRenderer {
     g.rect(playLeft + playWidth, 0, 2, height).fill(this.colors.frameInnerEdge);
 
     // Bright gold bevel hairline on the felt side of the seam
-    g.rect(playLeft, 0, 1, height).fill({ color: this.colors.brass, alpha: 0.55 });
-    g.rect(playLeft + playWidth - 1, 0, 1, height).fill({ color: this.colors.brass, alpha: 0.55 });
+    g.rect(playLeft, 0, 1, height).fill({color: this.colors.brass, alpha: 0.55});
+    g.rect(playLeft + playWidth - 1, 0, 1, height).fill({color: this.colors.brass, alpha: 0.55});
     this.root.addChild(g);
   }
 
   private drawPoints() {
-    const { pointWidth, topPointHeight, bottomPointHeight } = this.layout;
+    const {pointWidth, topPointHeight, bottomPointHeight} = this.layout;
     const lightTex = this.texture('pointLight');
     const darkTex = this.texture('pointDark');
 
@@ -599,23 +596,23 @@ export class BoardRenderer {
         pos.x, tipY,
       ])
         .fill(grad)
-        .stroke({ color: this.colors.pointOutline, width: 1, alpha: 0.45 });
+        .stroke({color: this.colors.pointOutline, width: 1, alpha: 0.45});
 
       // Subtle inner highlight along the long edges of the triangle
       const edgeAlpha = isLight ? 0.25 : 0.15;
       const edgeColor = isLight ? 0xffffff : this.colors.brassDark;
       g.moveTo(pos.x - pointWidth / 2 + 1, pos.y)
         .lineTo(pos.x, tipY)
-        .stroke({ color: edgeColor, width: 1, alpha: edgeAlpha });
+        .stroke({color: edgeColor, width: 1, alpha: edgeAlpha});
       this.root.addChild(g);
     }
   }
 
   private drawBar() {
-    const { barX, barWidth, height } = this.layout;
+    const {barX, barWidth, height} = this.layout;
     const tex = this.texture('bar');
     if (tex) {
-      const sprite = new TilingSprite({ texture: tex, width: barWidth, height, x: barX });
+      const sprite = new TilingSprite({texture: tex, width: barWidth, height, x: barX});
       this.root.addChild(sprite);
       return;
     }
@@ -646,7 +643,7 @@ export class BoardRenderer {
   }
 
   private drawHinges() {
-    const { barX, barWidth, height } = this.layout;
+    const {barX, barWidth, height} = this.layout;
     const tex = this.texture('hinge');
     const cx = barX + barWidth / 2;
     const hingeW = barWidth * 1.6;
@@ -773,13 +770,14 @@ export class BoardRenderer {
         };
         halo(1.05, 0.14);
         halo(1.025, 0.18);
-      } else {
+      }
+      else {
         // Procedural fallback checker: the disc fills radius r exactly, so the
         // thin concentric-ellipse ring (only the part beyond r shows) is fine.
         const shadow = new Graphics();
         const ring = (grow: number, alpha: number) => {
           shadow.ellipse(x, y, r + grow, ry + grow);
-          shadow.fill({ color: 0x000000, alpha });
+          shadow.fill({color: 0x000000, alpha});
         };
         ring(0.6, 0.1);
         ring(0.4, 0.14);
@@ -808,7 +806,7 @@ export class BoardRenderer {
     const g = new Graphics();
     // Outer brass-toned rim
     g.circle(x, y, r).fill(this.colors.brass);
-    g.circle(x, y, r).stroke({ color: this.colors.brassDark, width: 1.5 });
+    g.circle(x, y, r).stroke({color: this.colors.brassDark, width: 1.5});
 
     // Inner rim layer (darker, 92% radius)
     g.circle(x, y, r * 0.92).fill(rim);
@@ -828,7 +826,7 @@ export class BoardRenderer {
     });
 
     // Center pip
-    g.circle(x, y, r * 0.1).fill({ color: rim, alpha: 0.8 });
+    g.circle(x, y, r * 0.1).fill({color: rim, alpha: 0.8});
 
     // Specular highlight top-left
     g.ellipse(x - r * 0.3, y - r * 0.3, r * 0.22, r * 0.16).fill({
@@ -848,11 +846,11 @@ export class BoardRenderer {
       state.bar.black - (skip?.pos === BAR && skip.owner === 'black' ? 1 : 0)
     );
     for (let n = 0; n < whiteCount; n++) {
-      const { x, y } = this.barCheckerAnchor('white', n);
+      const {x, y} = this.barCheckerAnchor('white', n);
       this.drawChecker(x, y, 'white');
     }
     for (let n = 0; n < blackCount; n++) {
-      const { x, y } = this.barCheckerAnchor('black', n);
+      const {x, y} = this.barCheckerAnchor('black', n);
       this.drawChecker(x, y, 'black');
     }
   }
@@ -886,16 +884,14 @@ export class BoardRenderer {
       state.off.white - (skip?.pos === OFF && skip.owner === 'white' ? 1 : 0)
     );
     for (let n = 0; n < blackCount; n++) {
-      const { x, y } = this.offCheckerAnchor('black', n);
+      const {x, y} = this.offCheckerAnchor('black', n);
       this.drawChecker(x, y, 'black');
     }
     for (let n = 0; n < whiteCount; n++) {
-      const { x, y } = this.offCheckerAnchor('white', n);
+      const {x, y} = this.offCheckerAnchor('white', n);
       this.drawChecker(x, y, 'white');
     }
   }
-
-  // ---------- Selection overlay ----------
 
   private drawSelectionOverlay(state: BoardState, selection: RenderSelection) {
     const {
@@ -925,7 +921,7 @@ export class BoardRenderer {
         state.turn === 'white'
           ? this.layout.height / 2 + r + 6
           : this.layout.height / 2 - r - 6;
-      return { x: cx, y: cy };
+      return {x: cx, y: cy};
     }
     if (pos === OFF) return null;
     const ppos = pointCoords(this.layout, pos);
@@ -951,7 +947,7 @@ export class BoardRenderer {
     if (!a) return;
     const r = this.layout.checkerRadius;
     const g = new Graphics();
-    g.circle(a.x, a.y, r * 1.18).stroke({ color: 0xffd34d, width: 2, alpha: 0.45 });
+    g.circle(a.x, a.y, r * 1.18).stroke({color: 0xffd34d, width: 2, alpha: 0.45});
     this.root.addChild(g);
   }
 
@@ -960,7 +956,7 @@ export class BoardRenderer {
     if (!a) return;
     const r = this.layout.checkerRadius;
     const g = new Graphics();
-    g.circle(a.x, a.y, r * 1.2).stroke({ color: 0xff5c5c, width: 2.5, alpha: 0.55 });
+    g.circle(a.x, a.y, r * 1.2).stroke({color: 0xff5c5c, width: 2.5, alpha: 0.55});
     this.root.addChild(g);
   }
 
@@ -969,8 +965,8 @@ export class BoardRenderer {
     if (!a) return;
     const r = this.layout.checkerRadius;
     const g = new Graphics();
-    g.circle(a.x, a.y, r * 0.98).fill({ color: 0xef4444, alpha: 0.22 });
-    g.circle(a.x, a.y, r * 1.08).stroke({ color: 0xff6b6b, width: 2.5, alpha: 0.9 });
+    g.circle(a.x, a.y, r * 0.98).fill({color: 0xef4444, alpha: 0.22});
+    g.circle(a.x, a.y, r * 1.08).stroke({color: 0xff6b6b, width: 2.5, alpha: 0.9});
     this.root.addChild(g);
   }
 
@@ -979,8 +975,8 @@ export class BoardRenderer {
     if (!a) return;
     const r = this.layout.checkerRadius;
     const g = new Graphics();
-    g.circle(a.x, a.y, r * 1.22).stroke({ color: 0xffe58a, width: 4, alpha: 0.95 });
-    g.circle(a.x, a.y, r * 1.05).stroke({ color: 0xfff2c2, width: 1.5, alpha: 0.7 });
+    g.circle(a.x, a.y, r * 1.22).stroke({color: 0xffe58a, width: 4, alpha: 0.95});
+    g.circle(a.x, a.y, r * 1.05).stroke({color: 0xfff2c2, width: 1.5, alpha: 0.7});
     this.root.addChild(g);
   }
 
@@ -989,8 +985,8 @@ export class BoardRenderer {
     if (!a) return;
     const r = this.layout.checkerRadius;
     const g = new Graphics();
-    g.circle(a.x, a.y, r * 0.95).fill({ color: 0x4ade80, alpha: 0.28 });
-    g.circle(a.x, a.y, r * 1.05).stroke({ color: 0x6ee7a3, width: 2.5, alpha: 0.9 });
+    g.circle(a.x, a.y, r * 0.95).fill({color: 0x4ade80, alpha: 0.28});
+    g.circle(a.x, a.y, r * 1.05).stroke({color: 0x6ee7a3, width: 2.5, alpha: 0.9});
     this.root.addChild(g);
   }
 
@@ -1021,12 +1017,12 @@ export class BoardRenderer {
 
       g.moveTo(pos.x, pos.y)
         .lineTo(pos.tipX, tipY)
-        .stroke({ color, width, alpha });
+        .stroke({color, width, alpha});
 
       g.circle(pos.x, pos.y, selected && debug.anchor === 'base' ? r * 0.22 : r * 0.13)
-        .fill({ color, alpha: selected && debug.anchor === 'base' ? 0.8 : 0.35 });
+        .fill({color, alpha: selected && debug.anchor === 'base' ? 0.8 : 0.35});
       g.circle(pos.tipX, tipY, selected && debug.anchor === 'tip' ? r * 0.22 : r * 0.13)
-        .fill({ color, alpha: selected && debug.anchor === 'tip' ? 0.8 : 0.35 });
+        .fill({color, alpha: selected && debug.anchor === 'tip' ? 0.8 : 0.35});
     }
 
     const selectedIdx = this.pointIndexForColumn(debug.side, activeColumn);
@@ -1044,10 +1040,10 @@ export class BoardRenderer {
       });
       g.moveTo(center.x - r * 0.24, center.y)
         .lineTo(center.x + r * 0.24, center.y)
-        .stroke({ color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8 });
+        .stroke({color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8});
       g.moveTo(center.x, center.y - r * 0.24)
         .lineTo(center.x, center.y + r * 0.24)
-        .stroke({ color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8 });
+        .stroke({color: activeTopChecker ? 0x7cff74 : 0xff4df3, width: 1.5, alpha: 0.8});
     }
 
     this.root.addChild(g);
@@ -1087,24 +1083,21 @@ export class BoardRenderer {
     this.root.addChild(g);
   }
 
-  // ---------- Hit areas ----------
-
   private drawHitAreas(state: BoardState) {
     const cb = this.onPointClick;
     if (!cb) return;
     void state;
 
-    // All hit-area math lives in packages/board-renderer/src/hit-areas.ts so the same
-    // function powers the Pixi renderer AND the test suite that
-    // simulates every point on every theme. If you're tempted to
-    // tweak this loop, edit the pure function instead so the tests
-    // catch regressions.
+    // All hit-area math lives in packages/board-renderer/src/hit-areas.ts as a pure
+    // function, kept separate from this imperative loop so it stays readable and
+    // reusable across themes/orientations. If you're tempted to tweak this loop,
+    // edit the pure function instead.
     const rects = computeHitRects(this.layout);
     for (const rect of rects) {
       const g = new Graphics();
       g
         .rect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
-        .fill({ color: 0xffffff, alpha: 0.001 });
+        .fill({color: 0xffffff, alpha: 0.001});
       g.eventMode = 'static';
       g.cursor = 'pointer';
       const target = rect.target;
@@ -1118,6 +1111,6 @@ export class BoardRenderer {
       cancelAnimationFrame(this.animationFrame);
       this.animationFrame = null;
     }
-    this.root.destroy({ children: true, texture: false, textureSource: false });
+    this.root.destroy({children: true, texture: false, textureSource: false});
   }
 }

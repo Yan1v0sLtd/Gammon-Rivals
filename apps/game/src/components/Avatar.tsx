@@ -1,4 +1,4 @@
-import { avatarUrl } from '../lib/identity';
+import {avatarUrl} from '../lib/identity';
 
 interface Props {
   /** The seed used to deterministically generate the avatar. */
@@ -34,25 +34,25 @@ export default function Avatar({
   className = '',
 }: Props) {
   const ringClass = RING_CLASS[ring];
-  return (
-    <div
-      className={`relative inline-block rounded-full overflow-visible ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <img
-        src={imageUrl || avatarUrl(seed, size * 2)}
-        alt=""
-        width={size}
-        height={size}
-        loading="lazy"
-        draggable={false}
-        className={`block w-full h-full rounded-full object-cover bg-amber-900/40 ${ringClass}`}
-      />
-      {badge !== undefined && (
-        <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-amber-700 text-amber-50 text-[10px] font-display tracking-wider border border-amber-900/80 shadow">
+  return (<div
+    className={`relative inline-block rounded-full overflow-visible ${className}`}
+    style={{
+      width: size,
+      height: size
+    }}
+  >
+    <img
+      src={imageUrl || avatarUrl(seed, size * 2)}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      draggable={false}
+      className={`block w-full h-full rounded-full object-cover bg-amber-900/40 ${ringClass}`}
+    />
+    {badge !== undefined && (<span
+      className="absolute -bottom-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-amber-700 text-amber-50 text-[10px] font-display tracking-wider border border-amber-900/80 shadow">
           {badge}
-        </span>
-      )}
-    </div>
-  );
+        </span>)}
+  </div>);
 }

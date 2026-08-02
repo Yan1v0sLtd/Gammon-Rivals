@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../lib/supabase';
-import { ModalCloseButton } from '../components/ModalCloseButton';
-import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
-import type { WheelSlot, WheelStateResult } from './useWheelState';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {extractErrorMessage} from '../../../../packages/shared/src/errors';
+import {useSpinWheelMutation} from '../features/lobby/lobbyApi';
+import type {WheelSlot} from '../features/lobby/lobbyData';
+import {ModalCloseButton} from '../components/ModalCloseButton';
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from './RewardFlight';
+import type {WheelStateResult} from './useWheelState';
 
 /**
  * spin_wheel returns a single object describing what the player won
@@ -16,14 +18,10 @@ interface SpinResult {
   readonly label: string | null;
   readonly accent_color: string;
   readonly primary_reward: {
-    readonly type: string;
-    readonly amount: number;
-    readonly icon_url: string | null;
+    readonly type: string; readonly amount: number; readonly icon_url: string | null;
   };
   readonly secondary_reward: {
-    readonly type: string;
-    readonly amount: number;
-    readonly icon_url: string | null;
+    readonly type: string; readonly amount: number; readonly icon_url: string | null;
   } | null;
   readonly credited_coins: number;
   readonly credited_gems: number;
@@ -97,53 +95,52 @@ function conicGradientFromSlots(slots: readonly WheelSlot[]): string {
  *  icon_url points at a (potentially missing) /lobby/icons/xp.webp.
  *  Keeps XP visuals consistent across the lobby. */
 function XpHex() {
-  return (
-    <svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden>
-      <defs>
-        <linearGradient id="wm-xp-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#581c87" />
-        </linearGradient>
-      </defs>
-      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#fbbf24" />
-      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#wm-xp-fill)" />
-      <text
-        x="50"
-        y="68"
-        textAnchor="middle"
-        fontFamily="system-ui, sans-serif"
-        fontWeight="900"
-        fontSize="34"
-        fill="white"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth="1"
-      >
-        XP
-      </text>
-    </svg>
-  );
+  return (<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden>
+    <defs>
+      <linearGradient id="wm-xp-fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#a855f7"/>
+        <stop offset="100%" stopColor="#581c87"/>
+      </linearGradient>
+    </defs>
+    <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#fbbf24"/>
+    <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#wm-xp-fill)"/>
+    <text
+      x="50"
+      y="68"
+      textAnchor="middle"
+      fontFamily="system-ui, sans-serif"
+      fontWeight="900"
+      fontSize="34"
+      fill="white"
+      stroke="rgba(0,0,0,0.35)"
+      strokeWidth="1"
+    >
+      XP
+    </text>
+  </svg>);
 }
 
 /** Render the slot's icon. For 'xp' rewards we always render the
  *  inline hex so the missing /lobby/icons/xp.webp doesn't show as
  *  a broken-image glyph. For other types we honour icon_url and
  *  fall back silently when it's blank. */
-function RewardIcon({ type, iconUrl }: { type: string; iconUrl: string | null }) {
-  if (type === 'xp') return <XpHex />;
+function RewardIcon({
+  type,
+  iconUrl
+}: { type: string; iconUrl: string | null }) {
+  if (type === 'xp') return <XpHex/>;
   if (iconUrl) {
-    return (
-      <img
-        src={iconUrl}
-        alt=""
-        draggable={false}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))',
-        }}
-      />
-    );
+    return (<img
+      src={iconUrl}
+      alt=""
+      draggable={false}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'contain',
+        filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.45))',
+      }}
+    />);
   }
   return null;
 }
@@ -156,10 +153,16 @@ function shortAmount(n: number): string {
   return String(n);
 }
 
-export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdated }: Props) {
+export function WheelModal({
+  wheel,
+  onClose,
+  onSpinComplete,
+  onProgressionUpdated
+}: Props) {
   const state = wheel.state;
   const slots = state?.slots ?? EMPTY_SLOTS;
 
+  const [spinWheel] = useSpinWheelMutation();
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'celebrating'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
@@ -184,15 +187,17 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
     const el = tickerRef.current;
     if (!el) return;
     el.getAnimations().forEach((a) => a.cancel());
-    el.animate(
-      [
-        { transform: 'translateX(-50%) rotate(0deg)' },
-        { transform: 'translateX(-50%) rotate(-10deg)', offset: 0.4 },
-        { transform: 'translateX(-50%) rotate(3deg)', offset: 0.75 },
-        { transform: 'translateX(-50%) rotate(0deg)' },
-      ],
-      { duration: 180, easing: 'ease-out', fill: 'forwards' }
-    );
+    el.animate([{transform: 'translateX(-50%) rotate(0deg)'}, {
+      transform: 'translateX(-50%) rotate(-10deg)',
+      offset: 0.4
+    }, {
+      transform: 'translateX(-50%) rotate(3deg)',
+      offset: 0.75
+    }, {transform: 'translateX(-50%) rotate(0deg)'},], {
+      duration: 180,
+      easing: 'ease-out',
+      fill: 'forwards'
+    });
   };
 
   // Stop the rAF loop if the modal unmounts mid-spin. Without this
@@ -257,15 +262,15 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
     setError(null);
     setPhase('spinning');
 
-    const { data, error: rpcErr } = await supabase.rpc('spin_wheel', {
-      p_config_id: state.config_id,
-    });
-    if (rpcErr) {
-      setError(spinErrorMessage(rpcErr.message));
+    let result: SpinResult;
+    try {
+      result = await spinWheel({configId: state.config_id}).unwrap();
+    }
+    catch (err) {
+      setError(spinErrorMessage(extractErrorMessage(err)));
       setPhase('idle');
       return;
     }
-    const result = data as unknown as SpinResult;
     setSpinResult(result);
 
     // Drive rotation manually via rAF so we can fire ticker kicks
@@ -302,7 +307,8 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
 
           if (t < 1) {
             rafIdRef.current = requestAnimationFrame(tick);
-          } else {
+          }
+          else {
             currentRotRef.current = endRot;
             rafIdRef.current = null;
             resolve();
@@ -407,10 +413,8 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
               borderRadius: '9999px',
               background: 'linear-gradient(180deg, #6d0808 0%, #3b0203 100%)',
               border: '3px solid #f6b52b',
-              boxShadow:
-                '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
-              color: '#ffd76b',
-              // Font + tracking shrink in lockstep with the plate.
+              boxShadow: '0 0 0 2px #7b3408, inset 0 4px 6px rgba(255,255,255,0.22), inset 0 -6px 10px rgba(0,0,0,0.5), 0 8px 18px rgba(0,0,0,0.45)',
+              color: '#ffd76b', // Font + tracking shrink in lockstep with the plate.
               fontSize: 'clamp(0.78rem, 2.2vmin, 1.2rem)',
               fontWeight: 900,
               letterSpacing: '0.08em',
@@ -442,21 +446,17 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
             phone. */}
         <div
           className="relative mt-3 sm:mt-5 lg:mt-8"
-          style={
-            {
-              // 1.13× wheel-d gives the gold ring room to breathe
-              // around the spinning disc.
-              width: `calc(${wheelDimension} * 1.13)`,
-              height: `calc(${wheelDimension} * 1.13)`,
-              padding: `calc(${wheelDimension} * 0.045)`,
-              borderRadius: '50%',
-              background:
-                'radial-gradient(circle at 35% 25%, #fff4a1 0%, #f8bf31 28%, #c46d0e 60%, #5a2407 100%)',
-              boxShadow:
-                'inset 0 0 0 5px #ffe178, inset 0 0 0 11px #9b4509, 0 14px 22px rgba(0,0,0,0.55), 0 0 30px rgba(255,180,45,0.4)',
-              ['--wheel-d' as never]: wheelDimension,
-            } as React.CSSProperties
-          }
+          style={{
+            // 1.13× wheel-d gives the gold ring room to breathe
+            // around the spinning disc.
+            width: `calc(${wheelDimension} * 1.13)`,
+            height: `calc(${wheelDimension} * 1.13)`,
+            padding: `calc(${wheelDimension} * 0.045)`,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 25%, #fff4a1 0%, #f8bf31 28%, #c46d0e 60%, #5a2407 100%)',
+            boxShadow: 'inset 0 0 0 5px #ffe178, inset 0 0 0 11px #9b4509, 0 14px 22px rgba(0,0,0,0.55), 0 0 30px rgba(255,180,45,0.4)',
+            ['--wheel-d' as never]: wheelDimension,
+          } as React.CSSProperties}
         >
           {/* Pointer — drop/teardrop shape copied from the user's
               reference SVG. Round bulb at the top + short tapered
@@ -500,9 +500,9 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
                 fill="#fcfcfc"
               />
               {/* Outer rivet — light grey ring (reference path #3). */}
-              <circle cx="50" cy="42" r="9" fill="#ccc" />
+              <circle cx="50" cy="42" r="9" fill="#ccc"/>
               {/* Inner rivet — darker grey centre (reference path #4). */}
-              <circle cx="50" cy="42" r="4.5" fill="#666" />
+              <circle cx="50" cy="42" r="4.5" fill="#666"/>
             </svg>
           </div>
 
@@ -541,27 +541,23 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
               pointerEvents: 'none',
             }}
           >
-            {Array.from({ length: SLOT_COUNT }).map((_, i) => (
-              <span
-                key={`tick-${i}`}
-                className="absolute"
-                style={{
-                  left: '50%',
-                  top: '50%',
-                  width: 'calc(var(--wheel-d) * 0.022)',
-                  height: 'calc(var(--wheel-d) * 0.055)',
-                  marginLeft: 'calc(var(--wheel-d) * -0.011)',
-                  marginTop: 'calc(var(--wheel-d) * -0.0275)',
-                  borderRadius: 'calc(var(--wheel-d) * 0.006)',
-                  background:
-                    'linear-gradient(180deg, #fff7c0 0%, #ffd24a 45%, #a94b08 100%)',
-                  boxShadow:
-                    '0 0 6px rgba(255, 220, 120, 0.8), inset 0 0 0 1px rgba(91, 35, 6, 0.6)',
-                  transform: `rotate(${i * SLOT_ANGLE + SLOT_HALF}deg) translateY(calc(var(--wheel-d) * -0.535))`,
-                  transformOrigin: 'center',
-                }}
-              />
-            ))}
+            {Array.from({length: SLOT_COUNT}).map((_, i) => (<span
+              key={`tick-${i}`}
+              className="absolute"
+              style={{
+                left: '50%',
+                top: '50%',
+                width: 'calc(var(--wheel-d) * 0.022)',
+                height: 'calc(var(--wheel-d) * 0.055)',
+                marginLeft: 'calc(var(--wheel-d) * -0.011)',
+                marginTop: 'calc(var(--wheel-d) * -0.0275)',
+                borderRadius: 'calc(var(--wheel-d) * 0.006)',
+                background: 'linear-gradient(180deg, #fff7c0 0%, #ffd24a 45%, #a94b08 100%)',
+                boxShadow: '0 0 6px rgba(255, 220, 120, 0.8), inset 0 0 0 1px rgba(91, 35, 6, 0.6)',
+                transform: `rotate(${i * SLOT_ANGLE + SLOT_HALF}deg) translateY(calc(var(--wheel-d) * -0.535))`,
+                transformOrigin: 'center',
+              }}
+            />))}
           </div>
 
           {/* Spinning disc — conic-gradient + per-slot content.
@@ -576,11 +572,10 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
               background: conicBg,
               transformOrigin: '50% 50%',
               willChange: 'transform',
-              boxShadow:
-                'inset 0 0 0 3px #5b2506, inset 0 0 35px rgba(0,0,0,0.32)',
+              boxShadow: 'inset 0 0 0 3px #5b2506, inset 0 0 35px rgba(0,0,0,0.32)',
             }}
           >
-                  {/* Winning-wedge glow — the WHOLE slice lights up (not just
+            {/* Winning-wedge glow — the WHOLE slice lights up (not just
                    *  the prize icons). A full-disc conic overlay that's bright
                    *  only across the winning slot's 36° arc (same `from
                    *  -SLOT_HALF` origin as the wheel so it aligns exactly),
@@ -588,41 +583,37 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
                    *  opacity (see .wheel-winning-wedge in index.css). Rendered
                    *  first + no z-index so it sits above the gradient but below
                    *  the dividers + icons, which stay crisp on top. */}
-                  {phase === 'celebrating' && spinResult != null ? (
-                    <div
-                      aria-hidden
-                      className="wheel-winning-wedge absolute inset-0 rounded-full"
-                      style={{
-                        background: `conic-gradient(from -${SLOT_HALF}deg, transparent 0 ${spinResult.slot_index * SLOT_ANGLE}deg, rgba(255,247,184,0.92) ${spinResult.slot_index * SLOT_ANGLE}deg ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg, transparent ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg 360deg)`,
-                        mixBlendMode: 'screen',
-                        pointerEvents: 'none',
-                        filter: 'drop-shadow(0 0 calc(var(--wheel-d) * 0.045) rgba(255,238,150,0.95))',
-                      }}
-                    />
-                  ) : null}
+            {phase === 'celebrating' && spinResult != null ? (<div
+              aria-hidden
+              className="wheel-winning-wedge absolute inset-0 rounded-full"
+              style={{
+                background: `conic-gradient(from -${SLOT_HALF}deg, transparent 0 ${spinResult.slot_index * SLOT_ANGLE}deg, rgba(255,247,184,0.92) ${spinResult.slot_index * SLOT_ANGLE}deg ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg, transparent ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg 360deg)`,
+                mixBlendMode: 'screen',
+                pointerEvents: 'none',
+                filter: 'drop-shadow(0 0 calc(var(--wheel-d) * 0.045) rgba(255,238,150,0.95))',
+              }}
+            />) : null}
 
-                  {/* Wedge dividers — radial lines from center to rim,
+            {/* Wedge dividers — radial lines from center to rim,
                    *  one per slot boundary. They sit ON TOP of the
                    *  conic gradient and rotate with the disc. */}
-                  {Array.from({ length: SLOT_COUNT }).map((_, i) => (
-                    <div
-                      key={`divider-${i}`}
-                      aria-hidden
-                      className="absolute"
-                      style={{
-                        top: 0,
-                        left: '50%',
-                        marginLeft: '-1px',
-                        width: '2px',
-                        height: '50%',
-                        background: 'rgba(0,0,0,0.35)',
-                        transformOrigin: '50% 100%',
-                        transform: `rotate(${i * SLOT_ANGLE + SLOT_HALF}deg)`,
-                      }}
-                    />
-                  ))}
+            {Array.from({length: SLOT_COUNT}).map((_, i) => (<div
+              key={`divider-${i}`}
+              aria-hidden
+              className="absolute"
+              style={{
+                top: 0,
+                left: '50%',
+                marginLeft: '-1px',
+                width: '2px',
+                height: '50%',
+                background: 'rgba(0,0,0,0.35)',
+                transformOrigin: '50% 100%',
+                transform: `rotate(${i * SLOT_ANGLE + SLOT_HALF}deg)`,
+              }}
+            />))}
 
-                  {/* Slot content pivots. Each pivot is a 0×0 anchor at
+            {/* Slot content pivots. Each pivot is a 0×0 anchor at
                    *  the disc centre rotated by `i × SLOT_ANGLE`. The
                    *  content stack hangs from a point near the rim and
                    *  reads radially inward: primary-icon → primary-
@@ -630,97 +621,88 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
                    *  Stacking radially (not tangentially) keeps every
                    *  amount upright relative to its wedge, instead of
                    *  warping the label around the wheel circumference. */}
-                  {slots.map((slot, i) => {
-                    const isWinning =
-                      phase === 'celebrating' && spinResult?.slot_index === i;
-                    const hasSecondary = !!slot.secondary_reward;
-                    // Combo slots squeeze two icon+amount pairs into the
-                    // same wedge; shrink both icon and text so they fit
-                    // without clipping at the divider lines.
-                    const iconSize = hasSecondary
-                      ? 'calc(var(--wheel-d) * 0.08)'
-                      : 'calc(var(--wheel-d) * 0.11)';
-                    const amountSize = hasSecondary
-                      ? 'calc(var(--wheel-d) * 0.045)'
-                      : 'calc(var(--wheel-d) * 0.06)';
-                    return (
-                      <div
-                        key={`slot-${i}`}
-                        className="absolute"
-                        style={{
-                          top: '50%',
-                          left: '50%',
-                          width: 0,
-                          height: 0,
-                          transform: `rotate(${i * SLOT_ANGLE}deg)`,
-                        }}
-                      >
-                        <div
-                          className="absolute flex flex-col items-center"
-                          style={{
-                            top: 'calc(var(--wheel-d) * -0.43)',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: 'calc(var(--wheel-d) * 0.22)',
-                            gap: 'calc(var(--wheel-d) * 0.005)',
-                            color: 'white',
-                            fontFamily: 'system-ui, sans-serif',
-                            fontWeight: 900,
-                            lineHeight: 1,
-                            textShadow:
-                              '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 3px rgba(0,0,0,0.65)',
-                            filter: isWinning
-                              ? 'drop-shadow(0 0 10px #fef08a)'
-                              : undefined,
-                          }}
-                        >
-                          {/* Primary reward — icon then amount, stacked. */}
-                          <div style={{ width: iconSize, height: iconSize }}>
-                            <RewardIcon
-                              type={slot.primary_reward.type}
-                              iconUrl={slot.primary_reward.icon_url}
-                            />
-                          </div>
-                          <div
-                            style={{
-                              fontSize: amountSize,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {shortAmount(slot.primary_reward.amount)}
-                          </div>
+            {slots.map((slot, i) => {
+              const isWinning = phase === 'celebrating' && spinResult?.slot_index === i;
+              const hasSecondary = !!slot.secondary_reward;
+              // Combo slots squeeze two icon+amount pairs into the
+              // same wedge; shrink both icon and text so they fit
+              // without clipping at the divider lines.
+              const iconSize = hasSecondary ? 'calc(var(--wheel-d) * 0.08)' : 'calc(var(--wheel-d) * 0.11)';
+              const amountSize = hasSecondary ? 'calc(var(--wheel-d) * 0.045)' : 'calc(var(--wheel-d) * 0.06)';
+              return (<div
+                key={`slot-${i}`}
+                className="absolute"
+                style={{
+                  top: '50%',
+                  left: '50%',
+                  width: 0,
+                  height: 0,
+                  transform: `rotate(${i * SLOT_ANGLE}deg)`,
+                }}
+              >
+                <div
+                  className="absolute flex flex-col items-center"
+                  style={{
+                    top: 'calc(var(--wheel-d) * -0.43)',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 'calc(var(--wheel-d) * 0.22)',
+                    gap: 'calc(var(--wheel-d) * 0.005)',
+                    color: 'white',
+                    fontFamily: 'system-ui, sans-serif',
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    textShadow: '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 3px rgba(0,0,0,0.65)',
+                    filter: isWinning ? 'drop-shadow(0 0 10px #fef08a)' : undefined,
+                  }}
+                >
+                  {/* Primary reward — icon then amount, stacked. */}
+                  <div style={{
+                    width: iconSize,
+                    height: iconSize
+                  }}>
+                    <RewardIcon
+                      type={slot.primary_reward.type}
+                      iconUrl={slot.primary_reward.icon_url}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      fontSize: amountSize,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {shortAmount(slot.primary_reward.amount)}
+                  </div>
 
-                          {/* Secondary reward (combo slots) — same pattern,
+                  {/* Secondary reward (combo slots) — same pattern,
                            *  one tier deeper toward the wheel centre. */}
-                          {hasSecondary && slot.secondary_reward ? (
-                            <>
-                              <div
-                                style={{
-                                  width: iconSize,
-                                  height: iconSize,
-                                  marginTop: 'calc(var(--wheel-d) * 0.005)',
-                                }}
-                              >
-                                <RewardIcon
-                                  type={slot.secondary_reward.type}
-                                  iconUrl={slot.secondary_reward.icon_url}
-                                />
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: amountSize,
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {shortAmount(slot.secondary_reward.amount)}
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {hasSecondary && slot.secondary_reward ? (<>
+                    <div
+                      style={{
+                        width: iconSize,
+                        height: iconSize,
+                        marginTop: 'calc(var(--wheel-d) * 0.005)',
+                      }}
+                    >
+                      <RewardIcon
+                        type={slot.secondary_reward.type}
+                        iconUrl={slot.secondary_reward.icon_url}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        fontSize: amountSize,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {shortAmount(slot.secondary_reward.amount)}
+                    </div>
+                  </>) : null}
                 </div>
+              </div>);
+            })}
+          </div>
 
           {/* Center hub — gold orb with a star symbol, sitting on
               top of the wheel. Fixed (does not rotate) so it
@@ -736,11 +718,9 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
               height: 'calc(var(--wheel-d) * 0.26)',
               transform: 'translate(-50%, -50%)',
               borderRadius: '50%',
-              background:
-                'radial-gradient(circle at 35% 22%, #fff7a6, #ffc72e 35%, #c96c0c 70%, #5d2305)',
+              background: 'radial-gradient(circle at 35% 22%, #fff7a6, #ffc72e 35%, #c96c0c 70%, #5d2305)',
               border: 'calc(var(--wheel-d) * 0.018) solid #ffd158',
-              boxShadow:
-                '0 6px 0 #713006, 0 10px 18px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.6)',
+              boxShadow: '0 6px 0 #713006, 0 10px 18px rgba(0,0,0,0.55), inset 0 4px 8px rgba(255,255,255,0.6)',
               zIndex: 10,
               color: '#fff08a',
               fontSize: 'calc(var(--wheel-d) * 0.16)',
@@ -770,37 +750,30 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
             height: 'clamp(2.6rem, 7vmin, 3.6rem)',
             borderRadius: '9999px',
             border: '5px solid #ffd866',
-            background:
-              'linear-gradient(180deg, #fff070 0%, #ffbd24 35%, #f2730d 72%, #b73808 100%)',
-            color: 'white',
-            // "SPINNING…" is much longer than "SPIN"; shrink the font + tracking
+            background: 'linear-gradient(180deg, #fff070 0%, #ffbd24 35%, #f2730d 72%, #b73808 100%)',
+            color: 'white', // "SPINNING…" is much longer than "SPIN"; shrink the font + tracking
             // (and never wrap) so it stays inside the pill instead of overflowing.
             fontSize: phase === 'idle' ? 'clamp(1.15rem, 3.3vmin, 1.9rem)' : 'clamp(0.85rem, 2.5vmin, 1.3rem)',
             fontWeight: 900,
             letterSpacing: phase === 'idle' ? '0.1em' : '0.04em',
             whiteSpace: 'nowrap',
             textShadow: '0 3px 0 #8e3308',
-            boxShadow:
-              '0 5px 0 #793006, 0 10px 16px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
+            boxShadow: '0 5px 0 #793006, 0 10px 16px rgba(0,0,0,0.5), inset 0 4px 6px rgba(255,255,255,0.55)',
           }}
         >
           {phase === 'idle' ? 'SPIN' : 'SPINNING…'}
         </button>
 
-        {error ? (
-          <div className="mt-3 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900">
-            {error}
-          </div>
-        ) : null}
+        {error ? (<div
+          className="mt-3 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900">
+          {error}
+        </div>) : null}
       </div>
 
       {/* Flying tokens render OUTSIDE the modal frame at z-[60] so they
           travel cleanly across the lobby to the wallet pills. */}
-      {flights.map((spec) => (
-        <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
-      ))}
-    </div>
-  );
+      {flights.map((spec) => (<RewardFlight key={spec.id} spec={spec} onLanded={removeFlight}/>))}
+    </div>);
 }
 
 /** Map server-side spin errors to player-readable copy. */

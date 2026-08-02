@@ -1,43 +1,35 @@
 /**
- * Native-platform helpers for Supabase OAuth flows on Android (and
- * iOS later). On the web we lean on Supabase's built-in flow:
- * `signInWithOAuth` returns a URL, we navigate the current tab to
- * it, Google redirects back to `/auth/callback`, the AuthCallback
- * page exchanges the code for a session. None of that works in a
- * Capacitor WebView because:
+ * Native-platform helpers for Supabase OAuth on Android (iOS later).
+ * The web flow — navigate the tab to the OAuth URL, Google redirects
+ * back to /auth/callback, AuthCallback exchanges the code — breaks in
+ * a Capacitor WebView:
  *
  *   1. Google's OAuth endpoint refuses to render inside an embedded
- *      WebView (security policy — phishing prevention). We have to
- *      open it in a real browser tab.
- *   2. After Google redirects to Supabase and Supabase redirects to
- *      `https://gammon-rivals.vercel.app/auth/callback`, the user
- *      is in the system browser, not the app. We'd lose the
- *      session.
+ *      WebView (phishing prevention), so it must open in a real
+ *      browser tab.
+ *   2. The user then sits in the system browser, not the app, and the
+ *      session would be lost.
  *
- * The native flow this module enables:
+ * Native flow instead:
  *
- *   A) Open the Supabase-generated OAuth URL in Chrome Custom Tabs
- *      via @capacitor/browser. That's a real browser context, so
- *      Google is happy.
- *   B) Configure the OAuth `redirectTo` to be our custom-scheme
- *      deep link: `gammonrivals://auth/callback`. Supabase MUST
- *      have this URL registered in
- *      Dashboard → Authentication → URL Configuration → Redirect
- *      URLs. Without the dashboard entry Supabase silently swaps
- *      back to the project's Site URL and the deep link never fires.
- *   C) Listen for the `appUrlOpen` event from @capacitor/app. When
- *      the OS routes `gammonrivals://auth/callback#access_token=…`
- *      back into MainActivity, this handler parses the hash and
- *      calls `supabase.auth.setSession` to install the session in
- *      the JS layer. Then closes the Chrome Custom Tab.
+ *   A) Open the Supabase OAuth URL in Chrome Custom Tabs
+ *      (@capacitor/browser) — a real browser context.
+ *   B) Point the OAuth `redirectTo` at our custom-scheme deep link
+ *      `gammonrivals://auth/callback`. Supabase MUST have this URL
+ *      registered (Dashboard → Authentication → URL Configuration →
+ *      Redirect URLs) or it silently falls back to the Site URL and
+ *      the deep link never fires.
+ *   C) `appUrlOpen` (from @capacitor/app) routes the deep link back
+ *      into the app; this handler parses the hash, calls
+ *      supabase.auth.setSession, and closes the tab.
  *
- * The web build still uses the existing AuthCallback page flow.
- * Platform detection (`isNativePlatform`) is what splits the two.
+ * Web keeps the existing AuthCallback page flow; isNativePlatform()
+ * splits the two.
  */
-import { Capacitor } from '@capacitor/core';
-import { App, type URLOpenListenerEvent } from '@capacitor/app';
-import { Browser } from '@capacitor/browser';
-import { supabase } from './supabase';
+import {Capacitor} from '@capacitor/core';
+import {App, type URLOpenListenerEvent} from '@capacitor/app';
+import {Browser} from '@capacitor/browser';
+import {supabase} from './supabase';
 
 /** True on Android (and later iOS) when the app runs inside a
  *  Capacitor WebView. False on plain-web builds and in Vite dev. */
@@ -49,49 +41,41 @@ export const isNativePlatform = (): boolean => Capacitor.isNativePlatform();
 export const NATIVE_AUTH_CALLBACK_URL = 'gammonrivals://auth/callback';
 
 /**
- * Pick the right OAuth `redirectTo` based on platform:
- *   - Native (Android/iOS) → custom-scheme deep link.
- *   - Web                  → the caller's web URL (unchanged behaviour).
- *
- * The optional `next` path is appended to the deep link as a query
- * param so the JS handler can navigate the user to the right place
- * after the session is installed (e.g. back to /profile after a
- * guest → Google link from the profile page).
+ * OAuth `redirectTo` per platform: the custom-scheme deep link on
+ * native, the caller's web URL on web. The optional `next` path rides
+ * the deep link's query string so the completion handler can navigate
+ * the user back to where they were (e.g. /profile after linking).
  */
 export function pickOAuthRedirectTo(webRedirect: string, next?: string): string {
   if (!isNativePlatform()) return webRedirect;
   if (!next) return NATIVE_AUTH_CALLBACK_URL;
-  const params = new URLSearchParams({ next });
+  const params = new URLSearchParams({next});
   return `${NATIVE_AUTH_CALLBACK_URL}?${params.toString()}`;
 }
 
 /**
- * Open an OAuth URL in a real browser tab (Chrome Custom Tabs on
- * Android). On web this is a no-op because the calling code uses
- * `window.location.assign` directly — the web flow stays within
- * one browser context, so we don't need to spawn a new tab.
+ * Open an OAuth URL in Chrome Custom Tabs (Android). No-op on web —
+ * there the caller navigates the current tab directly.
  */
 export async function openAuthInBrowser(url: string): Promise<void> {
   if (!isNativePlatform()) return;
-  await Browser.open({ url, presentationStyle: 'popover' });
+  await Browser.open({
+    url,
+    presentationStyle: 'popover'
+  });
 }
 
 /**
- * Extract { access_token, refresh_token } from a deep-link URL like
- *   gammonrivals://auth/callback#access_token=AAA&refresh_token=BBB&…
- * Both fragments and search params are checked so server-mode
- * (`response_mode=query`) ALSO works, even though Supabase uses
- * the fragment by default.
+ * Extract access_token / refresh_token (or an error) from a deep-link
+ * URL like gammonrivals://auth/callback#access_token=…&refresh_token=…
+ * Checks both fragment and search params so server-mode
+ * (response_mode=query) works too.
  */
 function tokensFromCallbackUrl(rawUrl: string): {
-  access_token?: string;
-  refresh_token?: string;
-  error?: string;
-  error_description?: string;
+  access_token?: string; refresh_token?: string; error?: string; error_description?: string;
 } {
-  // Some deep links the OS passes us are not fully WHATWG-URL-parseable
-  // (e.g. a missing `://` slash, or odd encoding). Be defensive: split
-  // on the first `#`, parse the back half as a query string.
+  // Some deep links aren't fully WHATWG-URL-parseable (missing `://`
+  // slash, odd encoding); fall back to manual split + query parse.
   let access_token: string | undefined;
   let refresh_token: string | undefined;
   let error: string | undefined;
@@ -108,7 +92,8 @@ function tokensFromCallbackUrl(rawUrl: string): {
     const url = new URL(rawUrl);
     if (url.hash.length > 1) grabFrom(new URLSearchParams(url.hash.slice(1)));
     if (url.search.length > 1) grabFrom(new URLSearchParams(url.search.slice(1)));
-  } catch {
+  }
+  catch {
     // Fallback parser if URL ctor rejects the scheme.
     const hashIdx = rawUrl.indexOf('#');
     if (hashIdx >= 0) grabFrom(new URLSearchParams(rawUrl.slice(hashIdx + 1)));
@@ -119,16 +104,20 @@ function tokensFromCallbackUrl(rawUrl: string): {
     }
   }
 
-  return { access_token, refresh_token, error, error_description };
+  return {
+    access_token,
+    refresh_token,
+    error,
+    error_description
+  };
 }
 
-/** Optional callback the host app can register so it can react to a
- *  successful native auth completion (e.g. navigate back to a page,
- *  show a toast). Receives the parsed `next` path if Supabase
- *  echoed our `?next=…` query param through the redirect. */
+/** Callback for a successful native auth completion (e.g. to navigate
+ *  back to a page); receives the `next` path if Supabase echoed it. */
 export interface NativeAuthCompletionPayload {
   readonly nextPath: string | null;
 }
+
 type NativeAuthCompletionListener = (payload: NativeAuthCompletionPayload) => void;
 const listeners = new Set<NativeAuthCompletionListener>();
 
@@ -138,27 +127,24 @@ export function onNativeAuthCompletion(listener: NativeAuthCompletionListener): 
 }
 
 /**
- * Install the global `appUrlOpen` listener exactly once per process.
- * Called from main.tsx at startup. Safe to call multiple times —
- * the guard ensures only the first call wires the listener.
- *
- * Subsequent OAuth deep links land here, install the session, and
- * notify any registered completion listeners.
+ * Wire the global `appUrlOpen` listener once per process (idempotent;
+ * called from main.tsx). OAuth deep links land here, install the
+ * session, and notify registered completion listeners.
  */
 let installed = false;
+
 export async function installNativeAuthHandler(): Promise<void> {
   if (installed) return;
   installed = true;
   if (!isNativePlatform()) return;
 
   await App.addListener('appUrlOpen', async (event: URLOpenListenerEvent) => {
-    // We only care about URLs landing on our auth host. Ignore
-    // anything else (e.g. share intents, future deep links into
-    // other sections of the app).
+    // Only our auth host matters; ignore other deep links/intents.
     let url: URL;
     try {
       url = new URL(event.url);
-    } catch {
+    }
+    catch {
       // Unparseable URL — bail; nothing useful we can do.
       return;
     }
@@ -166,8 +152,7 @@ export async function installNativeAuthHandler(): Promise<void> {
 
     const tokens = tokensFromCallbackUrl(event.url);
 
-    // Surface OAuth errors as console output for now — a future
-    // pass can show a toast in the lobby.
+    // Surface OAuth errors to the console for now.
     if (tokens.error) {
       console.warn('Native auth callback error:', tokens.error, tokens.error_description);
       void Browser.close().catch(() => undefined);
@@ -180,7 +165,8 @@ export async function installNativeAuthHandler(): Promise<void> {
           access_token: tokens.access_token,
           refresh_token: tokens.refresh_token,
         });
-      } catch (err) {
+      }
+      catch (err) {
         console.warn('Native auth setSession failed:', err);
       }
     }
@@ -188,9 +174,8 @@ export async function installNativeAuthHandler(): Promise<void> {
     // Dismiss the Chrome Custom Tab — the auth flow is done.
     void Browser.close().catch(() => undefined);
 
-    // Notify listeners. `?next=…` may have been carried through by
-    // Supabase as a query param on the deep link URL.
+    // Notify listeners, passing any `?next=…` Supabase echoed through.
     const nextPath = url.searchParams.get('next');
-    listeners.forEach((listener) => listener({ nextPath }));
+    listeners.forEach((listener) => listener({nextPath}));
   });
 }

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import type { Die, DiceRoll } from '../../../../packages/engine/src/types';
+import {useEffect, useMemo, useRef} from 'react';
+import type {DiceRoll, Die} from '../../../../packages/engine/src/types';
 
 /**
  * DiceTray v4 — pure HTML + CSS 3D dice.
@@ -56,12 +56,30 @@ interface Props {
  *   .dice-face--f6 → -Z back
  */
 const ROTATION_MAP: Record<Die, { x: number; y: number }> = {
-  1: { x: 0, y: 0 },
-  2: { x: -90, y: 0 },
-  3: { x: 0, y: -90 },
-  4: { x: 0, y: 90 },
-  5: { x: 90, y: 0 },
-  6: { x: 180, y: 0 },
+  1: {
+    x: 0,
+    y: 0
+  },
+  2: {
+    x: -90,
+    y: 0
+  },
+  3: {
+    x: 0,
+    y: -90
+  },
+  4: {
+    x: 0,
+    y: 90
+  },
+  5: {
+    x: 90,
+    y: 0
+  },
+  6: {
+    x: 180,
+    y: 0
+  },
 };
 
 /** Minimum full 360° turns each roll's tumble should perform.
@@ -97,10 +115,7 @@ function nextRotationStop(current: number, baseFace: number): number {
 
 /* ─── diceToShow — same semantics as every prior version ───────── */
 
-function diceToShow(
-  roll: DiceRoll,
-  remaining: readonly Die[]
-): Array<{ readonly value: Die; readonly used: boolean }> {
+function diceToShow(roll: DiceRoll, remaining: readonly Die[]): Array<{ readonly value: Die; readonly used: boolean }> {
   if (roll[0] === roll[1]) {
     // Doubles grant FOUR moves but we render only TWO dice and
     // grey them out progressively:
@@ -108,19 +123,28 @@ function diceToShow(
     //   2–3 moves used → one die greyed
     //   4   moves used → both greyed
     const used = 4 - remaining.length;
-    return [
-      { value: roll[0], used: used >= 2 },
-      { value: roll[0], used: used >= 4 },
-    ];
+    return [{
+      value: roll[0],
+      used: used >= 2
+    }, {
+      value: roll[0],
+      used: used >= 4
+    },];
   }
   const remCopy = [...remaining];
   return ([roll[0], roll[1]] as const).map((v) => {
     const idx = remCopy.indexOf(v);
     if (idx >= 0) {
       remCopy.splice(idx, 1);
-      return { value: v, used: false };
+      return {
+        value: v,
+        used: false
+      };
     }
-    return { value: v, used: true };
+    return {
+      value: v,
+      used: true
+    };
   });
 }
 
@@ -140,19 +164,15 @@ export default function DiceTray({
   // tumble re-fired on every sub-move the player made.
   const rollId = `${roll[0]}-${roll[1]}`;
 
-  return (
-    <div className={`dice-board dice-board--${settleSide}`} aria-hidden>
-      {dice.map((d, i) => (
-        <CssDie
-          key={i}
-          value={d.value}
-          used={d.used}
-          rollId={`${rollId}-${i}`}
-          sprite={themeSprite}
-        />
-      ))}
-    </div>
-  );
+  return (<div className={`dice-board dice-board--${settleSide}`} aria-hidden>
+    {dice.map((d, i) => (<CssDie
+      key={i}
+      value={d.value}
+      used={d.used}
+      rollId={`${rollId}-${i}`}
+      sprite={themeSprite}
+    />))}
+  </div>);
 }
 
 /**
@@ -172,16 +192,16 @@ function CssDie({
   rollId,
   sprite,
 }: {
-  readonly value: Die;
-  readonly used: boolean;
-  readonly rollId: string;
-  readonly sprite?: string;
+  readonly value: Die; readonly used: boolean; readonly rollId: string; readonly sprite?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   // Cumulative absolute rotation across this die's lifetime. We
   // need this in a ref (not state) so re-renders don't reset it,
   // and so updating it doesn't trigger another React render.
-  const rotation = useRef({ x: 0, y: 0 });
+  const rotation = useRef({
+    x: 0,
+    y: 0
+  });
 
   useEffect(() => {
     const el = ref.current;
@@ -190,7 +210,10 @@ function CssDie({
     const base = ROTATION_MAP[value];
     const nextX = nextRotationStop(rotation.current.x, base.x);
     const nextY = nextRotationStop(rotation.current.y, base.y);
-    rotation.current = { x: nextX, y: nextY };
+    rotation.current = {
+      x: nextX,
+      y: nextY
+    };
 
     // Force the browser to commit the CURRENT style before setting
     // the new transform. Without this, mount + transform-set in
@@ -213,18 +236,14 @@ function CssDie({
   // and the shadow at the same time. The cube className itself
   // only carries the sprite-mode flag now.
   const className = `dice-cube${sprite ? ' dice-cube--sprite' : ''}`;
-  const style = sprite
-    ? ({ ['--dice-sprite-url' as string]: `url("${sprite}")` } as React.CSSProperties)
-    : undefined;
+  const style = sprite ? ({['--dice-sprite-url' as string]: `url("${sprite}")`} as React.CSSProperties) : undefined;
 
   // For sprite mode we don't render any pip children — the
   // sprite IS the face artwork. For default mode we render the
   // standard pip counts per face (1, 2, 3, 4, 5, 6).
   const renderPips = (count: number) => {
     if (sprite) return null;
-    return Array.from({ length: count }, (_, i) => (
-      <span key={i} className="dice-pip" />
-    ));
+    return Array.from({length: count}, (_, i) => (<span key={i} className="dice-pip"/>));
   };
 
   // The stand wrapper holds the cube + a flat shadow sibling. It
@@ -238,17 +257,15 @@ function CssDie({
   // together. Without that, a "used" die went to 40% opacity but
   // its shadow stayed at full strength — players reported seeing
   // "shadow without die" after consuming a pip in a move.
-  return (
-    <div className={`dice-stand${used ? ' dice-stand--used' : ''}`}>
-      <div ref={ref} className={className} style={style}>
-        <div className="dice-face dice-face--f1">{renderPips(1)}</div>
-        <div className="dice-face dice-face--f2">{renderPips(2)}</div>
-        <div className="dice-face dice-face--f3">{renderPips(3)}</div>
-        <div className="dice-face dice-face--f4">{renderPips(4)}</div>
-        <div className="dice-face dice-face--f5">{renderPips(5)}</div>
-        <div className="dice-face dice-face--f6">{renderPips(6)}</div>
-      </div>
-      <div className="dice-shadow" aria-hidden />
+  return (<div className={`dice-stand${used ? ' dice-stand--used' : ''}`}>
+    <div ref={ref} className={className} style={style}>
+      <div className="dice-face dice-face--f1">{renderPips(1)}</div>
+      <div className="dice-face dice-face--f2">{renderPips(2)}</div>
+      <div className="dice-face dice-face--f3">{renderPips(3)}</div>
+      <div className="dice-face dice-face--f4">{renderPips(4)}</div>
+      <div className="dice-face dice-face--f5">{renderPips(5)}</div>
+      <div className="dice-face dice-face--f6">{renderPips(6)}</div>
     </div>
-  );
+    <div className="dice-shadow" aria-hidden/>
+  </div>);
 }

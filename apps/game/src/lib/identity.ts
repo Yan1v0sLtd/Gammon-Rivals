@@ -1,20 +1,8 @@
-// ─── Identity ───────────────────────────────────────────────────────────
 // Random display names + avatar seeds for new players and AI opponents.
 // Avatars are rendered by DiceBear (https://www.dicebear.com) — same seed
 // always produces the same SVG so we don't need to store an image.
 
-const FIRST_NAMES = [
-  'Alex', 'Riley', 'Jordan', 'Casey', 'Morgan', 'Quinn', 'Avery', 'Emerson',
-  'Reese', 'Sage', 'River', 'Rowan', 'Skyler', 'Tatum', 'Drew', 'Phoenix',
-  'Cameron', 'Hayden', 'Charlie', 'Eden', 'Finley', 'Frankie', 'Harper',
-  'Hunter', 'Jamie', 'Jesse', 'Kai', 'Logan', 'Marlowe', 'Nico', 'Parker',
-  'Peyton', 'Remy', 'Robin', 'Ryan', 'Shay', 'Sky', 'Sutton', 'Taylor',
-  'Wren', 'Adrian', 'Ari', 'Bailey', 'Blair', 'Blake', 'Brett', 'Devon',
-  'Dylan', 'Ellis', 'Evan', 'Gray', 'Hollis', 'Indigo', 'Jules', 'Kendall',
-  'Kenzie', 'Kit', 'Lane', 'Lennon', 'Lior', 'Maren', 'Mika', 'Noa',
-  'Oakley', 'Ocean', 'Onyx', 'Quincy', 'Ramsey', 'Rio', 'Rory', 'Sasha',
-  'Shiloh', 'Sloan', 'Tristan', 'Val', 'Vesper', 'Wells', 'Winter', 'Zion',
-] as const;
+const FIRST_NAMES = ['Alex', 'Riley', 'Jordan', 'Casey', 'Morgan', 'Quinn', 'Avery', 'Emerson', 'Reese', 'Sage', 'River', 'Rowan', 'Skyler', 'Tatum', 'Drew', 'Phoenix', 'Cameron', 'Hayden', 'Charlie', 'Eden', 'Finley', 'Frankie', 'Harper', 'Hunter', 'Jamie', 'Jesse', 'Kai', 'Logan', 'Marlowe', 'Nico', 'Parker', 'Peyton', 'Remy', 'Robin', 'Ryan', 'Shay', 'Sky', 'Sutton', 'Taylor', 'Wren', 'Adrian', 'Ari', 'Bailey', 'Blair', 'Blake', 'Brett', 'Devon', 'Dylan', 'Ellis', 'Evan', 'Gray', 'Hollis', 'Indigo', 'Jules', 'Kendall', 'Kenzie', 'Kit', 'Lane', 'Lennon', 'Lior', 'Maren', 'Mika', 'Noa', 'Oakley', 'Ocean', 'Onyx', 'Quincy', 'Ramsey', 'Rio', 'Rory', 'Sasha', 'Shiloh', 'Sloan', 'Tristan', 'Val', 'Vesper', 'Wells', 'Winter', 'Zion',] as const;
 
 const AI_TITLE_BY_LEVEL: Record<string, string> = {
   easy: 'Rookie',
@@ -35,31 +23,21 @@ export function randomDisplayName(): string {
   return FIRST_NAMES[idx]!;
 }
 
-/**
- * Display name for an AI opponent — a plain first name, exactly like a real
- * player's free-form display name. No "the <Tier>" suffix, so the AI's
- * difficulty never leaks through the name. (The tier still surfaces as a
- * human-style rank on the status line via aiRankLabel.)
- */
+/** AI opponent name — a plain first name, like a real player's, so the
+ *  difficulty never leaks through it (the tier shows as a rank via aiRankLabel). */
 export function aiDisplayName(): string {
   return randomDisplayName();
 }
 
-/**
- * Human-looking rank word for an AI opponent's status line — "Rookie" / "Pro"
- * / "Master" rather than the raw difficulty ("EASY"/"MEDIUM"/"HARD"), so the
- * opponent reads as a real player and the AI tier never leaks into the UI.
- */
+/** Human-looking rank for an AI's status line ("Rookie"/"Pro"/"Master"),
+ *  never the raw difficulty, so the opponent reads as a real player. */
 export function aiRankLabel(level: string): string {
   return AI_TITLE_BY_LEVEL[level] ?? 'Player';
 }
 
-/**
- * Build the URL for a DiceBear avatar. We use the `personas` style — flat
- * cartoon portraits that look like the photo-style avatars in the reference
- * mobile games. Background is given a warm tone so the avatar reads on
- * the dark wood UI without us having to set it per-render.
- */
+/** DiceBear URL for an avatar — `personas` style (flat portraits like the
+ *  reference apps) with a warm gradient background that reads on the dark
+ *  wood UI. */
 export function avatarUrl(seed: string, size = 128): string {
   const params = new URLSearchParams({
     seed,
@@ -80,12 +58,8 @@ export interface PlayerIdentity {
   readonly badge?: string;
 }
 
-/**
- * Make a fresh identity for an AI opponent. Deliberately indistinguishable
- * from a human: a plain random name + avatar, NO `badge`, no tier in the name.
- * The difficulty surfaces only as a human-style rank on the status line
- * (via aiRankLabel), never in the identity itself.
- */
+/** Fresh AI opponent identity — a plain random name + avatar, no badge or
+ *  tier, deliberately indistinguishable from a human player. */
 export function makeAIIdentity(): PlayerIdentity {
   return {
     name: aiDisplayName(),
@@ -93,20 +67,19 @@ export function makeAIIdentity(): PlayerIdentity {
   };
 }
 
-/**
- * Deterministic AI opponent identity from a stable seed (the matchId).
- * Same seed → same name + avatar, so a server-bot opponent reads as one
- * consistent "human" across reloads — unlike makeAIIdentity, which is random
- * and only stays put if memoised. Used by PlayOnline for is_bot matches,
- * where the component can re-mount mid-match (reload) and must not reshuffle
- * the opponent's identity. djb2 hash → name index; matchId is the avatar seed.
- */
+/** Deterministic AI identity from a stable seed (the matchId): same seed →
+ *  same name + avatar, so a server-bot reads as one consistent "human"
+ *  across reloads (PlayOnline re-mounts mid-match). djb2 hash picks the
+ *  name; the seed itself is the avatar seed. */
 export function aiIdentityFromSeed(seed: string): PlayerIdentity {
   let h = 5381 >>> 0;
   for (let i = 0; i < seed.length; i++) {
     h = ((h * 33) ^ seed.charCodeAt(i)) >>> 0;
   }
-  return { name: FIRST_NAMES[h % FIRST_NAMES.length]!, avatarSeed: seed || 'no-seed' };
+  return {
+    name: FIRST_NAMES[h % FIRST_NAMES.length]!,
+    avatarSeed: seed || 'no-seed'
+  };
 }
 
 /** Local fallback identity when there's no server profile yet. */

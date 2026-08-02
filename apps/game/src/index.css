@@ -39,15 +39,13 @@ html, body, #root {
   display: grid;
   place-items: center;
   border-radius: 9999px;
-  background:
-    radial-gradient(circle at 50% 44%, rgba(180, 80, 255, 0.95), rgba(83, 17, 135, 0.82) 55%, rgba(21, 7, 49, 0.96)),
-    linear-gradient(135deg, #fff4b1, #ca7624 45%, #4e228a 82%);
-  box-shadow:
-    0 0 0 0.22rem #1b123b,
-    0 0 0 0.38rem #ffcc42,
-    0 0 0 0.48rem rgba(255, 255, 255, 0.36),
-    0 0 1.15rem rgba(173, 69, 255, 0.82),
-    0 0.55rem 0.95rem rgba(0, 0, 0, 0.45);
+  background: radial-gradient(circle at 50% 44%, rgba(180, 80, 255, 0.95), rgba(83, 17, 135, 0.82) 55%, rgba(21, 7, 49, 0.96)),
+  linear-gradient(135deg, #fff4b1, #ca7624 45%, #4e228a 82%);
+  box-shadow: 0 0 0 0.22rem #1b123b,
+  0 0 0 0.38rem #ffcc42,
+  0 0 0 0.48rem rgba(255, 255, 255, 0.36),
+  0 0 1.15rem rgba(173, 69, 255, 0.82),
+  0 0.55rem 0.95rem rgba(0, 0, 0, 0.45);
 }
 
 .lobby-profile-avatar-core img {
@@ -77,9 +75,8 @@ html, body, #root {
   background: linear-gradient(180deg, #fcd34d 0%, #b45309 100%);
   color: white;
   font: 900 clamp(1rem, 1.7vw, 1.32rem) / 1 "Segoe UI", sans-serif;
-  text-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.55),
-    0 0 0.32rem rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55),
+  0 0 0.32rem rgba(0, 0, 0, 0.45);
   box-shadow: 0 0.25rem 0.7rem rgba(0, 0, 0, 0.55);
 }
 
@@ -127,12 +124,10 @@ html, body, #root {
   gap: 0.45rem;
   border: 1px solid #f7c457;
   border-radius: 0.48rem;
-  background:
-    linear-gradient(180deg, #f3c758 0%, #a75d15 45%, #70400f 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -2px 0 rgba(67, 27, 0, 0.62),
-    0 0.25rem 0.65rem rgba(0, 0, 0, 0.36);
+  background: linear-gradient(180deg, #f3c758 0%, #a75d15 45%, #70400f 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5),
+  inset 0 -2px 0 rgba(67, 27, 0, 0.62),
+  0 0.25rem 0.65rem rgba(0, 0, 0, 0.36);
   color: #fff0b2;
   font: 900 0.9rem / 1 "Segoe UI", sans-serif;
   padding: 0.22rem 0.68rem 0.28rem 0.42rem;
@@ -158,9 +153,8 @@ html, body, #root {
   border: 2px solid rgba(3, 9, 20, 0.72);
   border-radius: 9999px;
   background: linear-gradient(180deg, #04070f, #182235);
-  box-shadow:
-    inset 0 1px 3px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.75),
+  0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .lobby-profile-progress-fill {
@@ -169,14 +163,11 @@ html, body, #root {
   height: 100%;
   overflow: hidden;
   border-radius: inherit;
-  background:
-    /* A subtle horizontal sweep that rides on top of the bubble layer
-       to keep the bar reading as a single liquid surface. */
-    linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 36%),
-    linear-gradient(90deg, #ff5d1f 0%, #ff9d1f 35%, #ffd040 70%, #ffe166 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 240, 200, 0.45),
-    0 0 0.85rem rgba(255, 165, 45, 0.85);
+  background: /* A subtle horizontal sweep that rides on top of the bubble layer
+       to keep the bar reading as a single liquid surface. */ linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 36%),
+  linear-gradient(90deg, #ff5d1f 0%, #ff9d1f 35%, #ffd040 70%, #ffe166 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 200, 0.45),
+  0 0 0.85rem rgba(255, 165, 45, 0.85);
 }
 
 /* Water-tank bubble flow. Two horizontally-scrolling layers of
@@ -199,14 +190,12 @@ html, body, #root {
      tile reads as a small "pocket" of bubbles rather than a single
      dot. The bubble itself is a small radial gradient with a soft
      falloff. */
-  background-image:
-    radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
-    radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
-    radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
-  background-size:
-    42px 100%,
-    42px 100%,
-    42px 100%;
+  background-image: radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
+  radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
+  radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
+  background-size: 42px 100%,
+  42px 100%,
+  42px 100%;
   background-repeat: repeat;
   animation: lobby-progress-flow-slow 4.5s linear infinite;
   will-change: background-position;
@@ -220,12 +209,10 @@ html, body, #root {
      pass through more frequently. Different tile width from the
      slow layer means the two patterns never sync up — combined
      they never repeat in a way the eye catches. */
-  background-image:
-    radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
-    radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
-  background-size:
-    26px 100%,
-    26px 100%;
+  background-image: radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
+  radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
+  background-size: 26px 100%,
+  26px 100%;
   background-repeat: repeat;
   animation: lobby-progress-flow-fast 2.6s linear infinite;
   will-change: background-position;
@@ -239,13 +226,21 @@ html, body, #root {
    bubble moves from element x=-32 (off-screen left) → x=10 (in
    view). The bubble appears to flow LEFT → RIGHT. */
 @keyframes lobby-progress-flow-slow {
-  0% { background-position: -42px 50%, -42px 50%, -42px 50%; }
-  100% { background-position: 0 50%, 0 50%, 0 50%; }
+  0% {
+    background-position: -42px 50%, -42px 50%, -42px 50%;
+  }
+  100% {
+    background-position: 0 50%, 0 50%, 0 50%;
+  }
 }
 
 @keyframes lobby-progress-flow-fast {
-  0% { background-position: -26px 50%, -26px 50%; }
-  100% { background-position: 0 50%, 0 50%; }
+  0% {
+    background-position: -26px 50%, -26px 50%;
+  }
+  100% {
+    background-position: 0 50%, 0 50%;
+  }
 }
 
 .lobby-profile-progress-label {
@@ -260,13 +255,12 @@ html, body, #root {
      the percentage reads on the dark empty portion AND the bright
      lava portion of the bar without needing to know the fill
      percentage. */
-  text-shadow:
-    0 0 2px rgba(0, 0, 0, 0.8),
-    -1px 0 0 rgba(0, 0, 0, 0.85),
-    1px 0 0 rgba(0, 0, 0, 0.85),
-    0 -1px 0 rgba(0, 0, 0, 0.85),
-    0 1px 0 rgba(0, 0, 0, 0.85),
-    0 2px 4px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8),
+  -1px 0 0 rgba(0, 0, 0, 0.85),
+  1px 0 0 rgba(0, 0, 0, 0.85),
+  0 -1px 0 rgba(0, 0, 0, 0.85),
+  0 1px 0 rgba(0, 0, 0, 0.85),
+  0 2px 4px rgba(0, 0, 0, 0.55);
   letter-spacing: 0.02em;
   z-index: 2;
 }
@@ -274,7 +268,9 @@ html, body, #root {
 /* Legacy progress-text class still referenced by responsive
    overrides further down; kept as a no-op safety so we don't break
    anything that doesn't get re-styled. */
-.lobby-profile-progress-text { display: none; }
+.lobby-profile-progress-text {
+  display: none;
+}
 
 .lobby-background-layer {
   pointer-events: none;
@@ -366,15 +362,13 @@ html, body, #root {
 .lobby-play-button {
   border-radius: 9999px;
   border: 2px solid rgba(224, 255, 143, 0.95);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%),
-    linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%);
-  box-shadow:
-    0 5px 0 #06450a,
-    0 13px 22px rgba(0, 0, 0, 0.34),
-    inset 0 2px 0 rgba(255, 255, 255, 0.74),
-    inset 0 -5px 0 rgba(0, 78, 5, 0.34),
-    0 0 0 2px rgba(7, 27, 11, 0.85);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%),
+  linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%);
+  box-shadow: 0 5px 0 #06450a,
+  0 13px 22px rgba(0, 0, 0, 0.34),
+  inset 0 2px 0 rgba(255, 255, 255, 0.74),
+  inset 0 -5px 0 rgba(0, 78, 5, 0.34),
+  0 0 0 2px rgba(7, 27, 11, 0.85);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
@@ -460,9 +454,7 @@ html, body, #root {
 }
 
 .lobby-bottom-nav-slot:not(.is-placeholder):hover img {
-  filter:
-    drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 0.6rem rgba(255, 196, 78, 0.45));
+  filter: drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.6rem rgba(255, 196, 78, 0.45));
 }
 
 .lobby-bottom-nav-slot:not(.is-placeholder):active {
@@ -512,10 +504,7 @@ html, body, #root {
   width: 1.9rem;
   height: 1.9rem;
   display: block;
-  filter:
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35))
-    drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 6px rgba(255, 211, 75, 0.38));
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35)) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 6px rgba(255, 211, 75, 0.38));
   /* Settle on mount / when the tooltip closes. */
   animation: lobby-nav-lock-settle 0.5s ease-out forwards;
 }
@@ -545,11 +534,10 @@ html, body, #root {
   opacity: 0;
   transform: translateX(-50%);
   background: radial-gradient(circle at 50% 35%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow:
-    0 0 0 1px #c99629,
-    inset 0 2px 8px rgba(255, 255, 255, 0.08),
-    inset 0 -7px 12px rgba(0, 0, 0, 0.72),
-    0 10px 25px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px #c99629,
+  inset 0 2px 8px rgba(255, 255, 255, 0.08),
+  inset 0 -7px 12px rgba(0, 0, 0, 0.72),
+  0 10px 25px rgba(0, 0, 0, 0.45);
   white-space: nowrap;
   pointer-events: none;
   transition: opacity 0.15s ease-in, top 0.15s ease-in;
@@ -579,10 +567,9 @@ html, body, #root {
   font-weight: 700;
   letter-spacing: 0.009em;
   color: #ffe98b;
-  text-shadow:
-    0 0.045em 0 #7a4f0c,
-    0 0.091em 0.318em rgba(255, 216, 91, 0.38),
-    0 0.182em 0.455em rgba(0, 0, 0, 0.75);
+  text-shadow: 0 0.045em 0 #7a4f0c,
+  0 0.091em 0.318em rgba(255, 216, 91, 0.38),
+  0 0.182em 0.455em rgba(0, 0, 0, 0.75);
   transition: opacity 0.25s ease 0.35s, transform 0.25s ease 0.35s;
 }
 
@@ -598,27 +585,57 @@ html, body, #root {
 }
 
 @keyframes lobby-nav-lock-wiggle {
-  0% { transform: rotate(0) scale(1); }
-  20% { transform: rotate(8deg) scale(0.93); }
-  55% { transform: rotate(-5deg) scale(0.97); }
-  80% { transform: rotate(3deg) scale(0.94); }
-  100% { transform: rotate(0) scale(0.95); }
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  20% {
+    transform: rotate(8deg) scale(0.93);
+  }
+  55% {
+    transform: rotate(-5deg) scale(0.97);
+  }
+  80% {
+    transform: rotate(3deg) scale(0.94);
+  }
+  100% {
+    transform: rotate(0) scale(0.95);
+  }
 }
 
 @keyframes lobby-nav-lock-settle {
-  0% { transform: rotate(0) scale(0.95); }
-  20% { transform: rotate(-8deg); }
-  55% { transform: rotate(5deg); }
-  80% { transform: rotate(-3deg); }
-  100% { transform: rotate(0) scale(1); }
+  0% {
+    transform: rotate(0) scale(0.95);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  55% {
+    transform: rotate(5deg);
+  }
+  80% {
+    transform: rotate(-3deg);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
 }
 
 @keyframes lobby-nav-lock-stretch {
-  0% { transform: translateX(-50%) scale(1, 1); }
-  10% { transform: translateX(-50%) scale(1.1, 0.9); }
-  30% { transform: translateX(-50%) scale(0.9, 1.1); }
-  50% { transform: translateX(-50%) scale(1.05, 0.95); }
-  100% { transform: translateX(-50%) scale(1, 1); }
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  10% {
+    transform: translateX(-50%) scale(1.1, 0.9);
+  }
+  30% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+  100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -694,9 +711,7 @@ html, body, #root {
 }
 
 .lobby-hourly-bonus-image:not(:disabled):hover img {
-  filter:
-    drop-shadow(0 0.55rem 0.7rem rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 0.9rem rgba(255, 196, 78, 0.55));
+  filter: drop-shadow(0 0.55rem 0.7rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.9rem rgba(255, 196, 78, 0.55));
 }
 
 /* When the bonus is claimable, pulse a warm gold halo around the
@@ -713,9 +728,7 @@ html, body, #root {
 .lobby-hourly-bonus-image.is-ready img {
   position: relative;
   z-index: 1;
-  filter:
-    drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 0.7rem rgba(255, 205, 80, 0.7));
+  filter: drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.7rem rgba(255, 205, 80, 0.7));
 }
 
 .lobby-hourly-bonus-image.is-ready::before {
@@ -736,8 +749,14 @@ html, body, #root {
 }
 
 @keyframes lobby-hourly-bonus-halo {
-  0%, 100% { opacity: 0.35; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.12); }
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
 }
 
 .lobby-hourly-bonus-image:not(:disabled):active {
@@ -766,15 +785,13 @@ html, body, #root {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: white;
-  text-shadow:
-    -1px 0 0 rgba(0, 0, 0, 0.65),
-    1px 0 0 rgba(0, 0, 0, 0.65),
-    0 -1px 0 rgba(0, 0, 0, 0.65),
-    0 1px 0 rgba(0, 0, 0, 0.65),
-    0 2px 4px rgba(0, 0, 0, 0.55);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0.3rem 0.6rem rgba(0, 0, 0, 0.45);
+  text-shadow: -1px 0 0 rgba(0, 0, 0, 0.65),
+  1px 0 0 rgba(0, 0, 0, 0.65),
+  0 -1px 0 rgba(0, 0, 0, 0.65),
+  0 1px 0 rgba(0, 0, 0, 0.65),
+  0 2px 4px rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
+  0 0.3rem 0.6rem rgba(0, 0, 0, 0.45);
   user-select: none;
   transition: background 200ms ease, border-color 200ms ease, transform 120ms ease;
 }
@@ -861,799 +878,795 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    --lobby-u proportional grid only ran on iPhone landscape. Lifted
    to base so desktop / tablet / phone all render the same lobby
    chrome scaled proportionally by --lobby-u. */
-  .lobby-screen {
-    height: 100dvh;
-    max-height: 100dvh;
-    overflow: hidden;
-    /* Centre the fixed-aspect lobby "stage" (.lobby-shell) in the viewport
-       so the lobby reads identically — just scaled — on every aspect ratio
-       (mobile / web / Android / iOS). Any letterbox space (viewport aspect
-       != the 1792x828 canvas) is filled by the fixed background layers
-       behind the stage. */
-    display: grid;
-    place-items: center;
-  }
-
-  .lobby-shell {
-    --lobby-u: min(0.055804dvw, 0.120773dvh);
-    position: relative;
-    display: block;
-    /* The lobby "stage" IS the 1792x828 design canvas, scaled to fit via
-       --lobby-u and centred by .lobby-screen. Every element positions
-       within this canvas, so the whole composition stays consistent across
-       devices instead of anchoring to the raw viewport edges (which made
-       the board/nav spread apart on wide desktop viewports). */
-    width: calc(1792 * var(--lobby-u));
-    height: calc(828 * var(--lobby-u));
-    min-height: 0;
-    overflow: visible;
-    padding: 0;
-  }
-
-  .lobby-topbar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 40;
-    display: block;
-    width: 100%;
-    height: calc(140 * var(--lobby-u));
-    padding: 0;
-  }
-
-  .lobby-profile-card {
-    position: absolute;
-    left: calc(52 * var(--lobby-u));
-    top: calc(30 * var(--lobby-u));
-    display: block;
-    width: calc(480 * var(--lobby-u));
-    height: calc(145 * var(--lobby-u));
-    max-width: none;
-    padding: 0;
-  }
-
-  .lobby-profile-avatar-wrap {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: calc(145 * var(--lobby-u));
-    height: calc(145 * var(--lobby-u));
-  }
-
-  .lobby-profile-avatar-core {
-    inset: 0;
-    box-shadow:
-      0 0 0 calc(4 * var(--lobby-u)) #1b123b,
-      0 0 0 calc(8 * var(--lobby-u)) #ffcc42,
-      0 0 0 calc(10 * var(--lobby-u)) rgba(255, 255, 255, 0.34),
-      0 calc(9 * var(--lobby-u)) calc(16 * var(--lobby-u)) rgba(0, 0, 0, 0.46);
-  }
-
-  .lobby-profile-avatar-core > * {
-    width: 100% !important;
-    height: 100% !important;
-  }
-
-  .lobby-profile-level-shield {
-    /* Pointy-top hexagon — height = width × 1.155 (the clip-path
-       puts vertices at top + bottom, flat sides left + right, so
-       the natural aspect ratio is taller than wide). */
-    right: calc(-13 * var(--lobby-u));
-    bottom: calc(-15 * var(--lobby-u));
-    width: calc(56 * var(--lobby-u));
-    height: calc(65 * var(--lobby-u));
-    font-size: calc(24 * var(--lobby-u));
-  }
-
-  .lobby-profile-copy {
-    position: absolute;
-    left: calc(178 * var(--lobby-u));
-    top: calc(8 * var(--lobby-u));
-    width: calc(330 * var(--lobby-u));
-    height: calc(138 * var(--lobby-u));
-  }
-
-  .lobby-profile-copy > a {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  .lobby-profile-copy > a > div:first-child {
-    position: absolute;
-    left: 0;
-    top: 0;
-    display: flex;
-    height: calc(42 * var(--lobby-u));
-    align-items: center;
-    gap: calc(12 * var(--lobby-u));
-  }
-
-  .lobby-profile-copy > a > div:first-child > div {
-    /* Wider max-width + smaller font-size so longer profile names
-       (e.g., "Yaniv Alfassi") render in full instead of clipping
-       with an ellipsis after ~7 characters. */
-    max-width: calc(260 * var(--lobby-u));
-    font-size: calc(32 * var(--lobby-u));
-    line-height: 1;
-  }
-
-  .lobby-profile-edit {
-    position: relative;
-    width: calc(34 * var(--lobby-u));
-    height: calc(34 * var(--lobby-u));
-    border-radius: calc(7 * var(--lobby-u));
-    font-size: 0;
-  }
-
-  .lobby-profile-edit::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: calc(17 * var(--lobby-u));
-    height: calc(5 * var(--lobby-u));
-    border-radius: 999px;
-    background: #ffcf55;
-    transform: translate(-50%, -50%) rotate(-38deg);
-  }
-
-  .lobby-profile-edit::after {
-    content: '';
-    position: absolute;
-    left: calc(21 * var(--lobby-u));
-    top: calc(9 * var(--lobby-u));
-    width: 0;
-    height: 0;
-    border-left: calc(6 * var(--lobby-u)) solid #ffcf55;
-    border-top: calc(3 * var(--lobby-u)) solid transparent;
-    border-bottom: calc(3 * var(--lobby-u)) solid transparent;
-    transform: rotate(-38deg);
-  }
-
-  .lobby-profile-copy > a > div:nth-child(2) {
-    position: static;
-    display: block;
-    margin: 0;
-  }
-
-  .lobby-rank-badge {
-    position: absolute;
-    left: calc(2 * var(--lobby-u));
-    top: calc(54 * var(--lobby-u));
-    width: calc(160 * var(--lobby-u));
-    min-width: 0;
-    height: calc(42 * var(--lobby-u));
-    gap: calc(8 * var(--lobby-u));
-    border-radius: calc(10 * var(--lobby-u));
-    padding: calc(4 * var(--lobby-u)) calc(12 * var(--lobby-u)) calc(5 * var(--lobby-u)) calc(8 * var(--lobby-u));
-    font-size: calc(20 * var(--lobby-u));
-  }
-
-  .lobby-rank-star {
-    width: calc(24 * var(--lobby-u));
-    height: calc(24 * var(--lobby-u));
-  }
-
-  .lobby-profile-progress {
-    /* Width matched to .lobby-rank-badge (160 lobby-u) so the level
-       bar reads as the same length as the "ROOKIE" status pill above
-       it. Was 280 lobby-u — almost twice as wide as the badge. */
-    position: absolute;
-    left: 0;
-    top: calc(110 * var(--lobby-u));
-    width: calc(160 * var(--lobby-u));
-    height: calc(34 * var(--lobby-u));
-    border-width: calc(3 * var(--lobby-u));
-  }
-
-  /* In-bar percent label scaled for the lobby-u (large desktop)
-     breakpoint. The progress bar at this breakpoint is 34 lobby-u
-     tall — plenty of room for a 17 lobby-u label. */
-  .lobby-profile-progress-label {
-    font-size: calc(17 * var(--lobby-u));
-    letter-spacing: 0;
-  }
-
-  /* Legacy class (no longer in markup) — keep the override as a
-     no-op so older mounted DOMs don't show it. */
-  .lobby-profile-progress-text { display: none; }
-
-  .lobby-profile-copy > button {
-    display: none;
-  }
-
-  .lobby-topbar-actions {
-    position: absolute;
-    inset: 0;
-    display: block;
-  }
-
-  .lobby-currency-strip {
-    /* Horizontally centred on the viewport. Sizes here were halved
-       from the original design grid (590×82 → 472×66 etc.) to take
-       20% off the visual footprint per the user's spec — every
-       numeric multiplier on var(--lobby-u) in this block and the
-       four .lobby-currency-* rules below was scaled by 0.8. The
-       earlier Tailwind shrink in LobbyTopBar.tsx was a no-op
-       because THIS block applies at all viewports and overrides
-       utility classes via source order. */
-    position: absolute;
-    left: 50%;
-    /* Nudged up from the design grid's 32u (now 18u) so the balances clear
-       the top edge of the (smaller, top-down) board. Clamped so it can never
-       cross the top of the lobby canvas (the phone's screen frame). */
-    top: max(0px, calc(18 * var(--lobby-u) - 5px));
-    transform: translateX(-50%);
-    display: grid;
-    width: calc(472 * var(--lobby-u));
-    height: calc(66 * var(--lobby-u));
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    border: 1px solid rgba(199, 143, 65, 0.78);
-    border-radius: calc(19 * var(--lobby-u));
-    background:
-      linear-gradient(180deg, rgba(18, 22, 33, 0.94), rgba(7, 10, 20, 0.98)),
-      radial-gradient(circle at 50% 0, rgba(255, 213, 102, 0.11), transparent 70%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.12),
-      inset 0 -1px 0 rgba(255, 205, 80, 0.08),
-      0 calc(6 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
-  }
-
-  .lobby-currency-strip::after {
-    content: '';
-    position: absolute;
-    /* 50% of the new 472-unit width — 236. */
-    left: calc(236 * var(--lobby-u));
-    top: calc(13 * var(--lobby-u));
-    width: calc(2 * var(--lobby-u));
-    height: calc(40 * var(--lobby-u));
-    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.16), transparent);
-  }
-
-  .lobby-currency-pill {
-    display: grid;
-    min-width: 0;
-    height: 100%;
-    grid-template-columns: calc(48 * var(--lobby-u)) minmax(0, 1fr) calc(44 * var(--lobby-u));
-    align-items: center;
-    gap: calc(10 * var(--lobby-u));
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    padding: 0 calc(16 * var(--lobby-u)) 0 calc(19 * var(--lobby-u));
-  }
-
-  .lobby-currency-icon {
-    width: calc(46 * var(--lobby-u));
-    height: calc(46 * var(--lobby-u));
-    margin-left: 0;
-  }
-
-  .lobby-currency-value {
-    height: auto;
-    min-width: 0;
-    justify-content: center;
-    margin-left: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
-    font-size: calc(26 * var(--lobby-u));
-  }
-
-  .lobby-currency-add {
-    width: calc(44 * var(--lobby-u));
-    height: calc(44 * var(--lobby-u));
-    margin-right: 0;
-    border: 1px solid rgba(203, 255, 147, 0.42);
-    border-radius: calc(9 * var(--lobby-u));
-  }
-
-  .lobby-currency-add > span:first-child {
-    width: calc(6 * var(--lobby-u));
-    height: calc(26 * var(--lobby-u));
-  }
-
-  .lobby-currency-add > span:last-child {
-    width: calc(26 * var(--lobby-u));
-    height: calc(6 * var(--lobby-u));
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] {
-    position: absolute;
-    right: calc(32 * var(--lobby-u));
-    top: calc(34 * var(--lobby-u));
-    display: flex;
-    gap: calc(25 * var(--lobby-u));
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] button {
-    width: calc(110 * var(--lobby-u));
-    min-width: 0;
-    gap: calc(4 * var(--lobby-u));
-    font-size: calc(17 * var(--lobby-u));
-    line-height: 1;
-  }
-
-  .lobby-topbar nav[aria-label='Lobby shortcuts'] button > span:first-child {
-    width: calc(64 * var(--lobby-u));
-    height: calc(64 * var(--lobby-u));
-  }
-
-  .lobby-main-grid {
-    /* Full-viewport-width grid so the centre (board) column is centred to
-       the SCREEN. The two 1fr side columns are equal, so the fixed 1032u
-       board column always resolves to exactly 50dvw — the same axis the
-       bottom nav (left:50%) and the top balance pills sit on. The u terms
-       cancel: 1fr = (100% - 1032u - 2*gap)/2, so the board centre =
-       1fr + gap + 516u = 50dvw on EVERY aspect ratio.
-       Before: a fixed 1720u block pinned at left:55u with asymmetric side
-       columns (264u | 1032u | 280u). The board centre landed ~11u right of
-       the canvas centre, AND the whole canvas was left-anchored — so when
-       the scaled 1792x828 canvas was letterboxed (any viewport != ~2.16:1)
-       the board drifted off-centre and FLIPPED side between web (wide) and
-       the Android landscape viewport (tall-ish). That was the off-centre
-       board + the cross-platform inconsistency. Centring the board column
-       to the viewport puts board + podium + nav + balances on one axis
-       everywhere. The left offers stay pinned to the left edge via their
-       own fixed width + margin-left (see .lobby-offers).
-       (top kept at 94u so the lowered podium + Play button don't slide
-       under the bottom navigator on short landscape viewports.) */
-    position: absolute;
-    left: 0;
-    top: calc(94 * var(--lobby-u));
-    z-index: 20;
-    display: grid;
-    width: 100%;
-    height: calc(490 * var(--lobby-u));
-    /* minmax(0, 1fr) — NOT plain 1fr — for the side columns. A bare 1fr
-       has an implicit min-content floor, so the left offers (264u + margin)
-       forced col 1 wider than col 3 and shoved the board ~11u right of
-       centre, misaligning it with the viewport-centred nav. minmax(0,1fr)
-       lets both sides shrink equally so the board column is truly centred
-       (offers harmlessly overflow into the empty gap on narrow widths). */
-    grid-template-columns: minmax(0, 1fr) calc(1032 * var(--lobby-u)) minmax(0, 1fr);
-    column-gap: calc(72 * var(--lobby-u));
-    align-items: start;
-    padding: 0;
-  }
-
-  .lobby-offers,
-  .lobby-action-stack {
-    align-self: start;
-    width: 100%;
-    /* Anchor the side cards below the top bar's profile widget. The extra
-       +47px (was +20px) drops the first card clear of the profile card's
-       box on short-landscape, where the two regions otherwise overlap by
-       ~25px and the profile card swallowed taps on the top of the first
-       offer (Special Offers "not clickable"). */
-    margin-top: calc(80 * var(--lobby-u) + 47px);
-  }
-
-  .lobby-offers {
-    display: flex;
-    /* The grid's first column is now a flexible 1fr (so the centre board
-       column is screen-centred). Pin the offers to a fixed width at the
-       left edge of that column so they don't stretch across it and stay
-       exactly where they were before the centring change. Overrides the
-       width:100% from the shared .lobby-offers/.lobby-action-stack rule. */
-    width: calc(264 * var(--lobby-u));
-    justify-self: start;
-    margin-left: calc(55 * var(--lobby-u));
-    height: calc(400 * var(--lobby-u));
-    flex-direction: column;
-    /* Pack from the top so the first card aligns with the first
-       card of the right-side .lobby-action-stack (which is a grid
-       with align-content: start). An earlier media-query rule sets
-       justify-content: center here, which left a ~21 px gap above
-       the first card and made the two stacks render at different
-       y-positions. */
-    justify-content: flex-start;
-    gap: calc(10 * var(--lobby-u));
-    overflow: visible;
-    padding: 0;
-    /* Sit above the carousel boards (data-slot selected=30 / side=20) so the
-       fanned-out side-board images, whose transparent boxes overflow into
-       this column, can't intercept taps meant for the offer cards. */
-    position: relative;
-    z-index: 31;
-  }
-
-  /* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
-     pinned to the right edge of the third grid column. Inherits the left
-     rail's top anchor (margin-top), width, height, gap, flex-column,
-     top-packing (flex-start) and z-index from .lobby-offers; only the
-     horizontal pin flips. */
-  .lobby-offers--right {
-    justify-self: end;
-    margin-left: 0;
-    margin-right: calc(55 * var(--lobby-u));
-    /* The rail box is wider than the square icons; without this the icons
-       sit at the box's LEFT edge, leaving an oversized gap to the screen's
-       right edge. Right-align them so they hug the right with the same gap
-       the left rail's icons have from the left edge. */
-    align-items: flex-end;
-  }
-
-  /* Old text-tile cards — wide horizontal rectangle. Scoped to
-   * non-image variants so the new 400x400 icon cards aren't
-   * forced into a 264u x 100u shape. */
-  .lobby-offer-card:not(:has(> img)) {
-    flex: 0 0 calc(100 * var(--lobby-u));
-    width: calc(264 * var(--lobby-u));
-    min-width: 0;
-    height: calc(100 * var(--lobby-u));
-    min-height: 0;
-    border-radius: calc(11 * var(--lobby-u));
-    gap: calc(10 * var(--lobby-u));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.14),
-      0 calc(7 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
-  }
-
-  /* Image icon cards — square, sized off lobby-u. 30% smaller
-   * than the prior round (240u → 168u) per operator request. */
-  .lobby-offer-card:has(> img) {
-    flex: 0 0 calc(168 * var(--lobby-u)) !important;
-    width: calc(168 * var(--lobby-u)) !important;
-    height: calc(168 * var(--lobby-u)) !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    min-height: 0;
-    aspect-ratio: 1 / 1 !important;
-    border-radius: 0;
-    gap: 0;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .lobby-offer-card:not(:has(> img)) > span.relative.grid {
-    width: calc(77 * var(--lobby-u));
-    height: calc(77 * var(--lobby-u));
-    margin-left: calc(18 * var(--lobby-u));
-    border-width: calc(2 * var(--lobby-u));
-    font-size: calc(37 * var(--lobby-u));
-  }
-
-  .lobby-offer-card:not(:has(> img)) > span.relative:not(.grid) {
-    width: calc(140 * var(--lobby-u));
-    padding-right: calc(32 * var(--lobby-u));
-  }
-
-  .lobby-offer-card > span.relative > span:first-child {
-    font-size: calc(22 * var(--lobby-u));
-    line-height: 0.98;
-  }
-
-  .lobby-offer-card > span.relative > span:last-child {
-    margin-top: calc(6 * var(--lobby-u));
-    font-size: calc(12 * var(--lobby-u));
-    line-height: 1.08;
-  }
-
-  .lobby-offer-arrow {
-    position: absolute;
-    right: calc(20 * var(--lobby-u));
-    top: 50%;
-    color: #ffe29d;
-    font: 900 calc(44 * var(--lobby-u)) / 1 "Segoe UI", sans-serif;
-    text-shadow: 0 calc(3 * var(--lobby-u)) 0 rgba(0, 0, 0, 0.48);
-    transform: translateY(-50%);
-  }
-
-  .lobby-board-region {
-    /* 20 % wider than the previous 860 x 490. Height stays at 490 so
-       the Play button below the carousel doesn't slide into the
-       bottom navigator at short iPhone-landscape viewports. The
-       boards still read as larger because they're sized by width. */
-    display: block;
-    width: calc(1032 * var(--lobby-u));
-    height: calc(490 * var(--lobby-u));
-    min-width: 0;
-    overflow: visible;
-    /* Small lift; no scale now — board size is the .lobby-carousel-board
-       width, and the board is bottom-anchored so it sits on the podium.
-       Only the carousel moves — the offers rail (grid col 1) is untouched. */
-    transform: translateY(calc(-12 * var(--lobby-u)));
-  }
-
-  .lobby-carousel-section {
-    width: calc(1032 * var(--lobby-u));
-    max-width: none;
-    height: calc(490 * var(--lobby-u));
-    overflow: visible;
-  }
-
-  .lobby-carousel-viewport {
-    width: calc(1032 * var(--lobby-u));
-    height: calc(490 * var(--lobby-u));
-    max-height: none;
-    min-height: 0 !important;
-    aspect-ratio: auto;
-    overflow: visible;
-  }
-
-  .lobby-carousel-board {
-    --lobby-prev-x: -50%;
-    --lobby-next-x: 50%;
-    --lobby-side-scale: 0.72;
-    --lobby-incoming-prev-x: -84%;
-    --lobby-incoming-next-x: 84%;
-    --lobby-incoming-scale: 0.64;
-    /* Bottom-anchored: the board's BASE sits at a fixed point near the
-       podium rim, so growing the board extends it UPWARD into the freed
-       space instead of sinking into the podium — and it stays seated
-       through future size changes. top:auto overrides the short-landscape
-       `top` so the board isn't stretched between both edges. Tune `bottom`
-       once to seat the base on the rim; tune width for size. */
-    top: auto;
-    /* Pure --lobby-u (baked from the mobile baseline: -25u + 10px at the phone
-       lobby-u ~0.486). A fixed px term is a DIFFERENT fraction of the scaled
-       stage at each resolution, so it made the board <-> podium gap drift
-       between phone and desktop. Pure-u keeps the mobile gap identical
-       everywhere. */
-    bottom: calc(-4.4 * var(--lobby-u));
-    /* Top-down boards read larger than the old tilted art (no perspective
-       foreshortening). Net width 69% (was 74% tilted): trimmed for top-down,
-       then +10% back per operator review once the hourly-bonus icon was
-       shrunk to free navigator room. Bottom-anchored, so it stays seated on
-       the podium as it resizes. */
-    /* 10% smaller (69% -> 62.1%) per operator review. Bottom-anchored, so it
-       shrinks toward its base on the podium rather than floating. */
-    width: 62.1%;
-    height: auto;
-  }
-
-  .lobby-carousel-board[data-slot='selected'] {
-    transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
-    /* Tight, dark contact shadow under the centred board so it reads as
-       sitting on the podium (selected board only — side boards stay flat). */
-    filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
-  }
-
-  .lobby-carousel-board[data-slot='previous'] {
-    transform: translateX(-50%) translateX(calc(var(--lobby-prev-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  }
-
-  .lobby-carousel-board[data-slot='next'] {
-    transform: translateX(-50%) translateX(calc(var(--lobby-next-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  }
-
-  .lobby-carousel-viewport > img.pointer-events-none {
-    /* Podium: +20 % (702 -> 842) for the new thinner US-of-A holder art.
-       Bottom is pure --lobby-u (baked from -72u - 15px at the phone lobby-u
-       ~0.486) so the board <-> podium gap is identical at every resolution
-       (mobile baseline), instead of drifting via the old fixed px term. */
-    bottom: calc(-102.9 * var(--lobby-u));
-    width: calc(842 * var(--lobby-u));
-    max-width: none;
-    /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
-       drop-shadow on the <img>); scales with --lobby-u. */
-    filter: drop-shadow(0 calc(20 * var(--lobby-u)) calc(13 * var(--lobby-u)) rgba(0, 0, 0, 0.62));
-  }
-
-  /* Podium cross-fade: the newest layer fades in over the old one when the
-     podium image swaps (e.g. a board with a dedicated holder). Driven by
-     PodiumImage in LobbyBoardCarousel. */
-  @keyframes lobbyPodiumFade {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .lobby-podium-fade-in {
-    animation: lobbyPodiumFade 450ms ease forwards;
-  }
-
-  /* NOTE: .lobby-podium-fade-out is no longer applied — the outgoing podium
-     stays fully opaque under the fading-in one (see PodiumImage in
-     LobbyBoardCarousel: double-fading dipped combined opacity below 1 and
-     flashed the background through the podium). Kept for reference. */
-  @keyframes lobbyPodiumFadeOut {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  .lobby-podium-fade-out {
-    animation: lobbyPodiumFadeOut 450ms ease forwards;
-  }
-
-  /* (Removed a `.lobby-carousel-viewport > div[class*='top-'] { display:none }`
-     rule that used to hide the deleted prev/next nav arrows — it ALSO matched
-     the board-name pill's `top-[2%]` class and silently hid it, which is why
-     the board name "disappeared". The name pill is shown again via
-     .gr-name-pill.) */
-
-  .lobby-play-button {
-    /* Halved from 80×350 — previously dominating the board centre.
-       The vertical offset is left as-is (still sits on the wooden
-       deck below the carved front); only the button's intrinsic
-       size shrinks. */
-    /* Pure --lobby-u (baked from -85u - 5px at the phone lobby-u ~0.486) so the
-       Play button stays locked to the board + podium at every resolution. */
-    bottom: calc(-95.3 * var(--lobby-u));
-    height: calc(40 * var(--lobby-u));
-    min-width: calc(175 * var(--lobby-u));
-    padding: 0 calc(21 * var(--lobby-u));
-    border-width: calc(2 * var(--lobby-u));
-    font-size: calc(27 * var(--lobby-u));
-    letter-spacing: 0.16em;
-    box-shadow:
-      0 calc(3 * var(--lobby-u)) 0 #06450a,
-      0 calc(8 * var(--lobby-u)) calc(11 * var(--lobby-u)) rgba(0, 0, 0, 0.4),
-      inset 0 calc(1 * var(--lobby-u)) 0 rgba(255, 255, 255, 0.74),
-      inset 0 calc(-3 * var(--lobby-u)) 0 rgba(0, 78, 5, 0.34),
-      0 0 0 calc(1 * var(--lobby-u)) rgba(7, 27, 11, 0.85);
-  }
-
-  .lobby-carousel-viewport > div[class*='bottom-24'] {
-    display: none;
-  }
+.lobby-screen {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  /* Centre the fixed-aspect lobby "stage" (.lobby-shell) in the viewport
+     so the lobby reads identically — just scaled — on every aspect ratio
+     (mobile / web / Android / iOS). Any letterbox space (viewport aspect
+     != the 1792x828 canvas) is filled by the fixed background layers
+     behind the stage. */
+  display: grid;
+  place-items: center;
+}
+
+.lobby-shell {
+  --lobby-u: min(0.055804dvw, 0.120773dvh);
+  position: relative;
+  display: block;
+  /* The lobby "stage" IS the 1792x828 design canvas, scaled to fit via
+     --lobby-u and centred by .lobby-screen. Every element positions
+     within this canvas, so the whole composition stays consistent across
+     devices instead of anchoring to the raw viewport edges (which made
+     the board/nav spread apart on wide desktop viewports). */
+  width: calc(1792 * var(--lobby-u));
+  height: calc(828 * var(--lobby-u));
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+.lobby-topbar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  display: block;
+  width: 100%;
+  height: calc(140 * var(--lobby-u));
+  padding: 0;
+}
+
+.lobby-profile-card {
+  position: absolute;
+  left: calc(52 * var(--lobby-u));
+  top: calc(30 * var(--lobby-u));
+  display: block;
+  width: calc(480 * var(--lobby-u));
+  height: calc(145 * var(--lobby-u));
+  max-width: none;
+  padding: 0;
+}
+
+.lobby-profile-avatar-wrap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(145 * var(--lobby-u));
+  height: calc(145 * var(--lobby-u));
+}
+
+.lobby-profile-avatar-core {
+  inset: 0;
+  box-shadow: 0 0 0 calc(4 * var(--lobby-u)) #1b123b,
+  0 0 0 calc(8 * var(--lobby-u)) #ffcc42,
+  0 0 0 calc(10 * var(--lobby-u)) rgba(255, 255, 255, 0.34),
+  0 calc(9 * var(--lobby-u)) calc(16 * var(--lobby-u)) rgba(0, 0, 0, 0.46);
+}
+
+.lobby-profile-avatar-core > * {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.lobby-profile-level-shield {
+  /* Pointy-top hexagon — height = width × 1.155 (the clip-path
+     puts vertices at top + bottom, flat sides left + right, so
+     the natural aspect ratio is taller than wide). */
+  right: calc(-13 * var(--lobby-u));
+  bottom: calc(-15 * var(--lobby-u));
+  width: calc(56 * var(--lobby-u));
+  height: calc(65 * var(--lobby-u));
+  font-size: calc(24 * var(--lobby-u));
+}
+
+.lobby-profile-copy {
+  position: absolute;
+  left: calc(178 * var(--lobby-u));
+  top: calc(8 * var(--lobby-u));
+  width: calc(330 * var(--lobby-u));
+  height: calc(138 * var(--lobby-u));
+}
+
+.lobby-profile-copy > a {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.lobby-profile-copy > a > div:first-child {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  height: calc(42 * var(--lobby-u));
+  align-items: center;
+  gap: calc(12 * var(--lobby-u));
+}
+
+.lobby-profile-copy > a > div:first-child > div {
+  /* Wider max-width + smaller font-size so longer profile names
+     (e.g., "Yaniv Alfassi") render in full instead of clipping
+     with an ellipsis after ~7 characters. */
+  max-width: calc(260 * var(--lobby-u));
+  font-size: calc(32 * var(--lobby-u));
+  line-height: 1;
+}
+
+.lobby-profile-edit {
+  position: relative;
+  width: calc(34 * var(--lobby-u));
+  height: calc(34 * var(--lobby-u));
+  border-radius: calc(7 * var(--lobby-u));
+  font-size: 0;
+}
+
+.lobby-profile-edit::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(17 * var(--lobby-u));
+  height: calc(5 * var(--lobby-u));
+  border-radius: 999px;
+  background: #ffcf55;
+  transform: translate(-50%, -50%) rotate(-38deg);
+}
+
+.lobby-profile-edit::after {
+  content: '';
+  position: absolute;
+  left: calc(21 * var(--lobby-u));
+  top: calc(9 * var(--lobby-u));
+  width: 0;
+  height: 0;
+  border-left: calc(6 * var(--lobby-u)) solid #ffcf55;
+  border-top: calc(3 * var(--lobby-u)) solid transparent;
+  border-bottom: calc(3 * var(--lobby-u)) solid transparent;
+  transform: rotate(-38deg);
+}
+
+.lobby-profile-copy > a > div:nth-child(2) {
+  position: static;
+  display: block;
+  margin: 0;
+}
+
+.lobby-rank-badge {
+  position: absolute;
+  left: calc(2 * var(--lobby-u));
+  top: calc(54 * var(--lobby-u));
+  width: calc(160 * var(--lobby-u));
+  min-width: 0;
+  height: calc(42 * var(--lobby-u));
+  gap: calc(8 * var(--lobby-u));
+  border-radius: calc(10 * var(--lobby-u));
+  padding: calc(4 * var(--lobby-u)) calc(12 * var(--lobby-u)) calc(5 * var(--lobby-u)) calc(8 * var(--lobby-u));
+  font-size: calc(20 * var(--lobby-u));
+}
+
+.lobby-rank-star {
+  width: calc(24 * var(--lobby-u));
+  height: calc(24 * var(--lobby-u));
+}
+
+.lobby-profile-progress {
+  /* Width matched to .lobby-rank-badge (160 lobby-u) so the level
+     bar reads as the same length as the "ROOKIE" status pill above
+     it. Was 280 lobby-u — almost twice as wide as the badge. */
+  position: absolute;
+  left: 0;
+  top: calc(110 * var(--lobby-u));
+  width: calc(160 * var(--lobby-u));
+  height: calc(34 * var(--lobby-u));
+  border-width: calc(3 * var(--lobby-u));
+}
+
+/* In-bar percent label scaled for the lobby-u (large desktop)
+   breakpoint. The progress bar at this breakpoint is 34 lobby-u
+   tall — plenty of room for a 17 lobby-u label. */
+.lobby-profile-progress-label {
+  font-size: calc(17 * var(--lobby-u));
+  letter-spacing: 0;
+}
+
+/* Legacy class (no longer in markup) — keep the override as a
+   no-op so older mounted DOMs don't show it. */
+.lobby-profile-progress-text {
+  display: none;
+}
+
+.lobby-profile-copy > button {
+  display: none;
+}
+
+.lobby-topbar-actions {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.lobby-currency-strip {
+  /* Horizontally centred on the viewport. Sizes here were halved
+     from the original design grid (590×82 → 472×66 etc.) to take
+     20% off the visual footprint per the user's spec — every
+     numeric multiplier on var(--lobby-u) in this block and the
+     four .lobby-currency-* rules below was scaled by 0.8. The
+     earlier Tailwind shrink in LobbyTopBar.tsx was a no-op
+     because THIS block applies at all viewports and overrides
+     utility classes via source order. */
+  position: absolute;
+  left: 50%;
+  /* Nudged up from the design grid's 32u (now 18u) so the balances clear
+     the top edge of the (smaller, top-down) board. Clamped so it can never
+     cross the top of the lobby canvas (the phone's screen frame). */
+  top: max(0px, calc(18 * var(--lobby-u) - 5px));
+  transform: translateX(-50%);
+  display: grid;
+  width: calc(472 * var(--lobby-u));
+  height: calc(66 * var(--lobby-u));
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid rgba(199, 143, 65, 0.78);
+  border-radius: calc(19 * var(--lobby-u));
+  background: linear-gradient(180deg, rgba(18, 22, 33, 0.94), rgba(7, 10, 20, 0.98)),
+  radial-gradient(circle at 50% 0, rgba(255, 213, 102, 0.11), transparent 70%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12),
+  inset 0 -1px 0 rgba(255, 205, 80, 0.08),
+  0 calc(6 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
+}
+
+.lobby-currency-strip::after {
+  content: '';
+  position: absolute;
+  /* 50% of the new 472-unit width — 236. */
+  left: calc(236 * var(--lobby-u));
+  top: calc(13 * var(--lobby-u));
+  width: calc(2 * var(--lobby-u));
+  height: calc(40 * var(--lobby-u));
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.16), transparent);
+}
+
+.lobby-currency-pill {
+  display: grid;
+  min-width: 0;
+  height: 100%;
+  grid-template-columns: calc(48 * var(--lobby-u)) minmax(0, 1fr) calc(44 * var(--lobby-u));
+  align-items: center;
+  gap: calc(10 * var(--lobby-u));
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 0 calc(16 * var(--lobby-u)) 0 calc(19 * var(--lobby-u));
+}
+
+.lobby-currency-icon {
+  width: calc(46 * var(--lobby-u));
+  height: calc(46 * var(--lobby-u));
+  margin-left: 0;
+}
+
+.lobby-currency-value {
+  height: auto;
+  min-width: 0;
+  justify-content: center;
+  margin-left: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  font-size: calc(26 * var(--lobby-u));
+}
+
+.lobby-currency-add {
+  width: calc(44 * var(--lobby-u));
+  height: calc(44 * var(--lobby-u));
+  margin-right: 0;
+  border: 1px solid rgba(203, 255, 147, 0.42);
+  border-radius: calc(9 * var(--lobby-u));
+}
+
+.lobby-currency-add > span:first-child {
+  width: calc(6 * var(--lobby-u));
+  height: calc(26 * var(--lobby-u));
+}
+
+.lobby-currency-add > span:last-child {
+  width: calc(26 * var(--lobby-u));
+  height: calc(6 * var(--lobby-u));
+}
+
+.lobby-topbar nav[aria-label='Lobby shortcuts'] {
+  position: absolute;
+  right: calc(32 * var(--lobby-u));
+  top: calc(34 * var(--lobby-u));
+  display: flex;
+  gap: calc(25 * var(--lobby-u));
+}
+
+.lobby-topbar nav[aria-label='Lobby shortcuts'] button {
+  width: calc(110 * var(--lobby-u));
+  min-width: 0;
+  gap: calc(4 * var(--lobby-u));
+  font-size: calc(17 * var(--lobby-u));
+  line-height: 1;
+}
+
+.lobby-topbar nav[aria-label='Lobby shortcuts'] button > span:first-child {
+  width: calc(64 * var(--lobby-u));
+  height: calc(64 * var(--lobby-u));
+}
+
+.lobby-main-grid {
+  /* Full-viewport-width grid so the centre (board) column is centred to
+     the SCREEN. The two 1fr side columns are equal, so the fixed 1032u
+     board column always resolves to exactly 50dvw — the same axis the
+     bottom nav (left:50%) and the top balance pills sit on. The u terms
+     cancel: 1fr = (100% - 1032u - 2*gap)/2, so the board centre =
+     1fr + gap + 516u = 50dvw on EVERY aspect ratio.
+     Before: a fixed 1720u block pinned at left:55u with asymmetric side
+     columns (264u | 1032u | 280u). The board centre landed ~11u right of
+     the canvas centre, AND the whole canvas was left-anchored — so when
+     the scaled 1792x828 canvas was letterboxed (any viewport != ~2.16:1)
+     the board drifted off-centre and FLIPPED side between web (wide) and
+     the Android landscape viewport (tall-ish). That was the off-centre
+     board + the cross-platform inconsistency. Centring the board column
+     to the viewport puts board + podium + nav + balances on one axis
+     everywhere. The left offers stay pinned to the left edge via their
+     own fixed width + margin-left (see .lobby-offers).
+     (top kept at 94u so the lowered podium + Play button don't slide
+     under the bottom navigator on short landscape viewports.) */
+  position: absolute;
+  left: 0;
+  top: calc(94 * var(--lobby-u));
+  z-index: 20;
+  display: grid;
+  width: 100%;
+  height: calc(490 * var(--lobby-u));
+  /* minmax(0, 1fr) — NOT plain 1fr — for the side columns. A bare 1fr
+     has an implicit min-content floor, so the left offers (264u + margin)
+     forced col 1 wider than col 3 and shoved the board ~11u right of
+     centre, misaligning it with the viewport-centred nav. minmax(0,1fr)
+     lets both sides shrink equally so the board column is truly centred
+     (offers harmlessly overflow into the empty gap on narrow widths). */
+  grid-template-columns: minmax(0, 1fr) calc(1032 * var(--lobby-u)) minmax(0, 1fr);
+  column-gap: calc(72 * var(--lobby-u));
+  align-items: start;
+  padding: 0;
+}
+
+.lobby-offers,
+.lobby-action-stack {
+  align-self: start;
+  width: 100%;
+  /* Anchor the side cards below the top bar's profile widget. The extra
+     +47px (was +20px) drops the first card clear of the profile card's
+     box on short-landscape, where the two regions otherwise overlap by
+     ~25px and the profile card swallowed taps on the top of the first
+     offer (Special Offers "not clickable"). */
+  margin-top: calc(80 * var(--lobby-u) + 47px);
+}
+
+.lobby-offers {
+  display: flex;
+  /* The grid's first column is now a flexible 1fr (so the centre board
+     column is screen-centred). Pin the offers to a fixed width at the
+     left edge of that column so they don't stretch across it and stay
+     exactly where they were before the centring change. Overrides the
+     width:100% from the shared .lobby-offers/.lobby-action-stack rule. */
+  width: calc(264 * var(--lobby-u));
+  justify-self: start;
+  margin-left: calc(55 * var(--lobby-u));
+  height: calc(400 * var(--lobby-u));
+  flex-direction: column;
+  /* Pack from the top so the first card aligns with the first
+     card of the right-side .lobby-action-stack (which is a grid
+     with align-content: start). An earlier media-query rule sets
+     justify-content: center here, which left a ~21 px gap above
+     the first card and made the two stacks render at different
+     y-positions. */
+  justify-content: flex-start;
+  gap: calc(10 * var(--lobby-u));
+  overflow: visible;
+  padding: 0;
+  /* Sit above the carousel boards (data-slot selected=30 / side=20) so the
+     fanned-out side-board images, whose transparent boxes overflow into
+     this column, can't intercept taps meant for the offer cards. */
+  position: relative;
+  z-index: 31;
+}
+
+/* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
+   pinned to the right edge of the third grid column. Inherits the left
+   rail's top anchor (margin-top), width, height, gap, flex-column,
+   top-packing (flex-start) and z-index from .lobby-offers; only the
+   horizontal pin flips. */
+.lobby-offers--right {
+  justify-self: end;
+  margin-left: 0;
+  margin-right: calc(55 * var(--lobby-u));
+  /* The rail box is wider than the square icons; without this the icons
+     sit at the box's LEFT edge, leaving an oversized gap to the screen's
+     right edge. Right-align them so they hug the right with the same gap
+     the left rail's icons have from the left edge. */
+  align-items: flex-end;
+}
+
+/* Old text-tile cards — wide horizontal rectangle. Scoped to
+ * non-image variants so the new 400x400 icon cards aren't
+ * forced into a 264u x 100u shape. */
+.lobby-offer-card:not(:has(> img)) {
+  flex: 0 0 calc(100 * var(--lobby-u));
+  width: calc(264 * var(--lobby-u));
+  min-width: 0;
+  height: calc(100 * var(--lobby-u));
+  min-height: 0;
+  border-radius: calc(11 * var(--lobby-u));
+  gap: calc(10 * var(--lobby-u));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+  0 calc(7 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
+}
+
+/* Image icon cards — square, sized off lobby-u. 30% smaller
+ * than the prior round (240u → 168u) per operator request. */
+.lobby-offer-card:has(> img) {
+  flex: 0 0 calc(168 * var(--lobby-u)) !important;
+  width: calc(168 * var(--lobby-u)) !important;
+  height: calc(168 * var(--lobby-u)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 0;
+  gap: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.lobby-offer-card:not(:has(> img)) > span.relative.grid {
+  width: calc(77 * var(--lobby-u));
+  height: calc(77 * var(--lobby-u));
+  margin-left: calc(18 * var(--lobby-u));
+  border-width: calc(2 * var(--lobby-u));
+  font-size: calc(37 * var(--lobby-u));
+}
+
+.lobby-offer-card:not(:has(> img)) > span.relative:not(.grid) {
+  width: calc(140 * var(--lobby-u));
+  padding-right: calc(32 * var(--lobby-u));
+}
+
+.lobby-offer-card > span.relative > span:first-child {
+  font-size: calc(22 * var(--lobby-u));
+  line-height: 0.98;
+}
+
+.lobby-offer-card > span.relative > span:last-child {
+  margin-top: calc(6 * var(--lobby-u));
+  font-size: calc(12 * var(--lobby-u));
+  line-height: 1.08;
+}
+
+.lobby-offer-arrow {
+  position: absolute;
+  right: calc(20 * var(--lobby-u));
+  top: 50%;
+  color: #ffe29d;
+  font: 900 calc(44 * var(--lobby-u)) / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 calc(3 * var(--lobby-u)) 0 rgba(0, 0, 0, 0.48);
+  transform: translateY(-50%);
+}
+
+.lobby-board-region {
+  /* 20 % wider than the previous 860 x 490. Height stays at 490 so
+     the Play button below the carousel doesn't slide into the
+     bottom navigator at short iPhone-landscape viewports. The
+     boards still read as larger because they're sized by width. */
+  display: block;
+  width: calc(1032 * var(--lobby-u));
+  height: calc(490 * var(--lobby-u));
+  min-width: 0;
+  overflow: visible;
+  /* Small lift; no scale now — board size is the .lobby-carousel-board
+     width, and the board is bottom-anchored so it sits on the podium.
+     Only the carousel moves — the offers rail (grid col 1) is untouched. */
+  transform: translateY(calc(-12 * var(--lobby-u)));
+}
+
+.lobby-carousel-section {
+  width: calc(1032 * var(--lobby-u));
+  max-width: none;
+  height: calc(490 * var(--lobby-u));
+  overflow: visible;
+}
+
+.lobby-carousel-viewport {
+  width: calc(1032 * var(--lobby-u));
+  height: calc(490 * var(--lobby-u));
+  max-height: none;
+  min-height: 0 !important;
+  aspect-ratio: auto;
+  overflow: visible;
+}
+
+.lobby-carousel-board {
+  --lobby-prev-x: -50%;
+  --lobby-next-x: 50%;
+  --lobby-side-scale: 0.72;
+  --lobby-incoming-prev-x: -84%;
+  --lobby-incoming-next-x: 84%;
+  --lobby-incoming-scale: 0.64;
+  /* Bottom-anchored: the board's BASE sits at a fixed point near the
+     podium rim, so growing the board extends it UPWARD into the freed
+     space instead of sinking into the podium — and it stays seated
+     through future size changes. top:auto overrides the short-landscape
+     `top` so the board isn't stretched between both edges. Tune `bottom`
+     once to seat the base on the rim; tune width for size. */
+  top: auto;
+  /* Pure --lobby-u (baked from the mobile baseline: -25u + 10px at the phone
+     lobby-u ~0.486). A fixed px term is a DIFFERENT fraction of the scaled
+     stage at each resolution, so it made the board <-> podium gap drift
+     between phone and desktop. Pure-u keeps the mobile gap identical
+     everywhere. */
+  bottom: calc(-4.4 * var(--lobby-u));
+  /* Top-down boards read larger than the old tilted art (no perspective
+     foreshortening). Net width 69% (was 74% tilted): trimmed for top-down,
+     then +10% back per operator review once the hourly-bonus icon was
+     shrunk to free navigator room. Bottom-anchored, so it stays seated on
+     the podium as it resizes. */
+  /* 10% smaller (69% -> 62.1%) per operator review. Bottom-anchored, so it
+     shrinks toward its base on the podium rather than floating. */
+  width: 62.1%;
+  height: auto;
+}
+
+.lobby-carousel-board[data-slot='selected'] {
+  transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
+  /* Tight, dark contact shadow under the centred board so it reads as
+     sitting on the podium (selected board only — side boards stay flat). */
+  filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
+}
+
+.lobby-carousel-board[data-slot='previous'] {
+  transform: translateX(-50%) translateX(calc(var(--lobby-prev-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
+}
+
+.lobby-carousel-board[data-slot='next'] {
+  transform: translateX(-50%) translateX(calc(var(--lobby-next-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
+}
+
+.lobby-carousel-viewport > img.pointer-events-none {
+  /* Podium: +20 % (702 -> 842) for the new thinner US-of-A holder art.
+     Bottom is pure --lobby-u (baked from -72u - 15px at the phone lobby-u
+     ~0.486) so the board <-> podium gap is identical at every resolution
+     (mobile baseline), instead of drifting via the old fixed px term. */
+  bottom: calc(-102.9 * var(--lobby-u));
+  width: calc(842 * var(--lobby-u));
+  max-width: none;
+  /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
+     drop-shadow on the <img>); scales with --lobby-u. */
+  filter: drop-shadow(0 calc(20 * var(--lobby-u)) calc(13 * var(--lobby-u)) rgba(0, 0, 0, 0.62));
+}
+
+/* Podium cross-fade: the newest layer fades in over the old one when the
+   podium image swaps (e.g. a board with a dedicated holder). Driven by
+   PodiumImage in LobbyBoardCarousel. */
+@keyframes lobbyPodiumFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.lobby-podium-fade-in {
+  animation: lobbyPodiumFade 450ms ease forwards;
+}
+
+/* NOTE: .lobby-podium-fade-out is no longer applied — the outgoing podium
+   stays fully opaque under the fading-in one (see PodiumImage in
+   LobbyBoardCarousel: double-fading dipped combined opacity below 1 and
+   flashed the background through the podium). Kept for reference. */
+@keyframes lobbyPodiumFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.lobby-podium-fade-out {
+  animation: lobbyPodiumFadeOut 450ms ease forwards;
+}
+
+/* (Removed a `.lobby-carousel-viewport > div[class*='top-'] { display:none }`
+   rule that used to hide the deleted prev/next nav arrows — it ALSO matched
+   the board-name pill's `top-[2%]` class and silently hid it, which is why
+   the board name "disappeared". The name pill is shown again via
+   .gr-name-pill.) */
+
+.lobby-play-button {
+  /* Halved from 80×350 — previously dominating the board centre.
+     The vertical offset is left as-is (still sits on the wooden
+     deck below the carved front); only the button's intrinsic
+     size shrinks. */
+  /* Pure --lobby-u (baked from -85u - 5px at the phone lobby-u ~0.486) so the
+     Play button stays locked to the board + podium at every resolution. */
+  bottom: calc(-95.3 * var(--lobby-u));
+  height: calc(40 * var(--lobby-u));
+  min-width: calc(175 * var(--lobby-u));
+  padding: 0 calc(21 * var(--lobby-u));
+  border-width: calc(2 * var(--lobby-u));
+  font-size: calc(27 * var(--lobby-u));
+  letter-spacing: 0.16em;
+  box-shadow: 0 calc(3 * var(--lobby-u)) 0 #06450a,
+  0 calc(8 * var(--lobby-u)) calc(11 * var(--lobby-u)) rgba(0, 0, 0, 0.4),
+  inset 0 calc(1 * var(--lobby-u)) 0 rgba(255, 255, 255, 0.74),
+  inset 0 calc(-3 * var(--lobby-u)) 0 rgba(0, 78, 5, 0.34),
+  0 0 0 calc(1 * var(--lobby-u)) rgba(7, 27, 11, 0.85);
+}
+
+.lobby-carousel-viewport > div[class*='bottom-24'] {
+  display: none;
+}
+
+.lobby-carousel-viewport button[aria-label='Previous board'],
+.lobby-carousel-viewport button[aria-label='Next board'] {
+  width: calc(56 * var(--lobby-u));
+  height: calc(56 * var(--lobby-u));
+  border-width: calc(4 * var(--lobby-u));
+  font-size: calc(46 * var(--lobby-u));
+  opacity: 0.84;
+}
+
+.lobby-carousel-viewport button[aria-label='Previous board'] {
+  left: calc(182 * var(--lobby-u));
+}
+
+.lobby-carousel-viewport button[aria-label='Next board'] {
+  right: calc(182 * var(--lobby-u));
+}
+
+.lobby-action-stack {
+  display: grid;
+  height: calc(400 * var(--lobby-u));
+  grid-template-columns: 1fr !important;
+  gap: calc(10 * var(--lobby-u));
+  align-content: start;
+  min-height: 0;
+}
+
+.lobby-action-card {
+  /* 20 % smaller across the board. 350 -> 280, 125 -> 100. */
+  width: calc(280 * var(--lobby-u));
+  height: calc(100 * var(--lobby-u));
+  min-height: 0;
+  gap: calc(6 * var(--lobby-u));
+  border-width: calc(2 * var(--lobby-u));
+  border-radius: calc(11 * var(--lobby-u));
+  padding: calc(11 * var(--lobby-u)) calc(35 * var(--lobby-u)) calc(11 * var(--lobby-u)) calc(10 * var(--lobby-u));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16),
+  0 calc(8 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
+}
+
+.lobby-action-icon {
+  width: calc(69 * var(--lobby-u));
+  height: calc(77 * var(--lobby-u));
+}
+
+.lobby-action-icon img {
+  max-width: calc(69 * var(--lobby-u));
+  max-height: calc(69 * var(--lobby-u));
+}
+
+.lobby-action-icon > span {
+  width: calc(56 * var(--lobby-u));
+  height: calc(56 * var(--lobby-u));
+  font-size: calc(29 * var(--lobby-u));
+}
+
+.lobby-action-card > span.relative.min-w-0 {
+  width: calc(168 * var(--lobby-u));
+  flex: 0 0 calc(168 * var(--lobby-u));
+}
+
+.lobby-action-title {
+  font-size: calc(22 * var(--lobby-u));
+  line-height: 0.98;
+}
+
+.lobby-action-subtitle {
+  margin-top: calc(6 * var(--lobby-u));
+  font-size: calc(13 * var(--lobby-u));
+  line-height: 1.15;
+}
+
+.lobby-action-card > span:last-child {
+  position: absolute;
+  right: calc(13 * var(--lobby-u));
+  top: 50%;
+  font-size: calc(34 * var(--lobby-u));
+  transform: translateY(-50%);
+}
+
+.lobby-bottom-nav-shell {
+  /* Width-only override; aspect-ratio (from the base rule) handles
+     height so the painted bar stays in its 1889:231 proportions. */
+  position: absolute;
+  left: 50%;
+  bottom: calc(15 * var(--lobby-u));
+  top: auto;
+  z-index: 35;
+  /* -15% (1099 -> 934): smaller navigator frees vertical room for the
+     board and de-emphasises it vs. the hero. Kept above ~900u so the
+     five slots stay comfortable tap targets on mobile. */
+  width: calc(934 * var(--lobby-u));
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  transform: translateX(-50%);
+}
+
+.lobby-bottom-nav-item:not(:first-child)::before {
+  top: calc(25 * var(--lobby-u));
+  bottom: calc(25 * var(--lobby-u));
+}
+
+.lobby-bottom-nav-item.is-featured {
+  width: calc(150 * var(--lobby-u));
+  min-height: calc(150 * var(--lobby-u));
+  margin-top: calc(12 * var(--lobby-u));
+  border-width: calc(4 * var(--lobby-u));
+}
+
+.lobby-nav-icon,
+.lobby-bottom-nav-item.is-featured .lobby-nav-icon {
+  width: calc(70 * var(--lobby-u));
+  height: calc(70 * var(--lobby-u));
+  transform: scale(0.72);
+}
+
+.lobby-bottom-nav-item.is-featured .lobby-nav-icon {
+  width: calc(70 * var(--lobby-u));
+  height: calc(70 * var(--lobby-u));
+  transform: scale(0.68);
+}
+
+.lobby-nav-label,
+.lobby-bottom-nav-item.is-featured .lobby-nav-label {
+  max-width: calc(180 * var(--lobby-u));
+  color: #ffe0a0;
+  font-size: calc(20 * var(--lobby-u));
+  line-height: 1.05;
+}
+
+.lobby-bottom-nav-item.is-featured .lobby-nav-label {
+  max-width: calc(120 * var(--lobby-u));
+  font-size: calc(18 * var(--lobby-u));
+}
+
+.lobby-nav-badge {
+  top: calc(11 * var(--lobby-u));
+  right: 24%;
+  min-width: calc(24 * var(--lobby-u));
+  padding: calc(4 * var(--lobby-u)) calc(7 * var(--lobby-u));
+  font-size: calc(16 * var(--lobby-u));
+}
 
-  .lobby-carousel-viewport button[aria-label='Previous board'],
-  .lobby-carousel-viewport button[aria-label='Next board'] {
-    width: calc(56 * var(--lobby-u));
-    height: calc(56 * var(--lobby-u));
-    border-width: calc(4 * var(--lobby-u));
-    font-size: calc(46 * var(--lobby-u));
-    opacity: 0.84;
-  }
-
-  .lobby-carousel-viewport button[aria-label='Previous board'] {
-    left: calc(182 * var(--lobby-u));
-  }
-
-  .lobby-carousel-viewport button[aria-label='Next board'] {
-    right: calc(182 * var(--lobby-u));
-  }
-
-  .lobby-action-stack {
-    display: grid;
-    height: calc(400 * var(--lobby-u));
-    grid-template-columns: 1fr !important;
-    gap: calc(10 * var(--lobby-u));
-    align-content: start;
-    min-height: 0;
-  }
-
-  .lobby-action-card {
-    /* 20 % smaller across the board. 350 -> 280, 125 -> 100. */
-    width: calc(280 * var(--lobby-u));
-    height: calc(100 * var(--lobby-u));
-    min-height: 0;
-    gap: calc(6 * var(--lobby-u));
-    border-width: calc(2 * var(--lobby-u));
-    border-radius: calc(11 * var(--lobby-u));
-    padding: calc(11 * var(--lobby-u)) calc(35 * var(--lobby-u)) calc(11 * var(--lobby-u)) calc(10 * var(--lobby-u));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.16),
-      0 calc(8 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
-  }
-
-  .lobby-action-icon {
-    width: calc(69 * var(--lobby-u));
-    height: calc(77 * var(--lobby-u));
-  }
-
-  .lobby-action-icon img {
-    max-width: calc(69 * var(--lobby-u));
-    max-height: calc(69 * var(--lobby-u));
-  }
-
-  .lobby-action-icon > span {
-    width: calc(56 * var(--lobby-u));
-    height: calc(56 * var(--lobby-u));
-    font-size: calc(29 * var(--lobby-u));
-  }
-
-  .lobby-action-card > span.relative.min-w-0 {
-    width: calc(168 * var(--lobby-u));
-    flex: 0 0 calc(168 * var(--lobby-u));
-  }
-
-  .lobby-action-title {
-    font-size: calc(22 * var(--lobby-u));
-    line-height: 0.98;
-  }
-
-  .lobby-action-subtitle {
-    margin-top: calc(6 * var(--lobby-u));
-    font-size: calc(13 * var(--lobby-u));
-    line-height: 1.15;
-  }
-
-  .lobby-action-card > span:last-child {
-    position: absolute;
-    right: calc(13 * var(--lobby-u));
-    top: 50%;
-    font-size: calc(34 * var(--lobby-u));
-    transform: translateY(-50%);
-  }
-
-  .lobby-bottom-nav-shell {
-    /* Width-only override; aspect-ratio (from the base rule) handles
-       height so the painted bar stays in its 1889:231 proportions. */
-    position: absolute;
-    left: 50%;
-    bottom: calc(15 * var(--lobby-u));
-    top: auto;
-    z-index: 35;
-    /* -15% (1099 -> 934): smaller navigator frees vertical room for the
-       board and de-emphasises it vs. the hero. Kept above ~900u so the
-       five slots stay comfortable tap targets on mobile. */
-    width: calc(934 * var(--lobby-u));
-    margin: 0;
-    padding: 0;
-    overflow: visible;
-    transform: translateX(-50%);
-  }
-
-  .lobby-bottom-nav-item:not(:first-child)::before {
-    top: calc(25 * var(--lobby-u));
-    bottom: calc(25 * var(--lobby-u));
-  }
-
-  .lobby-bottom-nav-item.is-featured {
-    width: calc(150 * var(--lobby-u));
-    min-height: calc(150 * var(--lobby-u));
-    margin-top: calc(12 * var(--lobby-u));
-    border-width: calc(4 * var(--lobby-u));
-  }
-
-  .lobby-nav-icon,
-  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
-    width: calc(70 * var(--lobby-u));
-    height: calc(70 * var(--lobby-u));
-    transform: scale(0.72);
-  }
-
-  .lobby-bottom-nav-item.is-featured .lobby-nav-icon {
-    width: calc(70 * var(--lobby-u));
-    height: calc(70 * var(--lobby-u));
-    transform: scale(0.68);
-  }
-
-  .lobby-nav-label,
-  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
-    max-width: calc(180 * var(--lobby-u));
-    color: #ffe0a0;
-    font-size: calc(20 * var(--lobby-u));
-    line-height: 1.05;
-  }
-
-  .lobby-bottom-nav-item.is-featured .lobby-nav-label {
-    max-width: calc(120 * var(--lobby-u));
-    font-size: calc(18 * var(--lobby-u));
-  }
-
-  .lobby-nav-badge {
-    top: calc(11 * var(--lobby-u));
-    right: 24%;
-    min-width: calc(24 * var(--lobby-u));
-    padding: calc(4 * var(--lobby-u)) calc(7 * var(--lobby-u));
-    font-size: calc(16 * var(--lobby-u));
-  }
 /* end unified lobby layout block */
 
 .profile-page {
-  background:
-    radial-gradient(circle at 22% 12%, rgba(133, 55, 255, 0.3), transparent 30rem),
-    radial-gradient(circle at 82% 8%, rgba(34, 82, 185, 0.22), transparent 26rem),
-    radial-gradient(circle at 50% 100%, rgba(141, 22, 150, 0.24), transparent 34rem),
-    linear-gradient(180deg, #050817 0%, #09051b 48%, #030611 100%);
+  background: radial-gradient(circle at 22% 12%, rgba(133, 55, 255, 0.3), transparent 30rem),
+  radial-gradient(circle at 82% 8%, rgba(34, 82, 185, 0.22), transparent 26rem),
+  radial-gradient(circle at 50% 100%, rgba(141, 22, 150, 0.24), transparent 34rem),
+  linear-gradient(180deg, #050817 0%, #09051b 48%, #030611 100%);
 }
 
 .profile-page-header {
@@ -1673,13 +1686,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border: 1px solid rgba(255, 201, 57, 0.85);
   border-radius: 0.85rem;
-  background:
-    linear-gradient(180deg, rgba(31, 32, 61, 0.94), rgba(10, 11, 34, 0.98)),
-    radial-gradient(circle at 50% 0, rgba(255, 211, 70, 0.15), transparent 62%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 0 0 1px rgba(145, 71, 255, 0.32),
-    0 0.45rem 1rem rgba(0, 0, 0, 0.42);
+  background: linear-gradient(180deg, rgba(31, 32, 61, 0.94), rgba(10, 11, 34, 0.98)),
+  radial-gradient(circle at 50% 0, rgba(255, 211, 70, 0.15), transparent 62%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+  0 0 0 1px rgba(145, 71, 255, 0.32),
+  0 0.45rem 1rem rgba(0, 0, 0, 0.42);
 }
 
 .profile-back-chevron {
@@ -1713,12 +1724,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .profile-history-panel,
 .profile-stat-grid {
   border: 1px solid rgba(177, 75, 255, 0.38);
-  background:
-    radial-gradient(circle at 18% 18%, rgba(152, 51, 245, 0.24), transparent 26rem),
-    linear-gradient(180deg, rgba(15, 12, 42, 0.9), rgba(6, 5, 25, 0.96));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 1rem 2rem rgba(0, 0, 0, 0.36);
+  background: radial-gradient(circle at 18% 18%, rgba(152, 51, 245, 0.24), transparent 26rem),
+  linear-gradient(180deg, rgba(15, 12, 42, 0.9), rgba(6, 5, 25, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
+  0 1rem 2rem rgba(0, 0, 0, 0.36);
 }
 
 .profile-main-card {
@@ -1746,8 +1755,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   width: min(92%, 15.5rem);
   aspect-ratio: 1;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 48% 45%, rgba(224, 132, 255, 0.86), rgba(115, 27, 197, 0.54) 54%, transparent 70%);
+  background: radial-gradient(circle at 48% 45%, rgba(224, 132, 255, 0.86), rgba(115, 27, 197, 0.54) 54%, transparent 70%);
   filter: blur(0.15rem);
   box-shadow: 0 0 2.2rem rgba(176, 68, 255, 0.82);
 }
@@ -1759,11 +1767,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border-radius: 9999px;
   background: linear-gradient(135deg, #fff4b1, #cf861e 48%, #6027af);
-  box-shadow:
-    0 0 0 0.35rem #17133b,
-    0 0 0 0.62rem #ffd159,
-    0 0 0 0.78rem rgba(255, 255, 255, 0.34),
-    0 0.9rem 1.4rem rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 0.35rem #17133b,
+  0 0 0 0.62rem #ffd159,
+  0 0 0 0.78rem rgba(255, 255, 255, 0.34),
+  0 0.9rem 1.4rem rgba(0, 0, 0, 0.45);
 }
 
 .profile-level-shield {
@@ -1776,8 +1783,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: 5.15rem;
   place-items: center;
   clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
-  background:
-    linear-gradient(180deg, #fff0a5, #d6931f 26%, #111739 27%, #14133c 100%);
+  background: linear-gradient(180deg, #fff0a5, #d6931f 26%, #111739 27%, #14133c 100%);
   color: #fff8c7;
   font: 900 2.15rem / 1 "Segoe UI", sans-serif;
   text-shadow: 0 0.18rem 0 rgba(0, 0, 0, 0.65);
@@ -1862,15 +1868,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   gap: 0.6rem;
   border: 1px solid #ffd462;
   border-radius: 0.8rem;
-  background:
-    linear-gradient(180deg, rgba(255, 226, 108, 0.96), #b56a14 48%, #74400b);
+  background: linear-gradient(180deg, rgba(255, 226, 108, 0.96), #b56a14 48%, #74400b);
   color: #211004;
   font: 900 clamp(1.35rem, 3.1vw, 2rem) / 1 "Segoe UI", sans-serif;
   padding: 0.22rem 1rem 0.34rem 0.28rem;
   text-transform: uppercase;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 0.45rem 0.95rem rgba(0, 0, 0, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
+  0 0.45rem 0.95rem rgba(0, 0, 0, 0.38);
 }
 
 .profile-rank-shield {
@@ -1936,18 +1940,16 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border: 0.18rem solid #ffdc73;
   border-radius: 9999px;
   background: linear-gradient(180deg, #05091c, #141733);
-  box-shadow:
-    inset 0 0.25rem 0.6rem rgba(0, 0, 0, 0.75),
-    0 0 0 0.12rem rgba(218, 65, 255, 0.46);
+  box-shadow: inset 0 0.25rem 0.6rem rgba(0, 0, 0, 0.75),
+  0 0 0 0.12rem rgba(218, 65, 255, 0.46);
 }
 
 .profile-xp-bar span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
-    linear-gradient(90deg, #ff9c1f, #ffdf41);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
+  linear-gradient(90deg, #ff9c1f, #ffdf41);
   box-shadow: 0 0 1.1rem rgba(255, 198, 32, 0.82);
 }
 
@@ -1993,9 +1995,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border: 1px solid rgba(146, 80, 255, 0.42);
   border-radius: 0.85rem;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(146, 67, 255, 0.24), transparent 52%),
-    rgba(9, 9, 34, 0.78);
+  background: radial-gradient(circle at 50% 20%, rgba(146, 67, 255, 0.24), transparent 52%),
+  rgba(9, 9, 34, 0.78);
   text-align: center;
   padding: 1.05rem 0.6rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -2191,9 +2192,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   min-height: 5.2rem;
   border: 1px solid rgba(255, 41, 152, 0.62);
   border-radius: 1.05rem;
-  background:
-    radial-gradient(circle at 50% 0, rgba(255, 36, 166, 0.18), transparent 58%),
-    linear-gradient(180deg, rgba(40, 7, 56, 0.94), rgba(17, 4, 36, 0.98));
+  background: radial-gradient(circle at 50% 0, rgba(255, 36, 166, 0.18), transparent 58%),
+  linear-gradient(180deg, rgba(40, 7, 56, 0.94), rgba(17, 4, 36, 0.98));
   color: #ff514d;
   font: 900 2rem / 1 "Segoe UI", sans-serif;
   text-transform: uppercase;
@@ -2354,11 +2354,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * grows with content and scrolls — nothing clips. */
   min-height: 100dvh;
   overflow-y: auto;
-  background:
-    radial-gradient(circle at 16% 18%, rgba(94, 55, 180, 0.16), transparent 26rem),
-    radial-gradient(circle at 82% 12%, rgba(255, 194, 86, 0.09), transparent 24rem),
-    radial-gradient(circle at 50% 110%, rgba(110, 46, 170, 0.12), transparent 36rem),
-    linear-gradient(180deg, #070914 0%, #050611 52%, #03040a 100%);
+  background: radial-gradient(circle at 16% 18%, rgba(94, 55, 180, 0.16), transparent 26rem),
+  radial-gradient(circle at 82% 12%, rgba(255, 194, 86, 0.09), transparent 24rem),
+  radial-gradient(circle at 50% 110%, rgba(110, 46, 170, 0.12), transparent 36rem),
+  linear-gradient(180deg, #070914 0%, #050611 52%, #03040a 100%);
 }
 
 .profile-screen {
@@ -2389,13 +2388,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: clamp(3.75rem, 3.75vw, 4.5rem);
   border: 1px solid rgba(255, 211, 74, 0.95);
   border-radius: 1.125rem;
-  background:
-    linear-gradient(180deg, rgba(22, 24, 42, 0.98), rgba(8, 9, 22, 0.99)),
-    radial-gradient(circle at 50% 0, rgba(255, 209, 74, 0.15), transparent 68%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(255, 211, 74, 0.12),
-    0 0.5rem 1.25rem rgba(0, 0, 0, 0.38);
+  background: linear-gradient(180deg, rgba(22, 24, 42, 0.98), rgba(8, 9, 22, 0.99)),
+  radial-gradient(circle at 50% 0, rgba(255, 209, 74, 0.15), transparent 68%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13),
+  inset 0 -1px 0 rgba(255, 211, 74, 0.12),
+  0 0.5rem 1.25rem rgba(0, 0, 0, 0.38);
 }
 
 .profile-back-chevron {
@@ -2417,13 +2414,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   gap: clamp(1.2rem, 1.9vw, 2.25rem);
   border: 1px solid rgba(188, 123, 35, 0.86);
   border-radius: 1.375rem;
-  background:
-    linear-gradient(180deg, rgba(18, 20, 34, 0.94), rgba(7, 8, 20, 0.98)),
-    radial-gradient(circle at 50% 0, rgba(255, 217, 97, 0.1), transparent 70%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.11),
-    inset 0 -1px 0 rgba(255, 210, 78, 0.1),
-    0 0.55rem 1.1rem rgba(0, 0, 0, 0.34);
+  background: linear-gradient(180deg, rgba(18, 20, 34, 0.94), rgba(7, 8, 20, 0.98)),
+  radial-gradient(circle at 50% 0, rgba(255, 217, 97, 0.1), transparent 70%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11),
+  inset 0 -1px 0 rgba(255, 210, 78, 0.1),
+  0 0.55rem 1.1rem rgba(0, 0, 0, 0.34);
   transform: translateX(-50%);
 }
 
@@ -2452,9 +2447,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   background: linear-gradient(180deg, #ffd45d, #9b5a12);
   color: #160b05;
   font: 900 clamp(1.35rem, 1.55vw, 1.75rem) / 1 "Segoe UI", sans-serif;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    0 0.22rem 0 rgba(70, 38, 0, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42),
+  0 0.22rem 0 rgba(70, 38, 0, 0.78);
 }
 
 .profile-currency-divider {
@@ -2492,22 +2486,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  filter:
-    drop-shadow(0 0.18rem 0 rgba(80, 47, 7, 0.84))
-    drop-shadow(0 0.42rem 0.35rem rgba(0, 0, 0, 0.52));
+  filter: drop-shadow(0 0.18rem 0 rgba(80, 47, 7, 0.84)) drop-shadow(0 0.42rem 0.35rem rgba(0, 0, 0, 0.52));
 }
 
 .profile-main-card,
 .profile-history-panel,
 .profile-logout-button {
   border: 1px solid rgba(174, 112, 50, 0.82);
-  background:
-    radial-gradient(circle at 12% 50%, rgba(143, 43, 185, 0.16), transparent 25rem),
-    linear-gradient(180deg, rgba(16, 18, 37, 0.96), rgba(7, 7, 20, 0.985));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 246, 184, 0.14),
-    inset 0 0 0 1px rgba(140, 70, 22, 0.15),
-    0 0.9rem 1.8rem rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 12% 50%, rgba(143, 43, 185, 0.16), transparent 25rem),
+  linear-gradient(180deg, rgba(16, 18, 37, 0.96), rgba(7, 7, 20, 0.985));
+  box-shadow: inset 0 1px 0 rgba(255, 246, 184, 0.14),
+  inset 0 0 0 1px rgba(140, 70, 22, 0.15),
+  0 0.9rem 1.8rem rgba(0, 0, 0, 0.35);
 }
 
 .profile-main-card {
@@ -2540,11 +2530,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .profile-avatar-image {
   width: clamp(11rem, 11.5vw, 13.75rem) !important;
   height: clamp(11rem, 11.5vw, 13.75rem) !important;
-  box-shadow:
-    0 0 0 0.28rem #151128,
-    0 0 0 0.54rem #f4c64a,
-    0 0 0 0.7rem rgba(255, 244, 177, 0.48),
-    0 0.75rem 1.35rem rgba(0, 0, 0, 0.46);
+  box-shadow: 0 0 0 0.28rem #151128,
+  0 0 0 0.54rem #f4c64a,
+  0 0 0 0.7rem rgba(255, 244, 177, 0.48),
+  0 0.75rem 1.35rem rgba(0, 0, 0, 0.46);
 }
 
 .profile-level-shield {
@@ -2669,17 +2658,15 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border: 0.14rem solid rgba(190, 63, 219, 0.62);
   border-radius: 9999px;
   background: linear-gradient(180deg, #040511, #101226);
-  box-shadow:
-    inset 0 0.2rem 0.42rem rgba(0, 0, 0, 0.76),
-    0 0 0 1px rgba(255, 214, 90, 0.22);
+  box-shadow: inset 0 0.2rem 0.42rem rgba(0, 0, 0, 0.76),
+  0 0 0 1px rgba(255, 214, 90, 0.22);
 }
 
 .profile-xp-bar span {
   height: calc(100% - 0.22rem);
   margin: 0.11rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
-    linear-gradient(90deg, #ff9f1f, #ffd71f);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
+  linear-gradient(90deg, #ff9f1f, #ffd71f);
 }
 
 .profile-xp-text {
@@ -2787,14 +2774,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border: 1px solid rgba(132, 73, 191, 0.32);
   border-radius: 1.25rem;
-  background:
-    radial-gradient(circle at 50% 0, rgba(116, 50, 180, 0.18), transparent 60%),
-    linear-gradient(180deg, rgba(24, 20, 45, 0.86), rgba(10, 10, 27, 0.96));
+  background: radial-gradient(circle at 50% 0, rgba(116, 50, 180, 0.18), transparent 60%),
+  linear-gradient(180deg, rgba(24, 20, 45, 0.86), rgba(10, 10, 27, 0.96));
   text-align: center;
   padding: 0.85rem;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -1px 0 rgba(255, 211, 82, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+  inset 0 -1px 0 rgba(255, 211, 82, 0.04);
 }
 
 .profile-stat-card--wide {
@@ -2859,8 +2844,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: clamp(3.55rem, 6.67dvh, 4.5rem);
   border-color: rgba(255, 255, 255, 0.06);
   border-radius: 1.125rem;
-  background:
-    linear-gradient(180deg, rgba(24, 24, 47, 0.9), rgba(10, 10, 28, 0.98));
+  background: linear-gradient(180deg, rgba(24, 24, 47, 0.9), rgba(10, 10, 28, 0.98));
   padding: 0 clamp(0.75rem, 1.35vw, 1.5rem);
 }
 
@@ -2946,9 +2930,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   margin: 0;
   border-color: rgba(120, 72, 167, 0.42);
   border-radius: 1.5rem;
-  background:
-    radial-gradient(circle at 50% 0, rgba(111, 48, 157, 0.15), transparent 65%),
-    linear-gradient(180deg, rgba(17, 14, 36, 0.96), rgba(7, 7, 22, 0.99));
+  background: radial-gradient(circle at 50% 0, rgba(111, 48, 157, 0.15), transparent 65%),
+  linear-gradient(180deg, rgba(17, 14, 36, 0.96), rgba(7, 7, 22, 0.99));
   color: #ff4b43;
   font-size: clamp(1.45rem, 2.2vw, 2.625rem);
 }
@@ -3173,11 +3156,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 
   .profile-avatar-image {
-    box-shadow:
-      0 0 0 calc(5 * var(--profile-u)) #151128,
-      0 0 0 calc(10 * var(--profile-u)) #f4c64a,
-      0 0 0 calc(13 * var(--profile-u)) rgba(255, 244, 177, 0.48),
-      0 calc(14 * var(--profile-u)) calc(25 * var(--profile-u)) rgba(0, 0, 0, 0.46);
+    box-shadow: 0 0 0 calc(5 * var(--profile-u)) #151128,
+    0 0 0 calc(10 * var(--profile-u)) #f4c64a,
+    0 0 0 calc(13 * var(--profile-u)) rgba(255, 244, 177, 0.48),
+    0 calc(14 * var(--profile-u)) calc(25 * var(--profile-u)) rgba(0, 0, 0, 0.46);
   }
 
   .profile-level-shield {
@@ -3354,12 +3336,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   .profile-save-progress-err {
     font-size: calc(16 * var(--profile-u));
   }
+
   /* NOTE: the landscape overrides for --lobby-u (currency pills) and
    * .profile-pp-shield live in a SEPARATE landscape block near the end
    * of the file — their base rules (.profile-top-currency,
    * .profile-pp-shield) are defined LATER than this block, so an
    * override here would lose the cascade to them. */
-
   .profile-stat-grid {
     grid-template-columns: repeat(4, calc(140 * var(--profile-u)));
     /* ONE row. The 4 stat cards fill a single row of 4 columns, so the
@@ -3548,10 +3530,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   pointer-events: none;
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(102, 60, 24, 0.1), transparent 46%),
-    radial-gradient(ellipse at 50% 105%, rgba(138, 83, 25, 0.22), transparent 36%),
-    linear-gradient(180deg, rgba(3, 4, 9, 0.82), rgba(8, 6, 8, 0.7) 48%, rgba(3, 3, 5, 0.95));
+  background: radial-gradient(ellipse at 50% 42%, rgba(102, 60, 24, 0.1), transparent 46%),
+  radial-gradient(ellipse at 50% 105%, rgba(138, 83, 25, 0.22), transparent 36%),
+  linear-gradient(180deg, rgba(3, 4, 9, 0.82), rgba(8, 6, 8, 0.7) 48%, rgba(3, 3, 5, 0.95));
 }
 
 .game-table-plate {
@@ -3563,12 +3544,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: min(72dvh, 48rem);
   border: 1px solid rgba(204, 151, 55, 0.26);
   border-radius: clamp(1.2rem, 2vw, 2.4rem);
-  background:
-    radial-gradient(ellipse at 50% 20%, rgba(255, 202, 87, 0.08), transparent 36%),
-    linear-gradient(180deg, rgba(26, 17, 13, 0.58), rgba(15, 12, 12, 0.24));
-  box-shadow:
-    0 1.5rem 4rem rgba(0, 0, 0, 0.42),
-    inset 0 0 2rem rgba(255, 205, 82, 0.06);
+  background: radial-gradient(ellipse at 50% 20%, rgba(255, 202, 87, 0.08), transparent 36%),
+  linear-gradient(180deg, rgba(26, 17, 13, 0.58), rgba(15, 12, 12, 0.24));
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.42),
+  inset 0 0 2rem rgba(255, 205, 82, 0.06);
   transform: translateX(-50%);
 }
 
@@ -3635,9 +3614,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   position: absolute;
   inset: 0;
   overflow: visible;
-  filter:
-    drop-shadow(0 1.35rem 2.25rem rgba(0, 0, 0, 0.62))
-    drop-shadow(0 0 1rem rgba(255, 187, 62, 0.04));
+  filter: drop-shadow(0 1.35rem 2.25rem rgba(0, 0, 0, 0.62)) drop-shadow(0 0 1rem rgba(255, 187, 62, 0.04));
 }
 
 .game-actions-layer {
@@ -3826,13 +3803,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   gap: clamp(0.45rem, 0.85vw, 0.95rem);
   border: 2px solid rgba(215, 155, 43, 0.82);
   border-radius: clamp(1.35rem, 2.15vw, 2.35rem);
-  background:
-    radial-gradient(circle at 50% 20%, rgba(255, 212, 99, 0.14), transparent 38%),
-    linear-gradient(180deg, rgba(20, 20, 22, 0.98), rgba(5, 8, 15, 0.98));
-  box-shadow:
-    0 0 0 0.12rem rgba(0, 0, 0, 0.62),
-    0 0.85rem 1.55rem rgba(0, 0, 0, 0.5),
-    inset 0 0.12rem 0 rgba(255, 239, 176, 0.24);
+  background: radial-gradient(circle at 50% 20%, rgba(255, 212, 99, 0.14), transparent 38%),
+  linear-gradient(180deg, rgba(20, 20, 22, 0.98), rgba(5, 8, 15, 0.98));
+  box-shadow: 0 0 0 0.12rem rgba(0, 0, 0, 0.62),
+  0 0.85rem 1.55rem rgba(0, 0, 0, 0.5),
+  inset 0 0.12rem 0 rgba(255, 239, 176, 0.24);
   color: #ffd45f;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(2rem, 4.5vw, 4.5rem);
@@ -3968,12 +3943,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   overflow: hidden;
   border: 1px solid rgba(214, 157, 49, 0.54);
   border-radius: clamp(1rem, 1.5vw, 1.5rem);
-  background:
-    radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
-    linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
-  box-shadow:
-    inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
-    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+  background: radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+  linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow: inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+  0 1.1rem 2rem rgba(0, 0, 0, 0.44);
 }
 
 .game-player-card-glow {
@@ -4237,12 +4210,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   overflow: hidden;
   border: 1px solid rgba(214, 157, 49, 0.54);
   border-radius: clamp(0.8rem, 1.5vw, 1.1rem);
-  background:
-    radial-gradient(circle at 24% 14%, rgba(124, 52, 168, 0.25), transparent 31%),
-    linear-gradient(180deg, rgba(31, 25, 28, 0.96), rgba(10, 10, 12, 0.95));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 230, 166, 0.06),
-    0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
+  background: radial-gradient(circle at 24% 14%, rgba(124, 52, 168, 0.25), transparent 31%),
+  linear-gradient(180deg, rgba(31, 25, 28, 0.96), rgba(10, 10, 12, 0.95));
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 166, 0.06),
+  0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
 }
 
 .game-compact-panel.game-player-panel--left {
@@ -4254,10 +4225,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 .game-compact-panel.is-turn {
-  box-shadow:
-    0 0 1rem rgba(126, 207, 255, 0.2),
-    inset 0 0 0 1px rgba(255, 230, 166, 0.07),
-    0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
+  box-shadow: 0 0 1rem rgba(126, 207, 255, 0.2),
+  inset 0 0 0 1px rgba(255, 230, 166, 0.07),
+  0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
 }
 
 .game-compact-top {
@@ -4926,9 +4896,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: clamp(5.8rem, 9.9vw, 11.9rem);
   border: 2px solid rgba(255, 225, 174, 0.48);
   border-radius: 50% 50% 42% 42%;
-  background:
-    radial-gradient(ellipse at 50% 78%, rgba(214, 122, 19, 0.84), rgba(91, 38, 7, 0.66) 44%, transparent 47%),
-    radial-gradient(ellipse at 50% 20%, rgba(255, 247, 217, 0.26), transparent 54%);
+  background: radial-gradient(ellipse at 50% 78%, rgba(214, 122, 19, 0.84), rgba(91, 38, 7, 0.66) 44%, transparent 47%),
+  radial-gradient(ellipse at 50% 20%, rgba(255, 247, 217, 0.26), transparent 54%);
   box-shadow: inset 0 0 1rem rgba(255, 255, 255, 0.18), 0 1.1rem 1.8rem rgba(0, 0, 0, 0.48);
   transform: rotate(-10deg);
 }
@@ -4940,9 +4909,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: clamp(6.2rem, 10.9vw, 13rem);
   border: 2px solid rgba(199, 119, 74, 0.5);
   border-radius: 48% 48% 30% 30%;
-  background:
-    radial-gradient(ellipse at 50% 12%, rgba(22, 7, 12, 0.98), rgba(70, 22, 32, 0.94) 44%, transparent 46%),
-    linear-gradient(90deg, rgba(71, 26, 33, 0.8), rgba(130, 65, 66, 0.82), rgba(37, 15, 22, 0.9));
+  background: radial-gradient(ellipse at 50% 12%, rgba(22, 7, 12, 0.98), rgba(70, 22, 32, 0.94) 44%, transparent 46%),
+  linear-gradient(90deg, rgba(71, 26, 33, 0.8), rgba(130, 65, 66, 0.82), rgba(37, 15, 22, 0.9));
   box-shadow: inset 0 0 1.2rem rgba(255, 190, 128, 0.11), 0 1.1rem 1.8rem rgba(0, 0, 0, 0.52);
   transform: rotate(10deg);
 }
@@ -5060,11 +5028,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 @media (orientation: landscape) and (max-width: 1023px) {
   .game-content {
-    padding:
-      max(0.35rem, env(safe-area-inset-top))
-      max(0.7rem, env(safe-area-inset-right))
-      max(0.3rem, env(safe-area-inset-bottom))
-      max(0.7rem, env(safe-area-inset-left));
+    padding: max(0.35rem, env(safe-area-inset-top)) max(0.7rem, env(safe-area-inset-right)) max(0.3rem, env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left));
   }
 
   .game-match-header {
@@ -5073,9 +5037,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     top: 0;
     min-height: 2.35rem;
     grid-template-columns: minmax(5.4rem, 1fr) auto minmax(5.4rem, 1fr);
-    padding-inline:
-      max(0.7rem, env(safe-area-inset-left))
-      max(0.7rem, env(safe-area-inset-right));
+    padding-inline: max(0.7rem, env(safe-area-inset-left)) max(0.7rem, env(safe-area-inset-right));
   }
 
   .game-home-link {
@@ -5136,10 +5098,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     border-width: 1px;
     border-radius: 0.72rem;
     font-size: clamp(1rem, 3.35vw, 1.42rem);
-    box-shadow:
-      0 0 0 0.08rem rgba(0, 0, 0, 0.62),
-      0 0.45rem 0.75rem rgba(0, 0, 0, 0.46),
-      inset 0 0.08rem 0 rgba(255, 239, 176, 0.22);
+    box-shadow: 0 0 0 0.08rem rgba(0, 0, 0, 0.62),
+    0 0.45rem 0.75rem rgba(0, 0, 0, 0.46),
+    inset 0 0.08rem 0 rgba(255, 239, 176, 0.22);
   }
 
   .game-score-core::before,
@@ -5175,9 +5136,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     position: absolute;
     z-index: 17;
     top: clamp(2.55rem, 9dvh, 3.15rem);
-    inset-inline:
-      max(0.7rem, env(safe-area-inset-left))
-      max(0.7rem, env(safe-area-inset-right));
+    inset-inline: max(0.7rem, env(safe-area-inset-left)) max(0.7rem, env(safe-area-inset-right));
     display: grid;
     grid-template-columns: clamp(7.2rem, 18vw, 8.45rem) clamp(7.2rem, 18vw, 8.45rem);
     justify-content: space-between;
@@ -5498,9 +5457,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .game-background-tone {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 40%, rgba(82, 34, 39, 0.08), transparent 34%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.36), transparent 26%, transparent 74%, rgba(0, 0, 0, 0.36));
+  background: radial-gradient(circle at 50% 40%, rgba(82, 34, 39, 0.08), transparent 34%),
+  linear-gradient(90deg, rgba(0, 0, 0, 0.36), transparent 26%, transparent 74%, rgba(0, 0, 0, 0.36));
   pointer-events: none;
 }
 
@@ -5538,6 +5496,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .game-match-header {
   pointer-events: none;
 }
+
 .game-match-header .game-nav-home,
 .game-match-header .game-match-hud,
 .game-match-header .game-header-actions,
@@ -5593,10 +5552,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
      checker shadow's concentric half-discs). The previous single
      drop-shadow used % values for offset / blur — invalid CSS, so it
      rendered as nothing. */
-  filter:
-    drop-shadow(0 0.45rem 0.55rem rgba(0, 0, 0, 0.42))
-    drop-shadow(0 1.4rem 1.8rem rgba(0, 0, 0, 0.5))
-    drop-shadow(0 2.6rem 3.4rem rgba(0, 0, 0, 0.28));
+  filter: drop-shadow(0 0.45rem 0.55rem rgba(0, 0, 0, 0.42)) drop-shadow(0 1.4rem 1.8rem rgba(0, 0, 0, 0.5)) drop-shadow(0 2.6rem 3.4rem rgba(0, 0, 0, 0.28));
 }
 
 .game-board-shell {
@@ -5666,6 +5622,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   gap: clamp(0.28rem, 1.1vw, 0.6rem);
   pointer-events: auto;
 }
+
 .game-controls-secondary > .game-cube-button,
 .game-controls-secondary > .game-double-button,
 .game-controls-secondary > .game-auto-slot {
@@ -5688,6 +5645,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: grid;
   place-items: center;
 }
+
 .game-controls-secondary .game-auto-toggle {
   width: 100%;
   height: 100%;
@@ -5699,11 +5657,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   justify-content: center;
   overflow: hidden;
 }
+
 .game-controls-secondary .game-auto-switch {
   width: 66%;
   height: 30%;
   flex: 0 0 auto;
 }
+
 .game-controls-secondary .game-auto-label {
   font-size: clamp(0.38rem, 1.05vw, 0.6rem);
   line-height: 1;
@@ -5718,6 +5678,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   width: clamp(2.56rem, 7.36vw, 4.32rem);
   height: clamp(2.56rem, 7.36vw, 4.32rem);
 }
+
 .game-controls-secondary .game-auto-label {
   font-size: clamp(0.61rem, 1.68vw, 0.96rem);
 }
@@ -5733,11 +5694,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   overflow: hidden;
   line-height: 1;
 }
+
 .game-controls-secondary .game-cube-button > strong,
 .game-controls-secondary .game-double-button > strong {
   font-size: clamp(0.5rem, 1.25vw, 0.92rem);
   line-height: 1;
 }
+
 .game-controls-secondary .game-cube-button > span,
 .game-controls-secondary .game-double-button > span {
   font-size: clamp(0.3rem, 0.7vw, 0.5rem);
@@ -5759,6 +5722,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   pointer-events: auto;
   z-index: 270;
 }
+
 .game-controls-primary .game-end-turn-pair {
   display: flex;
   flex-direction: column;
@@ -5767,6 +5731,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: auto;
   aspect-ratio: auto;
 }
+
 .game-controls-primary .game-roll-button,
 .game-controls-primary .game-end-turn-pair-button {
   width: clamp(3.5rem, 13dvh, 5.2rem);
@@ -5784,28 +5749,35 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   cursor: pointer;
   transition: filter 140ms ease, transform 120ms ease;
 }
+
 /* Labels are baked into the art — hide the fallback text spans. */
 .game-controls-primary .game-roll-button span,
 .game-controls-primary .game-end-turn-pair-button span {
   display: none;
 }
+
 /* Roll (green) / Undo (orange) / End-turn (red) — supplied as circular art. */
 .game-controls-primary .game-roll-button--roll {
   background-image: url('/gameplay/premium-purple/roll.webp');
 }
+
 .game-controls-primary .game-roll-button--undo,
 .game-controls-primary .game-end-turn-pair-button--undo {
   background-image: url('/gameplay/premium-purple/undo.webp');
 }
+
 .game-controls-primary .game-end-turn-pair-button--end {
   background-image: url('/gameplay/premium-purple/end-turn.webp');
 }
+
 .game-controls-primary button:not(:disabled):hover {
   filter: brightness(1.1);
 }
+
 .game-controls-primary button:not(:disabled):active {
   transform: translateY(1px) scale(0.97);
 }
+
 .game-controls-primary button:disabled {
   opacity: 0.5;
   cursor: default;
@@ -5981,19 +5953,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   aspect-ratio: 1.9 / 1;
   border-radius: 999px;
   background: linear-gradient(180deg, #1c1813, #0a0a0d);
-  box-shadow:
-    inset 0 0.12rem 0.4rem rgba(0, 0, 0, 0.85),
-    inset 0 0 0 0.08rem rgba(255, 204, 101, 0.22);
+  box-shadow: inset 0 0.12rem 0.4rem rgba(0, 0, 0, 0.85),
+  inset 0 0 0 0.08rem rgba(255, 204, 101, 0.22);
   transition: background 220ms ease, box-shadow 220ms ease;
 }
 
 /* ON state — green pill with a soft outer glow. */
 .game-auto-toggle.is-on .game-auto-switch {
   background: linear-gradient(180deg, #1bb55a 0%, #07703a 100%);
-  box-shadow:
-    inset 0 0.12rem 0.35rem rgba(0, 0, 0, 0.42),
-    inset 0 0 0 0.08rem rgba(180, 255, 196, 0.55),
-    0 0 0.55em rgba(40, 210, 100, 0.45);
+  box-shadow: inset 0 0.12rem 0.35rem rgba(0, 0, 0, 0.42),
+  inset 0 0 0 0.08rem rgba(180, 255, 196, 0.55),
+  0 0 0.55em rgba(40, 210, 100, 0.45);
 }
 
 .game-auto-knob {
@@ -6006,13 +5976,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(circle at 32% 26%, #fff8db 0 34%, #f7d37b 70%, #a86d18 100%);
-  box-shadow:
-    0 0.18rem 0.42rem rgba(0, 0, 0, 0.55),
-    inset 0 -0.06rem 0.12rem rgba(0, 0, 0, 0.18),
-    inset 0 0.05rem 0.1rem rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0.18rem 0.42rem rgba(0, 0, 0, 0.55),
+  inset 0 -0.06rem 0.12rem rgba(0, 0, 0, 0.18),
+  inset 0 0.05rem 0.1rem rgba(255, 255, 255, 0.45);
   transform: translateY(-50%);
   transition: left 220ms cubic-bezier(0.4, 0, 0.2, 1),
-    background 220ms ease;
+  background 220ms ease;
 }
 
 .game-auto-toggle.is-on .game-auto-knob {
@@ -6210,9 +6179,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-size: clamp(1.2rem, 3.4vw, 3.05rem);
   font-weight: 950;
   line-height: 1;
-  text-shadow:
-    0 0.05em 0.08em rgba(0, 0, 0, 0.72),
-    0 0 0.22em rgba(255, 209, 90, 0.22);
+  text-shadow: 0 0.05em 0.08em rgba(0, 0, 0, 0.72),
+  0 0 0.22em rgba(255, 209, 90, 0.22);
 }
 
 .game-score-separator {
@@ -6401,15 +6369,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border-radius: 50%;
   border: 0.14rem solid rgba(255, 205, 76, 0.86);
   background: rgba(10, 10, 12, 0.34);
-  box-shadow:
-    0 0 1.1rem rgba(190, 53, 255, 0.68),
-    inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 1.1rem rgba(190, 53, 255, 0.68),
+  inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
 }
 
 .game-player-panel--right .game-avatar-ring {
-  box-shadow:
-    0 0 1.1rem rgba(53, 173, 255, 0.72),
-    inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 1.1rem rgba(53, 173, 255, 0.72),
+  inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
 }
 
 .game-avatar-image {
@@ -6944,21 +6910,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   z-index: 0;
   border-radius: 50%;
   border: 0.18rem solid rgba(195, 76, 255, 0.95);
-  background:
-    radial-gradient(circle at center, transparent 58%, rgba(38, 14, 64, 0.45) 70%, transparent 80%);
-  box-shadow:
-    0 0 1.1rem 0.15rem rgba(196, 76, 255, 0.6),
-    0 0 2rem 0.4rem rgba(196, 76, 255, 0.3),
-    inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle at center, transparent 58%, rgba(38, 14, 64, 0.45) 70%, transparent 80%);
+  box-shadow: 0 0 1.1rem 0.15rem rgba(196, 76, 255, 0.6),
+  0 0 2rem 0.4rem rgba(196, 76, 255, 0.3),
+  inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
   pointer-events: none;
 }
 
 .game-player-panel--right .game-avatar-ring {
   border-color: rgba(51, 178, 255, 0.95);
-  box-shadow:
-    0 0 1.1rem 0.15rem rgba(51, 178, 255, 0.65),
-    0 0 2rem 0.4rem rgba(51, 178, 255, 0.3),
-    inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 1.1rem 0.15rem rgba(51, 178, 255, 0.65),
+  0 0 2rem 0.4rem rgba(51, 178, 255, 0.3),
+  inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
 }
 
 .game-avatar-image {
@@ -6988,9 +6951,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   box-shadow: none;
   color: #ffde61;
   font-size: clamp(0.56rem, 1.08vw, 1.05rem);
-  text-shadow:
-    0 0.08em 0.08em rgba(0, 0, 0, 0.84),
-    0 0 0.35em rgba(255, 208, 76, 0.34);
+  text-shadow: 0 0.08em 0.08em rgba(0, 0, 0, 0.84),
+  0 0 0.35em rgba(255, 208, 76, 0.34);
 }
 
 .game-player-panel--right .game-level-shield {
@@ -7576,12 +7538,10 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: 31.8%;
   border: 1px solid rgba(214, 157, 49, 0.54);
   border-radius: clamp(1rem, 1.5vw, 1.5rem);
-  background:
-    radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
-    linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
-  box-shadow:
-    inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
-    0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+  background: radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+  linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow: inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+  0 1.1rem 2rem rgba(0, 0, 0, 0.44);
 }
 
 .game-player-panel--left .game-player-top {
@@ -7681,9 +7641,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-weight: 950;
   line-height: 1;
   text-align: center;
-  text-shadow:
-    0 0.08em 0.1em rgba(0, 0, 0, 0.85),
-    0 0 0.35em rgba(255, 208, 76, 0.32);
+  text-shadow: 0 0.08em 0.1em rgba(0, 0, 0, 0.85),
+  0 0 0.35em rgba(255, 208, 76, 0.32);
   isolation: auto;
   pointer-events: none;
 }
@@ -8194,8 +8153,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    animation so the motion language stays consistent.
    ────────────────────────────────────────────────────────────── */
 @keyframes wheel-modal-backdrop-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes wheel-modal-rise {
@@ -8232,14 +8195,23 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 /* Winning-wedge glow — pulses the whole winning slice's brightness while the
    wheel celebrates (the overlay element is built in WheelModal.tsx). */
 @keyframes wheel-winning-wedge-glow {
-  0%, 100% { opacity: 0.5; }
-  50%      { opacity: 1; }
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
+
 .wheel-winning-wedge {
   animation: wheel-winning-wedge-glow 0.75s ease-in-out infinite;
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .wheel-winning-wedge { animation: none; opacity: 0.9; }
+  .wheel-winning-wedge {
+    animation: none;
+    opacity: 0.9;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────────
@@ -8301,8 +8273,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    (was 25% / 75%) toward the middle of the board. 35% puts the
    left tray at the inner edge of the left half; 65% mirrors on
    the right. Tweak these two values to taste. */
-.dice-board--left  { left: 35%; }
-.dice-board--right { left: 65%; }
+.dice-board--left {
+  left: 35%;
+}
+
+.dice-board--right {
+  left: 65%;
+}
 
 /* The cube itself. preserve-3d puts the six faces in real 3D space.
    The transition does ALL the visual work — every new roll just
@@ -8416,9 +8393,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   background: #fcfcfc;
   border-radius: calc(var(--dice-cube-size) * 0.13);
   border: 1px solid #e0e0e0;
-  box-shadow:
-    inset 0 0 calc(var(--dice-cube-size) * 0.1) rgba(0, 0, 0, 0.15),
-    0 calc(var(--dice-cube-size) * 0.05) calc(var(--dice-cube-size) * 0.13) rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 0 calc(var(--dice-cube-size) * 0.1) rgba(0, 0, 0, 0.15),
+  0 calc(var(--dice-cube-size) * 0.05) calc(var(--dice-cube-size) * 0.13) rgba(0, 0, 0, 0.3);
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   padding: calc(var(--dice-cube-size) * 0.08);
@@ -8427,12 +8403,29 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 /* Per-face cube-space positions. translateZ MUST be half the cube
    width — derived directly from --dice-cube-size. */
-.dice-face--f1 { transform: rotateY(0deg)    translateZ(calc(var(--dice-cube-size) * 0.5)); }
-.dice-face--f6 { transform: rotateY(180deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
-.dice-face--f3 { transform: rotateY(90deg)   translateZ(calc(var(--dice-cube-size) * 0.5)); }
-.dice-face--f4 { transform: rotateY(-90deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
-.dice-face--f2 { transform: rotateX(90deg)   translateZ(calc(var(--dice-cube-size) * 0.5)); }
-.dice-face--f5 { transform: rotateX(-90deg)  translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.dice-face--f1 {
+  transform: rotateY(0deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
+
+.dice-face--f6 {
+  transform: rotateY(180deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
+
+.dice-face--f3 {
+  transform: rotateY(90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
+
+.dice-face--f4 {
+  transform: rotateY(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
+
+.dice-face--f2 {
+  transform: rotateX(90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
+
+.dice-face--f5 {
+  transform: rotateX(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
+}
 
 /* Pip diameter is 18% of the cube — readable at the smallest end
    of the clamp (28px → 5px pip) and not overpowering at the
@@ -8490,49 +8483,123 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    background-size: 300% 200%, means:
      col 0 → 0%   col 1 →  50%   col 2 → 100%
      row 0 → 0%   row 1 → 100% */
-.dice-cube--sprite .dice-face--f1 { background-position:   0%   0%; }
-.dice-cube--sprite .dice-face--f2 { background-position:  50%   0%; }
-.dice-cube--sprite .dice-face--f3 { background-position: 100%   0%; }
-.dice-cube--sprite .dice-face--f4 { background-position:   0% 100%; }
-.dice-cube--sprite .dice-face--f5 { background-position:  50% 100%; }
-.dice-cube--sprite .dice-face--f6 { background-position: 100% 100%; }
+.dice-cube--sprite .dice-face--f1 {
+  background-position: 0% 0%;
+}
+
+.dice-cube--sprite .dice-face--f2 {
+  background-position: 50% 0%;
+}
+
+.dice-cube--sprite .dice-face--f3 {
+  background-position: 100% 0%;
+}
+
+.dice-cube--sprite .dice-face--f4 {
+  background-position: 0% 100%;
+}
+
+.dice-cube--sprite .dice-face--f5 {
+  background-position: 50% 100%;
+}
+
+.dice-cube--sprite .dice-face--f6 {
+  background-position: 100% 100%;
+}
 
 /* Per-face pip placement using the 3×3 grid. The cells are
    row/col 1..3. Each face's nth-child rule puts the pip in the
    correct standard-dice cell. */
 
 /* 1 pip — centre */
-.dice-face--f1 .dice-pip { grid-area: 2 / 2; }
+.dice-face--f1 .dice-pip {
+  grid-area: 2 / 2;
+}
 
 /* 2 pips — top-left, bottom-right */
-.dice-face--f2 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
-.dice-face--f2 .dice-pip:nth-child(2) { grid-area: 3 / 3; }
+.dice-face--f2 .dice-pip:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.dice-face--f2 .dice-pip:nth-child(2) {
+  grid-area: 3 / 3;
+}
 
 /* 3 pips — diagonal */
-.dice-face--f3 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
-.dice-face--f3 .dice-pip:nth-child(2) { grid-area: 2 / 2; }
-.dice-face--f3 .dice-pip:nth-child(3) { grid-area: 3 / 3; }
+.dice-face--f3 .dice-pip:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.dice-face--f3 .dice-pip:nth-child(2) {
+  grid-area: 2 / 2;
+}
+
+.dice-face--f3 .dice-pip:nth-child(3) {
+  grid-area: 3 / 3;
+}
 
 /* 4 pips — four corners */
-.dice-face--f4 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
-.dice-face--f4 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
-.dice-face--f4 .dice-pip:nth-child(3) { grid-area: 3 / 1; }
-.dice-face--f4 .dice-pip:nth-child(4) { grid-area: 3 / 3; }
+.dice-face--f4 .dice-pip:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.dice-face--f4 .dice-pip:nth-child(2) {
+  grid-area: 1 / 3;
+}
+
+.dice-face--f4 .dice-pip:nth-child(3) {
+  grid-area: 3 / 1;
+}
+
+.dice-face--f4 .dice-pip:nth-child(4) {
+  grid-area: 3 / 3;
+}
 
 /* 5 pips — four corners + centre */
-.dice-face--f5 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
-.dice-face--f5 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
-.dice-face--f5 .dice-pip:nth-child(3) { grid-area: 2 / 2; }
-.dice-face--f5 .dice-pip:nth-child(4) { grid-area: 3 / 1; }
-.dice-face--f5 .dice-pip:nth-child(5) { grid-area: 3 / 3; }
+.dice-face--f5 .dice-pip:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.dice-face--f5 .dice-pip:nth-child(2) {
+  grid-area: 1 / 3;
+}
+
+.dice-face--f5 .dice-pip:nth-child(3) {
+  grid-area: 2 / 2;
+}
+
+.dice-face--f5 .dice-pip:nth-child(4) {
+  grid-area: 3 / 1;
+}
+
+.dice-face--f5 .dice-pip:nth-child(5) {
+  grid-area: 3 / 3;
+}
 
 /* 6 pips — two columns of three */
-.dice-face--f6 .dice-pip:nth-child(1) { grid-area: 1 / 1; }
-.dice-face--f6 .dice-pip:nth-child(2) { grid-area: 1 / 3; }
-.dice-face--f6 .dice-pip:nth-child(3) { grid-area: 2 / 1; }
-.dice-face--f6 .dice-pip:nth-child(4) { grid-area: 2 / 3; }
-.dice-face--f6 .dice-pip:nth-child(5) { grid-area: 3 / 1; }
-.dice-face--f6 .dice-pip:nth-child(6) { grid-area: 3 / 3; }
+.dice-face--f6 .dice-pip:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.dice-face--f6 .dice-pip:nth-child(2) {
+  grid-area: 1 / 3;
+}
+
+.dice-face--f6 .dice-pip:nth-child(3) {
+  grid-area: 2 / 1;
+}
+
+.dice-face--f6 .dice-pip:nth-child(4) {
+  grid-area: 2 / 3;
+}
+
+.dice-face--f6 .dice-pip:nth-child(5) {
+  grid-area: 3 / 1;
+}
+
+.dice-face--f6 .dice-pip:nth-child(6) {
+  grid-area: 3 / 3;
+}
 
 /* Respect prefers-reduced-motion: skip the long tumble, just snap
    to the final face. */
@@ -8822,6 +8889,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 .lobby-topbar-actions {
   pointer-events: none;
 }
+
 .lobby-topbar-actions > * {
   pointer-events: auto;
 }
@@ -8934,25 +9002,23 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   aspect-ratio: 1;
   border-radius: 50%;
   border: calc(7.5 * var(--lobby-u)) solid transparent;
-  background:
-    radial-gradient(circle at 46% 42%, #e88dff 0 12%, #b756f4 36%, #7420bd 65%, #27086c 100%) padding-box,
-    conic-gradient(
-      from 218deg,
-      #ff69f6,
-      #fff9be 10%,
-      #ff9b00 20%,
-      #fff3a0 32%,
-      #dc7a00 47%,
-      #7727ef 65%,
-      #ff72f8 82%,
-      #fff7ac 94%,
-      #ff69f6
-    ) border-box;
-  box-shadow:
-    inset 0 0 22px rgba(255, 255, 255, 0.2),
-    0 0 0 2px rgba(25, 12, 80, 0.85),
-    0 0 18px rgba(178, 55, 255, 0.7),
-    0 8px 14px rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at 46% 42%, #e88dff 0 12%, #b756f4 36%, #7420bd 65%, #27086c 100%) padding-box,
+  conic-gradient(
+    from 218deg,
+    #ff69f6,
+    #fff9be 10%,
+    #ff9b00 20%,
+    #fff3a0 32%,
+    #dc7a00 47%,
+    #7727ef 65%,
+    #ff72f8 82%,
+    #fff7ac 94%,
+    #ff69f6
+  ) border-box;
+  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.2),
+  0 0 0 2px rgba(25, 12, 80, 0.85),
+  0 0 18px rgba(178, 55, 255, 0.7),
+  0 8px 14px rgba(0, 0, 0, 0.35);
   display: grid;
   place-items: center;
   overflow: visible;
@@ -9021,13 +9087,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border: 1.5px solid #f2b633;
   border-radius: 18% 18% 45% 45%;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
-    linear-gradient(180deg, #20296d, #0b103e 72%);
-  box-shadow:
-    inset 0 0 5px rgba(115, 98, 255, 0.38),
-    0 2px 5px rgba(0, 0, 0, 0.45),
-    0 0 4px rgba(255, 194, 50, 0.4);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
+  linear-gradient(180deg, #20296d, #0b103e 72%);
+  box-shadow: inset 0 0 5px rgba(115, 98, 255, 0.38),
+  0 2px 5px rgba(0, 0, 0, 0.45),
+  0 0 4px rgba(255, 194, 50, 0.4);
   z-index: 6;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
@@ -9054,13 +9118,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   place-items: center;
   border: 2px solid #f2b633;
   border-radius: 18% 18% 45% 45%;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
-    linear-gradient(180deg, #20296d, #0b103e 72%);
-  box-shadow:
-    inset 0 0 6px rgba(115, 98, 255, 0.38),
-    0 3px 7px rgba(0, 0, 0, 0.5),
-    0 0 5px rgba(255, 194, 50, 0.4);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
+  linear-gradient(180deg, #20296d, #0b103e 72%);
+  box-shadow: inset 0 0 6px rgba(115, 98, 255, 0.38),
+  0 3px 7px rgba(0, 0, 0, 0.5),
+  0 0 5px rgba(255, 194, 50, 0.4);
   z-index: 6;
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
@@ -9115,10 +9177,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   line-height: 1;
   letter-spacing: -0.03em;
   color: white;
-  text-shadow:
-    0 1px 0 #d7dcff,
-    0 2px 0 #151a55,
-    0 3px 5px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 0 #d7dcff,
+  0 2px 0 #151a55,
+  0 3px 5px rgba(0, 0, 0, 0.55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9136,13 +9197,11 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   padding: 0 clamp(7px, 0.85vw, 11px);
   border-radius: 7px;
   border: 1.5px solid transparent;
-  background:
-    linear-gradient(180deg, #b96517 0%, #773100 49%, #411605 100%) padding-box,
-    linear-gradient(125deg, #fff7b3, #ff9d00, #fff7b3) border-box;
-  box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.16),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.4),
-    0 0 5px rgba(255, 171, 30, 0.35);
+  background: linear-gradient(180deg, #b96517 0%, #773100 49%, #411605 100%) padding-box,
+  linear-gradient(125deg, #fff7b3, #ff9d00, #fff7b3) border-box;
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.16),
+  inset 0 -2px 4px rgba(0, 0, 0, 0.4),
+  0 0 5px rgba(255, 171, 30, 0.35);
 }
 
 /* `.lobby-pp-rank-badge` is now just the star glyph — no inner
@@ -9217,14 +9276,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: calc(29 * var(--lobby-u));
   border-radius: 999px;
   padding: 2px;
-  background:
-    linear-gradient(180deg, #070b22, #12142b) padding-box,
-    linear-gradient(90deg, #fff7b3, #ff9d00, #ff73f7, #fff7b3) border-box;
+  background: linear-gradient(180deg, #070b22, #12142b) padding-box,
+  linear-gradient(90deg, #fff7b3, #ff9d00, #ff73f7, #fff7b3) border-box;
   border: 1px solid transparent;
-  box-shadow:
-    inset 0 2px 4px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 121, 226, 0.5),
-    0 0 6px rgba(255, 186, 41, 0.22);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
+  0 0 0 1px rgba(255, 121, 226, 0.5),
+  0 0 6px rgba(255, 186, 41, 0.22);
   overflow: hidden;
 }
 
@@ -9233,10 +9290,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(180deg, #fff62f 0%, #ffc400 38%, #ff8c00 100%);
-  box-shadow:
-    inset 0 3px 4px rgba(255, 255, 255, 0.46),
-    inset 0 -3px 4px rgba(196, 78, 0, 0.25),
-    0 0 8px rgba(255, 207, 28, 0.7);
+  box-shadow: inset 0 3px 4px rgba(255, 255, 255, 0.46),
+  inset 0 -3px 4px rgba(196, 78, 0, 0.25),
+  0 0 8px rgba(255, 207, 28, 0.7);
   transition: width 0.45s ease-out;
   overflow: hidden;
 }
@@ -9252,10 +9308,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   inset: 0;
   opacity: 0.95;
   mix-blend-mode: screen;
-  background-image:
-    radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
-    radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
-    radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
+  background-image: radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
+  radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
+  radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
   /* tile width MUST match the keyframe shift (-42px) so the loop is seamless */
   background-size: 42px 100%, 42px 100%, 42px 100%;
   background-repeat: repeat;
@@ -9267,9 +9322,8 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   content: '';
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
-    radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
+  background-image: radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
+  radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
   /* tile width MUST match the keyframe shift (-26px) for a seamless loop */
   background-size: 26px 100%, 26px 100%;
   background-repeat: repeat;
@@ -9337,14 +9391,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border-radius: clamp(8px, 0.9vw, 11px);
   /* BG at 0.85 alpha to match the XP card — preserves the dark
    * brand colour with only a slight transparency. */
-  background:
-    linear-gradient(180deg, rgba(20, 15, 66, 0.85), rgba(4, 8, 35, 0.85)),
-    radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.25), transparent 36%);
+  background: linear-gradient(180deg, rgba(20, 15, 66, 0.85), rgba(4, 8, 35, 0.85)),
+  radial-gradient(circle at 10% 0%, rgba(116, 54, 255, 0.25), transparent 36%);
   border: 1px solid rgba(104, 69, 219, 0.5);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -4px 8px rgba(0, 0, 0, 0.22),
-    0 4px 8px rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+  inset 0 -4px 8px rgba(0, 0, 0, 0.22),
+  0 4px 8px rgba(0, 0, 0, 0.28);
 }
 
 .lobby-pp-stat {
@@ -9368,14 +9420,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   display: grid;
   place-items: center;
   position: relative;
-  background:
-    radial-gradient(circle at 36% 26%, rgba(135, 87, 255, 0.5), transparent 26%),
-    linear-gradient(180deg, #2e1a68, #0c092b 76%);
+  background: radial-gradient(circle at 36% 26%, rgba(135, 87, 255, 0.5), transparent 26%),
+  linear-gradient(180deg, #2e1a68, #0c092b 76%);
   border: 1px solid rgba(135, 82, 255, 0.55);
-  box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.06),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.46),
-    0 2px 4px rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.06),
+  inset 0 -2px 4px rgba(0, 0, 0, 0.46),
+  0 2px 4px rgba(0, 0, 0, 0.32);
   flex-shrink: 0;
 }
 
@@ -9469,22 +9519,47 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 }
 
 @keyframes gr-shimmer {
-  0% { --gr-shimmer: 0deg; }
-  100% { --gr-shimmer: 360deg; }
+  0% {
+    --gr-shimmer: 0deg;
+  }
+  100% {
+    --gr-shimmer: 360deg;
+  }
 }
+
 @keyframes gr-shine {
-  0% { opacity: 0; }
-  15% { opacity: 1; }
-  55% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
+
 @keyframes gr-text-shine {
-  0% { background-position: 100% center; }
-  100% { background-position: -100% center; }
+  0% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: -100% center;
+  }
 }
+
 @keyframes gr-twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(0.75) rotate(45deg); }
-  50% { opacity: 1; transform: scale(1.2) rotate(45deg); }
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.75) rotate(45deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(45deg);
+  }
 }
 
 /* In @layer components so Tailwind positioning utilities (.absolute,
@@ -9500,23 +9575,36 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     border-radius: 0.448em;
     line-height: 1;
     background: linear-gradient(180deg, #f2f4f1 0%, #9ba09b 48%, #4d514d 100%);
-    box-shadow:
-      0 0.276em 0.483em rgba(0, 0, 0, 0.48),
-      0 0 0.207em rgba(210, 220, 210, 0.18),
-      inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
-      inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
+    box-shadow: 0 0.276em 0.483em rgba(0, 0, 0, 0.48),
+    0 0 0.207em rgba(210, 220, 210, 0.18),
+    inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
+    inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
   }
 }
 
 /* Size presets — the only knob. */
-.gr-play-lg { font-size: clamp(22px, 5vw, 48px); }
-.gr-play-md { font-size: 26px; }
-.gr-play-sm { font-size: 16px; }
+.gr-play-lg {
+  font-size: clamp(22px, 5vw, 48px);
+}
+
+.gr-play-md {
+  font-size: 26px;
+}
+
+.gr-play-sm {
+  font-size: 16px;
+}
 
 /* Full-width variant: the pill stretches to the parent width and
    font-size then only drives the height. */
-.gr-play-block { display: block; width: 100%; }
-.gr-play-block .gr-play-button { width: 100%; }
+.gr-play-block {
+  display: block;
+  width: 100%;
+}
+
+.gr-play-block .gr-play-button {
+  width: 100%;
+}
 
 .gr-play-wrap::before {
   content: "";
@@ -9543,20 +9631,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-weight: 1000;
   letter-spacing: 0.043em;
   text-transform: uppercase;
-  text-shadow:
-    0 0.052em 0 #11401b,
-    0 0.103em 0.138em rgba(0, 0, 0, 0.45),
-    0 0 0.207em rgba(255, 255, 255, 0.55);
+  text-shadow: 0 0.052em 0 #11401b,
+  0 0.103em 0.138em rgba(0, 0, 0, 0.45),
+  0 0 0.207em rgba(255, 255, 255, 0.55);
   /* Flat green — top sheen + vertical gradient for the 3D pill, no
      dot/line texture pattern. */
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0) 28%),
-    linear-gradient(to top, #1b5a24 0%, #2fa345 52%, #63df73 100%);
-  box-shadow:
-    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
-    inset 0 -0.069em 0.034em rgba(8, 72, 18, 0.48),
-    0 0.069em 0 #343834,
-    0 0.207em 0.31em rgba(0, 0, 0, 0.46);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 28%),
+  linear-gradient(to top, #1b5a24 0%, #2fa345 52%, #63df73 100%);
+  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
+  inset 0 -0.069em 0.034em rgba(8, 72, 18, 0.48),
+  0 0.069em 0 #343834,
+  0 0.207em 0.31em rgba(0, 0, 0, 0.46);
   transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
@@ -9610,48 +9695,50 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   opacity: 0;
   transition: opacity 0.5s ease;
 }
+
 .gr-play-shimmer::before {
-  box-shadow:
-    0 0 calc(var(--inset) * 0.1) 0.034em hsl(var(--gr-glow-hue) 35% 95%),
-    0 0 calc(var(--inset) * 0.2) 0.069em hsl(var(--gr-glow-hue) 55% 80%),
-    0 0 calc(var(--inset) * 0.42) 0.086em hsl(var(--gr-glow-hue) 90% 66%);
+  box-shadow: 0 0 calc(var(--inset) * 0.1) 0.034em hsl(var(--gr-glow-hue) 35% 95%),
+  0 0 calc(var(--inset) * 0.2) 0.069em hsl(var(--gr-glow-hue) 55% 80%),
+  0 0 calc(var(--inset) * 0.42) 0.086em hsl(var(--gr-glow-hue) 90% 66%);
   z-index: -1;
 }
+
 .gr-play-shimmer::after {
-  box-shadow:
-    inset 0 0 0 0.017em hsl(var(--gr-glow-hue) 90% 92%),
-    inset 0 0 0.052em 0.017em hsl(var(--gr-glow-hue) 95% 76%),
-    inset 0 0 0.138em 0.034em hsl(var(--gr-glow-hue) 100% 62%);
+  box-shadow: inset 0 0 0 0.017em hsl(var(--gr-glow-hue) 90% 92%),
+  inset 0 0 0.052em 0.017em hsl(var(--gr-glow-hue) 95% 76%),
+  inset 0 0 0.138em 0.034em hsl(var(--gr-glow-hue) 100% 62%);
   z-index: 2;
 }
 
 .gr-play-button:hover {
   filter: brightness(1.12) saturate(1.14);
   transform: translateY(-0.034em) scale(1.04);
-  box-shadow:
-    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
-    inset 0 -0.069em 0.034em rgba(0, 40, 10, 0.5),
-    0 0.086em 0 #343834,
-    0 0.31em 0.414em rgba(0, 0, 0, 0.5),
-    0 0 0.483em rgba(106, 255, 140, 0.42);
+  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
+  inset 0 -0.069em 0.034em rgba(0, 40, 10, 0.5),
+  0 0.086em 0 #343834,
+  0 0.31em 0.414em rgba(0, 0, 0, 0.5),
+  0 0 0.483em rgba(106, 255, 140, 0.42);
 }
+
 .gr-play-button:hover .gr-play-shimmer::before,
 .gr-play-button:hover .gr-play-shimmer::after {
   opacity: 1;
   animation: gr-shine 1.2s ease-in 1 forwards;
 }
+
 .gr-play-button:hover .gr-play-text {
   color: transparent;
   animation: gr-text-shine 0.66s ease-in 1 both;
 }
+
 .gr-play-button:active {
   transform: translateY(0.069em) scale(1.01);
-  box-shadow:
-    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.32),
-    inset 0 -0.052em 0.034em rgba(0, 68, 20, 0.42),
-    0 0.034em 0 #343834,
-    0 0.138em 0.241em rgba(0, 0, 0, 0.42);
+  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.32),
+  inset 0 -0.052em 0.034em rgba(0, 68, 20, 0.42),
+  0 0.034em 0 #343834,
+  0 0.138em 0.241em rgba(0, 0, 0, 0.42);
 }
+
 .gr-play-button:disabled {
   cursor: default;
   filter: grayscale(0.5) brightness(0.82);
@@ -9667,14 +9754,39 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   filter: drop-shadow(0 0 0.138em #ffe76a);
   animation: gr-twinkle 1.8s infinite ease-in-out;
 }
-.gr-play-sparkle:nth-child(1) { top: -0.138em; right: 0.931em; animation-delay: 0s; }
-.gr-play-sparkle:nth-child(2) { bottom: 0.086em; left: 0.776em; width: 0.155em; height: 0.155em; animation-delay: 0.45s; }
-.gr-play-sparkle:nth-child(3) { top: 0.379em; left: -0.069em; width: 0.138em; height: 0.138em; animation-delay: 0.9s; }
+
+.gr-play-sparkle:nth-child(1) {
+  top: -0.138em;
+  right: 0.931em;
+  animation-delay: 0s;
+}
+
+.gr-play-sparkle:nth-child(2) {
+  bottom: 0.086em;
+  left: 0.776em;
+  width: 0.155em;
+  height: 0.155em;
+  animation-delay: 0.45s;
+}
+
+.gr-play-sparkle:nth-child(3) {
+  top: 0.379em;
+  left: -0.069em;
+  width: 0.138em;
+  height: 0.138em;
+  animation-delay: 0.9s;
+}
 
 /* Honor reduced-motion: kill the perpetual shimmer + sparkle loops. */
 @media (prefers-reduced-motion: reduce) {
-  .gr-play-shimmer { animation: none; }
-  .gr-play-sparkle { animation: none; opacity: 0.6; }
+  .gr-play-shimmer {
+    animation: none;
+  }
+
+  .gr-play-sparkle {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 /* ==========================================================================
@@ -9703,7 +9815,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   --gold-dark: #8a5d12;
   position: relative;
   flex: none;
-  width: 1em;          /* collapsed: square (= height) */
+  width: 1em; /* collapsed: square (= height) */
   height: 1em;
   border: 0;
   border-radius: 999px;
@@ -9711,19 +9823,19 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   overflow: hidden;
   color: var(--gold-light);
   background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow:
-    0 0 0 0.019em var(--gold-dark),
-    0 0 0 0.032em var(--gold-mid),
-    inset 0 0.026em 0.103em rgba(255, 255, 255, 0.08),
-    inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
-    0 0.09em 0.205em rgba(0, 0, 0, 0.45);
-  transition:
-    width 430ms cubic-bezier(0.2, 0.9, 0.2, 1.12),
-    transform 180ms ease,
-    box-shadow 220ms ease;
+  box-shadow: 0 0 0 0.019em var(--gold-dark),
+  0 0 0 0.032em var(--gold-mid),
+  inset 0 0.026em 0.103em rgba(255, 255, 255, 0.08),
+  inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
+  0 0.09em 0.205em rgba(0, 0, 0, 0.45);
+  transition: width 430ms cubic-bezier(0.2, 0.9, 0.2, 1.12),
+  transform 180ms ease,
+  box-shadow 220ms ease;
 }
 
-.gr-unlock-pill.is-open { width: 3.974em; }
+.gr-unlock-pill.is-open {
+  width: 3.974em;
+}
 
 .gr-unlock-pill::before {
   content: "";
@@ -9769,14 +9881,14 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   letter-spacing: 0.1em;
   white-space: nowrap;
   background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow:
-    0 0 0 0.08em var(--gold-dark),
-    0 0 0 0.14em var(--gold-mid),
-    inset 0 0.06em 0.1em rgba(255, 255, 255, 0.08),
-    inset 0 -0.1em 0.18em rgba(0, 0, 0, 0.75),
-    0 0.16em 0.3em rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 0.08em var(--gold-dark),
+  0 0 0 0.14em var(--gold-mid),
+  inset 0 0.06em 0.1em rgba(255, 255, 255, 0.08),
+  inset 0 -0.1em 0.18em rgba(0, 0, 0, 0.75),
+  0 0.16em 0.3em rgba(0, 0, 0, 0.45);
   text-shadow: 0 0.06em 0.08em rgba(0, 0, 0, 0.55);
 }
+
 .gr-name-pill::before {
   content: "";
   position: absolute;
@@ -9792,13 +9904,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 .gr-unlock-pill:hover {
   transform: translateY(-0.013em);
-  box-shadow:
-    0 0 0 0.019em var(--gold-dark),
-    0 0 0 0.032em var(--gold-mid),
-    0 0 0.256em rgba(255, 216, 91, 0.28),
-    inset 0 0.026em 0.103em rgba(255, 255, 255, 0.1),
-    inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
-    0 0.128em 0.256em rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 0.019em var(--gold-dark),
+  0 0 0 0.032em var(--gold-mid),
+  0 0 0.256em rgba(255, 216, 91, 0.28),
+  inset 0 0.026em 0.103em rgba(255, 255, 255, 0.1),
+  inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
+  0 0.128em 0.256em rgba(0, 0, 0, 0.5);
 }
 
 .gr-unlock-icon,
@@ -9820,10 +9931,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   width: 0.449em;
   height: 0.449em;
   display: block;
-  filter:
-    drop-shadow(0 0.013em 0 rgba(255, 255, 255, 0.35))
-    drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 0.077em rgba(255, 211, 75, 0.38));
+  filter: drop-shadow(0 0.013em 0 rgba(255, 255, 255, 0.35)) drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.077em rgba(255, 211, 75, 0.38));
 }
 
 /* Gem variant — the gem.webp keeps its own colors, just sized + a
@@ -9847,10 +9955,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   font-weight: 700;
   letter-spacing: 0.009em;
   color: #ffe98b;
-  text-shadow:
-    0 0.045em 0 #7a4f0c,
-    0 0.091em 0.318em rgba(255, 216, 91, 0.38),
-    0 0.182em 0.455em rgba(0, 0, 0, 0.75);
+  text-shadow: 0 0.045em 0 #7a4f0c,
+  0 0.091em 0.318em rgba(255, 216, 91, 0.38),
+  0 0.182em 0.455em rgba(0, 0, 0, 0.75);
   pointer-events: none;
 }
 
@@ -9918,6 +10025,7 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   height: 2px;
   width: clamp(2.2rem, 7vw, 4rem);
 }
+
 .gr-loadingscreen-tail::after {
   content: '';
   position: absolute;
@@ -9927,15 +10035,19 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   background: #f6c453;
   transform: translateY(-50%) rotate(45deg);
 }
+
 .gr-loadingscreen-tail--l {
   background: linear-gradient(to right, transparent, #f6c453);
 }
+
 .gr-loadingscreen-tail--l::after {
   right: -3px;
 }
+
 .gr-loadingscreen-tail--r {
   background: linear-gradient(to left, transparent, #f6c453);
 }
+
 .gr-loadingscreen-tail--r::after {
   left: -3px;
 }
@@ -9946,10 +10058,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border-radius: 999px;
   border: 2px solid #edb64f;
   background: linear-gradient(#0d0802, #1c1206);
-  box-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.6),
-    0 0 14px rgba(240, 180, 70, 0.22),
-    inset 0 2px 6px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6),
+  0 0 14px rgba(240, 180, 70, 0.22),
+  inset 0 2px 6px rgba(0, 0, 0, 0.85);
   padding: 3px;
 }
 
@@ -9962,13 +10073,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   border-radius: 999px;
   overflow: hidden;
 }
+
 .gr-loadingscreen-fill {
   height: 100%;
   width: 100%;
   border-radius: 999px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
-    repeating-linear-gradient(55deg, #ffdf8a 0 12px, #f3b445 12px 24px);
+  background: linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
+  repeating-linear-gradient(55deg, #ffdf8a 0 12px, #f3b445 12px 24px);
   box-shadow: 0 0 10px rgba(255, 190, 70, 0.4);
   /* Indeterminate: slide in from the left once, easing out near "90%".
      LoadingScreen overrides transform+animation inline when it has real

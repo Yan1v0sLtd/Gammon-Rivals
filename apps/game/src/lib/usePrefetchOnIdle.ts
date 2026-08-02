@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import {useEffect} from 'react';
 
 /**
  * Warms the browser cache for a set of image URLs AFTER the page is
@@ -27,25 +27,21 @@ export function usePrefetchOnIdle(urls: readonly string[]): void {
       }
     };
 
-    const w = window as typeof window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-
     let idleHandle: number | undefined;
     let timeoutHandle: number | undefined;
-    if (typeof w.requestIdleCallback === 'function') {
+    if (typeof window.requestIdleCallback === 'function') {
       // timeout ensures we still prefetch within 2.5s even if the main thread
       // never goes fully idle on a busy first load.
-      idleHandle = w.requestIdleCallback(warm, { timeout: 2500 });
-    } else {
+      idleHandle = window.requestIdleCallback(warm, {timeout: 2500});
+    }
+    else {
       timeoutHandle = window.setTimeout(warm, 1200);
     }
 
     return () => {
       cancelled = true;
-      if (idleHandle !== undefined && typeof w.cancelIdleCallback === 'function') {
-        w.cancelIdleCallback(idleHandle);
+      if (idleHandle !== undefined && typeof window.cancelIdleCallback === 'function') {
+        window.cancelIdleCallback(idleHandle);
       }
       if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
     };

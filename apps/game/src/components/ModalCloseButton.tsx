@@ -20,16 +20,19 @@ interface ModalCloseButtonProps {
  * are identical in size and style; each modal supplies only the positioning
  * via `className` (both place it inside their frame's top-right corner).
  */
-export function ModalCloseButton({ onClose, ariaLabel, className = '', disabled = false }: ModalCloseButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClose}
-      disabled={disabled}
-      aria-label={ariaLabel}
-      className={`grid h-[1.875rem] w-[1.875rem] place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-base font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,212,135,0.22)] transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-    >
-      ✕
-    </button>
-  );
+export function ModalCloseButton({
+  onClose,
+  ariaLabel,
+  className = '',
+  disabled = false
+}: ModalCloseButtonProps) {
+  return (<button
+    type="button"
+    onClick={onClose}
+    disabled={disabled}
+    aria-label={ariaLabel}
+    className={`grid h-[1.875rem] w-[1.875rem] place-items-center rounded-full border-2 border-[#c89a47] bg-gradient-to-b from-[#2b2421] via-[#161210] to-[#0c0908] text-base font-black leading-none text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,212,135,0.22)] transition hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+  >
+    ✕
+  </button>);
 }

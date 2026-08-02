@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 
 export interface PreloadStatus {
   /** True once every URL has resolved (loaded or errored). Always true
@@ -19,9 +19,7 @@ export interface PreloadStatus {
  * requests. Adding new URLs later (e.g. when remote board data arrives)
  * starts loads for the new ones only.
  */
-export function useImagePreloader(
-  urls: readonly (string | null | undefined)[]
-): PreloadStatus {
+export function useImagePreloader(urls: readonly (string | null | undefined)[]): PreloadStatus {
   const cleaned = useMemo<readonly string[]>(() => {
     const seen = new Set<string>();
     for (const u of urls) {
@@ -34,9 +32,7 @@ export function useImagePreloader(
   // changes, not when the parent re-renders with a new array reference.
   const cleanedKey = cleaned.join('|');
 
-  const [loadedSet, setLoadedSet] = useState<ReadonlySet<string>>(
-    () => new Set()
-  );
+  const [loadedSet, setLoadedSet] = useState<ReadonlySet<string>>(() => new Set());
   const startedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {

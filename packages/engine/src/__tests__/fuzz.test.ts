@@ -41,7 +41,7 @@ function assertStructural(state: BoardState) {
   }
 }
 
-// ---- Independent (different-code) legal-move generation, per CLAUDE.md ----
+
 // white: low->high, home 18..23, bears off past 23. black: high->low, home
 // 0..5, bears off past 0. Used ONLY to cross-check the engine; never imports
 // the engine's singleMovesForDie / maxSequenceLength.
@@ -150,7 +150,7 @@ describe('engine fuzz — random full games hold all invariants', () => {
           if (moves.length === 0) break;
           const m = moves[Math.floor(rng.next() * moves.length) % moves.length]!;
 
-          // --- legality of every offered move ---
+
           expect(remaining.includes(m.die)).toBe(true);
           if (before.bar[mover] > 0 || state.bar[mover] > 0) {
             // bar priority: while on the bar, the only legal source is BAR

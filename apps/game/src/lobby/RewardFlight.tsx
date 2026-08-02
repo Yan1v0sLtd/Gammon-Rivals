@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef } from 'react';
+import {useEffect, useEffectEvent, useRef} from 'react';
 
 export type FlightCurrency = 'coins' | 'gems' | 'xp';
 
@@ -27,31 +27,29 @@ const ICONS: Partial<Record<FlightCurrency, string>> = {
 
 /** Inline XP hex — matches the DailyBonus + WheelModal styling. */
 function XpHexInline() {
-  return (
-    <svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden>
-      <defs>
-        <linearGradient id="rf-xp-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#581c87" />
-        </linearGradient>
-      </defs>
-      <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#fbbf24" />
-      <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#rf-xp-fill)" />
-      <text
-        x="50"
-        y="68"
-        textAnchor="middle"
-        fontFamily="system-ui, sans-serif"
-        fontWeight="900"
-        fontSize="34"
-        fill="white"
-        stroke="rgba(0,0,0,0.35)"
-        strokeWidth="1"
-      >
-        XP
-      </text>
-    </svg>
-  );
+  return (<svg viewBox="0 0 100 110" width="100%" height="100%" aria-hidden>
+    <defs>
+      <linearGradient id="rf-xp-fill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#a855f7"/>
+        <stop offset="100%" stopColor="#581c87"/>
+      </linearGradient>
+    </defs>
+    <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="#fbbf24"/>
+    <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#rf-xp-fill)"/>
+    <text
+      x="50"
+      y="68"
+      textAnchor="middle"
+      fontFamily="system-ui, sans-serif"
+      fontWeight="900"
+      fontSize="34"
+      fill="white"
+      stroke="rgba(0,0,0,0.35)"
+      strokeWidth="1"
+    >
+      XP
+    </text>
+  </svg>);
 }
 
 interface Props {
@@ -65,7 +63,10 @@ interface Props {
  * out as it lands. When the animation finishes, it removes itself via
  * the onLanded callback.
  */
-export function RewardFlight({ spec, onLanded }: Props) {
+export function RewardFlight({
+  spec,
+  onLanded
+}: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
   const notifyLanded = useEffectEvent(onLanded);
 
@@ -76,30 +77,23 @@ export function RewardFlight({ spec, onLanded }: Props) {
     const dy = spec.endY - spec.startY;
     // Arc up by ~30 % of the vertical distance so tokens curve, not slide.
     const arcY = dy * 0.5 - Math.max(60, Math.abs(dy) * 0.25);
-    const anim = el.animate(
-      [
-        {
-          transform: 'translate(-50%, -50%) translate(0px, 0px) scale(1)',
-          opacity: 1,
-        },
-        {
-          // Mid-point: half the horizontal travel + arc Y peak.
-          transform: `translate(-50%, -50%) translate(${dx * 0.55}px, ${arcY}px) scale(0.95)`,
-          opacity: 1,
-          offset: 0.55,
-        },
-        {
-          transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.35)`,
-          opacity: 0,
-        },
-      ],
-      {
-        duration: spec.durationMs,
-        delay: spec.delayMs,
-        easing: 'cubic-bezier(0.4, 0, 0.6, 1)',
-        fill: 'forwards',
-      }
-    );
+    const anim = el.animate([{
+      transform: 'translate(-50%, -50%) translate(0px, 0px) scale(1)',
+      opacity: 1,
+    }, {
+      // Mid-point: half the horizontal travel + arc Y peak.
+      transform: `translate(-50%, -50%) translate(${dx * 0.55}px, ${arcY}px) scale(0.95)`,
+      opacity: 1,
+      offset: 0.55,
+    }, {
+      transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(0.35)`,
+      opacity: 0,
+    },], {
+      duration: spec.durationMs,
+      delay: spec.delayMs,
+      easing: 'cubic-bezier(0.4, 0, 0.6, 1)',
+      fill: 'forwards',
+    });
     let cancelled = false;
     anim.finished
       .then(() => {
@@ -112,7 +106,8 @@ export function RewardFlight({ spec, onLanded }: Props) {
       cancelled = true;
       try {
         anim.cancel();
-      } catch {
+      }
+      catch {
         // ignore — element may have been removed already
       }
     };
@@ -122,30 +117,23 @@ export function RewardFlight({ spec, onLanded }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div
-      ref={ref}
-      aria-hidden="true"
-      className="pointer-events-none fixed z-[60] h-10 w-10 select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
-      style={{
-        left: `${spec.startX}px`,
-        top: `${spec.startY}px`,
-        // Initial transform is set so the element is centred on (startX,startY)
-        // before the animation begins; the animation keyframes also include
-        // `translate(-50%, -50%)` so the centre is preserved through the path.
-        transform: 'translate(-50%, -50%)',
-      }}
-    >
-      {spec.currency === 'xp' ? (
-        <XpHexInline />
-      ) : (
-        <img
-          src={ICONS[spec.currency]}
-          alt=""
-          className="h-full w-full"
-          draggable={false}
-        />
-      )}
-    </div>
-  );
+  return (<div
+    ref={ref}
+    aria-hidden="true"
+    className="pointer-events-none fixed z-[60] h-10 w-10 select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
+    style={{
+      left: `${spec.startX}px`,
+      top: `${spec.startY}px`, // Initial transform is set so the element is centred on (startX,startY)
+      // before the animation begins; the animation keyframes also include
+      // `translate(-50%, -50%)` so the centre is preserved through the path.
+      transform: 'translate(-50%, -50%)',
+    }}
+  >
+    {spec.currency === 'xp' ? (<XpHexInline/>) : (<img
+      src={ICONS[spec.currency]}
+      alt=""
+      className="h-full w-full"
+      draggable={false}
+    />)}
+  </div>);
 }

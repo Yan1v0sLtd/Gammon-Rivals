@@ -39,7 +39,6 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-// ── Google service-account OAuth (RS256 JWT → access token) ─────────────────
 function b64url(input: ArrayBuffer | string): string {
   const bytes = typeof input === 'string' ? new TextEncoder().encode(input) : new Uint8Array(input);
   let bin = '';

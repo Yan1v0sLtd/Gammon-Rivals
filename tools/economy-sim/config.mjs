@@ -10,15 +10,15 @@
 // sim's job is to be sensitive to these, so tweak + re-run.
 // =============================================================================
 
-// ----------------------------------------------------------------------------
+
 // SECTION A — LIVE CONFIG SNAPSHOT
-// ----------------------------------------------------------------------------
+
 
 // Currency → USD (micros). 1 coin = $0.0001, 1 gem = $0.01. Used only to label
 // numbers in USD; the user asked for IN-COIN analysis so this is informational.
 export const CURRENCY = { coinUsd: 0.0001, gemUsd: 0.01 };
 
-// --- Level curve (level_configs). xpRequired is CUMULATIVE. ------------------
+
 // Levels 1..80 are inlined verbatim from the DB. From L80 up, the live curve is
 // exactly linear: xpRequired(L) = 128096 + (L-80)*3518, reward_coins = 3250,
 // and a gem drop every 10th level (verified against all 500 rows). We generate
@@ -74,7 +74,7 @@ export const CURVE = (() => {
 })();
 export const MAX_LEVEL = CURVE.length;
 
-// --- Difficulty + standard rooms (table_configs). ----------------------------
+
 // finish_match: XP (win only) = base_xp_win * xp_multiplier_pct/100 * boost.
 // Coins: win => prizeWin (AI) ; loss => prizeLoss ; first 10 AI tiered matches
 // are risk-free (entry refunded if entry > prizeLoss). Entry fee is the SINK,
@@ -100,7 +100,7 @@ export function xpPerWin(tier) {
   return Math.floor((tier.baseXp * (100 + tier.xpMultPct)) / 100);
 }
 
-// --- Taps -------------------------------------------------------------------
+
 export const SIGNUP_GRANT = { coins: 10000, gems: 100 }; // economy_grants 'signup'
 
 // daily_bonus_configs (day 1..7). Streak advances on consecutive claim, resets if a day is missed.
@@ -134,16 +134,16 @@ export const COIN_BOARDS = [
   { id: 'zen-garden', priceCoins: 3000, unlockLevel: 5 },
 ];
 
-// ----------------------------------------------------------------------------
+
 // SECTION B — BEHAVIORAL MODEL (ASSUMPTIONS — tune these)
-// ----------------------------------------------------------------------------
+
 // NOTE: these are NOT from the DB. They are the modeller's assumptions about how
 // players behave. Every result is conditional on them — change + re-run.
 
 export const HORIZON_DAYS = 180; // simulate ~6 months
 export const SEED = 12345;       // deterministic; change for a different draw
 
-// --- Iteration switches (operator direction 2026-05-31) ---------------------
+
 // Analyse the CORE LOOP + LEVEL tap ONLY. The wheel / daily bonus / missions are
 // "meta" taps the operator will tune separately, so they're excluded here.
 export const INCLUDE_FREE_TAPS = false; // wheel + daily bonus

@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useState,
-  type CSSProperties,
-  type MouseEvent,
-  type ReactNode,
-} from 'react';
+import {type CSSProperties, type MouseEvent, type ReactNode, useEffect, useState,} from 'react';
 
 interface ScaleInModalProps {
   /** Fired on backdrop click (if enabled) and on Escape. */
@@ -63,35 +57,29 @@ export function ScaleInModal({
     if (event.target === event.currentTarget) onClose();
   };
 
-  return (
+  return (<div
+    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    onClick={handleBackdrop}
+    style={{
+      // Full-screen backdrop-filter blur was removed for mobile perf (a live
+      // blur over the whole animating lobby every time a modal opens). The
+      // slightly deeper dim compensates so content behind still recedes.
+      background: 'radial-gradient(circle at center, rgba(28,20,46,0.58), rgba(0,0,0,0.87))',
+      opacity: entered ? 1 : 0,
+      transition: 'opacity 220ms ease',
+    }}
+  >
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={handleBackdrop}
+      className={className}
       style={{
-        // Full-screen backdrop-filter blur was removed for mobile perf (a live
-        // blur over the whole animating lobby every time a modal opens). The
-        // slightly deeper dim compensates so content behind still recedes.
-        background:
-          'radial-gradient(circle at center, rgba(28,20,46,0.58), rgba(0,0,0,0.87))',
+        transformOrigin: 'center', // Match the board-purchase popup's springy emerge.
+        transform: entered ? 'scaleX(1) scaleY(1)' : 'scaleX(0.16) scaleY(0.12)',
         opacity: entered ? 1 : 0,
-        transition: 'opacity 220ms ease',
+        transition: 'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
+        transitionDelay: entered ? '120ms' : '0ms', ...style,
       }}
     >
-      <div
-        className={className}
-        style={{
-          transformOrigin: 'center',
-          // Match the board-purchase popup's springy emerge.
-          transform: entered ? 'scaleX(1) scaleY(1)' : 'scaleX(0.16) scaleY(0.12)',
-          opacity: entered ? 1 : 0,
-          transition:
-            'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
-          transitionDelay: entered ? '120ms' : '0ms',
-          ...style,
-        }}
-      >
-        {children}
-      </div>
+      {children}
     </div>
-  );
+  </div>);
 }

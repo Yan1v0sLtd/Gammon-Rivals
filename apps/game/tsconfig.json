@@ -6,6 +6,7 @@
   "include": [
     "src",
     "../../packages/engine/src",
+    "../../packages/ai/src",
     "../../packages/board-renderer/src",
     "../../packages/shared/src"
   ]

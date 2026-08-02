@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { formatCompactNumber } from '../lib/format';
+import {useEffect, useRef, useState} from 'react';
+import {formatCompactNumber} from '../lib/format';
 
 interface RollingNumberProps {
   /** The numeric value the wallet currently holds. */
@@ -21,7 +21,11 @@ interface RollingNumberProps {
  * snapping. Mounts displaying whatever value is already there (no
  * animation on first render) — only changes animate.
  */
-export function RollingNumber({ value, durationMs = 700, compact = true }: RollingNumberProps) {
+export function RollingNumber({
+  value,
+  durationMs = 700,
+  compact = true
+}: RollingNumberProps) {
   const target = Math.max(0, value ?? 0);
   const [displayed, setDisplayed] = useState<number>(target);
   const fromRef = useRef<number>(target);
@@ -44,7 +48,8 @@ export function RollingNumber({ value, durationMs = 700, compact = true }: Rolli
       setDisplayed(next);
       if (t < 1) {
         rafRef.current = requestAnimationFrame(tick);
-      } else {
+      }
+      else {
         rafRef.current = null;
       }
     };
