@@ -1,0 +1,32 @@
+{
+  "name": "gammon-${localWorkspaceFolderBasename}",
+  "image": "miskamyasa/mise-ub-24-04",
+  "remoteUser": "ubuntu",
+  "workspaceFolder": "${localWorkspaceFolder}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind",
+  "containerEnv": {
+    "MISE_TRUSTED_CONFIG_PATHS": "${localWorkspaceFolder}",
+    "MISE_ENV": "dev",
+    "NEURALWATT_API_KEY": "${localEnv:NEURALWATT_API_KEY}",
+  },
+  "initializeCommand": "mkdir -p ${localEnv:HOME}/.cache/containers/local-share-opencode/gammon/${localWorkspaceFolderBasename}",
+  "mounts": [
+    // Cache mounts
+    "source=${localEnv:HOME}/.cache/containers/cache,target=/home/ubuntu/.cache,type=bind",
+    "source=${localEnv:HOME}/.cache/containers/local-share,target=/home/ubuntu/.local/share,type=bind",
+    // pnpm mounts
+    "source=${localEnv:HOME}/.local/share/pnpm,target=${localEnv:HOME}/.local/share/pnpm,type=bind",
+    // Opencode mounts
+    "source=${localEnv:HOME}/.cache/containers/local-share-opencode/gammon/${localWorkspaceFolderBasename},target=/home/ubuntu/.local/share/opencode,type=bind",
+    "source=${localEnv:HOME}/.local/share/opencode/auth.json,target=/home/ubuntu/.local/share/opencode/auth.json,type=bind",
+    "source=${localEnv:HOME}/.config/opencode,target=/home/ubuntu/.config/opencode,type=bind,readonly",
+    // Pi
+    "source=${localEnv:HOME}/.config/pi,target=/home/ubuntu/.pi/agent,type=bind",
+    // parent directory — sibling checkouts (read-only); workspace itself stays rw via workspaceMount
+    "source=${localWorkspaceFolder}/..,target=${localWorkspaceFolder}/..,type=bind,readonly"
+  ],
+  "runArgs": [
+    "--name=gammon-${localWorkspaceFolderBasename}"
+  ],
+  "postCreateCommand": "mise self-update -y && mise install"
+}

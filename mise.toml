@@ -1,0 +1,20 @@
+# Full local development toolset. Loaded with `MISE_ENV=dev`.
+# CI uses the narrower per-package configs (mise.api.toml, mise.admin-web.toml,
+# mise.web.toml). Keep tool versions here in sync with those subsets.
+[tools]
+prettier = "3.9.1"
+python = "3.11.15"
+node = "24.14.0"
+# Mobile apps
+#"npm:eas-cli" = "20.5.1"
+# Ai related
+opencode = "1.14.51"
+pi = "0.83.0"
+"npm:@colbymchenry/codegraph" = "1.4.0"
+
+
+[tasks.setup]
+run = """
+set -eu
+echo '✅ Dev environment ready!'
+"""
