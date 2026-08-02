@@ -15,7 +15,6 @@ export interface AuthRootState {
 
 const selectAuth = (state: AuthRootState) => state.auth;
 
-export const selectAuthStatus = (state: AuthRootState) => state.auth.status;
 export const selectAuthInitializing = (state: AuthRootState) =>
   state.auth.status === 'initializing';
 export const selectIsAuthenticated = (state: AuthRootState) =>

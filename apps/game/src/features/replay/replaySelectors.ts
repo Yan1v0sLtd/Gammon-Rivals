@@ -43,7 +43,6 @@ export function reconstructStates(data: GameWithMoves): BoardState[] {
   return states;
 }
 
-const selectReplay = (state: ReplayRootShape) => state.replay;
 const selectPly = (state: ReplayRootShape) => state.replay.ply;
 const selectPlaying = (state: ReplayRootShape) => state.replay.playing;
 
@@ -71,5 +70,3 @@ export const selectIsPlaying = createSelector(
   [selectPlaying, selectClampedPly, selectTotalPlies],
   (playing, ply, totalPlies) => playing && ply < totalPlies,
 );
-
-export { selectReplay };
