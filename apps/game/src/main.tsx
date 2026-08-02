@@ -5,7 +5,7 @@ import './index.css';
 import App from './App.tsx';
 import { AuthProvider } from './lib/auth';
 import { initializeClient } from '../../../packages/shared/src/clientBootstrap';
-import { NavigationOverlayProvider } from './lib/navigationOverlay';
+import { NavigationLoaderOverlay } from './components/NavigationLoaderOverlay';
 import { installNativeAuthHandler } from './lib/nativeAuth';
 import { store } from './store/store';
 
@@ -18,9 +18,12 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>
       <AuthProvider>
-        <NavigationOverlayProvider>
+        {/* The overlay is position:fixed, z-index:9999, so sibling
+            placement is visually identical to its old provider wrapper. */}
+        <>
           <App />
-        </NavigationOverlayProvider>
+          <NavigationLoaderOverlay />
+        </>
       </AuthProvider>
     </Provider>
   </StrictMode>

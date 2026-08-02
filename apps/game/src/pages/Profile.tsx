@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { skipToken } from '@reduxjs/toolkit/query/react';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../lib/auth';
-import { useShop } from '../components/shopContext';
+import { useShop } from '../features/appUi/useShop';
 import { formatCompactNumber } from '../lib/format';
 import {
   playerDataApi,

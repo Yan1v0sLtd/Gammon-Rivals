@@ -9,7 +9,7 @@ import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
 import { useGetProfileQuery } from '../features/playerData/playerDataApi';
-import { useNavigationOverlay } from '../lib/navigationOverlayContext';
+import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
 import { supabase } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
 import { getProfileProgression } from '../../../../packages/shared/src/progression';
@@ -50,7 +50,7 @@ export default function PlayOnline() {
   // online game's first state load resolves — whether the match was
   // found or returned an error, the overlay should stop showing
   // "Loading…" so the user can interact (or see the error).
-  const { hide: hideOverlay } = useNavigationOverlay();
+  const { hide: hideOverlay } = useNavigationLoaderOverlay();
   /**
    * Difficulty rooms set ?turn=<seconds> when they route into here so
    * the inactivity-forfeit threshold scales with the room's per-turn

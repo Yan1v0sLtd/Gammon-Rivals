@@ -1,4 +1,4 @@
-import { useShop } from '../components/shopContext';
+import { useShop } from '../features/appUi/useShop';
 import type { ProfileProgression } from '../../../../packages/shared/src/progression';
 import type { Database } from '../../../../packages/shared/src/database';
 import { CurrencyPill } from '../components/CurrencyPill';

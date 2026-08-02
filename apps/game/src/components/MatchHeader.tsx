@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { MatchState } from '../../../../packages/engine/src/match';
-import { useNavigationOverlay } from '../lib/navigationOverlayContext';
+import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
 
 interface Props {
   match: MatchState;
@@ -29,7 +29,7 @@ export default function MatchHeader({
   blackName = 'Black',
 }: Props) {
   const navigate = useNavigate();
-  const { show: showOverlay } = useNavigationOverlay();
+  const { show: showOverlay } = useNavigationLoaderOverlay();
   const cleanTurnLabel = turnLabel.replace(/\s*\(AI\)/i, '').toUpperCase();
   const whiteDisplayName = displayName(whiteName).toUpperCase();
   const blackDisplayName = displayName(blackName).toUpperCase();

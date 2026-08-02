@@ -1,12 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ScaleInModal } from '../components/ScaleInModal';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { getBilling } from '../lib/billing/service';
-import { getShopCatalogCache, updateShopCatalogCache } from '../lib/shopCache';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
+import {
+  useGetShopCatalogQuery,
+  useGetStoreSaleQuery,
+  useGetStoreConfigQuery,
+  usePurchaseShopItemMutation,
+} from '../features/shop/shopApi';
+import { shopGrantConfirmed } from '../features/shop/shopActions';
+import { baseApi } from '../store/baseApi';
+import { useAppDispatch } from '../store/hooks';
 import type { Database, Json } from '../../../../packages/shared/src/database';
 
 // -----------------------------------------------------------------------------
@@ -592,38 +599,38 @@ interface BuyDescriptor {
 }
 
 export function ShopModal({ onClose }: { readonly onClose: () => void }) {
-  const { user, wallet, refreshWallet, refreshXpBoost } = useAuth();
+  const { user, wallet } = useAuth();
+  const dispatch = useAppDispatch();
   const [toast, setToast] = useState<Toast | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
-  // Seed from the warm cache (prefetched by ShopProvider while the app was
-  // idle) so a warmed open renders the full catalog on its FIRST frame — no
-  // skeleton, no pack art popping in seconds later on the phone. loadShop()
-  // still refetches in the background to stay fresh.
-  const warmCache = getShopCatalogCache();
-  const [data, setData] = useState<MappedShop>(() =>
-    warmCache ? mapShop(warmCache.rows) : { bundles: [], packs: [] },
-  );
-  // The running Store Sale (null when none). bonusPercent drives the badges +
-  // boosted amounts; the actual grant boost is enforced server-side. endsAt (when
-  // the sale has a scheduled end) drives the live countdown at the modal footer.
-  const [sale, setSale] = useState<{ label: string; bonusPercent: number; endsAt: string | null } | null>(
-    warmCache?.sale ?? null,
-  );
-  // Storefront presentation config (BO-editable): header title + an optional
-  // blurred themed background. Defaults keep the current look until an operator
-  // sets them. See store_config (singleton, public read).
-  const [storeConfig, setStoreConfig] = useState<{ title: string; bgImageUrl: string | null }>(
-    warmCache?.config ?? { title: 'Store', bgImageUrl: null },
-  );
   const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
   const nextFlightIdRef = useRef(1);
-  // Catalog load state. The shop_items query is the gating fetch (the sale +
-  // store_config are best-effort enhancements). 'error' shows a retry rather than
-  // an empty store, so a network failure never masquerades as "no packs".
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(warmCache ? 'ready' : 'loading');
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  const [purchaseShopItem] = usePurchaseShopItemMutation();
+
+  const catalogQuery = useGetShopCatalogQuery();
+  // The running sale drives a live countdown, so it is the one query worth
+  // re-checking each time the Store opens; the catalog + storefront config
+  // come straight from the boot prefetch (see ShopHost) so a warmed open
+  // issues no request at all.
+  const saleQuery = useGetStoreSaleQuery(undefined, { refetchOnMountOrArgChange: true });
+  const configQuery = useGetStoreConfigQuery();
+
+  const data = useMemo(() => mapShop(catalogQuery.data ?? []), [catalogQuery.data]);
+  const sale = saleQuery.data ?? null;
+  // Memoized so the null fallback keeps a stable identity while config loads;
+  // shopImageUrls below depends on it, and a fresh object every render would
+  // re-run the preloader's effect on each frame.
+  const storeConfig = useMemo(
+    () => configQuery.data ?? { title: 'Store', bgImageUrl: null },
+    [configQuery.data],
+  );
+  // Catalog is the gating fetch: it alone decides the three states. RTK
+  // Query keeps `data` across background refetches, so a refresh failure
+  // with a catalog already on screen stays 'ready' — only a cold load that
+  // errors reaches the retry UI.
+  const status: 'loading' | 'ready' | 'error' =
+    catalogQuery.data !== undefined ? 'ready' : catalogQuery.isError ? 'error' : 'loading';
 
   // Gate the reveal on the operator-uploaded pack art + themed background so the
   // store appears fully-formed instead of images popping in after the frame.
@@ -635,56 +642,6 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
   );
   const { ready: shopImagesReady } = useImagePreloader(shopImageUrls);
   const contentReady = status === 'ready' && shopImagesReady;
-
-  const loadShop = useCallback(async () => {
-    if (!isSupabaseConfigured) {
-      setStatus('ready');
-      return;
-    }
-    // Keep showing the warm-cached catalog (no skeleton) while refreshing;
-    // only a cold open goes through the loading state.
-    setStatus((s) => (s === 'ready' ? s : 'loading'));
-    // Catalog is the gating fetch — its failure is what becomes the retry state.
-    // An empty result set is a legitimately empty store, not an error.
-    const { data: rows, error } = await supabase
-      .from('shop_items')
-      .select('*')
-      .eq('is_enabled', true)
-      .order('sort_order', { ascending: true });
-    if (!mountedRef.current) return;
-    if (error || !rows) {
-      // A refresh failure with a warm catalog on screen shouldn't nuke the
-      // store into the retry state — only a cold load does.
-      setStatus((s) => (s === 'ready' ? s : 'error'));
-      return;
-    }
-    setData(mapShop(rows));
-    setStatus('ready');
-    updateShopCatalogCache({ rows });
-    // Sale + storefront config are best-effort enhancements: a failure here must
-    // never block the store, so they don't touch `status`.
-    void supabase.rpc('current_store_sale').then(({ data: saleRows, error: saleErr }) => {
-      if (!mountedRef.current || saleErr || !saleRows || saleRows.length === 0) return;
-      const nextSale = { label: saleRows[0].label, bonusPercent: saleRows[0].bonus_percent, endsAt: saleRows[0].ends_at };
-      setSale(nextSale);
-      updateShopCatalogCache({ sale: nextSale });
-    });
-    void supabase
-      .from('store_config')
-      .select('title, bg_image_url')
-      .eq('id', true)
-      .maybeSingle()
-      .then(({ data: row, error: cfgErr }) => {
-        if (!mountedRef.current || cfgErr || !row) return;
-        const nextConfig = { title: row.title || 'Store', bgImageUrl: row.bg_image_url };
-        setStoreConfig(nextConfig);
-        updateShopCatalogCache({ config: nextConfig });
-      });
-  }, []);
-
-  useEffect(() => {
-    void loadShop();
-  }, [loadShop]);
 
   useEffect(() => {
     const update = () => {
@@ -750,8 +707,9 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     }
     const sourceEl = document.querySelector(`[data-fly-source="${item.id}"]`);
     if (sourceEl && item.flightKind) spawnFlights(item.flightKind, sourceEl, 6);
-    window.setTimeout(() => void refreshWallet(), 600);
-    void refreshXpBoost();
+    // Any confirmed grant funnels through shopGrantConfirmed; the listener
+    // owns the delayed wallet + XP-boost refresh for both purchase paths.
+    if (user) dispatch(shopGrantConfirmed({ userId: user.id }));
     showToast('success', `${item.label} purchased ✓`);
   };
 
@@ -768,22 +726,27 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
     }
     const sourceEl = document.querySelector(`[data-fly-source="${item.id}"]`);
     setBusyId(item.id);
-    const { error } = await supabase.rpc('purchase_shop_item', { target_item_id: item.id });
-    setBusyId(null);
-    if (error) {
-      const msg = error.message ?? '';
+    try {
+      await purchaseShopItem({ itemId: item.id, userId: user.id }).unwrap();
+    } catch (err) {
+      setBusyId(null);
+      // unwrap() rejects with the serialized ApiError ({ message }), not an
+      // Error — handle both shapes so the message matching keeps working.
+      const msg = err instanceof Error ? err.message : (err as { message?: string }).message ?? '';
       if (msg.includes('unsupported_grant')) showToast('info', `${item.label} — coming soon`);
       else if (msg.includes('insufficient_gems')) {
         showToast('info', 'Not enough gems.');
-        void refreshWallet();
+        // The displayed balance disagreed with the server, so resync
+        // immediately (this replaces the old refreshWallet()).
+        dispatch(baseApi.util.invalidateTags([{ type: 'Wallet', id: user.id }]));
       } else if (msg.includes('already_owned_board')) showToast('info', 'You already own that board.');
       else if (msg.includes('purchase_limit_reached')) showToast('info', 'Purchase limit reached for this item.');
       else showToast('error', 'Purchase failed. Try again.');
       return;
     }
+    setBusyId(null);
     if (sourceEl && item.flightKind) spawnFlights(item.flightKind, sourceEl, 6);
-    window.setTimeout(() => void refreshWallet(), 600);
-    void refreshXpBoost();
+    dispatch(shopGrantConfirmed({ userId: user.id }));
     showToast('success', `Got ${item.label}!`);
   };
 
@@ -886,7 +849,7 @@ export function ShopModal({ onClose }: { readonly onClose: () => void }) {
             {/* Content: Featured Pack | Packs grid — skeleton while the catalog
                 loads, a retry on failure, otherwise the two sections. */}
             {status === 'error' ? (
-              <ShopError onRetry={() => void loadShop()} />
+              <ShopError onRetry={() => void catalogQuery.refetch()} />
             ) : !contentReady ? (
               <ShopSkeleton />
             ) : (

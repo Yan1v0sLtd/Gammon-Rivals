@@ -20,7 +20,7 @@ import type { AlignmentDebugSelection } from '../../../../packages/board-rendere
 import { AI_LEVELS, type AILevel } from '../../../../packages/ai/src/types';
 import { useAuth } from '../lib/auth';
 import { formatCompactNumber } from '../lib/format';
-import { useNavigationOverlay } from '../lib/navigationOverlayContext';
+import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
 import {
   createMatch,
   finishMatch,
@@ -160,7 +160,7 @@ function loadAlignmentLayout(): ThemeLayout {
 export default function HotSeat() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationLoaderOverlay();
   const {
     user,
     profile,

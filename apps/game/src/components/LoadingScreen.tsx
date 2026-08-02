@@ -12,7 +12,7 @@ interface Props {
  * Full-art loading screen: BO-managed background image (see
  * lib/loadingScreenImage.ts — localStorage-cached, bundled fallback) with
  * the gold striped progress bar from the brand mockup overlaid near the
- * bottom. Used as the Suspense fallback and inside NavigationOverlay, so
+ * bottom. Used as the Suspense fallback and inside NavigationLoaderOverlay, so
  * it must render instantly with zero network — the image getter is
  * synchronous and the bar is pure CSS (composited transform animation).
  */

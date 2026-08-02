@@ -2,9 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useNavigate } from 'react-router-dom';
 // AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
-import { useShop } from '../components/shopContext';
+import { useShop } from '../features/appUi/useShop';
 import { extractErrorMessage } from '../../../../packages/shared/src/errors';
-import { useNavigationOverlay } from '../lib/navigationOverlayContext';
+import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
 import {
   abandonStaleMatches,
   cancelMatchmakingRpc,
@@ -175,7 +175,7 @@ function LobbyBackgroundLayer({
 export function LobbyScreen() {
   const navigate = useNavigate();
   const { openShop } = useShop();
-  const { show: showOverlay, hide: hideOverlay } = useNavigationOverlay();
+  const { show: showOverlay, hide: hideOverlay } = useNavigationLoaderOverlay();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet, refreshProfile } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
   const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();

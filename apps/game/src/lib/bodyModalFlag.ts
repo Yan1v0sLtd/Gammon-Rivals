@@ -10,7 +10,7 @@ import { useEffect } from 'react';
  * pause the known infinite animations and lets the Sunbeam's rAF loop skip
  * drawing, so an open modal gets the whole GPU/CPU budget.
  *
- * Ref-counted because two independent owners write it (ShopProvider for the
+ * Ref-counted because two independent owners write it (ShopHost for the
  * shop popup, LobbyScreen for the lobby modals) and modals can stack.
  */
 let openCount = 0;
