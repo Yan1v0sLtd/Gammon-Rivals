@@ -10,6 +10,7 @@ import {
   type MissionsResult,
   type RewardItem,
 } from './useDailyMissions';
+import {createEmptyArray} from "../lib/constants.ts";
 
 interface Props {
   readonly result: MissionsResult;
@@ -31,7 +32,6 @@ interface Props {
  */
 const DESIGN_W = 1536;
 const DESIGN_H = 812;
-const EMPTY_MISSIONS: readonly Mission[] = [];
 
 export function DailyMissionsModal({ result, onClose }: Props) {
   const { state, isLoading, error, refetch } = result;
@@ -89,7 +89,7 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose, claimingMissionId, rerollingMissionId]);
 
-  const missionsList = state?.missions ?? EMPTY_MISSIONS;
+  const missionsList = state?.missions ?? createEmptyArray<Mission>();
   const dailies = useMemo(() => missionsList.filter((m) => m.period === 'daily'), [missionsList]);
   const orderedDailies = useMemo(
     () => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)),
