@@ -4,33 +4,52 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
+import { skipToken } from '@reduxjs/toolkit/query';
 import { isSupabaseConfigured, supabase } from './supabase';
-import { getProfileProgression, type ProfileProgression } from '../../../../packages/shared/src/progression';
+import type { ProfileProgression } from '../../../../packages/shared/src/progression';
 import { useOnlinePresence } from './useOnlinePresence';
 import { isNativePlatform, openAuthInBrowser, pickOAuthRedirectTo } from './nativeAuth';
 import { signInWithGoogleNative } from './nativeGoogleAuth';
-import type { Database } from '../../../../packages/shared/src/database';
-
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
-type LevelConfig = Database['public']['Tables']['level_configs']['Row'];
-type LevelStatusTier = Database['public']['Tables']['level_status_tiers']['Row'];
-
-/**
- * Active XP boost summary shown in the lobby + applied by the server.
- * `multiplier` is the highest across all active boost rows (matches the
- * SQL helper); `expiresAt` is the matching row's expiry. We don't track
- * per-row data on the client — the audit trail lives in the DB.
- */
-export interface ActiveXpBoost {
-  readonly multiplier: number;
-  readonly expiresAt: string;
-}
+import {
+  updateDisplayName,
+  type ActiveXpBoost,
+  type LevelConfig,
+  type LevelStatusTier,
+  type ProfileRow,
+  type UserWallet,
+} from './playerData';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  authInitializationStarted,
+  authSessionResolved,
+  authSignedOut,
+  type AuthIdentity,
+} from '../features/auth/authSlice';
+import {
+  selectActiveXpBoost,
+  selectAuthInitializing,
+  selectAuthUserId,
+  selectCurrentProfile,
+  selectCurrentWallet,
+  selectIsAnonymous,
+  selectIsGuest,
+  selectLevelConfigs,
+  selectLevelStatusTiers,
+  selectProfileProgression,
+} from '../features/auth/authSelectors';
+import {
+  playerDataApi,
+  useCompleteOAuthProfileMutation,
+  useGetActiveXpBoostQuery,
+  useGetLevelConfigsQuery,
+  useGetLevelStatusTiersQuery,
+  useGetProfileQuery,
+  useGetWalletQuery,
+} from '../features/playerData/playerDataApi';
 
 const missingConfigMessage =
   'Supabase is not configured. Copy .env.example to .env.local and fill in VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.';
@@ -45,20 +64,6 @@ function makeAuthRedirect(nextPath = currentRoutePath()): string {
   const next = nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : '/';
   const params = new URLSearchParams({ next });
   return `${window.location.origin}/auth/callback?${params.toString()}`;
-}
-
-function googleName(user: User): string | null {
-  const metadata = user.user_metadata as Record<string, unknown>;
-  const value = metadata.full_name ?? metadata.name;
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  if (user.email?.includes('@')) return user.email.split('@')[0]!;
-  return null;
-}
-
-function googleAvatar(user: User): string | null {
-  const metadata = user.user_metadata as Record<string, unknown>;
-  const value = metadata.avatar_url ?? metadata.picture;
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 /**
@@ -83,16 +88,18 @@ async function dispatchOAuthForPlatform(url: string | null): Promise<void> {
   window.location.assign(url);
 }
 
-function baseProfileInsert(user: User): Database['public']['Tables']['profiles']['Insert'] {
-  return {
-    id: user.id,
-    display_name: googleName(user) ?? 'Player',
-    is_guest: user.is_anonymous ?? false,
-    avatar_seed: user.id.replaceAll('-', '').slice(0, 12),
-    avatar_url: googleAvatar(user),
-    level: 1,
-    xp: 0,
+/**
+ * Project a Supabase User into the serializable identity the auth slice
+ * stores. Session/User objects and tokens never cross the Redux boundary.
+ */
+function projectAuthUser(user: User | null) {
+  if (!user) return authSignedOut();
+  const identity: AuthIdentity = {
+    userId: user.id,
+    email: user.email ?? null,
+    isAnonymous: user.is_anonymous ?? false,
   };
+  return authSessionResolved(identity);
 }
 
 export interface AuthContextValue {
@@ -100,13 +107,11 @@ export interface AuthContextValue {
   readonly user: User | null;
   readonly profile: ProfileRow | null;
   readonly wallet: UserWallet | null;
-  readonly levelConfigs: LevelConfig[];
-  /**
-   * Declarative level → rank label config (e.g. L1-15 = Rookie,
-   * L16-40 = Skilled). Consumed by getProfileProgression to derive
-   * statusLabel without coupling to the per-row level_configs.status_label.
-   */
-  readonly levelStatusTiers: LevelStatusTier[];
+  readonly levelConfigs: readonly LevelConfig[];
+  /** Declarative level → rank label config (e.g. L1-15 = Rookie,
+   *  L16-40 = Skilled). Consumed by getProfileProgression to derive
+   *  statusLabel without coupling to the per-row level_configs.status_label. */
+  readonly levelStatusTiers: readonly LevelStatusTier[];
   readonly progression: ProfileProgression;
   /** Highest currently-active XP multiplier and its expiry, or null if
    *  no boost is active. Read by the top-bar badge; refreshed after a
@@ -135,157 +140,132 @@ export interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const dispatch = useAppDispatch();
+
+  // Supabase stays the session/token authority. The Session lives here
+  // only so useAuth() can expose it for compatibility and existing auth
+  // operations can read it; Redux stores just the normalized identity.
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [wallet, setWallet] = useState<UserWallet | null>(null);
-  const [levelConfigs, setLevelConfigs] = useState<LevelConfig[]>([]);
-  const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([]);
-  const [activeXpBoost, setActiveXpBoost] = useState<ActiveXpBoost | null>(null);
-  const [isLoading, setLoading] = useState(isSupabaseConfigured);
-  const profileFetchRef = useRef<string | null>(null);
-  const walletFetchRef = useRef<string | null>(null);
 
-  const fetchLevelConfigs = useCallback(async () => {
-    if (!isSupabaseConfigured) return;
-    // Fetch level_configs + level_status_tiers in parallel. Both are
-    // small, cached for the session, and consumed together by
-    // getProfileProgression — no point waterfall-ing them.
-    const [levelsResult, tiersResult] = await Promise.all([
-      supabase
-        .from('level_configs')
-        .select('*')
-        .order('level', { ascending: true }),
-      supabase
-        .from('level_status_tiers')
-        .select('*')
-        .order('sort_order', { ascending: true })
-        .order('level_from', { ascending: true }),
-    ]);
-    if (levelsResult.error) {
-      console.warn('level config fetch error', levelsResult.error);
-    } else {
-      setLevelConfigs(levelsResult.data ?? []);
-    }
-    if (tiersResult.error) {
-      // Non-fatal: progression.ts falls back to the legacy
-      // level_configs.status_label column when tiers are unavailable.
-      console.warn('level status tier fetch error', tiersResult.error);
-    } else {
-      setLevelStatusTiers(tiersResult.data ?? []);
-    }
-  }, []);
+  const userId = useAppSelector(selectAuthUserId);
+  const profile = useAppSelector(selectCurrentProfile);
+  const wallet = useAppSelector(selectCurrentWallet);
+  const levelConfigs = useAppSelector(selectLevelConfigs);
+  const levelStatusTiers = useAppSelector(selectLevelStatusTiers);
+  const activeXpBoost = useAppSelector(selectActiveXpBoost);
+  const progression = useAppSelector(selectProfileProgression);
+  const isAnonymous = useAppSelector(selectIsAnonymous);
+  const isGuest = useAppSelector(selectIsGuest);
+  const isAuthInitializing = useAppSelector(selectAuthInitializing);
 
-  const fetchWallet = useCallback(async (userId: string) => {
+  const profileQuery = useGetProfileQuery(userId ?? skipToken, {
+    skip: !isSupabaseConfigured,
+  });
+  const walletQuery = useGetWalletQuery(userId ?? skipToken, {
+    skip: !isSupabaseConfigured,
+  });
+  const xpBoostQuery = useGetActiveXpBoostQuery(userId ?? skipToken, {
+    skip: !isSupabaseConfigured,
+  });
+  const levelConfigsQuery = useGetLevelConfigsQuery(undefined, {
+    skip: !isSupabaseConfigured,
+  });
+  const levelStatusTiersQuery = useGetLevelStatusTiersQuery(undefined, {
+    skip: !isSupabaseConfigured,
+  });
+
+  // The hook refetch callbacks are stable (memoized per subscription);
+  // aliasing them lets the refresh helpers await the same fetch the
+  // active hooks would trigger without creating extra subscriptions.
+  const { refetch: refetchProfile } = profileQuery;
+  const { refetch: refetchWallet } = walletQuery;
+  const { refetch: refetchXpBoost } = xpBoostQuery;
+
+  const userDataLoading =
+    profileQuery.isLoading ||
+    walletQuery.isLoading ||
+    xpBoostQuery.isLoading ||
+    profileQuery.isUninitialized ||
+    walletQuery.isUninitialized ||
+    xpBoostQuery.isUninitialized;
+
+  // Config rows only gate the initial hydration; once auth + the first
+  // query attempts have settled they stop contributing to isLoading so
+  // a later cache reset (identity change) cannot leave AuthGate spinning.
+  const [hydrationSettled, setHydrationSettled] = useState(!isSupabaseConfigured);
+  useEffect(() => {
     if (!isSupabaseConfigured) return;
-    if (walletFetchRef.current === userId) return;
-    walletFetchRef.current = userId;
-    let { data, error } = await supabase
-      .from('user_wallets')
-      .select('*')
-      .eq('profile_id', userId)
-      .maybeSingle();
-    if (!data && !error) {
-      await new Promise((resolve) => window.setTimeout(resolve, 250));
-      const retry = await supabase
-        .from('user_wallets')
-        .select('*')
-        .eq('profile_id', userId)
-        .maybeSingle();
-      data = retry.data;
-      error = retry.error;
-    }
-    if (error) {
-      console.warn('wallet fetch error', error);
-      walletFetchRef.current = null;
+    if (isAuthInitializing) return;
+    if (levelConfigsQuery.isLoading || levelStatusTiersQuery.isLoading) return;
+    if (userId !== null && userDataLoading) return;
+    setHydrationSettled(true);
+  }, [
+    isAuthInitializing,
+    levelConfigsQuery.isLoading,
+    levelStatusTiersQuery.isLoading,
+    userId,
+    userDataLoading,
+  ]);
+
+  const isLoading =
+    !isSupabaseConfigured
+      ? false
+      : isAuthInitializing || !hydrationSettled || (userId !== null && userDataLoading);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      dispatch(authSignedOut());
       return;
     }
-    if (!data) walletFetchRef.current = null;
-    setWallet(data);
-  }, []);
+    dispatch(authInitializationStarted());
+    let cancelled = false;
+    // Once the auth subscription emits, its event is newer than any
+    // still-pending getSession result, so the hydration read must stand down.
+    let authEventSeen = false;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled || authEventSeen) return;
+        setSession(data.session);
+        dispatch(projectAuthUser(data.session?.user ?? null));
+      } catch (err) {
+        // A thrown getSession (e.g. network) must not leave auth status
+        // initializing forever; settle as signed out.
+        if (cancelled || authEventSeen) return;
+        console.error('Failed to restore the Supabase session:', err);
+        setSession(null);
+        dispatch(authSignedOut());
+      }
+    })();
 
-  // Read the highest-multiplier active boost. Resolved to a plain
-  // {multiplier, expiresAt} so the top-bar badge can render directly
-  // without filtering an array. Empty result -> null so the badge can
-  // do a falsy check.
-  const fetchXpBoost = useCallback(async (userId: string) => {
-    if (!isSupabaseConfigured) return;
-    const nowIso = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('user_xp_boosts')
-      .select('multiplier, expires_at')
-      .eq('profile_id', userId)
-      .gt('expires_at', nowIso)
-      .order('multiplier', { ascending: false })
-      .order('expires_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (error) {
-      console.warn('xp boost fetch error', error);
-      return;
-    }
-    setActiveXpBoost(
-      data ? { multiplier: data.multiplier, expiresAt: data.expires_at } : null
-    );
-  }, []);
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      authEventSeen = true;
+      setSession(s);
+      dispatch(projectAuthUser(s?.user ?? null));
+    });
 
-  const fetchProfile = useCallback(
-    async (userId: string) => {
-      if (!isSupabaseConfigured) return;
-      if (profileFetchRef.current === userId) return;
-      profileFetchRef.current = userId;
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      if (!data && !error) {
-        await new Promise((resolve) => window.setTimeout(resolve, 250));
-        const retry = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-        data = retry.data;
-        error = retry.error;
-      }
-      if (error) {
-        console.warn('profile fetch error', error);
-        profileFetchRef.current = null;
-        return;
-      }
-      if (!data) profileFetchRef.current = null;
-      if (data?.deleted_at) {
-        profileFetchRef.current = null;
-        walletFetchRef.current = null;
-        setProfile(null);
-        setWallet(null);
-        await supabase.auth.signOut();
-        return;
-      }
-      setProfile(data);
-      await fetchWallet(userId);
-      await fetchXpBoost(userId);
-    },
-    [fetchWallet, fetchXpBoost]
-  );
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [dispatch]);
 
   const refreshProfile = useCallback(async () => {
-    if (!session?.user) return;
-    profileFetchRef.current = null;
-    walletFetchRef.current = null;
-    await fetchProfile(session.user.id);
-  }, [session, fetchProfile]);
+    if (!userId) return;
+    await Promise.all([refetchProfile(), refetchWallet(), refetchXpBoost()]);
+  }, [refetchProfile, refetchWallet, refetchXpBoost, userId]);
 
   const refreshWallet = useCallback(async () => {
-    if (!session?.user) return;
-    walletFetchRef.current = null;
-    await fetchWallet(session.user.id);
-  }, [session, fetchWallet]);
+    if (!userId) return;
+    await refetchWallet();
+  }, [refetchWallet, userId]);
 
   const refreshXpBoost = useCallback(async () => {
-    if (!session?.user) return;
-    await fetchXpBoost(session.user.id);
-  }, [session, fetchXpBoost]);
+    if (!userId) return;
+    await refetchXpBoost();
+  }, [refetchXpBoost, userId]);
+
+  const [completeOAuthMutation] = useCompleteOAuthProfileMutation();
 
   const completeOAuthProfile = useCallback(async () => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
@@ -295,119 +275,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!currentUser) {
       throw new Error('Google sign-in completed without an active session. Please try again.');
     }
-
-    const hasGoogleIdentity =
-      currentUser.app_metadata.provider === 'google' ||
-      currentUser.identities?.some((identity) => identity.provider === 'google') === true;
-    const avatarUrl = googleAvatar(currentUser);
-    const displayName = googleName(currentUser);
-    const update: Database['public']['Tables']['profiles']['Update'] = {
-      is_guest: hasGoogleIdentity ? false : currentUser.is_anonymous ?? false,
-      last_seen_at: new Date().toISOString(),
-    };
-    if (avatarUrl) update.avatar_url = avatarUrl;
-    if (displayName) update.display_name = displayName;
-    if (!currentUser.is_anonymous || hasGoogleIdentity) update.is_guest = false;
-
-    const { data: existingProfile, error: existingProfileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', currentUser.id)
-      .maybeSingle();
-    if (existingProfileError) throw existingProfileError;
-    if (existingProfile?.deleted_at) {
-      await supabase.auth.signOut();
-      throw new Error('This player account was removed in the Back Office.');
-    }
-
-    let updated: ProfileRow | null;
-    if (existingProfile) {
-      let { data: updatedProfile, error: updateError } = await supabase
-        .from('profiles')
-        .update(update)
-        .eq('id', currentUser.id)
-        .select()
-        .single();
-      if (updateError && updateError.message.toLowerCase().includes('avatar_url')) {
-        const fallbackUpdate = { ...update };
-        delete fallbackUpdate.avatar_url;
-        const retry = await supabase
-          .from('profiles')
-          .update(fallbackUpdate)
-          .eq('id', currentUser.id)
-          .select()
-          .single();
-        updatedProfile = retry.data;
-        updateError = retry.error;
-      }
-      if (updateError) throw updateError;
-      updated = updatedProfile;
-    } else {
-      let insertPayload = {
-        ...baseProfileInsert(currentUser),
-        is_guest: hasGoogleIdentity ? false : currentUser.is_anonymous ?? false,
-      };
-      let { data: insertedProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert(insertPayload)
-        .select()
-        .single();
-      if (insertError && insertError.message.toLowerCase().includes('avatar_url')) {
-        insertPayload = { ...insertPayload };
-        delete insertPayload.avatar_url;
-        const retry = await supabase
-          .from('profiles')
-          .insert(insertPayload)
-          .select()
-          .single();
-        insertedProfile = retry.data;
-        insertError = retry.error;
-      }
-      if (insertError) throw insertError;
-      updated = insertedProfile;
-    }
-    if (!updated) throw new Error('Could not load your player profile after sign-in.');
-
-    profileFetchRef.current = currentUser.id;
-    walletFetchRef.current = null;
     setSession(data.session);
-    setProfile(updated);
-    await fetchWallet(currentUser.id);
-  }, [fetchWallet]);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      setSession(data.session);
-      await fetchLevelConfigs();
-      if (data.session?.user) await fetchProfile(data.session.user.id);
-      if (cancelled) return;
-      setLoading(false);
-    })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (s?.user) {
-        profileFetchRef.current = null;
-        walletFetchRef.current = null;
-        void fetchProfile(s.user.id);
-      } else {
-        setProfile(null);
-        setWallet(null);
-        setActiveXpBoost(null);
-        profileFetchRef.current = null;
-        walletFetchRef.current = null;
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [fetchLevelConfigs, fetchProfile]);
+    dispatch(projectAuthUser(currentUser));
+    const result = await completeOAuthMutation(currentUser);
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+    // Post-success cache orchestration (profile upsert + wallet refresh)
+    // lives in completeOAuthProfile.onQueryStarted, guarded by the
+    // current Redux identity so stale user data cannot re-enter the cache.
+  }, [completeOAuthMutation, dispatch]);
 
   const signInWithGoogle = useCallback(async (options?: { redirectTo?: string }) => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
@@ -500,23 +377,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!session?.user) throw new Error('not signed in');
       const trimmed = name.trim();
       if (trimmed.length === 0) throw new Error('name cannot be empty');
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ display_name: trimmed })
-        .eq('id', session.user.id)
-        .select()
-        .single();
-      if (error) throw error;
-      setProfile(data);
+      const updated = await updateDisplayName(session.user.id, trimmed);
+      await dispatch(playerDataApi.util.upsertQueryData('getProfile', session.user.id, updated));
     },
-    [session]
-  );
-
-  const isAnonymous = isSupabaseConfigured ? (session?.user?.is_anonymous ?? false) : false;
-  const isGuest = profile?.is_guest ?? isAnonymous;
-  const progression = useMemo(
-    () => getProfileProgression(profile, levelConfigs, levelStatusTiers),
-    [profile, levelConfigs, levelStatusTiers]
+    [dispatch, session]
   );
 
   const value = useMemo<AuthContextValue>(

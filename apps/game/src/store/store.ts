@@ -1,13 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { baseApi } from './baseApi';
-import { createReplayListenerMiddleware } from './listenerMiddleware';
+import { createAppListenerMiddleware } from './listenerMiddleware';
 import replayReducer from '../features/replay/replaySlice';
+import authReducer from '../features/auth/authSlice';
 
 export function createAppStore() {
-  const listener = createReplayListenerMiddleware();
+  const listener = createAppListenerMiddleware();
   return configureStore({
     reducer: {
       [baseApi.reducerPath]: baseApi.reducer,
+      auth: authReducer,
       replay: replayReducer,
     },
     middleware: (getDefaultMiddleware) =>
