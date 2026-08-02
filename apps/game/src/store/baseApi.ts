@@ -21,6 +21,15 @@ export function toApiError(err: unknown): ApiError {
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: fakeBaseQuery<ApiError>(),
-  tagTypes: ['Profile', 'Wallet', 'XpBoost', 'LevelConfigs', 'LevelStatusTiers'],
+  tagTypes: [
+    'Profile',
+    'Wallet',
+    'XpBoost',
+    'LevelConfigs',
+    'LevelStatusTiers',
+    'OwnerStats',
+    'MatchHistory',
+    'GamesForMatch',
+  ],
   endpoints: () => ({}),
 });

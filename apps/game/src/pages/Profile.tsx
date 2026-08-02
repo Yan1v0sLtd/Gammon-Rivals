@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 import Avatar from '../components/Avatar';
 import { useAuth } from '../lib/auth';
 import { useShop } from '../components/shopContext';
 import { formatCompactNumber } from '../lib/format';
 import {
-  getOwnerStats,
-  listMatchesForOwner,
-  listGamesForMatch,
-  type MatchSummary,
-  type OwnerStats,
-} from '../lib/queries';
+  playerDataApi,
+  useGetMatchHistoryQuery,
+  useGetOwnerStatsQuery,
+} from '../features/playerData/playerDataApi';
+import type { MatchSummary } from '../lib/queries';
+import { useAppDispatch } from '../store/hooks';
 
 const MODE_LABEL: Record<string, string> = {
   hotseat: 'Hot-seat',
@@ -67,42 +68,20 @@ export default function Profile() {
     isGuest,
     linkGoogleIdentity,
     signOut,
-    refreshProfile,
   } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { openShop } = useShop();
-  const [matches, setMatches] = useState<MatchSummary[] | null>(null);
-  const [stats, setStats] = useState<OwnerStats | null>(null);
-  const [loadErr, setLoadErr] = useState<string | null>(null);
+  const { data: stats } = useGetOwnerStatsQuery(user?.id ?? skipToken);
+  const { data: matches, error: historyError } = useGetMatchHistoryQuery(
+    user?.id ?? skipToken,
+  );
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [linkErr, setLinkErr] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await refreshProfile();
-        const [s, m] = await Promise.all([
-          getOwnerStats(user.id),
-          listMatchesForOwner(user.id, 50),
-        ]);
-        if (cancelled) return;
-        setStats(s);
-        setMatches(m);
-      } catch (err) {
-        if (cancelled) return;
-        setLoadErr(errorMessage(err));
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, refreshProfile]);
 
   // Reset the "Opening Google..." button state when the user returns to
   // the app. handleLinkGoogle sets linkingGoogle=true and kicks off the
@@ -168,8 +147,16 @@ export default function Profile() {
 
   const openReplay = async (matchId: string) => {
     try {
-      const games = await listGamesForMatch(matchId);
-      const finished = games.filter((g) => g.finished_at);
+      const result = await dispatch(
+        playerDataApi.endpoints.getGamesForMatch.initiate(matchId, {
+          subscribe: false,
+        }),
+      );
+      if (result.error) {
+        console.warn('open replay failed', result.error);
+        return;
+      }
+      const finished = (result.data ?? []).filter((g) => g.finished_at);
       if (finished.length === 0) return;
       navigate(`/replay/${finished[0]!.id}`);
     } catch (err) {
@@ -395,9 +382,9 @@ export default function Profile() {
 
           <section className="profile-history-panel">
             <h2>Match History</h2>
-            {loadErr && (
+            {historyError && (
               <div className="profile-panel-message profile-panel-message--error">
-                {loadErr}
+                {errorMessage(historyError)}
               </div>
             )}
             {visibleMatches === null ? (

@@ -15,7 +15,6 @@ import { useOnlinePresence } from './useOnlinePresence';
 import { isNativePlatform, openAuthInBrowser, pickOAuthRedirectTo } from './nativeAuth';
 import { signInWithGoogleNative } from './nativeGoogleAuth';
 import {
-  updateDisplayName,
   type ActiveXpBoost,
   type LevelConfig,
   type LevelStatusTier,
@@ -42,13 +41,13 @@ import {
   selectProfileProgression,
 } from '../features/auth/authSelectors';
 import {
-  playerDataApi,
   useCompleteOAuthProfileMutation,
   useGetActiveXpBoostQuery,
   useGetLevelConfigsQuery,
   useGetLevelStatusTiersQuery,
   useGetProfileQuery,
   useGetWalletQuery,
+  useUpdateDisplayNameMutation,
 } from '../features/playerData/playerDataApi';
 
 const missingConfigMessage =
@@ -266,6 +265,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refetchXpBoost, userId]);
 
   const [completeOAuthMutation] = useCompleteOAuthProfileMutation();
+  const [updateDisplayNameMutation] = useUpdateDisplayNameMutation();
 
   const completeOAuthProfile = useCallback(async () => {
     if (!isSupabaseConfigured) throw new Error(missingConfigMessage);
@@ -377,10 +377,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!session?.user) throw new Error('not signed in');
       const trimmed = name.trim();
       if (trimmed.length === 0) throw new Error('name cannot be empty');
-      const updated = await updateDisplayName(session.user.id, trimmed);
-      await dispatch(playerDataApi.util.upsertQueryData('getProfile', session.user.id, updated));
+      const result = await updateDisplayNameMutation({
+        userId: session.user.id,
+        name: trimmed,
+      });
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      // Post-success cache propagation (canonical row upsert into
+      // getProfile) lives in updateDisplayName.onQueryStarted, guarded
+      // by the current Redux identity.
     },
-    [dispatch, session]
+    [session, updateDisplayNameMutation]
   );
 
   const value = useMemo<AuthContextValue>(
