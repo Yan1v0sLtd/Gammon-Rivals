@@ -17,7 +17,14 @@ for (const file of sourceFiles) {
   const imports = [...source.matchAll(/(?:from\s+|import\s*\()['"]([^'"]+)['"]/g)].map(
     (match) => match[1]
   );
+  const hasBarrelExport = /(?:^|\n)\s*export\s+(?:\*\s+from|(?:type\s+)?\{[^}]*\}\s+from)\s*['"]/m.test(source);
 
+  if (/^index\.tsx?$/.test(path.basename(file))) {
+    violations.push(`${file}: client index modules are forbidden`);
+  }
+  if (hasBarrelExport) {
+    violations.push(`${file}: client barrel re-exports are forbidden`);
+  }
   if (file.startsWith('apps/game/src/') && /VITE_ADMIN_APP_URL|apps\/admin/.test(source)) {
     violations.push(`${file}: game source references the admin app`);
   }
@@ -35,7 +42,8 @@ for (const file of sourceFiles) {
     }
     if (
       file.startsWith('apps/admin/src/') &&
-      (specifier.startsWith('@engine') || specifier.startsWith('@board-renderer'))
+      (resolved?.startsWith('packages/engine/') ||
+        resolved?.startsWith('packages/board-renderer/'))
     ) {
       violations.push(`${file}: admin UI must use board-preview instead of ${specifier}`);
     }
@@ -44,34 +52,29 @@ for (const file of sourceFiles) {
     }
     if (
       file.startsWith('packages/shared/src/') &&
-      (specifier.startsWith('@engine') ||
-        specifier.startsWith('@board-renderer') ||
-        specifier.startsWith('@board-preview') ||
-        (resolved !== null && !resolved.startsWith('packages/shared/src/')))
+      resolved !== null &&
+      !resolved.startsWith('packages/shared/src/')
     ) {
       violations.push(`${file}: shared code imports outside its package (${specifier})`);
     }
     if (
       file.startsWith('packages/engine/src/') &&
-      (specifier.startsWith('@shared') ||
-        specifier.startsWith('@board') ||
-        (resolved !== null && !resolved.startsWith('packages/engine/src/')))
+      resolved !== null &&
+      !resolved.startsWith('packages/engine/src/')
     ) {
       violations.push(`${file}: engine imports outside its package (${specifier})`);
     }
     if (
       file.startsWith('packages/board-renderer/src/') &&
-      (specifier.startsWith('@board-preview') || resolved?.startsWith('packages/board-preview/'))
+      resolved?.startsWith('packages/board-preview/')
     ) {
       violations.push(`${file}: renderer imports board-preview (${specifier})`);
     }
     if (
       file.startsWith('packages/board-preview/src/') &&
       !isExternal(specifier) &&
-      !specifier.startsWith('@shared') &&
-      !specifier.startsWith('@engine') &&
-      !specifier.startsWith('@board-renderer') &&
-      !(resolved?.startsWith('packages/board-preview/src/'))
+      !['packages/board-preview/', 'packages/shared/', 'packages/engine/', 'packages/board-renderer/']
+        .some((root) => resolved?.startsWith(root))
     ) {
       violations.push(`${file}: board-preview imports an unapproved boundary (${specifier})`);
     }
@@ -86,8 +89,7 @@ if (violations.length > 0) {
 }
 
 function isExternal(specifier) {
-  return !specifier.startsWith('.') && !specifier.startsWith('@shared') &&
-    !specifier.startsWith('@engine') && !specifier.startsWith('@board');
+  return !specifier.startsWith('.');
 }
 
 function pointsTo(specifier, resolved, root) {

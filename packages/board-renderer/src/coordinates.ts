@@ -1,4 +1,4 @@
-import type { ThemeLayout } from './theme';
+import type { ThemeLayout } from './theme/types';
 
 type RatioPair = readonly [number, number];
 

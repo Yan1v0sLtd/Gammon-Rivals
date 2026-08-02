@@ -1,5 +1,6 @@
-import type { BoardThemeConfig, BoardThemeId } from '../board/theme';
-import type { Json } from '@shared/database';
+import type { BoardThemeConfig } from '../board/theme/remote';
+import type { BoardThemeId } from '../../../../packages/board-renderer/src/theme/boardThemes';
+import type { Json } from '../../../../packages/shared/src/database';
 
 export type LobbyBoardId = BoardThemeId;
 

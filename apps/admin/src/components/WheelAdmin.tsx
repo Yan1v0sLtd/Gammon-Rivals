@@ -10,8 +10,8 @@ import {
   formatUsdMicros,
   usdMicrosFor,
   type CurrencyConfigRow,
-} from '@shared/currency';
-import type { Database } from '@shared/database';
+} from '../../../../packages/shared/src/currency';
+import type { Database } from '../../../../packages/shared/src/database';
 import ImageField from './ImageField';
 
 type WheelConfigRow = Database['public']['Tables']['wheel_configs']['Row'];

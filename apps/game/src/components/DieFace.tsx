@@ -1,4 +1,4 @@
-import type { Die } from '@engine/types';
+import type { Die } from '../../../../packages/engine/src/types';
 import { PIPS } from './die3dConstants';
 
 export default function DieFace({

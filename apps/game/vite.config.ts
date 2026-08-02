@@ -8,13 +8,6 @@ export default defineConfig({
   envDir: projectRoot,
   publicDir: path.join(projectRoot, 'public'),
   plugins: [react()],
-  resolve: {
-    alias: {
-      '@shared': path.join(projectRoot, 'packages/shared/src'),
-      '@engine': path.join(projectRoot, 'packages/engine/src'),
-      '@board-renderer': path.join(projectRoot, 'packages/board-renderer/src'),
-    },
-  },
   define: buildDefines(),
   server: { port: 5174, host: '127.0.0.1' },
   optimizeDeps: {

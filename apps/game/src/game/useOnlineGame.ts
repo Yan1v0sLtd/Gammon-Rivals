@@ -2,23 +2,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyMove,
   endTurn as engineEndTurn,
-  initialBoard,
   legalMoves,
   winner as engineWinner,
-} from '@engine';
-import type {
-  BoardState,
-  Die,
-  DiceRoll,
-  Move,
-  Player,
-  Position,
-} from '@engine';
-import { BAR, OFF } from '@engine/types';
+} from '../../../../packages/engine/src/rules';
+import { initialBoard } from '../../../../packages/engine/src/board';
+import {
+  BAR,
+  OFF,
+  type BoardState,
+  type Die,
+  type DiceRoll,
+  type Move,
+  type Player,
+  type Position,
+} from '../../../../packages/engine/src/types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import { useMatchPresence } from '../lib/useMatchPresence';
-import type { Database } from '@shared/database';
+import type { Database } from '../../../../packages/shared/src/database';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
 

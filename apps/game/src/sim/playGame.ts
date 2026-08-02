@@ -7,22 +7,11 @@
  * Determinism: pass a seeded Rng; both the dice (roll) and the AI's random
  * choices (easy level) draw from it, so a (seed) fully reproduces a run.
  */
-import {
-  applyMove,
-  classifyWin,
-  endTurn,
-  expandDice,
-  initialBoard,
-  roll,
-  winner,
-  WIN_MULTIPLIER,
-  type BoardState,
-  type Die,
-  type Move,
-  type Player,
-  type Rng,
-  type WinType,
-} from '@engine';
+import { classifyWin, WIN_MULTIPLIER, type WinType } from '../../../../packages/engine/src/match';
+import { applyMove, endTurn, winner } from '../../../../packages/engine/src/rules';
+import { expandDice, roll, type Rng } from '../../../../packages/engine/src/dice';
+import { initialBoard } from '../../../../packages/engine/src/board';
+import type { BoardState, Die, Move, Player } from '../../../../packages/engine/src/types';
 import { pickMove } from '../ai/picker';
 import { pickMoveSoftmax } from '../ai/strength';
 import type { AILevel } from '../ai/types';

@@ -1,32 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyGameResult,
-  applyMove,
   canOfferDouble,
   computeBearOffResult,
   computeDropResult,
-  endTurn as engineEndTurn,
-  expandDice,
-  initialBoard,
-  legalMoves,
   newMatch as newMatchState,
   offerDouble as engineOfferDouble,
   acceptDouble as engineAcceptDouble,
-  roll as rollDie,
+  type GameResult,
+  type MatchState,
+} from '../../../../packages/engine/src/match';
+import {
+  applyMove,
+  endTurn as engineEndTurn,
+  legalMoves,
   winner as engineWinner,
-} from '@engine';
+} from '../../../../packages/engine/src/rules';
+import { expandDice, roll as rollDie } from '../../../../packages/engine/src/dice';
+import { initialBoard } from '../../../../packages/engine/src/board';
 import type {
   BoardState,
   Die,
   DiceRoll,
-  GameResult,
-  MatchState,
   Move,
   Player,
   Position,
-} from '@engine';
+} from '../../../../packages/engine/src/types';
 import { pickMoveAsync } from '../ai/client';
-import type { AILevel } from '../ai';
+import type { AILevel } from '../ai/types';
 import { DICE_ANIMATION_MS } from '../components/diceTiming';
 import { captureException } from '@sentry/react';
 

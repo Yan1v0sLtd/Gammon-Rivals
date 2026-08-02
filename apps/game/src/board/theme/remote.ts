@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
-import type { Database, Json } from '@shared/database';
-import { getBoardTheme } from '@board-renderer/theme/boardThemes';
-import { premiumTheme } from '@board-renderer/theme/premium';
+import type { Database, Json } from '../../../../../packages/shared/src/database';
+import { getBoardTheme } from '../../../../../packages/board-renderer/src/theme/boardThemes';
+import { premiumTheme } from '../../../../../packages/board-renderer/src/theme/premium';
 import { getPersistedBoardId } from './selectedBoard';
-import { isJsonObject, layoutFromMetadata } from '@board-renderer/theme/metadata';
-import type { Theme } from '@board-renderer/theme/types';
+import { isJsonObject, layoutFromMetadata } from '../../../../../packages/board-renderer/src/theme/metadata';
+import type { Theme } from '../../../../../packages/board-renderer/src/theme/types';
 
-export { layoutFromMetadata } from '@board-renderer/theme/metadata';
 
 export type BoardThemeConfig = Database['public']['Tables']['board_theme_configs']['Row'];
 

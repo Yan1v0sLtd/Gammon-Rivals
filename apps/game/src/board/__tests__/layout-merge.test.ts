@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { computeLayout, pointCoords } from '@board-renderer/coordinates';
-import { computeHitRects } from '@board-renderer/hit-areas';
-import { layoutFromMetadata } from '../theme/remote';
-import { premiumTheme } from '@board-renderer/theme/premium';
-import { BAR } from '@engine/types';
-import type { Json } from '@shared/database';
+import { computeLayout, pointCoords } from '../../../../../packages/board-renderer/src/coordinates';
+import { computeHitRects } from '../../../../../packages/board-renderer/src/hit-areas';
+import { layoutFromMetadata } from '../../../../../packages/board-renderer/src/theme/metadata';
+import { premiumTheme } from '../../../../../packages/board-renderer/src/theme/premium';
+import { BAR } from '../../../../../packages/engine/src/types';
+import type { Json } from '../../../../../packages/shared/src/database';
 
 /**
  * Pins the layout-merge semantics that BOTH gameplay (remote.ts

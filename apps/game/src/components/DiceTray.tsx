@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import type { Die, DiceRoll } from '@engine/types';
+import type { Die, DiceRoll } from '../../../../packages/engine/src/types';
 
 /**
  * DiceTray v4 — pure HTML + CSS 3D dice.

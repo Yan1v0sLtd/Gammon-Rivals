@@ -10,11 +10,11 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { isSupabaseConfigured, supabase } from './supabase';
-import { getProfileProgression, type ProfileProgression } from '@shared/progression';
+import { getProfileProgression, type ProfileProgression } from '../../../../packages/shared/src/progression';
 import { useOnlinePresence } from './useOnlinePresence';
 import { isNativePlatform, openAuthInBrowser, pickOAuthRedirectTo } from './nativeAuth';
 import { signInWithGoogleNative } from './nativeGoogleAuth';
-import type { Database } from '@shared/database';
+import type { Database } from '../../../../packages/shared/src/database';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type UserWallet = Database['public']['Tables']['user_wallets']['Row'];

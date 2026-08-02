@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import type { MatchState } from '@engine';
+import type { MatchState } from '../../../../packages/engine/src/match';
 import { useNavigationOverlay } from '../lib/navigationOverlayContext';
 
 interface Props {

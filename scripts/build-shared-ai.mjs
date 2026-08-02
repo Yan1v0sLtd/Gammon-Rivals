@@ -9,8 +9,8 @@
 //   1. The browser-only Web Worker layer (client.ts / worker.ts) is EXCLUDED —
 //      it uses `new Worker()` and can't run in Deno. The pure decision logic
 //      (picker / evaluator / sequence / strength / types) is what we mirror.
-//   2. Game AI imports `@engine`. Deno needs the sibling mirror's explicit
-//      `../engine/index.ts` path.
+//   2. Game AI imports the engine source through a repository-relative path.
+//      Deno needs the sibling mirror's explicit `../engine/index.ts` path.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,9 +31,12 @@ const BANNER = [
   '',
 ].join('\n');
 
-/** Rewrite the engine alias to the sibling mirror's barrel. */
+/** Rewrite repository-relative engine imports to the server-only Deno barrel. */
 function fixEngineImport(code) {
-  return code.replace(/(['"])@engine(?:\/index)?(['"])/g, '$1../engine/index.ts$2');
+  return code.replace(
+    /(['"])\.\.\/\.\.\/\.\.\/\.\.\/packages\/engine\/src(?:\/(?:index|types|board|dice|rules|match))?(['"])/g,
+    '$1../engine/index.ts$2'
+  );
 }
 
 /** Add a `.ts` extension to relative specifiers that don't already have one. */
@@ -53,6 +56,7 @@ const files = readdirSync(SRC, { withFileTypes: true })
     (d) =>
       d.isFile() &&
       d.name.endsWith('.ts') &&
+      d.name !== 'index.ts' &&
       !d.name.endsWith('.test.ts') &&
       !EXCLUDE.has(d.name)
   )
@@ -63,4 +67,9 @@ for (const name of files) {
   writeFileSync(join(OUT, name), BANNER + addTsExtensions(fixEngineImport(code)));
 }
 
-console.log(`build-shared-ai: wrote ${files.length} file(s) -> ${OUT}`);
+const serverExports = ['types.ts', 'sequence.ts', 'evaluator.ts', 'picker.ts']
+  .map((name) => `export * from './${name}';`)
+  .join('\n');
+writeFileSync(join(OUT, 'index.ts'), BANNER + serverExports + '\n');
+
+console.log(`build-shared-ai: wrote ${files.length + 1} file(s) -> ${OUT}`);

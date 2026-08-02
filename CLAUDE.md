@@ -36,6 +36,7 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 4. **Stake/match-value framing, not bet/winnings.** Virtual chips only. No real-money chip purchases, no cash-out path. This keeps us out of "simulated gambling" regulatory territory.
 5. **No premature abstractions.** No TanStack Query, no Redux, no form library, no `@pixi/react`. Plain hooks + controlled components + imperative Pixi. Ask before adding any of these.
 6. **Doubling cube needs a confirm step.** Single-tap cube offers caused user complaints in the reference app (Lord of the Board). Long-press or two-tap.
+7. **No client barrel files or re-exports.** Import each source module directly.
 
 ---
 
@@ -60,7 +61,7 @@ packages/
 ```
 
 **New page checklist:**
-- Imports engine via `from '@engine'` (barrel) or a package module
+- Imports engine through a relative path to the specific module in `packages/engine/src`
 - Uses primitives from `components/UI.tsx` — no custom buttons
 - Added to `App.tsx` routes
 

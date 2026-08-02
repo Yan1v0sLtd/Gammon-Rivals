@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { BAR, OFF } from '@engine/types';
+import { BAR, OFF } from '../../../engine/src/types';
 import { computeLayout, pointCoords, checkerCenter } from '../coordinates';
 import {
   computeHitRects,
   destinationAnchorForEmptyPoint,
   hitTest,
 } from '../hit-areas';
-import { defaultTheme, premiumTheme, woodTheme } from '../theme';
-import type { ThemeLayout } from '../theme';
+import { defaultTheme } from '../theme/default';
+import { premiumTheme } from '../theme/premium';
+import { woodTheme } from '../theme/wood';
+import type { ThemeLayout } from '../theme/types';
 
 // Marble-kingdom is a remote-only theme (the layout overrides live
 // in `board_theme_configs.metadata`). It's the theme the user is

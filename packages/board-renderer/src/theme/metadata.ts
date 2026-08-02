@@ -1,4 +1,4 @@
-import type { Json } from '@shared/database';
+import type { Json } from '../../../shared/src/database';
 import type { ThemeLayout } from './types';
 
 export function isJsonObject(value: Json | undefined): value is Record<string, Json> {

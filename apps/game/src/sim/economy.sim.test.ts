@@ -8,7 +8,8 @@
  *   RUN_SIM=1 SIM_GAMES=4000 npx vitest run ...            → more games
  */
 import { describe, expect, it } from 'vitest';
-import { initialBoard, pipCount, seededRng } from '@engine';
+import { initialBoard, pipCount } from '../../../../packages/engine/src/board';
+import { seededRng } from '../../../../packages/engine/src/dice';
 import { DIFFICULTY_TIERS, proposedRetune } from './tiers';
 import { aiHouseCoinsPerMatch, aiRtp, pvpRtp, pvpWinnerPrize } from './economy';
 import { leveled, playGame, runFair, softmaxPicker, type Picker } from './playGame';

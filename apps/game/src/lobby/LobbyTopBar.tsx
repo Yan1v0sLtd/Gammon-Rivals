@@ -1,6 +1,6 @@
 import { useShop } from '../components/shopContext';
-import type { ProfileProgression } from '@shared/progression';
-import type { Database } from '@shared/database';
+import type { ProfileProgression } from '../../../../packages/shared/src/progression';
+import type { Database } from '../../../../packages/shared/src/database';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { LobbyProfileCard } from './LobbyProfileCard';
 import { XpBoostBadge } from './XpBoostBadge';

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { applyMove, endTurn as engineEndTurn, initialBoard, pipCount } from '@engine';
-import type { BoardState, Die, Move } from '@engine';
-import { BAR, OFF, type Position } from '@engine/types';
-import BoardCanvas from '@board-renderer/BoardCanvas';
-import { useBoardThemeConfig } from '../board/theme';
+import { applyMove, endTurn as engineEndTurn } from '../../../../packages/engine/src/rules';
+import { initialBoard, pipCount } from '../../../../packages/engine/src/board';
+import type { BoardState, Die, Move } from '../../../../packages/engine/src/types';
+import { BAR, OFF, type Position } from '../../../../packages/engine/src/types';
+import BoardCanvas from '../../../../packages/board-renderer/src/BoardCanvas';
+import { useBoardThemeConfig } from '../board/theme/remote';
 import { getGameWithMoves, type GameWithMoves } from '../lib/queries';
 
 interface SubMove {

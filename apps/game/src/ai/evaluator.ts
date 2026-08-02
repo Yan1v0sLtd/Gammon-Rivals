@@ -1,4 +1,4 @@
-import type { BoardState, Player } from '@engine';
+import type { BoardState, Player } from '../../../../packages/engine/src/types';
 
 const opp = (p: Player): Player => (p === 'white' ? 'black' : 'white');
 

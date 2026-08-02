@@ -7,11 +7,12 @@ import {
   TilingSprite,
   Texture,
 } from 'pixi.js';
-import { BAR, OFF } from '@engine/types';
-import type { BoardState, Player, Position } from '@engine/types';
+import { BAR, OFF } from '../../../engine/src/types';
+import type { BoardState, Player, Position } from '../../../engine/src/types';
 import { checkerCenter, computeLayout, pointCoords, type Layout } from '../coordinates';
 import { computeHitRects } from '../hit-areas';
-import type { LoadedTheme, ThemeAssetKey, ThemeColors, ThemeLayout } from '../theme';
+import type { LoadedTheme } from '../theme/loader';
+import type { ThemeAssetKey, ThemeColors, ThemeLayout } from '../theme/types';
 
 export interface RenderSelection {
   readonly selectedFrom: Position | null;

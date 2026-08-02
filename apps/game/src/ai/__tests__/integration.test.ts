@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   applyMove,
   endTurn,
-  expandDice,
-  initialBoard,
   legalMoves,
-  roll,
-  seededRng,
   winner,
-} from '@engine';
-import type { BoardState, Die } from '@engine';
+} from '../../../../../packages/engine/src/rules';
+import { expandDice, roll, seededRng } from '../../../../../packages/engine/src/dice';
+import { initialBoard } from '../../../../../packages/engine/src/board';
+import type { BoardState, Die } from '../../../../../packages/engine/src/types';
 import { pickMove } from '../picker';
 
 /** Drive a hot-seat-style turn for whoever's turn it is, using the AI picker. */

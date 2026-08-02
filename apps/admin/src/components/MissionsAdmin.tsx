@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 // adminSupabase client is the one logged in as the operator's BO
 // session and is what every other admin/* file uses.
 import { adminSupabase as supabase } from '../lib/adminSupabase';
-import { extractErrorMessage } from '@shared/errors';
+import { extractErrorMessage } from '../../../../packages/shared/src/errors';
 import ImageField from './ImageField';
 import { useConfirm } from './useConfirm';
 

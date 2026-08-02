@@ -26,7 +26,7 @@
  * the game's economy can't support.
  */
 
-import type { AILevel } from '../ai';
+import type { AILevel } from '../ai/types';
 
 /** Cheap, fast 32-bit hash for use as a seed. Not cryptographic.
  *  djb2-style — good enough that two matchIds differing by a single

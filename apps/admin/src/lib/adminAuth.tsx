@@ -9,7 +9,7 @@ import {
 } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { adminSupabase, isAdminSupabaseConfigured } from './adminSupabase';
-import type { Database } from '@shared/database';
+import type { Database } from '../../../../packages/shared/src/database';
 
 /**
  * Auth context for the Back Office. Mirrors the shape of the game's

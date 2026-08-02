@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AlignmentDebugSelection } from '@board-renderer/pixi/BoardRenderer';
-import type { ThemeLayout } from '../board/theme';
+import type { AlignmentDebugSelection } from '../../../../packages/board-renderer/src/pixi/BoardRenderer';
+import type { ThemeLayout } from '../../../../packages/board-renderer/src/theme/types';
 
 type RatioKey =
   | 'topPointCenterXRatios'

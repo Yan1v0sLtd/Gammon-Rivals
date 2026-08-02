@@ -1,4 +1,5 @@
-import type { CubeValue, Player } from '@engine';
+import type { CubeValue } from '../../../../packages/engine/src/match';
+import type { Player } from '../../../../packages/engine/src/types';
 
 interface Props {
   offeredBy: Player;

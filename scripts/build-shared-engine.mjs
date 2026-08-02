@@ -39,7 +39,13 @@ rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
 const files = readdirSync(SRC, { withFileTypes: true })
-  .filter((d) => d.isFile() && d.name.endsWith('.ts') && !d.name.endsWith('.test.ts'))
+  .filter(
+    (d) =>
+      d.isFile() &&
+      d.name.endsWith('.ts') &&
+      d.name !== 'index.ts' &&
+      !d.name.endsWith('.test.ts')
+  )
   .map((d) => d.name);
 
 for (const name of files) {
@@ -47,4 +53,9 @@ for (const name of files) {
   writeFileSync(join(OUT, name), BANNER + addTsExtensions(code));
 }
 
-console.log(`build-shared-engine: wrote ${files.length} file(s) -> ${OUT}`);
+const serverExports = ['types.ts', 'board.ts', 'dice.ts', 'rules.ts', 'match.ts']
+  .map((name) => `export * from './${name}';`)
+  .join('\n');
+writeFileSync(join(OUT, 'index.ts'), BANNER + serverExports + '\n');
+
+console.log(`build-shared-engine: wrote ${files.length + 1} file(s) -> ${OUT}`);

@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import type { Die } from '@engine/types';
+import type { Die } from '../../../../packages/engine/src/types';
 import DieFace from './DieFace';
 import { DIE_SIZE, FACE_TARGET_ROTATION, FACE_TRANSFORMS } from './die3dConstants';
 

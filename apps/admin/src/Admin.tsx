@@ -15,18 +15,18 @@ import {
   formatUsdMicros,
   usdMicrosFor,
   type CurrencyConfigRow,
-} from '@shared/currency';
-import type { Database, Json } from '@shared/database';
+} from '../../../packages/shared/src/currency';
+import type { Database, Json } from '../../../packages/shared/src/database';
 import ImageField from './components/ImageField';
 import FeltCornersField from './components/FeltCornersField';
 import BearOffTraysField from './components/BearOffTraysField';
 import BoardTuningField from './components/BoardTuningField';
-import BoardPreview from '@board-preview/BoardPreview';
+import BoardPreview from '../../../packages/board-preview/src/BoardPreview';
 import { WheelAdmin } from './components/WheelAdmin';
 import { LevelCurveProposal } from './components/LevelCurveProposal';
 import { MissionsAdmin } from './components/MissionsAdmin';
 import { useConfirm } from './components/useConfirm';
-import { resolveStatusLabel } from '@shared/progression';
+import { resolveStatusLabel } from '../../../packages/shared/src/progression';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];

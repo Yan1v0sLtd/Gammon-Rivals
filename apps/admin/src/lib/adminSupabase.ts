@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@shared/database';
+import type { Database } from '../../../../packages/shared/src/database';
 
 /**
  * Independent Supabase client used exclusively by the Back Office.

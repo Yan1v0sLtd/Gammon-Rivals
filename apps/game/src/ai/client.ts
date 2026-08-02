@@ -1,4 +1,4 @@
-import type { BoardState, Die, Move } from '@engine';
+import type { BoardState, Die, Move } from '../../../../packages/engine/src/types';
 import { pickMove } from './picker';
 import type { AILevel } from './types';
 

@@ -4,10 +4,10 @@ import { useImagePreloader } from '../lib/useImagePreloader';
 import { CurrencyPill } from '../components/CurrencyPill';
 import { useAuth } from '../lib/auth';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { getBilling } from '../lib/billing';
+import { getBilling } from '../lib/billing/service';
 import { getShopCatalogCache, updateShopCatalogCache } from '../lib/shopCache';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from '../lobby/RewardFlight';
-import type { Database, Json } from '@shared/database';
+import type { Database, Json } from '../../../../packages/shared/src/database';
 
 // -----------------------------------------------------------------------------
 // Redesigned Store. Two sections, no category tabs (per current direction):

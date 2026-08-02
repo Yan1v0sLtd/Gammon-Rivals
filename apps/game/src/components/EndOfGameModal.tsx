@@ -1,4 +1,4 @@
-import type { GameResult, MatchState } from '@engine';
+import type { GameResult, MatchState } from '../../../../packages/engine/src/match';
 
 /**
  * Optional reward summary attached to the match-over state. Populated

@@ -27,4 +27,3 @@ export async function getBilling(): Promise<BillingService> {
   return cached;
 }
 
-export type { BillingService, BillingPurchaseRequest, BillingOutcome } from './types';

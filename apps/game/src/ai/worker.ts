@@ -1,5 +1,5 @@
 import { pickMove } from './picker';
-import type { BoardState, Die } from '@engine';
+import type { BoardState, Die } from '../../../../packages/engine/src/types';
 import type { AILevel } from './types';
 
 interface PickRequest {

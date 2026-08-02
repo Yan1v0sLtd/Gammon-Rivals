@@ -1,4 +1,4 @@
-import type { Die } from '@engine/types';
+import type { Die } from '../../../../packages/engine/src/types';
 
 export const PIPS: Record<Die, readonly number[]> = {
   1: [4],

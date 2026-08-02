@@ -1,5 +1,5 @@
-import { BAR, OFF } from '@engine/types';
-import type { Player, Position } from '@engine/types';
+import { BAR, OFF } from '../../engine/src/types';
+import type { Player, Position } from '../../engine/src/types';
 import { checkerCenter, pointCoords, type Layout } from './coordinates';
 
 export interface HitRect {

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { applyMove, initialBoard, legalMoves } from '@engine';
-import type { BoardState, Die, Move } from '@engine';
-import { makeBoard } from '@engine/__tests__/helpers';
+import { applyMove, legalMoves } from '../../../../../packages/engine/src/rules';
+import { initialBoard } from '../../../../../packages/engine/src/board';
+import type { BoardState, Die, Move } from '../../../../../packages/engine/src/types';
+import { makeBoard } from '../../../../../packages/engine/src/__tests__/helpers';
 import { enumerateSequences } from '../sequence';
 import { evaluate } from '../evaluator';
 import { pickMove, type Rng } from '../picker';
