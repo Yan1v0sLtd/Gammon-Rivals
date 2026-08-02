@@ -27,8 +27,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Admin />} />
           <Route path="/auth/callback" element={<AdminAuthCallback />} />
-          <Route path="/admin" element={<Navigate to="/" replace />} />
-          <Route path="/admin/auth/callback" element={<AdminAuthCallback />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

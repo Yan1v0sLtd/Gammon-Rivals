@@ -1,7 +1,7 @@
-// Generate a Deno-native mirror of src/ai (the move picker) for Supabase edge
+// Generate a Deno-native mirror of apps/game/src/ai for Supabase edge
 // functions — server-authored AI turns (Phase 2b, layer 2). Sibling of the
-// engine mirror (build-shared-engine.mjs). src/ai stays the SINGLE SOURCE OF
-// TRUTH; never edit the generated files — re-run `npm run build:shared-ai` after
+// engine mirror (build-shared-engine.mjs). apps/game/src/ai stays the source of
+// truth; never edit generated files — re-run `npm run build:shared-ai` after
 // any picker change. The generated tree is committed so the edge deploy can
 // bundle it.
 //
@@ -9,15 +9,14 @@
 //   1. The browser-only Web Worker layer (client.ts / worker.ts) is EXCLUDED —
 //      it uses `new Worker()` and can't run in Deno. The pure decision logic
 //      (picker / evaluator / sequence / strength / types) is what we mirror.
-//   2. src/ai imports the engine as a directory specifier (`from '../engine'`).
-//      Deno needs an explicit file, and the engine mirror is a sibling package,
-//      so rewrite `../engine` → `../engine/index.ts` before adding extensions.
+//   2. Game AI imports `@engine`. Deno needs the sibling mirror's explicit
+//      `../engine/index.ts` path.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = join(ROOT, 'src', 'ai');
+const SRC = join(ROOT, 'apps', 'game', 'src', 'ai');
 const OUT = join(ROOT, 'supabase', 'functions', '_shared', 'ai');
 
 // Browser/Worker-only — not portable to Deno.
@@ -25,16 +24,16 @@ const EXCLUDE = new Set(['client.ts', 'worker.ts']);
 
 const BANNER = [
   '// GENERATED FILE — DO NOT EDIT.',
-  '// Deno mirror of src/ai (move picker) for Supabase edge functions',
-  '// (server-authored AI turns). src/ai is the single source of truth;',
+  '// Deno mirror of apps/game/src/ai for Supabase edge functions',
+  '// (server-authored AI turns). apps/game/src/ai is the source of truth;',
   '// regenerate with:  npm run build:shared-ai',
   '',
   '',
 ].join('\n');
 
-/** Rewrite the `../engine` directory import to the sibling mirror's barrel. */
+/** Rewrite the engine alias to the sibling mirror's barrel. */
 function fixEngineImport(code) {
-  return code.replace(/(['"])\.\.\/engine(['"])/g, '$1../engine/index.ts$2');
+  return code.replace(/(['"])@engine(?:\/index)?(['"])/g, '$1../engine/index.ts$2');
 }
 
 /** Add a `.ts` extension to relative specifiers that don't already have one. */

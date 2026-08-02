@@ -28,11 +28,6 @@ import { MissionsAdmin } from './components/MissionsAdmin';
 import { useConfirm } from './components/useConfirm';
 import { resolveStatusLabel } from '@shared/progression';
 
-const gameOrigin =
-  import.meta.env.VITE_GAME_APP_URL?.trim() ||
-  (import.meta.env.DEV ? 'http://127.0.0.1:5174' : window.location.origin);
-const gameLobbyUrl = new URL('/play', gameOrigin).toString();
-
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type AdminRoleRow = Database['public']['Tables']['admin_roles']['Row'];
 type AdminEmailRoleRow = Database['public']['Tables']['admin_email_allowlist']['Row'];
@@ -2674,9 +2669,6 @@ export default function Admin() {
     return (
       <main className="min-h-screen bg-[#061225] text-white">
         <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
-          <a href={gameLobbyUrl} className="text-sm font-semibold text-amber-200/80 hover:text-amber-100">
-            ← Back to lobby
-          </a>
           <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
             <div className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200/70">
               Gammon Rivals
@@ -2720,9 +2712,9 @@ export default function Admin() {
       <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <a href={gameLobbyUrl} className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
-              ← Lobby
-            </a>
+            <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
+              Gammon Rivals
+            </div>
             <h1 className="mt-1 text-2xl font-black tracking-tight">Back Office</h1>
           </div>
           <div className="text-right text-xs text-white/55">

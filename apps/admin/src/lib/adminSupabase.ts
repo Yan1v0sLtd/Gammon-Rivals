@@ -14,8 +14,8 @@ import type { Database } from '@shared/database';
  * Other differences from the game client:
  *   - Always uses localStorage (no hybrid session-vs-local switching).
  *     The BO is an operator tool — no anonymous-session story to handle.
- *   - `detectSessionInUrl: true` so either supported callback route can
- *     mount directly and let supabase-js read the PKCE code in place.
+ *   - `detectSessionInUrl: true` so the callback route can mount directly
+ *     and let supabase-js read the PKCE code in place.
  *
  * The PKCE code-verifier is stored under `${storageKey}-code-verifier`,
  * also in localStorage, so the verifier the BO writes when initiating

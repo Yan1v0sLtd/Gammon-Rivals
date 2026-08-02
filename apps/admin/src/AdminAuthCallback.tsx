@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { adminSupabase } from './lib/adminSupabase';
 
 /**
- * OAuth callback for the BO. Mounted at /auth/callback and the legacy
- * /admin/auth/callback path. The
+ * OAuth callback for the BO. Mounted at /auth/callback. The
  * adminSupabase client was constructed with `detectSessionInUrl: true`
  * + flowType 'pkce', so once this page mounts the library picks up the
  * ?code= parameter from the URL, exchanges it via the verifier sitting

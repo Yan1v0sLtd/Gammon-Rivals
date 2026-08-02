@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import BoardCanvas from '@board/BoardCanvas';
+import BoardCanvas from '@board-renderer/BoardCanvas';
 import { initialBoard } from '@engine/board';
-import { premiumTheme } from '@board/theme/premium';
-import { layoutFromMetadata } from '@board/theme/metadata';
-import type { Theme, ThemeLayout } from '@board/theme/types';
+import { premiumTheme } from '@board-renderer/theme/premium';
+import { layoutFromMetadata } from '@board-renderer/theme/metadata';
+import type { Theme, ThemeLayout } from '@board-renderer/theme/types';
 import type { Json } from '@shared/database';
 
 interface Props {

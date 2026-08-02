@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.game.tsbuildinfo"
+  },
+  "include": [
+    "src",
+    "../../packages/engine/src",
+    "../../packages/board-renderer/src",
+    "../../packages/shared/src"
+  ]
+}

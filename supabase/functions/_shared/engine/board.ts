@@ -1,6 +1,6 @@
 // GENERATED FILE — DO NOT EDIT.
-// Deno mirror of src/engine for Supabase edge functions (server-side
-// move/outcome validation). src/engine is the single source of truth;
+// Deno mirror of packages/engine for Supabase edge functions (server-side
+// move/outcome validation). packages/engine is the single source of truth;
 // regenerate with:  npm run build:shared-engine
 
 import type { BoardState, Player, Point } from './types.ts';

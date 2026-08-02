@@ -17,7 +17,7 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 | Phase | Scope | Status |
 | ----- | ----- | ------ |
 | 1 | Pure TS rules engine, board UI in PixiJS, dice physics, hot-seat 2-player, single games | 🟢 Done |
-| 2 | Match play, Crawford rule, doubling cube offer/accept/drop | 🟢 Engine + UI done — `src/engine/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
+| 2 | Match play, Crawford rule, doubling cube offer/accept/drop | 🟢 Engine + UI done — `packages/engine/src/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
 | 3 | AI opponent (3 tiers), Web Worker eval | 🟡 Mostly done — AI plays online matches as a **fallback** when matchmaking can't find a human opponent. Pure PvP is the primary mode. |
 | 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | 🟢 Auth + guests + profile done; replays / ELO TBD |
 | 5 | Online multiplayer — server-authoritative dice, Realtime moves, private invites, reconnect | 🟢 Done |
@@ -30,7 +30,7 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 
 ## Non-negotiables
 
-1. **The engine in `src/engine/` is pure TypeScript.** No React, no Pixi, no Supabase. If you import any of those into engine code, you've made a mistake. Engine functions take `BoardState` in, return new `BoardState` out. Everything is immutable.
+1. **The engine in `packages/engine/src/` is pure TypeScript.** No React, no Pixi, no Supabase. If you import any of those into engine code, you've made a mistake. Engine functions take `BoardState` in, return new `BoardState` out. Everything is immutable.
 2. **Dice are server-authoritative in online play.** Phase 5 onward, clients NEVER roll their own dice. Edge Function generates the roll, writes it to the match record, broadcasts via Realtime. The seeded `Rng` in `dice.ts` is only for local play and tests.
 3. **Pixi never holds game state.** `BoardRenderer` has an imperative `render(state)` API. It's a view function. If you find yourself storing turn/move/dice in Pixi code, stop.
 4. **Stake/match-value framing, not bet/winnings.** Virtual chips only. No real-money chip purchases, no cash-out path. This keeps us out of "simulated gambling" regulatory territory.
@@ -42,31 +42,25 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 ## File structure
 
 ```
-src/
-├── engine/                        → Pure TS. Tested in isolation.
-│   ├── types.ts                   → BoardState, Move, Player, TurnState, DiceRoll
-│   ├── board.ts                   → initialBoard(), pipCount(), state transitions
-│   ├── rules.ts                   → legalMoves(), applyMove() — STUBS, build out next
-│   ├── dice.ts                    → roll() with pluggable Rng (crypto for prod, seeded for tests)
-│   ├── index.ts                   → barrel
-│   └── __tests__/                 → vitest. Engine must stay green.
-├── game/                          → React-side session state (hooks + context)
-├── board/                         → PixiJS rendering layer
-│   ├── BoardCanvas.tsx            → React mount; passes state to renderer
-│   ├── pixi/                      → BoardRenderer, Checker, Dice, Point — imperative
-│   └── coordinates.ts             → logical pos (0–23, bar, off) → pixel mapping
-├── components/
-│   └── UI.tsx                     → primitives only — Button, Panel, Modal, Toast
-├── pages/
-│   ├── Home.tsx                   → landing — sanity-renders engine output
-│   └── HotSeat.tsx                → hot-seat game (Phase 1 target)
-├── lib/                           → supabase client (Phase 4+), shared utils
-├── App.tsx                        → router
-└── main.tsx
+apps/
+├── game/src/                      → Player application
+│   ├── game/                      → React-side session state
+│   ├── board/                     → Player board data adapters
+│   ├── components/
+│   ├── pages/
+│   ├── lib/
+│   ├── App.tsx
+│   └── main.tsx
+└── admin/src/                     → Independent Back Office application
+packages/
+├── engine/src/                    → Pure TypeScript rules and tests
+├── board-renderer/src/            → Shared Pixi renderer and geometry
+├── board-preview/src/             → Back Office board preview
+└── shared/src/                    → Shared database types and pure utilities
 ```
 
 **New page checklist:**
-- Imports engine via `from '../engine'` (barrel) or specific module
+- Imports engine via `from '@engine'` (barrel) or a package module
 - Uses primitives from `components/UI.tsx` — no custom buttons
 - Added to `App.tsx` routes
 

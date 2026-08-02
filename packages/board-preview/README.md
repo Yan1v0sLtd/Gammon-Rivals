@@ -1,5 +1,11 @@
 # Board preview
 
-Back Office board preview owned outside both applications. The admin app imports only this package; renderer and engine dependencies stay behind its boundary.
+Back Office board preview owned outside both applications.
 
-This package must not import player authentication, lobby, match-session, or admin data-access code.
+It may import only:
+
+- `packages/engine`
+- `packages/board-renderer`
+- `packages/shared`
+
+It must not import player authentication, lobby, match-session, or admin data-access code.

@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "paths": {
+      "@shared/*": ["./packages/shared/src/*"],
+      "@engine": ["./packages/engine/src/index.ts"],
+      "@engine/*": ["./packages/engine/src/*"],
+      "@board-renderer": ["./packages/board-renderer/src/index.ts"],
+      "@board-renderer/*": ["./packages/board-renderer/src/*"],
+      "@board-preview/*": ["./packages/board-preview/src/*"]
+    },
+    "jsx": "react-jsx",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  }
+}
