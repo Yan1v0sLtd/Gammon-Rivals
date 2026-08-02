@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useEffect, useMemo } from 'react';
 import { useImagePreloader } from '../lib/useImagePreloader';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
 import { PlayButton } from '../components/PlayButton';
-import type { Database, Json } from '../../../../packages/shared/src/database';
+import { useGetTableConfigsQuery } from '../features/lobby/lobbyApi';
+import type { TableConfigRow } from '../lib/lobbyData';
+import type { Json } from '../../../../packages/shared/src/database';
 
 /**
  * Server row shape we need. We only read enabled difficulty rows
  * (kind = 'difficulty') so the lobby grid stays clean even if BO
  * operators add half-built rows.
  */
-type TableConfigRow = Database['public']['Tables']['table_configs']['Row'];
 
 export interface DifficultySelection {
   readonly tableConfigId: string;
@@ -455,40 +456,17 @@ export function DifficultyModal({
   matchmaking,
   onCancelMatchmaking,
 }: DifficultyModalProps) {
-  const [rows, setRows] = useState<readonly TableConfigRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!open || !isSupabaseConfigured) return;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    void supabase
-      .from('table_configs')
-      .select('*')
-      .eq('kind', 'difficulty')
-      .eq('is_enabled', true)
-      .order('sort_order', { ascending: true })
-      .then(({ data, error: err }) => {
-        if (cancelled) return;
-        if (err) {
-          setError('Could not load difficulties.');
-          setLoading(false);
-          return;
-        }
-        setRows((data ?? []) as readonly TableConfigRow[]);
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
+  const { data, error, isFetching, isUninitialized } = useGetTableConfigsQuery('difficulty', {
+    skip: !open || !isSupabaseConfigured,
+  });
+  const rows = data ?? [];
+  const loading = isFetching || (open && isUninitialized);
+  const loadError = error !== undefined && !isFetching ? 'Could not load difficulties.' : null;
 
   // Preload the per-tier hero art so the cards reveal fully-formed instead of
   // the room images popping in a beat after the frame. Errors don't block the
   // gate (a missing .webp just shows the gradient), so it never hangs.
-  const heroUrls = useMemo(() => rows.map(heroPathFor), [rows]);
+  const heroUrls = useMemo(() => (data ?? []).map(heroPathFor), [data]);
   const { ready: heroImagesReady } = useImagePreloader(heroUrls);
 
   useEffect(() => {
@@ -547,8 +525,8 @@ export function DifficultyModal({
           </button>
         </div>
 
-        {error ? (
-          <div className="grid place-items-center py-12 text-amber-200/80">{error}</div>
+        {loadError ? (
+          <div className="grid place-items-center py-12 text-amber-200/80">{loadError}</div>
         ) : loading || (rows.length > 0 && !heroImagesReady) ? (
           <div className="grid place-items-center py-12 text-amber-200/60">Loading…</div>
         ) : rows.length === 0 ? (

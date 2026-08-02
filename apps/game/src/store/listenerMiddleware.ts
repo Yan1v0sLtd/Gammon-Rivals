@@ -6,6 +6,7 @@ import {
 } from '../features/auth/authSlice';
 import { playerDataApi } from '../features/playerData/playerDataApi';
 import { shopGrantConfirmed } from '../features/shop/shopActions';
+import { dailyBonusClaimConfirmed } from '../features/lobby/lobbyActions';
 import {
   replayPause,
   replayPlay,
@@ -26,6 +27,7 @@ import type { AppDispatch, RootState } from './store';
 
 const REPLAY_TICK_DELAY_MS = 1400;
 const SHOP_WALLET_REFRESH_DELAY_MS = 600;
+const DAILY_BONUS_WALLET_REFRESH_DELAY_MS = 600;
 
 const replayControlMatcher = isAnyOf(
   replayPlay,
@@ -129,6 +131,25 @@ export function createAppListenerMiddleware() {
       dispatch(baseApi.util.invalidateTags([{ type: 'XpBoost', id: action.payload.userId }]));
       await delay(SHOP_WALLET_REFRESH_DELAY_MS);
       dispatch(baseApi.util.invalidateTags([{ type: 'Wallet', id: action.payload.userId }]));
+    },
+  });
+
+  // Post-claim player-data refresh. The delay lets the reward-flight tokens
+  // land in the balance before the wallet ticks up. A new claim supersedes a
+  // pending refresh (cancelActiveListeners), and the delay is a chance for
+  // the identity to change — never invalidate another user's cache.
+  startListening({
+    actionCreator: dailyBonusClaimConfirmed,
+    effect: async (action, { cancelActiveListeners, delay, dispatch, getState }) => {
+      cancelActiveListeners();
+      await delay(DAILY_BONUS_WALLET_REFRESH_DELAY_MS);
+      if (getState().auth.userId !== action.payload.userId) return;
+      dispatch(
+        baseApi.util.invalidateTags([
+          { type: 'Wallet', id: action.payload.userId },
+          { type: 'Profile', id: action.payload.userId },
+        ]),
+      );
     },
   });
 

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { extractErrorMessage } from '../../../../packages/shared/src/errors';
+import { useSpinWheelMutation } from '../features/lobby/lobbyApi';
+import type { WheelSlot } from '../lib/lobbyData';
 import { ModalCloseButton } from '../components/ModalCloseButton';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
-import type { WheelSlot, WheelStateResult } from './useWheelState';
+import type { WheelStateResult } from './useWheelState';
 
 /**
  * spin_wheel returns a single object describing what the player won
@@ -160,6 +162,7 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
   const state = wheel.state;
   const slots = state?.slots ?? EMPTY_SLOTS;
 
+  const [spinWheel] = useSpinWheelMutation();
   const [phase, setPhase] = useState<'idle' | 'spinning' | 'celebrating'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [spinResult, setSpinResult] = useState<SpinResult | null>(null);
@@ -257,15 +260,14 @@ export function WheelModal({ wheel, onClose, onSpinComplete, onProgressionUpdate
     setError(null);
     setPhase('spinning');
 
-    const { data, error: rpcErr } = await supabase.rpc('spin_wheel', {
-      p_config_id: state.config_id,
-    });
-    if (rpcErr) {
-      setError(spinErrorMessage(rpcErr.message));
+    let result: SpinResult;
+    try {
+      result = await spinWheel({ configId: state.config_id }).unwrap();
+    } catch (err) {
+      setError(spinErrorMessage(extractErrorMessage(err)));
       setPhase('idle');
       return;
     }
-    const result = data as unknown as SpinResult;
     setSpinResult(result);
 
     // Drive rotation manually via rAF so we can fire ticker kicks

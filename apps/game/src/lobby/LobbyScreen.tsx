@@ -11,7 +11,12 @@ import {
   enterRoomAiFallback,
   findMatchInTier,
 } from '../lib/persistence';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  useClaimDailyBonusMutation,
+  useMarkTutorialCompleteMutation,
+  usePurchaseBoardWithGemsMutation,
+} from '../features/lobby/lobbyApi';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { usePrefetchOnIdle } from '../lib/usePrefetchOnIdle';
 import { useBodyModalFlag } from '../lib/bodyModalFlag';
@@ -178,7 +183,7 @@ export function LobbyScreen() {
   const { show: showOverlay, hide: hideOverlay } = useNavigationLoaderOverlay();
   const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet, refreshProfile } = useAuth();
   const { boards, isLoading: boardsLoading } = useLobbyBoards();
-  const { ownedIds, refetch: refetchInventory } = useUserBoardInventory();
+  const { ownedIds } = useUserBoardInventory();
   const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
   // startOnline / creatingOnline / onlineError were removed alongside
   // the "Play Online" side card. Every match now flows through
@@ -208,6 +213,7 @@ export function LobbyScreen() {
   const [difficultyError, setDifficultyError] = useState<string | null>(null);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [purchaseBoardWithGems] = usePurchaseBoardWithGemsMutation();
   const dailyBonus = useDailyBonus();
   const wheel = useWheelState('main');
   const [wheelModalOpen, setWheelModalOpen] = useState(false);
@@ -230,6 +236,7 @@ export function LobbyScreen() {
     missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0;
   const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
   const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
+  const [claimDailyBonusMutation] = useClaimDailyBonusMutation();
   const [justClaimedBonus, setJustClaimedBonus] = useState<{
     day: number;
     coins: number;
@@ -249,6 +256,7 @@ export function LobbyScreen() {
   );
   const tourPending =
     !!user && !!profile && profile.tutorial_completed_at == null && !tourDismissed;
+  const [markTutorialComplete] = useMarkTutorialCompleteMutation();
   const handleTourDone = useCallback(() => {
     setTourDismissed(true);
     try {
@@ -257,11 +265,11 @@ export function LobbyScreen() {
       // Private mode / storage disabled — the DB flag below still persists it.
     }
     if (isSupabaseConfigured) {
-      void supabase.rpc('mark_tutorial_complete').then(({ error }) => {
-        if (error) console.warn('mark_tutorial_complete failed', error);
+      void markTutorialComplete().then((result) => {
+        if (result.error) console.warn('mark_tutorial_complete failed', result.error.message);
       });
     }
-  }, []);
+  }, [markTutorialComplete]);
 
   const boardStateOf = (board: LobbyBoard) =>
     computeBoardState({
@@ -310,16 +318,16 @@ export function LobbyScreen() {
     setIsPurchasing(true);
     setPurchaseError(null);
     const board = purchaseTarget;
-    const { error } = await supabase.rpc('purchase_board_with_gems', {
-      target_board_id: board.id,
-    });
-    setIsPurchasing(false);
-    if (error) {
-      setPurchaseError(purchaseErrorMessage(error.message, board));
-      return;
+    try {
+      // The endpoint invalidates both the board-inventory and wallet tags,
+      // so the carousel flips to owned and the top bar re-totals.
+      await purchaseBoardWithGems({ boardId: board.id, userId: user.id }).unwrap();
+      setPurchaseTarget(null);
+    } catch (err) {
+      setPurchaseError(purchaseErrorMessage(extractErrorMessage(err), board));
+    } finally {
+      setIsPurchasing(false);
     }
-    setPurchaseTarget(null);
-    refetchInventory();
   };
 
   const dailyBonusErrorMessage = (code: string): string => {
@@ -393,59 +401,46 @@ export function LobbyScreen() {
 
     setIsClaimingDailyBonus(true);
     setDailyBonusError(null);
-    const { data, error } = await supabase.rpc('claim_daily_bonus');
-    setIsClaimingDailyBonus(false);
-    if (error) {
-      setDailyBonusError(dailyBonusErrorMessage(error.message));
-      return;
+    try {
+      const payload = await claimDailyBonusMutation({ userId: user.id }).unwrap();
+      if (!payload || typeof payload.day_claimed !== 'number') return;
+
+      const reward = {
+        day: payload.day_claimed,
+        coins: payload.reward_coins ?? 0,
+        gems: payload.reward_gems ?? 0,
+        xp: payload.reward_xp ?? 0,
+      };
+      setJustClaimedBonus(reward);
+
+      // Spawn the flying tokens before refreshing the wallet so the user
+      // sees the coins / gems travel and *then* land on a bumped balance.
+      // Each currency uses its OWN source icon when present. Fallback to
+      // the other source if a card was configured with only one icon —
+      // better the flight starts from a nearby card than vanishes
+      // entirely.
+      if (reward.gems > 0) {
+        const src = gemsSourceEl ?? coinsSourceEl;
+        if (src) spawnFlights('gems', src, 6);
+      }
+      if (reward.coins > 0) {
+        const src = coinsSourceEl ?? gemsSourceEl;
+        if (src) spawnFlights('coins', src, 6);
+      }
+
+      // The endpoint invalidates the daily-state, wallet, and profile
+      // tags, so canClaim flips, the top bar re-totals, and the XP bar
+      // updates through the active query subscriptions — no manual
+      // refresh to schedule here.
+      window.setTimeout(() => {
+        setDailyBonusOpen(false);
+        setJustClaimedBonus(null);
+      }, 1800);
+    } catch (err) {
+      setDailyBonusError(dailyBonusErrorMessage(extractErrorMessage(err)));
+    } finally {
+      setIsClaimingDailyBonus(false);
     }
-    const payload = data as {
-      day_claimed?: number;
-      reward_coins?: number;
-      reward_gems?: number;
-      reward_xp?: number;
-    } | null;
-    if (!payload || typeof payload.day_claimed !== 'number') return;
-
-    const reward = {
-      day: payload.day_claimed,
-      coins: payload.reward_coins ?? 0,
-      gems: payload.reward_gems ?? 0,
-      xp: payload.reward_xp ?? 0,
-    };
-    setJustClaimedBonus(reward);
-
-    // Spawn the flying tokens before refreshing the wallet so the user
-    // sees the coins / gems travel and *then* land on a bumped balance.
-    // Each currency uses its OWN source icon when present. Fallback to
-    // the other source if a card was configured with only one icon —
-    // better the flight starts from a nearby card than vanishes
-    // entirely.
-    if (reward.gems > 0) {
-      const src = gemsSourceEl ?? coinsSourceEl;
-      if (src) spawnFlights('gems', src, 6);
-    }
-    if (reward.coins > 0) {
-      const src = coinsSourceEl ?? gemsSourceEl;
-      if (src) spawnFlights('coins', src, 6);
-    }
-
-    // Refresh streak state (so canClaim flips to false), wallet
-    // (so the top-bar counter ticks up around the time the
-    // flights land), AND profile (so the level progress bar
-    // reflects any XP the daily bonus credited).
-    dailyBonus.refetch();
-    window.setTimeout(() => {
-      void refreshWallet();
-      void refreshProfile();
-    }, 600);
-
-    // Hold the modal open long enough to see the CLAIMED card and the
-    // flight, then auto-dismiss.
-    window.setTimeout(() => {
-      setDailyBonusOpen(false);
-      setJustClaimedBonus(null);
-    }, 1800);
   };
 
   // Auto-popup the daily bonus modal once per lobby session if the player

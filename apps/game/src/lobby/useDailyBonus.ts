@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
 import { useAuth } from '../lib/auth';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
 import type { Database } from '../../../../packages/shared/src/database';
+import {
+  useGetDailyBonusConfigsQuery,
+  useGetDailyBonusStateQuery,
+} from '../features/lobby/lobbyApi';
 
 export type DailyBonusConfig = Database['public']['Tables']['daily_bonus_configs']['Row'];
 export type UserDailyBonus = Database['public']['Tables']['user_daily_bonuses']['Row'];
@@ -95,40 +100,31 @@ export function computeDaysClaimedInCurrentStreak(
 
 export function useDailyBonus(): DailyBonusState {
   const { user } = useAuth();
-  const [configs, setConfigs] = useState<readonly DailyBonusConfig[]>([]);
-  const [userState, setUserState] = useState<UserDailyBonus | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshToken, setRefreshToken] = useState(0);
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    let cancelled = false;
-    setIsLoading(true);
-    const configsP = supabase
-      .from('daily_bonus_configs')
-      .select('*')
-      .order('day', { ascending: true });
-    const userP = user
-      ? supabase.from('user_daily_bonuses').select('*').eq('profile_id', user.id).maybeSingle()
-      : Promise.resolve({ data: null, error: null } as { data: UserDailyBonus | null; error: null });
-    void Promise.all([configsP, userP]).then(([c, u]) => {
-      if (cancelled) return;
-      setIsLoading(false);
-      if (!c.error && c.data) setConfigs(c.data);
-      if (!u.error) setUserState(u.data ?? null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user, refreshToken]);
+  const configsQuery = useGetDailyBonusConfigsQuery(undefined, {
+    skip: !isSupabaseConfigured,
+  });
+  const stateQuery = useGetDailyBonusStateQuery(user?.id ?? skipToken, {
+    skip: !isSupabaseConfigured,
+  });
+
+  const configs = configsQuery.data ?? [];
+  const userState = stateQuery.data ?? null;
 
   const today = todayET();
   const canClaim = userState !== null && userState.last_claim_date_et !== today;
-  const upcomingDay = useMemo(() => computeUpcomingDay(userState, today), [userState, today]);
-  const daysClaimedInCurrentStreak = useMemo(
-    () => computeDaysClaimedInCurrentStreak(userState, today),
-    [userState, today],
-  );
+  const upcomingDay = computeUpcomingDay(userState, today);
+  const daysClaimedInCurrentStreak = computeDaysClaimedInCurrentStreak(userState, today);
+
+  const { refetch: refetchConfigs, isUninitialized: configsNotStarted } = configsQuery;
+  const { refetch: refetchState, isUninitialized: stateNotStarted } = stateQuery;
+  const refetch = useCallback(() => {
+    // RTK Query throws when refetching an entry that was never started
+    // (skipped for an unconfigured client or a missing user id), so only
+    // request the entries that are actually live.
+    if (!configsNotStarted) void refetchConfigs();
+    if (!stateNotStarted) void refetchState();
+  }, [configsNotStarted, refetchConfigs, refetchState, stateNotStarted]);
 
   return {
     configs,
@@ -136,7 +132,10 @@ export function useDailyBonus(): DailyBonusState {
     canClaim,
     upcomingDay,
     daysClaimedInCurrentStreak,
-    isLoading,
-    refetch: useCallback(() => setRefreshToken((v) => v + 1), []),
+    // Active queries report isLoading from the first frame until the first
+    // result settles; skipped ones report false, so this reads "the initial
+    // fetch is in flight" without ever hanging on a skipped entry.
+    isLoading: configsQuery.isLoading || stateQuery.isLoading,
+    refetch,
   };
 }

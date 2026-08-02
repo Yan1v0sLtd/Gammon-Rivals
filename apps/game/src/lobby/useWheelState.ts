@@ -1,33 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
-
-export interface WheelReward {
-  readonly type: string;
-  readonly amount: number;
-  readonly icon_url: string | null;
-}
-
-export interface WheelSlot {
-  readonly slot_index: number;
-  readonly chance_basis_points: number;
-  readonly label: string | null;
-  readonly accent_color: string;
-  readonly is_enabled: boolean;
-  readonly primary_reward: WheelReward;
-  readonly secondary_reward: WheelReward | null;
-}
-
-export interface WheelState {
-  readonly config_id: string;
-  readonly display_name: string;
-  readonly cooldown_seconds: number;
-  readonly is_enabled: boolean;
-  readonly next_spin_at: string; // ISO
-  readonly can_spin_now: boolean;
-  readonly last_spin_at: string | null;
-  readonly last_slot_index: number | null;
-  readonly slots: readonly WheelSlot[];
-}
+import { useGetWheelStateQuery } from '../features/lobby/lobbyApi';
+import { isSupabaseConfigured } from '../lib/supabase';
+import type { WheelState } from '../lib/lobbyData';
 
 export interface WheelStateResult {
   /** null while the first fetch is in flight, or if Supabase is
@@ -40,8 +14,9 @@ export interface WheelStateResult {
    *  small component re-renders each second. */
   readonly secondsUntilSpin: number;
   /** Server-authoritative "the wheel can spin right now". Flips via the
-   *  scheduled zero-crossing re-fetch below (never from the client clock,
-   *  which could run fast and enable Claim early). */
+   *  scheduled zero-crossing re-fetch in the getWheelState endpoint
+   *  lifecycle (never from the client clock, which could run fast and
+   *  enable Claim early). */
   readonly canSpin: boolean;
   readonly isLoading: boolean;
   readonly error: string | null;
@@ -51,11 +26,12 @@ export interface WheelStateResult {
 }
 
 /**
- * Wheel state hook used by the lobby pill + the wheel modal.
+ * Wheel state compatibility hook used by the lobby pill + the wheel modal.
  *
- * Fetches `get_wheel_state` on mount and schedules ONE timeout for the
- * cooldown's zero-crossing, at which point it re-fetches so the server's
- * authoritative `can_spin_now` flips Claim on.
+ * The fetch and the cooldown zero-crossing re-fetch (which flips the
+ * server's authoritative `can_spin_now`) are owned by the `getWheelState`
+ * endpoint's `onCacheEntryAdded` lifecycle in lobbyApi; this hook only
+ * adapts that cache entry into the legacy view-model shape below.
  *
  * PERF NOTE: this hook used to run a permanent 1 Hz interval to tick the
  * countdown. It is consumed by LobbyScreen, so that ticked a re-render of
@@ -65,44 +41,15 @@ export interface WheelStateResult {
  * whole lobby).
  */
 export function useWheelState(configId: string = 'main'): WheelStateResult {
-  const [state, setState] = useState<WheelState | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState(0);
+  const {
+    data,
+    error: queryError,
+    isLoading,
+    isUninitialized,
+    refetch: refetchQuery,
+  } = useGetWheelStateQuery(configId, { skip: !isSupabaseConfigured });
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-    void supabase.rpc('get_wheel_state', { p_config_id: configId }).then(({ data, error: err }) => {
-      if (cancelled) return;
-      setIsLoading(false);
-      if (err) {
-        setError(err.message);
-        return;
-      }
-      setState(data as unknown as WheelState);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [configId, refreshToken]);
-
-  // Schedule a single re-fetch for the moment the cooldown elapses so the
-  // server's `can_spin_now` flips on. The 1.5s floor keeps a server that
-  // (pathologically) reports a past next_spin_at with can_spin_now=false
-  // from re-fetching in a tight loop.
-  useEffect(() => {
-    if (!state || !state.is_enabled || state.can_spin_now) return;
-    const untilZero = new Date(state.next_spin_at).getTime() - Date.now();
-    const delay = Math.min(Math.max(untilZero + 250, 1500), 2 ** 31 - 1);
-    const id = window.setTimeout(() => setRefreshToken((v) => v + 1), delay);
-    return () => window.clearTimeout(id);
-  }, [state]);
+  const state = data ?? null;
 
   const secondsUntilSpin = state
     ? Math.max(0, Math.ceil((new Date(state.next_spin_at).getTime() - Date.now()) / 1000))
@@ -114,9 +61,17 @@ export function useWheelState(configId: string = 'main'): WheelStateResult {
     state,
     secondsUntilSpin,
     canSpin,
-    isLoading,
-    error,
-    refetch: useCallback(() => setRefreshToken((v) => v + 1), []),
+    // A fresh subscription renders uninitialized (isLoading false) for one
+    // frame before the fetch starts; count that wait so nothing briefly
+    // renders as ready. Skipped (unconfigured) queries stay uninitialized
+    // forever, so only count it when Supabase is configured.
+    isLoading: isLoading || (isSupabaseConfigured && isUninitialized),
+    error: queryError?.message ?? null,
+    refetch: useCallback(() => {
+      // RTK Query throws when refetching an entry that was never started
+      // (skipped for an unconfigured client), so only refetch live entries.
+      if (!isUninitialized) void refetchQuery();
+    }, [isUninitialized, refetchQuery]),
   };
 }
 

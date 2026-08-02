@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useMemo } from 'react';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { useGetLobbyBoardsQuery } from '../features/lobby/lobbyApi';
 import { lobbyBoardFromConfig, lobbyBoards, type LobbyBoard } from './lobbyData';
 
 export interface LobbyBoardsResult {
@@ -10,40 +11,26 @@ export interface LobbyBoardsResult {
 }
 
 export function useLobbyBoards(): LobbyBoardsResult {
-  const [boards, setBoards] = useState<readonly LobbyBoard[]>(lobbyBoards);
-  const [isLoading, setIsLoading] = useState<boolean>(isSupabaseConfigured);
+  const { data, isLoading, isUninitialized } = useGetLobbyBoardsQuery(undefined, {
+    skip: !isSupabaseConfigured,
+  });
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setIsLoading(false);
-      return;
-    }
+  const boards = useMemo(() => {
+    const remoteBoards = data?.map(lobbyBoardFromConfig) ?? [];
+    const remoteIds = new Set(remoteBoards.map((board) => board.id));
+    return [
+      ...remoteBoards,
+      ...lobbyBoards.filter((board) => !remoteIds.has(board.id)),
+    ];
+  }, [data]);
 
-    let cancelled = false;
-    setIsLoading(true);
-    void supabase
-      .from('board_theme_configs')
-      .select('*')
-      .eq('is_enabled', true)
-      // Highest sort_order first so the operator can prioritise a
-      // featured board by giving it the biggest number.
-      .order('sort_order', { ascending: false })
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setIsLoading(false);
-        if (error || !data?.length) return;
-        const remoteBoards = data.map(lobbyBoardFromConfig);
-        const remoteIds = new Set(remoteBoards.map((board) => board.id));
-        setBoards([
-          ...remoteBoards,
-          ...lobbyBoards.filter((board) => !remoteIds.has(board.id)),
-        ]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return { boards, isLoading };
+  return {
+    boards,
+    // A fresh subscription renders uninitialized (isLoading false) for one
+    // frame before the fetch starts; count that wait so the lobby loading
+    // gate never lifts before the first fetch settles. Skipped (unconfigured)
+    // queries stay uninitialized forever, so only count it when Supabase is
+    // configured.
+    isLoading: isLoading || (isSupabaseConfigured && isUninitialized),
+  };
 }

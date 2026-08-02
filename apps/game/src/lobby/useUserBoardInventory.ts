@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useMemo } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query';
 import { useAuth } from '../lib/auth';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
+import { useGetUserBoardInventoryQuery } from '../features/lobby/lobbyApi';
 
 export interface UseUserBoardInventoryResult {
   readonly ownedIds: ReadonlySet<string>;
@@ -10,38 +12,21 @@ export interface UseUserBoardInventoryResult {
 
 export function useUserBoardInventory(): UseUserBoardInventoryResult {
   const { user } = useAuth();
-  const [ownedIds, setOwnedIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshToken, setRefreshToken] = useState(0);
+  const { data, isLoading, refetch } = useGetUserBoardInventoryQuery(
+    user?.id ?? skipToken,
+    { skip: !isSupabaseConfigured },
+  );
 
-  useEffect(() => {
-    if (!isSupabaseConfigured || !user) {
-      setOwnedIds(new Set());
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoading(true);
-    void supabase
-      .from('user_board_inventory')
-      .select('board_theme_id')
-      .eq('profile_id', user.id)
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        setIsLoading(false);
-        if (error || !data) return;
-        setOwnedIds(new Set(data.map((row) => row.board_theme_id)));
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, refreshToken]);
+  // The cache stores a serializable string[]; the Set is a transient
+  // compatibility shape for existing consumers and is never cached.
+  const ownedIds = useMemo(() => new Set(data ?? []), [data]);
 
   return {
     ownedIds,
     isLoading,
-    refetch: () => setRefreshToken((value) => value + 1),
+    refetch: useCallback(() => {
+      void refetch();
+    }, [refetch]),
   };
 }
 

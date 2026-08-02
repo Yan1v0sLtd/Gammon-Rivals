@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { HourlyBonusWidget } from './HourlyBonusWidget';
 import { lobbyNavItems } from './lobbyData';
-import type { LobbyFeatureConfigMap } from './useLobbyFeatureConfigs';
+import type { LobbyFeatureConfigMap } from '../lib/lobbyData';
 import type { WheelStateResult } from './useWheelState';
 
 interface Props {

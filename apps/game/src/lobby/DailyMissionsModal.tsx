@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type SyntheticEvent } from 'react';
-import { supabase } from '../lib/supabase';
+import { useAuth } from '../lib/auth';
+import {
+  useClaimMissionMutation,
+  useClaimStreakChestMutation,
+  useRerollMissionMutation,
+} from '../features/lobby/lobbyApi';
 import { extractErrorMessage } from '../../../../packages/shared/src/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import { ScaleInModal } from '../components/ScaleInModal';
-import {
-  formatCountdown,
-  nextResetMs,
-  type Mission,
-  type MissionsResult,
-  type RewardItem,
-} from './useDailyMissions';
+import type { Mission, RewardItem } from '../lib/lobbyData';
+import { formatCountdown, nextResetMs, type MissionsResult } from './useDailyMissions';
 import {createEmptyArray} from "../lib/constants.ts";
 
 interface Props {
@@ -34,7 +34,11 @@ const DESIGN_W = 1536;
 const DESIGN_H = 812;
 
 export function DailyMissionsModal({ result, onClose }: Props) {
-  const { state, isLoading, error, refetch } = result;
+  const { state, isLoading, error } = result;
+  const { user } = useAuth();
+  const [claimMission] = useClaimMissionMutation();
+  const [rerollMission] = useRerollMissionMutation();
+  const [claimStreakChest] = useClaimStreakChestMutation();
   const [actionError, setActionError] = useState<string | null>(null);
   const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
   const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
@@ -130,12 +134,11 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     setActionError(null);
     const mission = missionsList.find((m) => m.id === missionId);
     try {
-      const { data, error: rpcErr } = await supabase.rpc('claim_mission', { p_mission_id: missionId });
-      if (rpcErr) {
-        setActionError(extractErrorMessage(rpcErr));
+      if (!user) {
+        setActionError('Sign in to claim mission rewards.');
         return;
       }
-      const credited = data as { credited_coins?: number; credited_gems?: number; credited_xp?: number };
+      const credited = await claimMission({ missionId, userId: user.id }).unwrap();
       if (credited?.credited_coins) spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
       if (credited?.credited_gems) spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
       if (credited?.credited_xp) spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
@@ -147,7 +150,9 @@ export function DailyMissionsModal({ result, onClose }: Props) {
           else if (r.currency_code === 'xp') spawnFlights('xp', Math.min(5, Math.max(2, r.amount)), srcEl);
         }
       }
-      refetch();
+      // claimMission invalidates the aggregate missions tag, and the
+      // endpoint's Realtime channel patches follow-ups — the modal's
+      // list and streak panels refresh through the query subscription.
     } catch (e) {
       setActionError(extractErrorMessage(e));
     } finally {
@@ -167,13 +172,13 @@ export function DailyMissionsModal({ result, onClose }: Props) {
     setRerollingMissionId(missionId);
     setActionError(null);
     try {
-      const { error: rpcErr } = await supabase.rpc('reroll_mission', { p_mission_id: missionId });
-      if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-      else {
-        setRerolledTopId(missionId);
-        setRerollConfirmId(null);
-        refetch();
+      if (!user) {
+        setActionError('Sign in to reroll missions.');
+        return;
       }
+      await rerollMission({ missionId, userId: user.id }).unwrap();
+      setRerolledTopId(missionId);
+      setRerollConfirmId(null);
     } catch (e) {
       setActionError(extractErrorMessage(e));
     } finally {
@@ -183,9 +188,15 @@ export function DailyMissionsModal({ result, onClose }: Props) {
 
   const handleClaimStreak = async () => {
     setActionError(null);
-    const { error: rpcErr } = await supabase.rpc('claim_streak_chest');
-    if (rpcErr) setActionError(extractErrorMessage(rpcErr));
-    else refetch();
+    try {
+      if (!user) {
+        setActionError('Sign in to claim the streak chest.');
+        return;
+      }
+      await claimStreakChest({ userId: user.id }).unwrap();
+    } catch (e) {
+      setActionError(extractErrorMessage(e));
+    }
   };
 
   const daysDone = Math.min(7, state?.streak.current_streak_days ?? 0);
