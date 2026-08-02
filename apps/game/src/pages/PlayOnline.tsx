@@ -8,6 +8,7 @@ import ActionButtons, { MatchSecondaryControls } from '../components/ActionButto
 import AutoRollToggle from '../components/AutoRollToggle';
 import MatchHeader from '../components/MatchHeader';
 import { useAuth } from '../lib/auth';
+import { useGetProfileQuery } from '../features/playerData/playerDataApi';
 import { useNavigationOverlay } from '../lib/navigationOverlayContext';
 import { supabase } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
@@ -35,6 +36,7 @@ export default function PlayOnline() {
   const [params] = useSearchParams();
   const {
     user,
+    profile,
     wallet,
     progression,
     levelConfigs,
@@ -86,21 +88,21 @@ export default function PlayOnline() {
   const boardParam = params.get('board');
   const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
-  const [ownerProfile, setOwnerProfile] = useState<ProfileRow | null>(null);
-  const [opponentProfile, setOpponentProfile] = useState<ProfileRow | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Fetch profiles when match loads
-  useEffect(() => {
-    if (!game.match) return;
-    const ids = [game.match.owner_id, game.match.opponent_id].filter(Boolean) as string[];
-    if (ids.length === 0) return;
-    void (async () => {
-      const { data } = await supabase.from('profiles').select('*').in('id', ids);
-      setOwnerProfile(data?.find((p) => p.id === game.match!.owner_id) ?? null);
-      setOpponentProfile(data?.find((p) => p.id === game.match!.opponent_id) ?? null);
-    })();
-  }, [game.match]);
+  // Seat profiles come from the RTK Query player-data cache, never a
+  // local copy. The LOCAL player's row is already cached under
+  // `getProfile(user.id)` and surfaced by useAuth() — refetching it
+  // here would duplicate the row and let the two copies drift.
+  // Only the REMOTE seat needs its own cache entry, keyed by that
+  // player's id so it is deduplicated with any other consumer and
+  // cleared by the sign-out / account-change cache reset.
+  // Bot matches have no opponent_id, so the query is skipped and the
+  // seat falls back to the generated bot identity below.
+  const remoteId = game.match
+    ? (user?.id === game.match.owner_id ? game.match.opponent_id : game.match.owner_id)
+    : null;
+  const { data: remoteProfile } = useGetProfileQuery(remoteId ?? '', { skip: !remoteId });
 
   const handlePointClick = (pos: Position) => {
     if (game.gameWinner || game.matchFinished) return;
@@ -285,18 +287,17 @@ export default function PlayOnline() {
   const ownerColor = match.owner_color === 'black' ? 'black' : 'white';
   const opponentColor = ownerColor === 'white' ? 'black' : 'white';
   const isOwnerLocal = user.id === match.owner_id;
-  const selfProfile = isOwnerLocal ? ownerProfile : opponentProfile;
-  const opponentProf = isOwnerLocal ? opponentProfile : ownerProfile;
+  const selfProfile = profile;
+  const opponentProf = remoteProfile ?? null;
   const selfColor = isOwnerLocal ? ownerColor : opponentColor;
   const oppColor = selfColor === 'white' ? 'black' : 'white';
   const selfPip = selfColor === 'white' ? whitePip : blackPip;
   const oppPip = oppColor === 'white' ? whitePip : blackPip;
   const isLocalTurn = !!game.isLocalTurn;
   const isRollForSelf = game.turn === selfColor;
-  const selfProgression =
-    selfProfile?.id === user.id
-      ? progression
-      : getProfileProgression(selfProfile, levelConfigs, levelStatusTiers);
+  // selfProfile is always the local player's cached row, so its
+  // progression is the one useAuth() already derives.
+  const selfProgression = progression;
   const opponentProgression = getProfileProgression(opponentProf, levelConfigs, levelStatusTiers);
   const selfName = selfProfile?.display_name;
   const oppName = isBotMatch ? botIdentity!.name : opponentProf?.display_name;
