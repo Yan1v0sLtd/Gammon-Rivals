@@ -22,37 +22,6 @@ interface LobbyTopBarProps {
   onLinkGoogle(): Promise<void>;
 }
 
-// Rewards + Friends were placeholder (no-op) icons — removed per operator
-// review. Settings stays.
-const shortcuts = [
-  { label: 'Settings', icon: '/lobby/icons/settings-gear.webp' },
-] as const;
-
-function TopShortcut({
-  label,
-  icon,
-}: {
-  readonly label: string;
-  readonly icon: string;
-}) {
-  return (
-    <button
-      type="button"
-      className="relative flex min-w-16 flex-col items-center gap-1 text-[0.68rem] font-bold uppercase tracking-wide text-white/90 drop-shadow transition hover:brightness-110 active:translate-y-0.5"
-    >
-      <span className="grid h-11 w-11 place-items-center">
-        <img
-          src={icon}
-          alt=""
-          className="max-h-full max-w-full object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.38)]"
-          draggable={false}
-        />
-      </span>
-      <span>{label}</span>
-    </button>
-  );
-}
-
 export function LobbyTopBar({
   profile,
   wallet,
@@ -99,11 +68,6 @@ export function LobbyTopBar({
             <CurrencyPill key={currency.id} {...currency} onAdd={openShop} />
           ))}
         </div>
-        <nav aria-label="Lobby shortcuts" className="hidden gap-4 lg:flex">
-          {shortcuts.map((shortcut) => (
-            <TopShortcut key={shortcut.label} {...shortcut} />
-          ))}
-        </nav>
       </div>
     </header>
   );
