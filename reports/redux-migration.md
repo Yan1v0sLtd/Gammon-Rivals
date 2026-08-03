@@ -63,15 +63,25 @@ Cross-feature imports are allowed when one feature genuinely owns the reaction �
 | 6 Lobby server data | Done |
 | 7 Lobby workflows | Done |
 | 8 Match-entry routes | Done |
-| 9–12 | Not started |
+| 9a Gameplay slice and selectors | Not started |
+| 9b AI turn workflow | Not started |
+| 9c Turn timer and auto-roll | Not started |
+| 9d Match persistence | Not started |
+| 9e Retire the compatibility hook | Not started |
+| 10a Active-match cache entry | Not started |
+| 10b Selectors and interaction slice | Not started |
+| 10c Commands and optimistic selection | Not started |
+| 10d Turn timers, presence, server pokes | Not started |
+| 10e Retire the compatibility hook | Not started |
+| 11–12 | Not started |
 
 Current feature directories: `appUi`, `auth`, `lobby`, `playerData`, `replay`, `shop`.
 
 ### What deliberately stays in `lib/`
 
 - `supabase.ts`, `auth.tsx`, `nativeAuth.ts`, `nativeGoogleAuth.ts`, `billing/` — infrastructure and platform bridges, not feature data.
-- `persistence.ts` — `createMatch`, `saveGame`, `finishMatch`, `finishMatchRpc`, `updateMatchScore`, `deleteMyAccount`, and the `MatchMode` type. They serve the unmigrated `HotSeat`, `PlayOnline`, and `DeleteAccount` routes and move when Phases 9–10 migrate those routes; the `MatchMode` type is still imported (type-only) by `features/lobby/matchmakingData.ts` and should land in the gameplay feature at that point.
-- `identity.ts`, `aiPersona.ts` — consumed only by the unmigrated gameplay routes, plus the generic `avatarUrl` helper.
+- `persistence.ts` — `createMatch`, `saveGame`, `finishMatch`, `finishMatchRpc`, `updateMatchScore`, `deleteMyAccount`, and the `MatchMode` type. They serve the unmigrated `HotSeat`, `PlayOnline`, and `DeleteAccount` routes. The `HotSeat` share (`createMatch`, `saveGame`, `finishMatch`, `finishMatchRpc`, `modeFromAi`) plus the `MatchMode` type — still imported type-only by `features/lobby/matchmakingData.ts` — move to the gameplay feature in Phase 9d; the rest waits for Phase 10 and the `DeleteAccount` route.
+- `identity.ts`, `aiPersona.ts` — consumed only by the unmigrated gameplay routes, plus the generic `avatarUrl` helper. Both are shared by `HotSeat` and `PlayOnline`, so they stay in `lib/` through Phase 9 and move in Phase 10.
 - `useAutoRoll.ts`, `useMatchPresence.ts`, `useOnlinePresence.ts`, `useImagePreloader.ts`, `usePrefetchOnIdle.ts`, `warmImages.ts`, `bodyModalFlag.ts`, `format.ts`, `constants.ts`, `loadingScreenImage.ts` — presentation and browser-pipeline utilities that are not server state.
 
 ## Phase 1: Foundation and Replay pilot
@@ -308,6 +318,8 @@ Migrating routes users cannot reach would have manufactured migration work witho
 - Keep the engine unchanged during the state migration.
 - Keep Pixi stateless and driven by `BoardState` and selection props.
 
+Out of scope for the whole phase: online gameplay (Phase 10), any engine change (Phase 11), and the `PlayOnline` / `DeleteAccount` share of `lib/persistence.ts`.
+
 ### Reasoning
 
 Local gameplay is the safest place to prove Redux for a full game session because it has no Realtime reconciliation or server-authoritative dice. By this phase, action, selector, listener, lifecycle, and RTK Query mutation conventions have already been exercised elsewhere.
@@ -316,7 +328,123 @@ Keeping the existing engine fixed provides a trusted behavior oracle while the c
 
 Derived legal state should not be duplicated in the slice. The pure engine and memoized selectors can calculate it from the canonical snapshot.
 
-### Completion gate
+### Why this phase is split
+
+Local gameplay is one hook and one page, but they are the two largest client files in the app: `game/useGame.ts` (592 lines — 12 `useState`, five derivation memos, 16 callbacks, and one 110-line async AI effect) and its only consumer `pages/HotSeat.tsx` (720 lines, which additionally owns match persistence, the turn timer, and auto-roll). Migrating them in one step means rewriting engine-state ownership, async AI orchestration, timers, and Supabase writes together, with no intermediate state that is deployable or reviewable. Phase 9 is therefore delivered as five sub-phases, 9a–9e.
+
+The order is fixed by one dependency: every other owner reacts to gameplay domain events, so the slice that emits them lands first. Two constraints hold across all five sub-phases:
+
+- **`useGame`'s return shape (`MatchGameState & MatchGameActions`) is the compatibility boundary.** `HotSeat` reads nearly every field of it, so the hook keeps that exact interface until 9e. Each sub-phase then changes one owner instead of the page.
+- **Non-determinism enters through action payloads.** `roll()`, the opening-player coin flip in `randomFirstBoard()`, and `Date.now()` turn timestamps are produced by the dispatching layer (prepare callbacks) so reducers stay pure.
+
+### Phase 9a: Gameplay slice and selectors
+
+#### Scope
+
+- Add `features/gameplay/gameplaySlice.ts` owning the canonical serializable session: `match`, `board`, `roll`, `remaining`, `selectedFrom`, `history`, `turnLog`, the single-step `undoSnapshot`, `lastGameResult`, and the `AIConfig`.
+- Move the synchronous transitions into reducers that call the pure engine — roll, select origin, select destination, undo, end turn, forfeit, cube offer/accept/drop, next game, new match — named as domain events (`diceRolled`, `checkerMoved`, `turnEnded`, `gameFinished`).
+- Add `gameplaySelectors.ts` for everything the hook memoizes today: legal moves, legal origins, valid destinations, opponent-preview origins and destinations, `canEndTurn`, `canOfferDouble`, `canUndo`, `matchOver`, `inCrawfordGame`, `isAITurn`. Set-based derivations return arrays, with a stable empty array.
+- Reduce `useGame` to an adapter over `useAppSelector` / `useAppDispatch` behind its unchanged return shape. The AI effect stays in the hook for now and reads the slice.
+- Dispatch explicit route entry and exit so a second visit to `/hotseat` starts from a clean session.
+
+#### Reasoning
+
+The slice must exist before anything can react to gameplay events, and it is the only sub-phase that can be verified purely by playing a local game: no async behavior changes here.
+
+The undo snapshot looks derivable from `history` but is kept as stored state, because deriving it means replaying the turn through the engine — a behavior change that belongs to Phase 11, not to a state migration. `turnLog` timing is the opposite case: `startedAt` is a payload value, never a reducer-side clock read.
+
+#### Completion gate
+
+- Redux DevTools shows one readable event per player action.
+- Serializable and immutable checks stay enabled with no ignored paths; no `Set`, `Map`, or clock read inside a reducer.
+- Highlights, undo availability, and cube availability are unchanged in play.
+- `HotSeat.tsx` is untouched.
+
+### Phase 9b: AI turn workflow
+
+#### Scope
+
+- Move the AI orchestration effect (`useGame.ts:445-554`) and `playAISequence` (`:400-442`) into `features/gameplay/gameplayListeners.ts`, triggered by the slice events that hand the turn to the AI.
+- Replace `aiActiveRef`, `stateRef`, and the local `sleep()` with `cancelActiveListeners()`, `delay()`, and `getState()`. Swallow `TaskAbortError`.
+- Keep the AI timing constants (`AI_ROLL_DELAY`, `AI_PER_MOVE_DELAY`, `AI_END_TURN_DELAY`, `AI_CUBE_DECISION_DELAY`, dice-settle) exported from the slice together with their choreography comments.
+- Keep `isAIThinking` and `aiPreviewReady` as slice flags, dispatched by the listener.
+- `pickMoveAsync` remains the AI entry point; `packages/ai` and its worker are not touched.
+- Preserve the recovery path: a planner or apply failure ends only the AI's turn, and only while it is still the AI's turn with no winner, instead of freezing the match.
+
+#### Reasoning
+
+This is the riskiest sub-phase, so it ships alone. The guard refs exist only because a React effect can re-enter and cannot cancel; listener middleware provides cancellation as a primitive, which also fixes a real gap — today leaving the route mid-AI-turn cannot stop the sequence.
+
+#### Completion gate
+
+- Leaving `/hotseat` during an AI turn cancels the sequence; no state update happens after unmount.
+- A cube offer against the AI is still auto-accepted after its delay.
+- A planner failure never leaves the match frozen on "AI thinking".
+- No timer handle or promise enters Redux.
+
+### Phase 9c: Turn timer and auto-roll
+
+#### Scope
+
+- Move the forfeit-on-timeout workflow out of `HotSeat.tsx:468-517` into the gameplay listener: store the turn deadline as epoch ms from the action payload, `delay()` until it, then dispatch the forfeit. The `timeoutHandledRef` guard becomes listener cancellation.
+- Keep the countdown's 220 ms display tick local to the component that renders it, reading the deadline through a selector. It is presentation, not workflow.
+- Move `lib/useAutoRoll.ts`'s effect into the same workflow, still gated on the reveal flag so dice do not roll behind the loading screen. The stored preference itself stays where it is.
+- Fold route exit, game end, cube decision, and match over into the same listener so one place both starts and supersedes the countdown.
+
+#### Reasoning
+
+The timer is the last component-owned async loop in local play, and it mutates game state (`forfeitTurn`), so it belongs with the AI workflow that already owns turn transitions. Splitting deadline from display keeps the workflow cancellable without pushing a value into Redux every 220 ms.
+
+#### Completion gate
+
+- An expired turn forfeits exactly once; turn change, new game, and cube resolution restart the deadline.
+- The countdown pauses while a modal blocks play, and stops on route exit.
+- Auto-roll fires only after the reveal, once per turn.
+- `HotSeat.tsx` owns no timer other than the countdown display tick.
+
+### Phase 9d: Match persistence
+
+#### Scope
+
+- Move `createMatch`, `saveGame`, `finishMatch`, `finishMatchRpc`, `modeFromAi`, and the `MatchMode` type from `lib/persistence.ts` into `features/gameplay/gameplayData.ts`, wrap them as mutations in `gameplayApi.ts`, and update the type-only import in `features/lobby/matchmakingData.ts`.
+- Replace HotSeat's three persistence effects (`:245-350`) with listener reactions to the gameplay events; the `persistedGameNumberRef`, `persistedMatchOverRef`, and `matchCreatedForUserRef` idempotence guards move into the workflow.
+- Keep the `presetMatchId` branch: a match created by `enter_room` skips `createMatch` and finishes through `finishMatchRpc`; other matches keep the plain update.
+- Replace the manual `refreshWallet()` / `refreshProfile()` calls after a rewarded finish with player-data tag invalidation.
+- Keep the match id in the slice — it is an identifier, not a server row. The reward payload is read from the mutation result, never copied into the slice.
+
+#### Reasoning
+
+Persistence is deliberately last of the behavioral steps: it reacts to `gameFinished` and match completion, so doing it before 9a would mean wiring it to component effects and then rewiring it. It is also the step that lets `HotSeat` stop importing Supabase at all.
+
+#### Completion gate
+
+- Exactly one `createMatch` per session, one `saveGame` per completed game, and one finish call per match, including under StrictMode double-mount.
+- Wallet and profile refresh through invalidation only.
+- `lib/persistence.ts` retains only what `PlayOnline` and `DeleteAccount` still use.
+- No Supabase call remains in `HotSeat.tsx`.
+
+### Phase 9e: Retire the compatibility hook
+
+#### Scope
+
+- Delete `game/useGame.ts`; `HotSeat.tsx` reads selectors and dispatches events directly.
+- Delete the types that existed only for the facade (`MatchGameState`, `MatchGameActions`, `UseGameOptions`).
+- Leave `lib/identity.ts` and `lib/aiPersona.ts` in `lib/` — `PlayOnline` still consumes them, so they move in Phase 10.
+- `HotSeat`'s remaining `useState` is presentation only: identities, theme, layout, loading gate, modals, alignment tool.
+
+#### Reasoning
+
+The facade is what made 9a–9d individually deployable; keeping it afterwards would leave two ways to read the same state. Removing it separately keeps the large `HotSeat` diff free of behavior changes.
+
+#### Completion gate
+
+- `useGame` and its types are gone and nothing imports them.
+- `HotSeat.tsx` contains no engine transition and no gameplay rule.
+- Behavior parity: legal moves, outcomes, rewards, timers, and auto-roll unchanged.
+
+### Phase 9 completion gate
+
+Reached when 9a–9e are all done:
 
 - Existing local-game and engine tests remain green.
 - Route exit cancels AI and timers.
@@ -336,6 +464,8 @@ Derived legal state should not be duplicated in the slice. The pure engine and m
 - Keep server-authoritative dice and outcome validation unchanged.
 - Preserve a compatibility hook while React components migrate.
 
+Out of scope for the whole phase: any engine change (Phase 11), any edge-function or SQL change, spectator mode and the invite / public-lobby surfaces whose server primitives Phase 8 deliberately left in place, and the `DeleteAccount` share of `lib/persistence.ts`.
+
 ### Reasoning
 
 Online gameplay is last because it combines every difficult state problem in the application:
@@ -354,7 +484,136 @@ The current implementation deliberately updates match, moves, and current game t
 
 By this phase, RTK Query subscriptions, listener cancellation, mutation invalidation, route lifecycle, and full local gameplay have already been validated independently.
 
-### Completion gate
+### Why this phase is split
+
+`game/useOnlineGame.ts` is 1299 lines — the largest client file in the app. It holds nine `useState`, eight `useRef` guards, twelve derivation memos, ten async server commands, and seven effects: the Realtime + fallback-poll subscription, the server-bot poke, the opponent dice-reveal delay, a one-second activity tick, the opponent-activity clock, the auto-forfeit chain, and the soft turn-timer auto-action. It is simultaneously the server cache, the derivation layer, the command layer, the presence listener, two independent clocks, the duplicate-command guard, and the match finaliser. Its only consumer, `pages/PlayOnline.tsx` (526 lines), reads roughly thirty fields off the returned object. Migrating it in one step means rewriting cache ownership, derivation, every server command, and four async workflows together, with no intermediate state that is deployable or reviewable. Phase 10 is therefore delivered as five sub-phases, 10a–10e.
+
+The new code lives in `features/onlineMatch/`, separate from Phase 9's `features/gameplay/`: the online session's canonical state is server rows in the RTK Query cache, not a local slice, so the two features share no owner. Three constraints hold across all five sub-phases:
+
+- **`useOnlineGame`'s return shape (`OnlineGameState & OnlineGameActions`) is the compatibility boundary.** `PlayOnline` reads nearly every field of it, so the hook keeps that exact interface until 10e. Each sub-phase then changes one owner instead of the page.
+- **Server authority is not renegotiated.** Dice stay in `roll_dice`, turn commit in `finish_turn`, finalisation in `finish_match`, bot moves in `ai_move`. No sub-phase moves a rule from the server to the client, and no sub-phase changes an edge function.
+- **The single-snapshot invariant survives the move.** `useOnlineGame.ts:276-310` batches match, moves, and game into one React update on purpose; a render with the new match and the old moves derives `initialBoard()` and re-animates the whole checker distribution. That invariant becomes one aggregate cache entry, never three queries.
+
+### Phase 10a: Active-match cache entry
+
+#### Scope
+
+- Add `features/onlineMatch/onlineMatchData.ts` holding the reads from `refresh()` (`useOnlineGame.ts:257-318`), and `onlineMatchApi.ts` with one `getActiveMatch(matchId)` query whose result is the `{ match, moves, currentGame }` triple in a single cache entry.
+- Attach the per-match Realtime channel and the `FALLBACK_POLL_MS` poll (`:331-375`) to that entry's `onCacheEntryAdded`. Keep the client-side `game_id` filter on `moves` INSERTs — without it every insert in the database wakes every client. `currentGameIdRef` becomes a read of the cache entry.
+- Drop `fetchInFlight` in favour of RTK Query request deduplication, and keep an internal `refresh()` wrapper over refetch so the existing action callbacks stay untouched.
+- `useOnlineGame` keeps its memos, actions, refs, and return shape. Only its data source changes.
+
+#### Reasoning
+
+Every command invalidates this entry and every workflow in 10d reads from it, so it lands first. Realtime belongs on the cache lifecycle rather than a listener because its lifetime is exactly the lifetime of an active subscriber to this one entry (ownership rule 6). The aggregate shape is a correctness requirement, not tidiness: independent match / moves / game queries would render mixed snapshot versions, which is the bug documented at `:276-286`.
+
+#### Completion gate
+
+- Match, moves, and current game always render from one snapshot; no board re-animation between a turn commit and the next moves fetch.
+- One Realtime channel and one poll per mounted match, both released on unmount, with no StrictMode double-subscription.
+- No duplicate concurrent fetch for the same match.
+- `PlayOnline.tsx` is untouched.
+
+### Phase 10b: Selectors and the interaction slice
+
+#### Scope
+
+- Move derivation into `onlineMatchSelectors.ts`, reading the 10a cache entry: `deriveState` (`:103-146`), the `current_turn` shape validation (`:388-402`), `localColor`, `effectiveTurn`, `betweenGames`, `gameWinner`, the cube fields, `roll`, `remaining`, local and opponent legal moves, `legalOrigins`, `validDestinations`, opponent-preview origins and destinations, `canRoll`, `canEndTurn`, `canOfferDouble`, `inCrawfordGame`. Set-based derivations return arrays with a stable empty array, as in 9a.
+- Add `onlineMatchSlice.ts` for the only two values that are neither server rows nor derivable: `selectedFrom` and the opponent dice-reveal key (`:220`, `:503-522`). Dispatch explicit route entry and exit so a second visit to `/play/:matchId` starts clean.
+- Preserve both defensive paths: a metadata-only `current_turn` (what `replace_opponent_with_ai` leaves behind) still reads as "no turn in progress", and a poisoned moves row still degrades to a logged board reset instead of a thrown render.
+- Reduce `useOnlineGame` to an adapter over `useAppSelector` / `useAppDispatch` behind its unchanged return shape. Actions are untouched.
+
+#### Reasoning
+
+Derivation is pure and already memoised, so this sub-phase is verifiable by playing one game. Landing it before the commands means 10c dispatches against a state shape that will not move again.
+
+Reference stability of `roll` (`:481-498`) is a behaviour contract of the selector, not an optimisation: `DiceTray` uses the array as a memo dependency, and a fresh reference restarts the throw animation every paint — the "dice spin forever" bug.
+
+#### Completion gate
+
+- Highlights, opponent-preview timing, cube availability, and the roll / end-turn affordances are unchanged in play.
+- Dice do not re-spin on unrelated cache updates.
+- No `Set`, `Map`, or clock read in a reducer; serializable and immutable checks stay enabled with no ignored paths.
+- `PlayOnline.tsx` still consumes the hook only.
+
+### Phase 10c: Commands and optimistic selection
+
+#### Scope
+
+- Convert `rollDice`, `endTurn`, `offerDouble`, `acceptDouble`, `dropDouble`, `selectTo`, `resign`, `claimByInactivity`, and `finalizeMatch` (`:598-899`, `:1030-1083`, `:1243-1255`) into `onlineMatchApi` mutations over `onlineMatchData` wrappers.
+- Implement `selectTo` as an optimistic `updateQueryData` patch of `current_turn` on the aggregate entry, with rollback on failure and an authoritative refetch after. The `selectInFlightRef` / `pendingRefreshRef` refresh deferral (`:252-267`, `:714-735`) is replaced by the patch lifecycle.
+- Move edge-function error decoding and the benign-race allowlist (`turn already in progress`, `no_turn_in_progress`, `not_your_turn`, `match_already_finished`, `opponent_still_active`, `race_lost`) into `onlineMatchErrors.ts`, shared by the roll and turn-commit paths.
+- Keep duplicate-command protection: `rollInFlightRef` and `endTurnInFlightRef` become pending-mutation guards read through a selector, so a double click — or an auto-action racing a manual click — still produces one server write.
+- Keep `endTurn` free of a `canEndTurn` check. `canEndTurn` is a UI affordance, not a correctness invariant; the timer path force-ends turns with legal moves remaining on purpose.
+- Replace the manual wallet and profile refreshes after a rewarded finish with player-data tag invalidation.
+
+#### Reasoning
+
+The workflows in 10d do nothing but call these commands on a timer, so the commands must exist first; wiring the workflows to the old callbacks would mean rewiring them immediately after. The optimistic patch is the one place in this phase that can regress correctness invisibly, which is why it ships in the same sub-phase as the in-flight guards that protect it.
+
+`dropDouble`'s client-side score arithmetic (`:852-899`) is carried over as-is. Moving it behind a server RPC is a server-authority change, not a state migration, and belongs to separate work.
+
+#### Completion gate
+
+- One server write per command under a double click and under an auto-action racing a manual one.
+- A failed `selectTo` rolls back to the server view, and the fallback poll never clobbers a pending optimistic patch.
+- Benign server races still refetch silently with no error surfaced.
+- No client-generated dice and no client-computed outcome is introduced.
+- Rewards refresh through invalidation only.
+
+### Phase 10d: Turn timers, presence, and server pokes
+
+#### Scope
+
+Move all four async workflows into `features/onlineMatch/onlineMatchListeners.ts`:
+
+- The soft per-turn auto-action (`:1181-1240`): auto-roll when `canRoll`, otherwise force-end the turn. The `autoActionFiredKeyRef` latch keyed on `(match, game, moves length, dice)` becomes listener cancellation, keeping the invariant of one auto-action per turn even after a manual submove lands.
+- Presence and the inactivity claim: `lib/useMatchPresence.ts` moves into the feature and its channel joins the 10a cache lifecycle. `opponentDisconnectedAt` is stored as epoch ms in the slice, with the `PRESENCE_FORFEIT_GRACE_MS` grace period unchanged.
+- The auto-forfeit chain (`:1105-1179`): `replace_opponent_with_ai` then `finish_match`, keeping the release-the-latch-and-retry behaviour for `opponent_still_active` and `race_lost` and the fall-through for the terminal reasons.
+- The server-bot poke (`:443-474`): invoke `ai_move` when it is the bot's turn with no turn in progress, at most once per distinct board state so a failing invoke cannot spin.
+
+Replace the one-second `now` tick (`:925-929`) with a deadline model: `lastLocalActivityMs`, `lastOpponentActivityMs`, and `opponentDisconnectedAt` are epoch ms in the slice, the listener `delay()`s to the deadline, and the visible countdown keeps its display tick in the component that renders it, reading the deadline through a selector — the same split as 9c.
+
+Keep the two clocks distinct and keep their mount-time floor. Local activity drives the soft turn timer and is bumped by `selectFrom` even though it writes nothing; opponent activity is the `opponentSignature` (`:945-959`), never `match.updated_at`, because our own automated actions bump `updated_at` and would reset the claim clock forever.
+
+#### Reasoning
+
+This is the riskiest sub-phase — four independent reactions to one cache entry, three of which write to the server — so it ships alone and last of the behavioural steps. The ref latches exist only because a React effect can re-enter and cannot cancel; listener cancellation replaces all four and closes a real gap, since today leaving the route mid-forfeit or mid-poke cannot stop the sequence.
+
+The deadline-versus-tick split matters for cost as well as purity: dispatching a timestamp once per second would re-run every selector in the page for the sake of one countdown label.
+
+#### Completion gate
+
+- An expired turn auto-rolls or force-ends exactly once per `(game, dice)` tuple, including after a manual submove.
+- Opponent tab-close still forfeits after the grace period; the presence-based and time-based paths both behave as they do today.
+- Auto-forfeit releases its latch on the retryable server reasons and holds it on the terminal ones.
+- A bot turn is poked once per board state, and a failed `ai_move` does not loop.
+- Route exit cancels every workflow. No timer handle, channel, or promise enters Redux, and nothing dispatches once per second.
+
+### Phase 10e: Retire the compatibility hook
+
+#### Scope
+
+- Delete `game/useOnlineGame.ts` and the facade-only types (`OnlineGameState`, `OnlineGameActions`, `UseOnlineGameOptions`); `PlayOnline.tsx` reads selectors and dispatches events directly.
+- Move the entry-parameter parsing — `?turn=` and the derived `inactivityForfeitMs` (`PlayOnline.tsx:54-82`) — next to `game/matchEntryPath.ts`, so the lobby→gameplay payload has one definition on both the producing and consuming side, as Phase 8 planned.
+- Replace the last route-level Supabase write, the waiting-room "Cancel match" update (`PlayOnline.tsx:200-206`), with a feature mutation.
+- Move `lib/aiPersona.ts` and the AI-identity helpers of `lib/identity.ts` (`aiIdentityFromSeed`, `aiRankLabel`) out of `lib/` now that both of their consumers are migrated. The generic `PlayerIdentity` type and `avatarUrl` stay in `lib/`: `Avatar`, `BoardLayout`, and `SidePanel` use them and are not feature code.
+- `PlayOnline`'s remaining local state is presentation only: intro banner, theme, auto-roll toggle.
+
+#### Reasoning
+
+The facade is what made 10a–10d individually deployable; keeping it afterwards would leave two ways to read the same state. Removing it separately keeps the large `PlayOnline` diff free of behaviour changes.
+
+#### Completion gate
+
+- `useOnlineGame` and its types are gone and nothing imports them.
+- `PlayOnline.tsx` contains no Supabase call and no engine transition.
+- `?turn=` handling has one definition, shared with the lobby's entry-path builder.
+- Behaviour parity: turn timers, forfeits, cube flow, bot matches, and reconnect are unchanged.
+
+### Phase 10 completion gate
+
+Reached when 10a–10e are all done:
 
 - No client-generated online dice or client-authoritative outcome is introduced.
 - Match, game, and move data never render as mixed snapshot versions.
