@@ -11,6 +11,7 @@ import { selectEnteringRoomId, selectLobbyMatchmaking } from '../features/lobby/
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import type { DifficultySelection, MatchmakingOverlayState } from './DifficultyModal';
 import { useSelectedLobbyBoard } from './useSelectedLobbyBoard';
+import { matchEntryPath } from '../game/matchEntryPath';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
 
 export interface LobbyMatchmakingControls {
@@ -77,21 +78,15 @@ export function useLobbyMatchmaking(): LobbyMatchmakingControls {
     navigatedRef.current = true;
 
     const { matchId, target, turnSeconds, mode } = matchmaking;
-    const params = new URLSearchParams();
-    params.set('opp', mode === 'pvp' ? 'pvp' : mode);
-    params.set('target', String(target));
-    // `board` is THIS PLAYER's theme, written into their own URL only — the
-    // opponent writes their own, so both differ on the same matchId. Theme
-    // is per-client cosmetic, not a matchmaking dimension.
-    params.set('board', effectiveSelectedBoardId);
-    params.set('matchId', matchId);
-    params.set('turn', String(turnSeconds));
     showOverlay();
-    // Online matches (PvP or server-bot, mode='online') route to /play; legacy AI fallbacks to /hotseat.
     navigate(
-      mode === 'pvp' || mode === 'online'
-        ? `/play/${matchId}?${params.toString()}`
-        : `/hotseat?${params.toString()}`
+      matchEntryPath({
+        matchId,
+        target,
+        turnSeconds,
+        mode,
+        boardId: effectiveSelectedBoardId,
+      })
     );
   }, [matchmaking, showOverlay, navigate, effectiveSelectedBoardId]);
 

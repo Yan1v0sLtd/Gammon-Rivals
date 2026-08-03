@@ -62,14 +62,15 @@ Cross-feature imports are allowed when one feature genuinely owns the reaction �
 | 5 Shop | Done |
 | 6 Lobby server data | Done |
 | 7 Lobby workflows | Done |
-| 8–12 | Not started |
+| 8 Match-entry routes | Done |
+| 9–12 | Not started |
 
 Current feature directories: `appUi`, `auth`, `lobby`, `playerData`, `replay`, `shop`.
 
 ### What deliberately stays in `lib/`
 
 - `supabase.ts`, `auth.tsx`, `nativeAuth.ts`, `nativeGoogleAuth.ts`, `billing/` — infrastructure and platform bridges, not feature data.
-- `persistence.ts` minus the matchmaking RPCs — match creation, `saveGame`, `finishMatch`, invite/join, and account deletion still serve `HotSeat`, `PlayOnline`, `pages/Lobby`, `JoinMatch`, and `DeleteAccount`. They move when Phases 8–10 migrate those routes; the `MatchMode` type they export is still imported (type-only) by `features/lobby/matchmakingData.ts` and should land in the gameplay feature at that point.
+- `persistence.ts` — `createMatch`, `saveGame`, `finishMatch`, `finishMatchRpc`, `updateMatchScore`, `deleteMyAccount`, and the `MatchMode` type. They serve the unmigrated `HotSeat`, `PlayOnline`, and `DeleteAccount` routes and move when Phases 9–10 migrate those routes; the `MatchMode` type is still imported (type-only) by `features/lobby/matchmakingData.ts` and should land in the gameplay feature at that point.
 - `identity.ts`, `aiPersona.ts` — consumed only by the unmigrated gameplay routes, plus the generic `avatarUrl` helper.
 - `useAutoRoll.ts`, `useMatchPresence.ts`, `useOnlinePresence.ts`, `useImagePreloader.ts`, `usePrefetchOnIdle.ts`, `warmImages.ts`, `bodyModalFlag.ts`, `format.ts`, `constants.ts`, `loadingScreenImage.ts` — presentation and browser-pipeline utilities that are not server state.
 
@@ -271,24 +272,29 @@ Listener middleware is suitable for matchmaking because it supports cancellation
 
 ### Scope
 
-- Migrate invite joining, public match joining, room entry, and related queue workflows.
-- Standardize mutation-to-navigation behavior.
-- Reuse matchmaking and player-data endpoints rather than issuing direct Supabase requests from pages.
-- Define explicit states for idle, submitting, matched, cancelled, failed, and expired outcomes.
-- Keep React Router navigation at the route boundary or behind a narrowly defined navigation service; reducers must not navigate.
+Phase 8 was planned as a migration of invite joining, public-match joining, room entry, and related queue workflows. Investigation before implementation established there was nothing live left to migrate, so the phase was executed as a deletion phase plus one documented contract:
+
+- Deleted the `/lobby` route and `pages/Lobby.tsx`. The page was an orphan — its `<Route>` registration in `App.tsx` was the only reference — and the sole consumer of a legacy parallel matchmaking implementation (the old `matchmake` RPC, a component-owned Supabase Realtime channel on `matchmaking_queue`, and a 30-second `setInterval`) that duplicated the tier matchmaking already shipped in Phase 7.
+- Deleted the `/join/:code` route, `pages/JoinMatch.tsx`, and the invite-link card on `pages/PlayOnline.tsx`. The route was non-functional: no SQL function writes `matches.invite_code`. `find_match_in_tier`, `matchmake`, and `enter_room_ai_fallback` all leave it NULL, and `supabase/migrations/20260529000000_enter_room.sql:55` carries a comment explicitly deferring it. The only writer was `createOnlineMatch()` in `lib/persistence.ts`, callable only from the deleted `/lobby` page, so no invite URL was ever produced and no code could be joined.
+- Pruned `lib/persistence.ts`: `createOnlineMatch`, `joinMatchByInvite`, `joinPublicMatch`, `matchmake`, `cancelMatchmaking` (a duplicate client wrapper — the live cancel path is `cancelMatchmakingRpc` in `features/lobby/matchmakingData.ts`), `listPublicMatches`, and three exports that already had zero consumers repo-wide (`getMatchById`, `cancelMatch`, `MatchRowWithoutInternals`).
+- Kept the server side intact. `join_match_by_invite`, `join_public_match`, `matchmake`, `cancel_matchmaking`, and the `matches.invite_code` / `matches.is_public` columns all remain, so a future designed invite / public-lobby / spectator feature starts from working server primitives.
+- Added `apps/game/src/game/matchEntryPath.ts`, a pure builder exporting `MatchEntry` and `matchEntryPath(entry)` — the single definition of the lobby→gameplay handoff payload (query params `opp`, `target`, `board`, `matchId`, `turn`; `mode` `'pvp'`/`'online'` routes to `/play/:matchId`, legacy AI levels to `/hotseat`). `useLobbyMatchmaking.ts` is its only caller today; `PlayOnline` and `HotSeat` parse those params and will be unified against this module in Phases 9–10. No `features/matchEntry/` directory was created: after the deletions this phase owns no server data and no client state, so a feature directory would have been an empty shell.
 
 ### Reasoning
 
-These routes connect Lobby workflows to active gameplay. Migrating them before gameplay establishes a consistent handoff contract: successful entry produces a match identifier and route parameters, while cancellation and failure leave no stale workflow state.
+Room entry and queue workflows were already migrated in Phase 7. `features/lobby/matchmakingListeners.ts` owns the whole workflow — poll `find_match_in_tier`, then `enter_room_ai_fallback` on timeout, cancelling on route exit — and `lobby/useLobbyMatchmaking.ts` navigates only after a confirmed server result, with duplicate-submit protection via the `selectEnteringRoomId` selector. What remained outside the architecture was not live functionality but two unreachable pages: `/lobby`, which duplicated the shipped tier matchmaking with a legacy implementation, and `/join/:code`, which could never function because no server RPC mints an invite code.
 
-They are less complex than an active match but exercise real server mutations, duplicate-submit protection, loading overlays, and navigation races. Fixing those patterns first reduces the number of concerns introduced during gameplay migration.
+Migrating routes users cannot reach would have manufactured migration work without a consumer. The phase instead deleted the dead surfaces and captured the entry-payload contract that Phases 9–10 will standardize against, while deliberately leaving the server RPCs and columns in place so the future invite / public-lobby / spectator feature builds on working primitives.
+
+**Follow-up finding:** `matches.invite_code` is written by no server RPC. Any future invite feature must mint an invite code server-side before a `/join/:code` route can be reintroduced.
 
 ### Completion gate
 
-- Duplicate join or room-entry submissions are prevented.
-- Cancellation and route exit clear queue state.
-- Navigation occurs only after a confirmed server result.
-- Gameplay routes receive one documented entry payload.
+- `/lobby` and `/join/:code` no longer route anywhere; nothing in the repo links to the deleted pages.
+- `lib/persistence.ts` serves only the unmigrated `HotSeat`, `PlayOnline`, and `DeleteAccount` routes.
+- The lobby→gameplay handoff payload has one documented definition in `apps/game/src/game/matchEntryPath.ts`.
+- Room-entry workflows, duplicate-submit protection, and navigation-after-confirmed-result remain in `features/lobby/matchmakingListeners.ts` and `lobby/useLobbyMatchmaking.ts`.
+- Server RPCs and columns for invite, public lobby, and spectator remain untouched.
 
 ## Phase 9: Local gameplay
 

@@ -20,8 +20,8 @@ When adding a feature, ask: *does this belong in the engine (rules/state) or in 
 | 2 | Match play, Crawford rule, doubling cube offer/accept/drop | 🟢 Engine + UI done — `packages/engine/src/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
 | 3 | AI opponent (3 tiers), Web Worker eval | 🟡 Mostly done — AI plays online matches as a **fallback** when matchmaking can't find a human opponent. Pure PvP is the primary mode. |
 | 4 | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko | 🟢 Auth + guests + profile done; replays shipped as the Redux Toolkit/RTK Query pilot; ELO TBD |
-| 5 | Online multiplayer — server-authoritative dice, Realtime moves, private invites, reconnect | 🟢 Done |
-| 6 | Public lobby, ELO matchmaking, spectator mode | 🟡 Matchmaking RPC wired; ELO + spectator TBD |
+| 5 | Online multiplayer — server-authoritative dice, Realtime moves, reconnect | 🟢 Done — invite creation is not implemented: no server path writes `invite_code`, and the client invite/join surfaces were removed. |
+| 6 | Public lobby, ELO matchmaking, spectator mode | 🟡 Matchmaking RPC wired; the legacy public-lobby client was removed while the `join_public_match` / `matchmake` RPCs remain available server-side; ELO + spectator TBD |
 | 7 | Variants — Nackgammon, hyper-gammon, acey-deucey | ⬜ |
 
 > **Direction update**: the app is primarily a real-time PvP backgammon game. AI matches are the fallback when matchmaking can't pair the player with a human. Phase ordering above reflects the original plan; current focus is on the live PvP experience, the lobby/shop/daily-bonus surface, and gameplay polish (image→CSS conversions).

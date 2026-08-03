@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import BoardCanvas from '../../../../packages/board-renderer/src/BoardCanvas';
 import DiceTray from '../components/DiceTray';
@@ -56,7 +56,8 @@ export default function PlayOnline() {
    * the inactivity-forfeit threshold scales with the room's per-turn
    * timer. Allow a 15-second grace on top of the timer (one missed
    * turn worth) before declaring the opponent absent. Legacy
-   * /play/:id entry points (invite link, public lobby) don't pass
+   * /play/:id entry points (a directly opened or bookmarked URL —
+   * a cold load without the lobby's query params) don't pass
    * ?turn= — they fall back to the 5-minute default inside the hook.
    */
   const turnSecondsParam = (() => {
@@ -88,8 +89,6 @@ export default function PlayOnline() {
   const boardParam = params.get('board');
   const { theme: selectedTheme } = useBoardThemeConfig(boardParam);
 
-  const [copied, setCopied] = useState(false);
-
   // Seat profiles come from the RTK Query player-data cache, never a
   // local copy. The LOCAL player's row is already cached under
   // `getProfile(user.id)` and surfaced by useAuth() — refetching it
@@ -117,33 +116,6 @@ export default function PlayOnline() {
       game.selectFrom(pos);
     } else {
       game.cancelSelection();
-    }
-  };
-
-  const inviteCode = game.match?.invite_code;
-  // Invite URLs DELIBERATELY omit the inviter's `?board=…` param.
-  // Before, the inviter's chosen theme was baked into the URL the
-  // recipient followed, so the recipient's own theme preference
-  // got overridden. Now the recipient lands on /join/<code> with
-  // no board param and the join flow uses their own selection.
-  // This is consistent with the matchmaking design: theme is
-  // per-client cosmetic, never carried across players.
-  const inviteUrl = useMemo(
-    () =>
-      inviteCode
-        ? `${window.location.origin}/join/${inviteCode}`
-        : null,
-    [inviteCode]
-  );
-
-  const copyLink = async () => {
-    if (!inviteUrl) return;
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* ignore */
     }
   };
 
@@ -223,31 +195,6 @@ export default function PlayOnline() {
           <div className="font-display text-3xl text-board-accent text-center">
             Waiting for opponent…
           </div>
-          {isOwner && inviteUrl && (
-            <div className="w-full bg-board-felt/5 border border-board-felt/10 rounded-lg p-4 flex flex-col gap-3">
-              <div className="text-xs uppercase tracking-wider text-board-felt/50">
-                Send this link to your opponent
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={inviteUrl}
-                  readOnly
-                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                  className="flex-1 bg-board-felt/10 border border-board-felt/20 rounded px-2 py-1 text-sm font-mono focus:outline-none focus:border-board-accent"
-                />
-                <button
-                  onClick={copyLink}
-                  className="px-3 py-1 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110 active:scale-95 transition"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <div className="text-[11px] text-board-felt/50">
-                Code: <span className="font-mono text-board-accent">{match.invite_code}</span>{' '}
-                · expires in 24h
-              </div>
-            </div>
-          )}
           {isOwner && (
             <button
               onClick={async () => {

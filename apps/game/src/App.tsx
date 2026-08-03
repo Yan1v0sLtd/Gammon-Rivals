@@ -14,8 +14,6 @@ const HotSeat = lazy(() => import('./pages/HotSeat'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Replay = lazy(() => import('./pages/Replay'));
 const PlayOnline = lazy(() => import('./pages/PlayOnline'));
-const JoinMatch = lazy(() => import('./pages/JoinMatch'));
-const Lobby = lazy(() => import('./pages/Lobby'));
 const AuthCallback = lazy(() => import('./pages/AuthCallback'));
 const DeleteAccount = lazy(() => import('./pages/DeleteAccount'));
 
@@ -74,8 +72,6 @@ export default function App() {
             <Route path="/profile" element={<AuthGate><Profile /></AuthGate>} />
             <Route path="/replay/:gameId" element={<AuthGate><Replay /></AuthGate>} />
             <Route path="/play/:matchId" element={<AuthGate><PlayOnline /></AuthGate>} />
-            <Route path="/join/:code" element={<AuthGate><JoinMatch /></AuthGate>} />
-            <Route path="/lobby" element={<AuthGate><Lobby /></AuthGate>} />
             <Route path="/shop" element={<AuthGate><ShopRoute /></AuthGate>} />
             {/* Any unmatched path (e.g. a stale native deep link, or a
                 future bundle boot path) bounces to the lobby instead of a

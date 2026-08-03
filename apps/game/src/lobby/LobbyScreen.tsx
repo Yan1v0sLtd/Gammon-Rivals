@@ -449,9 +449,9 @@ export function LobbyScreen() {
 
           {/* Play Friends + Tournaments cards removed per operator
               direction. Hotseat ("two players on this device") is
-              still accessible through the bottom-nav or invite-code
-              join flow; Tournaments doesn't have a feature behind
-              it yet, so the card was just placeholder. */}
+              still accessible through the bottom-nav; Tournaments
+              doesn't have a feature behind it yet, so the card was
+              just placeholder. */}
         </div>
 
         <LobbyBottomNav

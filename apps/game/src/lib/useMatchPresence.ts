@@ -12,9 +12,10 @@ export interface MatchPresenceState {
    *
    * false = sync confirmed and no opponent present. Doesn't
    * necessarily mean they QUIT — they may not have loaded
-   * PlayOnline yet (e.g. they're still on /lobby reading the
-   * invite). Combine with `opponentEverOnline` to distinguish
-   * "never showed up" from "showed up then left".
+   * PlayOnline yet (e.g. they're still on the lobby screen
+   * or the app is still loading for them). Combine with
+   * `opponentEverOnline` to distinguish "never showed up"
+   * from "showed up then left".
    */
   readonly opponentOnline: boolean | null;
 
