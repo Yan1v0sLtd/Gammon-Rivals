@@ -4,6 +4,7 @@ import { createAppListenerMiddleware } from './listenerMiddleware';
 import replayReducer from '../features/replay/replaySlice';
 import authReducer from '../features/auth/authSlice';
 import appUiReducer from '../features/appUi/appUiSlice';
+import lobbyReducer from '../features/lobby/lobbySlice';
 
 export function createAppStore() {
   const listener = createAppListenerMiddleware();
@@ -13,6 +14,7 @@ export function createAppStore() {
       auth: authReducer,
       replay: replayReducer,
       appUi: appUiReducer,
+      lobby: lobbyReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().prepend(listener.middleware).concat(baseApi.middleware),

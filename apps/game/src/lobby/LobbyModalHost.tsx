@@ -1,0 +1,229 @@
+import { useCallback } from 'react';
+import { extractErrorMessage } from '../../../../packages/shared/src/errors';
+import { useAuth } from '../lib/auth';
+import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  useClaimDailyBonusMutation,
+  usePurchaseBoardWithGemsMutation,
+} from '../features/lobby/lobbyApi';
+import {
+  boardPurchaseErrorMessage,
+  dailyBonusErrorMessage,
+} from '../features/lobby/lobbyErrors';
+import { selectLobbyModal } from '../features/lobby/lobbySelectors';
+import {
+  boardPurchaseFailed,
+  dailyBonusClaimFailed,
+  dailyBonusClaimSucceeded,
+  lobbyModalClosed,
+} from '../features/lobby/lobbySlice';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { useShop } from '../features/appUi/useShop';
+import { BoardPurchaseModal } from './BoardPurchaseModal';
+import { DailyBonusModal } from './DailyBonusModal';
+import { DailyMissionsModal } from './DailyMissionsModal';
+import { DifficultyModal } from './DifficultyModal';
+import { HowToPlayModal } from './HowToPlayModal';
+import type { FlightCurrency } from './RewardFlight';
+import { WheelModal } from './WheelModal';
+import { useDailyBonus } from './useDailyBonus';
+import { useDailyMissions } from './useDailyMissions';
+import { useLobbyBoards } from './useLobbyBoards';
+import { useLobbyMatchmaking } from './useLobbyMatchmaking';
+import { useWheelState } from './useWheelState';
+
+interface LobbyModalHostProps {
+  /** Reward flights render inside LobbyScreen, so spawning stays owned there. */
+  readonly onSpawnFlights: (currency: FlightCurrency, sourceEl: Element, count: number) => void;
+}
+
+/**
+ * Renders the slice's open full-screen lobby modal. Server data stays in
+ * RTK Query; the slice owns only modal identity, in-flight error/result,
+ * and the selected board id.
+ */
+export function LobbyModalHost({ onSpawnFlights }: LobbyModalHostProps) {
+  const dispatch = useAppDispatch();
+  const modal = useAppSelector(selectLobbyModal);
+  const { profile, user, wallet, progression, refreshWallet, refreshProfile } = useAuth();
+  const { openShop } = useShop();
+  const { boards } = useLobbyBoards();
+  const { busyId, overlay, start, cancel } = useLobbyMatchmaking();
+  const dailyBonus = useDailyBonus();
+  const wheel = useWheelState('main');
+  const missionsResult = useDailyMissions(profile?.id);
+  const [purchaseBoardWithGems, { isLoading: isPurchasing }] = usePurchaseBoardWithGemsMutation();
+  const [claimDailyBonusMutation, { isLoading: isClaiming }] = useClaimDailyBonusMutation();
+
+  const closeModal = useCallback(() => dispatch(lobbyModalClosed()), [dispatch]);
+
+  if (modal.kind === 'difficulty') {
+    return (
+      <>
+        <DifficultyModal
+          open={modal.kind === 'difficulty'}
+          onClose={() => {
+            if (busyId !== null) return;
+            dispatch(lobbyModalClosed());
+          }}
+          onSelect={start}
+          onGetCoins={() => {
+            // No showOverlay() here — /shop renders instantly and must not
+            // trap the user behind the route overlay.
+            dispatch(lobbyModalClosed());
+            openShop();
+          }}
+          walletCoins={wallet?.coins ?? 0}
+          playerLevel={progression.level}
+          busyId={busyId}
+          matchmaking={overlay}
+          onCancelMatchmaking={cancel}
+        />
+        {modal.error ? (
+          <div className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 px-4 py-2 font-bold text-rose-950 shadow-2xl">
+            {modal.error}
+          </div>
+        ) : null}
+      </>
+    );
+  }
+
+  if (modal.kind === 'boardPurchase') {
+    const board = boards.find((b) => b.id === modal.boardId);
+    if (!board) return null;
+
+    const confirmPurchase = async () => {
+      if (isPurchasing) return;
+      if (!isSupabaseConfigured || !user) {
+        dispatch(boardPurchaseFailed({ message: 'Sign in to purchase boards.' }));
+        return;
+      }
+      try {
+        // The endpoint invalidates both the board-inventory and wallet tags,
+        // so the carousel flips to owned and the top bar re-totals.
+        await purchaseBoardWithGems({ boardId: board.id, userId: user.id }).unwrap();
+        dispatch(lobbyModalClosed());
+      } catch (err) {
+        dispatch(
+          boardPurchaseFailed({
+            message: boardPurchaseErrorMessage(extractErrorMessage(err), board.unlockLevel),
+          })
+        );
+      }
+    };
+
+    return (
+      <BoardPurchaseModal
+        boardName={board.name}
+        priceGems={board.priceGems}
+        isPurchasing={isPurchasing}
+        errorMessage={modal.error}
+        onConfirm={confirmPurchase}
+        onCancel={() => {
+          if (isPurchasing) return;
+          dispatch(lobbyModalClosed());
+        }}
+      />
+    );
+  }
+
+  if (modal.kind === 'missions') {
+    return (
+      <DailyMissionsModal
+        result={missionsResult}
+        onClose={() => {
+          dispatch(lobbyModalClosed());
+          // Claims/rerolls/chests may have credited the wallet AND XP —
+          // refresh both so the top-bar RollingNumber and the level
+          // progress bar catch up.
+          void refreshWallet();
+          void refreshProfile();
+        }}
+      />
+    );
+  }
+
+  if (modal.kind === 'wheel') {
+    return (
+      <WheelModal
+        wheel={wheel}
+        onClose={closeModal}
+        onProgressionUpdated={() => {
+          // Fires ~1500ms before the modal closes, while XP tokens are
+          // still flying — the XP bar fills during the flight animation.
+          void refreshProfile();
+        }}
+        onSpinComplete={() => {
+          // Refresh wallet so RollingNumber ticks the new total AFTER the
+          // coin/gem flights land (visual cause→effect), and re-fetch the
+          // wheel state so the lobby pill flips back to its countdown.
+          void refreshWallet();
+          wheel.refetch();
+        }}
+      />
+    );
+  }
+
+  if (modal.kind === 'dailyBonus') {
+    const claimDailyBonus = async () => {
+      if (isClaiming) return;
+      if (!isSupabaseConfigured || !user) {
+        dispatch(dailyBonusClaimFailed({ message: 'Sign in to claim daily bonuses.' }));
+        return;
+      }
+      // Capture each currency's source element BEFORE the modal re-renders
+      // into its claimed state (which can move/remove icons); each currency
+      // uses its own source so coins fly from the coin icon and gems from
+      // the gem icon.
+      const gemsSourceEl = document.querySelector('[data-fly-source="gems"]');
+      const coinsSourceEl = document.querySelector('[data-fly-source="coins"]');
+
+      try {
+        const payload = await claimDailyBonusMutation({ userId: user.id }).unwrap();
+        if (!payload || typeof payload.day_claimed !== 'number') return;
+
+        const reward = {
+          day: payload.day_claimed,
+          coins: payload.reward_coins ?? 0,
+          gems: payload.reward_gems ?? 0,
+          xp: payload.reward_xp ?? 0,
+        };
+        dispatch(dailyBonusClaimSucceeded(reward));
+
+        // Spawn before the delayed wallet refresh lands so the tokens arrive
+        // at a bumped balance. Fallback to the other source when a card has
+        // only one icon — better a nearby start than no flight.
+        if (reward.gems > 0) {
+          const src = gemsSourceEl ?? coinsSourceEl;
+          if (src) onSpawnFlights('gems', src, 6);
+        }
+        if (reward.coins > 0) {
+          const src = coinsSourceEl ?? gemsSourceEl;
+          if (src) onSpawnFlights('coins', src, 6);
+        }
+      } catch (err) {
+        dispatch(dailyBonusClaimFailed({ message: dailyBonusErrorMessage(extractErrorMessage(err)) }));
+      }
+    };
+
+    return (
+      <DailyBonusModal
+        configs={dailyBonus.configs}
+        upcomingDay={dailyBonus.upcomingDay}
+        canClaim={dailyBonus.canClaim}
+        isClaiming={isClaiming}
+        errorMessage={modal.error}
+        justClaimed={modal.justClaimed}
+        daysClaimedInCurrentStreak={dailyBonus.daysClaimedInCurrentStreak}
+        onClaim={claimDailyBonus}
+        onClose={closeModal}
+      />
+    );
+  }
+
+  if (modal.kind === 'howToPlay') {
+    return <HowToPlayModal onClose={closeModal} />;
+  }
+
+  return null;
+}

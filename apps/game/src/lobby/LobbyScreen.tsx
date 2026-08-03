@@ -1,53 +1,44 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-// AILevel import dropped along with the startMatch handler.
 import { useAuth } from '../lib/auth';
 import { useShop } from '../features/appUi/useShop';
-import { extractErrorMessage } from '../../../../packages/shared/src/errors';
 import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
-import {
-  abandonStaleMatches,
-  cancelMatchmakingRpc,
-  enterRoomAiFallback,
-  findMatchInTier,
-} from '../lib/persistence';
+import { abandonStaleMatches } from '../lib/persistence';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { useMarkTutorialCompleteMutation } from '../features/lobby/lobbyApi';
 import {
-  useClaimDailyBonusMutation,
-  useMarkTutorialCompleteMutation,
-  usePurchaseBoardWithGemsMutation,
-} from '../features/lobby/lobbyApi';
+  boardPurchaseModalOpened,
+  boardSelected,
+  dailyBonusAutoOpenRequested,
+  dailyBonusModalOpened,
+  difficultyModalOpened,
+  howToPlayModalOpened,
+  lobbyRouteEntered,
+  lobbyRouteExited,
+  missionsModalOpened,
+  wheelModalOpened,
+} from '../features/lobby/lobbySlice';
+import { selectIsLobbyModalOpen } from '../features/lobby/lobbySelectors';
 import { useImagePreloader } from '../lib/useImagePreloader';
 import { usePrefetchOnIdle } from '../lib/usePrefetchOnIdle';
 import { useBodyModalFlag } from '../lib/bodyModalFlag';
 import { setPersistedBoardId } from '../board/theme/selectedBoard';
 import { BoardLockTooltip } from './BoardLockTooltip';
-import { BoardPurchaseModal } from './BoardPurchaseModal';
-import { DailyBonusModal } from './DailyBonusModal';
-import { HowToPlayModal } from './HowToPlayModal';
-import {
-  DifficultyModal,
-  type DifficultySelection,
-  type MatchmakingOverlayState,
-} from './DifficultyModal';
-// LobbyActionCard import removed — the Play Friends + Tournaments
-// cards that used it were dropped from the right-rail per operator
-// direction. Component file still exists in case the cards return.
 import { LobbyBoardCarousel } from './LobbyBoardCarousel';
 import { LobbyBottomNav } from './LobbyBottomNav';
 import { useWheelState } from './useWheelState';
-import { WheelModal } from './WheelModal';
-import { DailyMissionsModal } from './DailyMissionsModal';
 import { useDailyMissions } from './useDailyMissions';
 import { LobbySideOffers } from './LobbySideOffers';
 import { LobbyTopBar } from './LobbyTopBar';
-import type { LobbyBoard, LobbyBoardId } from './lobbyData';
-import { RewardFlight, type RewardFlightSpec, type FlightCurrency } from './RewardFlight';
+import type { LobbyBoard } from './lobbyData';
+import { RewardFlight } from './RewardFlight';
 import { useDailyBonus } from './useDailyBonus';
-import { useLobbyBoards } from './useLobbyBoards';
+import { useSelectedLobbyBoard } from './useSelectedLobbyBoard';
 import { computeBoardState, useUserBoardInventory } from './useUserBoardInventory';
 import { useLobbyFeatureConfigs } from './useLobbyFeatureConfigs';
 import { OnboardingTour } from './OnboardingTour';
+import { LobbyModalHost } from './LobbyModalHost';
+import { useRewardFlights } from './useRewardFlights';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 // Static lobby assets — referenced unconditionally by sub-components,
 // so they're always part of the first-paint preload. Per-board imagery
@@ -85,10 +76,6 @@ const LOBBY_SECONDARY_ASSETS: readonly string[] = [
   '/lobby/difficulties/grand-master.webp',
   '/lobby/cards/how-to-play-popup.webp',
 ];
-
-// type OpponentChoice = 'hotseat' | AILevel;  ← used by the
-// now-removed startMatch handler (Play Friends + Tournaments
-// cards). Kept commented so a re-add is one line.
 
 /**
  * One full-screen background layer. THE FLICKER RULE: the screen must be
@@ -178,19 +165,18 @@ function LobbyBackgroundLayer({
 }
 
 export function LobbyScreen() {
-  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { openShop } = useShop();
   const { show: showOverlay, hide: hideOverlay } = useNavigationLoaderOverlay();
-  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet, refreshProfile } = useAuth();
-  const { boards, isLoading: boardsLoading } = useLobbyBoards();
+  const { profile, user, wallet, progression, isGuest, linkGoogleIdentity, refreshWallet } = useAuth();
+  const {
+    boards,
+    isLoading: boardsLoading,
+    effectiveSelectedBoardId,
+    selectedBoard,
+  } = useSelectedLobbyBoard();
   const { ownedIds } = useUserBoardInventory();
-  const [selectedBoardId, setSelectedBoardId] = useState<LobbyBoardId>('');
-  // startOnline / creatingOnline / onlineError were removed alongside
-  // the "Play Online" side card. Every match now flows through
-  // handleDifficultySelect (PvP-first → AI fallback), so the legacy
-  // public-lobby online-create path is no longer reachable from this
-  // surface. createOnlineMatch is still exported from persistence for
-  // invite-code flows and the back-office.
+  const { flights, spawnFlights, removeFlight } = useRewardFlights();
   const [lockedTooltipFor, setLockedTooltipFor] = useState<LobbyBoard | null>(null);
   // Stable handler for BoardLockTooltip's onDismiss. The tooltip
   // lists onDismiss in its setTimeout effect's dep array, so an
@@ -204,48 +190,25 @@ export function LobbyScreen() {
   // Warm "open next" section art (difficulty heroes, How-to-Play) in the
   // background once the lobby is interactive — no first-open flash.
   usePrefetchOnIdle(LOBBY_SECONDARY_ASSETS);
-  const [purchaseTarget, setPurchaseTarget] = useState<LobbyBoard | null>(null);
-  // Difficulty modal state. `enteringRoomId` is the table_config_id
-  // currently being purchased via enter_room — the modal uses it to
-  // disable just the tapped card while the RPC is in flight.
-  const [difficultyOpen, setDifficultyOpen] = useState(false);
-  const [enteringRoomId, setEnteringRoomId] = useState<string | null>(null);
-  const [difficultyError, setDifficultyError] = useState<string | null>(null);
-  const [isPurchasing, setIsPurchasing] = useState(false);
-  const [purchaseError, setPurchaseError] = useState<string | null>(null);
-  const [purchaseBoardWithGems] = usePurchaseBoardWithGemsMutation();
   const dailyBonus = useDailyBonus();
   const wheel = useWheelState('main');
-  const [wheelModalOpen, setWheelModalOpen] = useState(false);
-  const [dailyBonusOpen, setDailyBonusOpen] = useState(false);
-  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
-  const [missionsModalOpen, setMissionsModalOpen] = useState(false);
   // While ANY full-screen lobby modal is up, flag <body> so the ambient
   // lobby animations (Sunbeam, XP flow, shimmer, halo) pause — they're
   // invisible behind the backdrop but phones still paid for every frame.
-  useBodyModalFlag(
-    difficultyOpen ||
-      !!purchaseTarget ||
-      wheelModalOpen ||
-      howToPlayOpen ||
-      missionsModalOpen ||
-      dailyBonusOpen,
-  );
+  const isModalOpen = useAppSelector(selectIsLobbyModalOpen);
+  useBodyModalFlag(isModalOpen);
   const missionsResult = useDailyMissions(profile?.id);
   const missionsClaimableBadge =
     missionsResult.state?.missions.filter((m) => m.completed_at && !m.claimed_at).length ?? 0;
-  const [isClaimingDailyBonus, setIsClaimingDailyBonus] = useState(false);
-  const [dailyBonusError, setDailyBonusError] = useState<string | null>(null);
-  const [claimDailyBonusMutation] = useClaimDailyBonusMutation();
-  const [justClaimedBonus, setJustClaimedBonus] = useState<{
-    day: number;
-    coins: number;
-    gems: number;
-    xp: number;
-  } | null>(null);
-  const autoOpenedDailyBonusRef = useRef(false);
-  const [rewardFlights, setRewardFlights] = useState<readonly RewardFlightSpec[]>([]);
-  const nextFlightIdRef = useRef(0);
+
+  // Route enter/exit resets the lobby slice (modal, selected board,
+  // daily-bonus auto-open latch), mirroring the Replay pattern.
+  useEffect(() => {
+    dispatch(lobbyRouteEntered());
+    return () => {
+      dispatch(lobbyRouteExited());
+    };
+  }, [dispatch]);
 
   // First-run onboarding tour. Shows once: the source of truth is
   // profiles.tutorial_completed_at (follows the account across devices and the
@@ -284,183 +247,20 @@ export function LobbyScreen() {
     setLockedTooltipFor(board);
   };
 
-  const handlePurchaseTap = (board: LobbyBoard) => {
-    setPurchaseError(null);
-    setPurchaseTarget(board);
-  };
-
-  const purchaseErrorMessage = (code: string, board: LobbyBoard): string => {
-    switch (code) {
-      case 'insufficient_gems':
-        return 'Not enough gems.';
-      case 'level_too_low':
-        return `Reach level ${board.unlockLevel} to unlock.`;
-      case 'already_owned':
-        return 'You already own this board.';
-      case 'board_not_purchasable':
-        return 'This board is not available for purchase.';
-      case 'board_disabled':
-      case 'board_not_found':
-        return 'Board unavailable.';
-      case 'not_authenticated':
-        return 'Sign in to purchase boards.';
-      default:
-        return code;
-    }
-  };
-
-  const confirmPurchase = async () => {
-    if (!purchaseTarget || isPurchasing) return;
-    if (!isSupabaseConfigured || !user) {
-      setPurchaseError('Sign in to purchase boards.');
-      return;
-    }
-    setIsPurchasing(true);
-    setPurchaseError(null);
-    const board = purchaseTarget;
-    try {
-      // The endpoint invalidates both the board-inventory and wallet tags,
-      // so the carousel flips to owned and the top bar re-totals.
-      await purchaseBoardWithGems({ boardId: board.id, userId: user.id }).unwrap();
-      setPurchaseTarget(null);
-    } catch (err) {
-      setPurchaseError(purchaseErrorMessage(extractErrorMessage(err), board));
-    } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const dailyBonusErrorMessage = (code: string): string => {
-    switch (code) {
-      case 'already_claimed':
-        return "You've already claimed today's bonus.";
-      case 'not_authenticated':
-        return 'Sign in to claim daily bonuses.';
-      default:
-        // config_missing_for_day_N and anything else: surface the raw code.
-        return code;
-    }
-  };
-
-  const openDailyBonus = () => {
-    setDailyBonusError(null);
-    setJustClaimedBonus(null);
-    setDailyBonusOpen(true);
-  };
-
-  /** Spawn a burst of flying tokens from the just-claimed day card's gem
-   *  to the matching wallet pill in the top bar. Coins fly to the coins
-   *  pill; gems fly to the gems pill. Each currency gets `count` tokens
-   *  with a small staggered delay so the flight reads as a stream. */
-  const spawnFlights = (currency: FlightCurrency, sourceEl: Element, count: number) => {
-    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
-    if (!target) return;
-    const src = sourceEl.getBoundingClientRect();
-    const dst = target.getBoundingClientRect();
-    const startX = src.left + src.width / 2;
-    const startY = src.top + src.height / 2;
-    const endX = dst.left + dst.width / 2;
-    const endY = dst.top + dst.height / 2;
-    const additions: RewardFlightSpec[] = [];
-    for (let i = 0; i < count; i++) {
-      additions.push({
-        id: nextFlightIdRef.current++,
-        currency,
-        startX: startX + (Math.random() - 0.5) * 14,
-        startY: startY + (Math.random() - 0.5) * 14,
-        endX,
-        endY,
-        delayMs: i * 70,
-        durationMs: 800,
-      });
-    }
-    setRewardFlights((prev) => [...prev, ...additions]);
-  };
-
-  const removeFlight = (id: number) => {
-    setRewardFlights((prev) => prev.filter((f) => f.id !== id));
-  };
-
-  const claimDailyBonus = async () => {
-    if (isClaimingDailyBonus) return;
-    if (!isSupabaseConfigured || !user) {
-      setDailyBonusError('Sign in to claim daily bonuses.');
-      return;
-    }
-    // Capture each currency's source element BEFORE the modal
-    // re-renders into its claimed state (which can move / remove
-    // icons). Both queries scope to the active day card — the
-    // modal now stamps `data-fly-source` only on the active day,
-    // so querySelector returns that card's icon. Each currency
-    // gets its own source so e.g. coins fly from the coin icon and
-    // gems from the gem icon (used to share the gem source, which
-    // was visually wrong on coin-only days like Day 1 / Day 4
-    // anyway since there's no gem icon there).
-    const gemsSourceEl = document.querySelector('[data-fly-source="gems"]');
-    const coinsSourceEl = document.querySelector('[data-fly-source="coins"]');
-
-    setIsClaimingDailyBonus(true);
-    setDailyBonusError(null);
-    try {
-      const payload = await claimDailyBonusMutation({ userId: user.id }).unwrap();
-      if (!payload || typeof payload.day_claimed !== 'number') return;
-
-      const reward = {
-        day: payload.day_claimed,
-        coins: payload.reward_coins ?? 0,
-        gems: payload.reward_gems ?? 0,
-        xp: payload.reward_xp ?? 0,
-      };
-      setJustClaimedBonus(reward);
-
-      // Spawn the flying tokens before refreshing the wallet so the user
-      // sees the coins / gems travel and *then* land on a bumped balance.
-      // Each currency uses its OWN source icon when present. Fallback to
-      // the other source if a card was configured with only one icon —
-      // better the flight starts from a nearby card than vanishes
-      // entirely.
-      if (reward.gems > 0) {
-        const src = gemsSourceEl ?? coinsSourceEl;
-        if (src) spawnFlights('gems', src, 6);
-      }
-      if (reward.coins > 0) {
-        const src = coinsSourceEl ?? gemsSourceEl;
-        if (src) spawnFlights('coins', src, 6);
-      }
-
-      // The endpoint invalidates the daily-state, wallet, and profile
-      // tags, so canClaim flips, the top bar re-totals, and the XP bar
-      // updates through the active query subscriptions — no manual
-      // refresh to schedule here.
-      window.setTimeout(() => {
-        setDailyBonusOpen(false);
-        setJustClaimedBonus(null);
-      }, 1800);
-    } catch (err) {
-      setDailyBonusError(dailyBonusErrorMessage(extractErrorMessage(err)));
-    } finally {
-      setIsClaimingDailyBonus(false);
-    }
-  };
-
-  // Auto-popup the daily bonus modal once per lobby session if the player
-  // can claim. canClaim flips to false after a successful claim, so we
-  // won't auto-popup again the same day. With the close button removed,
-  // the modal is now claim-only — never opens when there's nothing to do.
+  // Auto-popup the daily bonus modal once per lobby session when the player
+  // can claim — canClaim flips false after a claim, so it won't auto-popup
+  // again the same day.
   useEffect(() => {
-    if (autoOpenedDailyBonusRef.current) return;
     // Let the first-run tour finish before the daily-bonus modal auto-opens —
     // otherwise a brand-new player gets both at once. When the tour is
     // dismissed tourPending flips false and this effect re-runs to open it.
     if (tourPending) return;
     if (!user || !dailyBonus.canClaim || dailyBonus.isLoading) return;
     if (dailyBonus.configs.length === 0) return;
-    autoOpenedDailyBonusRef.current = true;
-    setDailyBonusOpen(true);
-  }, [user, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length, tourPending]);
-  const effectiveSelectedBoardId = boards.some((board) => board.id === selectedBoardId)
-    ? selectedBoardId
-    : (boards[0]?.id ?? '');
+    // The open-at-most-once latch lives in the slice (dailyBonusAutoOpened),
+    // so re-running this effect is safe.
+    dispatch(dailyBonusAutoOpenRequested());
+  }, [user, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length, tourPending, dispatch]);
 
   // Persist the player's current board pick so match screens reached WITHOUT a
   // `?board=` param (invite links, public/queue matches, cold loads) can
@@ -470,10 +270,6 @@ export function LobbyScreen() {
     setPersistedBoardId(effectiveSelectedBoardId);
   }, [effectiveSelectedBoardId]);
 
-  // selectedBoard may be undefined briefly before useLobbyBoards's DB
-  // fetch resolves (or if no boards are configured in the back office).
-  // All downstream code now treats it as optional.
-  const selectedBoard = boards.find((board) => board.id === effectiveSelectedBoardId) ?? boards[0];
   const previousBoardRef = useRef<LobbyBoard | null>(selectedBoard ?? null);
   const [fadingBoard, setFadingBoard] = useState<LobbyBoard | null>(null);
   // Board ids whose background has actually painted at full opacity at
@@ -517,190 +313,6 @@ export function LobbyScreen() {
     const id = window.setTimeout(() => setFadingBoard(null), 3000);
     return () => window.clearTimeout(id);
   }, [fadingBoard]);
-
-  // startMatch was the click handler for Play Friends (hotseat)
-  // and Tournaments (AI). Both cards were removed from the
-  // right-rail per operator direction. The function is kept as
-  // a commented stub so a re-add is a one-import flip.
-  // const startMatch = (opponent: OpponentChoice, target = 1) => { ... };
-
-  /**
-   * Matchmaking overlay state. Renders inside the DifficultyModal
-   * while we're polling find_match_in_tier between PLAY click and
-   * either a PvP pair or the AI fallback.
-   */
-  const [matchmaking, setMatchmaking] = useState<MatchmakingOverlayState | null>(null);
-  // Cancel flag shared with the running poll loop. We use a ref rather
-  // than reading state inside the loop to avoid stale closures.
-  const cancelMatchmakingRef = useRef(false);
-
-  /**
-   * PvP-first match entry. On PLAY:
-   *   1. Validate board ownership defensively.
-   *   2. Open the matchmaking overlay; loop find_match_in_tier every
-   *      500ms for up to MAX_MATCH_SECONDS.
-   *   3. On a 'matched' status, route into the PvP match. Both
-   *      players land on the same matchId via the server-side row.
-   *   4. On timeout (still 'queued'), cancel matchmaking + call
-   *      enter_room_ai_fallback (which picks AI level from caller's
-   *      pvp_rating with cfg.ai_level as floor) and route to /hotseat.
-   *   5. Errors at any stage close the overlay with a friendly toast.
-   */
-  const MATCHMAKING_MAX_SECONDS = 4;
-  const MATCHMAKING_POLL_MS = 500;
-
-  const handleDifficultySelect = async (selection: DifficultySelection) => {
-    if (enteringRoomId !== null) return;
-    if (!user) {
-      setDifficultyError('Sign in to enter a room.');
-      return;
-    }
-    if (selectedBoard) {
-      const state = boardStateOf(selectedBoard);
-      if (state !== 'owned' && state !== 'free-unlock') {
-        setDifficultyError('Unlock this board before entering a room.');
-        return;
-      }
-    }
-
-    setEnteringRoomId(selection.tableConfigId);
-    setDifficultyError(null);
-    cancelMatchmakingRef.current = false;
-    const searchStart = Date.now();
-    setMatchmaking({
-      searchingForTier: selection.tableConfigId,
-      tierDisplayName: selection.displayName,
-      elapsedSeconds: 0,
-      maxSeconds: MATCHMAKING_MAX_SECONDS,
-    });
-
-    const friendlyError = (err: unknown): string => {
-      // extractErrorMessage handles both JS Error instances AND the
-      // plain-object PostgrestError shape Supabase RPCs reject with —
-      // the previous `String(err)` fallback rendered the latter as
-      // the useless literal "[object Object]".
-      const msg = extractErrorMessage(err);
-      if (msg.includes('insufficient_coins')) return 'Not enough coins for this room.';
-      if (msg.includes('level_too_low')) {
-        return 'This room is locked at your current level.';
-      }
-      if (msg.includes('room_disabled')) return 'This room is temporarily unavailable.';
-      if (msg.includes('pvp_not_allowed_in_tier')) {
-        return 'PvP isn’t enabled in this room.';
-      }
-      if (msg.includes('ai_not_allowed')) return 'AI play is disabled in this room.';
-      if (msg.includes('room_not_found')) return 'Room not found — try refreshing.';
-      if (msg.includes('not_authenticated')) return 'Sign in to enter a room.';
-      if (msg.includes('profile_missing')) {
-        return 'Profile not ready yet — try again in a moment.';
-      }
-      if (msg.includes('stale_client_reload')) {
-        return 'New version available — please refresh the page.';
-      }
-      // Final fallback: surface the raw error so we can debug
-      // production issues without a re-deploy.
-      console.error('[LobbyScreen] enter-room failure', err);
-      return msg ? `Could not enter the room: ${msg}` : 'Could not enter the room. Try again.';
-    };
-
-    const routeIntoMatch = (
-      matchId: string,
-      target: number,
-      turnSeconds: number,
-      mode: 'pvp' | string
-    ) => {
-      const params = new URLSearchParams();
-      params.set('opp', mode === 'pvp' ? 'pvp' : mode);
-      params.set('target', String(target));
-      // `board` is THIS PLAYER's selected theme — written into their
-      // own URL only. The matched opponent runs this same code in
-      // their own client and writes their OWN selection. Two players
-      // end up with different `?board=…` values pointing at the same
-      // matchId. The matches table has no board column; theme is a
-      // pure per-client cosmetic and is NOT a matchmaking dimension.
-      // See findMatchInTier in src/lib/persistence.ts.
-      params.set('board', effectiveSelectedBoardId);
-      params.set('matchId', matchId);
-      params.set('turn', String(turnSeconds));
-      showOverlay();
-      setDifficultyOpen(false);
-      setMatchmaking(null);
-      // Online matches (PvP, or a server-bot match: mode='online') route to
-      // /play/:matchId; legacy client-side AI fallbacks continue to /hotseat.
-      navigate(
-        mode === 'pvp' || mode === 'online'
-          ? `/play/${matchId}?${params.toString()}`
-          : `/hotseat?${params.toString()}`
-      );
-    };
-
-    try {
-      // 1. Poll loop for PvP match.
-      let matched: Awaited<ReturnType<typeof findMatchInTier>> | null = null;
-      while (Date.now() - searchStart < MATCHMAKING_MAX_SECONDS * 1000) {
-        if (cancelMatchmakingRef.current) break;
-        const result = await findMatchInTier({
-          tableConfigId: selection.tableConfigId,
-        });
-        if (result.status === 'matched' && result.matchId) {
-          matched = result;
-          break;
-        }
-        // Tick the overlay counter so the user sees the countdown move.
-        const elapsed = (Date.now() - searchStart) / 1000;
-        setMatchmaking((curr) =>
-          curr
-            ? {
-                ...curr,
-                elapsedSeconds: Math.min(MATCHMAKING_MAX_SECONDS, elapsed),
-              }
-            : curr
-        );
-        await new Promise((resolve) => setTimeout(resolve, MATCHMAKING_POLL_MS));
-      }
-
-      if (cancelMatchmakingRef.current) {
-        // User cancelled — clean up the server-side queue entry.
-        await cancelMatchmakingRpc().catch(() => undefined);
-        setMatchmaking(null);
-        return;
-      }
-
-      if (matched && matched.matchId) {
-        void refreshWallet();
-        routeIntoMatch(
-          matched.matchId,
-          matched.target ?? selection.matchTarget,
-          matched.turnSeconds ?? selection.turnSeconds,
-          'pvp'
-        );
-        return;
-      }
-
-      // 2. Timeout — fall back to AI at this tier.
-      await cancelMatchmakingRpc().catch(() => undefined);
-      const fallback = await enterRoomAiFallback({ tableConfigId: selection.tableConfigId });
-      void refreshWallet();
-      // Server-bot tiers come back as mode='online' (is_bot) → route to /play
-      // (server-authoritative). Legacy tiers route to /hotseat by ai level.
-      routeIntoMatch(
-        fallback.matchId,
-        fallback.target,
-        fallback.turnSeconds,
-        fallback.isBot ? 'online' : fallback.aiLevel
-      );
-    } catch (err) {
-      setMatchmaking(null);
-      setDifficultyError(friendlyError(err));
-      await cancelMatchmakingRpc().catch(() => undefined);
-    } finally {
-      setEnteringRoomId(null);
-    }
-  };
-
-  const handleCancelMatchmaking = () => {
-    cancelMatchmakingRef.current = true;
-  };
 
   // ---- Asset preload gate ----
   // Don't paint the lobby until the boards data is resolved AND every
@@ -766,9 +378,9 @@ export function LobbyScreen() {
   // unconditionally (the modal still surfaces the 7-day grid even when
   // already claimed today); Coins routes to /shop; Connect opens the tutorial.
   const handleOfferClick = (offerId: string) => {
-    if (offerId === 'daily') openDailyBonus();
+    if (offerId === 'daily') dispatch(dailyBonusModalOpened());
     else if (offerId === 'coins') openShop();
-    else if (offerId === 'connect') setHowToPlayOpen(true);
+    else if (offerId === 'connect') dispatch(howToPlayModalOpened());
   };
 
   return (
@@ -818,14 +430,11 @@ export function LobbyScreen() {
             <LobbyBoardCarousel
               boards={boards}
               selectedId={effectiveSelectedBoardId}
-              onSelectedIdChange={setSelectedBoardId}
-              onPlay={() => {
-                setDifficultyError(null);
-                setDifficultyOpen(true);
-              }}
+              onSelectedIdChange={(id) => dispatch(boardSelected(id))}
+              onPlay={() => dispatch(difficultyModalOpened())}
               getBoardState={boardStateOf}
               onLockedTap={handleLockedTap}
-              onPurchaseTap={handlePurchaseTap}
+              onPurchaseTap={(board) => dispatch(boardPurchaseModalOpened(board.id))}
               walletGems={wallet?.gems ?? 0}
             />
           </div>
@@ -852,9 +461,9 @@ export function LobbyScreen() {
             // elapsed. The lobby pill already gates by canSpin, but
             // double-check here so a stale click during a re-fetch
             // doesn't open the modal in the wrong state.
-            if (wheel.canSpin) setWheelModalOpen(true);
+            if (wheel.canSpin) dispatch(wheelModalOpened());
           }}
-          onOpenMissions={() => setMissionsModalOpen(true)}
+          onOpenMissions={() => dispatch(missionsModalOpened())}
           missionsBadge={missionsClaimableBadge}
           featureConfigs={featureConfigs}
           playerLevel={progression.level}
@@ -869,110 +478,10 @@ export function LobbyScreen() {
         />
       ) : null}
 
-      {purchaseTarget ? (
-        <BoardPurchaseModal
-          boardName={purchaseTarget.name}
-          priceGems={purchaseTarget.priceGems}
-          isPurchasing={isPurchasing}
-          errorMessage={purchaseError}
-          onConfirm={confirmPurchase}
-          onCancel={() => {
-            if (isPurchasing) return;
-            setPurchaseTarget(null);
-            setPurchaseError(null);
-          }}
-        />
-      ) : null}
-
-      {missionsModalOpen ? (
-        <DailyMissionsModal
-          result={missionsResult}
-          onClose={() => {
-            setMissionsModalOpen(false);
-            // Claims/rerolls/chests may have credited the wallet
-            // AND XP — refresh both so the top-bar RollingNumber
-            // and the level progress bar catch up.
-            void refreshWallet();
-            void refreshProfile();
-          }}
-        />
-      ) : null}
-
-      {wheelModalOpen ? (
-        <WheelModal
-          wheel={wheel}
-          onClose={() => setWheelModalOpen(false)}
-          onProgressionUpdated={() => {
-            // Fires when the wheel lands + XP flights spawn —
-            // ~1500ms BEFORE the modal closes. The lobby's
-            // XP progress bar (visible through the translucent
-            // backdrop) updates while the XP tokens are still
-            // flying toward the level hex, so the bar fills
-            // smoothly during the flight animation.
-            void refreshProfile();
-          }}
-          onSpinComplete={() => {
-            // Fires when the modal is about to close. Refresh
-            // wallet (so RollingNumber ticks the new total AFTER
-            // coin/gem flights land — visual cause→effect) and
-            // re-fetch the wheel state so the lobby pill flips
-            // back to its cooldown countdown.
-            void refreshWallet();
-            wheel.refetch();
-          }}
-        />
-      ) : null}
-
-      {dailyBonusOpen ? (
-        <DailyBonusModal
-          configs={dailyBonus.configs}
-          upcomingDay={dailyBonus.upcomingDay}
-          canClaim={dailyBonus.canClaim}
-          isClaiming={isClaimingDailyBonus}
-          errorMessage={dailyBonusError}
-          justClaimed={justClaimedBonus}
-          daysClaimedInCurrentStreak={dailyBonus.daysClaimedInCurrentStreak}
-          onClaim={claimDailyBonus}
-          onClose={() => setDailyBonusOpen(false)}
-        />
-      ) : null}
-
-      {howToPlayOpen ? (
-        <HowToPlayModal onClose={() => setHowToPlayOpen(false)} />
-      ) : null}
-
-      <DifficultyModal
-        open={difficultyOpen}
-        onClose={() => {
-          if (enteringRoomId !== null) return;
-          setDifficultyOpen(false);
-          setDifficultyError(null);
-        }}
-        onSelect={handleDifficultySelect}
-        onGetCoins={() => {
-          // No showOverlay() here — /shop renders instantly and doesn't
-          // hide the route overlay on mount, which would trap the user
-          // on a permanent loading screen. The lobby's own background
-          // is still on-screen until the route swap so the transition
-          // doesn't look ungated.
-          setDifficultyOpen(false);
-          setDifficultyError(null);
-          openShop();
-        }}
-        walletCoins={wallet?.coins ?? 0}
-        playerLevel={progression.level}
-        busyId={enteringRoomId}
-        matchmaking={matchmaking ?? undefined}
-        onCancelMatchmaking={handleCancelMatchmaking}
-      />
-      {difficultyError && difficultyOpen ? (
-        <div className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 px-4 py-2 font-bold text-rose-950 shadow-2xl">
-          {difficultyError}
-        </div>
-      ) : null}
+      <LobbyModalHost onSpawnFlights={spawnFlights} />
 
       {/* Flying coin / gem tokens rendered above everything else. */}
-      {rewardFlights.map((spec) => (
+      {flights.map((spec) => (
         <RewardFlight key={spec.id} spec={spec} onLanded={removeFlight} />
       ))}
 
