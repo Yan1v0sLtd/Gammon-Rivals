@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { skipToken } from '@reduxjs/toolkit/query';
 import { useGetDailyMissionsQuery } from '../features/lobby/lobbyApi';
 import { isSupabaseConfigured } from '../lib/supabase';
-import type { MissionsState } from '../lib/lobbyData';
+import type { MissionsState } from '../features/lobby/lobbyData';
 
 /**
  * Daily Missions client-side compatibility hook.

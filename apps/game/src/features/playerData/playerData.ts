@@ -1,6 +1,6 @@
 import type { PostgrestError, User } from '@supabase/supabase-js';
-import { supabase } from './supabase';
-import type { Database } from '../../../../packages/shared/src/database';
+import { supabase } from '../../lib/supabase';
+import type { Database } from '../../../../../packages/shared/src/database';
 
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export type UserWallet = Database['public']['Tables']['user_wallets']['Row'];

@@ -48,7 +48,7 @@ apps/
 │   ├── game/                      → React-side session state
 │   ├── board/                     → Player board data adapters
 │   ├── store/                     → Redux store, typed hooks, listener middleware, shared RTK Query API
-│   ├── features/                  → Per-feature slices, injected endpoints, selectors (one dir per feature)
+│   ├── features/                  → Per-feature slices, endpoints, selectors, Supabase data access, listeners (one dir per feature)
 │   ├── components/
 │   ├── pages/
 │   ├── lib/
@@ -109,7 +109,8 @@ If anything in the rules code seems backwards, run the engine tests first — th
 
 - **Redux Toolkit is the application-state framework; RTK Query is the only server cache.** `store/store.ts` configures the store strictly: default immutable + serializable checks stay enabled, no ignored paths, no broad exceptions. `store/baseApi.ts` is the single shared `createApi` with `fakeBaseQuery<ApiError>()`; features inject endpoints into it from `features/<feature>/` (never a second `createApi`).
 - **Never copy RTK Query results into an ordinary slice.** Server data stays in the `api` reducer. Slices hold only serializable UI state (replay keeps only `ply` + `playing`). Query data, errors, boards, and totals are read via selectors.
-- **Listener middleware owns workflows.** Async orchestration — timers, polling, Realtime subscriptions, delayed transitions, cross-feature reactions — lives in `store/listenerMiddleware.ts` as cancellable listener effects. Components never own timers/polling; the workflow is cancelled by dispatching a matched control action.
+- **Listener middleware owns workflows, features own the effects.** Async orchestration — timers, polling, Realtime subscriptions, delayed transitions, cross-feature reactions — lives in `features/<feature>/<feature>Listeners.ts` as cancellable listener effects, registered through `start<Feature>Listeners(startListening)`. `store/listenerMiddleware.ts` is a composition root that only calls those registrations. Components never own timers/polling; the workflow is cancelled by dispatching a matched control action.
+- **A feature owns its whole vertical slice.** Slice, selectors, injected endpoints, Supabase reads/RPC wrappers and listeners all sit in `features/<feature>/`. Once a route is migrated its data access moves out of `lib/`; `lib/` keeps infrastructure (`supabase.ts`, auth, billing) and the data layer of routes that are still unmigrated. See `reports/redux-migration.md` for the file-role table.
 - **Redux state must be serializable.** No `Set`, `Map`, class instances, Pixi objects, Realtime channels, promises, abort controllers, DOM elements, or values that can be reliably derived. Route params (`gameId`), totals, and boards are derived via memoized selectors (`createSelector`), never stored.
 - **Mount one `<Provider>` at the root** (`main.tsx`, inside `StrictMode`, wrapping existing providers). Use the typed hooks from `store/hooks.ts` (`useAppDispatch`/`useAppSelector`); feature API hooks are exported from their feature module. No barrels.
 

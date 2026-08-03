@@ -20,7 +20,7 @@ import {
   type LevelStatusTier,
   type ProfileRow,
   type UserWallet,
-} from './playerData';
+} from '../features/playerData/playerData';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
   authInitializationStarted,

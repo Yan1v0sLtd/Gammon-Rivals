@@ -7,7 +7,7 @@ import {
   type ShopItemRow,
   type ShopSale,
   type ShopStoreConfig,
-} from '../../lib/shopData';
+} from './shopData';
 
 export const shopApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
@@ -57,7 +57,7 @@ export const shopApi = baseApi.injectEndpoints({
       },
       // No invalidatesTags: the post-purchase player-data refresh (wallet +
       // XP boost) is a delayed workflow owned by the shopGrantConfirmed
-      // listener in store/listenerMiddleware.ts, so the reward-flight
+      // listener in features/shop/shopListeners.ts, so the reward-flight
       // animation lands before the balance ticks up.
     }),
   }),

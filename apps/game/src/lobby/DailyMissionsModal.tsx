@@ -8,7 +8,7 @@ import {
 import { extractErrorMessage } from '../../../../packages/shared/src/errors';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import { ScaleInModal } from '../components/ScaleInModal';
-import type { Mission, RewardItem } from '../lib/lobbyData';
+import type { Mission, RewardItem } from '../features/lobby/lobbyData';
 import { formatCountdown, nextResetMs, type MissionsResult } from './useDailyMissions';
 import {createEmptyArray} from "../lib/constants.ts";
 

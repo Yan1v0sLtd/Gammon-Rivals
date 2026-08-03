@@ -5,7 +5,7 @@ import {
   useEffect,
 } from 'react';
 import { shopApi } from '../features/shop/shopApi';
-import type { ShopItemRow } from '../lib/shopData';
+import type { ShopItemRow } from '../features/shop/shopData';
 import { warmImages } from '../lib/warmImages';
 import { useBodyModalFlag } from '../lib/bodyModalFlag';
 import { useAppDispatch, useAppSelector } from '../store/hooks';

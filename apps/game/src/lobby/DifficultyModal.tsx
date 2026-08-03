@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 import { formatCompactNumber } from '../lib/format';
 import { PlayButton } from '../components/PlayButton';
 import { useGetTableConfigsQuery } from '../features/lobby/lobbyApi';
-import type { TableConfigRow } from '../lib/lobbyData';
+import type { TableConfigRow } from '../features/lobby/lobbyData';
 import type { Json } from '../../../../packages/shared/src/database';
 
 /**

@@ -1,5 +1,5 @@
-import { isSupabaseConfigured, supabase } from './supabase';
-import type { Database } from '../../../../packages/shared/src/database';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import type { Database } from '../../../../../packages/shared/src/database';
 
 export type BoardThemeConfigRow = Database['public']['Tables']['board_theme_configs']['Row'];
 export type DailyBonusConfigRow = Database['public']['Tables']['daily_bonus_configs']['Row'];

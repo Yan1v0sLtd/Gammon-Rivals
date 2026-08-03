@@ -18,7 +18,7 @@ import {
   selectTotalPlies,
   type SubMove,
 } from '../features/replay/replaySelectors';
-import type { MoveRow } from '../lib/queries';
+import type { MoveRow } from '../features/replay/replayData';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 
 const MODE_LABEL: Record<string, string> = {

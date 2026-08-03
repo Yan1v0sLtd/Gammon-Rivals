@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useGetWheelStateQuery } from '../features/lobby/lobbyApi';
 import { isSupabaseConfigured } from '../lib/supabase';
-import type { WheelState } from '../lib/lobbyData';
+import type { WheelState } from '../features/lobby/lobbyData';
 
 export interface WheelStateResult {
   /** null while the first fetch is in flight, or if Supabase is

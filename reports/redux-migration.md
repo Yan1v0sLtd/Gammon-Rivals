@@ -29,6 +29,49 @@ Zustand, MobX, and TanStack Query should not be introduced alongside this archit
 10. The engine remains pure and independent of Redux, React, Supabase, and Pixi.
 11. Use one shared RTK Query `createApi` instance and inject feature endpoints into it. Do not create one API instance per feature.
 12. Each phase must preserve compatibility for routes that have not migrated yet.
+13. A feature owns its whole vertical slice: slice, selectors, injected endpoints, Supabase data access, and listener workflows all live in `features/<feature>/`. `store/` holds only wiring shared by every feature.
+14. `store/listenerMiddleware.ts` is a composition root. It creates the middleware, builds the typed `startListening`, and calls one `start<Feature>Listeners()` per feature. No listener effect, matcher, or timing constant is defined there.
+15. Once a route is migrated, its Supabase reads and RPC wrappers move out of `lib/` into the owning feature. `lib/` keeps only cross-cutting infrastructure and the data layer of routes that have not migrated yet.
+
+## Feature module layout
+
+Each directory under `apps/game/src/features/<feature>/` uses the same file roles. No barrels, no re-export shims: consumers import the specific module.
+
+| File | Role |
+| --- | --- |
+| `<feature>Slice.ts` | `createSlice` — serializable client state, domain-event action names, timing constants that describe presentation. |
+| `<feature>Selectors.ts` | `createSelector` derivations, including anything read from the RTK Query cache. |
+| `<feature>Api.ts` | `baseApi.injectEndpoints` — the only place endpoints, tags, and invalidation live. |
+| `<feature>Data.ts` | Supabase reads, writes, and RPC wrappers the endpoints call. Plain async functions, no Redux imports. |
+| `<feature>Listeners.ts` | `start<Feature>Listeners(startListening: AppStartListening)` — cancellable workflows, timers, polling. |
+| `<feature>Actions.ts` | Cross-boundary events that no single slice reduces (for example `shopGrantConfirmed`). |
+| `<feature>Errors.ts` | Error-to-message mapping used by the feature's workflows. |
+
+Feature listener modules receive the `AppStartListening` type from `store/listenerTypes.ts`, never the middleware instance. That keeps imports one-way: the middleware imports features, features never import the middleware.
+
+Cross-feature imports are allowed when one feature genuinely owns the reaction — `features/auth` reads `features/playerData` because auth owns sign-out and identity-scoped cache resets, while player data owns the profile row.
+
+### Migration status
+
+| Phase | State |
+| --- | --- |
+| 1 Foundation + Replay pilot | Done |
+| 2 Auth and player-data boundary | Done |
+| 3 Profile route | Done |
+| 4 Application shell state | Done |
+| 5 Shop | Done |
+| 6 Lobby server data | Done |
+| 7 Lobby workflows | Done |
+| 8–12 | Not started |
+
+Current feature directories: `appUi`, `auth`, `lobby`, `playerData`, `replay`, `shop`.
+
+### What deliberately stays in `lib/`
+
+- `supabase.ts`, `auth.tsx`, `nativeAuth.ts`, `nativeGoogleAuth.ts`, `billing/` — infrastructure and platform bridges, not feature data.
+- `persistence.ts` minus the matchmaking RPCs — match creation, `saveGame`, `finishMatch`, invite/join, and account deletion still serve `HotSeat`, `PlayOnline`, `pages/Lobby`, `JoinMatch`, and `DeleteAccount`. They move when Phases 8–10 migrate those routes; the `MatchMode` type they export is still imported (type-only) by `features/lobby/matchmakingData.ts` and should land in the gameplay feature at that point.
+- `identity.ts`, `aiPersona.ts` — consumed only by the unmigrated gameplay routes, plus the generic `avatarUrl` helper.
+- `useAutoRoll.ts`, `useMatchPresence.ts`, `useOnlinePresence.ts`, `useImagePreloader.ts`, `usePrefetchOnIdle.ts`, `warmImages.ts`, `bodyModalFlag.ts`, `format.ts`, `constants.ts`, `loadingScreenImage.ts` — presentation and browser-pipeline utilities that are not server state.
 
 ## Phase 1: Foundation and Replay pilot
 
@@ -354,6 +397,8 @@ Recommended enforceable boundaries:
 - Components may use generated RTK Query hooks and typed Redux hooks, but do not construct ad hoc caches.
 - Slices do not import Supabase, React, Pixi, or navigation APIs.
 - Feature API modules inject into the shared base API.
+- `store/listenerMiddleware.ts` contains no listener effects — only `start<Feature>Listeners()` calls.
+- A migrated route's Supabase access lives in its feature directory, not in `lib/`.
 - Server data is not duplicated in slices.
 - Non-serializable service objects never enter actions or state.
 - Gameplay rules remain in the engine.

@@ -27,9 +27,9 @@ import {
   type UserDailyBonusRow,
   type WheelSpinResult,
   type WheelState,
-} from '../../lib/lobbyData';
+} from './lobbyData';
 // Direct supabase access is the cache-lifetime Realtime exception; all
-// ordinary request/response I/O stays delegated to lib/lobbyData.
+// ordinary request/response I/O stays delegated to features/lobby/lobbyData.
 import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 
 export const lobbyApi = baseApi.injectEndpoints({
@@ -214,7 +214,7 @@ export const lobbyApi = baseApi.injectEndpoints({
         try {
           await queryFulfilled;
           // Wallet/Profile refresh is a delayed workflow owned by the
-          // dailyBonusClaimConfirmed listener in store/listenerMiddleware.ts.
+          // dailyBonusClaimConfirmed listener in features/lobby/dailyBonusListeners.ts.
           dispatch(dailyBonusClaimConfirmed({ userId }));
         } catch {
           // Failed claim: no domain event, so no delayed refresh is scheduled.

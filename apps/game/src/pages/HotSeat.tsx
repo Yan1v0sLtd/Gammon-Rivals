@@ -177,7 +177,7 @@ export default function HotSeat() {
   // Board theme is a PER-CLIENT cosmetic — each player reads their
   // OWN selected theme from THEIR OWN URL's `?board=…` query param.
   // Matchmaking ignores theme entirely (see findMatchInTier in
-  // src/lib/persistence.ts). Two players can be paired into the same
+  // src/features/lobby/matchmakingData.ts). Two players can be paired into the same
   // match with completely different themes on their screens.
   const boardParam = params.get('board');
   /**

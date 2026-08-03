@@ -14,7 +14,7 @@ import {
   cancelMatchmakingRpc,
   enterRoomAiFallback,
   findMatchInTier,
-} from '../../lib/persistence';
+} from './matchmakingData';
 import { baseApi } from '../../store/baseApi';
 import type { AppStartListening } from '../../store/listenerTypes';
 

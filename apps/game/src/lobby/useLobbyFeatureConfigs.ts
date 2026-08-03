@@ -1,6 +1,6 @@
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useGetLobbyFeatureConfigsQuery } from '../features/lobby/lobbyApi';
-import type { LobbyFeatureConfigMap } from '../lib/lobbyData';
+import type { LobbyFeatureConfigMap } from '../features/lobby/lobbyData';
 
 /**
  * Per-feature unlock levels for the bottom-nav (table: lobby_feature_configs),

@@ -3,7 +3,7 @@ import { getProfileProgression } from '../../../../../packages/shared/src/progre
 import type { ProfileProgression } from '../../../../../packages/shared/src/progression';
 import type { RootState } from '../../store/store';
 import { createEmptyArray } from '../../lib/constants';
-import type { LevelConfig, LevelStatusTier } from '../../lib/playerData';
+import type { LevelConfig, LevelStatusTier } from '../playerData/playerData';
 import { playerDataApi } from '../playerData/playerDataApi';
 import type { AuthState } from './authSlice';
 

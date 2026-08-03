@@ -10,7 +10,7 @@ import {
   useGetMatchHistoryQuery,
   useGetOwnerStatsQuery,
 } from '../features/playerData/playerDataApi';
-import type { MatchSummary } from '../lib/queries';
+import type { MatchSummary } from '../features/playerData/matchHistoryData';
 import { useAppDispatch } from '../store/hooks';
 
 const MODE_LABEL: Record<string, string> = {

@@ -1,5 +1,5 @@
 import { baseApi, toApiError } from '../../store/baseApi';
-import { getGameWithMoves, type GameWithMoves } from '../../lib/queries';
+import { getGameWithMoves, type GameWithMoves } from './replayData';
 
 export const replayApi = baseApi.injectEndpoints({
   endpoints: (build) => ({

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { extractErrorMessage } from '../../../../packages/shared/src/errors';
 import { useSpinWheelMutation } from '../features/lobby/lobbyApi';
-import type { WheelSlot } from '../lib/lobbyData';
+import type { WheelSlot } from '../features/lobby/lobbyData';
 import { ModalCloseButton } from '../components/ModalCloseButton';
 import { RewardFlight, type FlightCurrency, type RewardFlightSpec } from './RewardFlight';
 import type { WheelStateResult } from './useWheelState';

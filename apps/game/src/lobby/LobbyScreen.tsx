@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useAuth } from '../lib/auth';
 import { useShop } from '../features/appUi/useShop';
 import { useNavigationLoaderOverlay } from '../features/appUi/useNavigationLoaderOverlay';
-import { abandonStaleMatches } from '../lib/persistence';
+import { abandonStaleMatches } from '../features/lobby/matchmakingData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { useMarkTutorialCompleteMutation } from '../features/lobby/lobbyApi';
 import {

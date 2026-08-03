@@ -13,7 +13,7 @@ import {
   type LevelStatusTier,
   type ProfileRow,
   type UserWallet,
-} from '../../lib/playerData';
+} from './playerData';
 import {
   getOwnerStats,
   listGamesForMatch,
@@ -21,7 +21,7 @@ import {
   type GameRow,
   type MatchSummary,
   type OwnerStats,
-} from '../../lib/queries';
+} from './matchHistoryData';
 
 /** Minimal slice of store state read by the OAuth stale-result guard. */
 interface AuthGuardState {

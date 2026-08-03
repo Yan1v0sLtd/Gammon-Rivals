@@ -3,7 +3,7 @@ import { applyMove, endTurn } from '../../../../../packages/engine/src/rules';
 import { initialBoard } from '../../../../../packages/engine/src/board';
 import { BAR, OFF } from '../../../../../packages/engine/src/types';
 import type { BoardState, Die, Move, Position } from '../../../../../packages/engine/src/types';
-import type { GameWithMoves } from '../../lib/queries';
+import type { GameWithMoves } from './replayData';
 import type { ReplayState } from './replaySlice';
 
 export interface ReplayRootShape {
