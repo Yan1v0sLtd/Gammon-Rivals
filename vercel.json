@@ -1,6 +1,9 @@
 {
   "routes": [
     { "src": "^/$", "dest": "/landing.html" },
+    { "src": "^/how-to-play$", "dest": "/how-to-play.html" },
+    { "src": "^/terms$", "dest": "/terms.html" },
+    { "src": "^/privacy$", "dest": "/privacy.html" },
     {
       "src": "^/sw\\.js$",
       "headers": { "cache-control": "no-store, no-cache, must-revalidate" },
