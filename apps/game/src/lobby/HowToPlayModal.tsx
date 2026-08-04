@@ -1,13 +1,13 @@
-import {useImagePreloader} from '../lib/useImagePreloader';
-import {ScaleInModal} from '../components/ScaleInModal';
-import {ModalCloseButton} from '../components/ModalCloseButton';
+import {ModalCloseButton} from "../components/ModalCloseButton"
+import {ScaleInModal} from "../components/ScaleInModal"
+import {useImagePreloader} from "../lib/useImagePreloader"
 
-interface HowToPlayModalProps {
-  readonly onClose: () => void;
+type HowToPlayModalProps = {
+  readonly onClose: () => void,
 }
 
-const HOW_TO_PLAY_IMG = '/lobby/cards/how-to-play-popup.webp';
-const HOW_TO_PLAY_ASSETS: readonly string[] = [HOW_TO_PLAY_IMG];
+const HOW_TO_PLAY_IMG = "/lobby/cards/how-to-play-popup.webp"
+const HOW_TO_PLAY_ASSETS: readonly string[] = [HOW_TO_PLAY_IMG]
 
 /**
  * Static tutorial popup — triggered from the "How to Play" side-rail
@@ -29,16 +29,17 @@ const HOW_TO_PLAY_ASSETS: readonly string[] = [HOW_TO_PLAY_IMG];
  * "25% smaller than its original") via `width: 75%` on the inner panel.
  */
 export function HowToPlayModal({onClose}: HowToPlayModalProps) {
-  const {ready} = useImagePreloader(HOW_TO_PLAY_ASSETS);
+  const {ready} = useImagePreloader(HOW_TO_PLAY_ASSETS)
 
-  return (<ScaleInModal onClose={onClose} className="relative w-[75%] max-w-[1100px]">
+  return (<ScaleInModal
+    className="relative w-[75%] max-w-[1100px]"
+    onClose={onClose}>
     {ready ? (<>
       <img
-        src={HOW_TO_PLAY_IMG}
         alt="How to play backgammon"
         className="block w-full select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.55)]"
         draggable={false}
-      />
+        src={HOW_TO_PLAY_IMG}/>
 
       {/* Close (X) — INSIDE the frame's top-right corner, on the navy
            *  field just inside the gold border bracket. Replaces the old
@@ -46,14 +47,13 @@ export function HowToPlayModal({onClose}: HowToPlayModalProps) {
            *  the board carousel). Shared with the Daily Bonus modal so both
            *  close buttons are identical in size + style. */}
       <ModalCloseButton
-        onClose={onClose}
         ariaLabel="Close how to play"
         className="absolute right-[2.6%] top-[4%] z-[1]"
-      />
+        onClose={onClose}/>
     </>) : (// Brief placeholder so the panel has size while the image decodes
       // (only visible if opened before the idle prefetch warmed the cache).
       <div className="grid h-48 w-full place-items-center">
         <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/90"/>
       </div>)}
-  </ScaleInModal>);
+  </ScaleInModal>)
 }

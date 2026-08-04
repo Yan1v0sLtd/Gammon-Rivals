@@ -1,23 +1,23 @@
-import type {CubeValue} from '../../../../packages/engine/src/match';
-import type {Player} from '../../../../packages/engine/src/types';
+import type {CubeValue} from "../../../../packages/engine/src/match"
+import type {Player} from "../../../../packages/engine/src/types"
 
-interface Props {
-  offeredBy: Player;
-  currentValue: CubeValue;
+type Props = {
+  offeredBy: Player,
+  currentValue: CubeValue,
 
-  onAccept(): void;
+  onAccept(): void,
 
-  onDrop(): void;
+  onDrop(): void,
 }
 
-export default function CubeOfferDecision({
+export function CubeOfferDecision({
   offeredBy,
   currentValue,
   onAccept,
-  onDrop
+  onDrop,
 }: Props) {
-  const opponent = offeredBy === 'white' ? 'black' : 'white';
-  const newValue = currentValue * 2;
+  const opponent = offeredBy === "white" ? "black" : "white"
+  const newValue = currentValue * 2
   return (<div className="absolute inset-0 flex items-center justify-center bg-black/60 z-30">
     <div
       className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm">
@@ -32,24 +32,22 @@ export default function CubeOfferDecision({
       </div>
 
       <div className="text-xs mb-4 text-amber-900/80">
-        Accept to play for <strong>{newValue}</strong>, or drop to forfeit{' '}
+        Accept to play for <strong>{newValue}</strong>, or drop to forfeit{" "}
         <strong>{currentValue}</strong>.
       </div>
 
       <div className="flex gap-3 justify-center">
         <button
-          onClick={onAccept}
           className="px-5 py-2 rounded-md bg-amber-700 text-amber-50 font-medium border border-amber-900 shadow hover:brightness-110 active:scale-95 transition"
-        >
+          onClick={onAccept}>
           Accept
         </button>
         <button
-          onClick={onDrop}
           className="px-5 py-2 rounded-md bg-stone-700 text-stone-100 font-medium border border-stone-900 shadow hover:brightness-110 active:scale-95 transition"
-        >
+          onClick={onDrop}>
           Drop
         </button>
       </div>
     </div>
-  </div>);
+  </div>)
 }

@@ -1,68 +1,68 @@
-import {supabase} from '../../lib/supabase';
-import type {Database} from '../../../../../packages/shared/src/database';
+import type {Database} from "../../../../../packages/shared/src/database"
+import {supabase} from "../../lib/supabase"
 
-type MatchRow = Database['public']['Tables']['matches']['Row'];
-export type GameRow = Database['public']['Tables']['games']['Row'];
+type MatchRow = Database["public"]["Tables"]["matches"]["Row"]
+export type GameRow = Database["public"]["Tables"]["games"]["Row"]
 
-export interface MatchSummary extends MatchRow {
-  game_count: number;
-}
+export type MatchSummary = {
+  game_count: number,
+} & MatchRow
 
 export async function listMatchesForOwner(ownerId: string, limit = 50): Promise<MatchSummary[]> {
   const {
     data,
-    error
+    error,
   } = await supabase
-    .from('matches')
-    .select('*')
-    .eq('owner_id', ownerId)
-    .order('started_at', {ascending: false})
-    .limit(limit);
-  if (error) throw error;
+    .from("matches")
+    .select("*")
+    .eq("owner_id", ownerId)
+    .order("started_at", {ascending: false})
+    .limit(limit)
+  if (error) throw error
 
-  const matches = data ?? [];
-  if (matches.length === 0) return [];
+  const matches = data ?? []
+  if (matches.length === 0) return []
 
-  const matchIds = matches.map((match) => match.id);
+  const matchIds = matches.map((match) => match.id)
   const {
     data: games,
-    error: gamesError
+    error: gamesError,
   } = await supabase
-    .from('games')
-    .select('match_id')
-    .in('match_id', matchIds);
-  if (gamesError) throw gamesError;
+    .from("games")
+    .select("match_id")
+    .in("match_id", matchIds)
+  if (gamesError) throw gamesError
 
-  const gameCounts = new Map<string, number>();
+  const gameCounts = new Map<string, number>()
   for (const game of games ?? []) {
-    gameCounts.set(game.match_id, (gameCounts.get(game.match_id) ?? 0) + 1);
+    gameCounts.set(game.match_id, (gameCounts.get(game.match_id) ?? 0) + 1)
   }
 
   return matches.map((match) => {
     return {
       ...match,
-      game_count: gameCounts.get(match.id) ?? 0
-    };
-  });
+      game_count: gameCounts.get(match.id) ?? 0,
+    }
+  })
 }
 
-export interface OwnerStats {
-  totalFinished: number;
-  aiWins: number;
-  aiLosses: number;
-  hotseatPlayed: number;
-  ongoing: number;
+export type OwnerStats = {
+  totalFinished: number,
+  aiWins: number,
+  aiLosses: number,
+  hotseatPlayed: number,
+  ongoing: number,
 }
 
 export async function getOwnerStats(ownerId: string): Promise<OwnerStats> {
   const {
     data,
-    error
+    error,
   } = await supabase
-    .from('matches')
-    .select('mode, winner, finished_at')
-    .eq('owner_id', ownerId);
-  if (error) throw error;
+    .from("matches")
+    .select("mode, winner, finished_at")
+    .eq("owner_id", ownerId)
+  if (error) throw error
 
   const stats: OwnerStats = {
     totalFinished: 0,
@@ -70,34 +70,34 @@ export async function getOwnerStats(ownerId: string): Promise<OwnerStats> {
     aiLosses: 0,
     hotseatPlayed: 0,
     ongoing: 0,
-  };
+  }
   for (const m of data ?? []) {
     if (!m.finished_at) {
-      stats.ongoing += 1;
-      continue;
+      stats.ongoing += 1
+      continue
     }
-    stats.totalFinished += 1;
-    if (m.mode === 'hotseat') {
-      stats.hotseatPlayed += 1;
-      continue;
+    stats.totalFinished += 1
+    if (m.mode === "hotseat") {
+      stats.hotseatPlayed += 1
+      continue
     }
-    if (m.mode.startsWith('ai-')) {
+    if (m.mode.startsWith("ai-")) {
       // Owner is always white in AI matches (current setup)
-      if (m.winner === 'white') stats.aiWins += 1; else if (m.winner === 'black') stats.aiLosses += 1;
+      if (m.winner === "white") stats.aiWins += 1; else if (m.winner === "black") stats.aiLosses += 1
     }
   }
-  return stats;
+  return stats
 }
 
 export async function listGamesForMatch(matchId: string): Promise<GameRow[]> {
   const {
     data,
-    error
+    error,
   } = await supabase
-    .from('games')
-    .select('*')
-    .eq('match_id', matchId)
-    .order('game_number', {ascending: true});
-  if (error) throw error;
-  return data ?? [];
+    .from("games")
+    .select("*")
+    .eq("match_id", matchId)
+    .order("game_number", {ascending: true})
+  if (error) throw error
+  return data ?? []
 }

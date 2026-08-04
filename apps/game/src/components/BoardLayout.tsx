@@ -1,36 +1,37 @@
-import SidePanel from './SidePanel';
-import type {PlayerIdentity} from '../lib/identity';
+import type {PlayerIdentity} from "../lib/identity"
 
-interface PlayerSeat {
-  identity: PlayerIdentity | null;
-  pipCount?: number;
-  scoreLabel?: string;
-  doublesLabel?: string;
-  level?: number;
-  stateLabel?: string;
-  coinsLabel?: string;
-  isTurn?: boolean;
-  timerProgress?: number;
-  timerSecondsLeft?: number;
-  hudSlot?: React.ReactNode;
-  bottomSlot?: React.ReactNode;
+import {SidePanel} from "./SidePanel"
+
+type PlayerSeat = {
+  identity: PlayerIdentity | null,
+  pipCount?: number,
+  scoreLabel?: string,
+  doublesLabel?: string,
+  level?: number,
+  stateLabel?: string,
+  coinsLabel?: string,
+  isTurn?: boolean,
+  timerProgress?: number,
+  timerSecondsLeft?: number,
+  hudSlot?: React.ReactNode,
+  bottomSlot?: React.ReactNode,
 }
 
-interface Props {
+type Props = {
   /** The opponent (top-of-screen / left side panel). */
-  opponent: PlayerSeat;
+  opponent: PlayerSeat,
   /** The local player (bottom-of-screen / right side panel). */
-  self: PlayerSeat;
+  self: PlayerSeat,
   /** Top header (status, match score, nav). */
-  header?: React.ReactNode;
+  header?: React.ReactNode,
   /** The board itself — children render in the centre table. */
-  children: React.ReactNode;
+  children: React.ReactNode,
   /** Floating action row over the board (Roll / Double / Undo). */
-  actionsOverlay?: React.ReactNode;
+  actionsOverlay?: React.ReactNode,
   /** Modal overlay (cube decision, end-of-game, etc.) — fills the centre. */
-  centerOverlay?: React.ReactNode;
+  centerOverlay?: React.ReactNode,
   /** Dedicated gameplay background for the selected board, with lobby art as a fallback. */
-  backgroundImage?: string;
+  backgroundImage?: string,
 }
 
 /**
@@ -38,7 +39,7 @@ interface Props {
  * the board so the playing surface owns the viewport; wider screens grow
  * into the reference-style side panels around a large central board.
  */
-export default function BoardLayout({
+export function BoardLayout({
   opponent,
   self,
   header,
@@ -50,11 +51,10 @@ export default function BoardLayout({
   return (<main className="game-screen">
     {backgroundImage && (<>
       <img
-        src={backgroundImage}
         alt=""
         className="game-background-image"
         draggable={false}
-      />
+        src={backgroundImage}/>
     </>)}
     <div className="game-background-tone"/>
 
@@ -63,12 +63,20 @@ export default function BoardLayout({
 
       <div className="game-stage">
         <div className="game-mobile-players">
-          <SidePanel side="left" compact {...opponent} />
-          <SidePanel side="right" compact {...self} />
+          <SidePanel
+            compact
+            side="left"
+            {...opponent} />
+          <SidePanel
+            compact
+            side="right"
+            {...self} />
         </div>
 
         <div className="game-side-slot game-side-slot--left">
-          <SidePanel side="left" {...opponent} />
+          <SidePanel
+            side="left"
+            {...opponent} />
         </div>
 
         <div className="game-board-column">
@@ -86,9 +94,11 @@ export default function BoardLayout({
         </div>
 
         <div className="game-side-slot game-side-slot--right">
-          <SidePanel side="right" {...self} />
+          <SidePanel
+            side="right"
+            {...self} />
         </div>
       </div>
     </div>
-  </main>);
+  </main>)
 }

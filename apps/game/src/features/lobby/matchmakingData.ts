@@ -1,5 +1,5 @@
-import {supabase} from '../../lib/supabase';
-import type {MatchMode} from '../gameplay/gameplayData';
+import {supabase} from "../../lib/supabase"
+import type {MatchMode} from "../gameplay/gameplayData"
 
 /**
  * Result of a tier matchmaking poll. The server is the source of truth
@@ -7,20 +7,20 @@ import type {MatchMode} from '../gameplay/gameplayData';
  * or still queued. The client polls every ~500ms; after ~4 seconds of
  * "queued" results the client falls back to enterRoomAiFallback().
  */
-export interface FindMatchResult {
-  status: 'matched' | 'queued';
+export type FindMatchResult = {
+  status: "matched" | "queued",
   /** Set when status='matched'. */
-  matchId?: string;
+  matchId?: string,
   /** Set when status='matched'. The PvP opponent's profile id + rating. */
-  opponentId?: string;
-  opponentRating?: number;
+  opponentId?: string,
+  opponentRating?: number,
   /** Caller's own pvp_rating snapshot — useful for the "looking for
    *  opponents around X" overlay copy. */
-  rating: number;
-  turnSeconds?: number;
-  target?: number;
+  rating: number,
+  turnSeconds?: number,
+  target?: number,
   /** Post-debit wallet (only present on matched). */
-  wallet?: { coins: number; gems: number };
+  wallet?: {coins: number, gems: number},
 }
 
 /**
@@ -48,26 +48,26 @@ export interface FindMatchResult {
  * ─────────────────────────────────────────────────────────────────
  */
 export async function findMatchInTier(args: {
-  tableConfigId: string; ratingBand?: number;
+  tableConfigId: string, ratingBand?: number,
 }): Promise<FindMatchResult> {
   const {
     data,
-    error
-  } = await supabase.rpc('find_match_in_tier', {
+    error,
+  } = await supabase.rpc("find_match_in_tier", {
     p_table_config_id: args.tableConfigId,
     p_rating_band: args.ratingBand ?? 200,
-  });
-  if (error) throw error;
+  })
+  if (error) throw error
   const payload = data as {
-    status: 'matched' | 'queued';
-    match_id?: string;
-    opponent_id?: string;
-    opponent_rating?: number;
-    rating: number;
-    turn_seconds?: number;
-    target?: number;
-    wallet?: { coins: number; gems: number };
-  };
+    status: "matched" | "queued",
+    match_id?: string,
+    opponent_id?: string,
+    opponent_rating?: number,
+    rating: number,
+    turn_seconds?: number,
+    target?: number,
+    wallet?: {coins: number, gems: number},
+  }
   return {
     status: payload.status,
     matchId: payload.match_id,
@@ -77,7 +77,7 @@ export async function findMatchInTier(args: {
     turnSeconds: payload.turn_seconds,
     target: payload.target,
     wallet: payload.wallet,
-  };
+  }
 }
 
 /**
@@ -85,7 +85,7 @@ export async function findMatchInTier(args: {
  * a no-op if they aren't queued.
  */
 export async function cancelMatchmakingRpc(): Promise<void> {
-  await supabase.rpc('cancel_matchmaking');
+  await supabase.rpc("cancel_matchmaking")
 }
 
 /**
@@ -98,40 +98,40 @@ export async function cancelMatchmakingRpc(): Promise<void> {
  * the tier is passed; the AI doesn't care about the player's chosen
  * board theme, and the matches row never stores a board id.
  */
-export interface EnterRoomResult {
-  matchId: string;
-  turnSeconds: number;
-  mode: MatchMode;
-  target: number;
-  aiLevel: 'easy' | 'medium' | 'hard';
+export type EnterRoomResult = {
+  matchId: string,
+  turnSeconds: number,
+  mode: MatchMode,
+  target: number,
+  aiLevel: "easy" | "medium" | "hard",
   /** True when the tier routes AI through the server bot (mode='online' + is_bot). */
-  isBot: boolean;
-  botLevel: 'easy' | 'medium' | 'hard' | null;
-  streakLen: number;
-  wallet: { coins: number; gems: number };
+  isBot: boolean,
+  botLevel: "easy" | "medium" | "hard" | null,
+  streakLen: number,
+  wallet: {coins: number, gems: number},
 }
 
 export async function enterRoomAiFallback(args: {
-  tableConfigId: string;
+  tableConfigId: string,
 }): Promise<EnterRoomResult> {
   const {
     data,
-    error
-  } = await supabase.rpc('enter_room_ai_fallback', {
+    error,
+  } = await supabase.rpc("enter_room_ai_fallback", {
     p_table_config_id: args.tableConfigId,
-  });
-  if (error) throw error;
+  })
+  if (error) throw error
   const payload = data as {
-    match_id: string;
-    turn_seconds: number;
-    mode: MatchMode;
-    target: number;
-    ai_level: 'easy' | 'medium' | 'hard';
-    is_bot?: boolean;
-    bot_level?: 'easy' | 'medium' | 'hard' | null;
-    streak_len: number;
-    wallet: { coins: number; gems: number };
-  };
+    match_id: string,
+    turn_seconds: number,
+    mode: MatchMode,
+    target: number,
+    ai_level: "easy" | "medium" | "hard",
+    is_bot?: boolean,
+    bot_level?: "easy" | "medium" | "hard" | null,
+    streak_len: number,
+    wallet: {coins: number, gems: number},
+  }
   return {
     matchId: payload.match_id,
     turnSeconds: payload.turn_seconds,
@@ -142,7 +142,7 @@ export async function enterRoomAiFallback(args: {
     botLevel: payload.bot_level ?? null,
     streakLen: payload.streak_len,
     wallet: payload.wallet,
-  };
+  }
 }
 
 /**
@@ -159,9 +159,9 @@ export async function enterRoomAiFallback(args: {
 export async function abandonStaleMatches(maxAgeMinutes?: number): Promise<number> {
   const {
     data,
-    error
-  } = await supabase.rpc('abandon_stale_matches', maxAgeMinutes === undefined ? {} : {p_max_age_minutes: maxAgeMinutes},);
-  if (error) throw error;
-  const payload = data as { abandoned_count: number };
-  return payload?.abandoned_count ?? 0;
+    error,
+  } = await supabase.rpc("abandon_stale_matches", maxAgeMinutes === undefined ? {} : {p_max_age_minutes: maxAgeMinutes})
+  if (error) throw error
+  const payload = data as {abandoned_count: number}
+  return payload?.abandoned_count ?? 0
 }

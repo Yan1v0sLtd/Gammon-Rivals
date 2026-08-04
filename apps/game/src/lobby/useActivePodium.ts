@@ -1,5 +1,5 @@
-import {isSupabaseConfigured} from '../lib/supabase';
-import {useGetActivePodiumQuery} from '../features/lobby/lobbyApi';
+import {useGetActivePodiumQuery} from "../features/lobby/lobbyApi"
+import {isSupabaseConfigured} from "../lib/supabase"
 
 /**
  * The lobby carousel "podium" (the stand the board sits on) used to be a
@@ -10,11 +10,11 @@ import {useGetActivePodiumQuery} from '../features/lobby/lobbyApi';
  * The API caches the raw `string | null`; this default is a presentation
  * fallback applied only at the hook boundary, never stored in the cache.
  */
-const FALLBACK_PODIUM = '/lobby/holders/royal-holder.webp';
+const FALLBACK_PODIUM = "/lobby/holders/royal-holder.webp"
 
 export function useActivePodium(): string {
   const {data} = useGetActivePodiumQuery(undefined, {
     skip: !isSupabaseConfigured,
-  });
-  return data ?? FALLBACK_PODIUM;
+  })
+  return data ?? FALLBACK_PODIUM
 }

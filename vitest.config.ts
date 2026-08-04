@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import {defineConfig} from "vitest/config"
 
 export default defineConfig({
   test: {
@@ -9,6 +9,6 @@ export default defineConfig({
     // churned faster than they caught bugs and were removed deliberately.
     // scripts/check-app-boundaries.mjs keeps the split honest by forbidding
     // packages/** from importing apps/**. Do not widen this glob to apps/**.
-    include: ['packages/**/*.{test,spec}.ts'],
+    include: ["packages/**/*.{test,spec}.ts"],
   },
-});
+})

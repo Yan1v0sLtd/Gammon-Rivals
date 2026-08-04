@@ -1,21 +1,22 @@
-import type { Json } from '../../../shared/src/database';
-import type { ThemeLayout } from './types';
+import type {Json} from "../../../shared/src/database"
+
+import type {ThemeLayout} from "./types"
 
 export function isJsonObject(value: Json | undefined): value is Record<string, Json> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+  return Boolean(value && typeof value === "object" && !Array.isArray(value))
 }
 
 function isNumberArray(value: Json | undefined): value is number[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'number');
+  return Array.isArray(value) && value.every((item) => typeof item === "number")
 }
 
 function isPairOfNumbers(value: Json | undefined): value is [number, number] {
   return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    typeof value[0] === 'number' &&
-    typeof value[1] === 'number'
-  );
+    Array.isArray(value)
+    && value.length === 2
+    && typeof value[0] === "number"
+    && typeof value[1] === "number"
+  )
 }
 
 /**
@@ -30,33 +31,33 @@ function isPairOfNumbers(value: Json | undefined): value is [number, number] {
  * ignoring the felt-corner dots entirely.
  */
 export function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
-  if (!isJsonObject(metadata) || !isJsonObject(metadata.layout)) return undefined;
-  const source = metadata.layout;
+  if (!isJsonObject(metadata) || !isJsonObject(metadata.layout)) return undefined
+  const source = metadata.layout
   const layout: ThemeLayout = {
-    railWidthRatio: typeof source.railWidthRatio === 'number' ? source.railWidthRatio : undefined,
-    barWidthRatio: typeof source.barWidthRatio === 'number' ? source.barWidthRatio : undefined,
-    pointHeightRatio: typeof source.pointHeightRatio === 'number' ? source.pointHeightRatio : undefined,
+    railWidthRatio: typeof source.railWidthRatio === "number" ? source.railWidthRatio : undefined,
+    barWidthRatio: typeof source.barWidthRatio === "number" ? source.barWidthRatio : undefined,
+    pointHeightRatio: typeof source.pointHeightRatio === "number" ? source.pointHeightRatio : undefined,
     topPointHeightRatio:
-      typeof source.topPointHeightRatio === 'number' ? source.topPointHeightRatio : undefined,
+      typeof source.topPointHeightRatio === "number" ? source.topPointHeightRatio : undefined,
     bottomPointHeightRatio:
-      typeof source.bottomPointHeightRatio === 'number'
+      typeof source.bottomPointHeightRatio === "number"
         ? source.bottomPointHeightRatio
         : undefined,
-    topPointYRatio: typeof source.topPointYRatio === 'number' ? source.topPointYRatio : undefined,
+    topPointYRatio: typeof source.topPointYRatio === "number" ? source.topPointYRatio : undefined,
     bottomPointYRatio:
-      typeof source.bottomPointYRatio === 'number' ? source.bottomPointYRatio : undefined,
+      typeof source.bottomPointYRatio === "number" ? source.bottomPointYRatio : undefined,
     checkerRadiusRatio:
-      typeof source.checkerRadiusRatio === 'number' ? source.checkerRadiusRatio : undefined,
+      typeof source.checkerRadiusRatio === "number" ? source.checkerRadiusRatio : undefined,
     topPointWidthRatio:
-      typeof source.topPointWidthRatio === 'number' ? source.topPointWidthRatio : undefined,
+      typeof source.topPointWidthRatio === "number" ? source.topPointWidthRatio : undefined,
     bottomPointWidthRatio:
-      typeof source.bottomPointWidthRatio === 'number' ? source.bottomPointWidthRatio : undefined,
-    topPlayLeftRatio: typeof source.topPlayLeftRatio === 'number' ? source.topPlayLeftRatio : undefined,
+      typeof source.bottomPointWidthRatio === "number" ? source.bottomPointWidthRatio : undefined,
+    topPlayLeftRatio: typeof source.topPlayLeftRatio === "number" ? source.topPlayLeftRatio : undefined,
     bottomPlayLeftRatio:
-      typeof source.bottomPlayLeftRatio === 'number' ? source.bottomPlayLeftRatio : undefined,
-    topBarWidthRatio: typeof source.topBarWidthRatio === 'number' ? source.topBarWidthRatio : undefined,
+      typeof source.bottomPlayLeftRatio === "number" ? source.bottomPlayLeftRatio : undefined,
+    topBarWidthRatio: typeof source.topBarWidthRatio === "number" ? source.topBarWidthRatio : undefined,
     bottomBarWidthRatio:
-      typeof source.bottomBarWidthRatio === 'number' ? source.bottomBarWidthRatio : undefined,
+      typeof source.bottomBarWidthRatio === "number" ? source.bottomBarWidthRatio : undefined,
     topPointCenterXRatios: isNumberArray(source.topPointCenterXRatios)
       ? source.topPointCenterXRatios
       : undefined,
@@ -76,57 +77,57 @@ export function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       ? source.bottomCheckerOffsetXRatios
       : undefined,
     checkerScaleYRatio:
-      typeof source.checkerScaleYRatio === 'number' ? source.checkerScaleYRatio : undefined,
+      typeof source.checkerScaleYRatio === "number" ? source.checkerScaleYRatio : undefined,
     checkerStackSpacingRatio:
-      typeof source.checkerStackSpacingRatio === 'number'
+      typeof source.checkerStackSpacingRatio === "number"
         ? source.checkerStackSpacingRatio
         : undefined,
     topCheckerStackSpacingRatio:
-      typeof source.topCheckerStackSpacingRatio === 'number'
+      typeof source.topCheckerStackSpacingRatio === "number"
         ? source.topCheckerStackSpacingRatio
         : undefined,
     bottomCheckerStackSpacingRatio:
-      typeof source.bottomCheckerStackSpacingRatio === 'number'
+      typeof source.bottomCheckerStackSpacingRatio === "number"
         ? source.bottomCheckerStackSpacingRatio
         : undefined,
     topCheckerPaddingRatio:
-      typeof source.topCheckerPaddingRatio === 'number'
+      typeof source.topCheckerPaddingRatio === "number"
         ? source.topCheckerPaddingRatio
         : undefined,
     bottomCheckerPaddingRatio:
-      typeof source.bottomCheckerPaddingRatio === 'number'
+      typeof source.bottomCheckerPaddingRatio === "number"
         ? source.bottomCheckerPaddingRatio
         : undefined,
     blackOffTrayXRatio:
-      typeof source.blackOffTrayXRatio === 'number' ? source.blackOffTrayXRatio : undefined,
+      typeof source.blackOffTrayXRatio === "number" ? source.blackOffTrayXRatio : undefined,
     blackOffTrayTopRatio:
-      typeof source.blackOffTrayTopRatio === 'number' ? source.blackOffTrayTopRatio : undefined,
+      typeof source.blackOffTrayTopRatio === "number" ? source.blackOffTrayTopRatio : undefined,
     blackOffTrayHeightRatio:
-      typeof source.blackOffTrayHeightRatio === 'number'
+      typeof source.blackOffTrayHeightRatio === "number"
         ? source.blackOffTrayHeightRatio
         : undefined,
     whiteOffTrayXRatio:
-      typeof source.whiteOffTrayXRatio === 'number' ? source.whiteOffTrayXRatio : undefined,
+      typeof source.whiteOffTrayXRatio === "number" ? source.whiteOffTrayXRatio : undefined,
     whiteOffTrayTopRatio:
-      typeof source.whiteOffTrayTopRatio === 'number' ? source.whiteOffTrayTopRatio : undefined,
+      typeof source.whiteOffTrayTopRatio === "number" ? source.whiteOffTrayTopRatio : undefined,
     whiteOffTrayHeightRatio:
-      typeof source.whiteOffTrayHeightRatio === 'number'
+      typeof source.whiteOffTrayHeightRatio === "number"
         ? source.whiteOffTrayHeightRatio
         : undefined,
     offCheckerStackSpacingRatio:
-      typeof source.offCheckerStackSpacingRatio === 'number'
+      typeof source.offCheckerStackSpacingRatio === "number"
         ? source.offCheckerStackSpacingRatio
         : undefined,
     offTrayInsetRatio:
-      typeof source.offTrayInsetRatio === 'number' ? source.offTrayInsetRatio : undefined,
+      typeof source.offTrayInsetRatio === "number" ? source.offTrayInsetRatio : undefined,
     offTrayMarginRatio:
-      typeof source.offTrayMarginRatio === 'number' ? source.offTrayMarginRatio : undefined,
+      typeof source.offTrayMarginRatio === "number" ? source.offTrayMarginRatio : undefined,
     offTrayMidGapRatio:
-      typeof source.offTrayMidGapRatio === 'number' ? source.offTrayMidGapRatio : undefined,
+      typeof source.offTrayMidGapRatio === "number" ? source.offTrayMidGapRatio : undefined,
     blackOffTrayTiltDeg:
-      typeof source.blackOffTrayTiltDeg === 'number' ? source.blackOffTrayTiltDeg : undefined,
+      typeof source.blackOffTrayTiltDeg === "number" ? source.blackOffTrayTiltDeg : undefined,
     whiteOffTrayTiltDeg:
-      typeof source.whiteOffTrayTiltDeg === 'number' ? source.whiteOffTrayTiltDeg : undefined,
+      typeof source.whiteOffTrayTiltDeg === "number" ? source.whiteOffTrayTiltDeg : undefined,
     feltInnerTopLeftRatio: isPairOfNumbers(source.feltInnerTopLeftRatio)
       ? source.feltInnerTopLeftRatio
       : undefined,
@@ -164,8 +165,7 @@ export function layoutFromMetadata(metadata: Json): ThemeLayout | undefined {
       ? source.feltRightHalfBottomRightRatio
       : undefined,
     feltDepthScaleRatio:
-      typeof source.feltDepthScaleRatio === 'number' ? source.feltDepthScaleRatio : undefined,
-  };
-  return layout;
+      typeof source.feltDepthScaleRatio === "number" ? source.feltDepthScaleRatio : undefined,
+  }
+  return layout
 }
-

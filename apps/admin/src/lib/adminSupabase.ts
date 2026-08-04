@@ -1,5 +1,6 @@
-import {createClient, type SupabaseClient} from '@supabase/supabase-js';
-import type {Database} from '../../../../packages/shared/src/database';
+import {createClient, type SupabaseClient} from "@supabase/supabase-js"
+
+import type {Database} from "../../../../packages/shared/src/database"
 
 /**
  * Independent Supabase client used exclusively by the Back Office.
@@ -21,28 +22,28 @@ import type {Database} from '../../../../packages/shared/src/database';
  * also in localStorage, so the verifier the BO writes when initiating
  * Google OAuth is the same verifier that gets read at the callback.
  */
-const url = import.meta.env.VITE_SUPABASE_URL;
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const url = import.meta.env.VITE_SUPABASE_URL
+const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
-const missingConfigMessage = 'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office.';
+const missingConfigMessage = "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office."
 
 function createMissingSupabaseClient(): SupabaseClient<Database> {
   return new Proxy({}, {
     get() {
-      throw new Error(missingConfigMessage);
+      throw new Error(missingConfigMessage)
     },
-  }) as SupabaseClient<Database>;
+  }) as SupabaseClient<Database>
 }
 
-export const isAdminSupabaseConfigured = Boolean(url && key);
+export const isAdminSupabaseConfigured = Boolean(url && key)
 
 export const adminSupabase: SupabaseClient<Database> = isAdminSupabaseConfigured ? createClient<Database>(url, key, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce',
-    storageKey: 'sb-admin-auth-token',
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    flowType: "pkce",
+    storageKey: "sb-admin-auth-token",
+    storage: typeof window !== "undefined" ? window.localStorage : undefined,
   },
-}) : createMissingSupabaseClient();
+}) : createMissingSupabaseClient()

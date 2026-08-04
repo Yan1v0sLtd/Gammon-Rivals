@@ -1,5 +1,6 @@
-import {useEffect, useMemo, useRef} from 'react';
-import type {DiceRoll, Die} from '../../../../packages/engine/src/types';
+import {useEffect, useMemo, useRef} from "react"
+
+import type {DiceRoll, Die} from "../../../../packages/engine/src/types"
 
 /**
  * DiceTray v4 — pure HTML + CSS 3D dice.
@@ -28,11 +29,11 @@ import type {DiceRoll, Die} from '../../../../packages/engine/src/types';
  * approach would gradually have less rotation between rolls).
  */
 
-interface Props {
-  readonly roll: DiceRoll | null;
-  readonly remaining: readonly Die[];
-  readonly settleSide?: 'left' | 'right';
-  readonly placement?: 'board' | 'hud';
+type Props = {
+  readonly roll: DiceRoll | null,
+  readonly remaining: readonly Die[],
+  readonly settleSide?: "left" | "right",
+  readonly placement?: "board" | "hud",
   /** Optional theme-provided dice sprite (3 cols × 2 rows of faces
    *  1–6 in reading order). When supplied, each face div renders
    *  with the sprite as its background-image instead of the default
@@ -40,7 +41,7 @@ interface Props {
    *  selection) work identically — only the per-face artwork
    *  changes. Sourced from Theme.diceImage on the active board
    *  theme; null/undefined → fall back to default pip cubes. */
-  readonly themeSprite?: string;
+  readonly themeSprite?: string,
 }
 
 /**
@@ -55,39 +56,40 @@ interface Props {
  *   .dice-face--f5 → -Y top
  *   .dice-face--f6 → -Z back
  */
-const ROTATION_MAP: Record<Die, { x: number; y: number }> = {
+const ROTATION_MAP: Record<Die, {x: number, y: number}> = {
   1: {
     x: 0,
-    y: 0
+    y: 0,
   },
   2: {
     x: -90,
-    y: 0
+    y: 0,
   },
   3: {
     x: 0,
-    y: -90
+    y: -90,
   },
   4: {
     x: 0,
-    y: 90
+    y: 90,
   },
   5: {
     x: 90,
-    y: 0
+    y: 0,
   },
   6: {
     x: 180,
-    y: 0
+    y: 0,
   },
-};
+}
 
 /** Minimum full 360° turns each roll's tumble should perform.
  *  Per-axis is randomised between MIN and MIN+2 inclusive so the
  *  two axes have different spin counts and the cube looks like
  *  it's actually tumbling, not yaw-spinning. */
-const MIN_SPINS_PER_ROLL = 3;
-const SPIN_VARIANCE = 3; // 3..5 turns
+const MIN_SPINS_PER_ROLL = 3
+const SPIN_VARIANCE = 3 // 3..5 turns
+const PIP_KEYS = ["pip-1", "pip-2", "pip-3", "pip-4", "pip-5", "pip-6"] as const
 
 /**
  * Compute the next absolute rotation for an axis. Inputs:
@@ -107,72 +109,77 @@ const SPIN_VARIANCE = 3; // 3..5 turns
  * The smallest such k is ceil((current + min_extra - base) / 360).
  */
 function nextRotationStop(current: number, baseFace: number): number {
-  const extraSpins = MIN_SPINS_PER_ROLL + Math.floor(Math.random() * SPIN_VARIANCE);
-  const minExtra = extraSpins * 360 + Math.random() * 180;
-  const k = Math.ceil((current + minExtra - baseFace) / 360);
-  return baseFace + 360 * k;
+  const extraSpins = MIN_SPINS_PER_ROLL + Math.floor(Math.random() * SPIN_VARIANCE)
+  const minExtra = extraSpins * 360 + Math.random() * 180
+  const k = Math.ceil((current + minExtra - baseFace) / 360)
+  return baseFace + 360 * k
 }
 
 /* ─── diceToShow — same semantics as every prior version ───────── */
 
-function diceToShow(roll: DiceRoll, remaining: readonly Die[]): Array<{ readonly value: Die; readonly used: boolean }> {
+function diceToShow(roll: DiceRoll, remaining: readonly Die[]): {readonly id: "first" | "second", readonly value: Die, readonly used: boolean}[] {
   if (roll[0] === roll[1]) {
     // Doubles grant FOUR moves but we render only TWO dice and
     // grey them out progressively:
     //   0–1 moves used → both fresh
     //   2–3 moves used → one die greyed
     //   4   moves used → both greyed
-    const used = 4 - remaining.length;
+    const used = 4 - remaining.length
     return [{
+      id: "first",
       value: roll[0],
-      used: used >= 2
+      used: used >= 2,
     }, {
+      id: "second",
       value: roll[0],
-      used: used >= 4
-    },];
+      used: used >= 4,
+    }]
   }
-  const remCopy = [...remaining];
-  return ([roll[0], roll[1]] as const).map((v) => {
-    const idx = remCopy.indexOf(v);
+  const remCopy = [...remaining]
+  return ([roll[0], roll[1]] as const).map((v, i) => {
+    const idx = remCopy.indexOf(v)
     if (idx >= 0) {
-      remCopy.splice(idx, 1);
+      remCopy.splice(idx, 1)
       return {
+        id: i === 0 ? "first" : "second",
         value: v,
-        used: false
-      };
+        used: false,
+      }
     }
     return {
+      id: i === 0 ? "first" : "second",
       value: v,
-      used: true
-    };
-  });
+      used: true,
+    }
+  })
 }
 
 /* ─── Component ────────────────────────────────────────────────── */
 
-export default function DiceTray({
+export function DiceTray({
   roll,
   remaining,
-  settleSide = 'right',
+  settleSide = "right",
   themeSprite,
 }: Props) {
-  const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining]);
-  if (!roll || dice.length === 0) return null;
+  const dice = useMemo(() => (roll ? diceToShow(roll, remaining) : []), [roll, remaining])
+  if (!roll || dice.length === 0) return null
 
   // Stable id per roll. DELIBERATELY does NOT include
   // remaining.length — that was the v4-initial bug where the
   // tumble re-fired on every sub-move the player made.
-  const rollId = `${roll[0]}-${roll[1]}`;
+  const rollId = `${roll[0]}-${roll[1]}`
 
-  return (<div className={`dice-board dice-board--${settleSide}`} aria-hidden>
-    {dice.map((d, i) => (<CssDie
-      key={i}
-      value={d.value}
-      used={d.used}
-      rollId={`${rollId}-${i}`}
+  return (<div
+    aria-hidden
+    className={`dice-board dice-board--${settleSide}`}>
+    {dice.map((d) => (<CssDie
+      key={`${rollId}-${d.id}`}
+      rollId={`${rollId}-${d.id}`}
       sprite={themeSprite}
-    />))}
-  </div>);
+      used={d.used}
+      value={d.value}/>))}
+  </div>)
 }
 
 /**
@@ -192,37 +199,37 @@ function CssDie({
   rollId,
   sprite,
 }: {
-  readonly value: Die; readonly used: boolean; readonly rollId: string; readonly sprite?: string;
+  readonly value: Die, readonly used: boolean, readonly rollId: string, readonly sprite?: string,
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const dieRef = useRef<HTMLDivElement>(null)
   // Cumulative absolute rotation across this die's lifetime. We
   // need this in a ref (not state) so re-renders don't reset it,
   // and so updating it doesn't trigger another React render.
-  const rotation = useRef({
+  const rotationRef = useRef({
     x: 0,
-    y: 0
-  });
+    y: 0,
+  })
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const el = dieRef.current
+    if (!el) return
 
-    const base = ROTATION_MAP[value];
-    const nextX = nextRotationStop(rotation.current.x, base.x);
-    const nextY = nextRotationStop(rotation.current.y, base.y);
-    rotation.current = {
+    const base = ROTATION_MAP[value]
+    const nextX = nextRotationStop(rotationRef.current.x, base.x)
+    const nextY = nextRotationStop(rotationRef.current.y, base.y)
+    rotationRef.current = {
       x: nextX,
-      y: nextY
-    };
+      y: nextY,
+    }
 
     // Force the browser to commit the CURRENT style before setting
     // the new transform. Without this, mount + transform-set in
     // the same paint frame skips the transition entirely
     // (AI-roll "no animation" bug).
-    void el.offsetHeight;
+    void el.offsetHeight
 
-    el.style.transform = `rotateX(${nextX}deg) rotateY(${nextY}deg)`;
-  }, [rollId, value]);
+    el.style.transform = `rotateX(${nextX}deg) rotateY(${nextY}deg)`
+  }, [rollId, value])
 
   // When a theme sprite URL is provided, switch to sprite mode:
   // the cube gets the .dice-cube--sprite class, each face uses
@@ -235,16 +242,18 @@ function CssDie({
   // (see render below) so a single rule can dim both the cube
   // and the shadow at the same time. The cube className itself
   // only carries the sprite-mode flag now.
-  const className = `dice-cube${sprite ? ' dice-cube--sprite' : ''}`;
-  const style = sprite ? ({['--dice-sprite-url' as string]: `url("${sprite}")`} as React.CSSProperties) : undefined;
+  const className = `dice-cube${sprite ? " dice-cube--sprite" : ""}`
+  const style = sprite ? ({["--dice-sprite-url" as string]: `url("${sprite}")`} as React.CSSProperties) : undefined
 
   // For sprite mode we don't render any pip children — the
   // sprite IS the face artwork. For default mode we render the
   // standard pip counts per face (1, 2, 3, 4, 5, 6).
   const renderPips = (count: number) => {
-    if (sprite) return null;
-    return Array.from({length: count}, (_, i) => (<span key={i} className="dice-pip"/>));
-  };
+    if (sprite) return null
+    return PIP_KEYS.slice(0, count).map((pipKey) => (<span
+      key={pipKey}
+      className="dice-pip"/>))
+  }
 
   // The stand wrapper holds the cube + a flat shadow sibling. It
   // MUST keep transform-style: preserve-3d so the cube's faces
@@ -257,8 +266,11 @@ function CssDie({
   // together. Without that, a "used" die went to 40% opacity but
   // its shadow stayed at full strength — players reported seeing
   // "shadow without die" after consuming a pip in a move.
-  return (<div className={`dice-stand${used ? ' dice-stand--used' : ''}`}>
-    <div ref={ref} className={className} style={style}>
+  return (<div className={`dice-stand${used ? " dice-stand--used" : ""}`}>
+    <div
+      ref={dieRef}
+      className={className}
+      style={style}>
       <div className="dice-face dice-face--f1">{renderPips(1)}</div>
       <div className="dice-face dice-face--f2">{renderPips(2)}</div>
       <div className="dice-face dice-face--f3">{renderPips(3)}</div>
@@ -266,6 +278,8 @@ function CssDie({
       <div className="dice-face dice-face--f5">{renderPips(5)}</div>
       <div className="dice-face dice-face--f6">{renderPips(6)}</div>
     </div>
-    <div className="dice-shadow" aria-hidden/>
-  </div>);
+    <div
+      aria-hidden
+      className="dice-shadow"/>
+  </div>)
 }

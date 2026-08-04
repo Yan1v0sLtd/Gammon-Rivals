@@ -1,9 +1,9 @@
-import { applyMove, legalMoves } from '../../engine/src/rules';
-import type { BoardState, Die, Move } from '../../engine/src/types';
+import {applyMove, legalMoves} from "../../engine/src/rules"
+import type {BoardState, Die, Move} from "../../engine/src/types"
 
-export interface MoveSequence {
-  readonly finalState: BoardState;
-  readonly moves: readonly Move[];
+export type MoveSequence = {
+  readonly finalState: BoardState,
+  readonly moves: readonly Move[],
 }
 
 /**
@@ -13,58 +13,58 @@ export interface MoveSequence {
  */
 export function enumerateSequences(
   state: BoardState,
-  remaining: readonly Die[]
+  remaining: readonly Die[],
 ): MoveSequence[] {
-  const all: MoveSequence[] = [];
-  walk(state, remaining, [], all);
+  const all: MoveSequence[] = []
+  walk(state, remaining, [], all)
 
   // If the only "sequence" found is the no-op leaf (no legal moves at all),
   // treat it as an empty result — caller distinguishes "must pass" cleanly.
-  const nonEmpty = all.filter((s) => s.moves.length > 0);
-  if (nonEmpty.length === 0) return [];
+  const nonEmpty = all.filter((s) => s.moves.length > 0)
+  if (nonEmpty.length === 0) return []
 
-  const byState = new Map<string, MoveSequence>();
+  const byState = new Map<string, MoveSequence>()
   for (const s of nonEmpty) {
-    const key = stateKey(s.finalState);
-    if (!byState.has(key)) byState.set(key, s);
+    const key = stateKey(s.finalState)
+    if (!byState.has(key)) byState.set(key, s)
   }
-  return Array.from(byState.values());
+  return Array.from(byState.values())
 }
 
 function walk(
   state: BoardState,
   remaining: readonly Die[],
   history: Move[],
-  out: MoveSequence[]
+  out: MoveSequence[],
 ): void {
-  const moves = legalMoves(state, remaining);
+  const moves = legalMoves(state, remaining)
   if (moves.length === 0) {
-    out.push({ finalState: state, moves: [...history] });
-    return;
+    out.push({finalState: state, moves: [...history]})
+    return
   }
-  const seen = new Set<string>();
+  const seen = new Set<string>()
   for (const m of moves) {
-    const k = `${String(m.from)}->${String(m.to)}@${m.die}`;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    const next = applyMove(state, m);
-    const nextRemaining = removeDie(remaining, m.die);
-    history.push(m);
-    walk(next, nextRemaining, history, out);
-    history.pop();
+    const k = `${String(m.from)}->${String(m.to)}@${m.die}`
+    if (seen.has(k)) continue
+    seen.add(k)
+    const next = applyMove(state, m)
+    const nextRemaining = removeDie(remaining, m.die)
+    history.push(m)
+    walk(next, nextRemaining, history, out)
+    history.pop()
   }
 }
 
 function removeDie(dice: readonly Die[], die: Die): readonly Die[] {
-  const idx = dice.indexOf(die);
-  if (idx < 0) return dice;
-  return [...dice.slice(0, idx), ...dice.slice(idx + 1)];
+  const idx = dice.indexOf(die)
+  if (idx < 0) return dice
+  return [...dice.slice(0, idx), ...dice.slice(idx + 1)]
 }
 
 function stateKey(s: BoardState): string {
-  let k = `${s.turn}|${s.bar.white},${s.bar.black}|${s.off.white},${s.off.black}|`;
+  let k = `${s.turn}|${s.bar.white},${s.bar.black}|${s.off.white},${s.off.black}|`
   for (const pt of s.points) {
-    k += `${pt.owner ?? '_'}${pt.count};`;
+    k += `${pt.owner ?? "_"}${pt.count};`
   }
-  return k;
+  return k
 }

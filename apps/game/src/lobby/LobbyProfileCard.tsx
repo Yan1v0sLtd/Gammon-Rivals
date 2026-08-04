@@ -1,13 +1,14 @@
-import {Link} from 'react-router-dom';
-import Avatar from '../components/Avatar';
-import type {ProfileProgression} from '../../../../packages/shared/src/progression';
-import type {Database} from '../../../../packages/shared/src/database';
+import {Link} from "react-router-dom"
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+import type {Database} from "../../../../packages/shared/src/database"
+import type {ProfileProgression} from "../../../../packages/shared/src/progression"
+import {Avatar} from "../components/Avatar"
 
-interface LobbyProfileCardProps {
-  readonly profile: ProfileRow | null;
-  readonly progression: ProfileProgression;
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
+
+type LobbyProfileCardProps = {
+  readonly profile: ProfileRow | null,
+  readonly progression: ProfileProgression,
 }
 
 /**
@@ -19,30 +20,34 @@ interface LobbyProfileCardProps {
  */
 export function LobbyProfileCard({
   profile,
-  progression
+  progression,
 }: LobbyProfileCardProps) {
   return (<Link
-    to="/profile"
     aria-label="Open profile"
     className="lobby-pp-card group"
     data-fly-target="xp"
-  >
-    <span className="lobby-pp-shine" aria-hidden="true"/>
+    to="/profile">
+    <span
+      aria-hidden="true"
+      className="lobby-pp-shine"/>
 
     <div className="lobby-pp-content">
       <div className="lobby-pp-identity">
         <div className="lobby-pp-avatar-wrap">
           <div className="lobby-pp-avatar-ring">
-            <span className="lobby-pp-spark s1" aria-hidden="true"/>
-            <span className="lobby-pp-spark s2" aria-hidden="true"/>
+            <span
+              aria-hidden="true"
+              className="lobby-pp-spark s1"/>
+            <span
+              aria-hidden="true"
+              className="lobby-pp-spark s2"/>
 
             <div className="lobby-pp-avatar-img">
               <Avatar
-                seed={profile?.avatar_seed ?? 'guest'}
                 imageUrl={profile?.avatar_url}
-                size={240}
                 ring="none"
-              />
+                seed={profile?.avatar_seed ?? "guest"}
+                size={240}/>
             </div>
 
             <div className="lobby-pp-shield">
@@ -55,17 +60,20 @@ export function LobbyProfileCard({
       {/* XP bar — directly below the avatar, sized to the avatar circle
             (see .lobby-pp-content + .lobby-pp-xp-bar in index.css). It's the
             only text element left in the card. */}
-      <div className="lobby-pp-xp-bar" aria-label="Level progress">
+      <div
+        aria-label="Level progress"
+        className="lobby-pp-xp-bar">
         <div
           className="lobby-pp-xp-fill"
-          style={{width: `${Math.max(0, Math.min(100, progression.progressPercent))}%`}}
-        >
-          <span className="lobby-pp-xp-fill-bubbles" aria-hidden="true"/>
+          style={{width: `${Math.max(0, Math.min(100, progression.progressPercent))}%`}}>
+          <span
+            aria-hidden="true"
+            className="lobby-pp-xp-fill-bubbles"/>
         </div>
         <div className="lobby-pp-xp-text">
           <span>{progression.xpBarLabel}</span>
         </div>
       </div>
     </div>
-  </Link>);
+  </Link>)
 }

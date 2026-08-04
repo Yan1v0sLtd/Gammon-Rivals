@@ -1,5 +1,6 @@
-import {type CSSProperties, useCallback, useEffect, useRef, useState} from 'react';
-import {ONBOARDING_STEPS, type TourStep} from './onboardingSteps';
+import {type CSSProperties, useCallback, useEffect, useRef, useState} from "react"
+
+import {ONBOARDING_STEPS, type TourStep} from "./onboardingSteps"
 
 /**
  * First-run onboarding tour. A dimmed overlay with a spotlight cutout that
@@ -18,147 +19,156 @@ import {ONBOARDING_STEPS, type TourStep} from './onboardingSteps';
  * mirror so this shows exactly once.
  */
 
-interface Rect {
-  readonly top: number;
-  readonly left: number;
-  readonly width: number;
-  readonly height: number;
+type Rect = {
+  readonly top: number,
+  readonly left: number,
+  readonly width: number,
+  readonly height: number,
 }
 
 function readRect(selector: string | undefined): Rect | null {
-  if (!selector) return null;
-  const el = document.querySelector(selector);
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
+  if (!selector) return null
+  const el = document.querySelector(selector)
+  if (!el) return null
+  const r = el.getBoundingClientRect()
   // Treat a zero-size / off-screen element as "not there yet".
-  if (r.width === 0 && r.height === 0) return null;
+  if (r.width === 0 && r.height === 0) return null
   return {
     top: r.top,
     left: r.left,
     width: r.width,
-    height: r.height
-  };
+    height: r.height,
+  }
 }
 
 function rectsEqual(a: Rect | null, b: Rect | null): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  return (Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5);
+  if (a === b) return true
+  if (!a || !b) return false
+  return (Math.abs(a.top - b.top) < 0.5 && Math.abs(a.left - b.left) < 0.5 && Math.abs(a.width - b.width) < 0.5 && Math.abs(a.height - b.height) < 0.5)
 }
 
 export function OnboardingTour({
   steps = ONBOARDING_STEPS,
   onDone,
 }: {
-  readonly steps?: readonly TourStep[]; /** Fires once when the tour is dismissed — via Skip or the final CTA. */
-  readonly onDone: () => void;
+  readonly steps?: readonly TourStep[], /** Fires once when the tour is dismissed — via Skip or the final CTA. */
+  readonly onDone: () => void,
 }) {
-  const [index, setIndex] = useState(0);
-  const [rect, setRect] = useState<Rect | null>(null);
-  const doneRef = useRef(false);
+  const [index, setIndex] = useState(0)
+  const [rect, setRect] = useState<Rect | null>(null)
+  const doneRef = useRef(false)
 
-  const step = steps[index];
-  const isLast = index === steps.length - 1;
+  const step = steps[index]
+  const isLast = index === steps.length - 1
 
   const finish = useCallback(() => {
-    if (doneRef.current) return; // guard against double-fire (button + key)
-    doneRef.current = true;
-    onDone();
-  }, [onDone]);
+    if (doneRef.current) return // guard against double-fire (button + key)
+    doneRef.current = true
+    onDone()
+  }, [onDone])
 
   const next = useCallback(() => {
     if (isLast) {
-      finish();
-      return;
+      finish()
+      return
     }
-    setIndex((i) => Math.min(i + 1, steps.length - 1));
-  }, [isLast, finish, steps.length]);
+    setIndex((i) => Math.min(i + 1, steps.length - 1))
+  }, [isLast, finish, steps.length])
 
   // Glue the spotlight to the live element. rAF (not just resize/scroll) so the
   // cutout tracks the board carousel's transition and any late layout settle;
   // we only setState when the rect actually changes, so this stays cheap.
-  const PAD = 8;
-  const anchor = step?.anchor;
+  const PAD = 8
+  const anchor = step?.anchor
   useEffect(() => {
-    let raf = 0;
-    let current: Rect | null = null;
-    let first = true; // force one setState on (re)mount / step change
+    let raf = 0
+    let current: Rect | null = null
+    let first = true // force one setState on (re)mount / step change
     const tick = () => {
-      const nextRect = readRect(anchor);
+      const nextRect = readRect(anchor)
       if (first || !rectsEqual(current, nextRect)) {
-        first = false;
-        current = nextRect;
-        setRect(nextRect);
+        first = false
+        current = nextRect
+        setRect(nextRect)
       }
-      raf = requestAnimationFrame(tick);
-    };
+      raf = requestAnimationFrame(tick)
+    }
     // setState lives only inside the rAF callback (not the effect body) so it
     // doesn't trigger a synchronous cascading render; the first frame fires
     // ~16ms in and the spotlight's transition smooths the step change.
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [anchor]);
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+    }
+  }, [anchor])
 
   // Esc skips; Enter/Space advances — keyboard parity for desktop players.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        finish();
+      if (e.key === "Escape") {
+        e.preventDefault()
+        finish()
       }
-      else if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        next();
+      else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault()
+        next()
       }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [finish, next]);
+    }
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [finish, next])
 
-  if (!step) return null;
+  if (!step) return null
 
   // Card placement: below the spotlight if there's room, else above; centered
   // when there's no anchor (welcome) or the anchor isn't on screen.
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const cardMaxW = Math.min(360, vw - 24);
-  let cardStyle: CSSProperties;
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const cardMaxW = Math.min(360, vw - 24)
+  let cardStyle: CSSProperties
   if (rect) {
-    const centerX = rect.left + rect.width / 2;
-    const left = Math.max(12, Math.min(centerX - cardMaxW / 2, vw - cardMaxW - 12));
-    const spaceBelow = vh - (rect.top + rect.height);
-    const placeBelow = spaceBelow > 220 || spaceBelow > rect.top;
+    const centerX = rect.left + rect.width / 2
+    const left = Math.max(12, Math.min(centerX - cardMaxW / 2, vw - cardMaxW - 12))
+    const spaceBelow = vh - (rect.top + rect.height)
+    const placeBelow = spaceBelow > 220 || spaceBelow > rect.top
     cardStyle = placeBelow ? {
       left,
       top: rect.top + rect.height + PAD + 12,
-      maxWidth: cardMaxW
+      maxWidth: cardMaxW,
     } : {
       left,
       bottom: vh - rect.top + PAD + 12,
-      maxWidth: cardMaxW
-    };
+      maxWidth: cardMaxW,
+    }
   }
   else {
     cardStyle = {
-      left: '50%',
-      top: '50%',
-      transform: 'translate(-50%, -50%)',
+      left: "50%",
+      top: "50%",
+      transform: "translate(-50%, -50%)",
       maxWidth: cardMaxW,
-    };
+    }
   }
 
-  return (<div className="fixed inset-0 z-[120]" aria-live="polite" role="dialog" aria-modal="true">
+  return (<div
+    aria-live="polite"
+    aria-modal="true"
+    className="fixed inset-0 z-[120]"
+    role="dialog">
     {/* Full-screen click absorber: blocks interaction with the lobby beneath
           for the duration of the tour. Transparent when a spotlight is shown
           (the cutout's box-shadow does the dimming); dimmed itself otherwise. */}
     <div
       className="absolute inset-0"
       style={{
-        background: rect ? 'transparent' : 'rgba(3,9,20,0.82)',
-        pointerEvents: 'auto'
+        background: rect ? "transparent" : "rgba(3,9,20,0.82)",
+        pointerEvents: "auto",
       }}
-      onClick={(e) => e.stopPropagation()}
-    />
+      onClick={(e) => {
+        e.stopPropagation()
+      }}/>
 
     {/* Spotlight cutout — a transparent rect whose giant box-shadow dims
           everything around it, revealing the anchored element. */}
@@ -169,51 +179,49 @@ export function OnboardingTour({
         left: rect.left - PAD,
         width: rect.width + PAD * 2,
         height: rect.height + PAD * 2,
-        boxShadow: '0 0 0 9999px rgba(3,9,20,0.82)',
-        outline: '2px solid rgba(252,211,77,0.9)',
-        outlineOffset: '2px',
-        transition: 'top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease',
-      }}
-    />) : null}
+        boxShadow: "0 0 0 9999px rgba(3,9,20,0.82)",
+        outline: "2px solid rgba(252,211,77,0.9)",
+        outlineOffset: "2px",
+        transition: "top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease",
+      }}/>) : null}
 
     {/* Step card */}
     <div
       className="absolute flex flex-col gap-3 rounded-2xl border border-amber-300/30 bg-gradient-to-b from-[#0c2c4d] to-[#071a30] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
       style={{
         ...cardStyle,
-        pointerEvents: 'auto'
-      }}
-    >
+        pointerEvents: "auto",
+      }}>
       <div className="flex items-center gap-2">
-          <span className="text-[0.7rem] font-bold uppercase tracking-widest text-amber-300/70">
-            {index + 1} / {steps.length}
-          </span>
+        <span className="text-[0.7rem] font-bold uppercase tracking-widest text-amber-300/70">
+          {index + 1} / {steps.length}
+        </span>
       </div>
       <h2 className="font-display text-2xl font-black leading-tight text-amber-200 drop-shadow">
         {step.title}
       </h2>
       <div className="flex flex-col gap-2">
-        {step.body.map((p, i) => (<p key={i} className="text-sm leading-relaxed text-white/85">
+        {step.body.map((p) => (<p
+          key={p}
+          className="text-sm leading-relaxed text-white/85">
           {p}
         </p>))}
       </div>
       <div className="mt-1 flex items-center justify-between gap-3">
         {!isLast ? (<button
-          type="button"
-          onClick={finish}
           className="text-sm font-semibold text-white/55 transition hover:text-white/80"
-        >
+          type="button"
+          onClick={finish}>
           Skip
         </button>) : (<span/>)}
         <button
-          type="button"
-          onClick={next}
           className="rounded-lg bg-gradient-to-b from-[#ffd96a] via-[#f4c23a] to-[#e09a17] px-5 py-2 font-display text-base font-black text-[#3a2406] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_0_#a86a0e] transition hover:brightness-110 active:translate-y-[1px]"
-        >
+          type="button"
+          onClick={next}>
           {step.cta}
-          {!isLast ? ' →' : ''}
+          {!isLast ? " →" : ""}
         </button>
       </div>
     </div>
-  </div>);
+  </div>)
 }

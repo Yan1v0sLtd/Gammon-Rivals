@@ -15,206 +15,210 @@
 // payload shapes are verified ON DEVICE (test-license buy); see
 // docs/billing/native-wiring.md. Everything we own is typed.
 
-import 'cordova-plugin-purchase';
-import {supabase} from '../supabase';
-import type {BillingOutcome, BillingPurchaseRequest, BillingService} from './types';
+import "cordova-plugin-purchase"
+import {supabase} from "../supabase"
+
+import type {BillingOutcome, BillingPurchaseRequest, BillingService} from "./types"
 
 // The plugin sets window.CdvPurchase at runtime on device — read lazily,
 // not at module load.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Cdv = any;
+type Cdv = any
 
 function cdv(): Cdv {
-  const g = (globalThis as unknown as { CdvPurchase?: Cdv }).CdvPurchase;
-  if (!g) throw new Error('CdvPurchase unavailable — native (Play) build only');
-  return g;
+  const g = (globalThis as unknown as {CdvPurchase?: Cdv}).CdvPurchase
+  if (!g) throw new Error("CdvPurchase unavailable — native (Play) build only")
+  return g
 }
 
-const FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-google-purchase`;
+const supabaseUrl: string | undefined = import.meta.env.VITE_SUPABASE_URL
+const FN_URL = supabaseUrl ? `${supabaseUrl}/functions/v1/validate-google-purchase` : null
 
 /** POSTs the purchase token + buyer's Supabase JWT so the edge fn resolves
  *  profile_id from the token, not the request body. */
-async function validateWithServer(shopItemId: string, purchaseToken: string,): Promise<{
-  status?: string; error?: string
+async function validateWithServer(shopItemId: string, purchaseToken: string): Promise<{
+  status?: string, error?: string,
 }> {
+  if (FN_URL === null) throw new Error("Supabase URL is not configured")
+
   const {
     data: {session},
-  } = await supabase.auth.getSession();
+  } = await supabase.auth.getSession()
   const res = await fetch(FN_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session?.access_token ?? ''}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session?.access_token ?? ""}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
       shopItemId,
-      purchaseToken
+      purchaseToken,
     }),
-  });
-  return (await res.json()) as { status?: string; error?: string };
+  })
+  return (await res.json()) as {status?: string, error?: string}
 }
 
 export class NativeBillingService implements BillingService {
-  private skuToItem: Record<string, string> = {};
-  private itemToSku: Record<string, string> = {};
-  private initPromise: Promise<void> | null = null;
+  private skuToItem: Record<string, string> = {}
+  private itemToSku: Record<string, string> = {}
+  private initPromise: Promise<void> | null = null
   /** sku → resolver for the in-flight purchase() awaiting that product. */
-  private pending = new Map<string, (o: BillingOutcome) => void>();
+  private pending = new Map<string, (o: BillingOutcome) => void>()
 
   async purchase(req: BillingPurchaseRequest): Promise<BillingOutcome> {
     try {
-      await this.ensureInitialized();
+      await this.ensureInitialized()
     }
     catch (e) {
       return {
-        status: 'error',
-        code: 'init_failed',
-        message: (e as Error).message
-      };
+        status: "error",
+        code: "init_failed",
+        message: e instanceof Error ? e.message : String(e),
+      }
     }
 
-    const sku = req.productId ?? this.itemToSku[req.itemId];
+    const sku = req.productId ?? this.itemToSku[req.itemId]
     if (!sku) {
       return {
-        status: 'error',
-        code: 'unknown_sku',
-        message: `no Play SKU for ${req.itemId}`
-      };
+        status: "error",
+        code: "unknown_sku",
+        message: `no Play SKU for ${req.itemId}`,
+      }
     }
 
     const {
       store,
       Platform,
-      ErrorCode
-    } = cdv();
-    const offer = store.get(sku, Platform.GOOGLE_PLAY)?.getOffer?.();
+      ErrorCode,
+    } = cdv()
+    const offer = store.get(sku, Platform.GOOGLE_PLAY)?.getOffer?.()
     if (!offer) {
       return {
-        status: 'error',
-        code: 'no_offer',
-        message: `store offer missing for ${sku}`
-      };
+        status: "error",
+        code: "no_offer",
+        message: `store offer missing for ${sku}`,
+      }
     }
 
     // Arm the resolver before ordering so the verified handler can settle it.
-    const settled = new Promise<BillingOutcome>((resolve) => this.pending.set(sku, resolve));
+    const settled = new Promise<BillingOutcome>((resolve) => this.pending.set(sku, resolve))
 
-    const err = await offer.order();
+    const err = await offer.order()
     if (err) {
-      this.pending.delete(sku);
-      const cancelled = err.code === ErrorCode?.PAYMENT_CANCELLED;
-      return cancelled ? {status: 'cancelled'} : {
-        status: 'error',
-        code: String(err.code ?? 'order_failed'),
-        message: err.message ?? 'order failed'
-      };
+      this.pending.delete(sku)
+      const cancelled = err.code === ErrorCode?.PAYMENT_CANCELLED
+      return cancelled ? {status: "cancelled"} : {
+        status: "error",
+        code: String(err.code ?? "order_failed"),
+        message: err.message ?? "order failed",
+      }
     }
 
     // Resolved by the verified handler (→ 'granted') once the server grants.
-    return settled;
+    return settled
   }
 
   /** Register every enabled real-money product and wire the store lifecycle.
    *  Runs at most once. */
   private ensureInitialized(): Promise<void> {
-    if (this.initPromise) return this.initPromise;
-    this.initPromise = this.init().catch((e) => {
+    if (this.initPromise) return this.initPromise
+    this.initPromise = this.init().catch((e: unknown) => {
       // Reset so a later purchase can retry a transient init failure.
-      this.initPromise = null;
-      throw e;
-    });
-    return this.initPromise;
+      this.initPromise = null
+      throw e
+    })
+    return this.initPromise
   }
 
   private async init(): Promise<void> {
     const {
       store,
       ProductType,
-      Platform
-    } = cdv();
+      Platform,
+    } = cdv()
 
     // SKU list from the DB (data, not code).
     const {
       data,
-      error
+      error,
     } = await supabase
-      .from('shop_items')
-      .select('id, google_product_id')
-      .eq('is_enabled', true)
-      .not('google_product_id', 'is', null)
-      .not('price_cents', 'is', null);
-    if (error) throw error;
+      .from("shop_items")
+      .select("id, google_product_id")
+      .eq("is_enabled", true)
+      .not("google_product_id", "is", null)
+      .not("price_cents", "is", null)
+    if (error) throw error
 
     const rows = (data ?? []).filter((r): r is {
-      id: string; google_product_id: string
-    } => Boolean(r.google_product_id),);
+      id: string, google_product_id: string,
+    } => Boolean(r.google_product_id))
     for (const r of rows) {
-      this.skuToItem[r.google_product_id] = r.id;
-      this.itemToSku[r.id] = r.google_product_id;
+      this.skuToItem[r.google_product_id] = r.id
+      this.itemToSku[r.id] = r.google_product_id
     }
 
     store.register(rows.map((r) => ({
       id: r.google_product_id,
       type: ProductType.CONSUMABLE,
       platform: Platform.GOOGLE_PLAY,
-    })),);
+    })))
 
     // token → our server → grant. ok:true only once the grant landed.
     store.validator = async (receipt: Cdv, callback: Cdv) => {
-      const sku: string | undefined = receipt?.id ?? receipt?.transaction?.products?.[0]?.id;
-      const token: string | undefined = receipt?.transaction?.purchaseToken;
-      const itemId = sku ? this.skuToItem[sku] : undefined;
+      const sku: string | undefined = receipt?.id ?? receipt?.transaction?.products?.[0]?.id
+      const token: string | undefined = receipt?.transaction?.purchaseToken
+      const itemId = sku ? this.skuToItem[sku] : undefined
       if (!itemId || !token) {
         callback({
           ok: false,
           code: store.INVALID_PAYLOAD,
-          message: 'missing item/token'
-        });
-        return;
+          message: "missing item/token",
+        })
+        return
       }
       try {
-        const r = await validateWithServer(itemId, token);
-        if (r.status === 'granted' || r.status === 'already_fulfilled') {
+        const r = await validateWithServer(itemId, token)
+        if (r.status === "granted" || r.status === "already_fulfilled") {
           callback({
             ok: true,
-            data: {}
-          });
+            data: {},
+          })
         }
         else {
           callback({
             ok: false,
             code: store.INVALID_PAYLOAD,
-            message: r.error ?? r.status ?? 'invalid',
-          });
+            message: r.error ?? r.status ?? "invalid",
+          })
         }
       }
       catch (e) {
         callback({
           ok: false,
           code: store.INVALID_PAYLOAD,
-          message: (e as Error).message
-        });
+          message: (e as Error).message,
+        })
       }
-    };
+    }
 
     store
       .when()
       .approved((t: Cdv) => t.verify())
       .verified((r: Cdv) => {
-        r.finish();
-        const sku: string | undefined = r?.id ?? r?.transaction?.products?.[0]?.id;
-        if (sku) this.resolve(sku, {status: 'granted'});
-      });
+        r.finish()
+        const sku: string | undefined = r?.id ?? r?.transaction?.products?.[0]?.id
+        if (sku) this.resolve(sku, {status: "granted"})
+      })
 
-    await store.initialize([Platform.GOOGLE_PLAY]);
+    await store.initialize([Platform.GOOGLE_PLAY])
   }
 
   private resolve(sku: string, outcome: BillingOutcome): void {
-    const r = this.pending.get(sku);
+    const r = this.pending.get(sku)
     if (r) {
-      this.pending.delete(sku);
-      r(outcome);
+      this.pending.delete(sku)
+      r(outcome)
     }
   }
 }

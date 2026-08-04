@@ -1,14 +1,14 @@
-import {Component, type ErrorInfo, type ReactNode} from 'react';
-import {Link} from 'react-router-dom';
-import {captureException} from '@sentry/react';
+import {Component, type ErrorInfo, type ReactNode} from "react"
 
-interface Props {
-  readonly children: ReactNode;
+import {Link} from "react-router-dom"
+
+type Props = {
+  readonly children: ReactNode,
 }
 
-interface State {
-  readonly error: Error | null;
-  readonly info: ErrorInfo | null;
+type State = {
+  readonly error: Error | null,
+  readonly info: ErrorInfo | null,
 }
 
 /**
@@ -24,29 +24,24 @@ interface State {
 export class RouteErrorBoundary extends Component<Props, State> {
   state: State = {
     error: null,
-    info: null
-  };
+    info: null,
+  }
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    return {error};
+    return {error}
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // React swallows render errors once a boundary catches them, so they
-    // never reach Sentry's global handlers — report explicitly.
-    captureException(error, {
-      contexts: {react: {componentStack: info.componentStack ?? undefined}},
-    });
-    console.error('[RouteErrorBoundary] render crashed', error, info);
-    this.setState({info});
+    console.error("[RouteErrorBoundary] render crashed", error, info)
+    this.setState({info})
   }
 
   render(): ReactNode {
     if (this.state.error) {
       const {
         error,
-        info
-      } = this.state;
+        info,
+      } = this.state
       return (<main
         className="min-h-screen bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt p-6 flex flex-col gap-4 overflow-auto">
         <div className="font-display text-2xl text-rose-300">
@@ -67,21 +62,21 @@ export class RouteErrorBoundary extends Component<Props, State> {
         </div>
         <div className="flex gap-3">
           <Link
-            to="/play"
             className="px-4 py-2 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110"
-          >
+            to="/play">
             Home
           </Link>
           <button
-            type="button"
-            onClick={() => window.location.reload()}
             className="px-4 py-2 rounded bg-board-felt/10 border border-board-felt/20 text-board-felt/80 text-sm hover:bg-board-felt/15"
-          >
+            type="button"
+            onClick={() => {
+              window.location.reload()
+            }}>
             Reload page
           </button>
         </div>
-      </main>);
+      </main>)
     }
-    return this.props.children;
+    return this.props.children
   }
 }

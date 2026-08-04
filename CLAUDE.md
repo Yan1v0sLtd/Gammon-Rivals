@@ -58,7 +58,7 @@ the most common bug source.
 
 ## File structure
 
-```
+```text
 apps/
 ├── game/src/                      → Player application
 │   ├── game/                      → React-side session state

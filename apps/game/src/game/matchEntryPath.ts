@@ -25,32 +25,32 @@
  */
 
 /** Everything match entry knows about a matched room, as URL-able primitives. */
-export interface MatchEntry {
-  readonly matchId: string;
-  readonly target: number;
-  readonly turnSeconds: number;
+export type MatchEntry = {
+  readonly matchId: string,
+  readonly target: number,
+  readonly turnSeconds: number,
   /** One of `'pvp' | 'online' | 'easy' | 'medium' | 'hard'` (plain string from the matchmaking RPCs). */
-  readonly mode: string;
-  readonly boardId: string;
+  readonly mode: string,
+  readonly boardId: string,
 }
 
 /** Parsed query params consumed by PlayOnline from a match-entry URL. */
-export interface MatchEntryParams {
-  readonly turnSeconds: number | null;
-  readonly inactivityForfeitMs: number | undefined;
-  readonly boardId: string | null;
+export type MatchEntryParams = {
+  readonly turnSeconds: number | null,
+  readonly inactivityForfeitMs: number | undefined,
+  readonly boardId: string | null,
 }
 
 /** Parse the query params that matchEntryPath produces. */
 export function parseMatchEntryParams(params: URLSearchParams): MatchEntryParams {
-  const raw = params.get('turn');
-  const n = raw ? parseInt(raw, 10) : NaN;
-  const turnSeconds = Number.isFinite(n) ? Math.min(600, Math.max(5, n)) : null;
+  const raw = params.get("turn")
+  const n = raw ? parseInt(raw, 10) : NaN
+  const turnSeconds = Number.isFinite(n) ? Math.min(600, Math.max(5, n)) : null
   // The per-turn timer auto-ends slow players' turns, so this fires only when
   // the opponent has actually left / lost connection: 30s+ absorbs a blip.
   const inactivityForfeitMs =
-    turnSeconds !== null ? Math.max(turnSeconds * 2, 30) * 1000 : undefined;
-  return { turnSeconds, inactivityForfeitMs, boardId: params.get('board') };
+    turnSeconds !== null ? Math.max(turnSeconds * 2, 30) * 1000 : undefined
+  return {turnSeconds, inactivityForfeitMs, boardId: params.get("board")}
 }
 
 /** Full route path + query string to navigate into for a matched room. */
@@ -60,14 +60,14 @@ export function matchEntryPath(entry: MatchEntry): string {
     target,
     turnSeconds,
     mode,
-    boardId
-  } = entry;
-  const params = new URLSearchParams();
-  params.set('opp', mode === 'pvp' ? 'pvp' : mode);
-  params.set('target', String(target));
-  params.set('board', boardId);
-  params.set('matchId', matchId);
-  params.set('turn', String(turnSeconds));
-  const query = params.toString();
-  return mode === 'pvp' || mode === 'online' ? `/play/${matchId}?${query}` : `/hotseat?${query}`;
+    boardId,
+  } = entry
+  const params = new URLSearchParams()
+  params.set("opp", mode === "pvp" ? "pvp" : mode)
+  params.set("target", String(target))
+  params.set("board", boardId)
+  params.set("matchId", matchId)
+  params.set("turn", String(turnSeconds))
+  const query = params.toString()
+  return mode === "pvp" || mode === "online" ? `/play/${matchId}?${query}` : `/hotseat?${query}`
 }

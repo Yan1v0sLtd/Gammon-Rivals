@@ -1,14 +1,17 @@
-import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
-import App from './App';
-import './index.css';
-import {initializeClient} from '../../../packages/shared/src/clientBootstrap';
-import {AdminAuthProvider} from './lib/adminAuth';
+import {StrictMode} from "react"
 
-initializeClient('Gammon Rivals Back Office', 'gammon-rivals-admin');
+import {createRoot} from "react-dom/client"
 
-createRoot(document.getElementById('root')!).render(<StrictMode>
+import {initializeClient} from "../../../packages/shared/src/clientBootstrap"
+
+import {App} from "./App"
+import "./index.css"
+import {AdminAuthProvider} from "./lib/AdminAuthProvider"
+
+initializeClient("Gammon Rivals Back Office", "gammon-rivals-admin")
+
+createRoot(document.getElementById("root")!).render(<StrictMode>
   <AdminAuthProvider>
     <App/>
   </AdminAuthProvider>
-</StrictMode>);
+</StrictMode>)

@@ -4,9 +4,9 @@
 [tools]
 prettier = "3.9.1"
 python = "3.11.15"
-node = "24.14.0"
+node = "26.6.0"
 # Mobile apps
-#"npm:eas-cli" = "20.5.1"
+# "npm:eas-cli" = "20.5.1"
 # Ai related
 opencode = "1.14.51"
 pi = "0.83.0"

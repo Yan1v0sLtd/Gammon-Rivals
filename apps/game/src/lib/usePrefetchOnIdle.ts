@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect} from "react"
 
 /**
  * Warms the browser cache for a set of image URLs AFTER the page is
@@ -15,35 +15,35 @@ import {useEffect} from 'react';
  */
 export function usePrefetchOnIdle(urls: readonly string[]): void {
   useEffect(() => {
-    if (urls.length === 0) return;
-    let cancelled = false;
+    if (urls.length === 0) return
+    let cancelled = false
 
     const warm = () => {
-      if (cancelled) return;
+      if (cancelled) return
       for (const url of urls) {
-        if (!url) continue;
-        const img = new Image();
-        img.src = url;
+        if (!url) continue
+        const img = new Image()
+        img.src = url
       }
-    };
+    }
 
-    let idleHandle: number | undefined;
-    let timeoutHandle: number | undefined;
-    if (typeof window.requestIdleCallback === 'function') {
+    let idleHandle: number | undefined
+    let timeoutHandle: number | undefined
+    if (typeof window.requestIdleCallback === "function") {
       // timeout ensures we still prefetch within 2.5s even if the main thread
       // never goes fully idle on a busy first load.
-      idleHandle = window.requestIdleCallback(warm, {timeout: 2500});
+      idleHandle = window.requestIdleCallback(warm, {timeout: 2500})
     }
     else {
-      timeoutHandle = window.setTimeout(warm, 1200);
+      timeoutHandle = window.setTimeout(warm, 1200)
     }
 
     return () => {
-      cancelled = true;
-      if (idleHandle !== undefined && typeof window.cancelIdleCallback === 'function') {
-        window.cancelIdleCallback(idleHandle);
+      cancelled = true
+      if (idleHandle !== undefined && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleHandle)
       }
-      if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle);
-    };
-  }, [urls]);
+      if (timeoutHandle !== undefined) window.clearTimeout(timeoutHandle)
+    }
+  }, [urls])
 }

@@ -1,4 +1,4 @@
-import {useCallback, useState} from 'react';
+import {useCallback, useState} from "react"
 
 /**
  * Per-match auto-roll preference. When enabled, the player's dice are
@@ -12,11 +12,11 @@ import {useCallback, useState} from 'react';
  * the toggle is session-only — players opt in fresh per match.
  */
 export function useAutoRoll(): [boolean, (next: boolean) => void] {
-  const [enabled, setEnabledState] = useState<boolean>(false);
+  const [enabled, setEnabled] = useState<boolean>(false)
 
-  const setEnabled = useCallback((next: boolean) => {
-    setEnabledState(next);
-  }, []);
+  const setAutoRollEnabled = useCallback((next: boolean) => {
+    setEnabled(next)
+  }, [])
 
-  return [enabled, setEnabled];
+  return [enabled, setAutoRollEnabled]
 }

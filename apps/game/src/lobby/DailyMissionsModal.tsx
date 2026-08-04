@@ -1,19 +1,21 @@
-import {type CSSProperties, type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
-import {useAppSelector} from '../store/hooks';
-import {selectAuthUserId} from '../features/auth/authSelectors';
+import {type CSSProperties, type SyntheticEvent, useEffect, useMemo, useRef, useState} from "react"
+
+import {extractErrorMessage} from "../../../../packages/shared/src/errors"
+import {ScaleInModal} from "../components/ScaleInModal"
+import {selectAuthUserId} from "../features/auth/authSelectors"
 import {
   useClaimMissionMutation, useClaimStreakChestMutation, useRerollMissionMutation,
-} from '../features/lobby/lobbyApi';
-import {extractErrorMessage} from '../../../../packages/shared/src/errors';
-import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from './RewardFlight';
-import {ScaleInModal} from '../components/ScaleInModal';
-import type {Mission, RewardItem} from '../features/lobby/lobbyData';
-import {formatCountdown, type MissionsResult, nextResetMs} from '../features/lobby/lobbySelectors';
-import {createEmptyArray} from "../lib/constants.ts";
+} from "../features/lobby/lobbyApi"
+import type {Mission, RewardItem} from "../features/lobby/lobbyData"
+import {formatCountdown, type MissionsResult, nextResetMs} from "../features/lobby/lobbySelectors"
+import {createEmptyArray} from "../lib/constants.ts"
+import {useAppSelector} from "../store/hooks"
 
-interface Props {
-  readonly result: MissionsResult;
-  readonly onClose: () => void;
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "./RewardFlight"
+
+type Props = {
+  readonly result: MissionsResult,
+  readonly onClose: () => void,
 }
 
 /**
@@ -29,47 +31,47 @@ interface Props {
  * Data + behaviour (claim / claim-all / reroll / streak / countdown / reward
  * flights) are unchanged — only the markup + CSS are new.
  */
-const DESIGN_W = 1536;
-const DESIGN_H = 812;
+const DESIGN_W = 1536
+const DESIGN_H = 812
 
 export function DailyMissionsModal({
   result,
-  onClose
+  onClose,
 }: Props) {
   const {
     state,
     isLoading,
-    error
-  } = result;
-  const userId = useAppSelector(selectAuthUserId);
-  const [claimMission] = useClaimMissionMutation();
-  const [rerollMission] = useRerollMissionMutation();
-  const [claimStreakChest] = useClaimStreakChestMutation();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null);
-  const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null);
-  const [rerollConfirmId, setRerollConfirmId] = useState<string | null>(null);
+    error,
+  } = result
+  const userId = useAppSelector(selectAuthUserId)
+  const [claimMission] = useClaimMissionMutation()
+  const [rerollMission] = useRerollMissionMutation()
+  const [claimStreakChest] = useClaimStreakChestMutation()
+  const [actionError, setActionError] = useState<string | null>(null)
+  const [claimingMissionId, setClaimingMissionId] = useState<string | null>(null)
+  const [rerollingMissionId, setRerollingMissionId] = useState<string | null>(null)
+  const [rerollConfirmId, setRerollConfirmId] = useState<string | null>(null)
   // The most-recently-rerolled mission floats to the top of the list so the
   // replacement is always visible up top (not buried mid-list). reroll_mission
   // updates the row in place, so the id is stable across the refetch.
-  const [rerolledTopId, setRerolledTopId] = useState<string | null>(null);
-  const [tab, setTab] = useState<'daily' | 'weekly'>('daily');
-  const [howOpen, setHowOpen] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [rerolledTopId, setRerolledTopId] = useState<string | null>(null)
+  const [tab, setTab] = useState<"daily" | "weekly">("daily")
+  const [howOpen, setHowOpen] = useState(false)
+  const [now, setNow] = useState(Date.now())
 
-  const [flights, setFlights] = useState<readonly RewardFlightSpec[]>([]);
-  const nextFlightIdRef = useRef(0);
+  const [flights, setFlights] = useState<readonly RewardFlightSpec[]>([])
+  const nextFlightIdRef = useRef(0)
 
   const spawnFlights = (currency: FlightCurrency, count: number, srcEl: HTMLElement | null) => {
-    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`);
-    if (!target || !srcEl) return;
-    const srcRect = srcEl.getBoundingClientRect();
-    const dstRect = target.getBoundingClientRect();
-    const startX = srcRect.left + srcRect.width / 2;
-    const startY = srcRect.top + srcRect.height / 2;
-    const endX = dstRect.left + dstRect.width / 2;
-    const endY = dstRect.top + dstRect.height / 2;
-    const additions: RewardFlightSpec[] = [];
+    const target = document.querySelector<HTMLElement>(`[data-fly-target="${currency}"]`)
+    if (!target || !srcEl) return
+    const srcRect = srcEl.getBoundingClientRect()
+    const dstRect = target.getBoundingClientRect()
+    const startX = srcRect.left + srcRect.width / 2
+    const startY = srcRect.top + srcRect.height / 2
+    const endX = dstRect.left + dstRect.width / 2
+    const endY = dstRect.top + dstRect.height / 2
+    const additions: RewardFlightSpec[] = []
     for (let i = 0; i < count; i++) {
       additions.push({
         id: nextFlightIdRef.current++,
@@ -80,72 +82,82 @@ export function DailyMissionsModal({
         endY,
         delayMs: i * 70,
         durationMs: 850,
-      });
+      })
     }
-    setFlights((prev) => [...prev, ...additions]);
-  };
-  const removeFlight = (id: number) => setFlights((prev) => prev.filter((f) => f.id !== id));
+    setFlights((prev) => [...prev, ...additions])
+  }
+  const removeFlight = (id: number) => {
+    setFlights((prev) => prev.filter((f) => f.id !== id))
+  }
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+    const id = window.setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !claimingMissionId && !rerollingMissionId) onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, claimingMissionId, rerollingMissionId]);
+      if (e.key === "Escape" && !claimingMissionId && !rerollingMissionId) onClose()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [onClose, claimingMissionId, rerollingMissionId])
 
-  const missionsList = state?.missions ?? createEmptyArray<Mission>();
-  const dailies = useMemo(() => missionsList.filter((m) => m.period === 'daily'), [missionsList]);
-  const orderedDailies = useMemo(() => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)), [dailies, rerolledTopId],);
-  const weeklies = useMemo(() => missionsList.filter((m) => m.period === 'weekly').slice(0, 2), [missionsList]);
-  const claimableCount = useMemo(() => dailies.filter((m) => m.completed_at && !m.claimed_at).length, [dailies],);
-  const weeklyClaimable = useMemo(() => weeklies.some((m) => m.completed_at && !m.claimed_at), [weeklies],);
+  const missionsList = state?.missions ?? createEmptyArray<Mission>()
+  const dailies = useMemo(() => missionsList.filter((m) => m.period === "daily"), [missionsList])
+  const orderedDailies = useMemo(() => [...dailies].sort((a, b) => Number(b.id === rerolledTopId) - Number(a.id === rerolledTopId)), [dailies, rerolledTopId])
+  const weeklies = useMemo(() => missionsList.filter((m) => m.period === "weekly").slice(0, 2), [missionsList])
+  const claimableCount = useMemo(() => dailies.filter((m) => m.completed_at && !m.claimed_at).length, [dailies])
+  const weeklyClaimable = useMemo(() => weeklies.some((m) => m.completed_at && !m.claimed_at), [weeklies])
 
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState(1)
   useEffect(() => {
     const update = () => {
-      const s = Math.min(1, (window.innerWidth * 0.98) / DESIGN_W, (window.innerHeight * 0.96) / DESIGN_H);
-      setScale(s);
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
+      const s = Math.min(1, (window.innerWidth * 0.98) / DESIGN_W, (window.innerHeight * 0.96) / DESIGN_H)
+      setScale(s)
+    }
+    update()
+    window.addEventListener("resize", update)
+    return () => {
+      window.removeEventListener("resize", update)
+    }
+  }, [])
 
   const countdownMs = useMemo(() => {
-    void now;
-    return nextResetMs(state);
-  }, [state, now]);
+    void now
+    return nextResetMs(state)
+  }, [state, now])
 
-  const rerollsLeft = state ? Math.max(0, state.reroll.daily_cap - state.reroll.rerolls_today) : 0;
-  const canRerollAny = rerollsLeft > 0;
-  const rerollCost = state?.reroll.next_cost ?? null;
+  const rerollsLeft = state ? Math.max(0, state.reroll.daily_cap - state.reroll.rerolls_today) : 0
+  const canRerollAny = rerollsLeft > 0
+  const rerollCost = state?.reroll.next_cost ?? null
 
   const handleClaim = async (missionId: string, srcEl: HTMLElement | null) => {
-    setClaimingMissionId(missionId);
-    setActionError(null);
-    const mission = missionsList.find((m) => m.id === missionId);
+    setClaimingMissionId(missionId)
+    setActionError(null)
+    const mission = missionsList.find((m) => m.id === missionId)
     try {
       if (!userId) {
-        setActionError('Sign in to claim mission rewards.');
-        return;
+        setActionError("Sign in to claim mission rewards.")
+        return
       }
       const credited = await claimMission({
         missionId,
-        userId
-      }).unwrap();
-      if (credited?.credited_coins) spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl);
-      if (credited?.credited_gems) spawnFlights('gems', Math.min(6, Math.max(2, credited.credited_gems)), srcEl);
-      if (credited?.credited_xp) spawnFlights('xp', Math.min(5, Math.max(2, credited.credited_xp)), srcEl);
+        userId,
+      }).unwrap()
+      if (credited?.credited_coins) spawnFlights("coins", Math.min(8, Math.max(3, Math.ceil(credited.credited_coins / 75))), srcEl)
+      if (credited?.credited_gems) spawnFlights("gems", Math.min(6, Math.max(2, credited.credited_gems)), srcEl)
+      if (credited?.credited_xp) spawnFlights("xp", Math.min(5, Math.max(2, credited.credited_xp)), srcEl)
       if (!credited?.credited_coins && !credited?.credited_gems && !credited?.credited_xp && mission) {
         for (const r of mission.rewards) {
-          if (r.reward_kind !== 'currency' || !r.currency_code) continue;
-          if (r.currency_code === 'coins') spawnFlights('coins', Math.min(8, Math.max(3, Math.ceil(r.amount / 75))), srcEl); else if (r.currency_code === 'gems') spawnFlights('gems', Math.min(6, Math.max(2, r.amount)), srcEl); else if (r.currency_code === 'xp') spawnFlights('xp', Math.min(5, Math.max(2, r.amount)), srcEl);
+          if (r.reward_kind !== "currency" || !r.currency_code) continue
+          if (r.currency_code === "coins") spawnFlights("coins", Math.min(8, Math.max(3, Math.ceil(r.amount / 75))), srcEl); else if (r.currency_code === "gems") spawnFlights("gems", Math.min(6, Math.max(2, r.amount)), srcEl); else if (r.currency_code === "xp") spawnFlights("xp", Math.min(5, Math.max(2, r.amount)), srcEl)
         }
       }
       // claimMission invalidates the aggregate missions tag, and the
@@ -153,72 +165,82 @@ export function DailyMissionsModal({
       // list and streak panels refresh through the query subscription.
     }
     catch (e) {
-      setActionError(extractErrorMessage(e));
+      setActionError(extractErrorMessage(e))
     }
     finally {
-      setClaimingMissionId(null);
+      setClaimingMissionId(null)
     }
-  };
+  }
 
   const handleClaimAll = async () => {
-    const claimables = dailies.filter((m) => m.completed_at && !m.claimed_at);
+    const claimables = dailies.filter((m) => m.completed_at && !m.claimed_at)
     for (const m of claimables) {
-      const btn = document.querySelector<HTMLElement>('[data-claim-all-btn]');
-      await handleClaim(m.id, btn);
+      const btn = document.querySelector<HTMLElement>("[data-claim-all-btn]")
+      await handleClaim(m.id, btn)
     }
-  };
+  }
 
   const handleReroll = async (missionId: string) => {
-    setRerollingMissionId(missionId);
-    setActionError(null);
+    setRerollingMissionId(missionId)
+    setActionError(null)
     try {
       if (!userId) {
-        setActionError('Sign in to reroll missions.');
-        return;
+        setActionError("Sign in to reroll missions.")
+        return
       }
       await rerollMission({
         missionId,
-        userId
-      }).unwrap();
-      setRerolledTopId(missionId);
-      setRerollConfirmId(null);
+        userId,
+      }).unwrap()
+      setRerolledTopId(missionId)
+      setRerollConfirmId(null)
     }
     catch (e) {
-      setActionError(extractErrorMessage(e));
+      setActionError(extractErrorMessage(e))
     }
     finally {
-      setRerollingMissionId(null);
+      setRerollingMissionId(null)
     }
-  };
+  }
 
   const handleClaimStreak = async () => {
-    setActionError(null);
+    setActionError(null)
     try {
       if (!userId) {
-        setActionError('Sign in to claim the streak chest.');
-        return;
+        setActionError("Sign in to claim the streak chest.")
+        return
       }
-      await claimStreakChest({userId}).unwrap();
+      await claimStreakChest({userId}).unwrap()
     }
     catch (e) {
-      setActionError(extractErrorMessage(e));
+      setActionError(extractErrorMessage(e))
     }
-  };
+  }
 
-  const daysDone = Math.min(7, state?.streak.current_streak_days ?? 0);
-  const streakClaimable = (state?.streak.current_streak_days ?? 0) >= 7;
+  const daysDone = Math.min(7, state?.streak.current_streak_days ?? 0)
+  const streakClaimable = (state?.streak.current_streak_days ?? 0) >= 7
 
   return (<>
-    <ScaleInModal closeOnBackdropClick={false} closeOnEscape={false}>
-      <div className="dmx" style={{
-        transform: `scale(${scale})`,
-        transformOrigin: 'center'
-      }}>
+    <ScaleInModal
+      closeOnBackdropClick={false}
+      closeOnEscape={false}>
+      <div
+        className="dmx"
+        style={{
+          transform: `scale(${scale})`,
+          transformOrigin: "center",
+        }}>
         <style>{DM_STYLES}</style>
-        <main className="screen" aria-label="Daily Missions">
+        <main
+          aria-label="Daily Missions"
+          className="screen">
           <header className="topbar">
             <div className="brand-mark">
-              <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg}/>
+              <img
+                alt=""
+                draggable={false}
+                src="/lobby/missions/dice-icon.webp"
+                onError={hideImg}/>
             </div>
             <div className="brand-copy">
               <h1 className="brand-title">Daily Missions</h1>
@@ -231,9 +253,20 @@ export function DailyMissionsModal({
                 <div className="refresh-time">{formatCountdown(countdownMs)}</div>
               </div>
             </section>
-            <button className="close-button" type="button" aria-label="Close" onClick={onClose}>
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.7" strokeLinecap="round"/>
+            <button
+              aria-label="Close"
+              className="close-button"
+              type="button"
+              onClick={onClose}>
+              <svg
+                aria-hidden="true"
+                fill="none"
+                viewBox="0 0 24 24">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeWidth="2.7"/>
               </svg>
             </button>
           </header>
@@ -245,36 +278,48 @@ export function DailyMissionsModal({
               <div className="mission-list">
                 {orderedDailies.map((m) => (<MissionCard
                   key={m.id}
-                  mission={m}
-                  isClaiming={claimingMissionId === m.id}
                   canReroll={canRerollAny}
+                  isClaiming={claimingMissionId === m.id}
+                  mission={m}
                   rerollCost={rerollCost}
-                  onRerollClick={() => setRerollConfirmId(m.id)}
                   onClaim={(el) => handleClaim(m.id, el)}
                   onGo={onClose}
-                />))}
+                  onRerollClick={() => {
+                    setRerollConfirmId(m.id)
+                  }}/>))}
                 {dailies.length === 0 && (
                   <div className="dmx-empty">No active missions. Come back at midnight UTC.</div>)}
               </div>
               {actionError && <div className="dmx-action-error">{actionError}</div>}
               <div className="missions-footer">
-                    <span className="compact-button rerolls">
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M20 12a8 8 0 1 1-2.3-5.6" stroke="currentColor" strokeWidth="2.4"
-                              strokeLinecap="round"/>
-                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
-                              strokeLinejoin="round"/>
-                      </svg>
-                      <span>{rerollsLeft} left</span>
-                    </span>
+                <span className="compact-button rerolls">
+                  <svg
+                    aria-hidden="true"
+                    fill="none"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    width="17">
+                    <path
+                      d="M20 12a8 8 0 1 1-2.3-5.6"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeWidth="2.4"/>
+                    <path
+                      d="M20 4v6h-6"
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.4"/>
+                  </svg>
+                  <span>{rerollsLeft} left</span>
+                </span>
                 <button
-                  className="compact-button claim-all"
-                  type="button"
                   data-claim-all-btn
+                  className="compact-button claim-all"
                   disabled={claimableCount === 0 || claimingMissionId !== null}
-                  onClick={handleClaimAll}
-                >
-                  {claimableCount > 0 ? `Claim All (${claimableCount})` : 'Claim All'}
+                  type="button"
+                  onClick={handleClaimAll}>
+                  {claimableCount > 0 ? `Claim All (${claimableCount})` : "Claim All"}
                 </button>
               </div>
             </section>
@@ -282,34 +327,37 @@ export function DailyMissionsModal({
             <aside className="panel tabs-panel">
               <nav className="tabs">
                 <button
-                  className={`tab-button ${tab === 'daily' ? 'is-active' : ''}`}
+                  className={`tab-button ${tab === "daily" ? "is-active" : ""}`}
                   type="button"
-                  onClick={() => setTab('daily')}
-                >
+                  onClick={() => {
+                    setTab("daily")
+                  }}>
                   Daily
                 </button>
                 <button
-                  className={`tab-button ${tab === 'weekly' ? 'is-active' : ''}`}
+                  className={`tab-button ${tab === "weekly" ? "is-active" : ""}`}
                   type="button"
-                  onClick={() => setTab('weekly')}
-                >
+                  onClick={() => {
+                    setTab("weekly")
+                  }}>
                   Weekly{weeklyClaimable && <i className="tab-dot"/>}
                 </button>
               </nav>
 
-              {tab === 'daily' ? (<section className="streak-panel">
+              {tab === "daily" ? (<section className="streak-panel">
                 <div className="streak-header">
                   <h2 className="streak-title">Daily Streak</h2>
                   <div className="streak-days">
-                    {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? '' : 's'}
+                    {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? "" : "s"}
                   </div>
                   <button
+                    aria-expanded={howOpen}
+                    aria-label="How it works"
                     className="dm-info-btn"
                     type="button"
-                    aria-label="How it works"
-                    aria-expanded={howOpen}
-                    onClick={() => setHowOpen((v) => !v)}
-                  >
+                    onClick={() => {
+                      setHowOpen((v) => !v)
+                    }}>
                     i
                   </button>
                 </div>
@@ -318,38 +366,67 @@ export function DailyMissionsModal({
                 </p>
 
                 <div className="streak-track">
-                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (<div className="track-day" key={day}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((day) => (<div
+                    key={day}
+                    className="track-day">
                     <span>Day {day}</span>
-                    {day === 7 ? (<div className={`chest-node ${daysDone >= 7 ? 'is-lit' : ''}`}>
-                      <img src="/lobby/missions/chest-3.webp" alt="" draggable={false} onError={hideImg}/>
+                    {day === 7 ? (<div className={`chest-node ${daysDone >= 7 ? "is-lit" : ""}`}>
+                      <img
+                        alt=""
+                        draggable={false}
+                        src="/lobby/missions/chest-3.webp"
+                        onError={hideImg}/>
                     </div>) : (<div
-                      className={`day-node ${day <= daysDone ? 'is-done' : ''} ${day === daysDone + 1 ? 'is-current' : ''}`}
-                    />)}
+                      className={`day-node ${day <= daysDone ? "is-done" : ""} ${day === daysDone + 1 ? "is-current" : ""}`}/>)}
                   </div>))}
                 </div>
 
                 <div className="streak-rewards">
-                  {state.streak_chest_rewards.map((r, i) => (<div className="streak-reward-item" key={i}>
-                    <RewardIcon reward={r} size="lg"/>
+                  {state.streak_chest_rewards.map((r) => (<div
+                    key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
+                    className="streak-reward-item">
+                    <RewardIcon
+                      reward={r}
+                      size="lg"/>
                     <span>+{formatAmount(r.amount)}</span>
                   </div>))}
-                  {streakClaimable ? (<button className="streak-claim" type="button" onClick={handleClaimStreak}>
+                  {streakClaimable ? (<button
+                    className="streak-claim"
+                    type="button"
+                    onClick={handleClaimStreak}>
                     Claim
                   </button>) : (<div className="to-go">{7 - daysDone} to go</div>)}
                 </div>
 
-                {howOpen && (<div className="dm-how-popover" role="dialog" aria-label="How it works">
-                  <button className="dm-how-close" type="button" aria-label="Close"
-                          onClick={() => setHowOpen(false)}>
-                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.6"
-                            strokeLinecap="round"/>
+                {howOpen && (<div
+                  aria-label="How it works"
+                  className="dm-how-popover"
+                  role="dialog">
+                  <button
+                    aria-label="Close"
+                    className="dm-how-close"
+                    type="button"
+                    onClick={() => {
+                      setHowOpen(false)
+                    }}>
+                    <svg
+                      aria-hidden="true"
+                      fill="none"
+                      viewBox="0 0 24 24">
+                      <path
+                        d="M6 6l12 12M18 6L6 18"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeWidth="2.6"/>
                     </svg>
                   </button>
                   <h3 className="how-title">How it works</h3>
                   <div className="how-line">
                     <div className="how-icon">
-                      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <svg
+                        aria-hidden="true"
+                        fill="currentColor"
+                        viewBox="0 0 24 24">
                         <path d="M12 3.2l2.4 5 5.5.8-4 3.9.9 5.5-4.8-2.6-4.8 2.6.9-5.5-4-3.9 5.5-.8L12 3.2z"/>
                       </svg>
                     </div>
@@ -357,11 +434,21 @@ export function DailyMissionsModal({
                   </div>
                   <div className="how-line">
                     <div className="how-icon">
-                      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4"
-                              strokeLinecap="round"/>
-                        <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
-                              strokeLinejoin="round"/>
+                      <svg
+                        aria-hidden="true"
+                        fill="none"
+                        viewBox="0 0 24 24">
+                        <path
+                          d="M20 12a8 8 0 1 1-2.4-5.7"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeWidth="2.4"/>
+                        <path
+                          d="M20 4v6h-6"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2.4"/>
                       </svg>
                     </div>
                     <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
@@ -369,15 +456,18 @@ export function DailyMissionsModal({
                 </div>)}
               </section>) : (<section className="streak-panel weekly-tab">
                 {weeklies.length === 0 ? (<div className="weekly-empty">
-                  <img src="/lobby/missions/dice-icon.webp" alt="" draggable={false} onError={hideImg}/>
+                  <img
+                    alt=""
+                    draggable={false}
+                    src="/lobby/missions/dice-icon.webp"
+                    onError={hideImg}/>
                   <p>No weekly challenge active right now.</p>
                 </div>) : (weeklies.map((m) => (<WeeklyCard
                   key={m.id}
-                  mission={m}
                   isClaiming={claimingMissionId === m.id}
+                  mission={m}
                   onClaim={(el) => handleClaim(m.id, el)}
-                  onGo={onClose}
-                />)))}
+                  onGo={onClose}/>)))}
               </section>)}
             </aside>
           </section>)}
@@ -386,24 +476,26 @@ export function DailyMissionsModal({
     </ScaleInModal>
 
     {rerollConfirmId && state && (<RerollConfirmModal
-      priceGems={state.reroll.next_cost ?? 0}
-      isBusy={rerollingMissionId !== null}
       errorMessage={actionError}
-      onConfirm={() => handleReroll(rerollConfirmId)}
+      isBusy={rerollingMissionId !== null}
+      priceGems={state.reroll.next_cost ?? 0}
       onCancel={() => {
-        setRerollConfirmId(null);
-        setActionError(null);
+        setRerollConfirmId(null)
+        setActionError(null)
       }}
-    />)}
+      onConfirm={() => handleReroll(rerollConfirmId)}/>)}
 
-    {flights.map((spec) => (<RewardFlight key={spec.id} spec={spec} onLanded={removeFlight}/>))}
-  </>);
+    {flights.map((spec) => (<RewardFlight
+      key={spec.id}
+      spec={spec}
+      onLanded={removeFlight}/>))}
+  </>)
 }
 
 /* ───────────────────────── sub-components ───────────────────────── */
 
 function hideImg(e: SyntheticEvent<HTMLImageElement>) {
-  (e.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+  (e.currentTarget).style.visibility = "hidden"
 }
 
 /** Reroll confirmation popup — carnival/gold style matching BoardPurchaseModal,
@@ -415,66 +507,67 @@ function RerollConfirmModal({
   onConfirm,
   onCancel,
 }: {
-  readonly priceGems: number;
-  readonly isBusy: boolean;
-  readonly errorMessage: string | null;
-  readonly onConfirm: () => void;
-  readonly onCancel: () => void;
+  readonly priceGems: number,
+  readonly isBusy: boolean,
+  readonly errorMessage: string | null,
+  readonly onConfirm: () => void,
+  readonly onCancel: () => void,
 }) {
-  const [entered, setEntered] = useState(false);
+  const [entered, setEntered] = useState(false)
   useEffect(() => {
-    const raf = requestAnimationFrame(() => setEntered(true));
-    return () => cancelAnimationFrame(raf);
-  }, []);
-  const free = priceGems <= 0;
+    const raf = requestAnimationFrame(() => {
+      setEntered(true)
+    })
+    return () => {
+      cancelAnimationFrame(raf)
+    }
+  }, [])
+  const free = priceGems <= 0
   return (<div
     className="fixed inset-0 z-[70] flex items-center justify-center p-4"
     style={{
       // backdrop-filter blur removed for mobile perf; deeper dim compensates.
-      background: 'radial-gradient(circle at center, rgba(92,48,14,0.45), rgba(0,0,0,0.84))',
+      background: "radial-gradient(circle at center, rgba(92,48,14,0.45), rgba(0,0,0,0.84))",
       opacity: entered ? 1 : 0,
-      transition: 'opacity 220ms ease',
-    }}
-  >
+      transition: "opacity 220ms ease",
+    }}>
     <div
       className="relative text-center"
       style={{
-        width: 'min(92vw, 26rem)',
-        padding: 'clamp(1.6rem,5vmin,2.3rem) clamp(1.5rem,5vmin,2.6rem) clamp(1.4rem,4.5vmin,2rem)',
-        borderRadius: '22px',
-        background: 'linear-gradient(rgba(255,255,255,0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%)',
-        border: '5px solid #ffd057',
-        color: '#4b2108',
-        boxShadow: '0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)',
-        transformOrigin: 'center',
-        transform: entered ? 'scale(1)' : 'scale(0.16)',
+        width: "min(92vw, 26rem)",
+        padding: "clamp(1.6rem,5vmin,2.3rem) clamp(1.5rem,5vmin,2.6rem) clamp(1.4rem,4.5vmin,2rem)",
+        borderRadius: "22px",
+        background: "linear-gradient(rgba(255,255,255,0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%)",
+        border: "5px solid #ffd057",
+        color: "#4b2108",
+        boxShadow: "0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.7), inset 0 -8px 0 rgba(89,38,9,0.25), inset 0 0 45px rgba(95,43,8,0.22)",
+        transformOrigin: "center",
+        transform: entered ? "scale(1)" : "scale(0.16)",
         opacity: entered ? 1 : 0,
-        transition: 'transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease',
-        transitionDelay: entered ? '120ms' : '0ms',
-      }}
-    >
+        transition: "transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease",
+        transitionDelay: entered ? "120ms" : "0ms",
+      }}>
       <button
-        type="button"
-        onClick={onCancel}
-        disabled={isBusy}
         aria-label="Cancel"
         className="absolute z-10 grid place-items-center transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={isBusy}
         style={{
-          right: '-1.1rem',
-          top: '-1.1rem',
-          width: '3.2rem',
-          height: '3.2rem',
-          borderRadius: '50%',
-          border: '4px solid #ffe06c',
-          background: 'radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%)',
-          color: '#fff2a5',
-          fontSize: '2rem',
+          right: "-1.1rem",
+          top: "-1.1rem",
+          width: "3.2rem",
+          height: "3.2rem",
+          borderRadius: "50%",
+          border: "4px solid #ffe06c",
+          background: "radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%)",
+          color: "#fff2a5",
+          fontSize: "2rem",
           fontWeight: 900,
           lineHeight: 1,
-          textShadow: '0 3px 0 #8a1608',
-          boxShadow: '0 6px 0 #6b2106, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.55)',
+          textShadow: "0 3px 0 #8a1608",
+          boxShadow: "0 6px 0 #6b2106, 0 12px 18px rgba(0,0,0,0.45), inset 0 3px 0 rgba(255,255,255,0.55)",
         }}
-      >
+        type="button"
+        onClick={onCancel}>
         ×
       </button>
 
@@ -482,77 +575,72 @@ function RerollConfirmModal({
         className="relative font-display whitespace-nowrap"
         style={{
           margin: 0,
-          marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
-          fontSize: 'clamp(1.2rem,4.2vmin,1.8rem)',
+          marginBottom: "clamp(1rem,2.5vmin,1.4rem)",
+          fontSize: "clamp(1.2rem,4.2vmin,1.8rem)",
           fontWeight: 900,
-          letterSpacing: '0.03em',
-          color: '#5d3208',
-          textShadow: '0 1px 0 rgba(255,251,222,0.8), 0 2px 2px rgba(255,247,200,0.3), 0 -1px 1px rgba(35,14,2,0.45)',
-        }}
-      >
+          letterSpacing: "0.03em",
+          color: "#5d3208",
+          textShadow: "0 1px 0 rgba(255,251,222,0.8), 0 2px 2px rgba(255,247,200,0.3), 0 -1px 1px rgba(35,14,2,0.45)",
+        }}>
         <span style={{
-          fontSize: '0.6em',
-          margin: '0 0.5rem',
-          color: '#8a5410'
+          fontSize: "0.6em",
+          margin: "0 0.5rem",
+          color: "#8a5410",
         }}>✦</span>
         REROLL MISSION
         <span style={{
-          fontSize: '0.6em',
-          margin: '0 0.5rem',
-          color: '#8a5410'
+          fontSize: "0.6em",
+          margin: "0 0.5rem",
+          color: "#8a5410",
         }}>✦</span>
       </h2>
 
       {!free && (<div
         className="relative mx-auto flex items-center justify-center"
         style={{
-          width: 'min(82%, 18rem)',
-          height: 'clamp(4.4rem,12vmin,6rem)',
-          marginBottom: 'clamp(1rem,3vmin,1.5rem)',
-          borderRadius: '18px',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)',
-          border: '4px solid #e39a19',
-          boxShadow: '0 0 0 2px #ffdc60, 0 8px 14px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.65), inset 0 -5px 0 rgba(107,48,8,0.22)',
-          gap: 'clamp(0.8rem,2.5vmin,1.5rem)',
-        }}
-      >
+          width: "min(82%, 18rem)",
+          height: "clamp(4.4rem,12vmin,6rem)",
+          marginBottom: "clamp(1rem,3vmin,1.5rem)",
+          borderRadius: "18px",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%)",
+          border: "4px solid #e39a19",
+          boxShadow: "0 0 0 2px #ffdc60, 0 8px 14px rgba(0,0,0,0.35), inset 0 3px 0 rgba(255,255,255,0.65), inset 0 -5px 0 rgba(107,48,8,0.22)",
+          gap: "clamp(0.8rem,2.5vmin,1.5rem)",
+        }}>
         <img
-          src="/lobby/carousel/gem.webp"
           alt=""
           draggable={false}
+          src="/lobby/carousel/gem.webp"
           style={{
-            width: 'clamp(2.6rem,7vmin,3.8rem)',
-            height: 'clamp(2.6rem,7vmin,3.8rem)',
-            objectFit: 'contain',
-            filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(0,210,255,0.5))',
-          }}
-        />
+            width: "clamp(2.6rem,7vmin,3.8rem)",
+            height: "clamp(2.6rem,7vmin,3.8rem)",
+            objectFit: "contain",
+            filter: "drop-shadow(0 6px 4px rgba(0,0,0,0.35)) drop-shadow(0 0 10px rgba(0,210,255,0.5))",
+          }}/>
         <span
           className="font-display tabular-nums"
           style={{
-            fontSize: 'clamp(2.2rem,7vmin,3.4rem)',
+            fontSize: "clamp(2.2rem,7vmin,3.4rem)",
             fontWeight: 900,
-            color: '#3c1704',
+            color: "#3c1704",
             lineHeight: 1,
-            textShadow: '0 2px 0 #fff3ad, 0 5px 6px rgba(0,0,0,0.28)',
-          }}
-        >
-              {priceGems.toLocaleString()}
-            </span>
+            textShadow: "0 2px 0 #fff3ad, 0 5px 6px rgba(0,0,0,0.28)",
+          }}>
+          {priceGems.toLocaleString()}
+        </span>
       </div>)}
 
       <p
         className="relative font-bold"
         style={{
           margin: 0,
-          marginBottom: 'clamp(1rem,2.5vmin,1.4rem)',
-          fontSize: 'clamp(0.95rem,2.8vmin,1.25rem)',
-          color: '#572607',
-          textShadow: '0 1px 0 rgba(255,255,255,0.35)',
-        }}
-      >
-        {free ? ('Reroll this mission for free?') : (<>
-          Reroll this mission for{' '}
+          marginBottom: "clamp(1rem,2.5vmin,1.4rem)",
+          fontSize: "clamp(0.95rem,2.8vmin,1.25rem)",
+          color: "#572607",
+          textShadow: "0 1px 0 rgba(255,255,255,0.35)",
+        }}>
+        {free ? ("Reroll this mission for free?") : (<>
+          Reroll this mission for{" "}
           <strong style={{fontWeight: 900}}>{priceGems.toLocaleString()} Gems?</strong>
         </>)}
       </p>
@@ -560,66 +648,65 @@ function RerollConfirmModal({
       {errorMessage ? (<div
         className="relative mx-auto"
         style={{
-          maxWidth: '85%',
-          marginBottom: 'clamp(0.8rem,2vmin,1.2rem)',
-          borderRadius: '8px',
-          border: '1px solid rgba(190,18,60,0.4)',
-          background: '#fff1f1',
-          padding: '0.5rem 0.75rem',
-          fontSize: '0.8rem',
+          maxWidth: "85%",
+          marginBottom: "clamp(0.8rem,2vmin,1.2rem)",
+          borderRadius: "8px",
+          border: "1px solid rgba(190,18,60,0.4)",
+          background: "#fff1f1",
+          padding: "0.5rem 0.75rem",
+          fontSize: "0.8rem",
           fontWeight: 700,
-          color: '#9f1239',
-        }}
-      >
+          color: "#9f1239",
+        }}>
         {errorMessage}
       </div>) : null}
 
-      <div className="relative flex justify-center" style={{gap: 'clamp(1.5rem,5vmin,2.6rem)'}}>
+      <div
+        className="relative flex justify-center"
+        style={{gap: "clamp(1.5rem,5vmin,2.6rem)"}}>
         <button
-          type="button"
-          disabled={isBusy}
-          onClick={onConfirm}
           className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isBusy}
           style={{
-            width: 'clamp(7rem,22vmin,9rem)',
-            height: 'clamp(2.8rem,7vmin,3.4rem)',
-            borderRadius: '9999px',
-            border: '2px solid rgba(224,255,143,0.95)',
-            color: '#132109',
-            fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+            width: "clamp(7rem,22vmin,9rem)",
+            height: "clamp(2.8rem,7vmin,3.4rem)",
+            borderRadius: "9999px",
+            border: "2px solid rgba(224,255,143,0.95)",
+            color: "#132109",
+            fontSize: "clamp(1.2rem,3.6vmin,1.7rem)",
             fontWeight: 900,
-            letterSpacing: '0.04em',
-            textShadow: '0 1px 0 rgba(255,255,255,0.28)',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)',
-            boxShadow: '0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)',
+            letterSpacing: "0.04em",
+            textShadow: "0 1px 0 rgba(255,255,255,0.28)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.74) 0%, rgba(191,255,88,0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%)",
+            boxShadow: "0 5px 0 #06450a, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.74), inset 0 -5px 0 rgba(0,78,5,0.34), 0 0 0 2px rgba(7,27,11,0.85)",
           }}
-        >
-          {isBusy ? '…' : 'Yes'}
+          type="button"
+          onClick={onConfirm}>
+          {isBusy ? "…" : "Yes"}
         </button>
         <button
-          type="button"
-          disabled={isBusy}
-          onClick={onCancel}
           className="font-display transition active:translate-y-[2px] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isBusy}
           style={{
-            width: 'clamp(7rem,22vmin,9rem)',
-            height: 'clamp(2.8rem,7vmin,3.4rem)',
-            borderRadius: '9999px',
-            border: '2px solid rgba(220,220,220,0.95)',
-            color: '#1a1a1a',
-            fontSize: 'clamp(1.2rem,3.6vmin,1.7rem)',
+            width: "clamp(7rem,22vmin,9rem)",
+            height: "clamp(2.8rem,7vmin,3.4rem)",
+            borderRadius: "9999px",
+            border: "2px solid rgba(220,220,220,0.95)",
+            color: "#1a1a1a",
+            fontSize: "clamp(1.2rem,3.6vmin,1.7rem)",
             fontWeight: 900,
-            letterSpacing: '0.04em',
-            textShadow: '0 1px 0 rgba(255,255,255,0.4)',
-            background: 'linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)',
-            boxShadow: '0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)',
+            letterSpacing: "0.04em",
+            textShadow: "0 1px 0 rgba(255,255,255,0.4)",
+            background: "linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(210,210,210,0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%)",
+            boxShadow: "0 5px 0 #1f1f1f, 0 13px 22px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.7), inset 0 -5px 0 rgba(0,0,0,0.28), 0 0 0 2px rgba(15,15,15,0.85)",
           }}
-        >
+          type="button"
+          onClick={onCancel}>
           No
         </button>
       </div>
     </div>
-  </div>);
+  </div>)
 }
 
 function MissionCard({
@@ -631,34 +718,39 @@ function MissionCard({
   onClaim,
   onGo,
 }: {
-  readonly mission: Mission;
-  readonly isClaiming: boolean;
-  readonly canReroll: boolean;
-  readonly rerollCost: number | null;
-  readonly onRerollClick: () => void;
-  readonly onClaim: (el: HTMLElement | null) => void;
-  readonly onGo: () => void;
+  readonly mission: Mission,
+  readonly isClaiming: boolean,
+  readonly canReroll: boolean,
+  readonly rerollCost: number | null,
+  readonly onRerollClick: () => void,
+  readonly onClaim: (el: HTMLElement | null) => void,
+  readonly onGo: () => void,
 }) {
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-  const isCompleted = !!mission.completed_at && !mission.claimed_at;
-  const isClaimed = !!mission.claimed_at;
-  const isActive = !isCompleted && !isClaimed;
-  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
+  const btnRef = useRef<HTMLButtonElement | null>(null)
+  const isCompleted = !!mission.completed_at && !mission.claimed_at
+  const isClaimed = !!mission.claimed_at
+  const isActive = !isCompleted && !isClaimed
+  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100))
   // Only COMMON missions can be rerolled — rare/epic are fixed.
-  const showReroll = isActive && canReroll && rerollCost !== null && mission.rarity === 'common';
-  const rerollFree = rerollCost === 0;
+  const showReroll = isActive && canReroll && rerollCost !== null && mission.rarity === "common"
+  const rerollFree = rerollCost === 0
 
-  return (<article className={`mission-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+  return (<article className={`mission-card is-${mission.rarity} ${isCompleted ? "is-complete" : ""}`}>
     <div className="mission-badge">
-      <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false}
-           onError={hideImg}/>
+      <img
+        alt={`${mission.rarity} mission`}
+        draggable={false}
+        src={`/lobby/missions/badge-${mission.rarity}.webp`}
+        onError={hideImg}/>
     </div>
 
     <div className="mission-copy">
-      <p className="mission-description">{mission.subtitle || mission.title}</p>
+      <p className="mission-description">{mission.subtitle ?? mission.title}</p>
       <div className="progress-line">
         <div className="progress-track">
-          <div className="progress-fill" style={{'--progress': pct} as CSSProperties}/>
+          <div
+            className="progress-fill"
+            style={{"--progress": pct} as CSSProperties}/>
         </div>
         <div className="progress-count">
           {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
@@ -666,53 +758,94 @@ function MissionCard({
       </div>
     </div>
 
-    <div className="mission-separator" aria-hidden="true"/>
+    <div
+      aria-hidden="true"
+      className="mission-separator"/>
 
     <div className="mission-reward">
       <div>
         <div className="reward-title">Reward</div>
         <div className="reward-icons">
-          {mission.rewards.map((r, i) => (<div className="reward-item" key={i}>
-            <RewardIcon reward={r} size="md"/>
+          {mission.rewards.map((r) => (<div
+            key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
+            className="reward-item">
+            <RewardIcon
+              reward={r}
+              size="md"/>
             <div className="reward-amount">+{formatAmount(r.amount)}</div>
           </div>))}
         </div>
       </div>
 
       <div className="mission-controls">
-        {isActive ? (<button className="go-button" type="button" onClick={onGo}>
+        {isActive ? (<button
+          className="go-button"
+          type="button"
+          onClick={onGo}>
           Go
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"
-                  strokeLinejoin="round"/>
+          <svg
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24">
+            <path
+              d="M9 5l7 7-7 7"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="3.2"/>
           </svg>
-        </button>) : isClaimed ? (<button className="go-button is-claimed" type="button" disabled>
+        </button>) : isClaimed ? (<button
+          disabled
+          className="go-button is-claimed"
+          type="button">
           Claimed
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round"
-                  strokeLinejoin="round"/>
+          <svg
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24">
+            <path
+              d="M5 12.5l4.4 4.4L19 7"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="3.4"/>
           </svg>
         </button>) : (<button
           ref={btnRef}
           className="go-button"
-          type="button"
           disabled={isClaiming}
-          onClick={() => onClaim(btnRef.current)}
-        >
-          {isClaiming ? '…' : 'Claim'}
+          type="button"
+          onClick={() => {
+            onClaim(btnRef.current)
+          }}>
+          {isClaiming ? "…" : "Claim"}
         </button>)}
 
-        {showReroll && (<button type="button" className="reroll-note" onClick={onRerollClick}>
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M20 12a8 8 0 1 1-2.4-5.7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"/>
-            <path d="M20 4v6h-6" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"
-                  strokeLinejoin="round"/>
+        {showReroll && (<button
+          className="reroll-note"
+          type="button"
+          onClick={onRerollClick}>
+          <svg
+            aria-hidden="true"
+            fill="none"
+            viewBox="0 0 24 24">
+            <path
+              d="M20 12a8 8 0 1 1-2.4-5.7"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.4"/>
+            <path
+              d="M20 4v6h-6"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.4"/>
           </svg>
-          <span>{rerollFree ? 'Reroll free' : `Reroll · ${rerollCost}💎`}</span>
+          <span>{rerollFree ? "Reroll free" : `Reroll · ${rerollCost}💎`}</span>
         </button>)}
       </div>
     </div>
-  </article>);
+  </article>)
 }
 
 function WeeklyCard({
@@ -721,99 +854,171 @@ function WeeklyCard({
   onClaim,
   onGo,
 }: {
-  readonly mission: Mission;
-  readonly isClaiming: boolean;
-  readonly onClaim: (el: HTMLElement | null) => void;
-  readonly onGo: () => void;
+  readonly mission: Mission,
+  readonly isClaiming: boolean,
+  readonly onClaim: (el: HTMLElement | null) => void,
+  readonly onGo: () => void,
 }) {
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-  const isCompleted = !!mission.completed_at && !mission.claimed_at;
-  const isClaimed = !!mission.claimed_at;
-  const isActive = !isCompleted && !isClaimed;
-  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100));
-  return (<article className={`weekly-card is-${mission.rarity} ${isCompleted ? 'is-complete' : ''}`}>
+  const btnRef = useRef<HTMLButtonElement | null>(null)
+  const isCompleted = !!mission.completed_at && !mission.claimed_at
+  const isClaimed = !!mission.claimed_at
+  const isActive = !isCompleted && !isClaimed
+  const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100))
+  return (<article className={`weekly-card is-${mission.rarity} ${isCompleted ? "is-complete" : ""}`}>
     <div className="wk-badge">
-      <img src={`/lobby/missions/badge-${mission.rarity}.webp`} alt={`${mission.rarity} mission`} draggable={false}
-           onError={hideImg}/>
+      <img
+        alt={`${mission.rarity} mission`}
+        draggable={false}
+        src={`/lobby/missions/badge-${mission.rarity}.webp`}
+        onError={hideImg}/>
     </div>
     <h3 className="wk-title">{mission.title}</h3>
     {mission.subtitle && <p className="wk-desc">{mission.subtitle}</p>}
     <div className="wk-progress">
       <div className="progress-track">
-        <div className="progress-fill" style={{'--progress': pct} as CSSProperties}/>
+        <div
+          className="progress-fill"
+          style={{"--progress": pct} as CSSProperties}/>
       </div>
       <div className="progress-count">
         {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
       </div>
     </div>
     <div className="wk-rewards">
-      {mission.rewards.map((r, i) => (<div className="streak-reward-item" key={i}>
-        <RewardIcon reward={r} size="lg"/>
+      {mission.rewards.map((r) => (<div
+        key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
+        className="streak-reward-item">
+        <RewardIcon
+          reward={r}
+          size="lg"/>
         <span>+{formatAmount(r.amount)}</span>
       </div>))}
     </div>
-    {isActive ? (<button className="go-button wk-go" type="button" onClick={onGo}>
+    {isActive ? (<button
+      className="go-button wk-go"
+      type="button"
+      onClick={onGo}>
       Go
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"
-              strokeLinejoin="round"/>
+      <svg
+        aria-hidden="true"
+        fill="none"
+        viewBox="0 0 24 24">
+        <path
+          d="M9 5l7 7-7 7"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3.2"/>
       </svg>
-    </button>) : isClaimed ? (<button className="go-button is-claimed wk-go" type="button" disabled>
+    </button>) : isClaimed ? (<button
+      disabled
+      className="go-button is-claimed wk-go"
+      type="button">
       Claimed
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M5 12.5l4.4 4.4L19 7" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round"
-              strokeLinejoin="round"/>
+      <svg
+        aria-hidden="true"
+        fill="none"
+        viewBox="0 0 24 24">
+        <path
+          d="M5 12.5l4.4 4.4L19 7"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3.4"/>
       </svg>
-    </button>) : (<button ref={btnRef} className="go-button wk-go" type="button" disabled={isClaiming}
-                          onClick={() => onClaim(btnRef.current)}>
-      {isClaiming ? '…' : 'Claim'}
+    </button>) : (<button
+      ref={btnRef}
+      className="go-button wk-go"
+      disabled={isClaiming}
+      type="button"
+      onClick={() => {
+        onClaim(btnRef.current)
+      }}>
+      {isClaiming ? "…" : "Claim"}
     </button>)}
-  </article>);
+  </article>)
 }
 
-function XpHex({size}: { readonly size: 'md' | 'lg' }) {
-  const h = size === 'lg' ? 48 : 38;
-  return (<svg viewBox="0 0 100 110" style={{
-    height: h,
-    width: 'auto',
-    filter: 'drop-shadow(0 4px 5px rgba(0,0,0,0.4))'
-  }}
-               aria-hidden="true">
+function XpHex({size}: {readonly size: "md" | "lg"}) {
+  const h = size === "lg" ? 48 : 38
+  return (<svg
+    aria-hidden="true"
+    style={{
+      height: h,
+      width: "auto",
+      filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.4))",
+    }}
+    viewBox="0 0 100 110">
     <defs>
-      <linearGradient id="dm-xp-fill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#a855f7"/>
-        <stop offset="100%" stopColor="#581c87"/>
+      <linearGradient
+        id="dm-xp-fill"
+        x1="0"
+        x2="0"
+        y1="0"
+        y2="1">
+        <stop
+          offset="0%"
+          stopColor="#a855f7"/>
+        <stop
+          offset="100%"
+          stopColor="#581c87"/>
       </linearGradient>
-      <linearGradient id="dm-xp-rim" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#fcd34d"/>
-        <stop offset="100%" stopColor="#b45309"/>
+      <linearGradient
+        id="dm-xp-rim"
+        x1="0"
+        x2="0"
+        y1="0"
+        y2="1">
+        <stop
+          offset="0%"
+          stopColor="#fcd34d"/>
+        <stop
+          offset="100%"
+          stopColor="#b45309"/>
       </linearGradient>
     </defs>
-    <polygon points="50,3 96,28 96,82 50,107 4,82 4,28" fill="url(#dm-xp-rim)"/>
-    <polygon points="50,11 88,33 88,77 50,99 12,77 12,33" fill="url(#dm-xp-fill)"/>
-    <text x="50" y="68" textAnchor="middle" fontFamily="system-ui, sans-serif" fontWeight="900" fontSize="34"
-          fill="white" stroke="rgba(0,0,0,0.35)" strokeWidth="1">XP
+    <polygon
+      fill="url(#dm-xp-rim)"
+      points="50,3 96,28 96,82 50,107 4,82 4,28"/>
+    <polygon
+      fill="url(#dm-xp-fill)"
+      points="50,11 88,33 88,77 50,99 12,77 12,33"/>
+    <text
+      fill="white"
+      fontFamily="system-ui, sans-serif"
+      fontSize="34"
+      fontWeight="900"
+      stroke="rgba(0,0,0,0.35)"
+      strokeWidth="1"
+      textAnchor="middle"
+      x="50"
+      y="68">XP
     </text>
-  </svg>);
+  </svg>)
 }
 
 function RewardIcon({
   reward,
-  size
-}: { readonly reward: RewardItem; readonly size: 'md' | 'lg' }) {
-  const cls = size === 'lg' ? 'ri ri-lg' : 'ri';
-  if (reward.reward_kind === 'currency') {
-    if (reward.currency_code === 'xp') return <XpHex size={size}/>;
-    const src = reward.currency_code === 'coins' ? '/lobby/icons/gold-coin.webp' : reward.currency_code === 'gems' ? '/lobby/icons/gem.webp' : null;
-    if (src) return <img className={cls} src={src} alt="" draggable={false} onError={hideImg}/>;
+  size,
+}: {readonly reward: RewardItem, readonly size: "md" | "lg"}) {
+  const cls = size === "lg" ? "ri ri-lg" : "ri"
+  if (reward.reward_kind === "currency") {
+    if (reward.currency_code === "xp") return <XpHex size={size}/>
+    const src = reward.currency_code === "coins" ? "/lobby/icons/gold-coin.webp" : reward.currency_code === "gems" ? "/lobby/icons/gem.webp" : null
+    if (src) return (<img
+      alt=""
+      className={cls}
+      draggable={false}
+      src={src}
+      onError={hideImg}/>)
   }
-  return <div className={`xp-token ${cls}`}>?</div>;
+  return <div className={`xp-token ${cls}`}>?</div>
 }
 
 function formatAmount(n: number): string {
   // Full number with thousands separators (e.g. 11100 -> "11,100"). Easier to
   // read than K-abbreviation for the larger cashback coin rewards.
-  return n.toLocaleString('en-US');
+  return n.toLocaleString("en-US")
 }
 
 /* ───────────────────────── scoped styles ───────────────────────── */
@@ -1019,4 +1224,4 @@ const DM_STYLES = `
 .dmx .wk-go{ width:210px; height:58px; margin-top:4px; }
 .dmx .weekly-empty{ margin:auto; text-align:center; color:#c6cfed; }
 .dmx .weekly-empty img{ width:60px; height:60px; object-fit:contain; opacity:.7; margin-bottom:10px; }
-`;
+`

@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.board-preview.tsbuildinfo"
+  },
+  "include": ["src", "../board-renderer/src", "../engine/src", "../shared/src"]
+}

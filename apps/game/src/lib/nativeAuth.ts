@@ -26,19 +26,20 @@
  * Web keeps the existing AuthCallback page flow; isNativePlatform()
  * splits the two.
  */
-import {Capacitor} from '@capacitor/core';
-import {App, type URLOpenListenerEvent} from '@capacitor/app';
-import {Browser} from '@capacitor/browser';
-import {supabase} from './supabase';
+import {App, type URLOpenListenerEvent} from "@capacitor/app"
+import {Browser} from "@capacitor/browser"
+import {Capacitor} from "@capacitor/core"
+
+import {supabase} from "./supabase"
 
 /** True on Android (and later iOS) when the app runs inside a
  *  Capacitor WebView. False on plain-web builds and in Vite dev. */
-export const isNativePlatform = (): boolean => Capacitor.isNativePlatform();
+export const isNativePlatform = (): boolean => Capacitor.isNativePlatform()
 
 /** Deep-link redirect target for OAuth flows on native. Must match
  *  the host in AndroidManifest.xml's intent-filter (which routes
  *  any `<scheme>://auth/...` URL back into our app). */
-export const NATIVE_AUTH_CALLBACK_URL = 'gammonrivals://auth/callback';
+export const NATIVE_AUTH_CALLBACK_URL = "gammonrivals://auth/callback"
 
 /**
  * OAuth `redirectTo` per platform: the custom-scheme deep link on
@@ -47,10 +48,10 @@ export const NATIVE_AUTH_CALLBACK_URL = 'gammonrivals://auth/callback';
  * the user back to where they were (e.g. /profile after linking).
  */
 export function pickOAuthRedirectTo(webRedirect: string, next?: string): string {
-  if (!isNativePlatform()) return webRedirect;
-  if (!next) return NATIVE_AUTH_CALLBACK_URL;
-  const params = new URLSearchParams({next});
-  return `${NATIVE_AUTH_CALLBACK_URL}?${params.toString()}`;
+  if (!isNativePlatform()) return webRedirect
+  if (!next) return NATIVE_AUTH_CALLBACK_URL
+  const params = new URLSearchParams({next})
+  return `${NATIVE_AUTH_CALLBACK_URL}?${params.toString()}`
 }
 
 /**
@@ -58,11 +59,11 @@ export function pickOAuthRedirectTo(webRedirect: string, next?: string): string 
  * there the caller navigates the current tab directly.
  */
 export async function openAuthInBrowser(url: string): Promise<void> {
-  if (!isNativePlatform()) return;
+  if (!isNativePlatform()) return
   await Browser.open({
     url,
-    presentationStyle: 'popover'
-  });
+    presentationStyle: "popover",
+  })
 }
 
 /**
@@ -72,35 +73,35 @@ export async function openAuthInBrowser(url: string): Promise<void> {
  * (response_mode=query) works too.
  */
 function tokensFromCallbackUrl(rawUrl: string): {
-  access_token?: string; refresh_token?: string; error?: string; error_description?: string;
+  access_token?: string, refresh_token?: string, error?: string, error_description?: string,
 } {
   // Some deep links aren't fully WHATWG-URL-parseable (missing `://`
   // slash, odd encoding); fall back to manual split + query parse.
-  let access_token: string | undefined;
-  let refresh_token: string | undefined;
-  let error: string | undefined;
-  let error_description: string | undefined;
+  let access_token: string | undefined
+  let refresh_token: string | undefined
+  let error: string | undefined
+  let error_description: string | undefined
 
   const grabFrom = (sp: URLSearchParams) => {
-    access_token ??= sp.get('access_token') ?? undefined;
-    refresh_token ??= sp.get('refresh_token') ?? undefined;
-    error ??= sp.get('error') ?? undefined;
-    error_description ??= sp.get('error_description') ?? undefined;
-  };
+    access_token ??= sp.get("access_token") ?? undefined
+    refresh_token ??= sp.get("refresh_token") ?? undefined
+    error ??= sp.get("error") ?? undefined
+    error_description ??= sp.get("error_description") ?? undefined
+  }
 
   try {
-    const url = new URL(rawUrl);
-    if (url.hash.length > 1) grabFrom(new URLSearchParams(url.hash.slice(1)));
-    if (url.search.length > 1) grabFrom(new URLSearchParams(url.search.slice(1)));
+    const url = new URL(rawUrl)
+    if (url.hash.length > 1) grabFrom(new URLSearchParams(url.hash.slice(1)))
+    if (url.search.length > 1) grabFrom(new URLSearchParams(url.search.slice(1)))
   }
   catch {
     // Fallback parser if URL ctor rejects the scheme.
-    const hashIdx = rawUrl.indexOf('#');
-    if (hashIdx >= 0) grabFrom(new URLSearchParams(rawUrl.slice(hashIdx + 1)));
-    const qIdx = rawUrl.indexOf('?');
+    const hashIdx = rawUrl.indexOf("#")
+    if (hashIdx >= 0) grabFrom(new URLSearchParams(rawUrl.slice(hashIdx + 1)))
+    const qIdx = rawUrl.indexOf("?")
     if (qIdx >= 0) {
-      const end = hashIdx >= 0 ? hashIdx : rawUrl.length;
-      grabFrom(new URLSearchParams(rawUrl.slice(qIdx + 1, end)));
+      const end = hashIdx >= 0 ? hashIdx : rawUrl.length
+      grabFrom(new URLSearchParams(rawUrl.slice(qIdx + 1, end)))
     }
   }
 
@@ -108,22 +109,22 @@ function tokensFromCallbackUrl(rawUrl: string): {
     access_token,
     refresh_token,
     error,
-    error_description
-  };
+    error_description,
+  }
 }
 
 /** Callback for a successful native auth completion (e.g. to navigate
  *  back to a page); receives the `next` path if Supabase echoed it. */
-export interface NativeAuthCompletionPayload {
-  readonly nextPath: string | null;
+export type NativeAuthCompletionPayload = {
+  readonly nextPath: string | null,
 }
 
-type NativeAuthCompletionListener = (payload: NativeAuthCompletionPayload) => void;
-const listeners = new Set<NativeAuthCompletionListener>();
+type NativeAuthCompletionListener = (payload: NativeAuthCompletionPayload) => void
+const listeners = new Set<NativeAuthCompletionListener>()
 
 export function onNativeAuthCompletion(listener: NativeAuthCompletionListener): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  listeners.add(listener)
+  return () => listeners.delete(listener)
 }
 
 /**
@@ -131,51 +132,55 @@ export function onNativeAuthCompletion(listener: NativeAuthCompletionListener): 
  * called from main.tsx). OAuth deep links land here, install the
  * session, and notify registered completion listeners.
  */
-let installed = false;
+let installed = false
 
 export async function installNativeAuthHandler(): Promise<void> {
-  if (installed) return;
-  installed = true;
-  if (!isNativePlatform()) return;
+  if (installed) return
+  installed = true
+  if (!isNativePlatform()) return
 
-  await App.addListener('appUrlOpen', async (event: URLOpenListenerEvent) => {
-    // Only our auth host matters; ignore other deep links/intents.
-    let url: URL;
-    try {
-      url = new URL(event.url);
-    }
-    catch {
-      // Unparseable URL — bail; nothing useful we can do.
-      return;
-    }
-    if (url.host !== 'auth') return;
-
-    const tokens = tokensFromCallbackUrl(event.url);
-
-    // Surface OAuth errors to the console for now.
-    if (tokens.error) {
-      console.warn('Native auth callback error:', tokens.error, tokens.error_description);
-      void Browser.close().catch(() => undefined);
-      return;
-    }
-
-    if (tokens.access_token && tokens.refresh_token) {
+  await App.addListener("appUrlOpen", (event: URLOpenListenerEvent) => {
+    void (async () => {
+      // Only our auth host matters; ignore other deep links/intents.
+      let url: URL
       try {
-        await supabase.auth.setSession({
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-        });
+        url = new URL(event.url)
       }
-      catch (err) {
-        console.warn('Native auth setSession failed:', err);
+      catch {
+        // Unparseable URL — bail; nothing useful we can do.
+        return
       }
-    }
+      if (url.host !== "auth") return
 
-    // Dismiss the Chrome Custom Tab — the auth flow is done.
-    void Browser.close().catch(() => undefined);
+      const tokens = tokensFromCallbackUrl(event.url)
 
-    // Notify listeners, passing any `?next=…` Supabase echoed through.
-    const nextPath = url.searchParams.get('next');
-    listeners.forEach((listener) => listener({nextPath}));
-  });
+      // Surface OAuth errors to the console for now.
+      if (tokens.error) {
+        console.warn("Native auth callback error:", tokens.error, tokens.error_description)
+        void Browser.close().catch(() => undefined)
+        return
+      }
+
+      if (tokens.access_token && tokens.refresh_token) {
+        try {
+          await supabase.auth.setSession({
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+          })
+        }
+        catch (err) {
+          console.warn("Native auth setSession failed:", err)
+        }
+      }
+
+      // Dismiss the Chrome Custom Tab — the auth flow is done.
+      void Browser.close().catch(() => undefined)
+
+      // Notify listeners, passing any `?next=…` Supabase echoed through.
+      const nextPath = url.searchParams.get("next")
+      listeners.forEach((listener) => {
+        listener({nextPath})
+      })
+    })()
+  })
 }

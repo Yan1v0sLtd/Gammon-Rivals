@@ -1,7 +1,7 @@
-import type { Theme } from './types';
+import type {Theme} from "./types"
 
 export const defaultTheme: Theme = {
-  name: 'default',
+  name: "default",
   colors: {
     frameLight: 0x8a5a2c,
     frameDark: 0x3d2412,
@@ -29,4 +29,4 @@ export const defaultTheme: Theme = {
     blackCheckerHighlight: 0x8a6420,
     trayBg: 0x1c1206,
   },
-};
+}

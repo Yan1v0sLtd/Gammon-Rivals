@@ -1,60 +1,59 @@
-import {useNavigate} from 'react-router-dom';
-import type {MatchState} from '../../../../packages/engine/src/match';
-import {useNavigationLoaderOverlay} from '../features/appUi/useNavigationLoaderOverlay';
+import {useNavigate} from "react-router-dom"
 
-interface Props {
-  match: MatchState;
-  whitePip: number;
-  blackPip: number;
-  turnLabel: string;
-  inCrawford: boolean;
-  onNewMatch?: () => void;
-  whiteName?: string;
-  blackName?: string;
+import type {MatchState} from "../../../../packages/engine/src/match"
+import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
+
+type Props = {
+  match: MatchState,
+  whitePip: number,
+  blackPip: number,
+  turnLabel: string,
+  inCrawford: boolean,
+  onNewMatch?: () => void,
+  whiteName?: string,
+  blackName?: string,
 }
 
 function displayName(name: string): string {
-  const trimmed = name.trim();
-  if (!trimmed) return 'Player';
-  return trimmed.split(/\s+/)[0] ?? trimmed;
+  const trimmed = name.trim()
+  if (!trimmed) return "Player"
+  return trimmed.split(/\s+/)[0] ?? trimmed
 }
 
-export default function MatchHeader({
+export function MatchHeader({
   match,
   whitePip,
   blackPip,
   turnLabel,
   inCrawford,
-  whiteName = 'White',
-  blackName = 'Black',
+  whiteName = "White",
+  blackName = "Black",
 }: Props) {
-  const navigate = useNavigate();
-  const {show: showOverlay} = useNavigationLoaderOverlay();
-  const cleanTurnLabel = turnLabel.replace(/\s*\(AI\)/i, '').toUpperCase();
-  const whiteDisplayName = displayName(whiteName).toUpperCase();
-  const blackDisplayName = displayName(blackName).toUpperCase();
+  const navigate = useNavigate()
+  const {show: showOverlay} = useNavigationLoaderOverlay()
+  const cleanTurnLabel = turnLabel.replace(/\s*\(AI\)/i, "").toUpperCase()
+  const whiteDisplayName = displayName(whiteName).toUpperCase()
+  const blackDisplayName = displayName(blackName).toUpperCase()
 
   const goHome = () => {
     // Put the loader up before the route changes so the gameplay never
     // flashes between unmount and the lobby's own preload gate.
-    showOverlay();
-    navigate('/play');
-  };
+    showOverlay()
+    navigate("/play")
+  }
 
   return (<header className="game-match-header">
     <div className="game-nav-home">
       <button
-        type="button"
-        onClick={goHome}
-        className="game-home-link"
         aria-label="Back to lobby"
-      >
+        className="game-home-link"
+        type="button"
+        onClick={goHome}>
         <img
-          src="/gameplay/premium-purple/lobby.webp"
           alt=""
           className="game-home-image"
           draggable={false}
-        />
+          src="/gameplay/premium-purple/lobby.webp"/>
       </button>
     </div>
 
@@ -71,15 +70,13 @@ export default function MatchHeader({
       <div className="game-match-hud-row">
         <div className="game-match-hud-pill">
           <img
-            src="/gameplay/premium-purple/header.webp"
             alt=""
             className="game-match-hud-art"
             draggable={false}
-          />
+            src="/gameplay/premium-purple/header.webp"/>
           <div
-            className="game-score-player game-score-player--left"
             aria-label={`${whiteDisplayName} pip count`}
-          >
+            className="game-score-player game-score-player--left">
             <span>{whiteDisplayName}</span>
             <strong>{whitePip}</strong>
           </div>
@@ -91,9 +88,8 @@ export default function MatchHeader({
             </>) : (<span className="game-score-separator">VS</span>)}
           </div>
           <div
-            className="game-score-player game-score-player--right"
             aria-label={`${blackDisplayName} pip count`}
-          >
+            className="game-score-player game-score-player--right">
             <span>{blackDisplayName}</span>
             <strong>{blackPip}</strong>
           </div>
@@ -106,5 +102,5 @@ export default function MatchHeader({
         </div>
       </div>
     </div>
-  </header>);
+  </header>)
 }

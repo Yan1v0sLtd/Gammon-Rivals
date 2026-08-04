@@ -1,20 +1,20 @@
-import type { Database } from './database';
+import type {Database} from "./database"
 
-export type CurrencyConfigRow = Database['public']['Tables']['currency_configs']['Row'];
+export type CurrencyConfigRow = Database["public"]["Tables"]["currency_configs"]["Row"]
 
 // Map<code, usd_value_micros> for O(1) lookups when building $ columns
 // over reward lists. Disabled currencies are dropped so the BO can hide
 // a currency from $ math without deleting its row.
-export type CurrencyRateMap = ReadonlyMap<string, number>;
+export type CurrencyRateMap = ReadonlyMap<string, number>
 
 export function buildCurrencyRateMap(
   rows: readonly CurrencyConfigRow[],
 ): CurrencyRateMap {
-  const map = new Map<string, number>();
+  const map = new Map<string, number>()
   for (const row of rows) {
-    if (row.is_enabled) map.set(row.code, row.usd_value_micros);
+    if (row.is_enabled) map.set(row.code, row.usd_value_micros)
   }
-  return map;
+  return map
 }
 
 // USD value in micros for a (currency, amount) pair. Returns 0 when the
@@ -26,10 +26,10 @@ export function usdMicrosFor(
   currency: string | null | undefined,
   amount: number | null | undefined,
 ): number {
-  if (!currency || amount == null) return 0;
-  const micros = rates.get(currency);
-  if (micros == null) return 0;
-  return micros * amount;
+  if (!currency || amount == null) return 0
+  const micros = rates.get(currency)
+  if (micros == null) return 0
+  return micros * amount
 }
 
 // Format micros as "$X.YZ". Default precision is 2 decimals — what the
@@ -39,17 +39,17 @@ export function usdMicrosFor(
 // EV totals where rows commonly round down past two decimals.
 export function formatUsdMicros(
   micros: number,
-  opts: { precision?: 2 | 4 } = {},
+  opts: {precision?: 2 | 4} = {},
 ): string {
-  const precision = opts.precision ?? 2;
-  const value = micros / 1_000_000;
-  if (value === 0) return '$0.00';
-  if (precision === 2 && value > 0 && value < 0.005) return '<$0.01';
-  if (precision === 2 && value < 0 && value > -0.005) return '>-$0.01';
-  return value.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  const precision = opts.precision ?? 2
+  const value = micros / 1_000_000
+  if (value === 0) return "$0.00"
+  if (precision === 2 && value > 0 && value < 0.005) return "<$0.01"
+  if (precision === 2 && value < 0 && value > -0.005) return ">-$0.01"
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,
-  });
+  })
 }

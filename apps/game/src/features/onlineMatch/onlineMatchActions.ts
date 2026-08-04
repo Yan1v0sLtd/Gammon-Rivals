@@ -1,4 +1,4 @@
-import {createAction} from '@reduxjs/toolkit';
+import {createAction} from "@reduxjs/toolkit"
 
 /**
  * Workflow input, not application state: the auto-roll preference stays in the
@@ -6,5 +6,5 @@ import {createAction} from '@reduxjs/toolkit';
  * the local-gameplay workflow takes the same toggle.
  */
 export const onlineAutoRollEligibilityChanged = createAction<{
-  readonly enabled: boolean
-}>('onlineMatch/autoRollEligibilityChanged',);
+  readonly enabled: boolean,
+}>("onlineMatch/autoRollEligibilityChanged")

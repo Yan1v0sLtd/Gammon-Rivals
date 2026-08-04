@@ -1,36 +1,68 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import createConfig from '@miskamyasa/eslint-config'
 
-export default defineConfig([
-  globalIgnores([
-    'dist',
-    'dist-admin',
-    'android/.gradle',
-    'android/.idea',
-    'android/app/build',
-    'android/build',
-    'android/capacitor-cordova-android-plugins',
-    'android/app/src/main/assets',
-    'tmp',
-  ]),
+// Opinionated ESLint config for React + TypeScript projects.
+// Repo-specific bits:
+//  - android/ is generated Capacitor output (its assets contain built JS)
+//  - reports/ are work logs, not shipped code
+//  - allowDefaultProject: files outside the app/package tsconfigs still get
+//    linted; supabase/** is a mirror of packages/engine + packages/ai via
+//    build-shared-* scripts
+export default createConfig(
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
+    tsconfigRootDir: import.meta.dirname,
+    ignores: [
+      'dist',
+      'dist-admin',
+      'android',
+      'tmp',
+      'reports',
+      'scripts/**',
+      'tools/**',
+      'eslint.config.js',
+      'capacitor.config.ts',
+      'postcss.config.js',
+      'tailwind.config.js',
+      'tailwind.admin.config.js',
+      'vitest.config.ts',
+      '**/vite.config.*',
+      'public/sw.js',
+      'supabase/functions/**',
     ],
-    languageOptions: {
-      globals: globals.browser,
-    },
-    rules: {
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/purity": "off"
-    }
   },
-])
+  {
+    name: 'backgammon/parser',
+    files: ['**/*.{ts,tsx,mts,cts,mjs,cjs,js}'],
+    languageOptions: {
+      parserOptions: {
+        allowDefaultProject: [
+          'supabase/**',
+        ],
+      },
+    },
+  },
+  {
+    name: 'backgammon/user-overrides',
+    rules: {
+      // The general indent rule remains authoritative because these rules conflict on existing JSX formatting.
+      '@stylistic/jsx-indent-props': 'off',
+      '@stylistic/max-len': 'off',
+      '@eslint-react/set-state-in-effect': 'off',
+      'no-console': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-invalid-void-type': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      'no-use-before-define': 'off',
+      '@eslint-react/purity': "off",
+    },
+  },
+)

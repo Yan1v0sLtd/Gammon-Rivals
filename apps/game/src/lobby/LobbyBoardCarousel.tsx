@@ -1,9 +1,11 @@
-import {type CSSProperties, type PointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState,} from 'react';
-import type {LobbyBoard, LobbyBoardId} from '../features/lobby/lobbyBoardData';
-import type {BoardOwnershipState} from '../features/lobby/lobbySelectors';
-import {PlayButton} from '../components/PlayButton';
-import {UnlockPill} from '../components/UnlockPill';
-import {useActivePodium} from './useActivePodium';
+import {type CSSProperties, type PointerEvent, useCallback, useEffect, useLayoutEffect, useRef, useState} from "react"
+
+import {PlayButton} from "../components/PlayButton"
+import {UnlockPill} from "../components/UnlockPill"
+import type {LobbyBoard, LobbyBoardId} from "../features/lobby/lobbyBoardData"
+import type {BoardOwnershipState} from "../features/lobby/lobbySelectors"
+
+import {useActivePodium} from "./useActivePodium"
 
 /**
  * Renders the lobby podium with a cross-fade when its image changes (e.g.
@@ -14,89 +16,90 @@ import {useActivePodium} from './useActivePodium';
  * so the existing podium size + ground-shadow CSS rule applies to all
  * layers.
  */
-function PodiumImage({src}: { readonly src: string }) {
-  const [layers, setLayers] = useState<readonly { src: string; id: number }[]>([{
+function PodiumImage({src}: {readonly src: string}) {
+  const [layers, setLayers] = useState<readonly {src: string, id: number}[]>([{
     src,
-    id: 0
-  }]);
-  const nextId = useRef(1);
+    id: 0,
+  }])
+  const nextIdRef = useRef(1)
   useEffect(() => {
     setLayers((prev) => {
-      if (prev[prev.length - 1]!.src === src) return prev;
+      if (prev[prev.length - 1].src === src) return prev
       return [...prev, {
         src,
-        id: nextId.current++
-      }];
-    });
-  }, [src]);
+        id: nextIdRef.current++,
+      }]
+    })
+  }, [src])
   return (<>
     {layers.map((layer, i) => {
-      const isNewest = i === layers.length - 1;
-      const animating = layers.length > 1;
+      const isNewest = i === layers.length - 1
+      const animating = layers.length > 1
       // The newest layer fades IN over the older one(s); the older layers
       // stay FULLY OPAQUE underneath until the prune. (They used to fade
       // out simultaneously — a "true" cross-fade — but two half-opaque
       // layers only cover ~75% at the midpoint, so the background dipped
       // through the podium: visible flicker on every board switch.)
-      const fadeClass = animating && isNewest ? ' lobby-podium-fade-in' : '';
+      const fadeClass = animating && isNewest ? " lobby-podium-fade-in" : ""
       return (<img
         key={layer.id}
-        src={layer.src}
         alt=""
         aria-hidden="true"
-        draggable={false}
-        onAnimationEnd={isNewest && animating ? () => setLayers([layer]) : undefined}
         className={`pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none${fadeClass}`}
-      />);
+        draggable={false}
+        src={layer.src}
+        onAnimationEnd={isNewest && animating ? () => {
+          setLayers([layer])
+        } : undefined}/>)
     })}
-  </>);
+  </>)
 }
 
-interface LobbyBoardCarouselProps {
-  readonly boards: readonly LobbyBoard[];
-  readonly selectedId: LobbyBoardId;
-  readonly onSelectedIdChange: (id: LobbyBoardId) => void;
-  readonly onPlay: () => void;
-  readonly getBoardState: (board: LobbyBoard) => BoardOwnershipState;
-  readonly onLockedTap: (board: LobbyBoard) => void;
-  readonly onPurchaseTap: (board: LobbyBoard) => void;
+type LobbyBoardCarouselProps = {
+  readonly boards: readonly LobbyBoard[],
+  readonly selectedId: LobbyBoardId,
+  readonly onSelectedIdChange: (id: LobbyBoardId) => void,
+  readonly onPlay: () => void,
+  readonly getBoardState: (board: LobbyBoard) => BoardOwnershipState,
+  readonly onLockedTap: (board: LobbyBoard) => void,
+  readonly onPurchaseTap: (board: LobbyBoard) => void,
   /** Player's current gem balance — decides whether tapping a
    *  gem-gated board's pill opens the purchase modal or expands a
    *  "Get more Gems" nudge. */
-  readonly walletGems: number;
+  readonly walletGems: number,
 }
 
 // A tap is a pointer event that travels less than this distance, total.
 // Anything beyond gets treated as a drag.
-const TAP_MAX_DISTANCE_PX = 8;
+const TAP_MAX_DISTANCE_PX = 8
 
 // Velocity is averaged across pointer-move samples within this window.
-const VELOCITY_WINDOW_MS = 110;
+const VELOCITY_WINDOW_MS = 110
 
 // Default snap-back duration; scaled down for faster flicks.
-const SNAP_DURATION_MS = 320;
-const SNAP_MIN_DURATION_MS = 170;
+const SNAP_DURATION_MS = 320
+const SNAP_MIN_DURATION_MS = 170
 
 // How far (in slot-units) the user has to drag, or how fast (slot-units/ms)
 // they have to flick, to commit to the next/previous board on release.
-const COMMIT_THRESHOLD_FRACTION = 0.18;
-const COMMIT_THRESHOLD_VELOCITY = 0.0018;
+const COMMIT_THRESHOLD_FRACTION = 0.18
+const COMMIT_THRESHOLD_VELOCITY = 0.0018
 
 // How many slots out from center we render. Beyond this, boards are dropped
 // from the DOM. 2 gives the "next-next" peek that the original keyframes
 // produced when transitioning.
-const RENDER_RADIUS = 2;
+const RENDER_RADIUS = 2
 
 // Fallback layout (matches the base .lobby-carousel-board CSS vars). Used
 // before we've measured the actual values from CSS, and as a safety net if
 // a custom property comes back as NaN.
-interface Layout {
-  readonly slotX: number;
-  readonly slotScale: number;
-  readonly slotRot: number;
-  readonly farX: number;
-  readonly farScale: number;
-  readonly farRot: number;
+type Layout = {
+  readonly slotX: number,
+  readonly slotScale: number,
+  readonly slotRot: number,
+  readonly farX: number,
+  readonly farScale: number,
+  readonly farRot: number,
 }
 
 const DEFAULT_LAYOUT: Layout = {
@@ -106,22 +109,22 @@ const DEFAULT_LAYOUT: Layout = {
   farX: 70,
   farScale: 0.72,
   farRot: 8,
-};
+}
 
 function easeOutCubic(t: number): number {
-  return 1 - Math.pow(1 - t, 3);
+  return 1 - Math.pow(1 - t, 3)
 }
 
 function lerp(a: number, b: number, t: number): number {
-  return a + (b - a) * t;
+  return a + (b - a) * t
 }
 
 function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(min, Math.min(max, value))
 }
 
 function modulo(n: number, m: number): number {
-  return ((n % m) + m) % m;
+  return ((n % m) + m) % m
 }
 
 // Translate / scale / rotate for a board at signed continuous distance `d`
@@ -129,63 +132,63 @@ function modulo(n: number, m: number): number {
 // "incoming" position. Values between are linearly interpolated so dragging
 // looks smooth at any sub-slot offset.
 function boardTransform(d: number, layout: Layout): CSSProperties {
-  const abs = Math.abs(d);
-  const sign = abs === 0 ? 0 : Math.sign(d);
+  const abs = Math.abs(d)
+  const sign = abs === 0 ? 0 : Math.sign(d)
 
-  const tx = abs <= 1 ? lerp(0, layout.slotX, abs) * sign : lerp(layout.slotX, layout.farX, clamp(abs - 1, 0, 1)) * sign;
+  const tx = abs <= 1 ? lerp(0, layout.slotX, abs) * sign : lerp(layout.slotX, layout.farX, clamp(abs - 1, 0, 1)) * sign
 
-  const scale = abs <= 1 ? lerp(1, layout.slotScale, abs) : lerp(layout.slotScale, layout.farScale, clamp(abs - 1, 0, 1));
+  const scale = abs <= 1 ? lerp(1, layout.slotScale, abs) : lerp(layout.slotScale, layout.farScale, clamp(abs - 1, 0, 1))
 
-  const rotMag = abs <= 1 ? lerp(0, layout.slotRot, abs) : lerp(layout.slotRot, layout.farRot, clamp(abs - 1, 0, 1));
-  const rot = rotMag * sign;
+  const rotMag = abs <= 1 ? lerp(0, layout.slotRot, abs) : lerp(layout.slotRot, layout.farRot, clamp(abs - 1, 0, 1))
+  const rot = rotMag * sign
 
   // Fade boards out past the side slot so the "incoming" board ghosts in
   // rather than popping. Past RENDER_RADIUS we drop it entirely.
-  const opacity = abs >= RENDER_RADIUS ? 0 : abs > 1 ? lerp(1, 0.5, clamp(abs - 1, 0, 1)) : 1;
+  const opacity = abs >= RENDER_RADIUS ? 0 : abs > 1 ? lerp(1, 0.5, clamp(abs - 1, 0, 1)) : 1
 
   // Stack so the centered board is on top, side boards behind, far behind.
-  const zIndex = Math.max(0, Math.round(30 - abs * 10));
+  const zIndex = Math.max(0, Math.round(30 - abs * 10))
 
   return {
     transform: `translateX(-50%) translateX(${tx}%) scale(${scale}) rotate(${rot}deg)`,
     zIndex,
     opacity,
-  };
+  }
 }
 
 function readLayoutFromSample(sample: HTMLElement | null): Layout {
-  if (!sample) return DEFAULT_LAYOUT;
-  const cs = getComputedStyle(sample);
+  if (!sample) return DEFAULT_LAYOUT
+  const cs = getComputedStyle(sample)
   const pick = (name: string, fallback: number): number => {
-    const raw = cs.getPropertyValue(name).trim();
-    if (!raw) return fallback;
-    const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) ? parsed : fallback;
-  };
+    const raw = cs.getPropertyValue(name).trim()
+    if (!raw) return fallback
+    const parsed = parseFloat(raw)
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
   // CSS stores prev/next rotations as signed values; we want magnitudes
   // (`Math.abs`) since the sign comes from `d` at render time.
   return {
-    slotX: Math.abs(pick('--lobby-next-x', DEFAULT_LAYOUT.slotX)),
-    slotScale: pick('--lobby-side-scale', DEFAULT_LAYOUT.slotScale),
-    slotRot: Math.abs(pick('--lobby-next-rotation', DEFAULT_LAYOUT.slotRot)),
-    farX: Math.abs(pick('--lobby-incoming-next-x', DEFAULT_LAYOUT.farX)),
-    farScale: pick('--lobby-incoming-scale', DEFAULT_LAYOUT.farScale),
-    farRot: Math.abs(pick('--lobby-incoming-next-rotation', DEFAULT_LAYOUT.farRot)),
-  };
+    slotX: Math.abs(pick("--lobby-next-x", DEFAULT_LAYOUT.slotX)),
+    slotScale: pick("--lobby-side-scale", DEFAULT_LAYOUT.slotScale),
+    slotRot: Math.abs(pick("--lobby-next-rotation", DEFAULT_LAYOUT.slotRot)),
+    farX: Math.abs(pick("--lobby-incoming-next-x", DEFAULT_LAYOUT.farX)),
+    farScale: pick("--lobby-incoming-scale", DEFAULT_LAYOUT.farScale),
+    farRot: Math.abs(pick("--lobby-incoming-next-rotation", DEFAULT_LAYOUT.farRot)),
+  }
 }
 
 function layoutsEqual(a: Layout, b: Layout): boolean {
-  return (a.slotX === b.slotX && a.slotScale === b.slotScale && a.slotRot === b.slotRot && a.farX === b.farX && a.farScale === b.farScale && a.farRot === b.farRot);
+  return (a.slotX === b.slotX && a.slotScale === b.slotScale && a.slotRot === b.slotRot && a.farX === b.farX && a.farScale === b.farScale && a.farRot === b.farRot)
 }
 
-interface DragState {
-  pointerId: number;
-  startX: number;
-  startTime: number;
-  startPosition: number;
-  samples: { t: number; x: number }[];
-  moved: boolean;
-  tappedSignedIdx: number | null;
+type DragState = {
+  pointerId: number,
+  startX: number,
+  startTime: number,
+  startPosition: number,
+  samples: {t: number, x: number}[],
+  moved: boolean,
+  tappedSignedIdx: number | null,
 }
 
 export function LobbyBoardCarousel({
@@ -200,75 +203,77 @@ export function LobbyBoardCarousel({
   onPurchaseTap,
   walletGems,
 }: LobbyBoardCarouselProps) {
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null)
   // Global BO-managed podium (the stand under the board). Falls back to
   // the bundled royal-holder asset until Supabase resolves the active one.
   // A board with its own holder_image overrides this — see `podiumImage`
   // below, derived from the selected board.
-  const activePodium = useActivePodium();
+  const activePodium = useActivePodium()
 
   // Continuous carousel position. round(position) mod boards.length is the
   // currently centered board; fractional part is drag/animation offset.
   const initialPosition = (() => {
-    const idx = boards.findIndex((b) => b.id === selectedId);
-    return idx >= 0 ? idx : 0;
-  })();
-  const [position, setPositionState] = useState(initialPosition);
-  const positionRef = useRef(position);
-  const setPosition = useCallback((value: number) => {
-    positionRef.current = value;
-    setPositionState(value);
-  }, []);
+    const idx = boards.findIndex((b) => b.id === selectedId)
+    return idx >= 0 ? idx : 0
+  })()
+  const [position, setPosition] = useState(initialPosition)
+  const positionRef = useRef(position)
+  const updatePosition = useCallback((value: number) => {
+    positionRef.current = value
+    setPosition(value)
+  }, [])
 
-  const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef<DragState | null>(null);
-  const animFrameRef = useRef<number | null>(null);
-  const lastNotifiedRef = useRef<LobbyBoardId>(selectedId);
+  const [isDragging, setIsDragging] = useState(false)
+  const dragRef = useRef<DragState | null>(null)
+  const animFrameRef = useRef<number | null>(null)
+  const lastNotifiedRef = useRef<LobbyBoardId>(selectedId)
   // True while an external selectedId change is being animated. Suppresses
   // mid-animation notifications back to the parent (which would otherwise
   // briefly report an id we're animating through, not toward).
-  const externalAnimRef = useRef(false);
+  const externalAnimRef = useRef(false)
 
-  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT);
+  const [layout, setLayout] = useState<Layout>(DEFAULT_LAYOUT)
 
   // Which board has an expanded lock pill ("Reach level N to unlock")
   // or an expanded gem pill ("Get more Gems"). Only one of either at a
   // time; a click anywhere else collapses both. The pills stop
   // propagation on their own click, so this document listener only
   // fires for outside clicks.
-  const [expandedLockId, setExpandedLockId] = useState<string | null>(null);
-  const [expandedGemsId, setExpandedGemsId] = useState<string | null>(null);
+  const [expandedLockId, setExpandedLockId] = useState<string | null>(null)
+  const [expandedGemsId, setExpandedGemsId] = useState<string | null>(null)
   const expandLock = useCallback((id: string) => {
-    setExpandedLockId(id);
-    setExpandedGemsId(null);
-  }, []);
+    setExpandedLockId(id)
+    setExpandedGemsId(null)
+  }, [])
   const expandGems = useCallback((id: string) => {
-    setExpandedGemsId(id);
-    setExpandedLockId(null);
-  }, []);
+    setExpandedGemsId(id)
+    setExpandedLockId(null)
+  }, [])
   useEffect(() => {
-    if (!expandedLockId && !expandedGemsId) return;
+    if (!expandedLockId && !expandedGemsId) return
     const collapse = () => {
-      setExpandedLockId(null);
-      setExpandedGemsId(null);
-    };
-    document.addEventListener('click', collapse);
-    return () => document.removeEventListener('click', collapse);
-  }, [expandedLockId, expandedGemsId]);
+      setExpandedLockId(null)
+      setExpandedGemsId(null)
+    }
+    document.addEventListener("click", collapse)
+    return () => {
+      document.removeEventListener("click", collapse)
+    }
+  }, [expandedLockId, expandedGemsId])
 
   const cancelAnimation = useCallback(() => {
     if (animFrameRef.current !== null) {
-      cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = null;
+      cancelAnimationFrame(animFrameRef.current)
+      animFrameRef.current = null
     }
-  }, []);
+  }, [])
 
   const syncLastNotified = useCallback((id: LobbyBoardId, notifyParent: boolean): boolean => {
-    if (id === lastNotifiedRef.current) return false;
-    lastNotifiedRef.current = id;
-    if (notifyParent) onSelectedIdChange(id);
-    return true;
-  }, [onSelectedIdChange]);
+    if (id === lastNotifiedRef.current) return false
+    lastNotifiedRef.current = id
+    if (notifyParent) onSelectedIdChange(id)
+    return true
+  }, [onSelectedIdChange])
 
   // Animate `position` from current value to `target` over `duration` ms.
   // The optional `notifyOnLand` flag controls whether the parent is told
@@ -276,16 +281,16 @@ export function LobbyBoardCarousel({
   // animations (driven by selectedId prop changes) pass `false` to avoid
   // echoing the same value back.
   const animateTo = useCallback((target: number, duration: number, notifyOnLand: boolean) => {
-    cancelAnimation();
-    const from = positionRef.current;
+    cancelAnimation()
+    const from = positionRef.current
     if (Math.abs(target - from) < 0.001 || duration <= 0) {
-      setPosition(target);
+      updatePosition(target)
       if (notifyOnLand) {
         // notify happens via the integer-landed effect below
       }
-      return;
+      return
     }
-    externalAnimRef.current = !notifyOnLand;
+    externalAnimRef.current = !notifyOnLand
 
     // Eagerly notify the parent about the destination *at the start* of
     // the slide, so the lobby background can fade in parallel with the
@@ -293,99 +298,103 @@ export function LobbyBoardCarousel({
     // integer-landed effect below guards on lastNotifiedRef, so it
     // won't double-fire when the slide actually finishes.
     if (notifyOnLand && boards.length > 0) {
-      const targetIdx = modulo(Math.round(target), boards.length);
-      const targetId = boards[targetIdx]!.id;
-      syncLastNotified(targetId, true);
+      const targetIdx = modulo(Math.round(target), boards.length)
+      const targetId = boards[targetIdx].id
+      syncLastNotified(targetId, true)
     }
 
-    const start = performance.now();
+    const start = performance.now()
     const tick = (now: number) => {
-      const t = clamp((now - start) / duration, 0, 1);
-      const eased = easeOutCubic(t);
-      const value = from + (target - from) * eased;
+      const t = clamp((now - start) / duration, 0, 1)
+      const eased = easeOutCubic(t)
+      const value = from + (target - from) * eased
       if (t < 1) {
-        setPosition(value);
-        animFrameRef.current = requestAnimationFrame(tick);
+        updatePosition(value)
+        animFrameRef.current = requestAnimationFrame(tick)
       }
       else {
-        animFrameRef.current = null;
-        setPosition(target);
-        externalAnimRef.current = false;
+        animFrameRef.current = null
+        updatePosition(target)
+        externalAnimRef.current = false
       }
-    };
-    animFrameRef.current = requestAnimationFrame(tick);
-  }, [cancelAnimation, setPosition, boards, syncLastNotified]);
+    }
+    animFrameRef.current = requestAnimationFrame(tick)
+  }, [cancelAnimation, updatePosition, boards, syncLastNotified])
 
-  useEffect(() => () => cancelAnimation(), [cancelAnimation]);
+  useEffect(() => () => {
+    cancelAnimation()
+  }, [cancelAnimation])
 
   //
   // The slot positions / scales / rotations live in responsive CSS rules on
   // .lobby-carousel-board. We mirror them into state so the JS-driven
   // transforms match the breakpoint that's currently active.
   useLayoutEffect(() => {
-    const node = viewportRef.current;
-    if (!node) return;
+    const node = viewportRef.current
+    if (!node) return
     const measure = () => {
-      const sample = node.querySelector<HTMLElement>('.lobby-carousel-board');
-      const next = readLayoutFromSample(sample);
-      setLayout((prev) => (layoutsEqual(prev, next) ? prev : next));
-    };
-    measure();
-    const obs = new ResizeObserver(measure);
-    obs.observe(node);
-    return () => obs.disconnect();
-  }, [boards.length]);
+      const sample = node.querySelector<HTMLElement>(".lobby-carousel-board")
+      const next = readLayoutFromSample(sample)
+      setLayout((prev) => (layoutsEqual(prev, next) ? prev : next))
+    }
+    measure()
+    const obs = new ResizeObserver(measure)
+    obs.observe(node)
+    return () => {
+      obs.disconnect()
+    }
+  }, [boards.length])
 
   // When parent flips selectedId externally (e.g. URL nav), animate the
   // carousel to that board along the shortest path around the loop.
   useEffect(() => {
-    if (boards.length === 0) return;
-    const idx = boards.findIndex((b) => b.id === selectedId);
-    if (idx < 0) return;
-    if (!syncLastNotified(selectedId, false)) return;
-    if (dragRef.current) return; // user is mid-drag; their pointer wins.
-    const len = boards.length;
-    const candidates = [idx, idx - len, idx + len];
-    const current = positionRef.current;
-    const target = candidates.reduce((best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best), candidates[0]!);
-    if (Math.abs(target - current) < 0.001) return;
-    animateTo(target, SNAP_DURATION_MS, false);
-  }, [selectedId, boards, animateTo, syncLastNotified]);
+    if (boards.length === 0) return
+    const idx = boards.findIndex((b) => b.id === selectedId)
+    if (idx < 0) return
+    if (!syncLastNotified(selectedId, false)) return
+    if (dragRef.current) return // user is mid-drag; their pointer wins.
+    const len = boards.length
+    const candidates = [idx, idx - len, idx + len]
+    const current = positionRef.current
+    const target = candidates.reduce((best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best), candidates[0])
+    if (Math.abs(target - current) < 0.001) return
+    animateTo(target, SNAP_DURATION_MS, false)
+  }, [selectedId, boards, animateTo, syncLastNotified])
 
   // When position lands on a new integer slot, tell the parent. Skipped
   // during external animations (otherwise we'd echo the same id back).
   useEffect(() => {
-    if (boards.length === 0) return;
-    if (externalAnimRef.current) return;
+    if (boards.length === 0) return
+    if (externalAnimRef.current) return
     // Only notify when we're settled near an integer (drag at rest, or
     // animation finished). Avoids flapping through ids during a multi-slot
     // tween.
-    const distanceToInteger = Math.abs(position - Math.round(position));
-    if (distanceToInteger > 0.001) return;
-    const idx = modulo(Math.round(position), boards.length);
-    const id = boards[idx]!.id;
-    syncLastNotified(id, true);
-  }, [position, boards, syncLastNotified]);
+    const distanceToInteger = Math.abs(position - Math.round(position))
+    if (distanceToInteger > 0.001) return
+    const idx = modulo(Math.round(position), boards.length)
+    const id = boards[idx].id
+    syncLastNotified(id, true)
+  }, [position, boards, syncLastNotified])
 
   const slotWidthPx = useCallback((): number => {
-    const node = viewportRef.current;
-    if (!node) return 1;
+    const node = viewportRef.current
+    if (!node) return 1
     // One "slot" of carousel travel = the distance each board has to
     // translate to slide from one slot into the next. The CSS expresses
     // that translation as `translateX(slotX%)` of the BOARD's width — not
     // the viewport's — so a 1:1 finger-to-board-movement ratio requires
     // dividing finger pixels by the board's natural (untransformed) width
     // times slotX/100. offsetWidth ignores transform: scale().
-    const sample = node.querySelector<HTMLElement>('.lobby-carousel-board');
-    const boardWidthPx = sample?.offsetWidth ?? node.clientWidth * 0.6;
-    return Math.max(40, (boardWidthPx * layout.slotX) / 100);
-  }, [layout.slotX]);
+    const sample = node.querySelector<HTMLElement>(".lobby-carousel-board")
+    const boardWidthPx = sample?.offsetWidth ?? node.clientWidth * 0.6
+    return Math.max(40, (boardWidthPx * layout.slotX) / 100)
+  }, [layout.slotX])
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    cancelAnimation();
-    const target = event.target as HTMLElement | null;
-    const slotEl = target?.closest<HTMLElement>('[data-board-signed-idx]');
-    const tappedSignedIdx = slotEl ? parseInt(slotEl.dataset.boardSignedIdx ?? '', 10) : null;
+    cancelAnimation()
+    const target = event.target as HTMLElement | null
+    const slotEl = target?.closest<HTMLElement>("[data-board-signed-idx]")
+    const tappedSignedIdx = slotEl ? parseInt(slotEl.dataset.boardSignedIdx ?? "", 10) : null
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -393,91 +402,93 @@ export function LobbyBoardCarousel({
       startPosition: positionRef.current,
       samples: [{
         t: performance.now(),
-        x: event.clientX
+        x: event.clientX,
       }],
       moved: false,
       tappedSignedIdx: Number.isFinite(tappedSignedIdx) ? tappedSignedIdx : null,
-    };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-    const dx = event.clientX - drag.startX;
-    const now = performance.now();
+    const drag = dragRef.current
+    if (!drag) return
+    if (event.pointerId !== drag.pointerId) return
+    const dx = event.clientX - drag.startX
+    const now = performance.now()
     drag.samples.push({
       t: now,
-      x: event.clientX
-    });
-    while (drag.samples.length > 2 && now - drag.samples[0]!.t > VELOCITY_WINDOW_MS) {
-      drag.samples.shift();
+      x: event.clientX,
+    })
+    while (drag.samples.length > 2 && now - drag.samples[0].t > VELOCITY_WINDOW_MS) {
+      drag.samples.shift()
     }
     if (!drag.moved && Math.abs(dx) > TAP_MAX_DISTANCE_PX) {
-      drag.moved = true;
-      setIsDragging(true);
+      drag.moved = true
+      setIsDragging(true)
     }
     if (drag.moved) {
       // Swiping left (dx < 0) advances the carousel forward (position +).
-      const delta = -dx / slotWidthPx();
-      setPosition(drag.startPosition + delta);
+      const delta = -dx / slotWidthPx()
+      updatePosition(drag.startPosition + delta)
     }
-  };
+  }
 
   const handlePointerEnd = (event: PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-    dragRef.current = null;
+    const drag = dragRef.current
+    if (!drag) return
+    if (event.pointerId !== drag.pointerId) return
+    dragRef.current = null
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+      event.currentTarget.releasePointerCapture(event.pointerId)
     }
-    setIsDragging(false);
+    setIsDragging(false)
 
     // Tap path: the pointer barely moved. If they tapped a side board,
     // animate that board into the center; if they tapped the centered
     // board or empty space, do nothing.
     if (!drag.moved) {
       if (drag.tappedSignedIdx !== null && drag.tappedSignedIdx !== Math.round(positionRef.current)) {
-        animateTo(drag.tappedSignedIdx, SNAP_DURATION_MS, true);
+        animateTo(drag.tappedSignedIdx, SNAP_DURATION_MS, true)
       }
-      return;
+      return
     }
 
     // Drag path: decide whether to commit to a neighbouring slot or snap
     // back, based on both how far they dragged AND how fast they were
     // moving at release.
-    const samples = drag.samples;
-    let vxPxPerMs = 0;
+    const samples = drag.samples
+    let vxPxPerMs = 0
     if (samples.length >= 2) {
-      const first = samples[0]!;
-      const last = samples[samples.length - 1]!;
-      const dt = last.t - first.t;
-      if (dt > 0) vxPxPerMs = (last.x - first.x) / dt;
+      const first = samples[0]
+      const last = samples[samples.length - 1]
+      const dt = last.t - first.t
+      if (dt > 0) vxPxPerMs = (last.x - first.x) / dt
     }
-    const vSlotsPerMs = -vxPxPerMs / slotWidthPx();
+    const vSlotsPerMs = -vxPxPerMs / slotWidthPx()
 
-    const draggedSlots = positionRef.current - drag.startPosition;
-    let target: number;
+    const draggedSlots = positionRef.current - drag.startPosition
+    let target: number
     if (Math.abs(draggedSlots) >= COMMIT_THRESHOLD_FRACTION || Math.abs(vSlotsPerMs) >= COMMIT_THRESHOLD_VELOCITY) {
       // Step exactly one slot in whichever direction wins (drag or flick).
       // Limiting to one prevents a single hard flick from skipping past
       // several boards, which feels uncontrollable.
-      const direction = Math.sign(draggedSlots || vSlotsPerMs) || 1;
-      target = Math.round(drag.startPosition) + direction;
+      const direction = Math.sign(draggedSlots || vSlotsPerMs) || 1
+      target = Math.round(drag.startPosition) + direction
     }
     else {
-      target = Math.round(drag.startPosition);
+      target = Math.round(drag.startPosition)
     }
 
     // Velocity-aware duration: a fast flick finishes the remaining travel
     // in less time, so the motion feels continuous with the user's hand
     // rather than bouncing through a fixed-length animation.
-    const remaining = Math.abs(target - positionRef.current);
-    const baseDuration = SNAP_DURATION_MS * clamp(remaining, 0.4, 1);
-    const speedFactor = clamp(Math.abs(vSlotsPerMs) * 220, 0, 1);
-    const duration = Math.max(SNAP_MIN_DURATION_MS, baseDuration * (1 - 0.55 * speedFactor));
-    animateTo(target, duration, true);
-  };
+    const remaining = Math.abs(target - positionRef.current)
+    const baseDuration = SNAP_DURATION_MS * clamp(remaining, 0.4, 1)
+    const speedFactor = clamp(Math.abs(vSlotsPerMs) * 220, 0, 1)
+    const duration = Math.max(SNAP_MIN_DURATION_MS, baseDuration * (1 - 0.55 * speedFactor))
+    animateTo(target, duration, true)
+  }
 
   // animateByOffset was used by the prev/next arrows that were
   // removed in v12. Kept as a comment placeholder so future
@@ -488,14 +499,14 @@ export function LobbyBoardCarousel({
   // };
 
   const animateToBoardIdx = (idx: number) => {
-    if (boards.length === 0) return;
-    const len = boards.length;
-    const candidates = [idx, idx - len, idx + len];
-    const current = positionRef.current;
-    const target = candidates.reduce((best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best), candidates[0]!);
-    cancelAnimation();
-    animateTo(target, SNAP_DURATION_MS, true);
-  };
+    if (boards.length === 0) return
+    const len = boards.length
+    const candidates = [idx, idx - len, idx + len]
+    const current = positionRef.current
+    const target = candidates.reduce((best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best), candidates[0])
+    cancelAnimation()
+    animateTo(target, SNAP_DURATION_MS, true)
+  }
 
   // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
@@ -503,42 +514,41 @@ export function LobbyBoardCarousel({
       className="lobby-carousel-section relative mx-auto flex w-full max-w-[64rem] items-center justify-center overflow-visible">
       <div
         ref={viewportRef}
-        className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
-      >
+        className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]">
         <p className="px-6 text-center text-sm font-bold uppercase tracking-[0.18em]">
           Loading boards…
         </p>
       </div>
-    </section>);
+    </section>)
   }
 
   // Build the list of rendered boards (signed index, distance from center).
   // We anchor on floor(position) so the leading edge of the drag always has
   // a "next" board to peek at. RENDER_RADIUS + 1 on the upper bound makes
   // sure that peek board exists when we're partway between slots.
-  const baseIdx = Math.floor(position);
-  type RenderedBoard = { board: LobbyBoard; signedIdx: number; d: number; key: string };
-  const rendered: RenderedBoard[] = [];
+  const baseIdx = Math.floor(position)
+  type RenderedBoard = {board: LobbyBoard, signedIdx: number, d: number, key: string}
+  const rendered: RenderedBoard[] = []
   for (let off = -RENDER_RADIUS; off <= RENDER_RADIUS + 1; off++) {
-    const signedIdx = baseIdx + off;
-    const d = signedIdx - position;
-    if (Math.abs(d) > RENDER_RADIUS + 0.05) continue;
-    const wrappedIdx = modulo(signedIdx, boards.length);
+    const signedIdx = baseIdx + off
+    const d = signedIdx - position
+    if (Math.abs(d) > RENDER_RADIUS + 0.05) continue
+    const wrappedIdx = modulo(signedIdx, boards.length)
     rendered.push({
-      board: boards[wrappedIdx]!,
+      board: boards[wrappedIdx],
       signedIdx,
       d, // Lap-stable key: stays the same across re-renders for the same
       // logical board at the same loop iteration, so React reuses the
       // DOM node and the image doesn't flicker as the carousel scrolls.
       key: `${wrappedIdx}@${Math.floor(signedIdx / Math.max(1, boards.length))}`,
-    });
+    })
   }
 
-  const selectedBoardIdx = modulo(Math.round(position), boards.length);
-  const selected = boards[selectedBoardIdx]!;
+  const selectedBoardIdx = modulo(Math.round(position), boards.length)
+  const selected = boards[selectedBoardIdx]
   // The centered board's own holder image wins; the global active podium
   // is the fallback when this board has no dedicated holder.
-  const podiumImage = selected.holderImage || activePodium;
+  const podiumImage = selected.holderImage ?? activePodium
   // Show the inline PLAY button when the board is fully playable for
   // this user. Two states qualify:
   //   - 'owned'       — bought (or admin-granted) into inventory
@@ -554,20 +564,19 @@ export function LobbyBoardCarousel({
     <div
       ref={viewportRef}
       className="lobby-carousel-viewport relative aspect-[1.05/1] min-h-[25rem] touch-pan-y overflow-visible sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
-      data-dragging={isDragging ? 'true' : 'false'}
+      data-dragging={isDragging ? "true" : "false"}
+      onPointerCancel={handlePointerEnd}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerEnd}
-      onPointerCancel={handlePointerEnd}
-    >
+      onPointerUp={handlePointerEnd}>
       <div className="absolute inset-0 overflow-visible">
         {rendered.map(({
           board,
           signedIdx,
           d,
-          key
+          key,
         }) => {
-          const state = getBoardState(board);
+          const state = getBoardState(board)
           // Two independent gates, two pills:
           //   showLock  (centered) → LEVEL gate. Only when the player
           //             is under the required level. Expands to
@@ -575,9 +584,9 @@ export function LobbyBoardCarousel({
           //   showGems  (bottom)   → GEM gate. Whenever the board
           //             costs gems (level-locked OR purchasable). Its
           //             tap behavior depends on state (see below).
-          const showLock = state === 'level-locked';
-          const showGems = state === 'level-locked' || state === 'purchasable';
-          const isCenter = Math.abs(d) < 0.5;
+          const showLock = state === "level-locked"
+          const showGems = state === "level-locked" || state === "purchasable"
+          const isCenter = Math.abs(d) < 0.5
           // PLAY button now lives ON the centered board (same as
           // the lock) — only renders when the board is playable
           // AND it's the visually-centred slot. Sharing the per-
@@ -585,35 +594,34 @@ export function LobbyBoardCarousel({
           // identical centering math (top: calc(50% - 5px)) so
           // they visually swap into the same position depending
           // on the board's state.
-          const showPlayHere = isCenter && (state === 'owned' || state === 'free-unlock');
-          const style = boardTransform(d, layout);
+          const showPlayHere = isCenter && (state === "owned" || state === "free-unlock")
+          const style = boardTransform(d, layout)
           return (<div
             key={key}
+            className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing [container-type:inline-size]"
             data-board-signed-idx={signedIdx}
             data-state={state}
-            className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing [container-type:inline-size]"
-            style={style}
-          >
+            style={style}>
             <img
-              src={board.image}
-              alt={isCenter ? `${board.name} board preview` : ''}
+              alt={isCenter ? `${board.name} board preview` : ""}
               className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
               draggable={false}
-            />
+              src={board.image}/>
             {showLock ? (// Expandable lock pill. Collapsed size tracks the old
               // w-[12%] lock via 12cqi (board is a container). Tap
               // expands it inline to "Reach level N to unlock" using
               // the board's real unlockLevel. Same centering math as
               // the PLAY button.
               <UnlockPill
-                variant="lock"
+                ariaLabel={`${board.name} locked`}
                 level={board.unlockLevel}
                 open={expandedLockId === board.id}
-                onOpen={() => expandLock(board.id)}
-                ariaLabel={`${board.name} locked`}
-                wrapStyle={{fontSize: '12cqi'}}
+                variant="lock"
                 wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
-              />) : null}
+                wrapStyle={{fontSize: "12cqi"}}
+                onOpen={() => {
+                  expandLock(board.id)
+                }}/>) : null}
             {/* PLAY button on the centered + playable board. Same
                     `top: calc(50% - 5px)` / `-translate-y-1/2` math
                     as the lock so the two badges sit at exactly the
@@ -630,26 +638,33 @@ export function LobbyBoardCarousel({
               // instead of the viewport. Sparkles off to match the
               // plain original. Same centering math as the lock.
               <PlayButton
-                label="Play"
-                size="lg"
-                sparkles={false}
+                aria-label={`Play on ${board.name}`}
                 // Spotlight anchor for the first-run onboarding tour
                 // (OnboardingTour step 4). Only the centered, playable
                 // board renders a PlayButton, so there's exactly one.
                 data-tour="play"
-                aria-label={`Play on ${board.name}`}
-                onPointerDown={(event) => event.stopPropagation()}
-                onPointerUp={(event) => event.stopPropagation()}
-                onTouchStart={(event) => event.stopPropagation()}
-                onTouchEnd={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onPlay();
-                }}
-                style={{touchAction: 'manipulation'}}
-                wrapStyle={{fontSize: 'clamp(7px, 4.5cqi, 22px)'}}
+                label="Play"
+                size="lg"
+                sparkles={false}
+                style={{touchAction: "manipulation"}}
                 wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
-              />) : null}
+                wrapStyle={{fontSize: "clamp(7px, 4.5cqi, 22px)"}}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onPlay()
+                }}
+                onPointerDown={(event) => {
+                  event.stopPropagation()
+                }}
+                onPointerUp={(event) => {
+                  event.stopPropagation()
+                }}
+                onTouchEnd={(event) => {
+                  event.stopPropagation()
+                }}
+                onTouchStart={(event) => {
+                  event.stopPropagation()
+                }}/>) : null}
             {showGems ? (// GEM gate pill (gem badge, bottom). Tap behavior:
               //   under-level (level-locked) → expand the centered
               //       LEVEL lock — you must clear the level first.
@@ -657,25 +672,24 @@ export function LobbyBoardCarousel({
               //       "Get more Gems".
               //   at-level + enough gems → open the purchase popup.
               <UnlockPill
-                variant="gem"
-                text="Get more Gems"
+                ariaLabel={`Unlock ${board.name} for ${board.priceGems} gems`}
                 open={expandedGemsId === board.id}
+                text="Get more Gems"
+                variant="gem"
+                wrapClassName="absolute bottom-[8%] left-1/2 z-40 -translate-x-1/2"
+                wrapStyle={{fontSize: "12cqi"}}
                 onOpen={() => {
-                  if (state === 'level-locked') {
-                    expandLock(board.id);
+                  if (state === "level-locked") {
+                    expandLock(board.id)
                   }
                   else if (walletGems >= board.priceGems) {
-                    onPurchaseTap(board);
+                    onPurchaseTap(board)
                   }
                   else {
-                    expandGems(board.id);
+                    expandGems(board.id)
                   }
-                }}
-                ariaLabel={`Unlock ${board.name} for ${board.priceGems} gems`}
-                wrapStyle={{fontSize: '12cqi'}}
-                wrapClassName="absolute bottom-[8%] left-1/2 z-40 -translate-x-1/2"
-              />) : null}
-          </div>);
+                }}/>) : null}
+          </div>)
         })}
       </div>
 
@@ -685,8 +699,7 @@ export function LobbyBoardCarousel({
             (.gr-name-pill), centred at the top just below the balances notch. */}
       <div
         className="gr-name-pill font-display absolute left-1/2 top-[2%] z-40 -translate-x-1/2"
-        style={{fontSize: 'clamp(0.8rem, 1.7vw, 1.3rem)'}}
-      >
+        style={{fontSize: "clamp(0.8rem, 1.7vw, 1.3rem)"}}>
         {selected.name}
       </div>
 
@@ -703,14 +716,17 @@ export function LobbyBoardCarousel({
       <div className="absolute bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center gap-4">
         {boards.map((board, idx) => (<button
           key={board.id}
-          type="button"
           aria-label={`Select ${board.name}`}
           aria-pressed={selected.id === board.id}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => animateToBoardIdx(idx)}
-          className={`h-4 w-4 rounded-full border border-white/80 transition ${selected.id === board.id ? 'scale-125 bg-[#ffd35d] shadow-[0_0_8px_rgba(255,211,93,0.72)]' : 'bg-white/72 shadow-[0_1px_3px_rgba(0,0,0,0.32)] hover:bg-white'}`}
-        />))}
+          className={`h-4 w-4 rounded-full border border-white/80 transition ${selected.id === board.id ? "scale-125 bg-[#ffd35d] shadow-[0_0_8px_rgba(255,211,93,0.72)]" : "bg-white/72 shadow-[0_1px_3px_rgba(0,0,0,0.32)] hover:bg-white"}`}
+          type="button"
+          onClick={() => {
+            animateToBoardIdx(idx)
+          }}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+          }}/>))}
       </div>
     </div>
-  </section>);
+  </section>)
 }

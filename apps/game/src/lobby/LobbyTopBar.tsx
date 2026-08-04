@@ -1,18 +1,19 @@
-import {useShop} from '../features/appUi/useShop';
-import type {ProfileProgression} from '../../../../packages/shared/src/progression';
-import type {Database} from '../../../../packages/shared/src/database';
-import {CurrencyPill} from '../components/CurrencyPill';
-import {LobbyProfileCard} from './LobbyProfileCard';
-import {XpBoostBadge} from './XpBoostBadge';
+import type {Database} from "../../../../packages/shared/src/database"
+import type {ProfileProgression} from "../../../../packages/shared/src/progression"
+import {CurrencyPill} from "../components/CurrencyPill"
+import {useShop} from "../features/appUi/useShop"
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
-type UserWallet = Database['public']['Tables']['user_wallets']['Row'];
+import {LobbyProfileCard} from "./LobbyProfileCard"
+import {XpBoostBadge} from "./XpBoostBadge"
 
-interface LobbyTopBarProps {
-  readonly profile: ProfileRow | null;
-  readonly wallet: UserWallet | null;
-  readonly progression: ProfileProgression;
-  readonly isGuest: boolean;
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
+type UserWallet = Database["public"]["Tables"]["user_wallets"]["Row"]
+
+type LobbyTopBarProps = {
+  readonly profile: ProfileRow | null,
+  readonly wallet: UserWallet | null,
+  readonly progression: ProfileProgression,
+  readonly isGuest: boolean,
 
 }
 
@@ -21,28 +22,27 @@ export function LobbyTopBar({
   wallet,
   progression,
 }: LobbyTopBarProps) {
-  const {openShop} = useShop();
+  const {openShop} = useShop()
   const currencies = [{
-    id: 'coins',
-    flyTarget: 'coins',
-    label: 'Coins',
+    id: "coins",
+    flyTarget: "coins",
+    label: "Coins",
     value: wallet?.coins,
-    icon: '/lobby/icons/gold-coin.webp',
+    icon: "/lobby/icons/gold-coin.webp",
   }, {
-    id: 'gems',
-    flyTarget: 'gems',
-    label: 'Gems',
+    id: "gems",
+    flyTarget: "gems",
+    label: "Gems",
     value: wallet?.gems,
-    icon: '/lobby/icons/gem.webp',
-  },] as const;
+    icon: "/lobby/icons/gem.webp",
+  }] as const
 
   return (
     <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
       <div className="lobby-pp-shell relative flex min-w-0 flex-col gap-2">
         <LobbyProfileCard
           profile={profile}
-          progression={progression}
-        />
+          progression={progression}/>
         {/* XP-boost chip sits BELOW the premium card so it doesn't
             break the card's tight visual grid. Renders nothing when
             no boost is active. The guest "Save progress" CTA that
@@ -55,8 +55,11 @@ export function LobbyTopBar({
 
       <div className="lobby-topbar-actions flex flex-wrap items-start justify-end gap-3">
         <div className="lobby-currency-strip flex flex-wrap justify-end gap-3">
-          {currencies.map((currency) => (<CurrencyPill key={currency.id} {...currency} onAdd={openShop}/>))}
+          {currencies.map((currency) => (<CurrencyPill
+            key={currency.id}
+            {...currency}
+            onAdd={openShop}/>))}
         </div>
       </div>
-    </header>);
+    </header>)
 }

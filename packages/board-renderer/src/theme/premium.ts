@@ -1,8 +1,8 @@
-import { woodTheme } from './wood';
-import type { Theme } from './types';
+import type {Theme} from "./types"
+import {woodTheme} from "./wood"
 
 export const premiumTheme: Theme = {
-  name: 'premium',
+  name: "premium",
   colors: {
     ...woodTheme.colors,
     felt: 0xe9b86f,
@@ -13,11 +13,11 @@ export const premiumTheme: Theme = {
     trayBg: 0x8f1719,
   },
   assets: {
-    board: '/themes/premium/board-tilted.png',
-    whiteChecker: '/themes/premium/checker-white.svg',
-    blackChecker: '/themes/premium/checker-black.svg',
+    board: "/themes/premium/board-tilted.png",
+    whiteChecker: "/themes/premium/checker-white.svg",
+    blackChecker: "/themes/premium/checker-black.svg",
   },
-  backgroundImage: '/lobby/backgrounds/classic-green.webp',
+  backgroundImage: "/lobby/backgrounds/classic-green.webp",
   layout: {
     railWidthRatio: 0.205,
     barWidthRatio: 0.05,
@@ -69,4 +69,4 @@ export const premiumTheme: Theme = {
     // derivation — so the preview showed the old fixed position.
     offCheckerStackSpacingRatio: 0.56,
   },
-};
+}

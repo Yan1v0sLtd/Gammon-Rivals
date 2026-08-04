@@ -1,6 +1,6 @@
-import {isSupabaseConfigured} from '../lib/supabase';
-import {useGetLobbyFeatureConfigsQuery} from '../features/lobby/lobbyApi';
-import type {LobbyFeatureConfigMap} from '../features/lobby/lobbyData';
+import {useGetLobbyFeatureConfigsQuery} from "../features/lobby/lobbyApi"
+import type {LobbyFeatureConfigMap} from "../features/lobby/lobbyData"
+import {isSupabaseConfigured} from "../lib/supabase"
 
 /**
  * Per-feature unlock levels for the bottom-nav (table: lobby_feature_configs),
@@ -13,6 +13,6 @@ import type {LobbyFeatureConfigMap} from '../features/lobby/lobbyData';
 export function useLobbyFeatureConfigs(): LobbyFeatureConfigMap {
   const {data} = useGetLobbyFeatureConfigsQuery(undefined, {
     skip: !isSupabaseConfigured,
-  });
-  return data ?? {};
+  })
+  return data ?? {}
 }

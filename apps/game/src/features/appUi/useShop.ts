@@ -1,12 +1,14 @@
-import {useCallback} from 'react';
-import {useAppDispatch, useAppSelector} from '../../store/hooks';
-import {selectIsShopOpen} from './appUiSelectors';
-import {shopClosed, shopOpened} from './appUiSlice';
+import {useCallback} from "react"
 
-export interface ShopControls {
-  readonly openShop: () => void;
-  readonly closeShop: () => void;
-  readonly isShopOpen: boolean;
+import {useAppDispatch, useAppSelector} from "../../store/hooks"
+
+import {selectIsShopOpen} from "./appUiSelectors"
+import {shopClosed, shopOpened} from "./appUiSlice"
+
+export type ShopControls = {
+  readonly openShop: () => void,
+  readonly closeShop: () => void,
+  readonly isShopOpen: boolean,
 }
 
 /**
@@ -15,15 +17,15 @@ export interface ShopControls {
  * `{ openShop, closeShop, isShopOpen }` shape the old shop context gave.
  */
 export function useShop(): ShopControls {
-  const dispatch = useAppDispatch();
-  const isShopOpen = useAppSelector(selectIsShopOpen);
+  const dispatch = useAppDispatch()
+  const isShopOpen = useAppSelector(selectIsShopOpen)
   // useCallback([dispatch]) keeps these stable so effects that depend on
   // openShop (e.g. ShopRoute's redirect) never re-fire on re-render.
-  const openShop = useCallback(() => dispatch(shopOpened()), [dispatch]);
-  const closeShop = useCallback(() => dispatch(shopClosed()), [dispatch]);
+  const openShop = useCallback(() => dispatch(shopOpened()), [dispatch])
+  const closeShop = useCallback(() => dispatch(shopClosed()), [dispatch])
   return {
     openShop,
     closeShop,
-    isShopOpen
-  };
+    isShopOpen,
+  }
 }

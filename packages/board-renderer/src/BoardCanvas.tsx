@@ -1,25 +1,28 @@
-import { useEffect, useRef } from 'react';
-import { Application } from 'pixi.js';
-import type { BoardState, Position } from '../../engine/src/types';
-import { BoardRenderer, type RenderSelection } from './pixi/BoardRenderer';
-import { defaultTheme } from './theme/default';
-import { loadTheme } from './theme/loader';
-import type { Theme, ThemeLayout } from './theme/types';
+import {useEffect, useRef} from "react"
 
-interface Props {
-  state: BoardState;
-  theme?: Theme;
-  layoutOverride?: ThemeLayout;
-  selection?: RenderSelection;
-  onPointClick?: (pos: Position) => void;
+import {Application} from "pixi.js"
+
+import type {BoardState, Position} from "../../engine/src/types"
+
+import {BoardRenderer, type RenderSelection} from "./pixi/BoardRenderer"
+import {defaultTheme} from "./theme/default"
+import {loadTheme} from "./theme/loader"
+import type {Theme, ThemeLayout} from "./theme/types"
+
+type Props = {
+  state: BoardState,
+  theme?: Theme,
+  layoutOverride?: ThemeLayout,
+  selection?: RenderSelection,
+  onPointClick?: (pos: Position) => void,
   /** Fires once Pixi has finished initialising and the first board
    *  frame has been rendered. Lets the surrounding route hold its
    *  loader overlay open until the WebGL surface is actually painted,
    *  instead of fading on HTML-image readiness alone. */
-  onReady?: () => void;
+  onReady?: () => void,
 }
 
-export default function BoardCanvas({
+export function BoardCanvas({
   state,
   theme = defaultTheme,
   layoutOverride,
@@ -27,38 +30,38 @@ export default function BoardCanvas({
   onPointClick,
   onReady,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const appRef = useRef<Application | null>(null);
-  const rendererRef = useRef<BoardRenderer | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const appRef = useRef<Application | null>(null)
+  const rendererRef = useRef<BoardRenderer | null>(null)
 
-  const stateRef = useRef(state);
-  const selectionRef = useRef(selection);
-  const clickRef = useRef(onPointClick);
-  const layoutOverrideRef = useRef(layoutOverride);
+  const stateRef = useRef(state)
+  const selectionRef = useRef(selection)
+  const clickRef = useRef(onPointClick)
+  const layoutOverrideRef = useRef(layoutOverride)
   // Held in a ref so the init effect (theme-keyed) doesn't have to
   // re-run just because the parent passed a new onReady identity.
-  const onReadyRef = useRef(onReady);
+  const onReadyRef = useRef(onReady)
   useEffect(() => {
-    onReadyRef.current = onReady;
-  }, [onReady]);
+    onReadyRef.current = onReady
+  }, [onReady])
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const container = containerRef.current
+    if (!container) return
 
-    let cancelled = false;
-    let initialized = false;
-    let renderer: BoardRenderer | null = null;
-    let resizeObserver: ResizeObserver | null = null;
-    const app = new Application();
+    let cancelled = false
+    let initialized = false
+    let renderer: BoardRenderer | null = null
+    let resizeObserver: ResizeObserver | null = null
+    const app = new Application()
 
     const renderLatest = () => {
-      if (!renderer) return;
-      const width = Math.max(1, container.clientWidth);
-      const height = Math.max(1, container.clientHeight);
-      app.renderer.resize(width, height);
-      renderer.resize(width, height);
-      renderer.render(stateRef.current, selectionRef.current);
+      if (!renderer) return
+      const width = Math.max(1, container.clientWidth)
+      const height = Math.max(1, container.clientHeight)
+      app.renderer.resize(width, height)
+      renderer.resize(width, height)
+      renderer.render(stateRef.current, selectionRef.current)
     };
 
     (async () => {
@@ -68,7 +71,7 @@ export default function BoardCanvas({
       // board, but ~2.25x less fill than DPR 3) and skip antialias on hi-DPI
       // screens, where the pixel density already smooths edges. Desktop
       // (DPR 1) keeps antialias for crisp edges.
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
       const [, loaded] = await Promise.all([
         app.init({
           resizeTo: container,
@@ -78,20 +81,20 @@ export default function BoardCanvas({
           resolution: dpr,
         }),
         loadTheme(theme),
-      ]);
-      initialized = true;
+      ])
+      initialized = true
       if (cancelled) {
-        app.destroy(true);
-        return;
+        app.destroy(true)
+        return
       }
-      container.appendChild(app.canvas);
-      appRef.current = app;
+      container.appendChild(app.canvas)
+      appRef.current = app
 
-      renderer = new BoardRenderer(app, loaded);
-      renderer.setThemeLayout(layoutOverrideRef.current ?? theme.layout);
-      renderer.setOnPointClick((pos) => clickRef.current?.(pos));
-      rendererRef.current = renderer;
-      renderLatest();
+      renderer = new BoardRenderer(app, loaded)
+      renderer.setThemeLayout(layoutOverrideRef.current ?? theme.layout)
+      renderer.setOnPointClick((pos) => clickRef.current?.(pos))
+      rendererRef.current = renderer
+      renderLatest()
 
       // renderer.render() only updates Pixi's scene graph; the actual
       // GPU draw happens on the next ticker tick (rAF). If we fire
@@ -102,60 +105,60 @@ export default function BoardCanvas({
       // variants the renderer.render shape differs slightly; the
       // double-rAF fallback below covers that.
       try {
-        app.renderer.render({ container: app.stage });
-      } catch {
+        app.renderer.render({container: app.stage})
+      }
+      catch {
         // ignore — fall through to the rAF wait below
       }
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (cancelled) return;
-          onReadyRef.current?.();
-        });
-      });
+          if (cancelled) return
+          onReadyRef.current?.()
+        })
+      })
 
-      resizeObserver = new ResizeObserver(renderLatest);
-      resizeObserver.observe(container);
-    })();
+      resizeObserver = new ResizeObserver(renderLatest)
+      resizeObserver.observe(container)
+    })()
 
     return () => {
-      cancelled = true;
-      resizeObserver?.disconnect();
+      cancelled = true
+      resizeObserver?.disconnect()
       if (rendererRef.current === renderer) {
-        appRef.current = null;
-        rendererRef.current = null;
+        appRef.current = null
+        rendererRef.current = null
       }
-      renderer?.destroy();
-      if (initialized) app.destroy(true);
-    };
-  }, [theme]);
+      renderer?.destroy()
+      if (initialized) app.destroy(true)
+    }
+  }, [theme])
 
   useEffect(() => {
-    stateRef.current = state;
-    selectionRef.current = selection;
-    clickRef.current = onPointClick;
-    rendererRef.current?.render(state, selection);
-  }, [state, selection, onPointClick]);
+    stateRef.current = state
+    selectionRef.current = selection
+    clickRef.current = onPointClick
+    rendererRef.current?.render(state, selection)
+  }, [state, selection, onPointClick])
 
   useEffect(() => {
-    layoutOverrideRef.current = layoutOverride;
-    rendererRef.current?.setThemeLayout(layoutOverride ?? theme.layout);
-    rendererRef.current?.render(stateRef.current, selectionRef.current);
-  }, [layoutOverride, theme.layout]);
+    layoutOverrideRef.current = layoutOverride
+    rendererRef.current?.setThemeLayout(layoutOverride ?? theme.layout)
+    rendererRef.current?.render(stateRef.current, selectionRef.current)
+  }, [layoutOverride, theme.layout])
 
   const boardBackground = theme.assets?.board
     ? {
-        backgroundImage: `url("${theme.assets.board}")`,
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: '100% 100%',
-      }
-    : undefined;
+      backgroundImage: `url("${theme.assets.board}")`,
+      backgroundPosition: "center",
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "100% 100%",
+    }
+    : undefined
 
   return (
     <div
       ref={containerRef}
       className="h-full w-full overflow-visible"
-      style={boardBackground}
-    />
-  );
+      style={boardBackground}/>
+  )
 }

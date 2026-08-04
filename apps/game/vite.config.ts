@@ -1,23 +1,25 @@
-import path from 'node:path';
-import react from '@vitejs/plugin-react';
-import {defineConfig} from 'vite';
-import {buildDefines, projectRoot, vendorChunkGroups} from '../../config/vite.shared.ts';
+import path from "node:path"
+
+import react from "@vitejs/plugin-react"
+import {defineConfig} from "vite"
+
+import {buildDefines, projectRoot, vendorChunkGroups} from "../../config/vite.shared.ts"
 
 export default defineConfig({
-  root: path.join(projectRoot, 'apps/game'),
+  root: path.join(projectRoot, "apps/game"),
   envDir: projectRoot,
-  publicDir: path.join(projectRoot, 'public'),
+  publicDir: path.join(projectRoot, "public"),
   plugins: [react()],
   define: buildDefines(),
   server: {
     port: 5174,
-    host: '127.0.0.1'
+    host: "127.0.0.1",
   },
   optimizeDeps: {
-    include: ['cannon-es', 'three'],
+    include: ["cannon-es", "three"],
   },
   build: {
-    outDir: path.join(projectRoot, 'dist'),
+    outDir: path.join(projectRoot, "dist"),
     emptyOutDir: true,
     rolldownOptions: {
       output: {
@@ -27,4 +29,4 @@ export default defineConfig({
       },
     },
   },
-});
+})

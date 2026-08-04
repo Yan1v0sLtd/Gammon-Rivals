@@ -6,11 +6,11 @@
  * first rendered.
  */
 export function warmImages(urls: readonly (string | null | undefined)[]): void {
-  const seen = new Set<string>();
+  const seen = new Set<string>()
   for (const url of urls) {
-    if (!url || seen.has(url)) continue;
-    seen.add(url);
-    const img = new Image();
-    img.src = url;
+    if (!url || seen.has(url)) continue
+    seen.add(url)
+    const img = new Image()
+    img.src = url
   }
 }

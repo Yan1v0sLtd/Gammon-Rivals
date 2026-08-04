@@ -1,10 +1,12 @@
-import {useCallback} from 'react';
-import {useAppDispatch} from '../../store/hooks';
-import {navigationLoaderOverlayFadeStarted, navigationLoaderOverlayShown} from './appUiSlice';
+import {useCallback} from "react"
 
-export interface NavigationLoaderOverlayControls {
-  readonly show: () => void;
-  readonly hide: () => void;
+import {useAppDispatch} from "../../store/hooks"
+
+import {navigationLoaderOverlayFadeStarted, navigationLoaderOverlayShown} from "./appUiSlice"
+
+export type NavigationLoaderOverlayControls = {
+  readonly show: () => void,
+  readonly hide: () => void,
 }
 
 /**
@@ -13,11 +15,11 @@ export interface NavigationLoaderOverlayControls {
  * the actual unmount timer.
  */
 export function useNavigationLoaderOverlay(): NavigationLoaderOverlayControls {
-  const dispatch = useAppDispatch();
-  const show = useCallback(() => dispatch(navigationLoaderOverlayShown()), [dispatch]);
-  const hide = useCallback(() => dispatch(navigationLoaderOverlayFadeStarted()), [dispatch]);
+  const dispatch = useAppDispatch()
+  const show = useCallback(() => dispatch(navigationLoaderOverlayShown()), [dispatch])
+  const hide = useCallback(() => dispatch(navigationLoaderOverlayFadeStarted()), [dispatch])
   return {
     show,
-    hide
-  };
+    hide,
+  }
 }

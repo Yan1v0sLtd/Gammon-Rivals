@@ -75,7 +75,7 @@ name.
 
 ```ts
 import { useGetWalletQuery } from '../features/playerData/playerDataApi';
-```
+```sh
 
 ## Data access (`<feature>Data.ts`)
 
@@ -326,7 +326,7 @@ data layer of routes nobody has migrated yet.
 
 ## Verify
 
-```
+```sh
 npx tsc -b apps/game/tsconfig.json tsconfig.node.json
 npx eslint apps/game/src
 npm run check:boundaries

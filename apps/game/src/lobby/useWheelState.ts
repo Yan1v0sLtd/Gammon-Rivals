@@ -1,28 +1,29 @@
-import {useCallback, useEffect, useState} from 'react';
-import {useGetWheelStateQuery} from '../features/lobby/lobbyApi';
-import {isSupabaseConfigured} from '../lib/supabase';
-import type {WheelState} from '../features/lobby/lobbyData';
+import {useCallback, useEffect, useState} from "react"
 
-export interface WheelStateResult {
+import {useGetWheelStateQuery} from "../features/lobby/lobbyApi"
+import type {WheelState} from "../features/lobby/lobbyData"
+import {isSupabaseConfigured} from "../lib/supabase"
+
+export type WheelStateResult = {
   /** null while the first fetch is in flight, or if Supabase is
    *  not configured. Components should render a neutral
    *  placeholder when null. */
-  readonly state: WheelState | null;
+  readonly state: WheelState | null,
   /** Seconds remaining until the next spin, computed at RENDER time —
    *  it does NOT tick. A component that displays a live countdown must
    *  use useCountdownSeconds(state.next_spin_at) locally, so only that
    *  small component re-renders each second. */
-  readonly secondsUntilSpin: number;
+  readonly secondsUntilSpin: number,
   /** Server-authoritative "the wheel can spin right now". Flips via the
    *  scheduled zero-crossing re-fetch in the getWheelState endpoint
    *  lifecycle (never from the client clock, which could run fast and
    *  enable Claim early). */
-  readonly canSpin: boolean;
-  readonly isLoading: boolean;
-  readonly error: string | null;
+  readonly canSpin: boolean,
+  readonly isLoading: boolean,
+  readonly error: string | null,
   /** Manually re-fetch (e.g., after a successful spin or after the
    *  BO updates the wheel config). */
-  readonly refetch: () => void;
+  readonly refetch: () => void,
 }
 
 /**
@@ -40,20 +41,20 @@ export interface WheelStateResult {
  * pill via useCountdownSeconds() (a few DOM nodes/second instead of the
  * whole lobby).
  */
-export function useWheelState(configId: string = 'main'): WheelStateResult {
+export function useWheelState(configId = "main"): WheelStateResult {
   const {
     data,
     error: queryError,
     isLoading,
     isUninitialized,
     refetch: refetchQuery,
-  } = useGetWheelStateQuery(configId, {skip: !isSupabaseConfigured});
+  } = useGetWheelStateQuery(configId, {skip: !isSupabaseConfigured})
 
-  const state = data ?? null;
+  const state = data ?? null
 
-  const secondsUntilSpin = state ? Math.max(0, Math.ceil((new Date(state.next_spin_at).getTime() - Date.now()) / 1000)) : 0;
+  const secondsUntilSpin = state ? Math.max(0, Math.ceil((new Date(state.next_spin_at).getTime() - Date.now()) / 1000)) : 0
 
-  const canSpin = !!state && state.is_enabled && state.can_spin_now;
+  const canSpin = !!state && state.is_enabled && state.can_spin_now
 
   return {
     state,
@@ -67,9 +68,9 @@ export function useWheelState(configId: string = 'main'): WheelStateResult {
     refetch: useCallback(() => {
       // RTK Query throws when refetching an entry that was never started
       // (skipped for an unconfigured client), so only refetch live entries.
-      if (!isUninitialized) void refetchQuery();
+      if (!isUninitialized) void refetchQuery()
     }, [isUninitialized, refetchQuery]),
-  };
+  }
 }
 
 /**
@@ -79,33 +80,35 @@ export function useWheelState(configId: string = 'main'): WheelStateResult {
  */
 export function useCountdownSeconds(targetIso: string | null): number {
   const compute = useCallback((): number => {
-    if (!targetIso) return 0;
-    return Math.max(0, Math.ceil((new Date(targetIso).getTime() - Date.now()) / 1000));
-  }, [targetIso]);
+    if (!targetIso) return 0
+    return Math.max(0, Math.ceil((new Date(targetIso).getTime() - Date.now()) / 1000))
+  }, [targetIso])
 
-  const [seconds, setSeconds] = useState<number>(compute);
+  const [seconds, setSeconds] = useState<number>(compute)
 
   useEffect(() => {
-    setSeconds(compute());
-    if (!targetIso) return;
-    if (new Date(targetIso).getTime() <= Date.now()) return;
+    setSeconds(compute())
+    if (!targetIso) return
+    if (new Date(targetIso).getTime() <= Date.now()) return
     const id = window.setInterval(() => {
-      const next = compute();
-      setSeconds(next);
-      if (next <= 0) window.clearInterval(id);
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [targetIso, compute]);
+      const next = compute()
+      setSeconds(next)
+      if (next <= 0) window.clearInterval(id)
+    }, 1000)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [targetIso, compute])
 
-  return seconds;
+  return seconds
 }
 
 /** Format a "next spin in" duration as HH:MM:SS. */
 export function formatCooldown(seconds: number): string {
-  if (seconds <= 0) return '00:00:00';
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (seconds <= 0) return "00:00:00"
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  const pad = (n: number) => n.toString().padStart(2, "0")
+  return `${pad(h)}:${pad(m)}:${pad(s)}`
 }

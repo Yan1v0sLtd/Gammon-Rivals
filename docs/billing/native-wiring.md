@@ -45,16 +45,16 @@ with Google → `fulfill_google_purchase` grants → client `finish()` acknowled
   orders" → download the JSON key).
 
 ## 1. Deploy the validator (P2) + set secrets
-```
+```sh
 supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON="$(cat service-account.json)"
 supabase secrets set ANDROID_PACKAGE_NAME=com.gammonrivals.app
 supabase functions deploy validate-google-purchase
-```
+```sh
 `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` are injected
 automatically. NEVER commit the JSON (repo is public).
 
 ## 2. Install the plugin
-```
+```sh
 npm i cordova-plugin-purchase capacitor-plugin-cdv-purchase
 npx cap sync android
 ```

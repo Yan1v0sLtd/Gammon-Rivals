@@ -7,4 +7,4 @@
 // a multi-second dead pause after every roll while the CSS dice had already
 // settled in 1.5s. If you ever change the .dice-cube transition duration, keep
 // this in sync.)
-export const DICE_ANIMATION_MS = 1650;
+export const DICE_ANIMATION_MS = 1650

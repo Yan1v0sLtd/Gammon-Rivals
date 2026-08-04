@@ -1,58 +1,56 @@
-import {avatarUrl} from '../lib/identity';
+import {avatarUrl} from "../lib/identity"
 
-interface Props {
+type Props = {
   /** The seed used to deterministically generate the avatar. */
-  seed: string;
+  seed: string,
   /** Optional account avatar image, such as a Google profile photo. */
-  imageUrl?: string | null;
+  imageUrl?: string | null,
   /** Pixel size of the rendered circle. Defaults to 64. */
-  size?: number;
+  size?: number,
   /** Optional ring colour for the active player. */
-  ring?: 'active' | 'idle' | 'none';
+  ring?: "active" | "idle" | "none",
   /** Optional small badge — country flag, AI pill, etc. */
-  badge?: React.ReactNode;
-  className?: string;
+  badge?: React.ReactNode,
+  className?: string,
 }
 
-const RING_CLASS: Record<NonNullable<Props['ring']>, string> = {
-  active: 'ring-[3px] ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.45)]',
-  idle: 'ring-2 ring-amber-900/60',
-  none: '',
-};
+const RING_CLASS: Record<NonNullable<Props["ring"]>, string> = {
+  active: "ring-[3px] ring-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.45)]",
+  idle: "ring-2 ring-amber-900/60",
+  none: "",
+}
 
 /**
  * Round avatar rendered from a DiceBear seed. Loads the SVG from the
  * DiceBear API directly — no proxy or local image needed. The avatar
  * itself is generated; we layer a coloured ring + optional badge on top.
  */
-export default function Avatar({
+export function Avatar({
   seed,
   imageUrl,
   size = 64,
-  ring = 'idle',
+  ring = "idle",
   badge,
-  className = '',
+  className = "",
 }: Props) {
-  const ringClass = RING_CLASS[ring];
+  const ringClass = RING_CLASS[ring]
   return (<div
     className={`relative inline-block rounded-full overflow-visible ${className}`}
     style={{
       width: size,
-      height: size
-    }}
-  >
+      height: size,
+    }}>
     <img
-      src={imageUrl || avatarUrl(seed, size * 2)}
       alt=""
-      width={size}
+      className={`block w-full h-full rounded-full object-cover bg-amber-900/40 ${ringClass}`}
+      draggable={false}
       height={size}
       loading="lazy"
-      draggable={false}
-      className={`block w-full h-full rounded-full object-cover bg-amber-900/40 ${ringClass}`}
-    />
+      src={imageUrl ?? avatarUrl(seed, size * 2)}
+      width={size}/>
     {badge !== undefined && (<span
       className="absolute -bottom-1 -right-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-amber-700 text-amber-50 text-[10px] font-display tracking-wider border border-amber-900/80 shadow">
-          {badge}
-        </span>)}
-  </div>);
+      {badge}
+    </span>)}
+  </div>)
 }

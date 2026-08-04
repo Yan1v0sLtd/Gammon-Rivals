@@ -1,75 +1,84 @@
-import type {PayloadAction} from '@reduxjs/toolkit';
-import {createSlice} from '@reduxjs/toolkit';
-import {authCommandFailed, authCommandReset, authCommandStarted, authCommandSucceeded, type AuthCommand} from './authActions';
+import type {PayloadAction} from "@reduxjs/toolkit"
+import {createSlice} from "@reduxjs/toolkit"
 
-export type AuthStatus = 'initializing' | 'authenticated' | 'signedOut';
+import {authCommandFailed, authCommandReset, authCommandStarted, authCommandSucceeded, type AuthCommand} from "./authActions"
+
+export type AuthStatus = "initializing" | "authenticated" | "signedOut"
 
 /**
  * Serializable view of the Supabase session. Supabase stays the token
  * authority; this slice mirrors only the minimal identity the selectors
  * need and never stores a Session/User object or server row.
  */
-export interface AuthState {
-  readonly status: AuthStatus;
-  readonly userId: string | null;
-  readonly email: string | null;
-  readonly isAnonymous: boolean;
-  readonly command: {readonly name: AuthCommand | null; readonly status: 'idle' | 'pending' | 'succeeded' | 'failed'; readonly error: string | null};
+export type AuthState = {
+  readonly status: AuthStatus,
+  readonly userId: string | null,
+  readonly email: string | null,
+  readonly isAnonymous: boolean,
+  readonly command: {readonly name: AuthCommand | null, readonly status: "idle" | "pending" | "succeeded" | "failed", readonly error: string | null},
 }
 
 /** Normalized identity projection passed by authSessionResolved. */
-export interface AuthIdentity {
-  readonly userId: string;
-  readonly email: string | null;
-  readonly isAnonymous: boolean;
+export type AuthIdentity = {
+  readonly userId: string,
+  readonly email: string | null,
+  readonly isAnonymous: boolean,
 }
 
 export function createInitialAuthState(): AuthState {
   return {
-    status: 'initializing',
+    status: "initializing",
     userId: null,
     email: null,
     isAnonymous: false,
-    command: {name: null, status: 'idle', error: null}
-  };
+    command: {name: null, status: "idle", error: null},
+  }
 }
 
 function createSignedOutAuthState(): AuthState {
   return {
-    status: 'signedOut',
+    status: "signedOut",
     userId: null,
     email: null,
     isAnonymous: false,
-    command: {name: null, status: 'idle', error: null}
-  };
+    command: {name: null, status: "idle", error: null},
+  }
 }
 
 export const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState: createInitialAuthState(),
   reducers: {
     authInitializationStarted: () => createInitialAuthState(),
     authSessionResolved(state, action: PayloadAction<AuthIdentity>) {
-      state.status = 'authenticated';
-      state.userId = action.payload.userId;
-      state.email = action.payload.email;
-      state.isAnonymous = action.payload.isAnonymous;
+      state.status = "authenticated"
+      state.userId = action.payload.userId
+      state.email = action.payload.email
+      state.isAnonymous = action.payload.isAnonymous
     },
     authSignedOut: () => createSignedOutAuthState(),
   },
   extraReducers: (builder) => {
     builder
-      .addCase(authCommandStarted, (state, action) => { state.command = {name: action.payload.command, status: 'pending', error: null}; })
-      .addCase(authCommandSucceeded, (state, action) => { state.command = {name: action.payload.command, status: 'succeeded', error: null}; })
-      .addCase(authCommandFailed, (state, action) => { state.command = {name: action.payload.command, status: 'failed', error: action.payload.error}; })
-      .addCase(authCommandReset, (state) => { state.command = {name: null, status: 'idle', error: null}; });
+      .addCase(authCommandStarted, (state, action) => {
+        state.command = {name: action.payload.command, status: "pending", error: null}
+      })
+      .addCase(authCommandSucceeded, (state, action) => {
+        state.command = {name: action.payload.command, status: "succeeded", error: null}
+      })
+      .addCase(authCommandFailed, (state, action) => {
+        state.command = {name: action.payload.command, status: "failed", error: action.payload.error}
+      })
+      .addCase(authCommandReset, (state) => {
+        state.command = {name: null, status: "idle", error: null}
+      })
   },
-});
+})
 
 export const {
   authInitializationStarted,
   authSessionResolved,
-  authSignedOut
-} = authSlice.actions;
+  authSignedOut,
+} = authSlice.actions
 
-export default authSlice.reducer;
+export const authReducer = authSlice.reducer

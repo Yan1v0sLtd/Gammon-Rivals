@@ -1,34 +1,34 @@
-import type { BoardState, Player } from '../../engine/src/types';
+import type {BoardState, Player} from "../../engine/src/types"
 
-const opp = (p: Player): Player => (p === 'white' ? 'black' : 'white');
+const opp = (p: Player): Player => (p === "white" ? "black" : "white")
 
 function pip(state: BoardState, p: Player): number {
-  let total = 0;
+  let total = 0
   state.points.forEach((pt, i) => {
     if (pt.owner === p) {
-      total += pt.count * (p === 'white' ? 24 - i : i + 1);
+      total += pt.count * (p === "white" ? 24 - i : i + 1)
     }
-  });
-  total += state.bar[p] * 25;
-  return total;
+  })
+  total += state.bar[p] * 25
+  return total
 }
 
 function countBlots(state: BoardState, p: Player): number {
-  return state.points.filter((pt) => pt.owner === p && pt.count === 1).length;
+  return state.points.filter((pt) => pt.owner === p && pt.count === 1).length
 }
 
 function countMadePoints(state: BoardState, p: Player): number {
-  return state.points.filter((pt) => pt.owner === p && pt.count >= 2).length;
+  return state.points.filter((pt) => pt.owner === p && pt.count >= 2).length
 }
 
 function homeboardPoints(state: BoardState, p: Player): number {
-  const [lo, hi] = p === 'white' ? [18, 23] : [0, 5];
-  let count = 0;
+  const [lo, hi] = p === "white" ? [18, 23] : [0, 5]
+  let count = 0
   for (let i = lo; i <= hi; i++) {
-    const pt = state.points[i];
-    if (pt && pt.owner === p && pt.count >= 2) count++;
+    const pt = state.points[i]
+    if (pt?.owner === p && pt.count >= 2) count++
   }
-  return count;
+  return count
 }
 
 /**
@@ -42,14 +42,14 @@ function homeboardPoints(state: BoardState, p: Player): number {
  *  - off checkers: huge bonus (game progress)
  */
 export function evaluate(state: BoardState, me: Player): number {
-  const o = opp(me);
-  const pipDiff = pip(state, o) - pip(state, me);
+  const o = opp(me)
+  const pipDiff = pip(state, o) - pip(state, me)
   // Symmetric weights — evaluate(s, white) === -evaluate(s, black)
   return (
-    1.0 * pipDiff +
-    -3.0 * (countBlots(state, me) - countBlots(state, o)) +
-    0.4 * (countMadePoints(state, me) - countMadePoints(state, o)) +
-    0.8 * (homeboardPoints(state, me) - homeboardPoints(state, o)) +
-    50 * (state.off[me] - state.off[o])
-  );
+    1.0 * pipDiff
+    + -3.0 * (countBlots(state, me) - countBlots(state, o))
+    + 0.4 * (countMadePoints(state, me) - countMadePoints(state, o))
+    + 0.8 * (homeboardPoints(state, me) - homeboardPoints(state, o))
+    + 50 * (state.off[me] - state.off[o])
+  )
 }

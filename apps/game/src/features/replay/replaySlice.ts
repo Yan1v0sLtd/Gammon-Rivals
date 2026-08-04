@@ -1,59 +1,59 @@
-import type {PayloadAction} from '@reduxjs/toolkit';
-import {createSlice} from '@reduxjs/toolkit';
+import type {PayloadAction} from "@reduxjs/toolkit"
+import {createSlice} from "@reduxjs/toolkit"
 
-export interface ReplayState {
-  readonly ply: number;
-  readonly playing: boolean;
+export type ReplayState = {
+  readonly ply: number,
+  readonly playing: boolean,
 }
 
 export function createInitialReplayState(): ReplayState {
   return {
     ply: 0,
-    playing: false
-  };
+    playing: false,
+  }
 }
 
-interface BoundedPayload {
-  readonly totalPlies: number;
+type BoundedPayload = {
+  readonly totalPlies: number,
 }
 
-interface SeekPayload extends BoundedPayload {
-  readonly ply: number;
-}
+type SeekPayload = {
+  readonly ply: number,
+} & BoundedPayload
 
 function clampToTotal(ply: number, totalPlies: number): number {
-  return Math.min(Math.max(0, ply), Math.max(0, totalPlies));
+  return Math.min(Math.max(0, ply), Math.max(0, totalPlies))
 }
 
 export const replaySlice = createSlice({
-  name: 'replay',
+  name: "replay",
   initialState: createInitialReplayState(),
   reducers: {
     replayRouteEntered: () => createInitialReplayState(),
     replayRouteExited: () => createInitialReplayState(),
     replaySeek(state, action: PayloadAction<SeekPayload>) {
-      state.ply = clampToTotal(action.payload.ply, action.payload.totalPlies);
-      state.playing = false;
+      state.ply = clampToTotal(action.payload.ply, action.payload.totalPlies)
+      state.playing = false
     },
     replayPlay(state, action: PayloadAction<BoundedPayload>) {
-      const total = Math.max(0, action.payload.totalPlies);
-      if (state.ply >= total) state.ply = 0;
-      state.playing = total > 0;
+      const total = Math.max(0, action.payload.totalPlies)
+      if (state.ply >= total) state.ply = 0
+      state.playing = total > 0
     },
     replayPause(state) {
-      state.playing = false;
+      state.playing = false
     },
     replayTick(state, action: PayloadAction<BoundedPayload>) {
-      const total = Math.max(0, action.payload.totalPlies);
+      const total = Math.max(0, action.payload.totalPlies)
       if (state.ply >= total) {
-        state.playing = false;
-        return;
+        state.playing = false
+        return
       }
-      state.ply += 1;
-      state.playing = state.ply < total;
+      state.ply += 1
+      state.playing = state.ply < total
     },
   },
-});
+})
 
 export const {
   replayRouteEntered,
@@ -62,6 +62,6 @@ export const {
   replayPlay,
   replayPause,
   replayTick,
-} = replaySlice.actions;
+} = replaySlice.actions
 
-export default replaySlice.reducer;
+export const replayReducer = replaySlice.reducer

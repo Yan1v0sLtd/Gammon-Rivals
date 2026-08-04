@@ -10,23 +10,23 @@
  * localStorage is durable across sessions, so even a brand-new tab opened
  * straight onto an invite link recovers the last board the player chose.
  */
-const STORAGE_KEY = 'gr:selectedBoardId';
+const STORAGE_KEY = "gr:selectedBoardId"
 
 export function getPersistedBoardId(): string | null {
   try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value && value.trim() ? value.trim() : null;
+    const value = localStorage.getItem(STORAGE_KEY)
+    return value?.trim() ? value.trim() : null
   }
   catch {
     // Storage unavailable (private mode / SSR / sandbox) — non-fatal.
-    return null;
+    return null
   }
 }
 
 export function setPersistedBoardId(id: string | null | undefined): void {
   try {
     // Never clobber a real stored pick with an empty/placeholder value.
-    if (id && id.trim()) localStorage.setItem(STORAGE_KEY, id.trim());
+    if (id?.trim()) localStorage.setItem(STORAGE_KEY, id.trim())
   }
   catch {
     // Storage unavailable — non-fatal.

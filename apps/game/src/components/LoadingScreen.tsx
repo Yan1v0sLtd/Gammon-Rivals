@@ -1,11 +1,12 @@
-import type {FC} from 'react';
-import {getLoadingScreenImage} from '../lib/loadingScreenImage';
+import type {FC} from "react"
 
-interface Props {
+import {getLoadingScreenImage} from "../lib/loadingScreenImage"
+
+type Props = {
   /** Optional 0..1 progress fraction. When provided the bar is
    *  deterministic; otherwise it eases toward ~90% on its own. */
-  readonly progress?: number;
-  readonly label?: string;
+  readonly progress?: number,
+  readonly label?: string,
 }
 
 /**
@@ -18,33 +19,33 @@ interface Props {
  */
 export const LoadingScreen: FC<Props> = ({
   progress,
-  label = 'Loading'
+  label = "Loading",
 }) => {
-  const pct = typeof progress === 'number' ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : null;
+  const pct = typeof progress === "number" ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : null
 
   return (<main
-    className="fixed inset-0 z-[999] bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)]"
-    role="status"
     aria-busy="true"
-    aria-live="polite"
     aria-label={pct !== null ? `${label} ${pct}%` : label}
-  >
+    aria-live="polite"
+    className="fixed inset-0 z-[999] bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)]"
+    role="status">
     <img
-      src={getLoadingScreenImage()}
       alt=""
       aria-hidden="true"
-      draggable={false}
       className="absolute inset-0 h-full w-full select-none object-cover"
-    />
+      draggable={false}
+      src={getLoadingScreenImage()}/>
 
     {/* Bar block — sits in the art's dark bottom band, mockup-style. */}
     <div className="gr-loadingscreen-hud">
-      <div className="gr-loadingscreen-label" aria-hidden="true">
+      <div
+        aria-hidden="true"
+        className="gr-loadingscreen-label">
         <span className="gr-loadingscreen-tail gr-loadingscreen-tail--l"/>
         <span>
-            {label}
+          {label}
           {pct !== null ? <span className="ml-2">{pct}%</span> : null}
-          </span>
+        </span>
         <span className="gr-loadingscreen-tail gr-loadingscreen-tail--r"/>
       </div>
       <div className="gr-loadingscreen-track">
@@ -57,12 +58,11 @@ export const LoadingScreen: FC<Props> = ({
             className="gr-loadingscreen-fill"
             style={pct !== null ? {
               // Deterministic: driven by the caller's real progress.
-              animation: 'none',
+              animation: "none",
               transform: `translateX(-${100 - Math.max(pct, 4)}%)`,
-            } : undefined}
-          />
+            } : undefined}/>
         </div>
       </div>
     </div>
-  </main>);
-};
+  </main>)
+}

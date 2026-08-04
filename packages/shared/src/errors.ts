@@ -17,23 +17,23 @@
  * message and a generic "try again" copy.
  */
 export function extractErrorMessage(err: unknown): string {
-  if (err == null) return '';
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  if (typeof err === 'object') {
+  if (err == null) return ""
+  if (err instanceof Error) return err.message
+  if (typeof err === "string") return err
+  if (typeof err === "object") {
     const obj = err as {
-      message?: unknown;
-      details?: unknown;
-      hint?: unknown;
-      error?: unknown;
-    };
-    if (typeof obj.message === 'string' && obj.message.length > 0) return obj.message;
-    if (typeof obj.details === 'string' && obj.details.length > 0) return obj.details;
-    if (typeof obj.hint === 'string' && obj.hint.length > 0) return obj.hint;
+      message?: unknown,
+      details?: unknown,
+      hint?: unknown,
+      error?: unknown,
+    }
+    if (typeof obj.message === "string" && obj.message.length > 0) return obj.message
+    if (typeof obj.details === "string" && obj.details.length > 0) return obj.details
+    if (typeof obj.hint === "string" && obj.hint.length > 0) return obj.hint
     // Some wrappers nest the original error under `.error`.
-    if (obj.error) return extractErrorMessage(obj.error);
+    if (obj.error) return extractErrorMessage(obj.error)
   }
-  // Last resort — gives `"[object Object]"` for truly opaque cases,
-  // but at that point we've already inspected the common shapes.
-  return String(err);
+  if (typeof err === "object") return Array.isArray(err) ? err.join(",") : "[object Object]"
+  if (typeof err === "function") return "undefined"
+  return typeof err === "bigint" ? err.toString() : JSON.stringify(err) ?? "undefined"
 }

@@ -1,5 +1,5 @@
-import {LobbyScreen} from '../lobby/LobbyScreen';
+import {LobbyScreen} from "../lobby/LobbyScreen"
 
-export default function Home() {
-  return <LobbyScreen/>;
+export function Home() {
+  return <LobbyScreen/>
 }

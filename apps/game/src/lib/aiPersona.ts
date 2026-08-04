@@ -16,35 +16,35 @@
  * persona can't claim a level the economy doesn't support.
  */
 
-import type {AILevel} from '../../../../packages/ai/src/types';
+import type {AILevel} from "../../../../packages/ai/src/types"
 
 /** Cheap 32-bit djb2 hash for seeding; not cryptographic, but distinct
  *  matchIds (even by one hex digit) yield uncorrelated seeds. */
 function hashSeed(input: string): number {
-  let h = 5381 >>> 0;
+  let h = 5381 >>> 0
   for (let i = 0; i < input.length; i++) {
-    h = (h * 33) ^ input.charCodeAt(i);
+    h = (h * 33) ^ input.charCodeAt(i)
   }
-  return h >>> 0;
+  return h >>> 0
 }
 
 /** Deterministic PRNG. Identical seed → identical sequence. */
 function mulberry32(seed: number): () => number {
-  let s = seed >>> 0;
+  let s = seed >>> 0
   return () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+    s = (s + 0x6d2b79f5) >>> 0
+    let t = s
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
 }
 
-interface PersonaBand {
-  readonly levelMin: number;
-  readonly levelMax: number;
-  readonly coinsMin: number;
-  readonly coinsMax: number;
+type PersonaBand = {
+  readonly levelMin: number,
+  readonly levelMax: number,
+  readonly coinsMin: number,
+  readonly coinsMax: number,
 }
 
 const BANDS: Record<AILevel, PersonaBand> = {
@@ -52,27 +52,27 @@ const BANDS: Record<AILevel, PersonaBand> = {
     levelMin: 8,
     levelMax: 25,
     coinsMin: 1_000,
-    coinsMax: 8_000
+    coinsMax: 8_000,
   },
   medium: {
     levelMin: 25,
     levelMax: 55,
     coinsMin: 5_000,
-    coinsMax: 40_000
+    coinsMax: 40_000,
   },
   hard: {
     levelMin: 55,
     levelMax: 95,
     coinsMin: 15_000,
-    coinsMax: 150_000
+    coinsMax: 150_000,
   },
-};
+}
 
-export interface AIPersona {
+export type AIPersona = {
   /** Display-only player level for the AI opponent card. */
-  readonly level: number;
+  readonly level: number,
   /** Display-only coin balance for the AI opponent card. */
-  readonly coins: number;
+  readonly coins: number,
 }
 
 /**
@@ -83,16 +83,16 @@ export interface AIPersona {
  * @param difficulty AI tier — picks the band to sample from.
  */
 export function generateAIPersona(seed: string | null, difficulty: AILevel): AIPersona {
-  const band = BANDS[difficulty];
-  const rng = mulberry32(hashSeed(seed && seed.length > 0 ? seed : 'no-seed'));
-  const level = band.levelMin + Math.floor(rng() * (band.levelMax - band.levelMin + 1));
+  const band = BANDS[difficulty]
+  const rng = mulberry32(hashSeed(seed && seed.length > 0 ? seed : "no-seed"))
+  const level = band.levelMin + Math.floor(rng() * (band.levelMax - band.levelMin + 1))
   // Jitter coins within the band so players don't see suspiciously
   // clean round numbers every match.
-  const coinsRaw = band.coinsMin + rng() * (band.coinsMax - band.coinsMin);
+  const coinsRaw = band.coinsMin + rng() * (band.coinsMax - band.coinsMin)
   // Round to nearest 100 so the K-suffix formatter shows 12.4K, not 12387.
-  const coins = Math.round(coinsRaw / 100) * 100;
+  const coins = Math.round(coinsRaw / 100) * 100
   return {
     level,
-    coins
-  };
+    coins,
+  }
 }

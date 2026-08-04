@@ -1,6 +1,7 @@
-import {SocialLogin} from '@capgo/capacitor-social-login';
-import {isNativePlatform} from './nativeAuth';
-import {supabase} from './supabase';
+import {SocialLogin} from "@capgo/capacitor-social-login"
+
+import {isNativePlatform} from "./nativeAuth"
+import {supabase} from "./supabase"
 
 /**
  * Native Google sign-in for the Android (Capacitor) app.
@@ -19,26 +20,26 @@ import {supabase} from './supabase';
  *      Supabase Google provider) supplied here as VITE_GOOGLE_WEB_CLIENT_ID.
  *      We request the token for THAT audience so Supabase trusts it.
  */
-const WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() || undefined;
+const WEB_CLIENT_ID = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ?? undefined
 
-let initPromise: Promise<void> | null = null;
+let initPromise: Promise<void> | null = null
 
 function ensureInitialized(): Promise<void> {
   if (!WEB_CLIENT_ID) {
-    return Promise.reject(new Error('Google sign-in is not configured on this build: set VITE_GOOGLE_WEB_CLIENT_ID ' + '(the Web OAuth client ID from your Supabase Google provider).'));
+    return Promise.reject(new Error("Google sign-in is not configured on this build: set VITE_GOOGLE_WEB_CLIENT_ID " + "(the Web OAuth client ID from your Supabase Google provider)."))
   }
   // Initialize the native SDK once. webClientId is the SERVER (Web) OAuth
   // client — the same ID Supabase validates against — so the returned ID
   // token's audience matches and Supabase accepts it.
-  initPromise ??= SocialLogin.initialize({google: {webClientId: WEB_CLIENT_ID}});
-  return initPromise;
+  initPromise ??= SocialLogin.initialize({google: {webClientId: WEB_CLIENT_ID}})
+  return initPromise
 }
 
 export async function signInWithGoogleNative(): Promise<void> {
   if (!isNativePlatform()) {
-    throw new Error('signInWithGoogleNative was called off a native platform.');
+    throw new Error("signInWithGoogleNative was called off a native platform.")
   }
-  await ensureInitialized();
+  await ensureInitialized()
 
   // Do NOT pass custom `scopes` here. The @capgo plugin's Android
   // GoogleProvider already requests `openid` + `userinfo.email` +
@@ -49,21 +50,21 @@ export async function signInWithGoogleNative(): Promise<void> {
   // email + basic profile into the returned ID token — all that Supabase's
   // signInWithIdToken needs.
   const response = await SocialLogin.login({
-    provider: 'google',
+    provider: "google",
     options: {},
-  });
+  })
 
   // Online mode returns { idToken, accessToken, profile }. Cast defensively
   // so we don't fight the plugin's per-provider response union.
-  const result = response.result as { idToken?: string | null };
-  const idToken = result?.idToken ?? null;
+  const result = response.result as {idToken?: string | null}
+  const idToken = result?.idToken ?? null
   if (!idToken) {
-    throw new Error('Google sign-in did not return an ID token.');
+    throw new Error("Google sign-in did not return an ID token.")
   }
 
   const {error} = await supabase.auth.signInWithIdToken({
-    provider: 'google',
+    provider: "google",
     token: idToken,
-  });
-  if (error) throw error;
+  })
+  if (error) throw error
 }

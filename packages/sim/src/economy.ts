@@ -12,35 +12,35 @@
  * house keeps over many matches (the house funds the prize but nets the margin).
  */
 
-export interface AiPayout {
-  readonly entryFee: number;
-  readonly prizeWin: number;
-  readonly prizeLoss: number;
+export type AiPayout = {
+  readonly entryFee: number,
+  readonly prizeWin: number,
+  readonly prizeLoss: number,
 }
 
-export interface PvpPayout {
-  readonly entryFee: number;
-  readonly prizeLoss: number;
-  readonly pvpRakePct: number;
+export type PvpPayout = {
+  readonly entryFee: number,
+  readonly prizeLoss: number,
+  readonly pvpRakePct: number,
 }
 
 /** AI match: player expected return as a fraction of the entry fee. */
 export function aiRtp(t: AiPayout, pWin: number): number {
-  if (t.entryFee <= 0) return Number.NaN;
-  return (pWin * t.prizeWin + (1 - pWin) * t.prizeLoss) / t.entryFee;
+  if (t.entryFee <= 0) return Number.NaN
+  return (pWin * t.prizeWin + (1 - pWin) * t.prizeLoss) / t.entryFee
 }
 
 /** PvP winner payout from the pot: pot - rake - loser consolation. */
 export function pvpWinnerPrize(t: PvpPayout): number {
-  const pot = 2 * t.entryFee;
-  const rake = Math.round((pot * t.pvpRakePct) / 100);
-  return Math.max(0, pot - rake - t.prizeLoss);
+  const pot = 2 * t.entryFee
+  const rake = Math.round((pot * t.pvpRakePct) / 100)
+  return Math.max(0, pot - rake - t.prizeLoss)
 }
 
 /** PvP match: player expected return as a fraction of the entry fee at win prob pWin. */
 export function pvpRtp(t: PvpPayout, pWin: number): number {
-  if (t.entryFee <= 0) return Number.NaN;
-  return (pWin * pvpWinnerPrize(t) + (1 - pWin) * t.prizeLoss) / t.entryFee;
+  if (t.entryFee <= 0) return Number.NaN
+  return (pWin * pvpWinnerPrize(t) + (1 - pWin) * t.prizeLoss) / t.entryFee
 }
 
 /**
@@ -49,5 +49,5 @@ export function pvpRtp(t: PvpPayout, pWin: number): number {
  * Over many matches this should stay >= 0 for the economy not to bleed.
  */
 export function aiHouseCoinsPerMatch(t: AiPayout, pWin: number): number {
-  return t.entryFee - (pWin * t.prizeWin + (1 - pWin) * t.prizeLoss);
+  return t.entryFee - (pWin * t.prizeWin + (1 - pWin) * t.prizeLoss)
 }

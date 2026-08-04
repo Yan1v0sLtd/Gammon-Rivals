@@ -27,7 +27,7 @@ The Android app's WebView is configured (in `capacitor.config.ts` via
 `server.url`) to load `https://gammon-rivals.vercel.app` directly. So
 the day-to-day flow on mobile mirrors the web flow exactly:
 
-```
+```text
 edit code → git push → Vercel auto-deploys → restart the app on phone → see new code
 ```
 

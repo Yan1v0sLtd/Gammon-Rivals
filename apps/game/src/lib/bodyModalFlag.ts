@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect} from "react"
 
 /**
  * Ref-counted `<body data-gr-modal>` flag — "a full-screen modal is open".
@@ -13,25 +13,25 @@ import {useEffect} from 'react';
  * Ref-counted because two independent owners write it (ShopHost for the
  * shop popup, LobbyScreen for the lobby modals) and modals can stack.
  */
-let openCount = 0;
+let openCount = 0
 
 function applyFlag(): void {
   if (openCount > 0) {
-    document.body.dataset.grModal = '1';
+    document.body.dataset.grModal = "1"
   }
   else {
-    delete document.body.dataset.grModal;
+    delete document.body.dataset.grModal
   }
 }
 
 export function useBodyModalFlag(active: boolean): void {
   useEffect(() => {
-    if (!active) return;
-    openCount += 1;
-    applyFlag();
+    if (!active) return
+    openCount += 1
+    applyFlag()
     return () => {
-      openCount = Math.max(0, openCount - 1);
-      applyFlag();
-    };
-  }, [active]);
+      openCount = Math.max(0, openCount - 1)
+      applyFlag()
+    }
+  }, [active])
 }

@@ -1,7 +1,8 @@
-import {LoadingScreen} from './LoadingScreen';
-import {useAppSelector} from '../store/hooks';
-import {selectNavigationLoaderOverlayPhase} from '../features/appUi/appUiSelectors';
-import {NAV_LOADER_OVERLAY_FADE_OUT_MS} from '../features/appUi/appUiSlice';
+import {selectNavigationLoaderOverlayPhase} from "../features/appUi/appUiSelectors"
+import {NAV_LOADER_OVERLAY_FADE_OUT_MS} from "../features/appUi/appUiSlice"
+import {useAppSelector} from "../store/hooks"
+
+import {LoadingScreen} from "./LoadingScreen"
 
 /**
  * Renders the route-spanning navigation loader overlay that lives above all
@@ -14,19 +15,18 @@ import {NAV_LOADER_OVERLAY_FADE_OUT_MS} from '../features/appUi/appUiSlice';
  * appUi listener middleware — this component owns only the paint.
  */
 export function NavigationLoaderOverlay() {
-  const phase = useAppSelector(selectNavigationLoaderOverlayPhase);
+  const phase = useAppSelector(selectNavigationLoaderOverlayPhase)
 
-  if (phase === 'hidden') return null;
+  if (phase === "hidden") return null
 
   return (<div
-    aria-hidden={phase !== 'visible'}
+    aria-hidden={phase !== "visible"}
     className="fixed inset-0 z-[9999]"
     style={{
-      opacity: phase === 'visible' ? 1 : 0,
+      opacity: phase === "visible" ? 1 : 0,
       transition: `opacity ${NAV_LOADER_OVERLAY_FADE_OUT_MS}ms ease-out`,
-      pointerEvents: phase === 'visible' ? 'auto' : 'none',
-    }}
-  >
+      pointerEvents: phase === "visible" ? "auto" : "none",
+    }}>
     <LoadingScreen/>
-  </div>);
+  </div>)
 }

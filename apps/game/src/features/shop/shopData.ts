@@ -1,17 +1,17 @@
-import {isSupabaseConfigured, supabase} from '../../lib/supabase';
-import type {Database} from '../../../../../packages/shared/src/database';
+import type {Database} from "../../../../../packages/shared/src/database"
+import {isSupabaseConfigured, supabase} from "../../lib/supabase"
 
-export type ShopItemRow = Database['public']['Tables']['shop_items']['Row'];
+export type ShopItemRow = Database["public"]["Tables"]["shop_items"]["Row"]
 
-export interface ShopSale {
-  readonly label: string;
-  readonly bonusPercent: number;
-  readonly endsAt: string | null;
+export type ShopSale = {
+  readonly label: string,
+  readonly bonusPercent: number,
+  readonly endsAt: string | null,
 }
 
-export interface ShopStoreConfig {
-  readonly title: string;
-  readonly bgImageUrl: string | null;
+export type ShopStoreConfig = {
+  readonly title: string,
+  readonly bgImageUrl: string | null,
 }
 
 /**
@@ -20,17 +20,17 @@ export interface ShopStoreConfig {
  * unconfigured Supabase) is a legitimately empty store, not a failure.
  */
 export async function fetchShopCatalog(): Promise<readonly ShopItemRow[]> {
-  if (!isSupabaseConfigured) return [];
+  if (!isSupabaseConfigured) return []
   const {
     data,
-    error
+    error,
   } = await supabase
-    .from('shop_items')
-    .select('*')
-    .eq('is_enabled', true)
-    .order('sort_order', {ascending: true});
-  if (error) throw error;
-  return data ?? [];
+    .from("shop_items")
+    .select("*")
+    .eq("is_enabled", true)
+    .order("sort_order", {ascending: true})
+  if (error) throw error
+  return data ?? []
 }
 
 /**
@@ -40,21 +40,21 @@ export async function fetchShopCatalog(): Promise<readonly ShopItemRow[]> {
  * exactly like the old `Promise.allSettled`/ignored-error behavior.
  */
 export async function fetchStoreSale(): Promise<ShopSale | null> {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured) return null
   try {
     const {
       data,
-      error
-    } = await supabase.rpc('current_store_sale');
-    if (error || !data || data.length === 0) return null;
+      error,
+    } = await supabase.rpc("current_store_sale")
+    if (error || !data || data.length === 0) return null
     return {
       label: data[0].label,
       bonusPercent: data[0].bonus_percent,
       endsAt: data[0].ends_at,
-    };
+    }
   }
   catch {
-    return null;
+    return null
   }
 }
 
@@ -65,24 +65,24 @@ export async function fetchStoreSale(): Promise<ShopSale | null> {
  * failure and the Shop falls back to its defaults.
  */
 export async function fetchStoreConfig(): Promise<ShopStoreConfig | null> {
-  if (!isSupabaseConfigured) return null;
+  if (!isSupabaseConfigured) return null
   try {
     const {
       data,
-      error
+      error,
     } = await supabase
-      .from('store_config')
-      .select('title, bg_image_url')
-      .eq('id', true)
-      .maybeSingle();
-    if (error || !data) return null;
+      .from("store_config")
+      .select("title, bg_image_url")
+      .eq("id", true)
+      .maybeSingle()
+    if (error || !data) return null
     return {
-      title: data.title || 'Store',
-      bgImageUrl: data.bg_image_url
-    };
+      title: data.title || "Store",
+      bgImageUrl: data.bg_image_url,
+    }
   }
   catch {
-    return null;
+    return null
   }
 }
 
@@ -93,6 +93,6 @@ export async function fetchStoreConfig(): Promise<ShopStoreConfig | null> {
  * purchase_limit_reached) on it.
  */
 export async function purchaseShopItem(itemId: string): Promise<void> {
-  const {error} = await supabase.rpc('purchase_shop_item', {target_item_id: itemId});
-  if (error) throw new Error(error.message);
+  const {error} = await supabase.rpc("purchase_shop_item", {target_item_id: itemId})
+  if (error) throw new Error(error.message)
 }

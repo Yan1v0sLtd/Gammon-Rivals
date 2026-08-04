@@ -1,4 +1,4 @@
-import {isSupabaseConfigured, supabase} from './supabase';
+import {isSupabaseConfigured, supabase} from "./supabase"
 
 /**
  * BO-managed loading-screen art (see the `loading_screen_images` table —
@@ -18,52 +18,52 @@ import {isSupabaseConfigured, supabase} from './supabase';
  * screen on, always fully decoded, never a half-loaded flash.
  */
 
-const FALLBACK_URL = '/loading/default.webp';
-const CACHE_KEY = 'gr-loading-screen-url';
+const FALLBACK_URL = "/loading/default.webp"
+const CACHE_KEY = "gr-loading-screen-url"
 
 /** Synchronous getter used by LoadingScreen at render time. */
 export function getLoadingScreenImage(): string {
   try {
-    return window.localStorage.getItem(CACHE_KEY) || FALLBACK_URL;
+    return window.localStorage.getItem(CACHE_KEY) ?? FALLBACK_URL
   }
   catch {
-    return FALLBACK_URL;
+    return FALLBACK_URL
   }
 }
 
-let refreshed = false;
+let refreshed = false
 
 /** Fire-and-forget: sync the cache with the BO's active loading screen. */
 export function refreshLoadingScreenImage(): void {
-  if (refreshed || !isSupabaseConfigured) return;
-  refreshed = true;
+  if (refreshed || !isSupabaseConfigured) return
+  refreshed = true
 
   void supabase
-    .from('loading_screen_images')
-    .select('image_url')
-    .eq('is_active', true)
-    .order('sort_order', {ascending: false})
+    .from("loading_screen_images")
+    .select("image_url")
+    .eq("is_active", true)
+    .order("sort_order", {ascending: false})
     .limit(1)
     .maybeSingle()
     .then(({
       data,
-      error
+      error,
     }) => {
-      if (error || !data?.image_url) return;
-      const url = data.image_url;
-      if (url === getLoadingScreenImage()) return;
+      if (error || !data?.image_url) return
+      const url = data.image_url
+      if (url === getLoadingScreenImage()) return
 
       // Warm the image before publishing it to the cache so the next
       // loading screen never paints a still-downloading background.
-      const img = new Image();
+      const img = new Image()
       img.onload = () => {
         try {
-          window.localStorage.setItem(CACHE_KEY, url);
+          window.localStorage.setItem(CACHE_KEY, url)
         }
         catch {
           // Storage full/blocked — keep using the previous art.
         }
-      };
-      img.src = url;
-    });
+      }
+      img.src = url
+    })
 }
