@@ -7,6 +7,8 @@ import {computeHitRects} from "../hit-areas"
 import type {LoadedTheme} from "../theme/loader"
 import type {ThemeAssetKey, ThemeColors, ThemeLayout} from "../theme/types"
 
+import {measure} from "./perf"
+
 export type RenderSelection = {
   readonly selectedFrom: Position | null,
   readonly validDestinations: readonly Position[],
@@ -181,45 +183,53 @@ export class BoardRenderer {
   }
 
   private rebuildBoardLayer() {
-    this.clearLayer(this.boardLayer)
-    const hasBoardTexture = Boolean(this.texture("board"))
-    if (hasBoardTexture) {
-      this.drawBoardTexture(this.boardLayer)
-    }
-    else {
-      this.drawFrame(this.boardLayer)
-      this.drawRails(this.boardLayer)
-      this.drawFelt(this.boardLayer)
-      this.drawPoints(this.boardLayer)
-      this.drawBar(this.boardLayer)
-      this.drawHinges(this.boardLayer)
-      this.drawOffTrayBackgrounds(this.boardLayer)
-    }
+    measure("pixi.layer.board.rebuild", () => {
+      this.clearLayer(this.boardLayer)
+      const hasBoardTexture = Boolean(this.texture("board"))
+      if (hasBoardTexture) {
+        this.drawBoardTexture(this.boardLayer)
+      }
+      else {
+        this.drawFrame(this.boardLayer)
+        this.drawRails(this.boardLayer)
+        this.drawFelt(this.boardLayer)
+        this.drawPoints(this.boardLayer)
+        this.drawBar(this.boardLayer)
+        this.drawHinges(this.boardLayer)
+        this.drawOffTrayBackgrounds(this.boardLayer)
+      }
+    })
   }
 
   private rebuildCheckerLayer(state: BoardState | null, skip: CheckerSkip | null) {
-    this.clearLayer(this.checkerLayer)
-    if (!state) return
-    const dealAnimation = this.dealAnimation && this.currentDealAnimation()
-    if (!dealAnimation) {
-      this.drawCheckers(this.checkerLayer, state, skip)
-    }
-    this.drawBarCheckers(this.checkerLayer, state, skip)
-    this.drawOffCheckers(this.checkerLayer, state, skip)
+    measure("pixi.layer.checkers.rebuild", () => {
+      this.clearLayer(this.checkerLayer)
+      if (!state) return
+      const dealAnimation = this.dealAnimation && this.currentDealAnimation()
+      if (!dealAnimation) {
+        this.drawCheckers(this.checkerLayer, state, skip)
+      }
+      this.drawBarCheckers(this.checkerLayer, state, skip)
+      this.drawOffCheckers(this.checkerLayer, state, skip)
+    })
   }
 
   private rebuildSelectionLayer(state: BoardState | null, selection: RenderSelection | undefined) {
-    this.clearLayer(this.selectionLayer)
-    if (!state || !selection) return
-    this.drawSelectionOverlay(this.selectionLayer, state, selection)
-    if (selection?.alignmentDebug?.enabled) {
-      this.drawAlignmentDebugOverlay(this.selectionLayer, state, selection.alignmentDebug)
-    }
+    measure("pixi.layer.selection.rebuild", () => {
+      this.clearLayer(this.selectionLayer)
+      if (!state || !selection) return
+      this.drawSelectionOverlay(this.selectionLayer, state, selection)
+      if (selection?.alignmentDebug?.enabled) {
+        this.drawAlignmentDebugOverlay(this.selectionLayer, state, selection.alignmentDebug)
+      }
+    })
   }
 
   private rebuildInteractionLayer() {
-    this.clearLayer(this.interactionLayer)
-    if (this.interactionEnabled) this.drawHitAreas(this.interactionLayer)
+    measure("pixi.layer.interaction.rebuild", () => {
+      this.clearLayer(this.interactionLayer)
+      if (this.interactionEnabled) this.drawHitAreas(this.interactionLayer)
+    })
   }
 
   private clearAnimationLayer() {
@@ -267,24 +277,26 @@ export class BoardRenderer {
   private invalidate() {
     if (this.destroyed || this.scheduledFrame !== null) return
     this.scheduledFrame = requestAnimationFrame(() => {
-      this.scheduledFrame = null
-      if (this.destroyed) return
+      measure("pixi.animation.frame", () => {
+        this.scheduledFrame = null
+        if (this.destroyed) return
 
-      const hadAnimation = Boolean(this.animation)
-      const hadDealAnimation = Boolean(this.dealAnimation)
-      const animation = this.currentAnimation()
-      const dealAnimation = this.currentDealAnimation()
-      if (hadAnimation || hadDealAnimation) {
-        this.clearAnimationLayer()
-        if ((!animation && hadAnimation) || (!dealAnimation && hadDealAnimation)) {
-          this.rebuildCheckerLayer(this.currentState, animation?.skip ?? null)
-          this.rebuildSelectionLayer(this.currentState, this.currentSelection)
+        const hadAnimation = Boolean(this.animation)
+        const hadDealAnimation = Boolean(this.dealAnimation)
+        const animation = this.currentAnimation()
+        const dealAnimation = this.currentDealAnimation()
+        if (hadAnimation || hadDealAnimation) {
+          this.clearAnimationLayer()
+          if ((!animation && hadAnimation) || (!dealAnimation && hadDealAnimation)) {
+            this.rebuildCheckerLayer(this.currentState, animation?.skip ?? null)
+            this.rebuildSelectionLayer(this.currentState, this.currentSelection)
+          }
+          if (animation || dealAnimation) this.drawAnimationFrame()
         }
-        if (animation || dealAnimation) this.drawAnimationFrame()
-      }
 
-      this.app.renderer.render({container: this.app.stage})
-      if (this.animation || this.dealAnimation) this.invalidate()
+        this.app.renderer.render({container: this.app.stage})
+        if (this.animation || this.dealAnimation) this.invalidate()
+      })
     })
   }
 
