@@ -365,8 +365,8 @@ export function BoardPurchaseModal({
       </div>) : null}
 
       {/* Yes / No buttons — re-styled to match the green PLAY
-            button on the lobby board carousel (.lobby-play-button in
-            index.css). Yes uses the same green/lime gradient stack,
+            button on the lobby board carousel (PlayButton). Yes
+            uses the same green/lime gradient stack,
             No uses the same shape but a charcoal palette. Pill
             shape, dual-layer background (top white-sheen overlay +
             base gradient), thin lime/grey rim, chunky 3D drop-shadow

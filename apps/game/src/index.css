@@ -218,7 +218,8 @@ html, body, #root {
   will-change: background-position;
 }
 
-/* Animating background-position-x from a NEGATIVE tile-width up to */
+/* Animating background-position-x from a NEGATIVE tile-width up to 0 scrolls
+   the tile forward without a seam, since the pattern repeats. */
 
 .lobby-profile-progress-label {
   pointer-events: none;
@@ -285,12 +286,12 @@ html, body, #root {
 }
 
 .lobby-carousel-board {
-  --lobby-prev-x: -34%;
-  --lobby-next-x: 34%;
-  --lobby-side-scale: 0.82;
-  --lobby-incoming-prev-x: -70%;
-  --lobby-incoming-next-x: 70%;
-  --lobby-incoming-scale: 0.72;
+  --lobby-prev-x: -50%;
+  --lobby-next-x: 50%;
+  --lobby-side-scale: 0.72;
+  --lobby-incoming-prev-x: -84%;
+  --lobby-incoming-next-x: 84%;
+  --lobby-incoming-scale: 0.64;
   --lobby-prev-rotation: -6deg;
   --lobby-next-rotation: 6deg;
   --lobby-incoming-prev-rotation: -8deg;
@@ -304,6 +305,9 @@ html, body, #root {
   opacity: 1;
   transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
   animation: lobby-board-selected-next 390ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
+  /* Tight, dark contact shadow under the centred board so it reads as
+     sitting on the podium (selected board only — side boards stay flat). */
+  filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
 }
 
 .lobby-carousel-board[data-slot='previous'] {
@@ -336,18 +340,9 @@ html, body, #root {
   animation-name: lobby-board-next-previous;
 }
 
-.lobby-play-button {
-  border-radius: 9999px;
-  border: 2px solid rgba(224, 255, 143, 0.95);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%),
-  linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%);
-  box-shadow: 0 5px 0 #06450a,
-  0 13px 22px rgba(0, 0, 0, 0.34),
-  inset 0 2px 0 rgba(255, 255, 255, 0.74),
-  inset 0 -5px 0 rgba(0, 78, 5, 0.34),
-  0 0 0 2px rgba(7, 27, 11, 0.85);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
-}
+/* .lobby-play-button was dropped: the PLAY button moved onto the centred board
+   as <PlayButton> (sized in container-query units, positioned by
+   .lockPillWrap), so the class had no element left to match. */
 
 /* --- Lobby bottom navigator ---
    Locks the bar to the painted background's natural 1889x231 aspect
@@ -1110,80 +1105,15 @@ html, body, #root {
   transform: translateY(calc(-12 * var(--lobby-u)));
 }
 
-.lobby-carousel-section {
-  width: calc(1032 * var(--lobby-u));
-  max-width: none;
-  height: calc(490 * var(--lobby-u));
-  overflow: visible;
-}
+/* Section / viewport / board box geometry lives in
+   LobbyBoardCarousel.module.css; the slide-position custom properties and the
+   data-slot animation states stay global with the @keyframes that reference
+   them (single .lobby-carousel-board block further up). */
 
-.lobby-carousel-viewport {
-  width: calc(1032 * var(--lobby-u));
-  height: calc(490 * var(--lobby-u));
-  max-height: none;
-  min-height: 0 !important;
-  aspect-ratio: auto;
-  overflow: visible;
-}
-
-.lobby-carousel-board {
-  --lobby-prev-x: -50%;
-  --lobby-next-x: 50%;
-  --lobby-side-scale: 0.72;
-  --lobby-incoming-prev-x: -84%;
-  --lobby-incoming-next-x: 84%;
-  --lobby-incoming-scale: 0.64;
-  /* Bottom-anchored: the board's BASE sits at a fixed point near the
-     podium rim, so growing the board extends it UPWARD into the freed
-     space instead of sinking into the podium — and it stays seated
-     through future size changes. top:auto overrides the short-landscape
-     `top` so the board isn't stretched between both edges. Tune `bottom`
-     once to seat the base on the rim; tune width for size. */
-  top: auto;
-  /* Pure --lobby-u (baked from the mobile baseline: -25u + 10px at the phone
-     lobby-u ~0.486). A fixed px term is a DIFFERENT fraction of the scaled
-     stage at each resolution, so it made the board <-> podium gap drift
-     between phone and desktop. Pure-u keeps the mobile gap identical
-     everywhere. */
-  bottom: calc(-4.4 * var(--lobby-u));
-  /* Top-down boards read larger than the old tilted art (no perspective
-     foreshortening). Net width 69% (was 74% tilted): trimmed for top-down,
-     then +10% back per operator review once the hourly-bonus icon was
-     shrunk to free navigator room. Bottom-anchored, so it stays seated on
-     the podium as it resizes. */
-  /* 10% smaller (69% -> 62.1%) per operator review. Bottom-anchored, so it
-     shrinks toward its base on the podium rather than floating. */
-  width: 62.1%;
-  height: auto;
-}
-
-.lobby-carousel-board[data-slot='selected'] {
-  transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
-  /* Tight, dark contact shadow under the centred board so it reads as
-     sitting on the podium (selected board only — side boards stay flat). */
-  filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
-}
-
-.lobby-carousel-board[data-slot='previous'] {
-  transform: translateX(-50%) translateX(calc(var(--lobby-prev-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-}
-
-.lobby-carousel-board[data-slot='next'] {
-  transform: translateX(-50%) translateX(calc(var(--lobby-next-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-}
-
-.lobby-carousel-viewport > img.pointer-events-none {
-  /* Podium: +20 % (702 -> 842) for the new thinner US-of-A holder art.
-     Bottom is pure --lobby-u (baked from -72u - 15px at the phone lobby-u
-     ~0.486) so the board <-> podium gap is identical at every resolution
-     (mobile baseline), instead of drifting via the old fixed px term. */
-  bottom: calc(-102.9 * var(--lobby-u));
-  width: calc(842 * var(--lobby-u));
-  max-width: none;
-  /* Tight, dark ground shadow beneath the podium (overrides the Tailwind
-     drop-shadow on the <img>); scales with --lobby-u. */
-  filter: drop-shadow(0 calc(20 * var(--lobby-u)) calc(13 * var(--lobby-u)) rgba(0, 0, 0, 0.62));
-}
+/* Podium sizing/position lives in LobbyBoardCarousel.module.css (.podiumImage).
+   It used to be here, keyed on the Tailwind `pointer-events-none` utility that
+   happened to sit on the <img> — a hook that silently died when the class list
+   moved into the CSS module, taking the whole stand with it. */
 
 /* Podium cross-fade: the newest layer fades in over the old one when the
    podium image swaps (e.g. a board with a dedicated holder). Driven by
@@ -1218,53 +1148,11 @@ html, body, #root {
   animation: lobbyPodiumFadeOut 450ms ease forwards;
 }
 
-/* (Removed a `.lobby-carousel-viewport > div[class*='top-'] { display:none }`
-   rule that used to hide the deleted prev/next nav arrows — it ALSO matched
-   the board-name pill's `top-[2%]` class and silently hid it, which is why
-   the board name "disappeared". The name pill is shown again via
-   .gr-name-pill.) */
-
-.lobby-play-button {
-  /* Halved from 80×350 — previously dominating the board centre.
-     The vertical offset is left as-is (still sits on the wooden
-     deck below the carved front); only the button's intrinsic
-     size shrinks. */
-  /* Pure --lobby-u (baked from -85u - 5px at the phone lobby-u ~0.486) so the
-     Play button stays locked to the board + podium at every resolution. */
-  bottom: calc(-95.3 * var(--lobby-u));
-  height: calc(40 * var(--lobby-u));
-  min-width: calc(175 * var(--lobby-u));
-  padding: 0 calc(21 * var(--lobby-u));
-  border-width: calc(2 * var(--lobby-u));
-  font-size: calc(27 * var(--lobby-u));
-  letter-spacing: 0.16em;
-  box-shadow: 0 calc(3 * var(--lobby-u)) 0 #06450a,
-  0 calc(8 * var(--lobby-u)) calc(11 * var(--lobby-u)) rgba(0, 0, 0, 0.4),
-  inset 0 calc(1 * var(--lobby-u)) 0 rgba(255, 255, 255, 0.74),
-  inset 0 calc(-3 * var(--lobby-u)) 0 rgba(0, 78, 5, 0.34),
-  0 0 0 calc(1 * var(--lobby-u)) rgba(7, 27, 11, 0.85);
-}
-
-.lobby-carousel-viewport > div[class*='bottom-24'] {
-  display: none;
-}
-
-.lobby-carousel-viewport button[aria-label='Previous board'],
-.lobby-carousel-viewport button[aria-label='Next board'] {
-  width: calc(56 * var(--lobby-u));
-  height: calc(56 * var(--lobby-u));
-  border-width: calc(4 * var(--lobby-u));
-  font-size: calc(46 * var(--lobby-u));
-  opacity: 0.84;
-}
-
-.lobby-carousel-viewport button[aria-label='Previous board'] {
-  left: calc(182 * var(--lobby-u));
-}
-
-.lobby-carousel-viewport button[aria-label='Next board'] {
-  right: calc(182 * var(--lobby-u));
-}
+/* Removed with the prev/next nav arrows they targeted: two `[class*=...]`
+   hides and the arrow sizing rules. Both hides were landmines — the `top-`
+   one also matched the board-name pill's `top-[2%]` and hid the board name;
+   the `bottom-24` one also matched the pagination dots container. Style
+   components from their own CSS module, never via utility-class hooks. */
 
 .lobby-action-stack {
   display: grid;

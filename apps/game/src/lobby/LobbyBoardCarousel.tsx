@@ -12,10 +12,8 @@ import {useActivePodium} from "./useActivePodium"
  * Renders the lobby podium with a cross-fade when its image changes (e.g.
  * scrolling to a board that has its own holder image). The new image is
  * stacked on top and fades in over the previous one
- * (.lobby-podium-fade-in), then the old layer is pruned. Each layer stays
- * a direct child of .lobby-carousel-viewport and keeps `pointer-events-none`
- * so the existing podium size + ground-shadow CSS rule applies to all
- * layers.
+ * (.lobby-podium-fade-in), then the old layer is pruned. Every layer gets
+ * .podiumImage so size, position and ground shadow apply to all of them.
  */
 function PodiumImage({src}: {readonly src: string}) {
   const [layers, setLayers] = useState<readonly {src: string, id: number}[]>([{
