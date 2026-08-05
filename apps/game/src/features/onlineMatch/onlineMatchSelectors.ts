@@ -255,6 +255,26 @@ export const selectValidDestinations = createSelector([selectLocalLegalMoves, se
   return legal.filter((m) => m.from === selectedFrom).map((m) => m.to)
 })
 
+export type OnlineTimerViewModel = {
+  readonly deadlineMs: number | null,
+  readonly durationMs: number | null,
+  readonly activePlayer: Player,
+}
+
+export const selectTimerViewModel = createSelector(
+  [(state: OnlineMatchRootShape, matchId: string | undefined) => selectTurnDisplayDeadlineMs(state, matchId), (state: OnlineMatchRootShape) => state.onlineMatch.turnSeconds, selectEffectiveTurn],
+  (deadlineMs, turnSeconds, activePlayer): OnlineTimerViewModel => ({
+    deadlineMs,
+    durationMs: turnSeconds === null ? null : turnSeconds * 1000,
+    activePlayer,
+  }),
+)
+
+export const selectBoardPositionViewModel = createSelector(
+  [selectBoard, selectRoll, selectRemaining],
+  (board, roll, remaining) => ({board, roll, remaining}),
+)
+
 export const selectOpponentPreviewOrigins = createSelector([selectOpponentLegalMoves], (legal): readonly Position[] => {
   if (legal.length === 0) return createEmptyArray<Position>()
   const set = new Set<Position>()
@@ -269,7 +289,28 @@ export const selectOpponentPreviewDestinations = createSelector([selectOpponentL
   return Array.from(set)
 })
 
+export const selectSelectionViewModel = createSelector(
+  [selectSelectedFrom, selectLegalOrigins, selectValidDestinations, selectOpponentPreviewOrigins, selectOpponentPreviewDestinations],
+  (selectedFrom, legalOrigins, validDestinations, opponentOrigins, opponentDestinations) => ({
+    selectedFrom,
+    legalOrigins,
+    validDestinations,
+    opponentOrigins,
+    opponentDestinations,
+  }),
+)
+
 export const selectCanRoll = createSelector([selectMatchFinished, selectMatch, selectCurrentTurn, selectCubeOffer, selectIsLocalTurn], (matchFinished, match, currentTurn, cubeOffer, isLocalTurn) => !matchFinished && !!match && !!match.opponent_id && currentTurn === null && cubeOffer === null && isLocalTurn)
+
+export const selectInteractionViewModel = createSelector(
+  [selectIsLocalTurn, selectEffectiveTurn, selectMatchFinished, selectBetweenGames],
+  (canInteract, activePlayer, matchFinished, betweenGames) => ({
+    canInteract: canInteract && !matchFinished && !betweenGames,
+    isLocalTurn: canInteract,
+    activePlayer,
+    isFinished: matchFinished,
+  }),
+)
 
 export const selectCanEndTurn = createSelector([selectMatchFinished, selectBetweenGames, selectBoard, selectIsLocalTurn, selectCurrentTurn, selectRemaining, selectLocalLegalMoves], (matchFinished, betweenGames, board, isLocalTurn, currentTurn, remaining, legal) => !matchFinished && !betweenGames && !engineWinner(board) && isLocalTurn && currentTurn !== null && (remaining.length === 0 || legal.length === 0))
 

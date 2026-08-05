@@ -11,8 +11,8 @@ type PlayerSeat = {
   stateLabel?: string,
   coinsLabel?: string,
   isTurn?: boolean,
-  timerProgress?: number,
-  timerSecondsLeft?: number,
+  timerDeadlineMs?: number,
+  timerDurationMs?: number,
   hudSlot?: React.ReactNode,
   bottomSlot?: React.ReactNode,
 }

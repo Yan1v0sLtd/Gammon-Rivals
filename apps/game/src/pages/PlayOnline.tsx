@@ -4,10 +4,8 @@ import {skipToken} from "@reduxjs/toolkit/query"
 import {Link, useNavigate, useParams, useSearchParams} from "react-router-dom"
 
 import type {AILevel} from "../../../../packages/ai/src/types"
-import {BoardCanvas} from "../../../../packages/board-renderer/src/BoardCanvas"
 import {pipCount} from "../../../../packages/engine/src/board"
 import type {MatchState} from "../../../../packages/engine/src/match"
-import type {Position} from "../../../../packages/engine/src/types"
 import type {Database} from "../../../../packages/shared/src/database"
 import {getProfileProgression} from "../../../../packages/shared/src/progression"
 import {ActionButtons, MatchSecondaryControls} from "../components/ActionButtons"
@@ -15,11 +13,11 @@ import {AutoRollToggle} from "../components/AutoRollToggle"
 import {BoardLayout} from "../components/BoardLayout"
 import {CubeOfferDecision} from "../components/CubeOfferDecision"
 import {DICE_ANIMATION_MS} from "../components/diceTiming"
-import {DiceTray} from "../components/DiceTray"
 import {MatchHeader} from "../components/MatchHeader"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
 import {selectAuthUserId, selectCurrentProfile, selectCurrentWallet, selectLevelConfigs, selectLevelStatusTiers, selectProfileProgression, selectAuthInitializing} from "../features/auth/authSelectors"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
+import {OnlineBoardSurface} from "../features/onlineMatch/OnlineBoardSurface"
 import {onlineAutoRollEligibilityChanged} from "../features/onlineMatch/onlineMatchActions"
 import {
   FALLBACK_POLL_MS,
@@ -33,11 +31,9 @@ import {
   useGetActiveMatchQuery,
   useOfferDoubleMutation,
   useRollDiceMutation,
-  useSubmitSubMoveMutation,
 } from "../features/onlineMatch/onlineMatchApi"
 import {buildFinalizeScores} from "../features/onlineMatch/onlineMatchData"
 import {
-  encodeMove,
   selectBetweenGames,
   selectBoard,
   selectCanClaimByInactivity,
@@ -54,24 +50,15 @@ import {
   selectGameWinner,
   selectInCrawfordGame,
   selectIsLocalTurn,
-  selectLegalOrigins,
   selectLocalColor,
-  selectLocalLegalMoves,
   selectMatch,
   selectMatchFinished,
-  selectOpponentPreviewDestinations,
   selectOpponentPreviewKey,
-  selectOpponentPreviewOrigins,
-  selectRemaining,
   selectRoll,
   selectRollPending,
-  selectSelectedFrom,
-  selectTurnDisplayDeadlineMs,
-  selectValidDestinations,
+  selectTimerViewModel,
 } from "../features/onlineMatch/onlineMatchSelectors"
 import {
-  checkerSelected,
-  checkerSelectionCancelled,
   onlineMatchRouteEntered,
   onlineMatchRouteExited,
   opponentPreviewRevealed,
@@ -123,6 +110,9 @@ export function PlayOnline() {
   })
   const loading = activeMatch.isUninitialized || activeMatch.isLoading
   const [actionError, setActionError] = useState<string | null>(null)
+  const reportActionError = useCallback((message: string) => {
+    setActionError(message)
+  }, [])
 
   useEffect(() => {
     setActionError(null)
@@ -145,7 +135,6 @@ export function PlayOnline() {
 
   const [triggerRollDice] = useRollDiceMutation({fixedCacheKey: rollDiceCacheKey(matchId ?? "")})
   const [triggerFinishTurn] = useFinishTurnMutation({fixedCacheKey: finishTurnCacheKey(matchId ?? "")})
-  const [triggerSubmitSubMove] = useSubmitSubMoveMutation()
   const [triggerOfferDouble] = useOfferDoubleMutation()
   const [triggerAcceptDouble] = useAcceptDoubleMutation()
   const [triggerDropDouble] = useDropDoubleMutation()
@@ -162,12 +151,6 @@ export function PlayOnline() {
   const localColor = useAppSelector((state) => selectLocalColor(state, matchId))
   const isLocalTurn = useAppSelector((state) => selectIsLocalTurn(state, matchId))
   const roll = useAppSelector((state) => selectRoll(state, matchId))
-  const remaining = useAppSelector((state) => selectRemaining(state, matchId))
-  const selectedFrom = useAppSelector(selectSelectedFrom)
-  const legalOrigins = useAppSelector((state) => selectLegalOrigins(state, matchId))
-  const validDestinations = useAppSelector((state) => selectValidDestinations(state, matchId))
-  const opponentPreviewOrigins = useAppSelector((state) => selectOpponentPreviewOrigins(state, matchId))
-  const opponentPreviewDestinations = useAppSelector((state) => selectOpponentPreviewDestinations(state, matchId))
   const canRoll = useAppSelector((state) => selectCanRoll(state, matchId))
   const canEndTurn = useAppSelector((state) => selectCanEndTurn(state, matchId))
   const gameWinner = useAppSelector((state) => selectGameWinner(state, matchId))
@@ -178,10 +161,9 @@ export function PlayOnline() {
   const canOfferDouble = useAppSelector((state) => selectCanOfferDouble(state, matchId))
   const betweenGames = useAppSelector((state) => selectBetweenGames(state, matchId))
   const inCrawfordGame = useAppSelector((state) => selectInCrawfordGame(state, matchId))
-  const legal = useAppSelector((state) => selectLocalLegalMoves(state, matchId))
   const opponentPreviewKey = useAppSelector((state) => selectOpponentPreviewKey(state, matchId))
   const canClaimByInactivity = useAppSelector((state) => selectCanClaimByInactivity(state, matchId))
-  const turnDeadlineMs = useAppSelector((state) => selectTurnDisplayDeadlineMs(state, matchId))
+  const timer = useAppSelector((state) => selectTimerViewModel(state, matchId))
 
   const rollDice = useCallback(async () => {
     if (!matchId || !canRoll || rollPending) return
@@ -193,42 +175,6 @@ export function PlayOnline() {
       setActionError(toApiError(err).message)
     }
   }, [matchId, canRoll, rollPending, triggerRollDice])
-
-  const selectFrom = useCallback((pos: Position) => {
-    if (!isLocalTurn || !currentTurn) return
-    if (!legalOrigins.includes(pos)) {
-      dispatch(checkerSelectionCancelled())
-      return
-    }
-    dispatch(checkerSelected({from: pos}))
-  }, [isLocalTurn, currentTurn, legalOrigins, dispatch])
-
-  const cancelSelection = useCallback(() => dispatch(checkerSelectionCancelled()), [dispatch])
-
-  const selectTo = useCallback(async (pos: Position) => {
-    if (!matchId || !match || !currentTurn || selectedFrom === null) return
-    if (!isLocalTurn) return
-    const move = legal.find((m) => m.from === selectedFrom && m.to === pos)
-    if (!move) return
-
-    const newSubMoves = [...currentTurn.subMoves, encodeMove(move)]
-    const idx = currentTurn.remaining.indexOf(move.die)
-    const newRemaining = idx >= 0
-      ? [...currentTurn.remaining.slice(0, idx), ...currentTurn.remaining.slice(idx + 1)]
-      : [...currentTurn.remaining]
-
-    dispatch(checkerSelectionCancelled())
-
-    try {
-      await triggerSubmitSubMove({
-        matchId,
-        currentTurn: {...currentTurn, subMoves: newSubMoves, remaining: newRemaining},
-      }).unwrap()
-    }
-    catch (err) {
-      setActionError(toApiError(err).message)
-    }
-  }, [matchId, match, currentTurn, selectedFrom, isLocalTurn, legal, triggerSubmitSubMove, dispatch])
 
   const endTurn = useCallback(async () => {
     if (!matchId || !match || !currentTurn || !match.current_game_id) return
@@ -346,45 +292,11 @@ export function PlayOnline() {
   const remoteId = match ? (user?.id === match.owner_id ? match.opponent_id : match.owner_id) : null
   const {data: remoteProfile} = useGetProfileQuery(remoteId ?? "", {skip: !remoteId})
 
-  const handlePointClick = (pos: Position) => {
-    if (gameWinner || matchFinished) return
-    if (!isLocalTurn) return
-    if (selectedFrom === null) {
-      selectFrom(pos)
-      return
-    }
-    if (validDestinations.includes(pos)) {
-      void selectTo(pos)
-    }
-    else if (legalOrigins.includes(pos)) {
-      selectFrom(pos)
-    }
-    else {
-      cancelSelection()
-    }
-  }
-
   // Auto-roll preference: the delay + eligibility re-check live in listeners.
   const [autoRollOn, setAutoRollOn] = useAutoRoll()
   useEffect(() => {
     dispatch(onlineAutoRollEligibilityChanged({enabled: autoRollOn}))
   }, [dispatch, autoRollOn])
-
-  // Countdown label ticks here; the deadline is read from the store.
-  const [timerNow, setTimerNow] = useState(() => Date.now())
-  useEffect(() => {
-    if (turnDeadlineMs === null) return
-    const id = window.setInterval(() => {
-      setTimerNow(Date.now())
-    }, 220)
-    return () => {
-      window.clearInterval(id)
-    }
-  }, [turnDeadlineMs])
-  const turnSecondsLeft = turnDeadlineMs === null ? null : Math.max(0, Math.ceil((turnDeadlineMs - timerNow) / 1000))
-  const turnProgress = turnSecondsTotal === null || turnSecondsTotal === 0 || turnSecondsLeft === null
-    ? null
-    : turnSecondsLeft / turnSecondsTotal
 
   // Hide the route-spanning loader once the first load resolves.
   const overlayReady = !authLoading && (!loading || error !== null)
@@ -641,8 +553,8 @@ export function PlayOnline() {
         stateLabel: isBotMatch ? aiRankLabel(botLvl) : opponentProgression.statusLabel,
         coinsLabel: "—",
         isTurn: !isLocalTurn && !showMatchOver,
-        timerProgress: !isLocalTurn && !showMatchOver && !betweenGames ? turnProgress ?? undefined : undefined,
-        timerSecondsLeft: !isLocalTurn && !showMatchOver && !betweenGames ? turnSecondsLeft ?? undefined : undefined,
+        timerDeadlineMs: !isLocalTurn && !showMatchOver && !betweenGames ? (timer.deadlineMs ?? undefined) : undefined,
+        timerDurationMs: !isLocalTurn && !showMatchOver && !betweenGames ? (timer.durationMs ?? undefined) : undefined,
       }}
       self={{
         identity: profileToIdentity(selfProfile),
@@ -652,8 +564,8 @@ export function PlayOnline() {
         stateLabel: selfProgression.statusLabel,
         coinsLabel: formatCompactNumber(wallet?.coins),
         isTurn: isLocalTurn && !showMatchOver,
-        timerProgress: isLocalTurn && !showMatchOver && !betweenGames ? turnProgress ?? undefined : undefined,
-        timerSecondsLeft: isLocalTurn && !showMatchOver && !betweenGames ? turnSecondsLeft ?? undefined : undefined,
+        timerDeadlineMs: isLocalTurn && !showMatchOver && !betweenGames ? (timer.deadlineMs ?? undefined) : undefined,
+        timerDurationMs: isLocalTurn && !showMatchOver && !betweenGames ? (timer.durationMs ?? undefined) : undefined,
         bottomSlot: showActions ? (
           <MatchSecondaryControls
             autoRollSlot={!isSpectator ? (
@@ -668,22 +580,12 @@ export function PlayOnline() {
             onDouble={() => void offerDouble()}/>
         ) : undefined,
       }}>
-      <BoardCanvas
-        selection={{
-          selectedFrom: isLocalTurn && !isSpectator ? selectedFrom : null,
-          validDestinations: isLocalTurn && !isSpectator ? validDestinations : [],
-          legalOrigins: isLocalTurn && !isSpectator ? legalOrigins : [],
-          opponentOrigins: opponentPreviewOrigins,
-          opponentDestinations: opponentPreviewDestinations,
-        }}
-        state={board}
-        theme={selectedTheme}
-        onPointClick={handlePointClick}/>
-      <DiceTray
-        remaining={remaining}
-        roll={roll}
+      <OnlineBoardSurface
+        isSpectator={isSpectator}
+        matchId={match.id}
+        selectedTheme={selectedTheme}
         settleSide={isRollForSelf ? "right" : "left"}
-        themeSprite={selectedTheme.diceImage}/>
+        onActionError={reportActionError}/>
 
       {!isSpectator && !matchFinished && canClaimByInactivity && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">

@@ -3,18 +3,15 @@ import {useCallback, useEffect, useId, useLayoutEffect, useMemo, useState} from 
 import {useNavigate, useSearchParams} from "react-router-dom"
 
 import {AI_LEVELS, type AILevel} from "../../../../packages/ai/src/types"
-import {BoardCanvas} from "../../../../packages/board-renderer/src/BoardCanvas"
 import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/BoardRenderer"
 import {premiumTheme} from "../../../../packages/board-renderer/src/theme/premium"
 import type {ThemeLayout} from "../../../../packages/board-renderer/src/theme/types"
 import {pipCount} from "../../../../packages/engine/src/board"
-import type {Position} from "../../../../packages/engine/src/types"
 import {ActionButtons, MatchSecondaryControls} from "../components/ActionButtons"
 import {AlignmentPanel} from "../components/AlignmentPanel"
 import {AutoRollToggle} from "../components/AutoRollToggle"
 import {BoardLayout} from "../components/BoardLayout"
 import {CubeOfferDecision} from "../components/CubeOfferDecision"
-import {DiceTray} from "../components/DiceTray"
 import {EndOfGameModal} from "../components/EndOfGameModal"
 import {MatchHeader} from "../components/MatchHeader"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
@@ -32,26 +29,16 @@ import {
   selectIsAIThinking,
   selectIsAITurn,
   selectLastGameResult,
-  selectLegalOrigins,
   selectMatch,
   selectMatchId,
   selectMatchOver,
   selectOpeningPlayer,
-  selectOpponentPreviewDestinations,
-  selectOpponentPreviewOrigins,
   selectPendingOffer,
-  selectRemaining,
   selectRoll,
-  selectSelectedFrom,
-  selectTurnDeadlineMs,
-  selectTurnSeconds,
-  selectValidDestinations,
+  selectTimerViewModel,
 } from "../features/gameplay/gameplaySelectors"
 import {
   type AIConfig,
-  checkerMoved,
-  checkerSelected,
-  checkerSelectionCancelled,
   DEFAULT_TURN_SECONDS,
   diceRolled,
   doubleAccepted,
@@ -63,6 +50,7 @@ import {
   lastMoveUndone,
   turnEnded,
 } from "../features/gameplay/gameplaySlice"
+import {HotSeatBoardSurface} from "../features/gameplay/HotSeatBoardSurface"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
 import {generateAIPersona} from "../lib/aiPersona"
 import {formatCompactNumber} from "../lib/format"
@@ -270,17 +258,10 @@ export function HotSeat() {
     fixedCacheKey: gameplayFinishCacheKey(gameplaySessionId),
   })
   const matchId = useAppSelector(selectMatchId)
-  const turnDeadlineMs = useAppSelector(selectTurnDeadlineMs)
-  const turnSeconds = useAppSelector(selectTurnSeconds)
+  const timer = useAppSelector(selectTimerViewModel)
   const match = useAppSelector(selectMatch)
   const board = useAppSelector(selectBoard)
   const roll = useAppSelector(selectRoll)
-  const remaining = useAppSelector(selectRemaining)
-  const selectedFrom = useAppSelector(selectSelectedFrom)
-  const validDestinations = useAppSelector(selectValidDestinations)
-  const legalOrigins = useAppSelector(selectLegalOrigins)
-  const opponentPreviewOrigins = useAppSelector(selectOpponentPreviewOrigins)
-  const opponentPreviewDestinations = useAppSelector(selectOpponentPreviewDestinations)
   const canEndTurn = useAppSelector(selectCanEndTurn)
   const canOfferDouble = useAppSelector(selectCanOfferDouble)
   const canUndo = useAppSelector(selectCanUndo)
@@ -405,48 +386,12 @@ export function HotSeat() {
     dispatch(autoRollEligibilityChanged({enabled: autoRollOn && gameReady}))
   }, [autoRollOn, dispatch, gameReady, routeKey])
 
-  const handlePointClick = (pos: Position) => {
-    if (lastGameResult || matchOver) return
-    if (pendingOffer) return
-    if (!humanCanInteract) return
-    if (selectedFrom === null) {
-      dispatch(checkerSelected({from: pos}))
-      return
-    }
-    if (validDestinations.includes(pos)) {
-      dispatch(checkerMoved({
-        from: selectedFrom,
-        to: pos,
-      }))
-    }
-    else if (legalOrigins.includes(pos)) {
-      dispatch(checkerSelected({from: pos}))
-    }
-    else {
-      dispatch(checkerSelectionCancelled())
-    }
-  }
-
   const turnLabel = matchOver ? "match over" : lastGameResult ? "game over" : pendingOffer ? `${pendingOffer === "white" ? "black" : "white"} decides` : isAIThinking ? `${board.turn} (AI) thinking…` : isAITurn ? `${board.turn} (AI)` : roll === null ? `${board.turn} to roll` : `${board.turn} to move`
 
   const showGameEndModal = (lastGameResult !== null || matchOver) && lastGameResult
   const showCubeDecision = pendingOffer !== null && !lastGameResult && !(aiConfig && pendingOffer !== aiConfig.player)
-  const turnTimerActive = turnTimerEnabled && turnDeadlineMs !== null && !showGameEndModal && !showCubeDecision && !matchOver && !lastGameResult
+  const turnTimerActive = turnTimerEnabled && timer.deadlineMs !== null && !showGameEndModal && !showCubeDecision && !matchOver && !lastGameResult
   const showIntroBanner = introVisible && match.gameNumber === 1 && !lastGameResult && !matchOver && !alignmentEnabled
-  const [timerNow, setTimerNow] = useState(() => Date.now())
-
-  useEffect(() => {
-    if (!turnTimerActive) return
-    const interval = window.setInterval(() => {
-      setTimerNow(Date.now())
-    }, 220)
-    return () => {
-      window.clearInterval(interval)
-    }
-  }, [turnTimerActive])
-
-  const turnSecondsLeft = turnTimerActive && turnDeadlineMs !== null ? Math.max(0, Math.ceil((turnDeadlineMs - timerNow) / 1000)) : 0
-  const turnTimerProgress = Math.max(0, Math.min(1, turnTimerActive && turnDeadlineMs !== null ? (turnDeadlineMs - timerNow) / (turnSeconds * 1000) : 0))
 
   // Local player is white in 2-player hot-seat (and when there's no AI);
   // when playing vs AI, the AI plays black and local player is white.
@@ -548,8 +493,8 @@ export function HotSeat() {
       stateLabel: opponentState,
       coinsLabel: opponentCoinsLabel,
       isTurn: !isLocalTurn && !showGameEndModal,
-      timerProgress: !isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
-      timerSecondsLeft: !isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined,
+      timerDeadlineMs: !isLocalTurn && turnTimerActive ? (timer.deadlineMs ?? undefined) : undefined,
+      timerDurationMs: !isLocalTurn && turnTimerActive ? (timer.durationMs ?? undefined) : undefined,
     }}
     self={{
       identity: selfIdentity,
@@ -560,8 +505,8 @@ export function HotSeat() {
       stateLabel: progression.statusLabel,
       coinsLabel: selfCoins,
       isTurn: isLocalTurn && !showGameEndModal,
-      timerProgress: isLocalTurn && turnTimerActive ? turnTimerProgress : undefined,
-      timerSecondsLeft: isLocalTurn && turnTimerActive ? turnSecondsLeft : undefined, // Cube / Double / Auto live UNDER the local player's details (their
+      timerDeadlineMs: isLocalTurn && turnTimerActive ? (timer.deadlineMs ?? undefined) : undefined,
+      timerDurationMs: isLocalTurn && turnTimerActive ? (timer.durationMs ?? undefined) : undefined, // Cube / Double / Auto live UNDER the local player's details (their
       // panel's bottom slot), matching the reference layout. Gated the same
       // way as the primary action overlay below.
       bottomSlot: !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (<MatchSecondaryControls
@@ -574,25 +519,14 @@ export function HotSeat() {
         showCube={match.target > 1}
         onDouble={handleOfferDouble}/>) : undefined,
     }}>
-    {canvasMountAllowed ? (<BoardCanvas
-      layoutOverride={alignmentEnabled ? alignmentLayout : undefined}
-      selection={{
-        selectedFrom: !alignmentEnabled && humanCanInteract ? selectedFrom : null,
-        validDestinations: !alignmentEnabled && humanCanInteract ? validDestinations : [],
-        legalOrigins: !alignmentEnabled && humanCanInteract ? legalOrigins : [],
-        opponentOrigins: alignmentEnabled ? [] : opponentPreviewOrigins,
-        opponentDestinations: alignmentEnabled ? [] : opponentPreviewDestinations,
-        alignmentDebug: alignmentEnabled ? alignmentDebug : undefined,
-      }}
-      state={board}
-      theme={selectedTheme}
-      onPointClick={alignmentEnabled ? undefined : handlePointClick}
-      onReady={handleBoardReady}/>) : null}
-    <DiceTray
-      remaining={remaining}
-      roll={roll}
+    <HotSeatBoardSurface
+      alignmentDebug={alignmentDebug}
+      alignmentEnabled={alignmentEnabled}
+      alignmentLayout={alignmentLayout}
+      canvasMountAllowed={canvasMountAllowed}
+      selectedTheme={selectedTheme}
       settleSide={isRollForSelf ? "right" : "left"}
-      themeSprite={selectedTheme.diceImage}/>
+      onReady={handleBoardReady}/>
     {alignmentEnabled && (<AlignmentPanel
       debug={alignmentDebug}
       layout={alignmentLayout}

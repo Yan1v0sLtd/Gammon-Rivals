@@ -16,8 +16,8 @@ type Props = {
   coinsLabel?: string,
   /** True if it's this player's turn. Drives the avatar ring + a glow. */
   isTurn?: boolean,
-  timerProgress?: number,
-  timerSecondsLeft?: number,
+  timerDeadlineMs?: number,
+  timerDurationMs?: number,
   /** Compact turn-adjacent visual, such as dice, rendered near the avatar. */
   hudSlot?: React.ReactNode,
   /** Stack of action chips below the avatar (auto-roll toggle, store, etc.). */
@@ -49,8 +49,8 @@ export function SidePanel({
   stateLabel = "Rookie",
   coinsLabel = "400",
   isTurn,
-  timerProgress,
-  timerSecondsLeft,
+  timerDeadlineMs,
+  timerDurationMs,
   hudSlot,
   bottomSlot,
   side,
@@ -139,9 +139,9 @@ export function SidePanel({
           </div>
         </div>
 
-        {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (<TurnTimerBar
-          progress={timerProgress}
-          secondsLeft={timerSecondsLeft}
+        {isTurn && typeof timerDeadlineMs === "number" && typeof timerDurationMs === "number" && (<TurnTimerBar
+          deadlineMs={timerDeadlineMs}
+          durationMs={timerDurationMs}
           side={side}/>)}
         {hudSlot && (<div
           className="pointer-events-none absolute z-30"
@@ -221,10 +221,10 @@ export function SidePanel({
       </div>
     </div>
 
-    {isTurn && timerProgress !== undefined && timerSecondsLeft !== undefined && (<TurnTimerBar
+    {isTurn && typeof timerDeadlineMs === "number" && typeof timerDurationMs === "number" && (<TurnTimerBar
       compact={compact}
-      progress={timerProgress}
-      secondsLeft={timerSecondsLeft}
+      deadlineMs={timerDeadlineMs}
+      durationMs={timerDurationMs}
       side={side}/>)}
     {hudSlot && (<div
       className="pointer-events-none absolute z-30"

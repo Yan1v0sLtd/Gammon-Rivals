@@ -72,9 +72,11 @@ function lcg(seed: number) {
 export class BoardRenderer {
   private readonly app: Application
   private readonly root: Container
-  // Board, position, and animation content have independent rebuild lifecycles.
+  // Each content layer has an independent rebuild lifecycle.
   private readonly boardLayer: Container
-  private readonly positionLayer: Container
+  private readonly checkerLayer: Container
+  private readonly selectionLayer: Container
+  private readonly interactionLayer: Container
   private readonly animationLayer: Container
   private layout: Layout
   private layoutWidth: number
@@ -82,21 +84,25 @@ export class BoardRenderer {
   private themeLayout: ThemeLayout | undefined
   private readonly loaded: LoadedTheme
   private onPointClick: PointClickHandler | null = null
+  private interactionEnabled = false
   private previousState: BoardState | null = null
   private currentState: BoardState | null = null
   private currentSelection: RenderSelection | undefined
   private animation: MoveAnimation | null = null
   private dealAnimation: DealAnimation | null = null
-  private animationFrame: number | null = null
+  private scheduledFrame: number | null = null
+  private destroyed = false
 
   constructor(app: Application, loaded: LoadedTheme) {
     this.app = app
     this.loaded = loaded
     this.root = new Container()
     this.boardLayer = new Container()
-    this.positionLayer = new Container()
+    this.checkerLayer = new Container()
+    this.selectionLayer = new Container()
+    this.interactionLayer = new Container()
     this.animationLayer = new Container()
-    this.root.addChild(this.boardLayer, this.positionLayer, this.animationLayer)
+    this.root.addChild(this.boardLayer, this.checkerLayer, this.selectionLayer, this.interactionLayer, this.animationLayer)
     this.app.stage.addChild(this.root)
     this.themeLayout = loaded.theme.layout
     this.layout = computeLayout(app.screen.width, app.screen.height, this.themeLayout)
@@ -111,9 +117,12 @@ export class BoardRenderer {
     this.layoutWidth = width
     this.layoutHeight = height
     this.rebuildBoardLayer()
-    this.rebuildPositionLayer(this.currentState, this.currentSelection, this.currentAnimation()?.skip ?? null)
+    this.rebuildCheckerLayer(this.currentState, this.currentAnimation()?.skip ?? null)
+    this.rebuildSelectionLayer(this.currentState, this.currentSelection)
+    this.rebuildInteractionLayer()
     this.clearAnimationLayer()
     this.drawAnimationFrame()
+    this.invalidate()
   }
 
   setThemeLayout(themeLayout: ThemeLayout | undefined) {
@@ -122,17 +131,27 @@ export class BoardRenderer {
     this.layoutWidth = this.layout.width
     this.layoutHeight = this.layout.height
     this.rebuildBoardLayer()
-    this.rebuildPositionLayer(this.currentState, this.currentSelection, this.currentAnimation()?.skip ?? null)
+    this.rebuildCheckerLayer(this.currentState, this.currentAnimation()?.skip ?? null)
+    this.rebuildSelectionLayer(this.currentState, this.currentSelection)
+    this.rebuildInteractionLayer()
     this.clearAnimationLayer()
     this.drawAnimationFrame()
+    this.invalidate()
   }
 
   setOnPointClick(fn: PointClickHandler | null) {
     this.onPointClick = fn
   }
 
-  render(state: BoardState, selection?: RenderSelection) {
-    const alignmentMode = Boolean(selection?.alignmentDebug?.enabled)
+  setInteractionEnabled(enabled: boolean) {
+    if (enabled === this.interactionEnabled) return
+    this.interactionEnabled = enabled
+    this.rebuildInteractionLayer()
+    this.invalidate()
+  }
+
+  setPosition(state: BoardState) {
+    const alignmentMode = Boolean(this.currentSelection?.alignmentDebug?.enabled)
     const shouldDeal =
       !alignmentMode
       && this.isStartingPosition(state)
@@ -148,10 +167,17 @@ export class BoardRenderer {
     }
     this.previousState = state
     this.currentState = state
-    this.currentSelection = selection
-    this.rebuildPositionLayer(state, selection, this.currentAnimation()?.skip ?? null)
+    this.rebuildCheckerLayer(state, this.currentAnimation()?.skip ?? null)
+    this.rebuildSelectionLayer(state, this.currentSelection)
     this.clearAnimationLayer()
     this.drawAnimationFrame()
+    this.invalidate()
+  }
+
+  setSelection(selection: RenderSelection | undefined) {
+    this.currentSelection = selection
+    this.rebuildSelectionLayer(this.currentState, selection)
+    this.invalidate()
   }
 
   private rebuildBoardLayer() {
@@ -171,24 +197,29 @@ export class BoardRenderer {
     }
   }
 
-  private rebuildPositionLayer(
-    state: BoardState | null,
-    selection: RenderSelection | undefined,
-    skip: CheckerSkip | null,
-  ) {
-    this.clearLayer(this.positionLayer)
+  private rebuildCheckerLayer(state: BoardState | null, skip: CheckerSkip | null) {
+    this.clearLayer(this.checkerLayer)
     if (!state) return
     const dealAnimation = this.dealAnimation && this.currentDealAnimation()
     if (!dealAnimation) {
-      this.drawCheckers(this.positionLayer, state, skip)
+      this.drawCheckers(this.checkerLayer, state, skip)
     }
-    this.drawBarCheckers(this.positionLayer, state, skip)
-    this.drawOffCheckers(this.positionLayer, state, skip)
-    if (selection) this.drawSelectionOverlay(this.positionLayer, state, selection)
+    this.drawBarCheckers(this.checkerLayer, state, skip)
+    this.drawOffCheckers(this.checkerLayer, state, skip)
+  }
+
+  private rebuildSelectionLayer(state: BoardState | null, selection: RenderSelection | undefined) {
+    this.clearLayer(this.selectionLayer)
+    if (!state || !selection) return
+    this.drawSelectionOverlay(this.selectionLayer, state, selection)
     if (selection?.alignmentDebug?.enabled) {
-      this.drawAlignmentDebugOverlay(this.positionLayer, state, selection.alignmentDebug)
+      this.drawAlignmentDebugOverlay(this.selectionLayer, state, selection.alignmentDebug)
     }
-    if (this.onPointClick) this.drawHitAreas(this.positionLayer)
+  }
+
+  private rebuildInteractionLayer() {
+    this.clearLayer(this.interactionLayer)
+    if (this.interactionEnabled) this.drawHitAreas(this.interactionLayer)
   }
 
   private clearAnimationLayer() {
@@ -233,28 +264,32 @@ export class BoardRenderer {
     return animation
   }
 
-  private startAnimationLoop() {
-    if (this.animationFrame !== null) return
+  private invalidate() {
+    if (this.destroyed || this.scheduledFrame !== null) return
+    this.scheduledFrame = requestAnimationFrame(() => {
+      this.scheduledFrame = null
+      if (this.destroyed) return
 
-    const tick = () => {
-      this.animationFrame = null
-      if ((!this.animation && !this.dealAnimation) || !this.currentState) return
       const hadAnimation = Boolean(this.animation)
       const hadDealAnimation = Boolean(this.dealAnimation)
       const animation = this.currentAnimation()
       const dealAnimation = this.currentDealAnimation()
-      this.clearAnimationLayer()
-      if ((!animation && hadAnimation) || (!dealAnimation && hadDealAnimation)) {
-        this.rebuildPositionLayer(this.currentState, this.currentSelection, animation?.skip ?? null)
+      if (hadAnimation || hadDealAnimation) {
+        this.clearAnimationLayer()
+        if ((!animation && hadAnimation) || (!dealAnimation && hadDealAnimation)) {
+          this.rebuildCheckerLayer(this.currentState, animation?.skip ?? null)
+          this.rebuildSelectionLayer(this.currentState, this.currentSelection)
+        }
+        if (animation || dealAnimation) this.drawAnimationFrame()
       }
-      if (!animation && !dealAnimation) return
-      this.drawAnimationFrame()
-      if (this.animation || this.dealAnimation) {
-        this.animationFrame = requestAnimationFrame(tick)
-      }
-    }
 
-    this.animationFrame = requestAnimationFrame(tick)
+      this.app.renderer.render({container: this.app.stage})
+      if (this.animation || this.dealAnimation) this.invalidate()
+    })
+  }
+
+  private startAnimationLoop() {
+    this.invalidate()
   }
 
   private get colors(): ThemeColors {
@@ -1139,8 +1174,7 @@ export class BoardRenderer {
   }
 
   private drawHitAreas(target: Container) {
-    const cb = this.onPointClick
-    if (!cb) return
+    if (!this.onPointClick) return
 
     // All hit-area math lives in packages/board-renderer/src/hit-areas.ts as a pure
     // function, kept separate from this imperative loop so it stays readable and
@@ -1156,17 +1190,20 @@ export class BoardRenderer {
       g.cursor = "pointer"
       const hitTarget = rect.target
       g.on("pointerdown", () => {
-        cb(hitTarget)
+        this.onPointClick?.(hitTarget)
       })
       target.addChild(g)
     }
   }
 
   destroy() {
-    if (this.animationFrame !== null) {
-      cancelAnimationFrame(this.animationFrame)
-      this.animationFrame = null
+    this.destroyed = true
+    if (this.scheduledFrame !== null) {
+      cancelAnimationFrame(this.scheduledFrame)
+      this.scheduledFrame = null
     }
+    this.animation = null
+    this.dealAnimation = null
     this.root.destroy({children: true, texture: false, textureSource: false})
   }
 }

@@ -18,6 +18,7 @@ const selectGameplay = (state: GameplayRootShape) => state.gameplay
 export const selectMatch = createSelector([selectGameplay], (g) => g.match)
 export const selectMatchId = createSelector([selectGameplay], (g) => g.matchId)
 export const selectBoard = createSelector([selectGameplay], (g) => g.board)
+export const selectBoardTurn = createSelector([selectGameplay], (g) => g.board.turn)
 export const selectRoll = createSelector([selectGameplay], (g) => g.roll)
 export const selectRemaining = createSelector([selectGameplay], (g) => g.remaining)
 export const selectSelectedFrom = createSelector([selectGameplay], (g) => g.selectedFrom)
@@ -28,6 +29,22 @@ export const selectIsAIThinking = createSelector([selectGameplay], (g) => g.isAI
 export const selectAiPreviewReady = createSelector([selectGameplay], (g) => g.aiPreviewReady)
 export const selectTurnDeadlineMs = createSelector([selectGameplay], (g) => g.turnDeadlineMs)
 export const selectTurnSeconds = createSelector([selectGameplay], (g) => g.turnSeconds)
+export const selectTurnTimerEnabled = createSelector([selectGameplay], (g) => g.turnTimerEnabled)
+
+export type GameplayTimerViewModel = {
+  readonly deadlineMs: number | null,
+  readonly durationMs: number,
+  readonly activePlayer: Player,
+}
+
+export const selectTimerViewModel = createSelector(
+  [selectTurnDeadlineMs, selectTurnSeconds, selectTurnTimerEnabled, selectBoardTurn],
+  (deadlineMs, turnSeconds, enabled, activePlayer): GameplayTimerViewModel => ({
+    deadlineMs: enabled ? deadlineMs : null,
+    durationMs: turnSeconds * 1000,
+    activePlayer,
+  }),
+)
 
 export const selectMatchOver = createSelector([selectMatch], (match: MatchState) => match.winner !== null)
 
@@ -36,7 +53,7 @@ export const selectGameFrozen = createSelector([selectLastGameResult, selectMatc
 // Before the first roll of a game nobody has moved, so board.turn IS the
 // opener; once the first turn is logged, turnLog[0].player is the opener and
 // stays correct after the board's turn flips.
-export const selectOpeningPlayer = createSelector([selectTurnLog, selectBoard], (turnLog: readonly TurnRecord[], board: BoardState): Player => turnLog.length > 0 ? turnLog[0].player : board.turn)
+export const selectOpeningPlayer = createSelector([selectTurnLog, selectBoardTurn], (turnLog: readonly TurnRecord[], boardTurn: Player): Player => turnLog.length > 0 ? turnLog[0].player : boardTurn)
 
 export const selectInCrawfordGame = createSelector([selectMatch], (match: MatchState) => isCrawfordGame(match))
 
@@ -59,9 +76,24 @@ export const selectValidDestinations = createSelector([selectLegalMoves, selectS
   return legal.filter((m) => m.from === selectedFrom).map((m) => m.to)
 })
 
-export const selectIsAITurn = createSelector([selectAiConfig, selectBoard, selectGameFrozen], (ai: AIConfig | null, board: BoardState, frozen: boolean) => ai !== null && board.turn === ai.player && !frozen)
+export const selectBoardPositionViewModel = createSelector(
+  [selectBoard, selectRoll, selectRemaining],
+  (board, roll, remaining) => ({board, roll, remaining}),
+)
+
+export const selectIsAITurn = createSelector([selectAiConfig, selectBoardTurn, selectGameFrozen], (ai: AIConfig | null, boardTurn: Player, frozen: boolean) => ai !== null && boardTurn === ai.player && !frozen)
 
 export const selectHumanCanInteract = createSelector([selectIsAITurn, selectIsAIThinking], (isAITurn: boolean, isAIThinking: boolean) => !isAITurn && !isAIThinking)
+
+export const selectInteractionViewModel = createSelector(
+  [selectHumanCanInteract, selectIsAITurn, selectBoardTurn, selectGameFrozen],
+  (canInteract, isAITurn, activePlayer, frozen) => ({
+    canInteract,
+    isAITurn,
+    activePlayer,
+    isFrozen: frozen,
+  }),
+)
 
 export const selectOpponentPreviewOrigins = createSelector([selectIsAITurn, selectAiPreviewReady, selectLegalOrigins], (isAITurn: boolean, previewReady: boolean, legalOrigins: readonly Position[]) => isAITurn && previewReady ? legalOrigins : createEmptyArray<Position>())
 
@@ -71,6 +103,17 @@ export const selectOpponentPreviewDestinations = createSelector([selectIsAITurn,
   for (const m of legal) set.add(m.to)
   return Array.from(set)
 })
+
+export const selectSelectionViewModel = createSelector(
+  [selectSelectedFrom, selectLegalOrigins, selectValidDestinations, selectOpponentPreviewOrigins, selectOpponentPreviewDestinations],
+  (selectedFrom, legalOrigins, validDestinations, opponentOrigins, opponentDestinations) => ({
+    selectedFrom,
+    legalOrigins,
+    validDestinations,
+    opponentOrigins,
+    opponentDestinations,
+  }),
+)
 
 export const selectCanEndTurn = createSelector([selectRoll, selectGameFrozen, selectRemaining, selectLegalMoves], (roll, frozen: boolean, remaining: readonly Die[], legal: readonly Move[]) => roll !== null && !frozen && (remaining.length === 0 || legal.length === 0))
 

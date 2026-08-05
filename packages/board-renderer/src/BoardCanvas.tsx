@@ -15,6 +15,7 @@ type Props = {
   layoutOverride?: ThemeLayout,
   selection?: RenderSelection,
   onPointClick?: (pos: Position) => void,
+  interactionEnabled?: boolean,
   /** Fires once Pixi has finished initialising and the first board
    *  frame has been rendered. Lets the surrounding route hold its
    *  loader overlay open until the WebGL surface is actually painted,
@@ -28,6 +29,7 @@ export function BoardCanvas({
   layoutOverride,
   selection,
   onPointClick,
+  interactionEnabled: interactionEnabledProp,
   onReady,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -38,6 +40,8 @@ export function BoardCanvas({
   const selectionRef = useRef(selection)
   const clickRef = useRef(onPointClick)
   const layoutOverrideRef = useRef(layoutOverride)
+  const interactionEnabled = interactionEnabledProp ?? Boolean(onPointClick)
+  const interactionEnabledRef = useRef(interactionEnabled)
   // Held in a ref so the init effect (theme-keyed) doesn't have to
   // re-run just because the parent passed a new onReady identity.
   const onReadyRef = useRef(onReady)
@@ -53,6 +57,8 @@ export function BoardCanvas({
     let initialized = false
     let renderer: BoardRenderer | null = null
     let resizeObserver: ResizeObserver | null = null
+    let outerReadyFrame: number | null = null
+    let innerReadyFrame: number | null = null
     const app = new Application()
 
     const renderLatest = () => {
@@ -61,8 +67,7 @@ export function BoardCanvas({
       const height = Math.max(1, container.clientHeight)
       app.renderer.resize(width, height)
       renderer.resize(width, height)
-      renderer.render(stateRef.current, selectionRef.current)
-    };
+    }
 
     (async () => {
       // Mobile GPUs choke on a full-DPR board: a DPR-3 phone would render ~9x
@@ -87,6 +92,7 @@ export function BoardCanvas({
         app.destroy(true)
         return
       }
+      app.ticker.stop()
       container.appendChild(app.canvas)
       appRef.current = app
 
@@ -94,9 +100,11 @@ export function BoardCanvas({
       renderer.setThemeLayout(layoutOverrideRef.current ?? theme.layout)
       renderer.setOnPointClick((pos) => clickRef.current?.(pos))
       rendererRef.current = renderer
-      renderLatest()
+      renderer.setSelection(selectionRef.current)
+      renderer.setPosition(stateRef.current)
+      renderer.setInteractionEnabled(interactionEnabledRef.current)
 
-      // renderer.render() only updates Pixi's scene graph; the actual
+      // app.renderer.render() only updates Pixi's scene graph; the actual
       // GPU draw happens on the next ticker tick (rAF). If we fire
       // onReady immediately, the overlay can start fading on a canvas
       // that's still blank, briefly exposing the underlying layout.
@@ -110,8 +118,8 @@ export function BoardCanvas({
       catch {
         // ignore — fall through to the rAF wait below
       }
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+      outerReadyFrame = requestAnimationFrame(() => {
+        innerReadyFrame = requestAnimationFrame(() => {
           if (cancelled) return
           onReadyRef.current?.()
         })
@@ -123,6 +131,8 @@ export function BoardCanvas({
 
     return () => {
       cancelled = true
+      if (outerReadyFrame !== null) cancelAnimationFrame(outerReadyFrame)
+      if (innerReadyFrame !== null) cancelAnimationFrame(innerReadyFrame)
       resizeObserver?.disconnect()
       if (rendererRef.current === renderer) {
         appRef.current = null
@@ -135,16 +145,27 @@ export function BoardCanvas({
 
   useEffect(() => {
     stateRef.current = state
+    rendererRef.current?.setPosition(state)
+  }, [state])
+
+  useEffect(() => {
     selectionRef.current = selection
-    clickRef.current = onPointClick
-    rendererRef.current?.render(state, selection)
-  }, [state, selection, onPointClick])
+    rendererRef.current?.setSelection(selection)
+  }, [selection])
 
   useEffect(() => {
     layoutOverrideRef.current = layoutOverride
     rendererRef.current?.setThemeLayout(layoutOverride ?? theme.layout)
-    rendererRef.current?.render(stateRef.current, selectionRef.current)
   }, [layoutOverride, theme.layout])
+
+  useEffect(() => {
+    interactionEnabledRef.current = interactionEnabled
+    rendererRef.current?.setInteractionEnabled(interactionEnabled)
+  }, [interactionEnabled])
+
+  useEffect(() => {
+    clickRef.current = onPointClick
+  }, [onPointClick])
 
   const boardBackground = theme.assets?.board
     ? {
