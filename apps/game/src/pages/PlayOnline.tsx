@@ -8,9 +8,10 @@ import {BoardLayout} from "../components/BoardLayout"
 import {CubeOfferDecision} from "../components/CubeOfferDecision"
 import {DICE_ANIMATION_MS} from "../components/diceTiming"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
-import {selectAuthUserId, selectCurrentProfile, selectAuthInitializing} from "../features/auth/authSelectors"
+import {selectAuthUserId, selectAuthInitializing} from "../features/auth/authSelectors"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
 import {OnlineBoardSurface} from "../features/onlineMatch/OnlineBoardSurface"
+import {OnlineIntroBanner} from "../features/onlineMatch/OnlineIntroBanner"
 import {onlineAutoRollEligibilityChanged} from "../features/onlineMatch/onlineMatchActions"
 import {
   FALLBACK_POLL_MS,
@@ -33,6 +34,7 @@ import {
   selectCanEndTurn,
   selectCanOfferDouble,
   selectCanRoll,
+  selectCubeDecisionVisible,
   selectCubeOffer,
   selectCubeOwner,
   selectCubeValue,
@@ -49,9 +51,7 @@ import {
 } from "../features/onlineMatch/onlineMatchSelectors"
 import {onlineMatchActions} from "../features/onlineMatch/onlineMatchSlice"
 import {OnlinePlayerPanel} from "../features/onlineMatch/OnlinePlayerPanel"
-import {useGetProfileQuery} from "../features/playerData/playerDataApi"
 import {parseMatchEntryParams} from "../game/matchEntryPath"
-import {aiIdentityFromSeed} from "../lib/identity"
 import {useAutoRoll} from "../lib/useAutoRoll"
 import {toApiError} from "../store/baseApi"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
@@ -61,7 +61,6 @@ export function PlayOnline() {
   const [params] = useSearchParams()
   const userId = useAppSelector(selectAuthUserId)
   const user = userId ? {id: userId} : null
-  const profile = useAppSelector(selectCurrentProfile)
   const authLoading = useAppSelector(selectAuthInitializing)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -124,6 +123,7 @@ export function PlayOnline() {
   const cubeValue = useAppSelector((state) => selectCubeValue(state, matchId))
   const cubeOwner = useAppSelector((state) => selectCubeOwner(state, matchId))
   const cubeOffer = useAppSelector((state) => selectCubeOffer(state, matchId))
+  const showCubeDecisionCenter = useAppSelector((state) => selectCubeDecisionVisible(state, matchId))
   const canOfferDouble = useAppSelector((state) => selectCanOfferDouble(state, matchId))
   const betweenGames = useAppSelector((state) => selectBetweenGames(state, matchId))
   const opponentPreviewKey = useAppSelector((state) => selectOpponentPreviewKey(state, matchId))
@@ -251,11 +251,6 @@ export function PlayOnline() {
 
   const {theme: selectedTheme} = useBoardThemeConfig(boardParam)
 
-  // The local player's profile is already cached via RTK Query; only
-  // the remote seat needs a cache entry, keyed by player id.
-  const remoteId = match ? (user?.id === match.owner_id ? match.opponent_id : match.owner_id) : null
-  const {data: remoteProfile} = useGetProfileQuery(remoteId ?? "", {skip: !remoteId})
-
   // Auto-roll preference: the delay + eligibility re-check live in listeners.
   const [autoRollOn, setAutoRollOn] = useAutoRoll()
   useEffect(() => {
@@ -346,29 +341,17 @@ export function PlayOnline() {
 
   const isSpectator = role === "spectator"
 
-  // Bot identity: deterministic from matchId so it doesn't reshuffle.
-  const isBotMatch = match.is_bot
-  const botIdentity = isBotMatch ? aiIdentityFromSeed(matchId ?? "") : null
-
   // Map owner/opponent profiles to seats based on local color.
   const ownerColor = match.owner_color === "black" ? "black" : "white"
   const opponentColor = ownerColor === "white" ? "black" : "white"
   const isOwnerLocal = user.id === match.owner_id
-  const selfProfile = profile
-  const opponentProf = remoteProfile ?? null
   const selfColor = isOwnerLocal ? ownerColor : opponentColor
   const isRollForSelf = effectiveTurn === selfColor
-  const selfName = selfProfile?.display_name
-  const oppName = isBotMatch ? botIdentity!.name : opponentProf?.display_name
 
-  const showCubeDecisionCenter = cubeOffer !== null && localColor !== null && cubeOffer !== localColor && !matchFinished
   const showCubePending = cubeOffer !== null && cubeOffer === localColor && !matchFinished
   const showBetweenGames = betweenGames && !matchFinished && !!currentGame
   const showMatchOver = matchFinished && !!match.winner
 
-  const firstRollerColor: "white" | "black" = "white"
-  const firstRollerName = firstRollerColor === selfColor ? selfName ?? "You" : oppName ?? "Opponent"
-  const firstRollerIsLocal = firstRollerColor === selfColor
   const showIntroBanner = introVisible && !!match.opponent_id && !currentGame && !matchFinished
 
   const showActions = role !== "spectator" && !betweenGames && !matchFinished && cubeOffer === null
@@ -389,23 +372,12 @@ export function PlayOnline() {
       ) : null}
       backgroundImage={gameplayBackground}
       centerOverlay={showIntroBanner ? (
-        <button
-          className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
-          type="button"
-          onClick={() => {
+        <OnlineIntroBanner
+          matchId={stableMatchId}
+          onDismiss={() => {
             setIntroVisible(false)
-          }}>
-          <div className="font-display text-2xl uppercase tracking-wider mb-1">
-            {firstRollerIsLocal ? "You roll first" : `${firstRollerName} rolls first`}
-          </div>
-          <div className="text-sm">
-            {firstRollerIsLocal
-              ? `${selfName ?? "You"} (${firstRollerColor}) start the match.`
-              : `${firstRollerName} (${firstRollerColor}) starts the match.`}
-          </div>
-          <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
-        </button>
-      ) : showCubeDecisionCenter ? (
+          }}/>
+      ) : showCubeDecisionCenter && cubeOffer !== null ? (
         <CubeOfferDecision
           currentValue={cubeValue}
           offeredBy={cubeOffer}

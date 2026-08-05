@@ -2,12 +2,11 @@ import {Application, Container, FillGradient, Graphics, Sprite, Texture, TilingS
 
 import type {BoardState, Player, Position} from "../../../engine/src/types"
 import {BAR, OFF} from "../../../engine/src/types"
+import {measure} from "../../../shared/src/perf"
 import {checkerCenter, computeLayout, type Layout, pointCoords} from "../coordinates"
 import {computeHitRects} from "../hit-areas"
 import type {LoadedTheme} from "../theme/loader"
 import type {ThemeAssetKey, ThemeColors, ThemeLayout} from "../theme/types"
-
-import {measure} from "./perf"
 
 export type RenderSelection = {
   readonly selectedFrom: Position | null,

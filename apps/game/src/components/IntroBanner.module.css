@@ -1,0 +1,42 @@
+.button {
+  background: linear-gradient(to bottom, #fef3c7, #fcd34d);
+  color: #451a03;
+  padding: 1.5rem 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  border: 2px solid #b45309;
+  text-align: center;
+  max-width: 24rem;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.05);
+}
+
+.button:active {
+  transform: scale(0.95);
+}
+
+.title {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 1.5rem;
+  line-height: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.dismissHint {
+  font-size: 11px;
+  color: rgb(120 53 15 / 0.6);
+  margin-top: 0.5rem;
+}

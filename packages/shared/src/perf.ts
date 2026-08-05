@@ -1,3 +1,4 @@
+// DEV-only instrumentation; React StrictMode double-invokes renders, so compare counts relatively, not absolutely.
 export type PerfCounts = Readonly<Record<string, number>>
 
 const counts = import.meta.env.DEV ? new Map<string, number>() : undefined
@@ -10,8 +11,8 @@ export function measure<T>(name: string, callback: () => T): T {
   currentCounts.set(name, (currentCounts.get(name) ?? 0) + 1)
 
   const id = markId++
-  const startMark = `board-renderer:${name}:start:${id}`
-  const endMark = `board-renderer:${name}:end:${id}`
+  const startMark = `perf:${name}:start:${id}`
+  const endMark = `perf:${name}:end:${id}`
   let startMarked = false
   try {
     performance.mark(startMark)
@@ -34,6 +35,24 @@ export function measure<T>(name: string, callback: () => T): T {
       }
     }
   }
+}
+
+export function count(name: string): void {
+  if (!import.meta.env.DEV) return
+
+  const currentCounts = counts!
+  currentCounts.set(name, (currentCounts.get(name) ?? 0) + 1)
+  try {
+    performance.mark(name)
+  }
+  catch {
+    // Instrumentation must not affect application behavior.
+  }
+}
+
+export function resetCounts(): void {
+  if (!import.meta.env.DEV) return
+  counts!.clear()
 }
 
 export function getCounts(): PerfCounts {

@@ -20,12 +20,12 @@ import {
   selectCanOfferDouble,
   selectCanRoll,
   selectCanUndo,
+  selectCubeDecisionVisible,
   selectHumanCanInteract,
   selectLastGameResult,
+  selectLocalColor,
   selectMatch,
   selectMatchOver,
-  selectOpeningPlayer,
-  selectOpponentIdentity,
   selectPendingOffer,
 } from "../features/gameplay/gameplaySelectors"
 import {
@@ -34,6 +34,7 @@ import {
   gameplayActions,
 } from "../features/gameplay/gameplaySlice"
 import {HotSeatBoardSurface} from "../features/gameplay/HotSeatBoardSurface"
+import {HotSeatIntroBanner} from "../features/gameplay/HotSeatIntroBanner"
 import {HotSeatMatchHeader} from "../features/gameplay/HotSeatMatchHeader"
 import {HotSeatPlayerPanel} from "../features/gameplay/HotSeatPlayerPanel"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
@@ -240,6 +241,10 @@ export function HotSeat() {
   const canEndTurn = useAppSelector(selectCanEndTurn)
   const canOfferDouble = useAppSelector(selectCanOfferDouble)
   const canUndo = useAppSelector(selectCanUndo)
+  const showCubeDecision = useAppSelector(selectCubeDecisionVisible)
+  // Local player is white in 2-player hot-seat (and when there's no AI);
+  // when playing vs AI, the AI plays black and local player is white.
+  const localColor = useAppSelector(selectLocalColor)
   const pendingOffer = useAppSelector(selectPendingOffer)
   const lastGameResult = useAppSelector(selectLastGameResult)
   const matchOver = useAppSelector(selectMatchOver)
@@ -247,8 +252,6 @@ export function HotSeat() {
   const playerCanRoll = useAppSelector(selectCanRoll)
   const alignmentPointIndex = alignmentDebug.side === "bottom" ? 12 + alignmentDebug.column : 11 - alignmentDebug.column
   const alignmentStackCount = board.points[alignmentPointIndex]?.count ?? 5
-  const opponentIdentity = useAppSelector(selectOpponentIdentity)
-
   // Match-start "rolls first" banner — parity with the PvP (PlayOnline) intro.
   // The opening player is now RANDOM (randomFirstBoard in gameplaySlice), so
   // the banner names whoever actually starts (you or the opponent).
@@ -341,21 +344,9 @@ export function HotSeat() {
   }, [autoRollOn, dispatch, gameReady, routeKey])
 
   const showGameEndModal = (lastGameResult !== null || matchOver) && lastGameResult
-  const showCubeDecision = pendingOffer !== null && !lastGameResult && !(aiConfig && pendingOffer !== aiConfig.player)
   const showIntroBanner = introVisible && match.gameNumber === 1 && !lastGameResult && !matchOver && !alignmentEnabled
 
-  // Local player is white in 2-player hot-seat (and when there's no AI);
-  // when playing vs AI, the AI plays black and local player is white.
-  const localColor = aiConfig ? (aiConfig.player === "black" ? "white" : "black") : "white"
   const isRollForSelf = board.turn === localColor
-  // Who opens THIS match (game 1). The opening turn is randomized per game by
-  // the slice's randomFirstBoard (gameplayActions.gameplayRouteEntered's prepare callback);
-  // selectOpeningPlayer derives the opener live — turnLog[0].player once the
-  // first turn is logged, board.turn before any roll — so the banner label
-  // stays correct even after the opener (esp. the AI) takes its turn and
-  // flips board.turn.
-  const starterColor = useAppSelector(selectOpeningPlayer)
-  const starterIsLocal = starterColor === localColor
   // Only hand a real background URL to BoardLayout once the theme has
   // settled AND the image is preloaded. Before that we'd be passing the
   // fallback (premium green) URL, which the loader overlay covers — but
@@ -380,7 +371,7 @@ export function HotSeat() {
           onUndo={handleUndo}/>
       ) : null}
       backgroundImage={gameplayBackground}
-      centerOverlay={showCubeDecision ? (
+      centerOverlay={showCubeDecision && pendingOffer !== null ? (
         <CubeOfferDecision
           currentValue={match.cube.value}
           offeredBy={pendingOffer}
@@ -399,20 +390,10 @@ export function HotSeat() {
           showOverlay()
           navigate("/play")
         }}
-        onNextGame={handleNextGame}/>) : showIntroBanner ? (<button
-        className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
-        type="button"
-        onClick={() => {
+        onNextGame={handleNextGame}/>) : showIntroBanner ? (<HotSeatIntroBanner
+        onDismiss={() => {
           setIntroVisible(false)
-        }}>
-        <div className="font-display text-2xl uppercase tracking-wider mb-1">
-          {starterIsLocal ? "You roll first" : `${opponentIdentity.name} rolls first`}
-        </div>
-        <div className="text-sm">
-          {starterIsLocal ? `You start the match as ${starterColor}.` : `${opponentIdentity.name} starts the match as ${starterColor}.`}
-        </div>
-        <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
-      </button>) : null}
+        }}/>) : null}
       header={<HotSeatMatchHeader/>}
       opponentPanel={<HotSeatPlayerPanel
         seat="opponent"/>}
