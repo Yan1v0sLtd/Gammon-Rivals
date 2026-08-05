@@ -1,6 +1,9 @@
 import type {PlayerIdentity} from "../lib/identity"
+import {useMediaQuery} from "../lib/useMediaQuery"
 
 import {SidePanel} from "./SidePanel"
+
+const MOBILE_LAYOUT_QUERY = "(max-aspect-ratio: 1.55/1)"
 
 type PlayerSeat = {
   identity: PlayerIdentity | null,
@@ -38,6 +41,10 @@ type Props = {
  * Mobile-first game table. Narrow screens get compact player HUDs above
  * the board so the playing surface owns the viewport; wider screens grow
  * into the reference-style side panels around a large central board.
+ *
+ * Only the layout matching the current aspect ratio is mounted — the hidden
+ * variant is not rendered at all, so we don't build its panel DOM (avatars,
+ * stat images, timers) on every screen.
  */
 export function BoardLayout({
   opponent,
@@ -48,6 +55,8 @@ export function BoardLayout({
   centerOverlay,
   backgroundImage,
 }: Props) {
+  const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_QUERY)
+
   return (<main className="game-screen">
     {backgroundImage && (<>
       <img
@@ -62,7 +71,7 @@ export function BoardLayout({
       {header}
 
       <div className="game-stage">
-        <div className="game-mobile-players">
+        {isMobileLayout ? (<div className="game-mobile-players">
           <SidePanel
             compact
             side="left"
@@ -71,13 +80,19 @@ export function BoardLayout({
             compact
             side="right"
             {...self} />
-        </div>
+        </div>) : (<>
+          <div className="game-side-slot game-side-slot--left">
+            <SidePanel
+              side="left"
+              {...opponent} />
+          </div>
 
-        <div className="game-side-slot game-side-slot--left">
-          <SidePanel
-            side="left"
-            {...opponent} />
-        </div>
+          <div className="game-side-slot game-side-slot--right">
+            <SidePanel
+              side="right"
+              {...self} />
+          </div>
+        </>)}
 
         <div className="game-board-column">
           <div className="game-board-stage">
@@ -91,12 +106,6 @@ export function BoardLayout({
           {centerOverlay && (<div className="game-center-layer">
             <div className="game-center-inner">{centerOverlay}</div>
           </div>)}
-        </div>
-
-        <div className="game-side-slot game-side-slot--right">
-          <SidePanel
-            side="right"
-            {...self} />
         </div>
       </div>
     </div>
