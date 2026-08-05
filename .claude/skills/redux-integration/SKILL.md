@@ -74,8 +74,8 @@ name.
 **No barrel files and no re-export shims.** Import the exact module:
 
 ```ts
-import { useGetWalletQuery } from '../features/playerData/playerDataApi';
-```sh
+import {useGetWalletQuery} from '../features/playerData/playerDataApi'
+```
 
 ## Data access (`<feature>Data.ts`)
 
@@ -83,13 +83,13 @@ The only place `supabase` is called for feature data. Plain async functions that
 throw on error; no Redux, React, or RTK Query imports.
 
 ```ts
-import { supabase } from '../../lib/supabase';
-import type { Database } from '../../../../../packages/shared/src/database';
+import {supabase} from '../../lib/supabase';
+import type {Database} from '../../../../../packages/shared/src/database';
 
 export type WalletRow = Database['public']['Tables']['user_wallets']['Row'];
 
 export async function fetchWallet(userId: string): Promise<WalletRow | null> {
-  const { data, error } = await supabase
+  const {data, error} = await supabase
     .from('user_wallets')
     .select('*')
     .eq('user_id', userId)
@@ -113,25 +113,25 @@ export async function fetchWallet(userId: string): Promise<WalletRow | null> {
 the shared `toApiError` helper exported from `store/baseApi.ts`.
 
 ```ts
-import { baseApi, toApiError } from '../../store/baseApi';
-import { fetchWallet, type WalletRow } from './playerData';
+import {baseApi, toApiError} from '../../store/baseApi';
+import {fetchWallet, type WalletRow} from './playerData';
 
 export const playerDataApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getWallet: build.query<WalletRow | null, string>({
       queryFn: async (userId) => {
         try {
-          return { data: await fetchWallet(userId) };
+          return {data: await fetchWallet(userId)};
         } catch (err) {
-          return { error: toApiError(err) };
+          return {error: toApiError(err)};
         }
       },
-      providesTags: (_r, _e, userId) => [{ type: 'Wallet', id: userId }],
+      providesTags: (_r, _e, userId) => [{type: 'Wallet', id: userId}],
     }),
   }),
 });
 
-export const { useGetWalletQuery } = playerDataApi;
+export const {useGetWalletQuery} = playerDataApi;
 ```
 
 - New tag types go in the `tagTypes` array in `store/baseApi.ts`. A tag that is
@@ -156,24 +156,24 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 export const DAILY_BONUS_CLAIMED_MODAL_MS = 1200;
 
 interface LobbyState {
-  modal: { kind: 'none' } | { kind: 'dailyBonus'; day: number };
+  modal: {kind: 'none'} | {kind: 'dailyBonus'; day: number};
 }
 
-const initialState = (): LobbyState => ({ modal: { kind: 'none' } });
+const initialState = (): LobbyState => ({modal: {kind: 'none'}});
 
 const lobbySlice = createSlice({
   name: 'lobby',
   initialState: initialState(),
   reducers: {
     lobbyRouteEntered: () => initialState(),
-    dailyBonusClaimSucceeded: (state, action: PayloadAction<{ day: number }>) => {
-      state.modal = { kind: 'dailyBonus', day: action.payload.day };
+    dailyBonusClaimSucceeded: (state, action: PayloadAction<{day: number}>) => {
+      state.modal = {kind: 'dailyBonus', day: action.payload.day};
     },
   },
 });
 
-export const { lobbyRouteEntered, dailyBonusClaimSucceeded } = lobbySlice.actions;
-export default lobbySlice.reducer;
+export const lobbySliceActions = lobbySlice.actions;
+export const lobbySliceReducre = lobbySlice.reducer;
 ```
 
 - Actions are **domain events**: `matchmakingRequested`, `replayRouteEntered`,
@@ -196,10 +196,10 @@ export default lobbySlice.reducer;
 ## Selectors (`<feature>Selectors.ts`)
 
 ```ts
-import { createSelector } from '@reduxjs/toolkit';
-import { createEmptyArray } from '../../lib/constants';
-import { playerDataApi } from './playerDataApi';
-import type { RootState } from '../../store/store';
+import {createSelector} from '@reduxjs/toolkit';
+import {createEmptyArray} from '../../lib/constants';
+import {playerDataApi} from './playerDataApi';
+import type {RootState} from '../../store/store';
 
 const selectUserId = (state: RootState) => state.auth.userId;
 
@@ -211,8 +211,9 @@ export const selectBalance = createSelector([selectWallet], (wallet) => wallet?.
 
 export const selectLevelConfigs = createSelector(
   [(state: RootState) => state],
-  (state): readonly LevelConfig[] =>
-    playerDataApi.endpoints.getLevelConfigs.select(undefined)(state).data ?? createEmptyArray<LevelConfig>(),
+  (state): readonly LevelConfig[] => {
+    playerDataApi.endpoints.getLevelConfigs.select(undefined)(state).data ?? createEmptyArray<LevelConfig>()
+  },
 );
 ```
 
@@ -238,7 +239,7 @@ polling loops.
 ```ts
 import {isAnyOf} from '@reduxjs/toolkit';
 import type {AppStartListening} from '../../store/listenerTypes';
-import {FOO_DELAY_MS, fooCancelled, fooRequested} from './fooSlice';
+import {FOO_DELAY_MS, fooActions} from './fooSlice';
 
 export function startFooListeners(startListening: AppStartListening): void {
   // Per-store scratch state stays in this closure, never at module scope, so
@@ -246,7 +247,7 @@ export function startFooListeners(startListening: AppStartListening): void {
   let attempts = 0;
 
   startListening({
-    matcher: isAnyOf(fooRequested, fooCancelled),
+    matcher: isAnyOf(fooActions.fooRequested, fooActions.fooCancelled),
     effect: async (action, {cancelActiveListeners, delay, dispatch, getState}) => {
       cancelActiveListeners();
       if (fooCancelled.match(action)) return;

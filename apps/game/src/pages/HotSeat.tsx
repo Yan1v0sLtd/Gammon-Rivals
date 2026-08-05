@@ -40,15 +40,7 @@ import {
 import {
   type AIConfig,
   DEFAULT_TURN_SECONDS,
-  diceRolled,
-  doubleAccepted,
-  doubleDropped,
-  doubleOffered,
-  gameContinued,
-  gameplayRouteEntered,
-  gameplayRouteExited,
-  lastMoveUndone,
-  turnEnded,
+  gameplayActions,
 } from "../features/gameplay/gameplaySlice"
 import {HotSeatBoardSurface} from "../features/gameplay/HotSeatBoardSurface"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
@@ -216,7 +208,7 @@ export function HotSeat() {
   // randomness or clock. useLayoutEffect so the option-derived
   // match/board/AI state is committed before the first paint.
   useLayoutEffect(() => {
-    dispatch(gameplayRouteEntered({
+    dispatch(gameplayActions.gameplayRouteEntered({
       sessionId: gameplaySessionId,
       presetMatchId,
       target,
@@ -225,30 +217,30 @@ export function HotSeat() {
       turnTimerEnabled,
     }))
     return () => {
-      dispatch(gameplayRouteExited())
+      dispatch(gameplayActions.gameplayRouteExited())
     }
   }, [dispatch, gameplaySessionId, presetMatchId, target, aiConfig, requestedTurnSeconds, turnTimerEnabled])
 
   const handleRoll = useCallback(() => {
-    dispatch(diceRolled())
+    dispatch(gameplayActions.diceRolled())
   }, [dispatch])
   const handleEndTurn = useCallback(() => {
-    dispatch(turnEnded())
+    dispatch(gameplayActions.turnEnded())
   }, [dispatch])
   const handleUndo = useCallback(() => {
-    dispatch(lastMoveUndone())
+    dispatch(gameplayActions.lastMoveUndone())
   }, [dispatch])
   const handleOfferDouble = useCallback(() => {
-    dispatch(doubleOffered())
+    dispatch(gameplayActions.doubleOffered())
   }, [dispatch])
   const handleAcceptDouble = useCallback(() => {
-    dispatch(doubleAccepted())
+    dispatch(gameplayActions.doubleAccepted())
   }, [dispatch])
   const handleDropDouble = useCallback(() => {
-    dispatch(doubleDropped())
+    dispatch(gameplayActions.doubleDropped())
   }, [dispatch])
   const handleNextGame = useCallback(() => {
-    dispatch(gameContinued())
+    dispatch(gameplayActions.gameContinued())
   }, [dispatch])
   // Rewards (XP + coins) granted by the server-side finish_match RPC.
   // Read from the mutation result in RTK Query so the end-of-game modal can
@@ -402,7 +394,7 @@ export function HotSeat() {
   const isLocalTurn = board.turn === localColor && !isAITurn
   const isRollForSelf = board.turn === localColor
   // Who opens THIS match (game 1). The opening turn is randomized per game by
-  // the slice's randomFirstBoard (gameplayRouteEntered's prepare callback);
+  // the slice's randomFirstBoard (gameplayActions.gameplayRouteEntered's prepare callback);
   // selectOpeningPlayer derives the opener live — turnLog[0].player once the
   // first turn is logged, board.turn before any roll — so the banner label
   // stays correct even after the opener (esp. the AI) takes its turn and

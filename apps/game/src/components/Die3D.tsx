@@ -16,7 +16,7 @@ type Props = {
  * physics loop via direct DOM transform writes on the ref prop —
  * this component never re-renders for animation frames.
  */
-const Die3D = function Die3D({
+export function Die3D({
   value,
   used,
   ref,
@@ -52,5 +52,3 @@ const Die3D = function Die3D({
     </div>
   </div>)
 }
-
-export {Die3D}

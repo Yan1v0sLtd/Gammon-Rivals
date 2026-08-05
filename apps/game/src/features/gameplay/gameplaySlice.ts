@@ -464,24 +464,6 @@ export const gameplaySlice = createSlice({
   },
 })
 
-export const {
-  gameplayRouteEntered,
-  gameplayRouteExited,
-  matchIdAssigned,
-  diceRolled,
-  checkerSelected,
-  checkerSelectionCancelled,
-  checkerMoved,
-  lastMoveUndone,
-  turnEnded,
-  turnForfeited,
-  doubleOffered,
-  doubleAccepted,
-  doubleDropped,
-  turnDeadlineChanged,
-  gameContinued,
-  aiThinkingChanged,
-  aiPreviewReadyChanged,
-} = gameplaySlice.actions
+export const gameplayActions = gameplaySlice.actions
 
 export const gameplayReducer = gameplaySlice.reducer

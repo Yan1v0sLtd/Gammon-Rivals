@@ -9,7 +9,7 @@ import {createEmptyArray} from "../../lib/constants"
 import {useAppDispatch, useAppSelector} from "../../store/hooks"
 
 import {selectBoardPositionViewModel, selectInteractionViewModel, selectPendingOffer, selectSelectionViewModel} from "./gameplaySelectors"
-import {checkerMoved, checkerSelected, checkerSelectionCancelled} from "./gameplaySlice"
+import {gameplayActions} from "./gameplaySlice"
 
 type Props = {
   readonly canvasMountAllowed: boolean,
@@ -50,16 +50,16 @@ export const HotSeatBoardSurface = memo(function HotSeatBoardSurface({
   const handlePointClick = useCallback((pos: Position) => {
     if (alignmentEnabled || interaction.isFrozen || !interaction.canInteract || pendingOffer !== null) return
     if (selection.selectedFrom === null) {
-      dispatch(checkerSelected({from: pos}))
+      dispatch(gameplayActions.checkerSelected({from: pos}))
     }
     else if (selection.validDestinations.includes(pos)) {
-      dispatch(checkerMoved({from: selection.selectedFrom, to: pos}))
+      dispatch(gameplayActions.checkerMoved({from: selection.selectedFrom, to: pos}))
     }
     else if (selection.legalOrigins.includes(pos)) {
-      dispatch(checkerSelected({from: pos}))
+      dispatch(gameplayActions.checkerSelected({from: pos}))
     }
     else {
-      dispatch(checkerSelectionCancelled())
+      dispatch(gameplayActions.checkerSelectionCancelled())
     }
   }, [alignmentEnabled, dispatch, interaction.canInteract, interaction.isFrozen, pendingOffer, selection])
 

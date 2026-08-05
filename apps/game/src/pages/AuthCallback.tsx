@@ -2,7 +2,8 @@ import {useEffect, useRef, useState} from "react"
 
 import {Link, useLocation, useNavigate, useSearchParams} from "react-router-dom"
 
-import {authCommandReset, authOAuthCompletionRequested} from "../features/auth/authActions"
+import {authOAuthCompletionRequested} from "../features/auth/authActions"
+import {authSliceActions} from "../features/auth/authSlice"
 import {selectAuthCommand} from "../features/auth/authSelectors"
 import {supabase} from "../lib/supabase"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
@@ -63,7 +64,7 @@ export function AuthCallback() {
       completionRef.current = null
       completionRequestedRef.current = false
       setError(null)
-      dispatch(authCommandReset())
+      dispatch(authSliceActions.authCommandReset())
     }
     completionRef.current ??= (async () => {
       const authError = readCallbackParam(params, "error_description") ?? readCallbackParam(params, "error")

@@ -10,7 +10,3 @@ export const authOAuthCompletionRequested = createAction("auth/oauthCompletionRe
 export const authRefreshRequested = createAction<{readonly scope: "profile" | "wallet" | "xpBoost" | "profileAndWallet"}>("auth/refreshRequested")
 
 export type AuthCommand = "googleSignIn" | "googleLink" | "anonymousSignIn" | "magicLink" | "signOut" | "oauthCompletion"
-export const authCommandStarted = createAction<{readonly command: AuthCommand}>("auth/commandStarted")
-export const authCommandSucceeded = createAction<{readonly command: AuthCommand}>("auth/commandSucceeded")
-export const authCommandFailed = createAction<{readonly command: AuthCommand, readonly error: string}>("auth/commandFailed")
-export const authCommandReset = createAction("auth/commandReset")

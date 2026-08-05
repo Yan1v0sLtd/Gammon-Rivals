@@ -17,21 +17,8 @@ import {
   AI_END_TURN_DELAY,
   AI_PER_MOVE_DELAY,
   AI_ROLL_DELAY,
-  aiPreviewReadyChanged,
-  aiThinkingChanged,
   AUTO_ROLL_DELAY,
-  checkerMoved,
-  diceRolled,
-  doubleAccepted,
-  doubleDropped,
-  doubleOffered,
-  gameContinued,
-  gameplayRouteEntered,
-  gameplayRouteExited,
-  matchIdAssigned,
-  turnDeadlineChanged,
-  turnEnded,
-  turnForfeited,
+  gameplayActions,
 } from "./gameplaySlice"
 
 type PendingGame = Omit<SaveGameArgs, "matchId">
@@ -70,11 +57,11 @@ function createPersistenceSession(id: string, ownerUserId: string | null, matchI
 /**
  * Events that can hand the turn to the AI or otherwise need the AI workflow
  * to re-evaluate: a fresh session/game/match, an AI roll completing, a turn
- * handoff, or a human cube offer against the AI. `checkerMoved` is excluded
+ * handoff, or a human cube offer against the AI. `gameplayActions.checkerMoved` is excluded
  * deliberately — the AI's own per-move dispatches must not supersede the
- * running sequence (they never hand the turn to the AI; `turnEnded` does).
+ * running sequence (they never hand the turn to the AI; `gameplayActions.turnEnded` does).
  */
-const gameplayWorkflowMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, diceRolled, turnEnded, turnForfeited, doubleOffered, gameContinued)
+const gameplayWorkflowMatcher = isAnyOf(gameplayActions.gameplayRouteEntered, gameplayActions.gameplayRouteExited, gameplayActions.diceRolled, gameplayActions.turnEnded, gameplayActions.turnForfeited, gameplayActions.doubleOffered, gameplayActions.gameContinued)
 
 export function startGameplayListeners(startListening: AppStartListening): void {
   startListening({
@@ -91,7 +78,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
       // any in-flight task — the slice already reset the session, and a stale
       // task must not dispatch into the next session. Every other trigger
       // supersedes a running task so only the newest workflow survives.
-      if (gameplayRouteExited.match(action)) {
+      if (gameplayActions.gameplayRouteExited.match(action)) {
         cancelActiveListeners()
         return
       }
@@ -114,10 +101,10 @@ export function startGameplayListeners(startListening: AppStartListening): void 
       // Cube offer pending against the AI: respond after a think delay.
       // v1: AI always accepts. Cube AI is a future improvement.
       if (s.match.cubeOffer !== null && s.match.cubeOffer !== ai.player) {
-        dispatch(aiThinkingChanged({thinking: true}))
+        dispatch(gameplayActions.aiThinkingChanged({thinking: true}))
         try {
           await delay(AI_CUBE_DECISION_DELAY)
-          dispatch(doubleAccepted())
+          dispatch(gameplayActions.doubleAccepted())
         }
         catch (err) {
           // Cancellation is not a failure; a real error must not freeze the
@@ -128,7 +115,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         finally {
           // Always release the thinking flag — if it stays set the board
           // reads "AI thinking" forever with nobody acting on it.
-          if (!signal.aborted) dispatch(aiThinkingChanged({thinking: false}))
+          if (!signal.aborted) dispatch(gameplayActions.aiThinkingChanged({thinking: false}))
         }
         return
       }
@@ -139,7 +126,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
       if (s.roll === null) {
         try {
           await delay(AI_ROLL_DELAY)
-          dispatch(diceRolled())
+          dispatch(gameplayActions.diceRolled())
         }
         catch (err) {
           if (err instanceof TaskAbortError || signal.aborted) return
@@ -163,11 +150,11 @@ export function startGameplayListeners(startListening: AppStartListening): void 
           for (const move of initialMoves) {
             await delay(AI_PER_MOVE_DELAY)
             if (signal.aborted) return
-            dispatch(aiPreviewReadyChanged({ready: false}))
+            dispatch(gameplayActions.aiPreviewReadyChanged({ready: false}))
             curBoard = applyMove(curBoard, move)
             // Send the exact die from the plan so ambiguous bear-off moves
             // keep the correct identity in the reducer and turn log.
-            dispatch(checkerMoved({
+            dispatch(gameplayActions.checkerMoved({
               from: move.from,
               to: move.to,
               die: move.die,
@@ -178,24 +165,24 @@ export function startGameplayListeners(startListening: AppStartListening): void 
 
           await delay(AI_END_TURN_DELAY)
           if (signal.aborted) return
-          dispatch(turnEnded({force: true}))
+          dispatch(gameplayActions.turnEnded({force: true}))
         }
 
-        dispatch(aiThinkingChanged({thinking: true}))
+        dispatch(gameplayActions.aiThinkingChanged({thinking: true}))
         try {
           const planPromise = pickMoveAsync(s.board, s.remaining, ai.level)
           await delay(AI_DICE_SETTLE_MS)
           if (signal.aborted) return
-          dispatch(aiPreviewReadyChanged({ready: true}))
+          dispatch(gameplayActions.aiPreviewReadyChanged({ready: true}))
           const plan = await planPromise
           if (signal.aborted) return
-          dispatch(aiThinkingChanged({thinking: false}))
+          dispatch(gameplayActions.aiThinkingChanged({thinking: false}))
 
           if (plan.length === 0) {
             await delay(AI_END_TURN_DELAY)
             if (signal.aborted) return
-            dispatch(aiPreviewReadyChanged({ready: false}))
-            dispatch(turnEnded({force: true}))
+            dispatch(gameplayActions.aiPreviewReadyChanged({ready: false}))
+            dispatch(gameplayActions.turnEnded({force: true}))
           }
           else {
             await playAISequence(s.board, plan)
@@ -209,27 +196,27 @@ export function startGameplayListeners(startListening: AppStartListening): void 
           // has no winner.
           if (err instanceof TaskAbortError || signal.aborted) return
           console.error("[gameplay] AI turn failed — ending AI turn to keep the match playable", err)
-          dispatch(aiPreviewReadyChanged({ready: false}))
+          dispatch(gameplayActions.aiPreviewReadyChanged({ready: false}))
           const live = getState().gameplay
           if (live.board.turn !== aiPlayer) return
           if (selectGameFrozen(getState())) return
-          // turnForfeited re-enters this workflow listener and aborts the
+          // gameplayActions.turnForfeited re-enters this workflow listener and aborts the
           // current task, so the finally below skips its thinking reset
           // (signal.aborted). Release the flag here, or the next human turn
           // stays locked on "AI thinking".
-          dispatch(aiThinkingChanged({thinking: false}))
-          dispatch(turnForfeited({expectedPlayer: aiPlayer}))
+          dispatch(gameplayActions.aiThinkingChanged({thinking: false}))
+          dispatch(gameplayActions.turnForfeited({expectedPlayer: aiPlayer}))
         }
         finally {
           // Never leave isAIThinking stuck true. A cancelled task's state was
           // already reset by the action that aborted it.
-          if (!signal.aborted) dispatch(aiThinkingChanged({thinking: false}))
+          if (!signal.aborted) dispatch(gameplayActions.aiThinkingChanged({thinking: false}))
         }
       }
     },
   })
 
-  const turnTimerMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, turnEnded, turnForfeited, doubleOffered, doubleAccepted, doubleDropped, gameContinued, checkerMoved)
+  const turnTimerMatcher = isAnyOf(gameplayActions.gameplayRouteEntered, gameplayActions.gameplayRouteExited, gameplayActions.turnEnded, gameplayActions.turnForfeited, gameplayActions.doubleOffered, gameplayActions.doubleAccepted, gameplayActions.doubleDropped, gameplayActions.gameContinued, gameplayActions.checkerMoved)
 
   startListening({
     matcher: turnTimerMatcher,
@@ -241,7 +228,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
       getState,
       signal,
     }) => {
-      if (gameplayRouteExited.match(action)) {
+      if (gameplayActions.gameplayRouteExited.match(action)) {
         cancelActiveListeners()
         return
       }
@@ -255,19 +242,19 @@ export function startGameplayListeners(startListening: AppStartListening): void 
 
       // A normal checker move does not restart the turn timer. It only enters
       // this listener so a bear-off result can cancel the old deadline.
-      if (checkerMoved.match(action) && !selectGameFrozen(getState())) return
+      if (gameplayActions.checkerMoved.match(action) && !selectGameFrozen(getState())) return
 
       cancelActiveListeners()
 
       if (!current.turnTimerEnabled || selectGameFrozen(getState()) || current.match.cubeOffer !== null) {
-        dispatch(turnDeadlineChanged({deadlineMs: null}))
+        dispatch(gameplayActions.turnDeadlineChanged({deadlineMs: null}))
         return
       }
 
       // The AI still gets a visible countdown, but only human turns may be
       // forfeited. This preserves the old humanCanInteract guard in HotSeat.
       const deadlineMs = Date.now() + current.turnSeconds * 1000
-      dispatch(turnDeadlineChanged({deadlineMs}))
+      dispatch(gameplayActions.turnDeadlineChanged({deadlineMs}))
 
       try {
         await delay(Math.max(0, deadlineMs - Date.now()))
@@ -280,7 +267,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
 
         // This action is itself a timer-workflow event, so listener
         // cancellation replaces the component's timeoutHandledRef latch.
-        dispatch(turnForfeited())
+        dispatch(gameplayActions.turnForfeited())
       }
       catch (err) {
         if (err instanceof TaskAbortError || signal.aborted) return
@@ -289,7 +276,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
     },
   })
 
-  const autoRollMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, diceRolled, turnEnded, turnForfeited, doubleOffered, doubleAccepted, doubleDropped, gameContinued, checkerMoved, autoRollEligibilityChanged)
+  const autoRollMatcher = isAnyOf(gameplayActions.gameplayRouteEntered, gameplayActions.gameplayRouteExited, gameplayActions.diceRolled, gameplayActions.turnEnded, gameplayActions.turnForfeited, gameplayActions.doubleOffered, gameplayActions.doubleAccepted, gameplayActions.doubleDropped, gameplayActions.gameContinued, gameplayActions.checkerMoved, autoRollEligibilityChanged)
 
   // This is workflow input, not application state: the preference remains in
   // useAutoRoll and the reveal flag remains derived by HotSeat. The closure is
@@ -309,7 +296,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         autoRollEnabled = action.payload.enabled
       }
 
-      if (gameplayRouteExited.match(action)) {
+      if (gameplayActions.gameplayRouteExited.match(action)) {
         autoRollEnabled = false
         cancelActiveListeners()
         return
@@ -331,7 +318,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         if (live.roll !== null || live.match.cubeOffer !== null) return
         if (selectGameFrozen(getState()) || selectIsAITurn(getState()) || live.isAIThinking) return
 
-        dispatch(diceRolled())
+        dispatch(gameplayActions.diceRolled())
       }
       catch (err) {
         if (err instanceof TaskAbortError || signal.aborted) return
@@ -344,7 +331,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
   // the local createMatch call entirely — the row already exists, the
   // entry fee was already debited server-side, and we should use that
   // id for all later writes (saveGame, finishMatch).
-  const persistenceMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, authSliceActions.authSessionResolved, authSliceActions.authSignedOut, matchIdAssigned, checkerMoved, doubleDropped)
+  const persistenceMatcher = isAnyOf(gameplayActions.gameplayRouteEntered, gameplayActions.gameplayRouteExited, authSliceActions.authSessionResolved, authSliceActions.authSignedOut, gameplayActions.matchIdAssigned, gameplayActions.checkerMoved, gameplayActions.doubleDropped)
   let persistenceSession: PersistenceSession | null = null
 
   startListening({
@@ -358,7 +345,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
     }) => {
       const current = getState().gameplay
 
-      if (gameplayRouteEntered.match(action)) {
+      if (gameplayActions.gameplayRouteEntered.match(action)) {
         const sessionId = action.payload.sessionId
         if (persistenceSession?.id !== sessionId) {
           persistenceSession?.finishMutation?.reset()
@@ -369,7 +356,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         }
       }
 
-      if (gameplayRouteExited.match(action)) {
+      if (gameplayActions.gameplayRouteExited.match(action)) {
         if (persistenceSession !== null) {
           persistenceSession.active = false
           persistenceSession.finishMutation?.reset()
@@ -401,7 +388,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
       if (!session?.active) return
 
       const previous = getOriginalState().gameplay
-      const gameJustFinished = (checkerMoved.match(action) || doubleDropped.match(action)) && current.lastGameResult !== null && current.lastGameResult !== previous.lastGameResult
+      const gameJustFinished = (gameplayActions.checkerMoved.match(action) || gameplayActions.doubleDropped.match(action)) && current.lastGameResult !== null && current.lastGameResult !== previous.lastGameResult
 
       if (gameJustFinished) {
         const gameNumber = current.match.winner ? current.match.gameNumber : current.match.gameNumber - 1
@@ -433,7 +420,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
 
       const matchId = current.matchId
       if (matchId === null && session.createdMatchId !== null) {
-        dispatch(matchIdAssigned({matchId: session.createdMatchId}))
+        dispatch(gameplayActions.matchIdAssigned({matchId: session.createdMatchId}))
         return
       }
 
@@ -464,7 +451,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         if (session.ownerUserId !== createOwnerUserId) return
         if (getState().auth.userId !== createOwnerUserId) return
         session.createdMatchId = createdMatchId
-        dispatch(matchIdAssigned({matchId: createdMatchId}))
+        dispatch(gameplayActions.matchIdAssigned({matchId: createdMatchId}))
         return
       }
 

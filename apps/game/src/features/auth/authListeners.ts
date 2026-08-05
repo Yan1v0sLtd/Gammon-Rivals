@@ -5,7 +5,7 @@ import {baseApi} from "../../store/baseApi"
 import type {AppStartListening} from "../../store/listenerTypes"
 import {playerDataApi} from "../playerData/playerDataApi"
 
-import {authInitializationRequested, authAnonymousSignInRequested, authCommandFailed, authCommandReset, authCommandStarted, authCommandSucceeded, authGoogleLinkRequested, authGoogleSignInRequested, authMagicLinkRequested, authOAuthCompletionRequested, authRefreshRequested, authSignOutRequested} from "./authActions"
+import {authInitializationRequested, authAnonymousSignInRequested, authGoogleLinkRequested, authGoogleSignInRequested, authMagicLinkRequested, authOAuthCompletionRequested, authRefreshRequested, authSignOutRequested} from "./authActions"
 import {completeOAuthProfile, getSupabaseSession, linkGoogleIdentity, sendMagicLink, signInAnonymously, signInWithGoogle, signOut} from "./authData"
 import {authSliceActions, type AuthIdentity} from "./authSlice"
 
@@ -71,16 +71,16 @@ export function startAuthListeners(startListening: AppStartListening): void {
     },
   })
 
-  const commandMatcher = isAnyOf(authGoogleSignInRequested, authGoogleLinkRequested, authAnonymousSignInRequested, authMagicLinkRequested, authSignOutRequested, authOAuthCompletionRequested, authCommandReset)
+  const commandMatcher = isAnyOf(authGoogleSignInRequested, authGoogleLinkRequested, authAnonymousSignInRequested, authMagicLinkRequested, authSignOutRequested, authOAuthCompletionRequested, authSliceActions.authCommandReset)
   startListening({
     matcher: commandMatcher,
     effect: async (action, {cancelActiveListeners, dispatch, getState, signal}) => {
       cancelActiveListeners()
       const sequence = ++authCommandSequence
       const isCurrent = (): boolean => !signal.aborted && sequence === authCommandSequence
-      if (authCommandReset.match(action)) return
+      if (authSliceActions.authCommandReset.match(action)) return
       const command = authGoogleSignInRequested.match(action) ? "googleSignIn" : authGoogleLinkRequested.match(action) ? "googleLink" : authAnonymousSignInRequested.match(action) ? "anonymousSignIn" : authMagicLinkRequested.match(action) ? "magicLink" : authSignOutRequested.match(action) ? "signOut" : "oauthCompletion"
-      dispatch(authCommandStarted({command}))
+      dispatch(authSliceActions.authCommandStarted({command}))
       try {
         if (authOAuthCompletionRequested.match(action)) {
           const session = await getSupabaseSession()
@@ -102,7 +102,7 @@ export function startAuthListeners(startListening: AppStartListening): void {
           if (!isCurrent()) return
           const currentAuth = getState().auth
           if (currentAuth.userId === session.user.id && currentAuth.command.name === command && currentAuth.command.status === "pending") {
-            dispatch(authCommandSucceeded({command}))
+            dispatch(authSliceActions.authCommandSucceeded({command}))
           }
         }
         else if (authGoogleSignInRequested.match(action)) await signInWithGoogle(action.payload.redirectTo)
@@ -110,11 +110,11 @@ export function startAuthListeners(startListening: AppStartListening): void {
         else if (authAnonymousSignInRequested.match(action)) await signInAnonymously()
         else if (authMagicLinkRequested.match(action)) await sendMagicLink(action.payload.email)
         else await signOut()
-        if (isCurrent() && !authOAuthCompletionRequested.match(action)) dispatch(authCommandSucceeded({command}))
+        if (isCurrent() && !authOAuthCompletionRequested.match(action)) dispatch(authSliceActions.authCommandSucceeded({command}))
       }
       catch (err) {
         if (!isCurrent()) return
-        dispatch(authCommandFailed({command, error: err instanceof Error ? err.message : String(err)}))
+        dispatch(authSliceActions.authCommandFailed({command, error: err instanceof Error ? err.message : String(err)}))
       }
     },
   })

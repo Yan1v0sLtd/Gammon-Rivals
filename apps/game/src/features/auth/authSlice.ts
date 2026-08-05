@@ -1,7 +1,7 @@
 import type {PayloadAction} from "@reduxjs/toolkit"
 import {createSlice} from "@reduxjs/toolkit"
 
-import {authCommandFailed, authCommandReset, authCommandStarted, authCommandSucceeded, type AuthCommand} from "./authActions"
+import {type AuthCommand} from "./authActions"
 
 export type AuthStatus = "initializing" | "authenticated" | "signedOut"
 
@@ -57,21 +57,18 @@ export const authSlice = createSlice({
       state.isAnonymous = action.payload.isAnonymous
     },
     authSignedOut: () => createSignedOutAuthState(),
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(authCommandStarted, (state, action) => {
-        state.command = {name: action.payload.command, status: "pending", error: null}
-      })
-      .addCase(authCommandSucceeded, (state, action) => {
-        state.command = {name: action.payload.command, status: "succeeded", error: null}
-      })
-      .addCase(authCommandFailed, (state, action) => {
-        state.command = {name: action.payload.command, status: "failed", error: action.payload.error}
-      })
-      .addCase(authCommandReset, (state) => {
-        state.command = {name: null, status: "idle", error: null}
-      })
+    authCommandStarted(state, action: PayloadAction<{readonly command: AuthCommand}>) {
+      state.command = {name: action.payload.command, status: "pending", error: null}
+    },
+    authCommandSucceeded(state, action: PayloadAction<{readonly command: AuthCommand}>) {
+      state.command = {name: action.payload.command, status: "succeeded", error: null}
+    },
+    authCommandFailed(state, action: PayloadAction<{readonly command: AuthCommand, readonly error: string}>) {
+      state.command = {name: action.payload.command, status: "failed", error: action.payload.error}
+    },
+    authCommandReset(state) {
+      state.command = {name: null, status: "idle", error: null}
+    },
   },
 })
 
