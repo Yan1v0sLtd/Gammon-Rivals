@@ -670,49 +670,10 @@ html, body, #root {
   overflow: visible;
 }
 
-.lobby-hourly-bonus {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  width: 100%;
-}
 
-.lobby-hourly-bonus-image {
-  position: relative;
-  display: grid;
-  place-items: center;
-  /* Hourly bonus shrunk again — an additional x0.8 (-20%) so the wheel no
-   * longer pops out above the navigator bar (operator review). The wheel
-   * graphic + the negative margin that lifts it above the bar scale together
-   * so it keeps its proportions + seat. */
-  width: clamp(3.2rem, 5.7vw, 5.24rem);
-  margin-top: clamp(-1.98rem, -3.14vw, -1.4rem);
-  padding: 0;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  transition: transform 160ms ease, filter 160ms ease;
-}
 
-.lobby-hourly-bonus-image:disabled {
-  cursor: default;
-}
 
-.lobby-hourly-bonus-image img {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-  filter: drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55));
-  pointer-events: none;
-  user-select: none;
-}
 
-.lobby-hourly-bonus-image:not(:disabled):hover img {
-  filter: drop-shadow(0 0.55rem 0.7rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.9rem rgba(255, 196, 78, 0.55));
-}
 
 /* When the bonus is claimable, pulse a warm gold halo around the
    widget so it draws the player's eye from across the lobby. The
@@ -725,110 +686,23 @@ html, body, #root {
    forever, while the bonus was claimable. Same warm pulsing look now comes
    from a radial-gradient ::before pulsing opacity/transform (compositor-only,
    near-zero cost). The img keeps a STATIC lit glow so it still reads "ready". */
-.lobby-hourly-bonus-image.is-ready img {
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.7rem rgba(255, 205, 80, 0.7));
-}
 
-.lobby-hourly-bonus-image.is-ready::before {
-  content: '';
-  position: absolute;
-  inset: -22%;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(
-    circle,
-    rgba(255, 215, 100, 0.55) 0%,
-    rgba(255, 173, 60, 0.28) 45%,
-    transparent 70%
-  );
-  animation: lobby-hourly-bonus-halo 1.6s ease-in-out infinite;
-  will-change: opacity, transform;
-}
 
-@keyframes lobby-hourly-bonus-halo {
-  0%, 100% {
-    opacity: 0.35;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.12);
-  }
-}
 
-.lobby-hourly-bonus-image:not(:disabled):active {
-  transform: translateY(1px);
-}
 
 /* Shared pill scaffold. All three states share the same shape /
    border / shadow; only the fill + text colour change. */
-.lobby-hourly-bonus-pill {
-  position: relative;
-  display: grid;
-  place-items: center;
-  /* Pinned ~12% narrower than the slot so the pill clears the separators and
-     all three states (Claim / timer / Unavailable) keep the same width for a
-     clean morph. The short "Claim" label no longer fills the box, so the base
-     font here sizes only the longer states (the HH:MM:SS timer and
-     "Unavailable"); the Claim label gets a larger font below. */
-  /* -5% per operator review (shared base → all three states stay the same
-     size for a clean morph). */
-  min-width: clamp(4.37rem, 7.13vw, 6.56rem);
-  height: clamp(1.2rem, 2.05vw, 1.71rem);
-  padding: 0 clamp(0.22rem, 0.45vw, 0.38rem);
-  border: 1.8px solid rgba(255, 199, 79, 0.85);
-  border-radius: 9999px;
-  font: 900 clamp(0.53rem, 0.88vw, 0.72rem) / 1 "Segoe UI", sans-serif;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: white;
-  text-shadow: -1px 0 0 rgba(0, 0, 0, 0.65),
-  1px 0 0 rgba(0, 0, 0, 0.65),
-  0 -1px 0 rgba(0, 0, 0, 0.65),
-  0 1px 0 rgba(0, 0, 0, 0.65),
-  0 2px 4px rgba(0, 0, 0, 0.55);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
-  0 0.3rem 0.6rem rgba(0, 0, 0, 0.45);
-  user-select: none;
-  transition: background 200ms ease, border-color 200ms ease, transform 120ms ease;
-}
 
 /* Ready: orange gradient that matches the difficulty modal's
    "Get Coins" CTA so the palette reads as the same UI family.
    This variant is rendered as a <button>. */
-button.lobby-hourly-bonus-pill.is-ready {
-  border-color: rgba(180, 83, 9, 0.8);
-  background: linear-gradient(180deg, #fbbf24 0%, #ea580c 100%);
-  cursor: pointer;
-  /* "Claim" is short, so size it up to fill the pinned pill width.
-     -10% on the label per operator review. */
-  font-size: clamp(0.855rem, 1.53vw, 1.17rem);
-}
 
-button.lobby-hourly-bonus-pill.is-ready:hover {
-  filter: brightness(1.08);
-}
 
-button.lobby-hourly-bonus-pill.is-ready:active {
-  transform: translateY(1px);
-}
 
 /* Cooldown: dark interior with gold trim. Mono-numeric digits so
    the timer doesn't jitter as numbers tick. */
-.lobby-hourly-bonus-pill.is-cooldown {
-  background: linear-gradient(180deg, #0a1024 0%, #060916 100%);
-  font-variant-numeric: tabular-nums;
-}
 
 /* Unavailable: muted gray, matching the wheel's "off" state. */
-.lobby-hourly-bonus-pill.is-unavailable {
-  border-color: rgba(148, 163, 184, 0.6);
-  background: linear-gradient(180deg, #475569 0%, #1f2937 100%);
-  color: rgba(255, 255, 255, 0.78);
-}
 
 .lobby-screen {
   /* Lobby never scrolls — content always fits within the viewport.
@@ -1662,598 +1536,76 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 /* end unified lobby layout block */
 
-.profile-page {
-  background: radial-gradient(circle at 22% 12%, rgba(133, 55, 255, 0.3), transparent 30rem),
-  radial-gradient(circle at 82% 8%, rgba(34, 82, 185, 0.22), transparent 26rem),
-  radial-gradient(circle at 50% 100%, rgba(141, 22, 150, 0.24), transparent 34rem),
-  linear-gradient(180deg, #050817 0%, #09051b 48%, #030611 100%);
-}
-
-.profile-page-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 1rem;
-  padding: 0 0 1.8rem;
-  text-align: center;
-}
-
-.profile-icon-button {
-  position: relative;
-  display: grid;
-  width: clamp(3.4rem, 7vw, 4.9rem);
-  height: clamp(3.4rem, 7vw, 4.9rem);
-  place-items: center;
-  border: 1px solid rgba(255, 201, 57, 0.85);
-  border-radius: 0.85rem;
-  background: linear-gradient(180deg, rgba(31, 32, 61, 0.94), rgba(10, 11, 34, 0.98)),
-  radial-gradient(circle at 50% 0, rgba(255, 211, 70, 0.15), transparent 62%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14),
-  0 0 0 1px rgba(145, 71, 255, 0.32),
-  0 0.45rem 1rem rgba(0, 0, 0, 0.42);
-}
-
-.profile-back-chevron {
-  width: 1.1rem;
-  height: 1.1rem;
-  border-left: 0.42rem solid #ffcc47;
-  border-bottom: 0.42rem solid #ffcc47;
-  transform: rotate(45deg) translateX(0.12rem);
-  filter: drop-shadow(0 0.12rem 0 rgba(0, 0, 0, 0.5));
-}
-
-.profile-gear-icon {
-  position: relative;
-  width: 2rem;
-  height: 2rem;
-  border: 0.45rem dashed #ffcc47;
-  border-radius: 50%;
-  filter: drop-shadow(0 0.12rem 0 rgba(0, 0, 0, 0.5));
-}
-
-.profile-gear-icon::before {
-  content: '';
-  position: absolute;
-  inset: 0.38rem;
-  border-radius: inherit;
-  background: #0b1028;
-  box-shadow: inset 0 0 0 0.18rem rgba(255, 204, 71, 0.7);
-}
-
-.profile-main-card,
-.profile-history-panel,
-.profile-stat-grid {
-  border: 1px solid rgba(177, 75, 255, 0.38);
-  background: radial-gradient(circle at 18% 18%, rgba(152, 51, 245, 0.24), transparent 26rem),
-  linear-gradient(180deg, rgba(15, 12, 42, 0.9), rgba(6, 5, 25, 0.96));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
-  0 1rem 2rem rgba(0, 0, 0, 0.36);
-}
-
-.profile-main-card {
-  border-color: rgba(255, 137, 33, 0.75);
-  border-radius: 1.55rem;
-  padding: clamp(1.4rem, 4vw, 2.35rem);
-}
-
-.profile-identity-grid {
-  display: grid;
-  grid-template-columns: minmax(10rem, 17rem) minmax(0, 1fr);
-  gap: clamp(1.4rem, 4vw, 2.4rem);
-  align-items: center;
-}
-
-.profile-avatar-stage {
-  position: relative;
-  display: grid;
-  min-height: 16.5rem;
-  place-items: center;
-}
-
-.profile-avatar-glow {
-  position: absolute;
-  width: min(92%, 15.5rem);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 48% 45%, rgba(224, 132, 255, 0.86), rgba(115, 27, 197, 0.54) 54%, transparent 70%);
-  filter: blur(0.15rem);
-  box-shadow: 0 0 2.2rem rgba(176, 68, 255, 0.82);
-}
-
-.profile-avatar-image {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #fff4b1, #cf861e 48%, #6027af);
-  box-shadow: 0 0 0 0.35rem #17133b,
-  0 0 0 0.62rem #ffd159,
-  0 0 0 0.78rem rgba(255, 255, 255, 0.34),
-  0 0.9rem 1.4rem rgba(0, 0, 0, 0.45);
-}
-
-.profile-level-shield {
-  position: absolute;
-  z-index: 2;
-  right: calc(50% - 6.3rem);
-  bottom: 0.7rem;
-  display: grid;
-  width: 4.2rem;
-  height: 5.15rem;
-  place-items: center;
-  clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
-  background: linear-gradient(180deg, #fff0a5, #d6931f 26%, #111739 27%, #14133c 100%);
-  color: #fff8c7;
-  font: 900 2.15rem / 1 "Segoe UI", sans-serif;
-  text-shadow: 0 0.18rem 0 rgba(0, 0, 0, 0.65);
-  box-shadow: 0 0.4rem 1rem rgba(0, 0, 0, 0.52);
-}
-
-.profile-name-editor {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-}
-
-.profile-name-input {
-  min-width: min(100%, 22rem);
-  flex: 1 1 16rem;
-  border: 1px solid rgba(255, 214, 91, 0.45);
-  border-radius: 0.7rem;
-  background: rgba(0, 0, 0, 0.36);
-  color: white;
-  font: 900 1.6rem / 1 "Segoe UI", sans-serif;
-  padding: 0.85rem 1rem;
-  outline: none;
-}
-
-.profile-name-input:focus {
-  border-color: #ffd85d;
-  box-shadow: 0 0 0 0.2rem rgba(255, 216, 93, 0.16);
-}
-
-.profile-small-action {
-  border-radius: 0.7rem;
-  background: linear-gradient(180deg, #ffe27c, #e49a20);
-  color: #26120a;
-  font-weight: 900;
-  padding: 0.72rem 1rem;
-  box-shadow: 0 0.24rem 0 #784100;
-}
-
-.profile-small-action--ghost {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  box-shadow: none;
-}
-
-.profile-edit-button {
-  position: relative;
-  width: 2.55rem;
-  height: 2.55rem;
-  flex: 0 0 auto;
-  border: 1px solid rgba(255, 220, 101, 0.38);
-  border-radius: 0.6rem;
-  background: rgba(7, 8, 28, 0.72);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.profile-edit-button span {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1.2rem;
-  height: 0.35rem;
-  border-radius: 9999px;
-  background: #ffc940;
-  transform: translate(-50%, -50%) rotate(-38deg);
-}
-
-.profile-edit-button span::after {
-  content: '';
-  position: absolute;
-  right: -0.28rem;
-  top: 0.01rem;
-  width: 0;
-  height: 0;
-  border-left: 0.34rem solid #ffc940;
-  border-top: 0.16rem solid transparent;
-  border-bottom: 0.16rem solid transparent;
-}
-
-.profile-rank-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  border: 1px solid #ffd462;
-  border-radius: 0.8rem;
-  background: linear-gradient(180deg, rgba(255, 226, 108, 0.96), #b56a14 48%, #74400b);
-  color: #211004;
-  font: 900 clamp(1.35rem, 3.1vw, 2rem) / 1 "Segoe UI", sans-serif;
-  padding: 0.22rem 1rem 0.34rem 0.28rem;
-  text-transform: uppercase;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65),
-  0 0.45rem 0.95rem rgba(0, 0, 0, 0.38);
-}
-
-.profile-rank-shield {
-  position: relative;
-  display: grid;
-  width: 3rem;
-  height: 3.45rem;
-  place-items: center;
-  clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
-  background: linear-gradient(180deg, #ffd765, #8d500f);
-}
-
-.profile-rank-shield span {
-  width: 1.72rem;
-  height: 1.72rem;
-  clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 79% 91%, 50% 70%, 21% 91%, 31% 56%, 2% 35%, 38% 34%);
-  background: linear-gradient(180deg, #fff8b8, #ffc11f 55%, #ae5c09);
-}
-
-.profile-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: rgba(255, 255, 255, 0.65);
-  font: 800 1.25rem / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-}
-
-.profile-rating strong {
-  color: #ffd449;
-}
-
-.profile-rating-cup {
-  width: 1.35rem;
-  height: 1.15rem;
-  border-radius: 0 0 0.55rem 0.55rem;
-  background: linear-gradient(180deg, #fff3ad, #d58e18);
-  box-shadow: 0 0 0.45rem rgba(255, 197, 51, 0.45);
-}
-
-.profile-progress-panel {
-  border: 1px solid rgba(66, 63, 150, 0.55);
-  border-radius: 1.1rem;
-  background: linear-gradient(180deg, rgba(12, 17, 58, 0.82), rgba(7, 8, 36, 0.94));
-  padding: clamp(1rem, 2.6vw, 1.45rem);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.profile-progress-arrow {
-  width: 1rem;
-  height: 1rem;
-  border-right: 0.38rem solid #ffd25b;
-  border-bottom: 0.38rem solid #ffd25b;
-  transform: rotate(-45deg);
-  filter: drop-shadow(0 0.18rem 0 rgba(0, 0, 0, 0.55));
-}
-
-.profile-xp-bar {
-  position: relative;
-  flex: 1 1 auto;
-  height: clamp(1.5rem, 4vw, 2.3rem);
-  overflow: hidden;
-  border: 0.18rem solid #ffdc73;
-  border-radius: 9999px;
-  background: linear-gradient(180deg, #05091c, #141733);
-  box-shadow: inset 0 0.25rem 0.6rem rgba(0, 0, 0, 0.75),
-  0 0 0 0.12rem rgba(218, 65, 255, 0.46);
-}
-
-.profile-xp-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
-  linear-gradient(90deg, #ff9c1f, #ffdf41);
-  box-shadow: 0 0 1.1rem rgba(255, 198, 32, 0.82);
-}
-
-.profile-xp-percent {
-  min-width: 3.5rem;
-  text-align: right;
-  font: 900 1.8rem / 1 "Segoe UI", sans-serif;
-}
-
-.profile-save-progress {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1.2rem;
-}
-
-.profile-google-button {
-  border: 1px solid rgba(255, 220, 100, 0.76);
-  border-radius: 0.9rem;
-  background: linear-gradient(180deg, #ffe77b, #c87e18);
-  color: #241109;
-  font-weight: 900;
-  padding: 0.85rem 1.1rem;
-  box-shadow: 0 0.28rem 0 #704000;
-}
-
-.profile-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1.55rem;
-  border-radius: 1.35rem;
-  padding: 0.9rem;
-}
-
-.profile-stat-card {
-  min-height: 12rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(146, 80, 255, 0.42);
-  border-radius: 0.85rem;
-  background: radial-gradient(circle at 50% 20%, rgba(146, 67, 255, 0.24), transparent 52%),
-  rgba(9, 9, 34, 0.78);
-  text-align: center;
-  padding: 1.05rem 0.6rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.profile-stat-card--wide {
-  grid-column: span 2;
-  min-height: 8rem;
-  grid-template-columns: auto auto 1fr;
-  justify-content: center;
-  column-gap: 1rem;
-  text-align: left;
-}
-
-.profile-stat-icon {
-  position: relative;
-  display: grid;
-  width: 4.3rem;
-  height: 4.3rem;
-  place-items: center;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(255, 223, 91, 0.25), rgba(65, 23, 118, 0.82));
-  box-shadow: 0 0 1rem rgba(139, 53, 255, 0.42);
-}
-
-.profile-stat-icon span,
-.profile-stat-icon span::before,
-.profile-stat-icon span::after {
-  position: absolute;
-  content: '';
-  display: block;
-}
-
-.profile-stat-icon--coins span,
-.profile-stat-icon--gems span {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #fff4a7, #ffb820 52%, #a96106);
-  box-shadow: inset 0 0 0 0.22rem rgba(255, 255, 255, 0.34);
-}
-
-.profile-stat-icon--gems span {
-  clip-path: polygon(18% 18%, 50% 4%, 82% 18%, 96% 44%, 50% 96%, 4% 44%);
-  border-radius: 0;
-  background: linear-gradient(180deg, #ffa8ff, #a43cff 52%, #451283);
-}
-
-.profile-stat-icon--finished span {
-  width: 2rem;
-  height: 2rem;
-  border-left: 0.32rem solid #f5f5ff;
-  border-bottom: 0.32rem solid #f5f5ff;
-  transform: rotate(-45deg);
-}
-
-.profile-stat-icon--wins span {
-  width: 2.25rem;
-  height: 1.9rem;
-  border-radius: 0 0 0.75rem 0.75rem;
-  background: linear-gradient(180deg, #fff2a4, #d89216);
-}
-
-.profile-stat-icon--losses span {
-  width: 2.4rem;
-  height: 2.7rem;
-  clip-path: polygon(50% 0, 92% 16%, 84% 74%, 50% 100%, 16% 74%, 8% 16%);
-  background: linear-gradient(180deg, #d798ff, #7527d9 52%, #35105f);
-}
-
-.profile-stat-icon--hotseat span {
-  width: 1.9rem;
-  height: 2.3rem;
-  border-radius: 48% 48% 42% 42%;
-  background: linear-gradient(180deg, #fff17b, #ff7d1d 42%, #b0002c);
-}
-
-.profile-history-panel {
-  margin-top: 1.05rem;
-  border-radius: 1.2rem;
-  padding: clamp(1rem, 3vw, 1.35rem);
-}
-
-.profile-history-row {
-  display: grid;
-  width: 100%;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: clamp(0.65rem, 2vw, 1.35rem);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 0.9rem;
-  background: linear-gradient(180deg, rgba(26, 25, 55, 0.94), rgba(11, 10, 31, 0.96));
-  padding: 0.88rem 1rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.profile-history-row:disabled {
-  cursor: default;
-}
-
-.profile-match-icon {
-  position: relative;
-  display: grid;
-  width: 3.8rem;
-  height: 3.8rem;
-  place-items: center;
-  border-radius: 0.75rem;
-  background: linear-gradient(180deg, rgba(103, 31, 255, 0.42), rgba(24, 10, 55, 0.9));
-  box-shadow: inset 0 0 0 1px rgba(190, 95, 255, 0.54);
-}
-
-.profile-match-icon span,
-.profile-match-icon span::before,
-.profile-match-icon span::after {
-  position: absolute;
-  content: '';
-  display: block;
-}
-
-.profile-match-icon--hotseat span {
-  width: 1.9rem;
-  height: 1.55rem;
-  border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
-  background: linear-gradient(180deg, #e07dff, #8615d0);
-}
-
-.profile-match-icon--online span {
-  width: 2rem;
-  height: 2rem;
-  border: 0.2rem solid #67ff8f;
-  border-radius: 50%;
-}
-
-.profile-match-icon--ai span {
-  width: 2.1rem;
-  height: 1.65rem;
-  border-radius: 0.42rem;
-  background: linear-gradient(180deg, #68dbff, #2055ff);
-}
-
-.profile-match-icon--ai span::before,
-.profile-match-icon--ai span::after {
-  top: 0.55rem;
-  width: 0.28rem;
-  height: 0.28rem;
-  border-radius: 50%;
-  background: white;
-}
-
-.profile-match-icon--ai span::before {
-  left: 0.55rem;
-}
-
-.profile-match-icon--ai span::after {
-  right: 0.55rem;
-}
-
-.profile-history-score {
-  min-width: 5.6rem;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  padding-left: clamp(0.7rem, 2vw, 1.35rem);
-  text-align: center;
-  font: 900 1.55rem / 1 "Segoe UI", sans-serif;
-  color: white;
-}
-
-.profile-history-status {
-  min-width: 7rem;
-  text-align: right;
-  font: 900 1rem / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-}
-
-.profile-history-status--won {
-  color: #6dff9a;
-}
-
-.profile-history-status--lost {
-  color: #ff6b8b;
-}
-
-.profile-history-status--open,
-.profile-history-status--hotseat {
-  color: #ffe33d;
-}
-
-.profile-logout-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin: 1.7rem 0 0.2rem;
-  min-height: 5.2rem;
-  border: 1px solid rgba(255, 41, 152, 0.62);
-  border-radius: 1.05rem;
-  background: radial-gradient(circle at 50% 0, rgba(255, 36, 166, 0.18), transparent 58%),
-  linear-gradient(180deg, rgba(40, 7, 56, 0.94), rgba(17, 4, 36, 0.98));
-  color: #ff514d;
-  font: 900 2rem / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.profile-logout-icon {
-  position: relative;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 0.22rem solid currentColor;
-  border-right: 0;
-  border-radius: 0.15rem;
-}
-
-.profile-logout-icon::before {
-  content: '';
-  position: absolute;
-  left: 1rem;
-  top: 0.78rem;
-  width: 1.4rem;
-  height: 0.46rem;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.profile-logout-icon::after {
-  content: '';
-  position: absolute;
-  right: -0.32rem;
-  top: 0.5rem;
-  width: 0.9rem;
-  height: 0.9rem;
-  border-right: 0.24rem solid currentColor;
-  border-bottom: 0.24rem solid currentColor;
-  transform: rotate(-45deg);
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 @media (max-width: 900px) {
-  .profile-identity-grid {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
 
-  .profile-identity-grid > div:last-child {
-    display: grid;
-    justify-items: center;
-  }
 
-  .profile-name-editor {
-    justify-content: center;
-  }
 
-  .profile-progress-panel {
-    width: 100%;
-  }
 
-  .profile-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 640px) {
@@ -2297,730 +1649,108 @@ button.lobby-hourly-bonus-pill.is-ready:active {
     transform: scale(0.78);
   }
 
-  .profile-page-header {
-    gap: 0.6rem;
-  }
 
-  .profile-main-card {
-    padding: 1rem;
-  }
 
-  .profile-avatar-stage {
-    min-height: 13.4rem;
-  }
 
-  .profile-avatar-image {
-    transform: scale(0.82);
-  }
 
-  .profile-level-shield {
-    right: calc(50% - 5rem);
-    bottom: 0.35rem;
-    transform: scale(0.84);
-  }
 
-  .profile-stat-card,
-  .profile-stat-card--wide {
-    grid-column: span 1;
-    min-height: 10rem;
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
 
-  .profile-history-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
 
-  .profile-history-score,
-  .profile-history-status {
-    grid-column: 2;
-    min-width: 0;
-    border-left: 0;
-    padding-left: 0;
-    text-align: left;
-  }
 
-  .profile-logout-button {
-    min-height: 4.3rem;
-    font-size: 1.45rem;
-  }
 }
 
 /* Profile v2: landscape game-screen layout. */
-.profile-page {
-  /* Was height:100dvh + overflow:hidden, which crammed the whole
-   * profile into a fixed viewport and CLIPPED the bottom (logout cut
-   * off) on short landscape phones. Now it's at least full-height but
-   * grows with content and scrolls — nothing clips. */
-  min-height: 100dvh;
-  overflow-y: auto;
-  background: radial-gradient(circle at 16% 18%, rgba(94, 55, 180, 0.16), transparent 26rem),
-  radial-gradient(circle at 82% 12%, rgba(255, 194, 86, 0.09), transparent 24rem),
-  radial-gradient(circle at 50% 110%, rgba(110, 46, 170, 0.12), transparent 36rem),
-  linear-gradient(180deg, #070914 0%, #050611 52%, #03040a 100%);
-}
 
-.profile-screen {
-  --profile-pad-x: clamp(1rem, 1.67vw, 2rem);
-  --profile-pad-y: clamp(0.875rem, 2.22dvh, 1.5rem);
-  --profile-gap: clamp(1rem, 2.78dvh, 1.875rem);
-  display: grid;
-  /* header + body. minmax(min-content, 1fr): the body fills the
-   * viewport when there's room (desktop) but grows to its content
-   * when there isn't (short landscape) so the left column can't clip. */
-  grid-template-rows: auto minmax(min-content, 1fr);
-  gap: var(--profile-gap);
-  width: 100%;
-  min-height: 100dvh;
-  padding: var(--profile-pad-y) var(--profile-pad-x);
-}
 
-.profile-top-nav {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-width: 0;
-}
 
-.profile-icon-button {
-  width: clamp(3.75rem, 3.75vw, 4.5rem);
-  height: clamp(3.75rem, 3.75vw, 4.5rem);
-  border: 1px solid rgba(255, 211, 74, 0.95);
-  border-radius: 1.125rem;
-  background: linear-gradient(180deg, rgba(22, 24, 42, 0.98), rgba(8, 9, 22, 0.99)),
-  radial-gradient(circle at 50% 0, rgba(255, 209, 74, 0.15), transparent 68%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13),
-  inset 0 -1px 0 rgba(255, 211, 74, 0.12),
-  0 0.5rem 1.25rem rgba(0, 0, 0, 0.38);
-}
 
-.profile-back-chevron {
-  width: 1.35rem;
-  height: 1.35rem;
-  border-left-width: 0.48rem;
-  border-bottom-width: 0.48rem;
-}
 
-.profile-currency-bar {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  display: flex;
-  width: min(29.375rem, 46vw);
-  height: clamp(4.35rem, 7.96dvh, 5.375rem);
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1.2rem, 1.9vw, 2.25rem);
-  border: 1px solid rgba(188, 123, 35, 0.86);
-  border-radius: 1.375rem;
-  background: linear-gradient(180deg, rgba(18, 20, 34, 0.94), rgba(7, 8, 20, 0.98)),
-  radial-gradient(circle at 50% 0, rgba(255, 217, 97, 0.1), transparent 70%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.11),
-  inset 0 -1px 0 rgba(255, 210, 78, 0.1),
-  0 0.55rem 1.1rem rgba(0, 0, 0, 0.34);
-  transform: translateX(-50%);
-}
 
-.profile-currency-pill {
-  display: grid;
-  grid-template-columns: clamp(2.5rem, 2.5vw, 3rem) minmax(4.2rem, auto) clamp(2rem, 2vw, 2.375rem);
-  align-items: center;
-  gap: clamp(0.65rem, 0.9vw, 1rem);
-  color: white;
-  font: 900 clamp(1.35rem, 1.55vw, 1.8rem) / 1 "Segoe UI", sans-serif;
-  text-shadow: 0 0.12rem 0 rgba(0, 0, 0, 0.65);
-}
 
-.profile-currency-pill img {
-  width: clamp(2.5rem, 2.5vw, 3rem);
-  height: clamp(2.5rem, 2.5vw, 3rem);
-  object-fit: contain;
-  filter: drop-shadow(0 0.28rem 0.35rem rgba(0, 0, 0, 0.45));
-}
 
-.profile-currency-pill button {
-  width: clamp(2rem, 2vw, 2.375rem);
-  height: clamp(2rem, 2vw, 2.375rem);
-  border: 1px solid rgba(255, 188, 60, 0.78);
-  border-radius: 0.55rem;
-  background: linear-gradient(180deg, #ffd45d, #9b5a12);
-  color: #160b05;
-  font: 900 clamp(1.35rem, 1.55vw, 1.75rem) / 1 "Segoe UI", sans-serif;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42),
-  0 0.22rem 0 rgba(70, 38, 0, 0.78);
-}
 
-.profile-currency-divider {
-  width: 1px;
-  height: 2.75rem;
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.14), transparent);
-}
 
-.profile-shortcuts {
-  display: flex;
-  gap: clamp(1.5rem, 1.9vw, 2.25rem);
-}
 
-.profile-shortcut {
-  display: grid;
-  width: clamp(4rem, 4vw, 4.8rem);
-  justify-items: center;
-  gap: 0.18rem;
-  border: 0;
-  background: transparent;
-  color: white;
-  font: 900 clamp(0.72rem, 0.82vw, 0.95rem) / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-  text-shadow: 0 0.12rem 0 rgba(0, 0, 0, 0.72);
-}
 
-.profile-shortcut-icon {
-  display: grid;
-  width: clamp(3.1rem, 3.35vw, 4rem);
-  height: clamp(3.1rem, 3.35vw, 4rem);
-  place-items: center;
-}
 
-.profile-shortcut-icon img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0.18rem 0 rgba(80, 47, 7, 0.84)) drop-shadow(0 0.42rem 0.35rem rgba(0, 0, 0, 0.52));
-}
 
-.profile-main-card,
-.profile-history-panel,
-.profile-logout-button {
-  border: 1px solid rgba(174, 112, 50, 0.82);
-  background: radial-gradient(circle at 12% 50%, rgba(143, 43, 185, 0.16), transparent 25rem),
-  linear-gradient(180deg, rgba(16, 18, 37, 0.96), rgba(7, 7, 20, 0.985));
-  box-shadow: inset 0 1px 0 rgba(255, 246, 184, 0.14),
-  inset 0 0 0 1px rgba(140, 70, 22, 0.15),
-  0 0.9rem 1.8rem rgba(0, 0, 0, 0.35);
-}
 
-.profile-main-card {
-  display: grid;
-  grid-template-columns: clamp(15rem, 17.2vw, 20.625rem) minmax(27rem, 1fr) minmax(34rem, 43.5rem);
-  gap: clamp(1.5rem, 1.9vw, 2.25rem);
-  align-items: center;
-  margin-inline: clamp(0.65rem, 0.94vw, 1.125rem);
-  overflow: hidden;
-  border-radius: 1.75rem;
-  padding: clamp(1.5rem, 3.7dvh, 2.5rem) clamp(1.65rem, 2.2vw, 2.625rem);
-}
 
-.profile-avatar-stage {
-  /* Shrink-wrap the avatar (don't stretch to the card height) so the
-   * level shield can anchor to the avatar's actual bottom edge. */
-  min-height: 0;
-  place-items: center;
-  align-self: center;
-  padding-top: 0;
-}
 
-.profile-avatar-glow {
-  width: clamp(11rem, 11.5vw, 13.75rem);
-  filter: blur(0.1rem);
-  opacity: 0.86;
-  box-shadow: 0 0 1.65rem rgba(189, 70, 255, 0.44);
-}
 
-.profile-avatar-image {
-  width: clamp(11rem, 11.5vw, 13.75rem) !important;
-  height: clamp(11rem, 11.5vw, 13.75rem) !important;
-  box-shadow: 0 0 0 0.28rem #151128,
-  0 0 0 0.54rem #f4c64a,
-  0 0 0 0.7rem rgba(255, 244, 177, 0.48),
-  0 0.75rem 1.35rem rgba(0, 0, 0, 0.46);
-}
 
-.profile-level-shield {
-  right: calc(50% - clamp(5.4rem, 5.6vw, 6.875rem));
-  bottom: clamp(0.2rem, 1.4dvh, 1.125rem);
-  width: clamp(4.2rem, 4.3vw, 5.125rem);
-  height: clamp(5.25rem, 5.4vw, 6.5rem);
-  font-size: clamp(1.65rem, 2.1vw, 2.4rem);
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.48);
-}
 
-.profile-info-column {
-  min-width: 0;
-}
 
-.profile-name-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 1.125rem;
-}
 
-.profile-name-row h1 {
-  min-width: 0;
-  overflow: hidden;
-  color: white;
-  font: 900 clamp(2.55rem, 3.35vw, 4rem) / 1 "Segoe UI", sans-serif;
-  text-overflow: ellipsis;
-  text-shadow: 0 0.22rem 0 rgba(0, 0, 0, 0.52);
-  white-space: nowrap;
-}
 
-.profile-edit-button {
-  width: clamp(2.1rem, 2.2vw, 2.625rem);
-  height: clamp(2.1rem, 2.2vw, 2.625rem);
-  border-radius: 0.7rem;
-}
 
-.profile-name-editor {
-  align-items: center;
-  gap: 0.65rem;
-}
 
-.profile-name-input {
-  max-width: 28rem;
-  min-width: 18rem;
-  border-radius: 0.8rem;
-  font-size: clamp(1.6rem, 2.3vw, 2.4rem);
-  padding: 0.65rem 0.9rem;
-}
 
-.profile-small-action {
-  min-height: 2.7rem;
-  border-radius: 0.7rem;
-  padding: 0.55rem 0.95rem;
-}
 
-.profile-rank-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.7rem;
-  margin-top: 1.05rem;
-}
 
-.profile-rank-badge {
-  min-width: clamp(10.5rem, 11.5vw, 13.75rem);
-  min-height: clamp(3.15rem, 3.35vw, 4rem);
-  gap: 0.75rem;
-  border-radius: 1.125rem;
-  font-size: clamp(1.25rem, 1.55vw, 1.75rem);
-  padding: 0.28rem 1.05rem 0.34rem 0.42rem;
-}
 
-.profile-rank-shield {
-  width: clamp(2.3rem, 2.5vw, 3rem);
-  height: clamp(2.72rem, 2.9vw, 3.45rem);
-}
 
-.profile-rank-shield span {
-  width: 1.55rem;
-  height: 1.55rem;
-}
 
-.profile-rating {
-  gap: 0.62rem;
-  font-size: clamp(1.1rem, 1.25vw, 1.5rem);
-}
 
-.profile-rating-cup {
-  width: 1.55rem;
-  height: 1.32rem;
-}
 
-.profile-xp-section {
-  width: min(100%, 38.75rem);
-  margin-top: 1.45rem;
-}
 
-.profile-level-row {
-  display: flex;
-  justify-content: space-between;
-  color: white;
-  font: 900 clamp(1.05rem, 1.25vw, 1.5rem) / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-}
 
-.profile-level-row span:last-child {
-  color: #d24cff;
-}
 
-.profile-xp-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 1.45rem;
-  margin-top: 0.8rem;
-}
 
-.profile-xp-bar {
-  height: clamp(1.55rem, 1.78vw, 2.125rem);
-  border: 0.14rem solid rgba(190, 63, 219, 0.62);
-  border-radius: 9999px;
-  background: linear-gradient(180deg, #040511, #101226);
-  box-shadow: inset 0 0.2rem 0.42rem rgba(0, 0, 0, 0.76),
-  0 0 0 1px rgba(255, 214, 90, 0.22);
-}
 
-.profile-xp-bar span {
-  height: calc(100% - 0.22rem);
-  margin: 0.11rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 42%),
-  linear-gradient(90deg, #ff9f1f, #ffd71f);
-}
 
-.profile-xp-text {
-  min-width: 11.5rem;
-  color: white;
-  font: 900 clamp(1.2rem, 1.65vw, 2rem) / 1 "Segoe UI", sans-serif;
-}
 
-.profile-next-reward {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.9rem;
-  color: rgba(255, 255, 255, 0.58);
-  font: 800 clamp(1rem, 1.45vw, 1.75rem) / 1 "Segoe UI", sans-serif;
-}
 
-.profile-next-reward img {
-  width: clamp(1.25rem, 1.35vw, 1.625rem);
-  height: clamp(1.25rem, 1.35vw, 1.625rem);
-}
 
-.profile-next-reward strong {
-  color: #ffd322;
-}
 
 /* Guest "Connect with Google" CTA. Moved out of the crammed profile-card
  * info column to its own full-width banner row in the left stack (below
  * the card). A single clear call-to-action instead of a tiny button
  * squeezed under the XP bar. */
-.profile-save-progress {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.4rem;
-  margin: 0;
-  border: 0;
-  padding: 0;
-}
 
-.profile-google-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  width: 100%;
-  min-height: 3rem;
-  border: 1px solid rgba(255, 220, 100, 0.76);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffe77b, #c87e18);
-  color: #241109;
-  font-weight: 900;
-  font-size: 1rem;
-  padding: 0.7rem 1.1rem;
-  box-shadow: 0 0.28rem 0 #704000;
-}
 
-.profile-google-button:disabled {
-  opacity: 0.72;
-}
 
 /* White roundel with the Google "G" so the CTA reads as a Google action
  * without bundling the brand SVG. Scoped under the button so it isn't
  * caught by the pink error-text rule. */
-.profile-google-button .profile-google-glyph {
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
-  background: #fff;
-  color: #1a73e8;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 900;
-  line-height: 1;
-}
 
-.profile-save-progress-err {
-  color: #ff9eb0;
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-align: center;
-}
 
-.profile-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 8.75rem));
-  grid-template-rows: minmax(7.5rem, 10rem) minmax(5.8rem, 7.5rem);
-  justify-content: center;
-  align-content: center;
-  gap: clamp(0.8rem, 1vw, 1.25rem);
-  min-width: 0;
-  margin-top: 0;
-  border: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0 0 0 clamp(1.2rem, 1.9vw, 2.25rem);
-}
 
-.profile-stat-card {
-  display: grid;
-  min-height: 0;
-  place-items: center;
-  border: 1px solid rgba(132, 73, 191, 0.32);
-  border-radius: 1.25rem;
-  background: radial-gradient(circle at 50% 0, rgba(116, 50, 180, 0.18), transparent 60%),
-  linear-gradient(180deg, rgba(24, 20, 45, 0.86), rgba(10, 10, 27, 0.96));
-  text-align: center;
-  padding: 0.85rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
-  inset 0 -1px 0 rgba(255, 211, 82, 0.04);
-}
 
-.profile-stat-card--wide {
-  grid-column: span 2;
-  grid-template-columns: auto auto;
-  column-gap: 1rem;
-}
 
-.profile-stat-icon {
-  width: clamp(2.6rem, 3.1vw, 3.7rem);
-  height: clamp(2.6rem, 3.1vw, 3.7rem);
-  background: transparent;
-  box-shadow: none;
-}
 
-.profile-stat-card strong {
-  color: white;
-  font: 900 clamp(1.85rem, 2.85vw, 3.35rem) / 1 "Segoe UI", sans-serif;
-  text-shadow: 0 0.2rem 0 rgba(0, 0, 0, 0.42);
-}
 
-.profile-stat-card small {
-  color: rgba(255, 255, 255, 0.68);
-  font: 900 clamp(0.8rem, 1.25vw, 1.5rem) / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-}
 
-.profile-bottom-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 18.75rem);
-  gap: clamp(1rem, 1.25vw, 1.5rem);
-  margin-inline: clamp(0.65rem, 0.94vw, 1.125rem);
-  min-height: 0;
-}
 
-.profile-history-panel {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  border-radius: 1.5rem;
-  padding: clamp(0.75rem, 1.9dvh, 1.25rem) clamp(1rem, 1.67vw, 2rem);
-}
 
-.profile-history-panel h2 {
-  color: white;
-  font: 900 clamp(1.15rem, 1.78vw, 2.125rem) / 1 "Segoe UI", sans-serif;
-  text-transform: uppercase;
-}
 
-.profile-history-list {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  gap: clamp(0.45rem, 1.3dvh, 0.875rem);
-  margin-top: clamp(0.55rem, 1.5dvh, 1rem);
-}
 
-.profile-history-row {
-  display: grid;
-  grid-template-columns: clamp(2.6rem, 2.7vw, 3.25rem) minmax(0, 1fr) minmax(5rem, 7.5rem) minmax(6.4rem, 9.6rem) auto;
-  gap: clamp(0.8rem, 1.25vw, 1.5rem);
-  height: clamp(3.55rem, 6.67dvh, 4.5rem);
-  border-color: rgba(255, 255, 255, 0.06);
-  border-radius: 1.125rem;
-  background: linear-gradient(180deg, rgba(24, 24, 47, 0.9), rgba(10, 10, 28, 0.98));
-  padding: 0 clamp(0.75rem, 1.35vw, 1.5rem);
-}
 
-.profile-match-icon {
-  width: clamp(2.6rem, 2.7vw, 3.25rem);
-  height: clamp(2.6rem, 2.7vw, 3.25rem);
-  border-radius: 0.65rem;
-}
 
-.profile-history-copy {
-  min-width: 0;
-  text-align: left;
-}
 
-.profile-history-copy span {
-  display: block;
-  overflow: hidden;
-  color: white;
-  font: 900 clamp(1.05rem, 1.45vw, 1.75rem) / 1.05 "Segoe UI", sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
-.profile-history-copy em {
-  color: rgba(255, 255, 255, 0.56);
-  font-style: normal;
-}
 
-.profile-history-copy span::first-letter {
-  text-transform: uppercase;
-}
 
-.profile-history-copy small {
-  display: block;
-  margin-top: 0.22rem;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.56);
-  font: 700 clamp(0.85rem, 1.15vw, 1.35rem) / 1 "Segoe UI", sans-serif;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
-.profile-history-score {
-  min-width: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-  padding-left: clamp(0.8rem, 1.25vw, 1.5rem);
-  font-size: clamp(1.05rem, 1.45vw, 1.75rem);
-}
 
-.profile-history-status {
-  min-width: 0;
-  font-size: clamp(0.78rem, 1.05vw, 1.25rem);
-}
 
-.profile-history-chevron {
-  color: #ffd14e;
-  font: 900 clamp(1.8rem, 2vw, 2.4rem) / 1 "Segoe UI", sans-serif;
-}
 
-.profile-panel-message {
-  display: grid;
-  flex: 1;
-  place-items: center;
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 800;
-}
 
-.profile-panel-message a {
-  color: #ffd54d;
-}
 
-.profile-panel-message--error {
-  color: #ff9eb0;
-}
 
-.profile-logout-button {
-  display: grid;
-  min-height: 0;
-  grid-template-rows: auto auto;
-  place-content: center;
-  place-items: center;
-  gap: 1.25rem;
-  margin: 0;
-  border-color: rgba(120, 72, 167, 0.42);
-  border-radius: 1.5rem;
-  background: radial-gradient(circle at 50% 0, rgba(111, 48, 157, 0.15), transparent 65%),
-  linear-gradient(180deg, rgba(17, 14, 36, 0.96), rgba(7, 7, 22, 0.99));
-  color: #ff4b43;
-  font-size: clamp(1.45rem, 2.2vw, 2.625rem);
-}
 
-.profile-logout-icon {
-  width: clamp(2.9rem, 3.75vw, 4.5rem);
-  height: clamp(2.9rem, 3.75vw, 4.5rem);
-  border-width: 0.26rem;
-}
 
-.profile-logout-icon::before {
-  left: 1.22rem;
-  top: 1.25rem;
-  width: 2rem;
-  height: 0.5rem;
-}
 
-.profile-logout-icon::after {
-  right: -0.44rem;
-  top: 0.92rem;
-  width: 1.08rem;
-  height: 1.08rem;
-}
 
 @media (orientation: portrait), (max-width: 980px) {
-  .profile-page {
-    height: auto;
-    min-height: 100dvh;
-    overflow-y: auto;
-  }
 
-  .profile-screen {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: auto auto auto;
-  }
 
-  .profile-currency-bar {
-    position: static;
-    order: 3;
-    width: 100%;
-    transform: none;
-  }
 
-  .profile-top-nav {
-    flex-wrap: wrap;
-    gap: 1rem;
-  }
 
-  .profile-main-card,
-  .profile-bottom-grid {
-    grid-template-columns: 1fr;
-  }
 
-  .profile-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-left: 0;
-    padding-left: 0;
-  }
 }
 
 @media (orientation: landscape) {
-  .profile-page {
-    /* Definite viewport height so the body's 1fr row and the history
-     * panel's height:100% resolve. overflow-y:auto is a safety net if
-     * content ever exceeds the viewport (it scrolls instead of being
-     * clipped, which was the original logout-cutoff bug). */
-    height: 100dvh;
-    overflow-y: auto;
-  }
-
-  .profile-screen {
-    --profile-pad-x: calc(32 * var(--profile-u));
-    --profile-pad-y: calc(24 * var(--profile-u));
-    --profile-gap-y: calc(30 * var(--profile-u));
-    --profile-side-inset: calc(18 * var(--profile-u));
-    --profile-u: min(0.052083dvw, 0.092593dvh);
-    /* Two rows: header + body. The OLD template had THREE rows
-     * (86u / 420u / EMPTY 300u) which crammed the body into ~420u and
-     * wasted 300u below — that's what clipped the logout. Now the body
-     * row takes ALL remaining height (minmax(0,1fr)). Definite height
-     * keeps it from ballooning. */
-    height: 100dvh;
-    grid-template-rows:
-      calc(86 * var(--profile-u))
-      minmax(0, 1fr);
-    gap: var(--profile-gap-y);
-    padding: var(--profile-pad-y) var(--profile-pad-x);
-  }
 
   /* Cap the body grid's single row to its own (definite) height so the
    * two columns can't push past the viewport. Without an explicit row
@@ -3028,9 +1758,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * overflowed the screen's body cell by ~26px on short landscape
    * phones (logout slipping under the fold). minmax(0, 1fr) pins the row
    * to the cell; the history list scrolls internally instead. */
-  .profile-body-grid {
-    grid-template-rows: minmax(0, 1fr);
-  }
 
   /* Pack the left column (profile card / stats / logout) at the TOP.
    * The column is stretched to the full body height (so it matches the
@@ -3040,249 +1767,54 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * middle with big gaps and stretching the cards. `start` keeps them
    * tight under each other; the spare height becomes clean whitespace at
    * the bottom of the column. */
-  .profile-left-stack {
-    align-content: start;
-  }
 
   /* History sits in the SAME body row as the left column, so its top must
    * line up with the profile card's top. The base rule carries a
    * margin-top: 1.05rem (a leftover from the old stacked layout) which
    * pushed the panel ~17px lower than the card and made it overflow the
    * row. Zero it out for the side-by-side landscape layout. */
-  .profile-history-panel {
-    margin-top: 0;
-  }
 
-  .profile-top-nav {
-    flex-wrap: nowrap;
-    align-items: flex-start;
-  }
 
-  .profile-icon-button {
-    width: calc(72 * var(--profile-u));
-    height: calc(72 * var(--profile-u));
-    border-radius: calc(18 * var(--profile-u));
-  }
 
-  .profile-back-chevron {
-    width: calc(22 * var(--profile-u));
-    height: calc(22 * var(--profile-u));
-    border-left-width: calc(8 * var(--profile-u));
-    border-bottom-width: calc(8 * var(--profile-u));
-  }
 
-  .profile-currency-bar {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    order: 0;
-    width: min(calc(470 * var(--profile-u)), 45dvw);
-    height: calc(86 * var(--profile-u));
-    gap: calc(36 * var(--profile-u));
-    border-radius: calc(22 * var(--profile-u));
-    transform: translateX(-50%);
-  }
 
-  .profile-currency-pill {
-    grid-template-columns:
-      calc(48 * var(--profile-u))
-      minmax(calc(72 * var(--profile-u)), auto)
-      calc(38 * var(--profile-u));
-    gap: calc(12 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
 
-  .profile-currency-pill img {
-    width: calc(48 * var(--profile-u));
-    height: calc(48 * var(--profile-u));
-  }
 
-  .profile-currency-pill button {
-    width: calc(38 * var(--profile-u));
-    height: calc(38 * var(--profile-u));
-    border-radius: calc(9 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
 
-  .profile-currency-divider {
-    height: calc(52 * var(--profile-u));
-  }
 
-  .profile-shortcuts {
-    margin-left: auto;
-    gap: calc(36 * var(--profile-u));
-  }
 
-  .profile-shortcut {
-    width: calc(72 * var(--profile-u));
-    gap: calc(5 * var(--profile-u));
-    font-size: calc(15 * var(--profile-u));
-  }
 
-  .profile-shortcut-icon {
-    width: calc(64 * var(--profile-u));
-    height: calc(64 * var(--profile-u));
-  }
 
-  .profile-main-card {
-    /* Auto height so the info column (name → rank → XP → next reward →
-     * Google) flows naturally instead of overflowing a fixed 420u slot
-     * and overlapping (the XP bar over the Google button). */
-    height: auto;
-    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr);
-    gap: calc(40 * var(--profile-u));
-    margin-inline: var(--profile-side-inset);
-    border-radius: calc(28 * var(--profile-u));
-    padding: calc(40 * var(--profile-u)) calc(42 * var(--profile-u));
-  }
 
-  .profile-avatar-stage {
-    /* Shrink-wrap the avatar so the level shield anchors to its real
-     * bottom edge (was stretched → shield floated below the avatar). */
-    align-self: center;
-    min-height: 0;
-    place-items: center;
-    padding-top: 0;
-  }
 
-  .profile-avatar-glow,
-  .profile-avatar-image {
-    width: calc(220 * var(--profile-u)) !important;
-    height: calc(220 * var(--profile-u)) !important;
-  }
 
-  .profile-avatar-glow {
-    filter: blur(calc(2 * var(--profile-u)));
-  }
 
-  .profile-avatar-image {
-    box-shadow: 0 0 0 calc(5 * var(--profile-u)) #151128,
-    0 0 0 calc(10 * var(--profile-u)) #f4c64a,
-    0 0 0 calc(13 * var(--profile-u)) rgba(255, 244, 177, 0.48),
-    0 calc(14 * var(--profile-u)) calc(25 * var(--profile-u)) rgba(0, 0, 0, 0.46);
-  }
 
-  .profile-level-shield {
-    right: calc(50% - calc(106 * var(--profile-u)));
-    bottom: calc(18 * var(--profile-u));
-    width: calc(82 * var(--profile-u));
-    height: calc(104 * var(--profile-u));
-    font-size: calc(40 * var(--profile-u));
-  }
 
-  .profile-info-column {
-    align-self: center;
-    min-width: 0;
-  }
 
-  .profile-name-row {
-    gap: calc(18 * var(--profile-u));
-  }
 
-  .profile-name-row h1 {
-    font-size: calc(64 * var(--profile-u));
-  }
 
-  .profile-edit-button {
-    width: calc(42 * var(--profile-u));
-    height: calc(42 * var(--profile-u));
-    border-radius: calc(10 * var(--profile-u));
-  }
 
-  .profile-edit-button span {
-    width: calc(19 * var(--profile-u));
-    height: calc(6 * var(--profile-u));
-  }
 
-  .profile-edit-button span::after {
-    right: calc(-5 * var(--profile-u));
-    border-left-width: calc(6 * var(--profile-u));
-    border-top-width: calc(3 * var(--profile-u));
-    border-bottom-width: calc(3 * var(--profile-u));
-  }
 
-  .profile-rank-row {
-    gap: calc(10 * var(--profile-u));
-    margin-top: calc(14 * var(--profile-u));
-  }
 
-  .profile-rank-badge {
-    min-width: calc(220 * var(--profile-u));
-    min-height: calc(64 * var(--profile-u));
-    gap: calc(12 * var(--profile-u));
-    border-radius: calc(18 * var(--profile-u));
-    padding: calc(5 * var(--profile-u)) calc(18 * var(--profile-u)) calc(7 * var(--profile-u)) calc(8 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
 
-  .profile-rank-shield {
-    width: calc(48 * var(--profile-u));
-    height: calc(55 * var(--profile-u));
-  }
 
-  .profile-rank-shield span {
-    width: calc(25 * var(--profile-u));
-    height: calc(25 * var(--profile-u));
-  }
 
-  .profile-rating {
-    gap: calc(10 * var(--profile-u));
-    font-size: calc(24 * var(--profile-u));
-  }
 
-  .profile-rating-cup {
-    width: calc(28 * var(--profile-u));
-    height: calc(24 * var(--profile-u));
-  }
 
-  .profile-xp-section {
-    width: min(100%, calc(620 * var(--profile-u)));
-    margin-top: calc(24 * var(--profile-u));
-  }
 
-  .profile-level-row {
-    font-size: calc(24 * var(--profile-u));
-  }
 
-  .profile-xp-row {
-    position: relative;
-    display: block;
-    margin-top: calc(12 * var(--profile-u));
-  }
 
-  .profile-xp-bar {
-    width: min(100%, calc(580 * var(--profile-u)));
-    height: calc(34 * var(--profile-u));
-    border-width: calc(2 * var(--profile-u));
-  }
 
-  .profile-xp-bar span {
-    height: calc(30 * var(--profile-u));
-    margin: calc(1 * var(--profile-u));
-  }
 
-  .profile-xp-text {
-    position: absolute;
-    left: calc(230 * var(--profile-u));
-    top: 50%;
-    min-width: 0;
-    font-size: calc(32 * var(--profile-u));
-    transform: translateY(-50%);
-  }
 
   /* Desktop-landscape sizing for the lobby-style XP bar on the
      profile page. Scales with --profile-u so it matches the rest
      of the desktop profile layout (the original .profile-xp-bar
      used `width: min(100%, calc(580 * var(--profile-u))); height:
      calc(34 * var(--profile-u))` — we mirror those values). */
-  .profile-xp-wide.lobby-profile-progress {
-    width: min(100%, calc(580 * var(--profile-u)));
-    height: calc(34 * var(--profile-u));
-  }
 
-  .profile-xp-wide .lobby-profile-progress-label {
-    font-size: calc(20 * var(--profile-u));
-  }
 
   /* Position the hex on the bottom-RIGHT of the profile avatar
      (mirroring the lobby's `right: 0.05rem; bottom: -0.08rem`
@@ -3291,216 +1823,44 @@ button.lobby-hourly-bonus-pill.is-ready:active {
      `right: calc(50% - 106 * --profile-u)` which puts the hex's
      right edge just past the avatar's right edge (avatar
      radius = 110px). We use the same math. */
-  .profile-level-shield-hex.lobby-profile-level-shield {
-    right: calc(50% - calc(106 * var(--profile-u)));
-    bottom: calc(18 * var(--profile-u));
-    left: auto;
-    transform: none;
-    width: calc(82 * var(--profile-u));
-    height: calc(95 * var(--profile-u));
-    font-size: calc(40 * var(--profile-u));
-  }
 
-  .profile-next-reward {
-    gap: calc(8 * var(--profile-u));
-    margin-top: calc(14 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
 
-  .profile-next-reward img {
-    width: calc(26 * var(--profile-u));
-    height: calc(26 * var(--profile-u));
-  }
 
-  .profile-save-progress {
-    gap: calc(6 * var(--profile-u));
-    margin: 0;
-  }
 
-  .profile-google-button {
-    width: 100%;
-    min-height: calc(74 * var(--profile-u));
-    gap: calc(10 * var(--profile-u));
-    border-radius: calc(16 * var(--profile-u));
-    padding: calc(10 * var(--profile-u)) calc(20 * var(--profile-u));
-    font-size: calc(24 * var(--profile-u));
-    box-shadow: 0 calc(4 * var(--profile-u)) 0 #704000;
-  }
 
-  .profile-google-button .profile-google-glyph {
-    width: calc(34 * var(--profile-u));
-    height: calc(34 * var(--profile-u));
-    font-size: calc(22 * var(--profile-u));
-  }
 
-  .profile-save-progress-err {
-    font-size: calc(16 * var(--profile-u));
-  }
 
   /* NOTE: the landscape overrides for --lobby-u (currency pills) and
    * .profile-pp-shield live in a SEPARATE landscape block near the end
    * of the file — their base rules (.profile-top-currency,
    * .profile-pp-shield) are defined LATER than this block, so an
    * override here would lose the cascade to them. */
-  .profile-stat-grid {
-    grid-template-columns: repeat(4, calc(140 * var(--profile-u)));
-    /* ONE row. The 4 stat cards fill a single row of 4 columns, so the
-     * old second row (calc(120 * u)) was always empty — ~95px of dead
-     * space that pushed the Log Out button down and stranded it. The
-     * wallet coins/gems cards that once occupied row 2 were removed from
-     * the JSX (the top bar shows balances now). */
-    grid-template-rows: calc(160 * var(--profile-u));
-    gap: calc(20 * var(--profile-u));
-    align-content: center;
-    justify-content: center;
-    margin-top: 0;
-    border-left: 1px solid rgba(255, 255, 255, 0.09);
-    padding: 0 0 0 calc(24 * var(--profile-u));
-  }
 
-  .profile-stat-card {
-    border-radius: calc(20 * var(--profile-u));
-    padding: calc(12 * var(--profile-u));
-  }
 
-  .profile-stat-card--wide {
-    grid-column: span 2;
-    grid-template-columns: auto auto;
-    column-gap: calc(16 * var(--profile-u));
-  }
 
-  .profile-stat-icon {
-    width: calc(58 * var(--profile-u));
-    height: calc(58 * var(--profile-u));
-  }
 
-  .profile-stat-icon--coins span,
-  .profile-stat-icon--gems span {
-    width: calc(38 * var(--profile-u));
-    height: calc(38 * var(--profile-u));
-  }
 
-  .profile-stat-icon--finished span {
-    width: calc(36 * var(--profile-u));
-    height: calc(36 * var(--profile-u));
-    border-left-width: calc(6 * var(--profile-u));
-    border-bottom-width: calc(6 * var(--profile-u));
-  }
 
-  .profile-stat-icon--wins span {
-    width: calc(42 * var(--profile-u));
-    height: calc(36 * var(--profile-u));
-  }
 
-  .profile-stat-icon--losses span {
-    width: calc(42 * var(--profile-u));
-    height: calc(48 * var(--profile-u));
-  }
 
-  .profile-stat-icon--hotseat span {
-    width: calc(38 * var(--profile-u));
-    height: calc(50 * var(--profile-u));
-  }
 
-  .profile-stat-card strong {
-    font-size: calc(54 * var(--profile-u));
-  }
 
-  .profile-stat-card small {
-    font-size: calc(24 * var(--profile-u));
-  }
 
-  .profile-bottom-grid {
-    height: calc(300 * var(--profile-u));
-    grid-template-columns: minmax(0, 1fr) calc(300 * var(--profile-u));
-    gap: calc(20 * var(--profile-u));
-    margin-inline: var(--profile-side-inset);
-  }
 
-  .profile-history-panel {
-    border-radius: calc(24 * var(--profile-u));
-    padding: calc(12 * var(--profile-u)) calc(26 * var(--profile-u));
-  }
 
-  .profile-history-panel h2 {
-    font-size: calc(34 * var(--profile-u));
-  }
 
-  .profile-history-list {
-    gap: calc(14 * var(--profile-u));
-    margin-top: calc(12 * var(--profile-u));
-  }
 
-  .profile-history-row {
-    grid-template-columns:
-      calc(52 * var(--profile-u))
-      minmax(0, 1fr)
-      calc(120 * var(--profile-u))
-      calc(150 * var(--profile-u))
-      calc(26 * var(--profile-u));
-    gap: calc(18 * var(--profile-u));
-    height: calc(72 * var(--profile-u));
-    border-radius: calc(18 * var(--profile-u));
-    padding: 0 calc(16 * var(--profile-u));
-  }
 
-  .profile-match-icon {
-    width: calc(52 * var(--profile-u));
-    height: calc(52 * var(--profile-u));
-    border-radius: calc(10 * var(--profile-u));
-  }
 
-  .profile-history-copy span,
-  .profile-history-score {
-    font-size: calc(28 * var(--profile-u));
-  }
 
-  .profile-history-copy small {
-    margin-top: calc(4 * var(--profile-u));
-    font-size: calc(20 * var(--profile-u));
-  }
 
-  .profile-history-score {
-    padding-left: calc(20 * var(--profile-u));
-  }
 
-  .profile-history-status {
-    font-size: calc(20 * var(--profile-u));
-  }
 
-  .profile-history-chevron {
-    font-size: calc(38 * var(--profile-u));
-  }
 
-  .profile-panel-message {
-    font-size: calc(26 * var(--profile-u));
-  }
 
-  .profile-logout-button {
-    gap: calc(22 * var(--profile-u));
-    border-radius: calc(24 * var(--profile-u));
-    font-size: calc(42 * var(--profile-u));
-  }
 
-  .profile-logout-icon {
-    width: calc(72 * var(--profile-u));
-    height: calc(72 * var(--profile-u));
-    border-width: calc(4 * var(--profile-u));
-  }
 
-  .profile-logout-icon::before {
-    left: calc(19 * var(--profile-u));
-    top: calc(20 * var(--profile-u));
-    width: calc(32 * var(--profile-u));
-    height: calc(8 * var(--profile-u));
-  }
 
-  .profile-logout-icon::after {
-    right: calc(-7 * var(--profile-u));
-    top: calc(15 * var(--profile-u));
-    width: calc(17 * var(--profile-u));
-    height: calc(17 * var(--profile-u));
-  }
 }
 
 /* Gameplay v2: responsive landscape table layout */
@@ -8026,15 +6386,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Daily Bonus — active day card animated gold frame
-   ---------------------------------------------------------------------------
-   When the player can claim today's bonus, the active day's frame spins a
-   gold conic-ish gradient via an animatable CSS custom property
-   (CSS Houdini @property), plus a soft blurred glow underneath. Browsers
-   without @property support (older Firefox) fall back to the static initial
-   value — same visual as before, just no rotation.
-*/
 
 @property --daily-bonus-rotate {
   syntax: "<angle>";
@@ -8048,48 +6399,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
   }
 }
 
-.daily-bonus-active-frame {
-  background-image: linear-gradient(
-    var(--daily-bonus-rotate),
-    #fef3c7 0%,
-    #fcd34d 18%,
-    #fde047 36%,
-    #d97706 52%,
-    #b45309 68%,
-    #fcd34d 84%,
-    #fef3c7 100%
-  );
-  animation: daily-bonus-spin 3s linear infinite;
-}
 
 /* Subtle blurred glow underneath that also rotates, for the shimmer
    feel from the reference's ::after layer. Tight inset + small blur so
    the halo stays right around the card and doesn't visually leak past
    the modal's frame on small viewports. */
-.daily-bonus-active-frame::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background-image: linear-gradient(
-    var(--daily-bonus-rotate),
-    #fcd34d 0%,
-    #f59e0b 50%,
-    #b45309 100%
-  );
-  filter: blur(6px);
-  opacity: 0.45;
-  z-index: -1;
-  animation: daily-bonus-spin 3s linear infinite;
-}
 
-/* ─────────────────────────────────────────────────────────────────
-   Profile page polish — reusing lobby visual primitives
-   (CurrencyPill, level hex, lava XP bar) but the lobby's CSS
-   selectors are positioned for the lobby's tiny avatar. These
-   overrides reposition + resize them for the profile page's
-   much larger avatar + wider XP container.
-   ───────────────────────────────────────────────────────────────── */
 
 /* Position the level hex at the bottom-RIGHT corner of the avatar
    (matching the lobby's `right: 0.05rem; bottom: -0.08rem` pattern,
@@ -8103,19 +6418,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    Overrides the lobby class defaults of `right: 0.05rem; bottom:
    -0.08rem` (those are sized for the lobby's small top-bar avatar
    container that's fitted to its content). */
-.profile-level-shield-hex.lobby-profile-level-shield {
-  /* Avatar mobile size: clamp(11rem, 11.5vw, 13.75rem)
-     Half-avatar:        clamp(5.5rem, 5.75vw, 6.875rem)
-     Pull the hex slightly OUT past the avatar's right edge so
-     ~half of it overlaps the circle and half peeks out. */
-  right: clamp(-1rem, calc(50% - 6.4rem), 0rem);
-  bottom: clamp(0.4rem, 1.6dvh, 1.2rem);
-  left: auto;
-  transform: none;
-  width: 4.2rem;
-  height: 4.85rem;
-  font-size: 1.6rem;
-}
 
 /* Widen the lobby progress bar to fill the profile XP row, and
    use a bigger height matching the original .profile-xp-bar
@@ -8123,115 +6425,25 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    on the profile card rather than the lobby's compact bar.
    The lobby's default is `width: clamp(6.4rem, 13vw, 11rem)` —
    sized for the lobby's tiny top-bar slot. */
-.profile-xp-wide.lobby-profile-progress {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  height: clamp(1.55rem, 1.78vw, 2.125rem);
-}
 
-.profile-xp-wide .lobby-profile-progress-label {
-  font-size: clamp(0.85rem, 1.05vw, 1.15rem);
-}
 
 /* Tighten the profile-history-list so the new scroll wrapper
    (max-h: 17rem; overflow-y: auto) fits ~4 rows cleanly. The
    .profile-history-row has its own padding which is already tuned;
    this just removes the panel-level max-height/overflow that
    competed with the new scroll wrapper. */
-.profile-history-panel ul.profile-history-list {
-  max-height: none;
-  overflow: visible;
-}
 
-/* ──────────────────────────────────────────────────────────────────
-   WheelModal open animation — backdrop fades in, content stack
-   rises into place (translateY + scale + opacity). The "ascending
-   fade-in" the user asked for: starts 36px below its final
-   position at 92% scale + 0 opacity, ramps to final transform +
-   full opacity. Same easing curve as the lobby's board-swap
-   animation so the motion language stays consistent.
-   ────────────────────────────────────────────────────────────── */
-@keyframes wheel-modal-backdrop-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
 
-@keyframes wheel-modal-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(36px) scale(0.92);
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
-.wheel-modal-backdrop {
-  animation: wheel-modal-backdrop-fade 360ms ease-out both;
-}
 
-.wheel-modal-rise {
-  animation: wheel-modal-rise 560ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
-}
 
 /* Respect users who've asked their OS to reduce motion — they
    still see a small fade so the modal doesn't pop in jarringly,
    but no transform sweep. */
-@media (prefers-reduced-motion: reduce) {
-  .wheel-modal-rise {
-    animation: wheel-modal-backdrop-fade 200ms ease-out both;
-  }
-}
 
 /* Winning-wedge glow — pulses the whole winning slice's brightness while the
    wheel celebrates (the overlay element is built in WheelModal.tsx). */
-@keyframes wheel-winning-wedge-glow {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
 
-.wheel-winning-wedge {
-  animation: wheel-winning-wedge-glow 0.75s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wheel-winning-wedge {
-    animation: none;
-    opacity: 0.9;
-  }
-}
-
-/* ──────────────────────────────────────────────────────────────────
-   DiceTray v4 — pure HTML+CSS 3D dice.
-
-   Six face divs per cube (in transform-style: preserve-3d), each
-   positioned at ±40px along an axis. Pips are <span> children
-   placed inside the face via CSS Grid (3×3 per face) with per-face
-   nth-child rules. No keyframes — the "tumble" comes from setting
-   the cube's inline transform to a target with multiple full 360°
-   turns baked in; the CSS transition interpolates smoothly through
-   those turns to land on the rolled face.
-
-   Critical CSS gotcha (twice burned, now permanently fixed):
-   `filter`, `overflow: hidden`, `mix-blend-mode`, `clip-path` on
-   the cube or any ancestor up to .dice-board force `transform-
-   style: flat` per the CSS Transforms spec — the 3D cube
-   collapses to a 2D edge. None of those properties appear on
-   .dice-board, .dice-cube, or .dice-face here.
-   ────────────────────────────────────────────────────────────── */
 
 /* Tray container — sits closer to the central bar of the player's
    half-board (was at 25% / 75% = dead centre of each half, the
@@ -8244,42 +6456,12 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    stays in sync when we change the size. The default uses a vmin
    clamp so the dice scale with viewport — fixes the "dice are
    tiny on desktop because 22px was a fixed pixel value" issue. */
-.dice-board {
-  position: absolute;
-  top: 50%;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: clamp(0.25rem, 0.8vmin, 0.6rem);
-  z-index: 5;
-  /* IMPORTANT: the translate(...) for centring + transform-style:
-     preserve-3d together. Without preserve-3d the translate
-     transform would create a flat rendering context and collapse
-     the cubes. (Same lesson learned in v2.) */
-  transform: translate(-50%, -50%);
-  transform-style: preserve-3d;
-  /* Perspective scales with the cube so the 3D effect stays
-     consistent across viewport sizes. */
-  perspective: calc(var(--dice-cube-size) * 14);
-  /* Decorative — let board clicks pass through. */
-  pointer-events: none;
-  /* Default cube size: scales from 28px on tiny phones up to 56px
-     on large screens via 5.5vmin. Same proportional look at every
-     resolution (fixes "too small on web" report). */
-  --dice-cube-size: clamp(28px, 5.5vmin, 56px);
-}
 
 /* Anchor positions — nudged inward from the half-board centres
    (was 25% / 75%) toward the middle of the board. 35% puts the
    left tray at the inner edge of the left half; 65% mirrors on
    the right. Tweak these two values to taste. */
-.dice-board--left {
-  left: 35%;
-}
 
-.dice-board--right {
-  left: 65%;
-}
 
 /* The cube itself. preserve-3d puts the six faces in real 3D space.
    The transition does ALL the visual work — every new roll just
@@ -8290,12 +6472,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    element. Keeps preserve-3d so the cube's faces still render in
    3D. Sizes itself to the cube; the shadow inside is absolutely
    positioned relative to the stand. */
-.dice-stand {
-  position: relative;
-  width: var(--dice-cube-size);
-  height: var(--dice-cube-size);
-  transform-style: preserve-3d;
-}
 
 /* Halo shadow — a flat, blurred dark region surrounding the cube
    on ALL sides (not just below). Reads as a soft "glow of
@@ -8316,59 +6492,17 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    - Slight vertical bias on the gradient (centre-y at 58%) keeps
      a hint of "more shadow under the die" so it still reads as
      having gravity, just without being a pure ground patch. */
-.dice-shadow {
-  position: absolute;
-  /* Extend the shadow ~14% beyond the cube on every side. The
-     blurred gradient then fades to transparent before the
-     halo's bounding box edge, so the visible shadow is roughly
-     the size of the cube plus a soft cushion of darkness
-     around it. */
-  top: calc(var(--dice-cube-size) * -0.14);
-  bottom: calc(var(--dice-cube-size) * -0.14);
-  left: calc(var(--dice-cube-size) * -0.14);
-  right: calc(var(--dice-cube-size) * -0.14);
-  background: radial-gradient(
-    ellipse 60% 60% at center 58%,
-    rgba(0, 0, 0, 0.55) 0%,
-    rgba(0, 0, 0, 0.28) 45%,
-    rgba(0, 0, 0, 0) 80%
-  );
-  filter: blur(calc(var(--dice-cube-size) * 0.08));
-  pointer-events: none;
-  z-index: -1;
-  /* The shadow opacity transitions with the cube so when a die
-     dims from "fresh" to "used" the shadow dims with it. */
-  transition: opacity 0.25s ease;
-}
 
 /* When the die's pip has been consumed in a move, dim both the
    cube AND the shadow together. (Was previously only on the cube,
    which left a fully-opaque shadow under a barely-visible die —
    players reported it as "shadow without dice".) */
-.dice-stand--used .dice-cube,
-.dice-stand--used .dice-shadow {
-  opacity: 0.4;
-}
 
 /* All cube dimensions derived from --dice-cube-size on the tray
    (see .dice-board). Changing that one variable resizes everything
    together — width/height, face dimensions, translateZ, pips,
    padding. No more "I changed the cube to 22px but forgot to update
    translateZ from 40px" foot-gun. */
-.dice-cube {
-  position: relative;
-  width: var(--dice-cube-size);
-  height: var(--dice-cube-size);
-  transform-style: preserve-3d;
-  /* Initial resting tilt — visible briefly between mount and the
-     first useEffect run that sets the inline transform. The
-     `void el.offsetHeight` in CssDie ensures the browser commits
-     this initial state so the transition has a clean "from". */
-  transform: rotateX(-20deg) rotateY(25deg);
-  /* 1.5s settle with a strong decel curve — fast spin in, gentle
-     landing on the rolled face. */
-  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
 
 /* Used-dice dimming moved to .dice-stand--used (above). A rule
    targeting just .dice-cube--used would only dim the cube and
@@ -8379,65 +6513,18 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    out the pips; per-face nth-child rules below put each pip in
    the right cell. Border-radius + padding scale with cube size so
    the look stays proportional across the viewport-clamp range. */
-.dice-face {
-  position: absolute;
-  /* Hide the reverse side of each face. Without this, the three rear faces
-     render their backs through the cube and z-fight with the front faces
-     mid-tumble — that's the "light flickering" during a roll. With backfaces
-     hidden, only the ~3 camera-facing faces draw, so the cube reads as solid
-     and the flicker is gone. */
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  width: var(--dice-cube-size);
-  height: var(--dice-cube-size);
-  background: #fcfcfc;
-  border-radius: calc(var(--dice-cube-size) * 0.13);
-  border: 1px solid #e0e0e0;
-  box-shadow: inset 0 0 calc(var(--dice-cube-size) * 0.1) rgba(0, 0, 0, 0.15),
-  0 calc(var(--dice-cube-size) * 0.05) calc(var(--dice-cube-size) * 0.13) rgba(0, 0, 0, 0.3);
-  display: grid;
-  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
-  padding: calc(var(--dice-cube-size) * 0.08);
-  box-sizing: border-box;
-}
 
 /* Per-face cube-space positions. translateZ MUST be half the cube
    width — derived directly from --dice-cube-size. */
-.dice-face--f1 {
-  transform: rotateY(0deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
-.dice-face--f6 {
-  transform: rotateY(180deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
-.dice-face--f3 {
-  transform: rotateY(90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
-.dice-face--f4 {
-  transform: rotateY(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
-.dice-face--f2 {
-  transform: rotateX(90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
-.dice-face--f5 {
-  transform: rotateX(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5));
-}
 
 /* Pip diameter is 18% of the cube — readable at the smallest end
    of the clamp (28px → 5px pip) and not overpowering at the
    largest (56px → 10px pip). */
-.dice-pip {
-  display: block;
-  background-color: #b30000;
-  border-radius: 50%;
-  width: calc(var(--dice-cube-size) * 0.18);
-  height: calc(var(--dice-cube-size) * 0.18);
-  margin: auto;
-}
 
 /* ──────────────────────────────────────────────────────────────────
    Sprite mode — when the active board theme provides a dice sprite
@@ -8454,161 +6541,51 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    below.
    ────────────────────────────────────────────────────────────── */
 
-.dice-cube--sprite .dice-face {
-  /* Sprite art replaces the white panel. We zero out the default
-     panel styling so the artwork is the dominant visual. */
-  background-image: var(--dice-sprite-url);
-  background-size: 300% 200%;
-  background-repeat: no-repeat;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  /* IMPORTANT: no border-radius in sprite mode. The artwork itself
-     has its own rounded corners (it's drawn on a transparent
-     square tile, with the die in the middle). If we add a CSS
-     border-radius here too, the face div clips the artwork's
-     corners and the dice render with visibly chopped-off edges.
-     Letting the face stay a flat rectangle keeps the artwork
-     pixel-perfect on every face. */
-  border-radius: 0;
-  /* Let the browser pick the best resampling for the scaled
-     sprite — produces smoother edges than the default at small
-     viewport sizes. */
-  image-rendering: auto;
-}
 
 /* 3-col × 2-row layout. background-position percentages are
    relative to (image_size - container_size) which, given
    background-size: 300% 200%, means:
      col 0 → 0%   col 1 →  50%   col 2 → 100%
      row 0 → 0%   row 1 → 100% */
-.dice-cube--sprite .dice-face--f1 {
-  background-position: 0% 0%;
-}
 
-.dice-cube--sprite .dice-face--f2 {
-  background-position: 50% 0%;
-}
 
-.dice-cube--sprite .dice-face--f3 {
-  background-position: 100% 0%;
-}
 
-.dice-cube--sprite .dice-face--f4 {
-  background-position: 0% 100%;
-}
 
-.dice-cube--sprite .dice-face--f5 {
-  background-position: 50% 100%;
-}
 
-.dice-cube--sprite .dice-face--f6 {
-  background-position: 100% 100%;
-}
 
 /* Per-face pip placement using the 3×3 grid. The cells are
    row/col 1..3. Each face's nth-child rule puts the pip in the
    correct standard-dice cell. */
 
 /* 1 pip — centre */
-.dice-face--f1 .dice-pip {
-  grid-area: 2 / 2;
-}
 
 /* 2 pips — top-left, bottom-right */
-.dice-face--f2 .dice-pip:nth-child(1) {
-  grid-area: 1 / 1;
-}
 
-.dice-face--f2 .dice-pip:nth-child(2) {
-  grid-area: 3 / 3;
-}
 
 /* 3 pips — diagonal */
-.dice-face--f3 .dice-pip:nth-child(1) {
-  grid-area: 1 / 1;
-}
 
-.dice-face--f3 .dice-pip:nth-child(2) {
-  grid-area: 2 / 2;
-}
 
-.dice-face--f3 .dice-pip:nth-child(3) {
-  grid-area: 3 / 3;
-}
 
 /* 4 pips — four corners */
-.dice-face--f4 .dice-pip:nth-child(1) {
-  grid-area: 1 / 1;
-}
 
-.dice-face--f4 .dice-pip:nth-child(2) {
-  grid-area: 1 / 3;
-}
 
-.dice-face--f4 .dice-pip:nth-child(3) {
-  grid-area: 3 / 1;
-}
 
-.dice-face--f4 .dice-pip:nth-child(4) {
-  grid-area: 3 / 3;
-}
 
 /* 5 pips — four corners + centre */
-.dice-face--f5 .dice-pip:nth-child(1) {
-  grid-area: 1 / 1;
-}
 
-.dice-face--f5 .dice-pip:nth-child(2) {
-  grid-area: 1 / 3;
-}
 
-.dice-face--f5 .dice-pip:nth-child(3) {
-  grid-area: 2 / 2;
-}
 
-.dice-face--f5 .dice-pip:nth-child(4) {
-  grid-area: 3 / 1;
-}
 
-.dice-face--f5 .dice-pip:nth-child(5) {
-  grid-area: 3 / 3;
-}
 
 /* 6 pips — two columns of three */
-.dice-face--f6 .dice-pip:nth-child(1) {
-  grid-area: 1 / 1;
-}
 
-.dice-face--f6 .dice-pip:nth-child(2) {
-  grid-area: 1 / 3;
-}
 
-.dice-face--f6 .dice-pip:nth-child(3) {
-  grid-area: 2 / 1;
-}
 
-.dice-face--f6 .dice-pip:nth-child(4) {
-  grid-area: 2 / 3;
-}
 
-.dice-face--f6 .dice-pip:nth-child(5) {
-  grid-area: 3 / 1;
-}
 
-.dice-face--f6 .dice-pip:nth-child(6) {
-  grid-area: 3 / 3;
-}
 
 /* Respect prefers-reduced-motion: skip the long tumble, just snap
    to the final face. */
-@media (prefers-reduced-motion: reduce) {
-  .dice-cube {
-    transition: transform 0.2s ease-out;
-  }
-}
-
 
 /* =============================================================================
  * Profile page layout v2
@@ -8635,120 +6612,37 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * (≈2.1–2.7 rem wide) are what gets painted. We still need to nail the
  * positioning relative to the avatar (the lobby anchors it to the lobby's
  * smaller avatar; the profile uses a 220 px avatar). */
-.profile-level-shield-hex.lobby-profile-level-shield {
-  /* `right: 8 %` puts the hex flush against the avatar's right edge
-   * regardless of avatar/page size; `bottom: 4 %` keeps it on the lower
-   * arc the same way the lobby hex sits. */
-  right: 8%;
-  bottom: 4%;
-  left: auto;
-  top: auto;
-  transform: none;
-  /* Lobby clamp values — same shield, same size everywhere it appears. */
-  width: clamp(2.1rem, 3.25vw, 2.7rem);
-  height: clamp(2.43rem, 3.76vw, 3.12rem);
-  font-size: clamp(1rem, 1.7vw, 1.32rem);
-}
 
 /* Top bar: keep the back button on the left, center the currency cluster,
  * and shrink the pills ~20 %. The `.profile-top-currency` wrapper is an
  * absolute-positioned centred row so it doesn't get squeezed by the
  * back button. */
-.profile-top-nav {
-  position: relative;
-}
 
-.profile-top-currency {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  /* The pills reuse the lobby's `.lobby-currency-*` styling so they look
-   * IDENTICAL to the lobby top bar (flat, green-bordered "+",
-   * --lobby-u-scaled). Those rules need --lobby-u, normally defined on
-   * `.lobby-shell` — supply it here. Portrait uses a fixed fallback
-   * because the lobby's dvw-based formula collapses to a few px when the
-   * viewport is tall-and-narrow; landscape (below) uses the real
-   * formula so it matches the lobby pixel-for-pixel. */
-  --lobby-u: 0.62px;
-  gap: calc(14 * var(--lobby-u));
-}
 
 /* Explicit pill height so the lobby rule's `height: 100%` resolves
  * against a real box. (The old `transform: scale(0.8)` shrink hack is
  * gone — it blurred the pills and never matched the lobby's size.) */
-.profile-top-currency .lobby-currency-pill {
-  height: calc(62 * var(--lobby-u));
-}
 
 /* Body grid: left stack + tall history. The right column gets all the
  * vertical room formerly split between main-card-row and bottom-row. */
-.profile-body-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-  gap: 1.5rem;
-  min-height: 0;
-  align-items: stretch;
-}
 
-.profile-left-stack {
-  display: grid;
-  grid-template-rows: auto auto auto;
-  gap: 1rem;
-  min-width: 0;
-}
 
 /* Main card: was a 3-column grid (avatar | info | stats). Now it only
  * holds avatar + info — stats moved out to a sibling. So this becomes a
  * 2-column grid. The .profile-stat-grid rule below restyles the moved
  * stats independently. */
-.profile-main-card {
-  grid-template-columns: auto minmax(0, 1fr) !important;
-  gap: 1.5rem !important;
-  padding: 1.5rem !important;
-  align-items: center !important;
-}
 
 /* Stat row: 4 equal cards laid out in one row under the avatar card.
  * Wallet coins/gems duplicates have been removed from the JSX (the top
  * bar already shows them) so we only have 4 stats now. */
-.profile-stat-grid {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  border-left: 0 !important;
-  padding: 0 !important;
-  gap: 0.75rem;
-}
 
 /* Log Out: full-width pill that fills the left column so it visually
  * matches the cards above it. Was a square button next to the history
  * panel. Reuses the dark gradient/rim treatment of the card surfaces. */
-.profile-logout-button {
-  width: 100%;
-  height: auto;
-  min-height: 3.5rem;
-  padding: 0.85rem 1.5rem;
-  border-radius: 1rem;
-  flex-direction: row;
-  justify-content: center;
-  gap: 0.75rem;
-  font-size: 1rem;
-}
 
 /* History panel takes the full height of the right column and scrolls
  * internally — more rows visible without scrolling the page itself. */
-.profile-history-panel {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
 
-.profile-history-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
 
 /* Landscape (desktop / tablet): override the v1 grid-template-rows on
  * .profile-screen — we no longer have a separate bottom row, just the
@@ -8765,18 +6659,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * the `@media (orientation: landscape)` block higher up that sets
  * `.profile-screen { height: 100dvh }`. */
 @media (orientation: landscape) {
-  .profile-screen {
-    grid-template-rows:
-      calc(86 * var(--profile-u))
-      minmax(0, 1fr);
-  }
 
   /* The main card no longer needs to be a fixed 420px tall slot — it
    * sits inside the left stack with `height: auto`. */
-  .profile-main-card {
-    height: auto !important;
-    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr) !important;
-  }
 }
 
 /* Short landscape (a phone held sideways). The tall-landscape layout
@@ -8796,26 +6681,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * at most the user scrolls a few px to reach the bottom of the left
  * column. Placed AFTER both landscape blocks so it wins the cascade. */
 @media (orientation: landscape) and (max-height: 540px) {
-  .profile-page {
-    height: auto;
-    min-height: 100dvh;
-  }
 
-  .profile-screen {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: calc(86 * var(--profile-u)) auto;
-  }
 
-  .profile-body-grid {
-    grid-template-rows: auto;
-    align-items: start;
-  }
 
-  .profile-history-panel {
-    height: auto;
-    max-height: 80dvh;
-  }
 }
 
 /* Portrait: stack the avatar card to a single column (avatar on top,
@@ -8829,9 +6697,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * — and placed AFTER the landscape block above so it wins the cascade
  * over the base `!important` grid. */
 @media (orientation: portrait) {
-  .profile-main-card {
-    grid-template-columns: 1fr !important;
-  }
 
   /* The base name size effectively pins to ~2.55rem (~41px) on phones —
    * its 3.35vw term only overtakes the min past ~1200px wide — so a
@@ -8839,25 +6704,13 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * and the ellipsis clips it to "Yaniv Alfa...". Scale the name with
    * the viewport in portrait so typical names fit with margin; very long
    * names still ellipsize gracefully. */
-  .profile-name-row h1 {
-    font-size: clamp(1.6rem, 6.4vw, 2.55rem);
-  }
 }
 
 /* Portrait + narrow: collapse the body grid to a single column. Match
  * history floats to the bottom and uses its own intrinsic height. */
 @media (max-width: 760px), (orientation: portrait) {
-  .profile-body-grid {
-    grid-template-columns: 1fr;
-  }
 
-  .profile-history-panel {
-    min-height: 22rem;
-  }
 
-  .profile-stat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
 }
 
 /* ============================================================
@@ -9104,32 +6957,6 @@ button.lobby-hourly-bonus-pill.is-ready:active {
  * scaled up for the big profile avatar and anchored to the bottom-
  * centre of the avatar circle (the avatar is 220px, centred in
  * .profile-avatar-stage). Replaces the old pointy hex. */
-.profile-pp-shield {
-  position: absolute;
-  left: 50%;
-  /* Stage shrink-wraps the avatar, so its bottom edge IS the avatar's
-   * bottom — sit the shield straddling it, bottom-centre. */
-  top: auto;
-  bottom: -0.6rem;
-  transform: translateX(-50%);
-  width: clamp(2.3rem, 3.6vw, 3rem);
-  aspect-ratio: 0.78;
-  display: grid;
-  place-items: center;
-  border: 2px solid #f2b633;
-  border-radius: 18% 18% 45% 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
-  linear-gradient(180deg, #20296d, #0b103e 72%);
-  box-shadow: inset 0 0 6px rgba(115, 98, 255, 0.38),
-  0 3px 7px rgba(0, 0, 0, 0.5),
-  0 0 5px rgba(255, 194, 50, 0.4);
-  z-index: 6;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 900;
-  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
-  color: #fff;
-  text-shadow: 0 1px 0 #25235b;
-}
 
 /* Landscape overrides for the profile currency pills + level shield.
  * MUST live HERE — after the base `.profile-top-currency` and
@@ -9142,18 +6969,9 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    * as `.lobby-shell`, so the reused `.lobby-currency-*` rules render at
    * the identical flat, --lobby-u-scaled size. (Portrait keeps the fixed
    * 0.62px fallback set on the base `.profile-top-currency` rule.) */
-  .profile-top-currency {
-    --lobby-u: min(0.055804dvw, 0.120773dvh);
-  }
 
   /* Level shield: shrink from ~46% of the avatar width to ~27% and nudge
    * it a touch lower so it sits cleanly on the avatar's bottom edge. */
-  .profile-pp-shield {
-    width: calc(60 * var(--profile-u));
-    bottom: calc(-30 * var(--profile-u));
-    border-width: calc(2 * var(--profile-u));
-    font-size: calc(28 * var(--profile-u));
-  }
 }
 
 /* Right column — name+rank row + XP card. Column 2, row 1. */
@@ -9566,228 +7384,30 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    etc.) applied via wrapClassName win over the default position:relative
    — otherwise this end-of-file rule beats the utility by source order
    and the board button drops into normal flow below the board. */
-@layer components {
-  .gr-play-wrap {
-    --gr-glow-hue: 48deg;
-    position: relative;
-    display: inline-block;
-    padding: 0.034em;
-    border-radius: 0.448em;
-    line-height: 1;
-    background: linear-gradient(180deg, #f2f4f1 0%, #9ba09b 48%, #4d514d 100%);
-    box-shadow: 0 0.276em 0.483em rgba(0, 0, 0, 0.48),
-    0 0 0.207em rgba(210, 220, 210, 0.18),
-    inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
-    inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
-  }
-}
 
 /* Size presets — the only knob. */
-.gr-play-lg {
-  font-size: clamp(22px, 5vw, 48px);
-}
 
-.gr-play-md {
-  font-size: 26px;
-}
 
-.gr-play-sm {
-  font-size: 16px;
-}
 
 /* Full-width variant: the pill stretches to the parent width and
    font-size then only drives the height. */
-.gr-play-block {
-  display: block;
-  width: 100%;
-}
 
-.gr-play-block .gr-play-button {
-  width: 100%;
-}
 
-.gr-play-wrap::before {
-  content: "";
-  position: absolute;
-  inset: 0.017em;
-  border-radius: inherit;
-  border: 0.017em solid rgba(255, 255, 255, 0.18);
-  pointer-events: none;
-}
 
-.gr-play-button {
-  position: relative;
-  width: 5.345em;
-  height: 1.793em;
-  border: 0;
-  border-radius: 0.448em;
-  cursor: pointer;
-  overflow: hidden;
-  isolation: isolate;
-  --inset: 0.586em;
-  display: block;
-  font-size: 1em;
-  color: #fff7cd;
-  font-weight: 1000;
-  letter-spacing: 0.043em;
-  text-transform: uppercase;
-  text-shadow: 0 0.052em 0 #11401b,
-  0 0.103em 0.138em rgba(0, 0, 0, 0.45),
-  0 0 0.207em rgba(255, 255, 255, 0.55);
-  /* Flat green — top sheen + vertical gradient for the 3D pill, no
-     dot/line texture pattern. */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 28%),
-  linear-gradient(to top, #1b5a24 0%, #2fa345 52%, #63df73 100%);
-  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
-  inset 0 -0.069em 0.034em rgba(8, 72, 18, 0.48),
-  0 0.069em 0 #343834,
-  0 0.207em 0.31em rgba(0, 0, 0, 0.46);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
-}
 
-.gr-play-text {
-  position: relative;
-  z-index: 3;
-  display: inline-block;
-  transform: translateY(-0.086em);
-  color: #fff7cd;
-  background-clip: text;
-  -webkit-background-clip: text;
-  background-image: linear-gradient(
-    120deg,
-    transparent,
-    hsla(var(--gr-glow-hue), 100%, 78%, 0.35) 38%,
-    hsla(var(--gr-glow-hue), 100%, 92%, 0.95) 50%,
-    transparent 62%
-  );
-  background-repeat: no-repeat;
-  background-size: 300% 300%;
-  background-position: 100% center;
-}
 
-.gr-play-shimmer {
-  position: absolute;
-  inset: calc(var(--inset) * -1);
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 2;
-  -webkit-mask-image: conic-gradient(
-    from var(--gr-shimmer, 0deg),
-    transparent 0%, transparent 20%, black 36%, black 45%,
-    transparent 50%, transparent 70%, black 85%, black 95%, transparent 100%
-  );
-  mask-image: conic-gradient(
-    from var(--gr-shimmer, 0deg),
-    transparent 0%, transparent 20%, black 36%, black 45%,
-    transparent 50%, transparent 70%, black 85%, black 95%, transparent 100%
-  );
-  mix-blend-mode: screen;
-  animation: gr-shimmer 1s linear infinite both;
-}
 
-.gr-play-shimmer::before,
-.gr-play-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: var(--inset);
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
 
-.gr-play-shimmer::before {
-  box-shadow: 0 0 calc(var(--inset) * 0.1) 0.034em hsl(var(--gr-glow-hue) 35% 95%),
-  0 0 calc(var(--inset) * 0.2) 0.069em hsl(var(--gr-glow-hue) 55% 80%),
-  0 0 calc(var(--inset) * 0.42) 0.086em hsl(var(--gr-glow-hue) 90% 66%);
-  z-index: -1;
-}
 
-.gr-play-shimmer::after {
-  box-shadow: inset 0 0 0 0.017em hsl(var(--gr-glow-hue) 90% 92%),
-  inset 0 0 0.052em 0.017em hsl(var(--gr-glow-hue) 95% 76%),
-  inset 0 0 0.138em 0.034em hsl(var(--gr-glow-hue) 100% 62%);
-  z-index: 2;
-}
 
-.gr-play-button:hover {
-  filter: brightness(1.12) saturate(1.14);
-  transform: translateY(-0.034em) scale(1.04);
-  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
-  inset 0 -0.069em 0.034em rgba(0, 40, 10, 0.5),
-  0 0.086em 0 #343834,
-  0 0.31em 0.414em rgba(0, 0, 0, 0.5),
-  0 0 0.483em rgba(106, 255, 140, 0.42);
-}
 
-.gr-play-button:hover .gr-play-shimmer::before,
-.gr-play-button:hover .gr-play-shimmer::after {
-  opacity: 1;
-  animation: gr-shine 1.2s ease-in 1 forwards;
-}
 
-.gr-play-button:hover .gr-play-text {
-  color: transparent;
-  animation: gr-text-shine 0.66s ease-in 1 both;
-}
 
-.gr-play-button:active {
-  transform: translateY(0.069em) scale(1.01);
-  box-shadow: inset 0 0.034em 0.017em rgba(255, 255, 255, 0.32),
-  inset 0 -0.052em 0.034em rgba(0, 68, 20, 0.42),
-  0 0.034em 0 #343834,
-  0 0.138em 0.241em rgba(0, 0, 0, 0.42);
-}
 
-.gr-play-button:disabled {
-  cursor: default;
-  filter: grayscale(0.5) brightness(0.82);
-}
 
-.gr-play-sparkle {
-  position: absolute;
-  width: 0.224em;
-  height: 0.224em;
-  background: #fff9bd;
-  transform: rotate(45deg);
-  pointer-events: none;
-  filter: drop-shadow(0 0 0.138em #ffe76a);
-  animation: gr-twinkle 1.8s infinite ease-in-out;
-}
 
-.gr-play-sparkle:nth-child(1) {
-  top: -0.138em;
-  right: 0.931em;
-  animation-delay: 0s;
-}
 
-.gr-play-sparkle:nth-child(2) {
-  bottom: 0.086em;
-  left: 0.776em;
-  width: 0.155em;
-  height: 0.155em;
-  animation-delay: 0.45s;
-}
 
-.gr-play-sparkle:nth-child(3) {
-  top: 0.379em;
-  left: -0.069em;
-  width: 0.138em;
-  height: 0.138em;
-  animation-delay: 0.9s;
-}
-
-/* Honor reduced-motion: kill the perpetual shimmer + sparkle loops. */
-@media (prefers-reduced-motion: reduce) {
-  .gr-play-shimmer {
-    animation: none;
-  }
-
-  .gr-play-sparkle {
-    animation: none;
-    opacity: 0.6;
-  }
-}
 
 /* ==========================================================================
  * Expandable locked pill (.gr-unlock-*) — see src/components/UnlockPill.tsx
@@ -9802,185 +7422,25 @@ button.lobby-hourly-bonus-pill.is-ready:active {
 
 /* Wrap in @layer components so caller positioning utilities (.absolute,
    translate, …) on the wrap win over the default position:relative. */
-@layer components {
-  .gr-unlock-wrap {
-    position: relative;
-    display: inline-flex;
-  }
-}
 
-.gr-unlock-pill {
-  --gold-light: #ffe98b;
-  --gold-mid: #d9a83a;
-  --gold-dark: #8a5d12;
-  position: relative;
-  flex: none;
-  width: 1em; /* collapsed: square (= height) */
-  height: 1em;
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  overflow: hidden;
-  color: var(--gold-light);
-  background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow: 0 0 0 0.019em var(--gold-dark),
-  0 0 0 0.032em var(--gold-mid),
-  inset 0 0.026em 0.103em rgba(255, 255, 255, 0.08),
-  inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
-  0 0.09em 0.205em rgba(0, 0, 0, 0.45);
-  transition: width 430ms cubic-bezier(0.2, 0.9, 0.2, 1.12),
-  transform 180ms ease,
-  box-shadow 220ms ease;
-}
 
-.gr-unlock-pill.is-open {
-  width: 3.974em;
-}
 
-.gr-unlock-pill::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 0.026em;
-  background: linear-gradient(135deg, #ffe98b 0%, #c78f25 34%, #fff0a0 52%, #8a5d12 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
 
-.gr-unlock-pill::after {
-  content: "";
-  position: absolute;
-  inset: 0.09em;
-  border-radius: inherit;
-  border: 0.013em solid rgba(255, 238, 157, 0.28);
-  box-shadow: inset 0 0 0.205em rgba(255, 220, 95, 0.08);
-  pointer-events: none;
-}
 
 /* Static golden NAME pill — reuses the .gr-unlock-pill gold treatment (dark
    core, gradient gold rim) but always shows its text and auto-sizes to fit.
    Used for the board name above the carousel. Size it via font-size on the
    element (inline style); everything else is em-relative. */
-.gr-name-pill {
-  --gold-light: #ffe98b;
-  --gold-mid: #d9a83a;
-  --gold-dark: #8a5d12;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.34em 1.15em;
-  border-radius: 999px;
-  overflow: hidden;
-  color: var(--gold-light);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
-  background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow: 0 0 0 0.08em var(--gold-dark),
-  0 0 0 0.14em var(--gold-mid),
-  inset 0 0.06em 0.1em rgba(255, 255, 255, 0.08),
-  inset 0 -0.1em 0.18em rgba(0, 0, 0, 0.75),
-  0 0.16em 0.3em rgba(0, 0, 0, 0.45);
-  text-shadow: 0 0.06em 0.08em rgba(0, 0, 0, 0.55);
-}
 
-.gr-name-pill::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 0.09em;
-  background: linear-gradient(135deg, #ffe98b 0%, #c78f25 34%, #fff0a0 52%, #8a5d12 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
 
-.gr-unlock-pill:hover {
-  transform: translateY(-0.013em);
-  box-shadow: 0 0 0 0.019em var(--gold-dark),
-  0 0 0 0.032em var(--gold-mid),
-  0 0 0.256em rgba(255, 216, 91, 0.28),
-  inset 0 0.026em 0.103em rgba(255, 255, 255, 0.1),
-  inset 0 -0.103em 0.18em rgba(0, 0, 0, 0.75),
-  0 0.128em 0.256em rgba(0, 0, 0, 0.5);
-}
 
-.gr-unlock-icon,
-.gr-unlock-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 220ms ease, transform 280ms ease, filter 280ms ease;
-}
 
-.gr-unlock-icon {
-  opacity: 1;
-  transform: scale(1);
-}
 
-.gr-unlock-icon svg {
-  width: 0.449em;
-  height: 0.449em;
-  display: block;
-  filter: drop-shadow(0 0.013em 0 rgba(255, 255, 255, 0.35)) drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.077em rgba(255, 211, 75, 0.38));
-}
 
 /* Gem variant — the gem.webp keeps its own colors, just sized + a
    soft drop-shadow to seat it in the badge. */
-.gr-unlock-icon img {
-  width: 0.62em;
-  height: auto;
-  display: block;
-  object-fit: contain;
-  filter: drop-shadow(0 0.038em 0.051em rgba(0, 0, 0, 0.5));
-}
 
-.gr-unlock-text {
-  opacity: 0;
-  /* em here is relative to THIS element's font-size (0.282em of pill),
-     so the design's px offsets are divided by 22, not 78. */
-  font-size: 0.282em;
-  transform: translateY(0.409em) scale(0.96);
-  filter: blur(0.18em);
-  white-space: nowrap;
-  font-weight: 700;
-  letter-spacing: 0.009em;
-  color: #ffe98b;
-  text-shadow: 0 0.045em 0 #7a4f0c,
-  0 0.091em 0.318em rgba(255, 216, 91, 0.38),
-  0 0.182em 0.455em rgba(0, 0, 0, 0.75);
-  pointer-events: none;
-}
 
-.gr-unlock-pill.is-open .gr-unlock-icon {
-  opacity: 0;
-  transform: translateY(-0.115em) scale(0.8);
-  filter: blur(0.051em);
-}
-
-.gr-unlock-pill.is-open .gr-unlock-text {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  filter: blur(0);
-  transition-delay: 120ms;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gr-unlock-pill,
-  .gr-unlock-icon,
-  .gr-unlock-text {
-    transition-duration: 1ms;
-  }
-}
 
 
 /* ============================================================
@@ -9993,121 +7453,23 @@ button.lobby-hourly-bonus-pill.is-ready:active {
    near-free to render.
    ============================================================ */
 
-.gr-loadingscreen-hud {
-  position: absolute;
-  left: 50%;
-  bottom: max(7vh, calc(env(safe-area-inset-bottom, 0px) + 5vh));
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: clamp(0.5rem, 1.6vh, 0.9rem);
-}
 
-.gr-loadingscreen-label {
-  display: flex;
-  align-items: center;
-  gap: clamp(0.6rem, 2vw, 1rem);
-  color: #f6c453;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.34em;
-  /* Optically recenter: letter-spacing adds a trailing gap. */
-  padding-left: 0.34em;
-  font-size: clamp(0.8rem, 2.6vh, 1.1rem);
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
-  white-space: nowrap;
-}
 
 /* The —◆ tails flanking LOADING, per the brand mockup. */
-.gr-loadingscreen-tail {
-  position: relative;
-  height: 2px;
-  width: clamp(2.2rem, 7vw, 4rem);
-}
 
-.gr-loadingscreen-tail::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  width: 7px;
-  height: 7px;
-  background: #f6c453;
-  transform: translateY(-50%) rotate(45deg);
-}
 
-.gr-loadingscreen-tail--l {
-  background: linear-gradient(to right, transparent, #f6c453);
-}
 
-.gr-loadingscreen-tail--l::after {
-  right: -3px;
-}
 
-.gr-loadingscreen-tail--r {
-  background: linear-gradient(to left, transparent, #f6c453);
-}
 
-.gr-loadingscreen-tail--r::after {
-  left: -3px;
-}
 
-.gr-loadingscreen-track {
-  width: min(72vw, 30rem);
-  height: clamp(16px, 3.6vh, 25px);
-  border-radius: 999px;
-  border: 2px solid #edb64f;
-  background: linear-gradient(#0d0802, #1c1206);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6),
-  0 0 14px rgba(240, 180, 70, 0.22),
-  inset 0 2px 6px rgba(0, 0, 0, 0.85);
-  padding: 3px;
-}
 
 /* Inner clip layer: the sliding fill is clipped HERE (a static rounded
    box inside the track's 3px inset). It cannot be clipped on the fill
    itself — clip-path travels with the element's transform, so the fill
    used to slide in visibly OUTSIDE the track frame. */
-.gr-loadingscreen-clip {
-  height: 100%;
-  border-radius: 999px;
-  overflow: hidden;
-}
 
-.gr-loadingscreen-fill {
-  height: 100%;
-  width: 100%;
-  border-radius: 999px;
-  background: linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
-  repeating-linear-gradient(55deg, #ffdf8a 0 12px, #f3b445 12px 24px);
-  box-shadow: 0 0 10px rgba(255, 190, 70, 0.4);
-  /* Indeterminate: slide in from the left once, easing out near "90%".
-     LoadingScreen overrides transform+animation inline when it has real
-     progress to show. */
-  transform: translateX(-93%);
-  animation: gr-loadingscreen-fill 2.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s forwards;
-  will-change: transform;
-}
 
-@keyframes gr-loadingscreen-fill {
-  to {
-    transform: translateX(-10%);
-  }
-}
-
-/* ============================================================
-   Modal-open animation pause. While any full-screen modal is up
-   (<body data-gr-modal>, ref-counted in lib/bodyModalFlag), the
-   lobby's ambient infinite animations pause: they're invisible
-   behind the dimmed backdrop, but phones still paid style/paint/
-   composite for every frame of them — while ALSO rendering the
-   modal. The Sunbeam canvas pauses its own rAF loop the same way.
-   ============================================================ */
-body[data-gr-modal] .lobby-profile-progress-bubbles,
-body[data-gr-modal] .lobby-profile-progress-bubbles::after,
-body[data-gr-modal] .lobby-hourly-bonus-image.is-ready::before,
-body[data-gr-modal] .gr-play-shimmer,
-body[data-gr-modal] .gr-play-shimmer::before,
-body[data-gr-modal] .gr-play-shimmer::after {
+body[data-fullscreen-modal] .lobby-profile-progress-bubbles,
+body[data-fullscreen-modal] .lobby-profile-progress-bubbles::after {
   animation-play-state: paused;
 }

@@ -1,0 +1,41 @@
+@keyframes wheelModalBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wheelModalRise {
+  0% { opacity: 0; transform: translateY(36px) scale(0.92); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.wheelModalBackdrop {
+  animation: wheelModalBackdropFade 360ms ease-out both;
+}
+
+.wheelModalRise {
+  animation: wheelModalRise 560ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheelModalRise {
+    animation: wheelModalBackdropFade 200ms ease-out both;
+  }
+}
+
+@keyframes wheelWinningWedgeGlow {
+  0%,
+  100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.wheelWinningWedge {
+  animation: wheelWinningWedgeGlow 0.75s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wheelWinningWedge {
+    animation: none;
+    opacity: 0.9;
+  }
+}

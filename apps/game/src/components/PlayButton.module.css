@@ -1,0 +1,236 @@
+@property --playButtonShimmer {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 33deg;
+}
+
+@keyframes playButtonShimmer {
+  0% { --playButtonShimmer: 0deg; }
+  100% { --playButtonShimmer: 360deg; }
+}
+
+@keyframes playButtonShine {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes playButtonTextShine {
+  0% { background-position: 100% center; }
+  100% { background-position: -100% center; }
+}
+
+@keyframes playButtonTwinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.75) rotate(45deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(45deg);
+  }
+}
+
+.playButtonWrap {
+  --playButtonGlowHue: 48deg;
+  display: inline-block;
+  padding: 0.034em;
+  border-radius: 0.448em;
+  line-height: 1;
+  background: linear-gradient(180deg, #f2f4f1 0%, #9ba09b 48%, #4d514d 100%);
+  box-shadow:
+    0 0.276em 0.483em rgba(0, 0, 0, 0.48),
+    0 0 0.207em rgba(210, 220, 210, 0.18),
+    inset 0 0.017em 0.017em rgba(255, 255, 255, 0.38),
+    inset 0 -0.017em 0.034em rgba(0, 0, 0, 0.34);
+}
+
+/* Zero-specificity default lets caller positioning win regardless of import order. */
+:where(.playButtonWrap) { position: relative; }
+
+:where(.playButtonWrap):global(.absolute) {
+  position: absolute;
+}
+
+:where(.playButtonWrap):global(.fixed) {
+  position: fixed;
+}
+
+:where(.playButtonWrap):global(.sticky) {
+  position: sticky;
+}
+
+:where(.playButtonWrap):global(.relative) {
+  position: relative;
+}
+
+.playButtonLarge { font-size: clamp(22px, 5vw, 48px); }
+.playButtonMedium { font-size: 26px; }
+.playButtonSmall { font-size: 16px; }
+
+.playButtonBlock {
+  display: block;
+  width: 100%;
+}
+
+.playButtonBlock .playButton { width: 100%; }
+
+.playButtonWrap::before {
+  content: "";
+  position: absolute;
+  inset: 0.017em;
+  border-radius: inherit;
+  border: 0.017em solid rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.playButton {
+  position: relative;
+  width: 5.345em;
+  height: 1.793em;
+  border: 0;
+  border-radius: 0.448em;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  --playButtonInset: 0.586em;
+  display: block;
+  font-size: 1em;
+  color: #fff7cd;
+  font-weight: 1000;
+  letter-spacing: 0.043em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0.052em 0 #11401b,
+    0 0.103em 0.138em rgba(0, 0, 0, 0.45),
+    0 0 0.207em rgba(255, 255, 255, 0.55);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 28%),
+    linear-gradient(to top, #1b5a24 0%, #2fa345 52%, #63df73 100%);
+  box-shadow:
+    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
+    inset 0 -0.069em 0.034em rgba(8, 72, 18, 0.48),
+    0 0.069em 0 #343834,
+    0 0.207em 0.31em rgba(0, 0, 0, 0.46);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.playButtonText {
+  position: relative;
+  z-index: 3;
+  display: inline-block;
+  transform: translateY(-0.086em);
+  color: #fff7cd;
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-image: linear-gradient(120deg,
+      transparent,
+       hsla(var(--playButtonGlowHue), 100%, 78%, 0.35) 38%,
+       hsla(var(--playButtonGlowHue), 100%, 92%, 0.95) 50%,
+      transparent 62%);
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
+  background-position: 100% center;
+}
+
+.playButtonShimmer {
+  position: absolute;
+  inset: calc(var(--playButtonInset) * -1);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  -webkit-mask-image: conic-gradient(from var(--playButtonShimmer, 0deg), transparent 0%, transparent 20%, black 36%, black 45%, transparent 50%, transparent 70%, black 85%, black 95%, transparent 100%);
+  mask-image: conic-gradient(from var(--playButtonShimmer, 0deg), transparent 0%, transparent 20%, black 36%, black 45%, transparent 50%, transparent 70%, black 85%, black 95%, transparent 100%);
+  mix-blend-mode: screen;
+  animation: playButtonShimmer 1s linear infinite both;
+}
+
+.playButtonShimmer::before,
+.playButtonShimmer::after {
+  content: "";
+  position: absolute;
+  inset: var(--playButtonInset);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.playButtonShimmer::before {
+  box-shadow:
+    0 0 calc(var(--playButtonInset) * 0.1) 0.034em hsl(var(--playButtonGlowHue) 35% 95%),
+    0 0 calc(var(--playButtonInset) * 0.2) 0.069em hsl(var(--playButtonGlowHue) 55% 80%),
+    0 0 calc(var(--playButtonInset) * 0.42) 0.086em hsl(var(--playButtonGlowHue) 90% 66%);
+  z-index: -1;
+}
+
+.playButtonShimmer::after {
+  box-shadow:
+    inset 0 0 0 0.017em hsl(var(--playButtonGlowHue) 90% 92%),
+    inset 0 0 0.052em 0.017em hsl(var(--playButtonGlowHue) 95% 76%),
+    inset 0 0 0.138em 0.034em hsl(var(--playButtonGlowHue) 100% 62%);
+  z-index: 2;
+}
+
+.playButton:hover {
+  filter: brightness(1.12) saturate(1.14);
+  transform: translateY(-0.034em) scale(1.04);
+  box-shadow:
+    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.18),
+    inset 0 -0.069em 0.034em rgba(0, 40, 10, 0.5),
+    0 0.086em 0 #343834,
+    0 0.31em 0.414em rgba(0, 0, 0, 0.5),
+    0 0 0.483em rgba(106, 255, 140, 0.42);
+}
+
+.playButton:hover .playButtonShimmer::before,
+.playButton:hover .playButtonShimmer::after {
+  opacity: 1;
+  animation: playButtonShine 1.2s ease-in 1 forwards;
+}
+
+.playButton:hover .playButtonText {
+  color: transparent;
+  animation: playButtonTextShine 0.66s ease-in 1 both;
+}
+
+.playButton:active {
+  transform: translateY(0.069em) scale(1.01);
+  box-shadow:
+    inset 0 0.034em 0.017em rgba(255, 255, 255, 0.32),
+    inset 0 -0.052em 0.034em rgba(0, 68, 20, 0.42),
+    0 0.034em 0 #343834,
+    0 0.138em 0.241em rgba(0, 0, 0, 0.42);
+}
+
+.playButton:disabled {
+  cursor: default;
+  filter: grayscale(0.5) brightness(0.82);
+}
+
+.playButtonSparkle {
+  position: absolute;
+  width: 0.224em;
+  height: 0.224em;
+  background: #fff9bd;
+  transform: rotate(45deg);
+  pointer-events: none;
+  filter: drop-shadow(0 0 0.138em #ffe76a);
+  animation: playButtonTwinkle 1.8s infinite ease-in-out;
+}
+
+.playButtonSparkle:nth-child(1) { top: -0.138em; right: 0.931em; animation-delay: 0s; }
+.playButtonSparkle:nth-child(2) { bottom: 0.086em; left: 0.776em; width: 0.155em; height: 0.155em; animation-delay: 0.45s; }
+.playButtonSparkle:nth-child(3) { top: 0.379em; left: -0.069em; width: 0.138em; height: 0.138em; animation-delay: 0.9s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .playButtonShimmer { animation: none; }
+  .playButtonSparkle { animation: none; opacity: 0.6; }
+}
+
+:global(body[data-fullscreen-modal]) .playButtonShimmer,
+:global(body[data-fullscreen-modal]) .playButtonShimmer::before,
+:global(body[data-fullscreen-modal]) .playButtonShimmer::after {
+  animation-play-state: paused;
+}

@@ -7,6 +7,7 @@ import type {WheelSlot} from "../features/lobby/lobbyData"
 
 import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "./RewardFlight"
 import type {WheelStateResult} from "./useWheelState"
+import styles from "./WheelModal.module.css"
 
 /**
  * spin_wheel returns a single object describing what the player won
@@ -408,17 +409,17 @@ export function WheelModal({
   const wheelDimension = "clamp(11rem, 48vmin, 22rem)"
 
   return (
-    <div className="wheel-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4">
+    <div className={`${styles.wheelModalBackdrop} fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4`}>
       {/* Carnival / fortune-wheel stack: title plate, pointer,
           gold-framed wheel with bulb lights, big SPIN CTA. No more
           cream modal box — the elements sit directly on the page
           overlay, matching the reference design.
-          `wheel-modal-rise` keyframe (defined in index.css)
+          `wheelModalRise` keyframe (defined in WheelModal.module.css)
           fades+rises the stack into place: opacity 0→1 and
           translateY(36px)→0 with a soft over-curve. Backdrop
-          gets its own fade-in via `wheel-modal-backdrop` on the
+          gets its own fade-in via `wheelModalBackdrop` on the
           parent. */}
-      <div className="wheel-modal-rise relative flex flex-col items-center">
+      <div className={`${styles.wheelModalRise} relative flex flex-col items-center`}>
         {/* Title plate + close button. Wrapped in a relative
             container so the close button can be positioned against
             the plate's edge (not the bonus-ui stack's edge, which
@@ -600,12 +601,12 @@ export function WheelModal({
                    *  only across the winning slot's 36° arc (same `from
                    *  -SLOT_HALF` origin as the wheel so it aligns exactly),
                    *  screen-blended to brighten that wedge, with a pulsing
-                   *  opacity (see .wheel-winning-wedge in index.css). Rendered
+                   *  opacity (see .wheelWinningWedge in WheelModal.module.css). Rendered
                    *  first + no z-index so it sits above the gradient but below
                    *  the dividers + icons, which stay crisp on top. */}
             {phase === "celebrating" && spinResult != null ? (<div
               aria-hidden
-              className="wheel-winning-wedge absolute inset-0 rounded-full"
+              className={`${styles.wheelWinningWedge} absolute inset-0 rounded-full`}
               style={{
                 background: `conic-gradient(from -${SLOT_HALF}deg, transparent 0 ${spinResult.slot_index * SLOT_ANGLE}deg, rgba(255,247,184,0.92) ${spinResult.slot_index * SLOT_ANGLE}deg ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg, transparent ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg 360deg)`,
                 mixBlendMode: "screen",

@@ -1,3 +1,4 @@
+import styles from "./HourlyBonusWidget.module.css"
 import {formatCooldown, useCountdownSeconds, type WheelStateResult} from "./useWheelState"
 
 type Props = {
@@ -38,13 +39,13 @@ export function HourlyBonusWidget({
 
   return (<div
     aria-label="Hourly bonus wheel"
-    className="lobby-hourly-bonus">
+    className={styles.hourlyBonus}>
     {/* Pre-rendered wheel + frame asset. Tap target is the whole
           widget — clicking the image is identical to clicking the
           pill when ready (better discoverability on touch). */}
     <button
       aria-label={pillKind === "ready" ? "Claim hourly bonus" : pillKind === "cooldown" ? `Next bonus in ${formatCooldown(secondsUntilSpin)}` : "Hourly bonus unavailable"}
-      className={`lobby-hourly-bonus-image ${pillKind === "ready" ? "is-ready" : ""}`}
+      className={`${styles.image} ${pillKind === "ready" ? styles.readyImage : ""}`}
       disabled={pillKind !== "ready"}
       type="button"
       onClick={pillKind === "ready" ? onClaim : undefined}>
@@ -55,15 +56,15 @@ export function HourlyBonusWidget({
     </button>
 
     {pillKind === "ready" ? (<button
-      className="lobby-hourly-bonus-pill is-ready"
+      className={`${styles.pill} ${styles.readyPill}`}
       type="button"
       onClick={onClaim}>
       Claim
     </button>) : pillKind === "cooldown" ? (<div
       aria-live="polite"
-      className="lobby-hourly-bonus-pill is-cooldown">
+      className={`${styles.pill} ${styles.cooldownPill}`}>
       {formatCooldown(secondsUntilSpin)}
-    </div>) : (<div className="lobby-hourly-bonus-pill is-unavailable">
+    </div>) : (<div className={`${styles.pill} ${styles.unavailablePill}`}>
       Unavailable
     </div>)}
   </div>)

@@ -17,6 +17,8 @@ import {
 import {formatCompactNumber} from "../lib/format"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./Profile.module.css"
+
 const MODE_LABEL: Record<string, string> = {
   hotseat: "Hot-seat",
   "ai-easy": "AI - Easy",
@@ -59,6 +61,30 @@ function modeIcon(mode: string): "hotseat" | "online" | "ai" {
   if (mode === "hotseat") return "hotseat"
   if (mode.startsWith("ai-")) return "ai"
   return "online"
+}
+
+const MATCH_ICON_CLASS: Record<ReturnType<typeof modeIcon>, string> = {
+  hotseat: styles.profileMatchIconHotseat,
+  online: styles.profileMatchIconOnline,
+  ai: styles.profileMatchIconAi,
+}
+
+const HISTORY_OUTCOME_CLASS: Record<ReturnType<typeof ownerOutcome>, string> = {
+  won: styles.profileHistoryStatusWon,
+  lost: styles.profileHistoryStatusLost,
+  open: styles.profileHistoryStatusOpen,
+  hotseat: styles.profileHistoryStatusHotseat,
+}
+
+type StatIcon = "coins" | "gems" | "finished" | "wins" | "losses" | "hotseat"
+
+const STAT_ICON_CLASS: Record<StatIcon, string> = {
+  coins: styles.profileStatIconCoins,
+  gems: styles.profileStatIconGems,
+  finished: styles.profileStatIconFinished,
+  wins: styles.profileStatIconWins,
+  losses: styles.profileStatIconLosses,
+  hotseat: styles.profileStatIconHotseat,
 }
 
 export function Profile() {
@@ -172,7 +198,7 @@ export function Profile() {
   }
 
   if (isLoading) {
-    return (<main className="profile-page grid min-h-screen place-items-center">
+    return (<main className={`${styles.profilePage} grid min-h-screen place-items-center`}>
       <div className="font-display text-sm uppercase text-[#f7d76b]/70">
         Loading
       </div>
@@ -188,14 +214,14 @@ export function Profile() {
   // wrapper applied around .profile-history-list in the JSX below.
   const visibleMatches = matches ?? null
 
-  return (<main className="profile-page text-white">
-    <div className="profile-screen">
-      <header className="profile-top-nav">
+  return (<main className={`${styles.profilePage} text-white`}>
+    <div className={styles.profileScreen}>
+      <header className={styles.profileTopNav}>
         <Link
           aria-label="Back to lobby"
-          className="profile-icon-button"
+          className={styles.profileIconButton}
           to="/play">
-          <span className="profile-back-chevron"/>
+          <span className={styles.profileBackChevron}/>
         </Link>
 
         {/* Wallet pills centered in the top nav (was right-aligned).
@@ -205,7 +231,7 @@ export function Profile() {
             * back button. */}
         <div
           aria-label="Wallet"
-          className="profile-top-currency flex items-center gap-3">
+          className={`${styles.profileTopCurrency} flex items-center gap-3`}>
           <CurrencyPill
             flyTarget="coins"
             icon="/lobby/icons/gold-coin.webp"
@@ -224,13 +250,13 @@ export function Profile() {
       {/* Two-column body: profile + stats + logout on the left,
           * match history (tall) on the right so the player can scan
           * more matches without scrolling. */}
-      <div className="profile-body-grid">
-        <div className="profile-left-stack">
-          <section className="profile-main-card">
-            <div className="profile-avatar-stage">
-              <div className="profile-avatar-glow"/>
+      <div className={styles.profileBodyGrid}>
+        <div className={styles.profileLeftStack}>
+          <section className={styles.profileMainCard}>
+            <div className={styles.profileAvatarStage}>
+              <div className={styles.profileAvatarGlow}/>
               <Avatar
-                className="profile-avatar-image"
+                className={styles.profileAvatarImage}
                 imageUrl={profile?.avatar_url}
                 ring="none"
                 seed={profile?.avatar_seed ?? "profile"}
@@ -238,66 +264,66 @@ export function Profile() {
               {/* Same rounded shield shape as the lobby profile card
                   * (.lobby-pp-shield), scaled up + anchored to the
                   * bottom-centre of the avatar circle via .profile-pp-shield. */}
-              <div className="profile-pp-shield">
+              <div className={styles.profilePpShield}>
                 <span>{progression.level}</span>
               </div>
             </div>
 
-            <div className="profile-info-column">
-              {editing ? (<div className="profile-name-editor">
+            <div className={styles.profileInfoColumn}>
+              {editing ? (<div className={styles.profileNameEditor}>
                 <input
                   autoFocus
-                  className="profile-name-input"
+                  className={styles.profileNameInput}
                   maxLength={32}
                   value={draftName}
                   onChange={(e) => {
                     setDraftName(e.target.value)
                   }}/>
                 <button
-                  className="profile-small-action"
+                  className={styles.profileSmallAction}
                   disabled={savingName || draftName.trim().length === 0}
                   type="button"
                   onClick={() => void saveName()}>
                   Save
                 </button>
                 <button
-                  className="profile-small-action profile-small-action--ghost"
+                  className={`${styles.profileSmallAction} ${styles.profileSmallActionGhost}`}
                   type="button"
                   onClick={() => {
                     setEditing(false)
                   }}>
                   Cancel
                 </button>
-              </div>) : (<div className="profile-name-row">
+              </div>) : (<div className={styles.profileNameRow}>
                 <h1>{profile?.display_name ?? "Player"}</h1>
                 <button
                   aria-label="Edit name"
-                  className="profile-edit-button"
+                  className={styles.profileEditButton}
                   type="button"
                   onClick={startEditName}>
                   <span/>
                 </button>
               </div>)}
 
-              <div className="profile-rank-row">
-                <span className="profile-rank-badge">
+              <div className={styles.profileRankRow}>
+                <span className={styles.profileRankBadge}>
                   <span
                     aria-hidden="true"
-                    className="profile-rank-shield">
+                    className={styles.profileRankShield}>
                     <span/>
                   </span>
                   <span>{progression.statusLabel}</span>
                 </span>
-                <span className="profile-rating">
+                <span className={styles.profileRating}>
                   <span
                     aria-hidden="true"
-                    className="profile-rating-cup"/>
+                    className={styles.profileRatingCup}/>
                   Rating <strong>{formatCompactNumber(profile?.rating ?? 1500)}</strong>
                 </span>
               </div>
 
-              <div className="profile-xp-section">
-                <div className="profile-level-row">
+              <div className={styles.profileXpSection}>
+                <div className={styles.profileLevelRow}>
                   <span>Level {progression.level}</span>
                   <span>Level {nextLevelLabel}</span>
                 </div>
@@ -305,10 +331,10 @@ export function Profile() {
                     * class (orange→yellow gradient with animated bubble
                     * layers riding the filled portion). profile-xp-wide
                     * scope widens it to the profile card's column. */}
-                <div className="profile-xp-row">
+                <div className={styles.profileXpRow}>
                   <span
                     aria-label={`XP progress ${progression.progressLabel}`}
-                    className="lobby-profile-progress profile-xp-wide">
+                    className={`lobby-profile-progress ${styles.profileXpWide}`}>
                     <span
                       className="lobby-profile-progress-fill"
                       style={{width: `${progression.progressPercent}%`}}>
@@ -319,7 +345,7 @@ export function Profile() {
                     <span className="lobby-profile-progress-label">{xpText}</span>
                   </span>
                 </div>
-                <div className="profile-next-reward">
+                <div className={styles.profileNextReward}>
                   <span>Next Reward:</span>
                   <img
                     alt=""
@@ -337,9 +363,9 @@ export function Profile() {
               * full-width banner directly below the card — a clear,
               * uncramped call to action. Absent entirely for signed-in
               * users, so their stack stays card -> stats -> logout. */}
-          {isGuest && (<div className="profile-save-progress">
+          {isGuest && (<div className={styles.profileSaveProgress}>
             <button
-              className="profile-google-button"
+              className={styles.profileGoogleButton}
               disabled={linkingGoogle}
               type="button"
               onClick={() => {
@@ -347,10 +373,10 @@ export function Profile() {
               }}>
               <span
                 aria-hidden="true"
-                className="profile-google-glyph">G</span>
+                className={styles.profileGoogleGlyph}>G</span>
               {linkingGoogle ? "Opening Google..." : "Connect with Google"}
             </button>
-            {linkErr && <span className="profile-save-progress-err">{linkErr}</span>}
+            {linkErr && <span className={styles.profileSaveProgressErr}>{linkErr}</span>}
           </div>)}
 
           {/* Stats live UNDER the avatar/info card (was on the right).
@@ -358,7 +384,7 @@ export function Profile() {
               * bar already shows them. Four match-stats only. */}
           <section
             aria-label="Player stats"
-            className="profile-stat-grid">
+            className={styles.profileStatGrid}>
             <Stat
               icon="finished"
               label="Finished"
@@ -381,7 +407,7 @@ export function Profile() {
               * matches the cards above. Reshaped from the prior square
               * 1×1 button. */}
           <button
-            className="profile-logout-button"
+            className={styles.profileLogoutButton}
             disabled={signingOut}
             type="button"
             onClick={() => {
@@ -389,10 +415,10 @@ export function Profile() {
             }}>
             <span
               aria-hidden="true"
-              className="profile-logout-icon"/>
+              className={styles.profileLogoutIcon}/>
             {signingOut ? "Logging out..." : "Log Out"}
           </button>
-          {signOutError && <div className="profile-save-progress-err text-center">{signOutError}</div>}
+          {signOutError && <div className={`${styles.profileSaveProgressErr} text-center`}>{signOutError}</div>}
 
           {/* Account deletion (Google Play requirement + privacy commitment).
                 Links to the public /delete-account page, which handles the
@@ -404,36 +430,36 @@ export function Profile() {
           </Link>
         </div>
 
-        <section className="profile-history-panel">
+        <section className={styles.profileHistoryPanel}>
           <h2>Match History</h2>
-          {historyError && (<div className="profile-panel-message profile-panel-message--error">
+          {historyError && (<div className={`${styles.profilePanelMessage} ${styles.profilePanelMessageError}`}>
             {errorMessage(historyError)}
           </div>)}
           {visibleMatches === null ? (
-            <div className="profile-panel-message">Loading...</div>) : visibleMatches.length === 0 ? (
-            <div className="profile-panel-message">
+            <div className={styles.profilePanelMessage}>Loading...</div>) : visibleMatches.length === 0 ? (
+            <div className={styles.profilePanelMessage}>
               <span>No matches yet.</span>
               <Link to="/play">Start one</Link>
             </div>) : (// History panel is the full height of the right column now,
             // so the inner scroll container takes 100 % and shows ~10
             // rows on a typical landscape viewport.
-            <div className="profile-history-scroll">
-              <ul className="profile-history-list">
+            <div className={styles.profileHistoryScroll}>
+              <ul className={styles.profileHistoryList}>
                 {visibleMatches.map((m) => {
                   const outcome = ownerOutcome(m)
                   const outcomeLabel = outcome === "won" ? "Won" : outcome === "lost" ? "Lost" : outcome === "open" ? "In Progress" : "Hot-seat"
                   return (<li key={m.id}>
                     <button
-                      className="profile-history-row"
+                      className={styles.profileHistoryRow}
                       disabled={!m.finished_at}
                       type="button"
                       onClick={() => m.finished_at && void openReplay(m.id)}>
                       <span
                         aria-hidden="true"
-                        className={`profile-match-icon profile-match-icon--${modeIcon(m.mode)}`}>
+                        className={`${styles.profileMatchIcon} ${MATCH_ICON_CLASS[modeIcon(m.mode)]}`}>
                         <span/>
                       </span>
-                      <span className="profile-history-copy">
+                      <span className={styles.profileHistoryCopy}>
                         <span>
                           {MODE_LABEL[m.mode] ?? m.mode}
                           <em> to {m.target}</em>
@@ -443,16 +469,16 @@ export function Profile() {
                           {m.game_count > 0 && ` - ${m.game_count} game${m.game_count > 1 ? "s" : ""}`}
                         </small>
                       </span>
-                      <span className="profile-history-score">
+                      <span className={styles.profileHistoryScore}>
                         {m.white_score} - {m.black_score}
                       </span>
                       <span
-                        className={`profile-history-status profile-history-status--${outcome}`}>
+                        className={`${styles.profileHistoryStatus} ${HISTORY_OUTCOME_CLASS[outcome]}`}>
                         {outcomeLabel}
                       </span>
                       <span
                         aria-hidden="true"
-                        className="profile-history-chevron">
+                        className={styles.profileHistoryChevron}>
                         ›
                       </span>
                     </button>
@@ -545,7 +571,7 @@ function Stat({
   // stat-icon sprites. Other stat icons stay on the sprites.
   const realIcon = icon === "coins" ? "/lobby/icons/gold-coin.webp" : icon === "gems" ? "/lobby/icons/gem.webp" : null
 
-  return (<div className={`profile-stat-card ${wide ? "profile-stat-card--wide" : ""}`}>
+  return (<div className={`${styles.profileStatCard}${wide ? ` ${styles.profileStatCardWide}` : ""}`}>
     {realIcon ? (<span
       aria-hidden="true"
       className="grid h-9 w-9 shrink-0 place-items-center">
@@ -556,7 +582,7 @@ function Stat({
         src={realIcon}/>
     </span>) : (<span
       aria-hidden="true"
-      className={`profile-stat-icon profile-stat-icon--${icon}`}>
+      className={`${styles.profileStatIcon} ${STAT_ICON_CLASS[icon]}`}>
       <span/>
     </span>)}
     {/* text-[1.35rem] is smaller than the previous default (~2rem

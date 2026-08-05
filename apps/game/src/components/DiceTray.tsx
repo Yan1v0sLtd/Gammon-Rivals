@@ -2,6 +2,8 @@ import {useEffect, useMemo, useRef} from "react"
 
 import type {DiceRoll, Die} from "../../../../packages/engine/src/types"
 
+import styles from "./DiceTray.module.css"
+
 /**
  * DiceTray v4 — pure HTML + CSS 3D dice.
  *
@@ -47,14 +49,14 @@ type Props = {
 /**
  * Per-face base rotation. To make face N face the camera, the cube
  * must be rotated to these (x, y) degrees (modulo 360 of each).
- * Matches the per-face CSS in src/index.css:
- *   .dice-face--f1 → +Z   (no rotation needed)
- *   .dice-face--f2 → +Y bottom (rotateX 90 deg)
- *   .dice-face--f3 → +X right (rotateY -90 deg shows the face that
+ * Matches the per-face CSS in DiceTray.module.css:
+ *   .diceFaceF1 → +Z   (no rotation needed)
+ *   .diceFaceF2 → +Y bottom (rotateX 90 deg)
+ *   .diceFaceF3 → +X right (rotateY -90 deg shows the face that
  *                              was on the +X side)
- *   .dice-face--f4 → -X left
- *   .dice-face--f5 → -Y top
- *   .dice-face--f6 → -Z back
+ *   .diceFaceF4 → -X left
+ *   .diceFaceF5 → -Y top
+ *   .diceFaceF6 → -Z back
  */
 const ROTATION_MAP: Record<Die, {x: number, y: number}> = {
   1: {
@@ -172,7 +174,7 @@ export function DiceTray({
 
   return (<div
     aria-hidden
-    className={`dice-board dice-board--${settleSide}`}>
+    className={`${styles.diceBoard} ${settleSide === "left" ? styles.diceBoardLeft : styles.diceBoardRight}`}>
     {dice.map((d) => (<CssDie
       key={`${rollId}-${d.id}`}
       rollId={`${rollId}-${d.id}`}
@@ -232,17 +234,17 @@ function CssDie({
   }, [rollId, value])
 
   // When a theme sprite URL is provided, switch to sprite mode:
-  // the cube gets the .dice-cube--sprite class, each face uses
+  // the cube gets the diceCubeSprite class, each face uses
   // background-image (positioned to its tile of the sprite), and
   // we skip rendering pip <span> children entirely. The CSS
-  // sprite rules (in src/index.css) handle the per-face
+  // sprite rules in DiceTray.module.css handle the per-face
   // background-position. The CSS variable carries the URL into
   // every face div without us having to thread it 6 times.
-  // The `used` styling now lives on the .dice-stand wrapper
+  // The `used` styling now lives on the diceStand wrapper
   // (see render below) so a single rule can dim both the cube
   // and the shadow at the same time. The cube className itself
   // only carries the sprite-mode flag now.
-  const className = `dice-cube${sprite ? " dice-cube--sprite" : ""}`
+  const className = `${styles.diceCube}${sprite ? ` ${styles.diceCubeSprite}` : ""}`
   const style = sprite ? ({["--dice-sprite-url" as string]: `url("${sprite}")`} as React.CSSProperties) : undefined
 
   // For sprite mode we don't render any pip children — the
@@ -252,7 +254,7 @@ function CssDie({
     if (sprite) return null
     return PIP_KEYS.slice(0, count).map((pipKey) => (<span
       key={pipKey}
-      className="dice-pip"/>))
+      className={styles.dicePip}/>))
   }
 
   // The stand wrapper holds the cube + a flat shadow sibling. It
@@ -266,20 +268,20 @@ function CssDie({
   // together. Without that, a "used" die went to 40% opacity but
   // its shadow stayed at full strength — players reported seeing
   // "shadow without die" after consuming a pip in a move.
-  return (<div className={`dice-stand${used ? " dice-stand--used" : ""}`}>
+  return (<div className={`${styles.diceStand}${used ? ` ${styles.diceStandUsed}` : ""}`}>
     <div
       ref={dieRef}
       className={className}
       style={style}>
-      <div className="dice-face dice-face--f1">{renderPips(1)}</div>
-      <div className="dice-face dice-face--f2">{renderPips(2)}</div>
-      <div className="dice-face dice-face--f3">{renderPips(3)}</div>
-      <div className="dice-face dice-face--f4">{renderPips(4)}</div>
-      <div className="dice-face dice-face--f5">{renderPips(5)}</div>
-      <div className="dice-face dice-face--f6">{renderPips(6)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF1}`}>{renderPips(1)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF2}`}>{renderPips(2)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF3}`}>{renderPips(3)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF4}`}>{renderPips(4)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF5}`}>{renderPips(5)}</div>
+      <div className={`${styles.diceFace} ${styles.diceFaceF6}`}>{renderPips(6)}</div>
     </div>
     <div
       aria-hidden
-      className="dice-shadow"/>
+      className={styles.diceShadow}/>
   </div>)
 }

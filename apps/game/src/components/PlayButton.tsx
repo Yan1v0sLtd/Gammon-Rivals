@@ -1,5 +1,7 @@
 import type {ButtonHTMLAttributes, CSSProperties} from "react"
 
+import styles from "./PlayButton.module.css"
+
 /**
  * Shared premium "Play" button — the standardized affirmative-action
  * button across the app (board carousel, difficulty cards, daily
@@ -7,7 +9,7 @@ import type {ButtonHTMLAttributes, CSSProperties} from "react"
  * optional corner sparkles.
  *
  * The whole button is sized off a single font-size (all internal
- * dimensions are in `em` — see the .gr-play-* rules in index.css), so
+ * dimensions are in `em` — see the playButton* rules in PlayButton.module.css), so
  * `size` is the only knob needed to scale it. For one-off sizing,
  * pass an explicit font-size via `wrapStyle={{ fontSize: '28px' }}`.
  *
@@ -47,28 +49,33 @@ export function PlayButton({
   ...buttonProps
 }: PlayButtonProps) {
   const showSparkles = sparkles ?? size === "lg"
+  const sizeClass = {
+    lg: styles.playButtonLarge,
+    md: styles.playButtonMedium,
+    sm: styles.playButtonSmall,
+  }[size]
   return (<div
-    className={`gr-play-wrap gr-play-${size} ${block ? "gr-play-block" : ""} ${wrapClassName}`}
+    className={`${styles.playButtonWrap} ${sizeClass} ${block ? styles.playButtonBlock : ""} ${wrapClassName}`}
     style={wrapStyle}>
     {showSparkles ? (<>
       <i
         aria-hidden="true"
-        className="gr-play-sparkle"/>
+        className={styles.playButtonSparkle}/>
       <i
         aria-hidden="true"
-        className="gr-play-sparkle"/>
+        className={styles.playButtonSparkle}/>
       <i
         aria-hidden="true"
-        className="gr-play-sparkle"/>
+        className={styles.playButtonSparkle}/>
     </>) : null}
     <button
-      className={`gr-play-button ${className}`}
+      className={`${styles.playButton} ${className}`}
       type={type}
       {...buttonProps}>
       <span
         aria-hidden="true"
-        className="gr-play-shimmer"/>
-      <span className="gr-play-text">{label}</span>
+        className={styles.playButtonShimmer}/>
+      <span className={styles.playButtonText}>{label}</span>
     </button>
   </div>)
 }

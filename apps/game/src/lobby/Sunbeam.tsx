@@ -105,8 +105,8 @@ export function Sunbeam() {
       if (!reduceMotion) rafId = requestAnimationFrame(renderFrame)
       const nowMs = performance.now()
       // A full-screen modal covers the glow — skip the 90-gradient redraw
-      // entirely while <body data-gr-modal> is set (see lib/bodyModalFlag).
-      if (document.body.dataset.grModal) {
+      // entirely while <body data-fullscreen-modal> is set (see lib/bodyModalFlag).
+      if (document.body.dataset.fullscreenModal) {
         lastDraw = nowMs
         return
       }

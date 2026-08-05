@@ -1,7 +1,7 @@
 import {useEffect} from "react"
 
 /**
- * Ref-counted `<body data-gr-modal>` flag — "a full-screen modal is open".
+ * Ref-counted `<body data-fullscreen-modal>` flag — "a full-screen modal is open".
  *
  * Why: the lobby keeps animating underneath open modals (Sunbeam canvas,
  * XP-bar flow, PLAY shimmer, wheel halo). None of it is visible behind the
@@ -17,10 +17,10 @@ let openCount = 0
 
 function applyFlag(): void {
   if (openCount > 0) {
-    document.body.dataset.grModal = "1"
+    document.body.dataset.fullscreenModal = "1"
   }
   else {
-    delete document.body.dataset.grModal
+    delete document.body.dataset.fullscreenModal
   }
 }
 

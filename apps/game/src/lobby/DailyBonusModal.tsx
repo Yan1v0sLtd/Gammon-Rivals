@@ -2,6 +2,8 @@ import {ModalCloseButton} from "../components/ModalCloseButton"
 import {ScaleInModal} from "../components/ScaleInModal"
 import type {DailyBonusConfig} from "../features/lobby/lobbySelectors"
 
+import styles from "./DailyBonusModal.module.css"
+
 type DailyBonusModalProps = {
   /** 7 rows, sorted day 1..7. May be empty briefly while loading. */
   readonly configs: readonly DailyBonusConfig[],
@@ -198,10 +200,10 @@ function DayCard({
 
   // Outer wrapper. For an ACTIVE day we wrap the inner cream surface in
   // a 3-pixel padding outer that hosts the rotating gold border via
-  // .daily-bonus-active-frame. For CLAIMED, we use a static gold
+  // .activeFrame in DailyBonusModal.module.css. For CLAIMED, we use a static gold
   // gradient. For LOCKED we use a flat cream surface with a thin gold
   // accent border.
-  const outerClass = ["relative h-full rounded-2xl shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]", isActive ? "daily-bonus-active-frame p-[3px]" : isClaimed ? "bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px]" : "p-0", fullWidth ? "col-span-3" : ""]
+  const outerClass = ["relative h-full rounded-2xl shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]", isActive ? `${styles.activeFrame} p-[3px]` : isClaimed ? "bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px]" : "p-0", fullWidth ? "col-span-3" : ""]
     .filter(Boolean)
     .join(" ")
 

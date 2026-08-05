@@ -10,6 +10,11 @@ export default defineConfig({
   envDir: projectRoot,
   publicDir: path.join(projectRoot, "public"),
   plugins: [react()],
+  css: {
+    modules: {
+      localsConvention: "camelCaseOnly",
+    },
+  },
   define: buildDefines(),
   server: {
     port: 5174,

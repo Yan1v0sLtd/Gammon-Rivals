@@ -1,0 +1,138 @@
+.hourlyBonus {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.image {
+  position: relative;
+  display: grid;
+  /* Keep the wheel and its lift proportional while fitting inside the nav. */
+  width: clamp(3.2rem, 5.7vw, 5.24rem);
+  margin-top: clamp(-1.98rem, -3.14vw, -1.4rem);
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  place-items: center;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+
+.image:disabled {
+  cursor: default;
+}
+
+.image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  user-select: none;
+}
+
+.image:not(:disabled):hover img {
+  filter:
+    drop-shadow(0 0.55rem 0.7rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.9rem rgba(255, 196, 78, 0.55));
+}
+
+/* The ready state uses a compositor-friendly halo instead of animated filters. */
+.readyImage img {
+  position: relative;
+  z-index: 1;
+  filter:
+    drop-shadow(0 0.5rem 0.6rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.7rem rgba(255, 205, 80, 0.7));
+}
+
+.readyImage::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle,
+      rgba(255, 215, 100, 0.55) 0%,
+      rgba(255, 173, 60, 0.28) 45%,
+      transparent 70%);
+  animation: hourlyBonusHalo 1.6s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes hourlyBonusHalo {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+.image:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.pill {
+  position: relative;
+  display: grid;
+  /* All variants retain one size so state transitions morph cleanly. */
+  min-width: clamp(4.37rem, 7.13vw, 6.56rem);
+  height: clamp(1.2rem, 2.05vw, 1.71rem);
+  padding: 0 clamp(0.22rem, 0.45vw, 0.38rem);
+  border: 1.8px solid rgba(255, 199, 79, 0.85);
+  border-radius: 9999px;
+  font: 900 clamp(0.53rem, 0.88vw, 0.72rem) / 1 "Segoe UI", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: white;
+  text-shadow:
+    -1px 0 0 rgba(0, 0, 0, 0.65),
+    1px 0 0 rgba(0, 0, 0, 0.65),
+    0 -1px 0 rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(0, 0, 0, 0.65),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 0.3rem 0.6rem rgba(0, 0, 0, 0.45);
+  user-select: none;
+  place-items: center;
+  transition: background 200ms ease, border-color 200ms ease, transform 120ms ease;
+}
+
+button.readyPill {
+  border-color: rgba(180, 83, 9, 0.8);
+  background: linear-gradient(180deg, #fbbf24 0%, #ea580c 100%);
+  cursor: pointer;
+  font-size: clamp(0.855rem, 1.53vw, 1.17rem);
+}
+
+button.readyPill:hover {
+  filter: brightness(1.08);
+}
+
+button.readyPill:active {
+  transform: translateY(1px);
+}
+
+.cooldownPill {
+  background: linear-gradient(180deg, #0a1024 0%, #060916 100%);
+  font-variant-numeric: tabular-nums;
+}
+
+.unavailablePill {
+  border-color: rgba(148, 163, 184, 0.6);
+  background: linear-gradient(180deg, #475569 0%, #1f2937 100%);
+  color: rgba(255, 255, 255, 0.78);
+}
+
+:global(body[data-fullscreen-modal]) .readyImage::before {
+  animation-play-state: paused;
+}

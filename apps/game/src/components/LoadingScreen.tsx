@@ -2,6 +2,8 @@ import type {FC} from "react"
 
 import {getLoadingScreenImage} from "../lib/loadingScreenImage"
 
+import styles from "./LoadingScreen.module.css"
+
 type Props = {
   /** Optional 0..1 progress fraction. When provided the bar is
    *  deterministic; otherwise it eases toward ~90% on its own. */
@@ -37,25 +39,25 @@ export const LoadingScreen: FC<Props> = ({
       src={getLoadingScreenImage()}/>
 
     {/* Bar block — sits in the art's dark bottom band, mockup-style. */}
-    <div className="gr-loadingscreen-hud">
+    <div className={styles.loadingScreenHud}>
       <div
         aria-hidden="true"
-        className="gr-loadingscreen-label">
-        <span className="gr-loadingscreen-tail gr-loadingscreen-tail--l"/>
+        className={styles.loadingScreenLabel}>
+        <span className={`${styles.loadingScreenTail} ${styles.loadingScreenTailLeft}`}/>
         <span>
           {label}
           {pct !== null ? <span className="ml-2">{pct}%</span> : null}
         </span>
-        <span className="gr-loadingscreen-tail gr-loadingscreen-tail--r"/>
+        <span className={`${styles.loadingScreenTail} ${styles.loadingScreenTailRight}`}/>
       </div>
-      <div className="gr-loadingscreen-track">
+      <div className={styles.loadingScreenTrack}>
         {/* The clip wrapper is what keeps the sliding fill INSIDE the
               rounded track — clip-path on the fill itself travels with its
               transform, so it never clipped anything (the bar visibly slid
               in from outside the frame). */}
-        <div className="gr-loadingscreen-clip">
+        <div className={styles.loadingScreenClip}>
           <div
-            className="gr-loadingscreen-fill"
+            className={styles.loadingScreenFill}
             style={pct !== null ? {
               // Deterministic: driven by the caller's real progress.
               animation: "none",

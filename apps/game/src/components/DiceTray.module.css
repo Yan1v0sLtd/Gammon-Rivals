@@ -1,0 +1,141 @@
+/* Tray container — the cube size custom property keeps all dependent rules in sync. */
+.diceBoard {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: clamp(0.25rem, 0.8vmin, 0.6rem);
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  perspective: calc(var(--dice-cube-size) * 14);
+  pointer-events: none;
+  --dice-cube-size: clamp(28px, 5.5vmin, 56px);
+}
+
+.diceBoardLeft {
+  left: 35%;
+}
+
+.diceBoardRight {
+  left: 65%;
+}
+
+.diceStand {
+  position: relative;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
+  transform-style: preserve-3d;
+}
+
+.diceShadow {
+  position: absolute;
+  top: calc(var(--dice-cube-size) * -0.14);
+  bottom: calc(var(--dice-cube-size) * -0.14);
+  left: calc(var(--dice-cube-size) * -0.14);
+  right: calc(var(--dice-cube-size) * -0.14);
+  background: radial-gradient(ellipse 60% 60% at center 58%,
+      rgba(0, 0, 0, 0.55) 0%,
+      rgba(0, 0, 0, 0.28) 45%,
+      rgba(0, 0, 0, 0) 80%);
+  filter: blur(calc(var(--dice-cube-size) * 0.08));
+  pointer-events: none;
+  z-index: -1;
+  transition: opacity 0.25s ease;
+}
+
+.diceStandUsed .diceCube,
+.diceStandUsed .diceShadow {
+  opacity: 0.4;
+}
+
+.diceCube {
+  position: relative;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateY(25deg);
+  transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.diceFace {
+  position: absolute;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  width: var(--dice-cube-size);
+  height: var(--dice-cube-size);
+  background: #fcfcfc;
+  border-radius: calc(var(--dice-cube-size) * 0.13);
+  border: 1px solid #e0e0e0;
+  box-shadow:
+    inset 0 0 calc(var(--dice-cube-size) * 0.1) rgba(0, 0, 0, 0.15),
+    0 calc(var(--dice-cube-size) * 0.05) calc(var(--dice-cube-size) * 0.13) rgba(0, 0, 0, 0.3);
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: calc(var(--dice-cube-size) * 0.08);
+  box-sizing: border-box;
+}
+
+.diceFaceF1 { transform: rotateY(0deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.diceFaceF6 { transform: rotateY(180deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.diceFaceF3 { transform: rotateY(90deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.diceFaceF4 { transform: rotateY(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.diceFaceF2 { transform: rotateX(90deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+.diceFaceF5 { transform: rotateX(-90deg) translateZ(calc(var(--dice-cube-size) * 0.5)); }
+
+.dicePip {
+  display: block;
+  background-color: #b30000;
+  border-radius: 50%;
+  width: calc(var(--dice-cube-size) * 0.18);
+  height: calc(var(--dice-cube-size) * 0.18);
+  margin: auto;
+}
+
+.diceCubeSprite .diceFace {
+  background-image: var(--dice-sprite-url);
+  background-size: 300% 200%;
+  background-repeat: no-repeat;
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  border-radius: 0;
+  image-rendering: auto;
+}
+
+.diceCubeSprite .diceFaceF1 { background-position: 0% 0%; }
+.diceCubeSprite .diceFaceF2 { background-position: 50% 0%; }
+.diceCubeSprite .diceFaceF3 { background-position: 100% 0%; }
+.diceCubeSprite .diceFaceF4 { background-position: 0% 100%; }
+.diceCubeSprite .diceFaceF5 { background-position: 50% 100%; }
+.diceCubeSprite .diceFaceF6 { background-position: 100% 100%; }
+
+.diceFaceF1 .dicePip { grid-area: 2 / 2; }
+.diceFaceF2 .dicePip:nth-child(1) { grid-area: 1 / 1; }
+.diceFaceF2 .dicePip:nth-child(2) { grid-area: 3 / 3; }
+.diceFaceF3 .dicePip:nth-child(1) { grid-area: 1 / 1; }
+.diceFaceF3 .dicePip:nth-child(2) { grid-area: 2 / 2; }
+.diceFaceF3 .dicePip:nth-child(3) { grid-area: 3 / 3; }
+.diceFaceF4 .dicePip:nth-child(1) { grid-area: 1 / 1; }
+.diceFaceF4 .dicePip:nth-child(2) { grid-area: 1 / 3; }
+.diceFaceF4 .dicePip:nth-child(3) { grid-area: 3 / 1; }
+.diceFaceF4 .dicePip:nth-child(4) { grid-area: 3 / 3; }
+.diceFaceF5 .dicePip:nth-child(1) { grid-area: 1 / 1; }
+.diceFaceF5 .dicePip:nth-child(2) { grid-area: 1 / 3; }
+.diceFaceF5 .dicePip:nth-child(3) { grid-area: 2 / 2; }
+.diceFaceF5 .dicePip:nth-child(4) { grid-area: 3 / 1; }
+.diceFaceF5 .dicePip:nth-child(5) { grid-area: 3 / 3; }
+.diceFaceF6 .dicePip:nth-child(1) { grid-area: 1 / 1; }
+.diceFaceF6 .dicePip:nth-child(2) { grid-area: 1 / 3; }
+.diceFaceF6 .dicePip:nth-child(3) { grid-area: 2 / 1; }
+.diceFaceF6 .dicePip:nth-child(4) { grid-area: 2 / 3; }
+.diceFaceF6 .dicePip:nth-child(5) { grid-area: 3 / 1; }
+.diceFaceF6 .dicePip:nth-child(6) { grid-area: 3 / 3; }
+
+@media (prefers-reduced-motion: reduce) {
+  .diceCube {
+    transition: transform 0.2s ease-out;
+  }
+}

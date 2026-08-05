@@ -1,0 +1,81 @@
+.loadingScreenHud {
+  position: absolute;
+  left: 50%;
+  bottom: max(7vh, calc(env(safe-area-inset-bottom, 0px) + 5vh));
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1.6vh, 0.9rem);
+}
+
+.loadingScreenLabel {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6rem, 2vw, 1rem);
+  color: #f6c453;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.34em;
+  padding-left: 0.34em;
+  font-size: clamp(0.8rem, 2.6vh, 1.1rem);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+
+.loadingScreenTail {
+  position: relative;
+  height: 2px;
+  width: clamp(2.2rem, 7vw, 4rem);
+}
+
+.loadingScreenTail::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  background: #f6c453;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.loadingScreenTailLeft { background: linear-gradient(to right, transparent, #f6c453); }
+.loadingScreenTailLeft::after { right: -3px; }
+.loadingScreenTailRight { background: linear-gradient(to left, transparent, #f6c453); }
+.loadingScreenTailRight::after { left: -3px; }
+
+.loadingScreenTrack {
+  width: min(72vw, 30rem);
+  height: clamp(16px, 3.6vh, 25px);
+  border-radius: 999px;
+  border: 2px solid #edb64f;
+  background: linear-gradient(#0d0802, #1c1206);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.6),
+    0 0 14px rgba(240, 180, 70, 0.22),
+    inset 0 2px 6px rgba(0, 0, 0, 0.85);
+  padding: 3px;
+}
+
+.loadingScreenClip {
+  height: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.loadingScreenFill {
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 46%),
+    repeating-linear-gradient(55deg, #ffdf8a 0 12px, #f3b445 12px 24px);
+  box-shadow: 0 0 10px rgba(255, 190, 70, 0.4);
+  transform: translateX(-93%);
+  animation: loadingScreenFill 2.7s cubic-bezier(0.22, 0.61, 0.36, 1) 0.12s forwards;
+  will-change: transform;
+}
+
+@keyframes loadingScreenFill {
+  to { transform: translateX(-10%); }
+}

@@ -5,6 +5,7 @@ import {UnlockPill} from "../components/UnlockPill"
 import type {LobbyBoard, LobbyBoardId} from "../features/lobby/lobbyBoardData"
 import type {BoardOwnershipState} from "../features/lobby/lobbySelectors"
 
+import styles from "./LobbyBoardCarousel.module.css"
 import {useActivePodium} from "./useActivePodium"
 
 /**
@@ -696,9 +697,9 @@ export function LobbyBoardCarousel({
       <PodiumImage src={podiumImage}/>
 
       {/* Board name — golden pill reusing the lock pill's gold treatment
-            (.gr-name-pill), centred at the top just below the balances notch. */}
+            (namePill in LobbyBoardCarousel.module.css), centred at the top just below the balances notch. */}
       <div
-        className="gr-name-pill font-display absolute left-1/2 top-[2%] z-40 -translate-x-1/2"
+        className={`${styles.namePill} font-display absolute left-1/2 top-[2%] z-40 -translate-x-1/2`}
         style={{fontSize: "clamp(0.8rem, 1.7vw, 1.3rem)"}}>
         {selected.name}
       </div>

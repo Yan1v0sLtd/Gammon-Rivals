@@ -1,0 +1,43 @@
+@property --daily-bonus-rotate {
+  syntax: "<angle>";
+  initial-value: 132deg;
+  inherits: false;
+}
+
+@keyframes dailyBonusSpin {
+  to {
+    --daily-bonus-rotate: 492deg;
+  }
+}
+
+:where(.activeFrame) {
+  position: relative;
+  background-image: linear-gradient(
+    var(--daily-bonus-rotate),
+    #fef3c7 0%,
+    #fcd34d 18%,
+    #fde047 36%,
+    #d97706 52%,
+    #b45309 68%,
+    #fcd34d 84%,
+    #fef3c7 100%
+  );
+  animation: dailyBonusSpin 3s linear infinite;
+}
+
+:where(.activeFrame)::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background-image: linear-gradient(
+    var(--daily-bonus-rotate),
+    #fcd34d 0%,
+    #f59e0b 50%,
+    #b45309 100%
+  );
+  filter: blur(6px);
+  opacity: 0.45;
+  z-index: -1;
+  animation: dailyBonusSpin 3s linear infinite;
+}

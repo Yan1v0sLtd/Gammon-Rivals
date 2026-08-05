@@ -1,0 +1,42 @@
+.namePill {
+  --gold-light: #ffe98b;
+  --gold-mid: #d9a83a;
+  --gold-dark: #8a5d12;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.34em 1.15em;
+  border-radius: 999px;
+  overflow: hidden;
+  color: var(--gold-light);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  background: radial-gradient(circle at 50% 32%, #202020 0%, #101010 58%, #050505 100%);
+  box-shadow:
+    0 0 0 0.08em var(--gold-dark),
+    0 0 0 0.14em var(--gold-mid),
+    inset 0 0.06em 0.1em rgba(255, 255, 255, 0.08),
+    inset 0 -0.1em 0.18em rgba(0, 0, 0, 0.75),
+    0 0.16em 0.3em rgba(0, 0, 0, 0.45);
+  text-shadow: 0 0.06em 0.08em rgba(0, 0, 0, 0.55);
+}
+
+/* Zero-specificity default lets caller positioning win regardless of import order. */
+:where(.namePill) {
+  position: relative;
+}
+
+.namePill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 0.09em;
+  background: linear-gradient(135deg, #ffe98b 0%, #c78f25 34%, #fff0a0 52%, #8a5d12 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
