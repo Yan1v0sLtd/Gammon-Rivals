@@ -198,8 +198,8 @@ export function Profile() {
   }
 
   if (isLoading) {
-    return (<main className={`${styles.profilePage} grid min-h-screen place-items-center`}>
-      <div className="font-display text-sm uppercase text-[#f7d76b]/70">
+    return (<main className={`${styles.profilePage} ${styles.profilePageLoading}`}>
+      <div className={styles.profileLoadingText}>
         Loading
       </div>
     </main>)
@@ -214,7 +214,7 @@ export function Profile() {
   // wrapper applied around .profile-history-list in the JSX below.
   const visibleMatches = matches ?? null
 
-  return (<main className={`${styles.profilePage} text-white`}>
+  return (<main className={styles.profilePage}>
     <div className={styles.profileScreen}>
       <header className={styles.profileTopNav}>
         <Link
@@ -231,7 +231,7 @@ export function Profile() {
             * back button. */}
         <div
           aria-label="Wallet"
-          className={`${styles.profileTopCurrency} flex items-center gap-3`}>
+          className={styles.profileTopCurrency}>
           <CurrencyPill
             flyTarget="coins"
             icon="/lobby/icons/gold-coin.webp"
@@ -418,13 +418,13 @@ export function Profile() {
               className={styles.profileLogoutIcon}/>
             {signingOut ? "Logging out..." : "Log Out"}
           </button>
-          {signOutError && <div className={`${styles.profileSaveProgressErr} text-center`}>{signOutError}</div>}
+          {signOutError && <div className={styles.profileSaveProgressErr}>{signOutError}</div>}
 
           {/* Account deletion (Google Play requirement + privacy commitment).
                 Links to the public /delete-account page, which handles the
                 confirm + delete flow. */}
           <Link
-            className="mt-2 block text-center text-xs font-semibold uppercase tracking-wide text-rose-300/50 transition hover:text-rose-300"
+            className={styles.profileDeleteLink}
             to="/delete-account">
             Delete account
           </Link>
@@ -529,28 +529,25 @@ function CurrencyPill({
 }) {
   return (<div
     aria-label={`${label}: ${value ?? 0}`}
-    className="lobby-currency-pill relative flex h-[2.76rem] min-w-[7.87rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"
+    className={`lobby-currency-pill ${styles.profileCurrencyPill}`}
     data-fly-target={flyTarget}>
-    <span className="lobby-currency-icon -ml-[0.92rem] grid h-[3.22rem] w-[3.22rem] shrink-0 place-items-center">
+    <span className={`lobby-currency-icon ${styles.profileCurrencyIcon}`}>
       <img
         alt=""
-        className="h-full w-full object-contain drop-shadow-[0_5px_5px_rgba(0,0,0,0.42)]"
+        className={styles.profileCurrencyImg}
         draggable={false}
         src={icon}/>
     </span>
-    <span
-      className="lobby-currency-value -ml-[0.46rem] flex h-[2.35rem] min-w-0 flex-1 items-center justify-center rounded bg-[#071f3f]/82 px-[0.92rem] text-center font-display text-lg font-black tracking-wide text-white shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+    <span className={`lobby-currency-value ${styles.profileCurrencyValue}`}>
       {formatCompactNumber(value)}
     </span>
     <button
       aria-label={`Get more ${label}`}
-      className="lobby-currency-add relative mr-[0.23rem] grid h-[2.3rem] w-[2.3rem] shrink-0 place-items-center rounded bg-gradient-to-b from-[#8dff68] via-[#47d039] to-[#17831c] shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_3px_0_#0c5710] transition hover:brightness-110 active:translate-y-[1px]"
+      className={`lobby-currency-add ${styles.profileCurrencyAdd}`}
       type="button"
       onClick={onAdd}>
-      <span
-        className="absolute left-1/2 top-1/2 h-[1.38rem] w-[0.345rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]"/>
-      <span
-        className="absolute left-1/2 top-1/2 h-[0.345rem] w-[1.38rem] -translate-x-1/2 -translate-y-1/2 rounded bg-white shadow-[0_1px_0_rgba(0,0,0,0.25)]"/>
+      <span className={`${styles.profileCurrencyPlus} ${styles.profileCurrencyPlusH}`}/>
+      <span className={styles.profileCurrencyPlus}/>
     </button>
   </div>)
 }
@@ -574,10 +571,10 @@ function Stat({
   return (<div className={`${styles.profileStatCard}${wide ? ` ${styles.profileStatCardWide}` : ""}`}>
     {realIcon ? (<span
       aria-hidden="true"
-      className="grid h-9 w-9 shrink-0 place-items-center">
+      className={styles.profileStatIconWrap}>
       <img
         alt=""
-        className="h-full w-full object-contain drop-shadow-[0_3px_3px_rgba(0,0,0,0.45)]"
+        className={styles.profileStatImg}
         draggable={false}
         src={realIcon}/>
     </span>) : (<span
@@ -588,7 +585,7 @@ function Stat({
     {/* text-[1.35rem] is smaller than the previous default (~2rem
           via .profile-stat-card strong) so a value like "16.6K" fits
           comfortably without overflowing the stat box. */}
-    <strong className="!text-[1.35rem] !leading-none">{formatCompactNumber(value)}</strong>
+    <strong className={styles.profileStatValue}>{formatCompactNumber(value)}</strong>
     <small>{label}</small>
   </div>)
 }

@@ -1,3 +1,23 @@
+.loadingScreenRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: radial-gradient(circle at center, #1a1027 0%, #070310 70%, #000000 100%);
+}
+
+.loadingScreenBg {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  user-select: none;
+  object-fit: cover;
+}
+
+.loadingScreenPct {
+  margin-left: 0.5rem;
+}
+
 .loadingScreenHud {
   position: absolute;
   left: 50%;

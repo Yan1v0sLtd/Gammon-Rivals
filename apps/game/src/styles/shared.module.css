@@ -1,0 +1,10 @@
+/* Shared declared styles, composed into consuming modules via `composes:`.
+ * Keeps repeated values in one place without CSS custom properties. */
+
+.fontDisplay {
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+.textWhite {
+  color: #fff;
+}

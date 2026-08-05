@@ -26,7 +26,7 @@ export function LobbyProfileCard({
 }: LobbyProfileCardProps) {
   return (<Link
     aria-label="Open profile"
-    className={`${styles.profilePill} group`}
+    className={styles.profilePill}
     data-fly-target="xp"
     to="/profile">
     <span

@@ -302,6 +302,64 @@ layer wrappers.
     dropped; the card-level `:has(> img)` / `:not(:has(> img))` sizing rules stay.
 - Re-verified: lint, `tsc -b`, `git diff --check` all pass.
 
+#### S11c — Tailwind decomposition of migrated modules
+
+Decomposed the Tailwind utility piles out of `className` in every migrated
+component, making each CSS module the single source of truth (no more
+order-dependent cascade between module rules and Tailwind utilities).
+
+- `LobbyActionCard` — all utilities + tone gradients (`toneBlue/Green/Purple`
+  via custom props), hover/active/disabled, `2xl` media query.
+- `LobbySideOffers` — responsive `aside` (mobile media query), `offerCard`
+  base + states, `offerImage`, `offerGlare`, extended icon/body/title/subtitle,
+  tone classes (`toneCoins/Daily/Connect`); removed the dead `tone` field from
+  `lobbyData.ts`.
+- `LobbyProfileCard` — removed dead `group` (no `group-hover`).
+- `LoadingScreen` — `loadingScreenRoot/Bg/Pct`.
+- `DailyBonusModal` — reward chips, day-card (ribbon/check/top/header/divider/
+  rewards/claim), modal (title/subtitle/grid/error).
+- `WheelModal` — backdrop/rise/title-plate/frame/pointer/rings/disc/divider/
+  slot/hub/spin/error (inline `--wheel-d` styles stay).
+- `LobbyBoardCarousel` — podium/section/viewport/stage/board/image/name-pill/
+  dots + lock/gem pill wrap positioning (global `lobby-carousel-*` classes
+  remain — separate migration).
+- `Profile` — loading, delete-link, local `CurrencyPill` (pill/icon/value/add/
+  plus), stat icon/value; `profilePage` now sets `color:#fff`; `text-center`
+  was already in the module.
+- `PlayButton` was already clean (size/block map to module classes).
+
+Remaining `className` tokens are module classes or true global classes
+(`lobby-carousel-*`, `lobby-profile-progress*`, `lobby-currency-*`) — no
+Tailwind utilities remain in any migrated component. Verified: lint, `tsc -b`,
+`git diff --check` all pass. Browser/manual visual checks and the full build
+(blocked by the known native Lightning CSS dependency) remain unverified.
+
+#### S11d — shared declared styles via `composes`
+
+Extracted repeated styles into `apps/game/src/styles/shared.module.css` and
+composed them into consumers with CSS Modules `composes:` (no CSS custom
+properties — user preference).
+
+- Created `shared.module.css` with `.fontDisplay` (the `font-display` stack).
+- Composed `fontDisplay` into 13 rules across 6 modules (LobbySideOffers,
+  LobbyBoardCarousel, LobbyActionCard, WheelModal ×3, DailyBonusModal ×5,
+  Profile ×2). `composes` must be the first declaration, so each rule was
+  restructured.
+- `index.css` is a global stylesheet (not a module) so it can't `composes`;
+  its 3 `font-family` occurrences were left as-is.
+- Verified in the built CSS: the shared class is emitted once
+  (`._fontDisplay_ozrpf_4`) and composed into consumers.
+
+**Build unblocked (pre-existing index.css bugs, not from this work):** the
+full build was previously blocked by a missing native Lightning CSS module;
+once that cleared, two latent syntax errors surfaced in `index.css` (both in
+HEAD, unrelated to the migration):
+- Unclosed comment at line 221 that swallowed the `.lobby-profile-progress-label`
+  rule → added the missing `*/`.
+- Stray `}` at line 1078 (double closing brace) → removed it.
+
+`npm run build` now passes. lint, `tsc -b`, `git diff --check` all pass.
+
 #### S11 shared-keyframes extraction
 
 - Created `apps/game/src/keyframes.css` (next to `index.css`) to hold the shared

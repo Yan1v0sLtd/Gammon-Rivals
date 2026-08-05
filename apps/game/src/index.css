@@ -218,7 +218,7 @@ html, body, #root {
   will-change: background-position;
 }
 
-/* Animating background-position-x from a NEGATIVE tile-width up to
+/* Animating background-position-x from a NEGATIVE tile-width up to */
 
 .lobby-profile-progress-label {
   pointer-events: none;
@@ -1073,8 +1073,6 @@ html, body, #root {
   column-gap: calc(72 * var(--lobby-u));
   align-items: start;
   padding: 0;
-}
-
 }
 
 

@@ -60,15 +60,15 @@ function GemReward({
    *  one (usually Day 2), making coins fly from the wrong card. */
   isFlightSource?: boolean,
 }) {
-  const dim = size === "sm" ? "h-[1.45em] w-[1.45em]" : "h-[1.7em] w-[1.7em]"
-  return (<div className="flex items-center gap-[0.25em]">
+  const dim = size === "sm" ? styles.rewardImgSm : styles.rewardImgMd
+  return (<div className={styles.rewardRow}>
     <img
       alt=""
       src="/lobby/carousel/gem.webp"
       {...(isFlightSource ? {"data-fly-source": "gems"} : {})}
-      className={`${dim} select-none object-contain drop-shadow-[0_6px_5px_rgba(80,40,15,0.5)]`}
+      className={`${styles.rewardImg} ${dim}`}
       draggable={false}/>
-    <span className="font-display text-[1.2em] font-black leading-none text-[#3a1f08]">
+    <span className={styles.rewardValue}>
       {amount.toLocaleString()}
     </span>
   </div>)
@@ -78,14 +78,14 @@ function CoinsReward({
   amount,
   isFlightSource = false,
 }: {amount: number, isFlightSource?: boolean}) {
-  return (<div className="flex items-center gap-[0.25em]">
+  return (<div className={styles.rewardRow}>
     <img
       alt=""
       src="/lobby/icons/gold-coin.webp"
       {...(isFlightSource ? {"data-fly-source": "coins"} : {})}
-      className="h-[1.7em] w-[1.7em] select-none object-contain drop-shadow-[0_6px_5px_rgba(80,40,15,0.5)]"
+      className={`${styles.rewardImg} ${styles.rewardImgMd}`}
       draggable={false}/>
-    <span className="font-display text-[1.2em] font-black leading-none text-[#3a1f08]">
+    <span className={styles.rewardValue}>
       {amount.toLocaleString()}
     </span>
   </div>)
@@ -93,10 +93,10 @@ function CoinsReward({
 
 /** Inline-SVG purple hexagon with 'XP' label, gold-rimmed. */
 function XpReward({amount}: {amount: number}) {
-  return (<div className="flex items-center gap-[0.25em]">
+  return (<div className={styles.rewardRow}>
     <svg
       aria-hidden="true"
-      className="h-[1.7em] w-auto select-none drop-shadow-[0_6px_5px_rgba(80,40,15,0.5)]"
+      className={`${styles.rewardImg} ${styles.xpRewardImg}`}
       viewBox="0 0 100 110">
       <defs>
         <linearGradient
@@ -145,7 +145,7 @@ function XpReward({amount}: {amount: number}) {
         XP
       </text>
     </svg>
-    <span className="font-display text-[1.2em] font-black leading-none text-[#3a1f08]">
+    <span className={styles.rewardValue}>
       {amount}%
     </span>
   </div>)
@@ -203,29 +203,27 @@ function DayCard({
   // .activeFrame in DailyBonusModal.module.css. For CLAIMED, we use a static gold
   // gradient. For LOCKED we use a flat cream surface with a thin gold
   // accent border.
-  const outerClass = ["relative h-full rounded-2xl shadow-[0_10px_14px_-4px_rgba(120,53,15,0.45)]", isActive ? `${styles.activeFrame} p-[3px]` : isClaimed ? "bg-gradient-to-b from-[#fcd34d] via-[#f59e0b] to-[#b45309] p-[3px]" : "p-0", fullWidth ? "col-span-3" : ""]
+  const outerClass = [styles.dayCard, isActive ? `${styles.activeFrame} ${styles.dayCardActive}` : isClaimed ? styles.dayCardClaimed : "", fullWidth ? styles.dayCardFull : ""]
     .filter(Boolean)
     .join(" ")
 
-  const innerBg = isClaimed ? "bg-gradient-to-b from-[#fff7d4] via-[#fde68a] to-[#fbbf24]" : "bg-gradient-to-b from-[#fdf6e3] to-[#f7ead0] border border-amber-200/70"
+  const innerBg = isClaimed ? styles.dayCardInnerClaimed : styles.dayCardInnerLocked
 
   return (<div className={outerClass}>
     <div
-      className={`relative flex h-full flex-col overflow-hidden rounded-[14px] ${innerBg}`}>
+      className={`${styles.dayCardInner} ${innerBg}`}>
       {/* Diagonal CLAIMED ribbon — top-left corner */}
-      {isClaimed ? (<div className="pointer-events-none absolute -left-px -top-px z-10 h-[5em] w-[5em] overflow-hidden">
-        <div
-          className="absolute -left-[1.6em] top-[0.9em] origin-center -rotate-45 bg-gradient-to-b from-emerald-500 to-emerald-700 px-[2.2em] py-[0.15em] font-display text-[0.6em] font-black uppercase tracking-[0.18em] text-white shadow-[0_2px_4px_rgba(0,0,0,0.35)]">
+      {isClaimed ? (<div className={styles.claimedRibbonWrap}>
+        <div className={styles.claimedRibbon}>
           Claimed
         </div>
       </div>) : null}
 
       {/* Green check circle — top-right */}
-      {isClaimed ? (<div
-        className="pointer-events-none absolute right-[0.5em] top-[0.5em] z-10 grid h-[1.5em] w-[1.5em] place-items-center rounded-full border-[3px] border-emerald-500 bg-white shadow-[0_3px_6px_rgba(0,0,0,0.18)]">
+      {isClaimed ? (<div className={styles.claimedCheck}>
         <svg
           aria-hidden="true"
-          className="h-[60%] w-[60%]"
+          className={styles.claimedCheckSvg}
           fill="none"
           stroke="#16a34a"
           strokeLinecap="round"
@@ -239,18 +237,16 @@ function DayCard({
       {/* TOP section: header + reward chip(s). Takes remaining vertical
          *  space so the bottom strip stays a consistent visual band on
          *  every card. */}
-      <div className="flex flex-1 flex-col items-center px-[0.7em] pb-[0.4em] pt-[0.5em]">
+      <div className={styles.dayTop}>
         {/* Header: ✦ DAY N ✦ */}
-        <div className="flex items-center gap-[0.4em]">
-          <span className="text-[0.6em] text-amber-600/85">✦</span>
-          <span
-            className="whitespace-nowrap font-display text-[0.95em] font-black uppercase tracking-[0.14em] text-[#3a1f08]">
+        <div className={styles.dayHeader}>
+          <span className={styles.dayHeaderStar}>✦</span>
+          <span className={styles.dayHeaderText}>
             Day&nbsp;{day}
           </span>
-          <span className="text-[0.6em] text-amber-600/85">✦</span>
+          <span className={styles.dayHeaderStar}>✦</span>
         </div>
-        <div
-          className="mx-auto mt-[0.3em] h-px w-[60%] bg-gradient-to-r from-transparent via-amber-500/70 to-transparent"/>
+        <div className={styles.dayDivider}/>
 
         {/* Reward content — ALWAYS a single horizontal row of icon+value
            *  pair(s). The chips are sized small enough that even a 2-reward day
@@ -261,7 +257,7 @@ function DayCard({
            *  many rewards the active day has. Day 7 (full width) gets a wider
            *  gap for its 3-reward combo. */}
         <div
-          className={`mt-[0.3em] flex flex-1 items-center justify-center ${fullWidth ? "gap-[1.1em]" : "gap-[0.45em]"}`}>
+          className={`${styles.dayRewards} ${fullWidth ? styles.dayRewardsWide : styles.dayRewardsNarrow}`}>
           {chips}
         </div>
       </div>
@@ -271,10 +267,9 @@ function DayCard({
          *  reward sits centred in the full card height, matching the mockup
          *  (no empty band). The reward block above is `flex-1`, so it always
          *  centres in whatever height is left. */}
-      {isActive ? (<div
-        className="flex min-h-[1.5em] items-center justify-center border-t border-amber-300/50 bg-amber-200/35 px-[0.5em] pb-[0.3em] pt-[0.15em]">
+      {isActive ? (<div className={styles.claimStrip}>
         <button
-          className="whitespace-nowrap rounded-md border border-[#b45309]/40 bg-gradient-to-b from-[#fcd34d] to-[#d97706] px-[1em] py-[0.15em] font-display text-[0.9em] font-black uppercase tracking-[0.1em] text-white shadow-md transition hover:brightness-110 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-60"
+          className={styles.claimButton}
           disabled={isClaiming}
           type="button"
           onClick={onClaim}>
@@ -304,7 +299,7 @@ export function DailyBonusModal({
   const byDay = new Map(configs.map((c) => [c.day, c]))
 
   return (<ScaleInModal
-    className="relative origin-center"
+    className={styles.modalRoot}
     onClose={onClose}>
     {/*
        * Framed-parchment popup. The gold border, the ornate corner
@@ -322,7 +317,7 @@ export function DailyBonusModal({
        */}
     <img
       alt=""
-      className="pointer-events-none block h-auto w-auto max-h-[86dvh] max-w-[min(94vw,1100px)] select-none drop-shadow-[0_25px_60px_rgba(0,0,0,0.6)]"
+      className={styles.frameImg}
       draggable={false}
       src="/lobby/daily-bonus/frame.webp"/>
 
@@ -331,7 +326,7 @@ export function DailyBonusModal({
           close buttons are identical in size + style. */}
     <ModalCloseButton
       ariaLabel="Close daily bonus"
-      className="absolute right-[5.2%] top-[7.5%] z-30"
+      className={styles.closeButton}
       onClose={onClose}/>
 
     {/* Content safe area — inset from the frame edges to clear the gold
@@ -342,34 +337,32 @@ export function DailyBonusModal({
           fits identically at every screen size (incl. short landscape
           phones), instead of `vw` units overflowing the smaller frame. */}
     <div
-      className="absolute [container-type:size]"
+      className={styles.contentArea}
       style={{
         top: "8.5%",
         right: "6.5%",
         bottom: "7.5%",
         left: "6.5%",
       }}>
-      <div className="relative flex h-full flex-col text-[3.6cqh] leading-none">
+      <div className={styles.contentInner}>
         {/* Title: ✦ ── DAILY BONUS ── ✦ */}
-        <div className="flex items-center justify-center gap-[0.5em]">
-          <span className="text-[1.1em] text-[#c98a2e]">✦</span>
-          <span className="h-[1.5px] w-[1.6em] bg-gradient-to-r from-transparent to-[#c98a2e]/85"/>
-          <h2
-            className="whitespace-nowrap bg-gradient-to-b from-[#fdeb8f] via-[#f0ad3d] to-[#a4611a] bg-clip-text font-display text-[3.5em] font-black uppercase leading-none tracking-[0.06em] text-transparent drop-shadow-[0_2px_0_rgba(255,255,255,0.45)]">
+        <div className={styles.titleRow}>
+          <span className={styles.titleStar}>✦</span>
+          <span className={`${styles.titleLine} ${styles.titleLineLeft}`}/>
+          <h2 className={styles.title}>
             Daily Bonus
           </h2>
-          <span className="h-[1.5px] w-[1.6em] bg-gradient-to-l from-transparent to-[#c98a2e]/85"/>
-          <span className="text-[1.1em] text-[#c98a2e]">✦</span>
+          <span className={`${styles.titleLine} ${styles.titleLineRight}`}/>
+          <span className={styles.titleStar}>✦</span>
         </div>
-        <div
-          className="mt-[0.4em] flex items-center justify-center gap-[0.5em] text-[1.2em] font-bold leading-tight text-[#6e4a26]">
-          <span className="text-[#c98a2e]">✦</span>
-          <span className="whitespace-nowrap">Come back every day to claim more rewards!</span>
-          <span className="text-[#c98a2e]">✦</span>
+        <div className={styles.subtitleRow}>
+          <span className={styles.subtitleStar}>✦</span>
+          <span className={styles.subtitleText}>Come back every day to claim more rewards!</span>
+          <span className={styles.subtitleStar}>✦</span>
         </div>
 
         {/* 3 + 3 + 1 grid — fills the remaining interior height */}
-        <div className="mt-[0.7em] grid min-h-0 flex-1 grid-cols-3 grid-rows-3 gap-[0.55em]">
+        <div className={styles.grid}>
           {[1, 2, 3, 4, 5, 6, 7].map((day) => {
             const cfg = byDay.get(day)
             const isActive = day === upcomingDay && canClaim && !justClaimed
@@ -396,8 +389,7 @@ export function DailyBonusModal({
           })}
         </div>
 
-        {errorMessage ? (<div
-          className="absolute inset-x-0 bottom-0 mx-auto w-fit max-w-[90%] rounded-md border border-rose-700/40 bg-rose-50/95 px-[0.6em] py-[0.3em] text-center text-[0.8em] font-bold leading-tight text-rose-900 shadow-[0_4px_10px_rgba(0,0,0,0.3)]">
+        {errorMessage ? (<div className={styles.error}>
           {errorMessage}
         </div>) : null}
       </div>

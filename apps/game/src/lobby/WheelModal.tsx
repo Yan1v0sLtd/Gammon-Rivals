@@ -409,7 +409,7 @@ export function WheelModal({
   const wheelDimension = "clamp(11rem, 48vmin, 22rem)"
 
   return (
-    <div className={`${styles.wheelModalBackdrop} fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4`}>
+    <div className={styles.wheelModalBackdrop}>
       {/* Carnival / fortune-wheel stack: title plate, pointer,
           gold-framed wheel with bulb lights, big SPIN CTA. No more
           cream modal box — the elements sit directly on the page
@@ -419,17 +419,17 @@ export function WheelModal({
           translateY(36px)→0 with a soft over-curve. Backdrop
           gets its own fade-in via `wheelModalBackdrop` on the
           parent. */}
-      <div className={`${styles.wheelModalRise} relative flex flex-col items-center`}>
+      <div className={styles.wheelModalRise}>
         {/* Title plate + close button. Wrapped in a relative
             container so the close button can be positioned against
             the plate's edge (not the bonus-ui stack's edge, which
             previously placed the X on top of the right "✦"). */}
-        <div className="relative z-10 flex items-center justify-center">
+        <div className={styles.titlePlateWrap}>
           {/* Red pill with thick gold border. Sizes reduced
               proportionally with the wheel — same visual ratio
               but smaller on mobile. */}
           <div
-            className="grid place-items-center font-display whitespace-nowrap"
+            className={styles.titlePlate}
             style={{
               width: "clamp(13rem, 50vmin, 19rem)",
               height: "clamp(2.3rem, 6vmin, 3rem)",
@@ -452,7 +452,7 @@ export function WheelModal({
               reward animation lands. */}
           <ModalCloseButton
             ariaLabel="Close"
-            className="absolute top-1/2 right-[-1.9rem] -translate-y-1/2"
+            className={styles.closeButton}
             disabled={phase !== "idle"}
             onClose={onClose}/>
         </div>
@@ -466,7 +466,7 @@ export function WheelModal({
             the total stack height shrinks enough to fit a landscape
             phone. */}
         <div
-          className="relative mt-3 sm:mt-5 lg:mt-8"
+          className={styles.wheelFrame}
           style={{
             // 1.13× wheel-d gives the gold ring room to breathe
             // around the spinning disc.
@@ -491,7 +491,7 @@ export function WheelModal({
           <div
             ref={tickerRef}
             aria-hidden
-            className="absolute"
+            className={styles.pointer}
             style={{
               top: "calc(var(--wheel-d) * -0.13)",
               left: "50%",
@@ -537,7 +537,7 @@ export function WheelModal({
               embedded in the rim, not floating on top. */}
           <div
             aria-hidden
-            className="absolute rounded-full"
+            className={styles.innerRing}
             style={{
               inset: "calc(var(--wheel-d) * 0.018)",
               border: "calc(var(--wheel-d) * 0.022) solid rgba(255,229,108,0.9)",
@@ -558,7 +558,7 @@ export function WheelModal({
               clear slot demarcations. */}
           <div
             aria-hidden
-            className="absolute rounded-full"
+            className={styles.tickRing}
             style={{
               inset: "calc(var(--wheel-d) * 0.018)",
               zIndex: 4,
@@ -566,7 +566,7 @@ export function WheelModal({
             }}>
             {SLOT_MARKERS.map((marker, i) => (<span
               key={`tick-${marker}`}
-              className="absolute"
+              className={styles.tick}
               style={{
                 left: "50%",
                 top: "50%",
@@ -589,7 +589,7 @@ export function WheelModal({
               cover the bulb lights. */}
           <div
             ref={discRef}
-            className="relative h-full w-full overflow-hidden rounded-full"
+            className={styles.disc}
             style={{
               background: conicBg,
               transformOrigin: "50% 50%",
@@ -606,7 +606,7 @@ export function WheelModal({
                    *  the dividers + icons, which stay crisp on top. */}
             {phase === "celebrating" && spinResult != null ? (<div
               aria-hidden
-              className={`${styles.wheelWinningWedge} absolute inset-0 rounded-full`}
+              className={styles.wheelWinningWedge}
               style={{
                 background: `conic-gradient(from -${SLOT_HALF}deg, transparent 0 ${spinResult.slot_index * SLOT_ANGLE}deg, rgba(255,247,184,0.92) ${spinResult.slot_index * SLOT_ANGLE}deg ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg, transparent ${(spinResult.slot_index + 1) * SLOT_ANGLE}deg 360deg)`,
                 mixBlendMode: "screen",
@@ -620,7 +620,7 @@ export function WheelModal({
             {SLOT_MARKERS.map((marker, i) => (<div
               key={`divider-${marker}`}
               aria-hidden
-              className="absolute"
+              className={styles.divider}
               style={{
                 top: 0,
                 left: "50%",
@@ -650,7 +650,7 @@ export function WheelModal({
               const amountSize = hasSecondary ? "calc(var(--wheel-d) * 0.045)" : "calc(var(--wheel-d) * 0.06)"
               return (<div
                 key={`slot-${slot.slot_index}`}
-                className="absolute"
+                className={styles.slotPivot}
                 style={{
                   top: "50%",
                   left: "50%",
@@ -659,7 +659,7 @@ export function WheelModal({
                   transform: `rotate(${i * SLOT_ANGLE}deg)`,
                 }}>
                 <div
-                  className="absolute flex flex-col items-center"
+                  className={styles.slotContent}
                   style={{
                     top: "calc(var(--wheel-d) * -0.43)",
                     left: "50%",
@@ -722,7 +722,7 @@ export function WheelModal({
           <div
             ref={wheelCenterRef}
             aria-hidden
-            className="absolute grid place-items-center font-display"
+            className={styles.centerHub}
             style={{
               top: "50%",
               left: "50%",
@@ -752,7 +752,7 @@ export function WheelModal({
             vmin-based ratio so the button stays proportional to
             the wheel above it. */}
         <button
-          className="relative z-10 mt-2 font-display transition active:translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
+          className={styles.spinButton}
           disabled={!isReady}
           style={{
             width: "clamp(8.5rem, 24vmin, 12rem)",
@@ -774,8 +774,7 @@ export function WheelModal({
           {phase === "idle" ? "SPIN" : "SPINNING…"}
         </button>
 
-        {error ? (<div
-          className="mt-3 rounded-md border border-rose-700/40 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-900">
+        {error ? (<div className={styles.error}>
           {error}
         </div>) : null}
       </div>

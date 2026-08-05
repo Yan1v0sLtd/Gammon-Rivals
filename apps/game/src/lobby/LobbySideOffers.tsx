@@ -2,6 +2,12 @@ import {lobbyOffers} from "./lobbyData"
 import styles from "./LobbySideOffers.module.css"
 import {Sunbeam} from "./Sunbeam"
 
+const offerTone: Record<string, string> = {
+  coins: styles.toneCoins,
+  daily: styles.toneDaily,
+  connect: styles.toneConnect,
+}
+
 type LobbySideOffersProps = {
   readonly onOfferClick?: (offerId: string) => void,
   /** Which offer ids to render, in order. Defaults to all. Lets the lobby
@@ -22,11 +28,11 @@ export function LobbySideOffers({
     .map((id) => lobbyOffers.find((o) => o.id === id))
     .filter((o): o is (typeof lobbyOffers)[number] => Boolean(o)) : lobbyOffers
   return (<aside
-    className={`${styles.offers} ${side === "right" ? styles.offersRight : ""} flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0`}>
+    className={`${styles.offers} ${side === "right" ? styles.offersRight : ""}`}>
     {offers.map((offer) => (<button
       key={offer.id}
       aria-label={offer.title}
-      className={`${styles.offerCard} relative flex min-w-[17.5rem] max-w-[17.5rem] items-center justify-center overflow-visible bg-transparent p-0 text-left outline-none ring-0 focus:outline-none focus-visible:outline-none transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${offer.image ? "border-0 shadow-none" : `min-h-[6.7rem] rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`}`}
+      className={offer.image ? styles.offerCard : `${styles.offerCard} ${offerTone[offer.id] ?? ""}`}
       style={offer.image ? {aspectRatio: offer.aspectRatio} : undefined}
       type="button"
       onClick={() => onOfferClick?.(offer.id)}>
@@ -39,21 +45,19 @@ export function LobbySideOffers({
                   sunbeam canvas (relative z-[1]). */}
         <img
           alt=""
-          className="relative z-[1] h-full w-full object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.42)]"
+          className={styles.offerImage}
           draggable={false}
           src={offer.image}/>
       </>) : (<>
-        <span className="absolute inset-x-0 bottom-0 h-10 bg-black/16"/>
-        <span
-          className={`${styles.offerIcon} relative ml-4 grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-[#f9d96c] bg-gradient-to-b from-[#fff5a9] to-[#d79a20] text-3xl font-black text-[#351c05] shadow-[0_5px_0_rgba(0,0,0,0.25)]`}>
+        <span className={styles.offerGlare}/>
+        <span className={styles.offerIcon}>
           {offer.symbol}
         </span>
-        <span className={`${styles.offerBody} relative min-w-0`}>
-          <span
-            className={`${styles.offerTitle} block font-display text-xl font-black uppercase leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]`}>
+        <span className={styles.offerBody}>
+          <span className={styles.offerTitle}>
             {offer.title}
           </span>
-          <span className={`${styles.offerSubtitle} mt-1 block text-xs font-semibold uppercase tracking-wide text-white/70`}>
+          <span className={styles.offerSubtitle}>
             {offer.subtitle}
           </span>
         </span>

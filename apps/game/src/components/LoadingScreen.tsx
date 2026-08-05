@@ -29,12 +29,12 @@ export const LoadingScreen: FC<Props> = ({
     aria-busy="true"
     aria-label={pct !== null ? `${label} ${pct}%` : label}
     aria-live="polite"
-    className="fixed inset-0 z-[999] bg-[radial-gradient(circle_at_center,#1a1027_0%,#070310_70%,#000000_100%)]"
+    className={styles.loadingScreenRoot}
     role="status">
     <img
       alt=""
       aria-hidden="true"
-      className="absolute inset-0 h-full w-full select-none object-cover"
+      className={styles.loadingScreenBg}
       draggable={false}
       src={getLoadingScreenImage()}/>
 
@@ -46,7 +46,7 @@ export const LoadingScreen: FC<Props> = ({
         <span className={`${styles.loadingScreenTail} ${styles.loadingScreenTailLeft}`}/>
         <span>
           {label}
-          {pct !== null ? <span className="ml-2">{pct}%</span> : null}
+          {pct !== null ? <span className={styles.loadingScreenPct}>{pct}%</span> : null}
         </span>
         <span className={`${styles.loadingScreenTail} ${styles.loadingScreenTailRight}`}/>
       </div>

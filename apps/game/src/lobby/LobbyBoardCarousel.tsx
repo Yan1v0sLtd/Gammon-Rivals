@@ -46,7 +46,7 @@ function PodiumImage({src}: {readonly src: string}) {
         key={layer.id}
         alt=""
         aria-hidden="true"
-        className={`pointer-events-none absolute bottom-[14%] left-1/2 z-[24] w-[72%] max-w-[47rem] -translate-x-1/2 select-none${fadeClass}`}
+        className={`${styles.podiumImage}${fadeClass}`}
         draggable={false}
         src={layer.src}
         onAnimationEnd={isNewest && animating ? () => {
@@ -512,11 +512,11 @@ export function LobbyBoardCarousel({
   // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
     return (<section
-      className="lobby-carousel-section relative mx-auto flex w-full max-w-[64rem] items-center justify-center overflow-visible">
+      className={`lobby-carousel-section ${styles.carouselSectionEmpty}`}>
       <div
         ref={viewportRef}
-        className="lobby-carousel-viewport flex aspect-[1.05/1] min-h-[25rem] w-full items-center justify-center text-[#ffd16f]/70 sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]">
-        <p className="px-6 text-center text-sm font-bold uppercase tracking-[0.18em]">
+        className={`lobby-carousel-viewport ${styles.carouselViewportEmpty}`}>
+        <p className={styles.carouselEmptyText}>
           Loading boards…
         </p>
       </div>
@@ -561,16 +561,16 @@ export function LobbyBoardCarousel({
   // The pill / lock overlay logic for locked/purchasable boards
   // still uses getBoardState(board) inside the loop.
 
-  return (<section className="lobby-carousel-section relative mx-auto w-full max-w-[64rem] overflow-visible">
+  return (<section className={`lobby-carousel-section ${styles.carouselSection}`}>
     <div
       ref={viewportRef}
-      className="lobby-carousel-viewport relative aspect-[1.05/1] min-h-[25rem] touch-pan-y overflow-visible sm:aspect-[1.34/1] lg:min-h-[31rem] xl:min-h-[35rem]"
+      className={`lobby-carousel-viewport ${styles.carouselViewport}`}
       data-dragging={isDragging ? "true" : "false"}
       onPointerCancel={handlePointerEnd}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerEnd}>
-      <div className="absolute inset-0 overflow-visible">
+      <div className={styles.carouselStage}>
         {rendered.map(({
           board,
           signedIdx,
@@ -599,13 +599,13 @@ export function LobbyBoardCarousel({
           const style = boardTransform(d, layout)
           return (<div
             key={key}
-            className="lobby-carousel-board absolute left-1/2 top-[11%] aspect-[4/3] w-[60%] cursor-grab active:cursor-grabbing [container-type:inline-size]"
+            className={`lobby-carousel-board ${styles.carouselBoard}`}
             data-board-signed-idx={signedIdx}
             data-state={state}
             style={style}>
             <img
               alt={isCenter ? `${board.name} board preview` : ""}
-              className="lobby-carousel-board-image h-full w-full object-contain drop-shadow-[0_18px_16px_rgba(0,0,0,0.42)]"
+              className={`lobby-carousel-board-image ${styles.carouselBoardImage}`}
               draggable={false}
               src={board.image}/>
             {showLock ? (// Expandable lock pill. Collapsed size tracks the old
@@ -618,7 +618,7 @@ export function LobbyBoardCarousel({
                 level={board.unlockLevel}
                 open={expandedLockId === board.id}
                 variant="lock"
-                wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                wrapClassName={styles.lockPillWrap}
                 wrapStyle={{fontSize: "12cqi"}}
                 onOpen={() => {
                   expandLock(board.id)
@@ -648,7 +648,7 @@ export function LobbyBoardCarousel({
                 size="lg"
                 sparkles={false}
                 style={{touchAction: "manipulation"}}
-                wrapClassName="absolute left-1/2 top-[calc(50%-5px)] z-40 -translate-x-1/2 -translate-y-1/2"
+                wrapClassName={styles.lockPillWrap}
                 wrapStyle={{fontSize: "clamp(7px, 4.5cqi, 22px)"}}
                 onClick={(event) => {
                   event.stopPropagation()
@@ -677,7 +677,7 @@ export function LobbyBoardCarousel({
                 open={expandedGemsId === board.id}
                 text="Get more Gems"
                 variant="gem"
-                wrapClassName="absolute bottom-[8%] left-1/2 z-40 -translate-x-1/2"
+                wrapClassName={styles.gemPillWrap}
                 wrapStyle={{fontSize: "12cqi"}}
                 onOpen={() => {
                   if (state === "level-locked") {
@@ -699,7 +699,7 @@ export function LobbyBoardCarousel({
       {/* Board name — golden pill reusing the lock pill's gold treatment
             (namePill in LobbyBoardCarousel.module.css), centred at the top just below the balances notch. */}
       <div
-        className={`${styles.namePill} font-display absolute left-1/2 top-[2%] z-40 -translate-x-1/2`}
+        className={`${styles.namePill} ${styles.namePillWrap}`}
         style={{fontSize: "clamp(0.8rem, 1.7vw, 1.3rem)"}}>
         {selected.name}
       </div>
@@ -714,12 +714,12 @@ export function LobbyBoardCarousel({
             .lobby-carousel-board-lock-button so the two badges swap
             into the exact same position. */}
 
-      <div className="absolute bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center justify-center gap-4">
+      <div className={styles.dots}>
         {boards.map((board, idx) => (<button
           key={board.id}
           aria-label={`Select ${board.name}`}
           aria-pressed={selected.id === board.id}
-          className={`h-4 w-4 rounded-full border border-white/80 transition ${selected.id === board.id ? "scale-125 bg-[#ffd35d] shadow-[0_0_8px_rgba(255,211,93,0.72)]" : "bg-white/72 shadow-[0_1px_3px_rgba(0,0,0,0.32)] hover:bg-white"}`}
+          className={`${styles.dot} ${selected.id === board.id ? styles.dotActive : styles.dotInactive}`}
           type="button"
           onClick={() => {
             animateToBoardIdx(idx)
