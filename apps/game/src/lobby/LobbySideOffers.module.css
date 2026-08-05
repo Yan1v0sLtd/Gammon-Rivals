@@ -37,15 +37,12 @@
   z-index: 31;
 }
 
-/* Below xl the rail collapses to a horizontal scroll row. */
-@media (max-width: 1279px) {
-  .offers {
-    flex-direction: row;
-    gap: 0.75rem;
-    overflow-x: auto;
-    padding-bottom: 0.25rem;
-  }
-}
+/* No narrow-width row collapse: the rail lives inside the fixed 1792x828
+   --lobby-u stage, which scales as a whole, so it never needs to reflow. A
+   `max-width: 1279px` row override here turned the rail horizontal and pushed
+   "How to Play" out past the screen edge. (It was mistakenly derived from dead
+   `flex-row xl:flex-col` utilities that never applied — CSS modules are
+   unlayered, so .offers' flex-direction already beat Tailwind's utilities.) */
 
 /* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
    pinned to the right edge of the third grid column. Inherits the left

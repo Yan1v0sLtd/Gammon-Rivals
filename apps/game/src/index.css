@@ -1148,11 +1148,11 @@ html, body, #root {
   animation: lobbyPodiumFadeOut 450ms ease forwards;
 }
 
-/* Removed with the prev/next nav arrows they targeted: two `[class*=...]`
-   hides and the arrow sizing rules. Both hides were landmines — the `top-`
-   one also matched the board-name pill's `top-[2%]` and hid the board name;
-   the `bottom-24` one also matched the pagination dots container. Style
-   components from their own CSS module, never via utility-class hooks. */
+/* Removed two `[class*=...]` hides plus the prev/next arrow sizing rules — the
+   arrows and the pagination dots they targeted are both gone from the JSX.
+   Those hides were landmines: they matched on Tailwind position utilities, so
+   `top-` also caught the board-name pill's `top-[2%]` and hid the board name.
+   Style components from their own CSS module, never via utility-class hooks. */
 
 .lobby-action-stack {
   display: grid;

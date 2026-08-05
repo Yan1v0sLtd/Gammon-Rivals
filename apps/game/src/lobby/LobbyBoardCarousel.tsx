@@ -497,16 +497,6 @@ export function LobbyBoardCarousel({
   //   animateTo(Math.round(positionRef.current) + delta, SNAP_DURATION_MS, true);
   // };
 
-  const animateToBoardIdx = (idx: number) => {
-    if (boards.length === 0) return
-    const len = boards.length
-    const candidates = [idx, idx - len, idx + len]
-    const current = positionRef.current
-    const target = candidates.reduce((best, c) => (Math.abs(c - current) < Math.abs(best - current) ? c : best), candidates[0])
-    cancelAnimation()
-    animateTo(target, SNAP_DURATION_MS, true)
-  }
-
   // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
     return (<section
@@ -702,9 +692,9 @@ export function LobbyBoardCarousel({
         {selected.name}
       </div>
 
-      {/* Prev/Next navigation arrows removed per operator
-            direction — board switching is now drag/swipe-only (and
-            the bottom dot indicators handle taps for accessibility). */}
+      {/* Prev/Next navigation arrows removed per operator direction — board
+            switching is drag/swipe-only. The bottom dot indicators are gone
+            too: they were hidden from the lobby art anyway. */}
 
       {/* PLAY button used to live here at the carousel level
             (top: 44%). It now renders INSIDE the per-board container
@@ -712,20 +702,6 @@ export function LobbyBoardCarousel({
             .lobby-carousel-board-lock-button so the two badges swap
             into the exact same position. */}
 
-      <div className={styles.dots}>
-        {boards.map((board, idx) => (<button
-          key={board.id}
-          aria-label={`Select ${board.name}`}
-          aria-pressed={selected.id === board.id}
-          className={`${styles.dot} ${selected.id === board.id ? styles.dotActive : styles.dotInactive}`}
-          type="button"
-          onClick={() => {
-            animateToBoardIdx(idx)
-          }}
-          onPointerDown={(event) => {
-            event.stopPropagation()
-          }}/>))}
-      </div>
     </div>
   </section>)
 }
