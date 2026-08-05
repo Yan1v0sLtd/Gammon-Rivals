@@ -1,9 +1,14 @@
 import {memo} from "react"
 
-import {MatchSecondaryControls} from "../../components/ActionButtons"
+import {MatchSecondaryControls} from "../../components/MatchSecondaryControls"
 import {AutoRollToggle} from "../../components/AutoRollToggle"
-import {DoublesStat, PipCountStat, ScoreStat, SeatTurnTimer, SelfIdentityBlock} from "../../components/ConnectedPlayerPanelLeaves"
-import {PlayerIdentityBlock, PlayerPanelShell} from "../../components/SidePanel"
+import {DoublesStat} from "../../components/DoublesStat"
+import {PipCountStat} from "../../components/PipCountStat"
+import {ScoreStat} from "../../components/ScoreStat"
+import {SeatTurnTimer} from "../../components/SeatTurnTimer"
+import {SelfIdentityBlock} from "../../components/SelfIdentityBlock"
+import {PlayerIdentityBlock} from "../../components/PlayerIdentityBlock"
+import {PlayerPanelShell} from "../../components/PlayerPanelShell"
 import {useIsMobileLayout} from "../../lib/useMediaQuery"
 import {useAppSelector} from "../../store/hooks"
 
