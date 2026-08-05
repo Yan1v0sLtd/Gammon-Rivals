@@ -89,3 +89,11 @@ export function makeGuestIdentity(): PlayerIdentity {
     avatarSeed: randomAvatarSeed(),
   }
 }
+
+let sessionGuestIdentity: PlayerIdentity | undefined
+
+/** Shared view-only fallback for the current signed-out session. */
+export function getSessionGuestIdentity(): PlayerIdentity {
+  sessionGuestIdentity ??= makeGuestIdentity()
+  return sessionGuestIdentity
+}

@@ -3,8 +3,8 @@ import {useEffect, useRef, useState} from "react"
 import {Link, useLocation, useNavigate, useSearchParams} from "react-router-dom"
 
 import {authOAuthCompletionRequested} from "../features/auth/authActions"
-import {authSliceActions} from "../features/auth/authSlice"
 import {selectAuthCommand} from "../features/auth/authSelectors"
+import {authSliceActions} from "../features/auth/authSlice"
 import {supabase} from "../lib/supabase"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 

@@ -1,5 +1,7 @@
 import {useCallback, useSyncExternalStore} from "react"
 
+const MOBILE_LAYOUT_QUERY = "(max-aspect-ratio: 1.55/1)"
+
 /**
  * Subscribe to a CSS media query and return whether it currently matches.
  * SSR-safe — reports `false` before hydration and re-syncs on the client.
@@ -20,4 +22,8 @@ export function useMediaQuery(query: string): boolean {
   }, [query])
 
   return useSyncExternalStore(subscribe, getSnapshot, () => false)
+}
+
+export function useIsMobileLayout(): boolean {
+  return useMediaQuery(MOBILE_LAYOUT_QUERY)
 }

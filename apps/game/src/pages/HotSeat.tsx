@@ -6,16 +6,12 @@ import {AI_LEVELS, type AILevel} from "../../../../packages/ai/src/types"
 import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/BoardRenderer"
 import {premiumTheme} from "../../../../packages/board-renderer/src/theme/premium"
 import type {ThemeLayout} from "../../../../packages/board-renderer/src/theme/types"
-import {pipCount} from "../../../../packages/engine/src/board"
-import {ActionButtons, MatchSecondaryControls} from "../components/ActionButtons"
+import {ActionButtons} from "../components/ActionButtons"
 import {AlignmentPanel} from "../components/AlignmentPanel"
-import {AutoRollToggle} from "../components/AutoRollToggle"
 import {BoardLayout} from "../components/BoardLayout"
 import {CubeOfferDecision} from "../components/CubeOfferDecision"
 import {EndOfGameModal} from "../components/EndOfGameModal"
-import {MatchHeader} from "../components/MatchHeader"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
-import {selectCurrentProfile, selectCurrentWallet, selectProfileProgression} from "../features/auth/authSelectors"
 import {autoRollEligibilityChanged} from "../features/gameplay/gameplayActions"
 import {gameplayFinishCacheKey, useFinishMatchRpcMutation} from "../features/gameplay/gameplayApi"
 import {
@@ -25,17 +21,12 @@ import {
   selectCanRoll,
   selectCanUndo,
   selectHumanCanInteract,
-  selectInCrawfordGame,
-  selectIsAIThinking,
-  selectIsAITurn,
   selectLastGameResult,
   selectMatch,
-  selectMatchId,
   selectMatchOver,
   selectOpeningPlayer,
+  selectOpponentIdentity,
   selectPendingOffer,
-  selectRoll,
-  selectTimerViewModel,
 } from "../features/gameplay/gameplaySelectors"
 import {
   type AIConfig,
@@ -43,10 +34,9 @@ import {
   gameplayActions,
 } from "../features/gameplay/gameplaySlice"
 import {HotSeatBoardSurface} from "../features/gameplay/HotSeatBoardSurface"
+import {HotSeatMatchHeader} from "../features/gameplay/HotSeatMatchHeader"
+import {HotSeatPlayerPanel} from "../features/gameplay/HotSeatPlayerPanel"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
-import {generateAIPersona} from "../lib/aiPersona"
-import {formatCompactNumber} from "../lib/format"
-import {aiRankLabel, makeAIIdentity, makeGuestIdentity, type PlayerIdentity} from "../lib/identity"
 import {useAutoRoll} from "../lib/useAutoRoll"
 import {useImagePreloader} from "../lib/useImagePreloader"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
@@ -158,10 +148,6 @@ export function HotSeat() {
     show: showOverlay,
     hide: hideOverlay,
   } = useNavigationLoaderOverlay()
-  const profile = useAppSelector(selectCurrentProfile)
-  const wallet = useAppSelector(selectCurrentWallet)
-  const progression = useAppSelector(selectProfileProgression)
-
   const opp = params.get("opp")
   const aiConfig = useMemo(() => parseOpponent(opp), [opp])
   const target = useMemo(() => parseTarget(params.get("target")), [params])
@@ -249,43 +235,19 @@ export function HotSeat() {
   const [, {data: matchReward}] = useFinishMatchRpcMutation({
     fixedCacheKey: gameplayFinishCacheKey(gameplaySessionId),
   })
-  const matchId = useAppSelector(selectMatchId)
-  const timer = useAppSelector(selectTimerViewModel)
   const match = useAppSelector(selectMatch)
   const board = useAppSelector(selectBoard)
-  const roll = useAppSelector(selectRoll)
   const canEndTurn = useAppSelector(selectCanEndTurn)
   const canOfferDouble = useAppSelector(selectCanOfferDouble)
   const canUndo = useAppSelector(selectCanUndo)
   const pendingOffer = useAppSelector(selectPendingOffer)
   const lastGameResult = useAppSelector(selectLastGameResult)
   const matchOver = useAppSelector(selectMatchOver)
-  const inCrawfordGame = useAppSelector(selectInCrawfordGame)
-  const isAITurn = useAppSelector(selectIsAITurn)
-  const isAIThinking = useAppSelector(selectIsAIThinking)
   const humanCanInteract = useAppSelector(selectHumanCanInteract)
   const playerCanRoll = useAppSelector(selectCanRoll)
   const alignmentPointIndex = alignmentDebug.side === "bottom" ? 12 + alignmentDebug.column : 11 - alignmentDebug.column
   const alignmentStackCount = board.points[alignmentPointIndex]?.count ?? 5
-  const whitePip = pipCount(board, "white")
-  const blackPip = pipCount(board, "black")
-
-  // Self identity comes from the auth profile when available; otherwise a
-  // local guest identity (random name + random avatar) until the profile
-  // loads. Opponent is either an AI identity (for vs-AI mode) or another
-  // local guest for true hot-seat 2-player.
-  const selfIdentity: PlayerIdentity = useMemo(() => {
-    if (profile) {
-      return {
-        name: profile.display_name,
-        avatarSeed: profile.avatar_seed,
-        avatarUrl: profile.avatar_url,
-      }
-    }
-    return makeGuestIdentity()
-  }, [profile])
-
-  const opponentIdentity: PlayerIdentity = useMemo(() => (aiConfig ? makeAIIdentity() : makeGuestIdentity()), [aiConfig])
+  const opponentIdentity = useAppSelector(selectOpponentIdentity)
 
   // Match-start "rolls first" banner — parity with the PvP (PlayOnline) intro.
   // The opening player is now RANDOM (randomFirstBoard in gameplaySlice), so
@@ -378,20 +340,13 @@ export function HotSeat() {
     dispatch(autoRollEligibilityChanged({enabled: autoRollOn && gameReady}))
   }, [autoRollOn, dispatch, gameReady, routeKey])
 
-  const turnLabel = matchOver ? "match over" : lastGameResult ? "game over" : pendingOffer ? `${pendingOffer === "white" ? "black" : "white"} decides` : isAIThinking ? `${board.turn} (AI) thinking…` : isAITurn ? `${board.turn} (AI)` : roll === null ? `${board.turn} to roll` : `${board.turn} to move`
-
   const showGameEndModal = (lastGameResult !== null || matchOver) && lastGameResult
   const showCubeDecision = pendingOffer !== null && !lastGameResult && !(aiConfig && pendingOffer !== aiConfig.player)
-  const turnTimerActive = turnTimerEnabled && timer.deadlineMs !== null && !showGameEndModal && !showCubeDecision && !matchOver && !lastGameResult
   const showIntroBanner = introVisible && match.gameNumber === 1 && !lastGameResult && !matchOver && !alignmentEnabled
 
   // Local player is white in 2-player hot-seat (and when there's no AI);
   // when playing vs AI, the AI plays black and local player is white.
   const localColor = aiConfig ? (aiConfig.player === "black" ? "white" : "black") : "white"
-  const opponentColor = localColor === "white" ? "black" : "white"
-  const localPip = localColor === "white" ? whitePip : blackPip
-  const opponentPip = opponentColor === "white" ? whitePip : blackPip
-  const isLocalTurn = board.turn === localColor && !isAITurn
   const isRollForSelf = board.turn === localColor
   // Who opens THIS match (game 1). The opening turn is randomized per game by
   // the slice's randomFirstBoard (gameplayActions.gameplayRouteEntered's prepare callback);
@@ -401,21 +356,6 @@ export function HotSeat() {
   // flips board.turn.
   const starterColor = useAppSelector(selectOpeningPlayer)
   const starterIsLocal = starterColor === localColor
-  const selfLevel = progression.level
-  const selfCoins = formatCompactNumber(wallet?.coins)
-  // AI opponent's display level + coin count are derived from the
-  // match id so each AI match looks like a different "player" while
-  // staying deterministic per match (no flicker across re-renders).
-  // Fallback persona for the brief window before matchId resolves —
-  // see lib/aiPersona for the per-tier bands.
-  const aiPersona = useMemo(() => (aiConfig ? generateAIPersona(matchId, aiConfig.level) : null), [aiConfig, matchId])
-  const opponentLevel = aiPersona ? aiPersona.level : 23
-  // Opponent coins are hidden ("—") to match the PvP panel, which never
-  // reveals the opponent's balance. An AI opponent shows the same dash a real
-  // opponent does, instead of a persona coin count (which would be a tell).
-  const opponentCoinsLabel = "—"
-  const opponentState = aiConfig ? aiRankLabel(aiConfig.level) : "Guest"
-  const doublesLabel = match.cube.value > 1 ? String(match.cube.value) : "0"
   // Only hand a real background URL to BoardLayout once the theme has
   // settled AND the image is preloaded. Before that we'd be passing the
   // fallback (premium green) URL, which the loader overlay covers — but
@@ -428,106 +368,82 @@ export function HotSeat() {
   // initialise while the loader is up, and onReady can fire to release
   // the overlay on a fully composed screen.
 
-  return (<BoardLayout
-    actionsOverlay={!alignmentEnabled && !showGameEndModal && !showCubeDecision ? (<ActionButtons
-      canEndTurn={canEndTurn && humanCanInteract}
-      canRoll={playerCanRoll}
-      canUndo={canUndo}
-      onEndTurn={handleEndTurn}
-      onRoll={handleRoll}
-      onUndo={handleUndo}/>) : null}
-    backgroundImage={gameplayBackground}
-    centerOverlay={showCubeDecision ? (<CubeOfferDecision
-      currentValue={match.cube.value}
-      offeredBy={pendingOffer}
-      onAccept={handleAcceptDouble}
-      onDrop={handleDropDouble}/>) : showGameEndModal ? (<EndOfGameModal
-      match={match}
-      matchOver={matchOver}
-      result={lastGameResult}
-      reward={matchReward ? {
-        xpAwarded: matchReward.xpAwarded,
-        xpMultiplier: matchReward.xpMultiplier,
-        coinsAwarded: matchReward.coinsAwarded,
-      } : null}
-      onNewMatch={() => {
-        showOverlay()
-        navigate("/play")
-      }}
-      onNextGame={handleNextGame}/>) : showIntroBanner ? (<button
-      className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
-      type="button"
-      onClick={() => {
-        setIntroVisible(false)
-      }}>
-      <div className="font-display text-2xl uppercase tracking-wider mb-1">
-        {starterIsLocal ? "You roll first" : `${opponentIdentity.name} rolls first`}
-      </div>
-      <div className="text-sm">
-        {starterIsLocal ? `You start the match as ${starterColor}.` : `${opponentIdentity.name} starts the match as ${starterColor}.`}
-      </div>
-      <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
-    </button>) : null}
-    header={<MatchHeader
-      blackName={selfIdentity.name}
-      blackPip={localPip}
-      inCrawford={inCrawfordGame}
-      match={match}
-      turnLabel={turnLabel}
-      whiteName={opponentIdentity.name}
-      whitePip={opponentPip}/>}
-    opponent={{
-      identity: opponentIdentity,
-      pipCount: opponentPip,
-      scoreLabel: `${match.score[opponentColor]} / ${match.target}`,
-      doublesLabel,
-      level: opponentLevel,
-      stateLabel: opponentState,
-      coinsLabel: opponentCoinsLabel,
-      isTurn: !isLocalTurn && !showGameEndModal,
-      timerDeadlineMs: !isLocalTurn && turnTimerActive ? (timer.deadlineMs ?? undefined) : undefined,
-      timerDurationMs: !isLocalTurn && turnTimerActive ? (timer.durationMs ?? undefined) : undefined,
-    }}
-    self={{
-      identity: selfIdentity,
-      pipCount: localPip,
-      scoreLabel: `${match.score[localColor]} / ${match.target}`,
-      doublesLabel,
-      level: selfLevel,
-      stateLabel: progression.statusLabel,
-      coinsLabel: selfCoins,
-      isTurn: isLocalTurn && !showGameEndModal,
-      timerDeadlineMs: isLocalTurn && turnTimerActive ? (timer.deadlineMs ?? undefined) : undefined,
-      timerDurationMs: isLocalTurn && turnTimerActive ? (timer.durationMs ?? undefined) : undefined, // Cube / Double / Auto live UNDER the local player's details (their
-      // panel's bottom slot), matching the reference layout. Gated the same
-      // way as the primary action overlay below.
-      bottomSlot: !alignmentEnabled && !showGameEndModal && !showCubeDecision ? (<MatchSecondaryControls
-        autoRollSlot={<AutoRollToggle
-          enabled={autoRollOn}
-          variant="inline"
-          onChange={setAutoRollOn}/>}
-        canDouble={canOfferDouble}
-        cubeValue={match.cube.value}
-        showCube={match.target > 1}
-        onDouble={handleOfferDouble}/>) : undefined,
-    }}>
-    <HotSeatBoardSurface
-      alignmentDebug={alignmentDebug}
-      alignmentEnabled={alignmentEnabled}
-      alignmentLayout={alignmentLayout}
-      canvasMountAllowed={canvasMountAllowed}
-      selectedTheme={selectedTheme}
-      settleSide={isRollForSelf ? "right" : "left"}
-      onReady={handleBoardReady}/>
-    {alignmentEnabled && (<AlignmentPanel
-      debug={alignmentDebug}
-      layout={alignmentLayout}
-      stackCount={alignmentStackCount}
-      onDebugChange={setAlignmentDebug}
-      onLayoutChange={setAlignmentLayout}
-      onReset={() => {
-        window.localStorage.removeItem(ALIGNMENT_STORAGE_KEY)
-        setAlignmentLayout(basePremiumLayout())
-      }}/>)}
-  </BoardLayout>)
+  return (
+    <BoardLayout
+      actionsOverlay={!alignmentEnabled && !showGameEndModal && !showCubeDecision ? (
+        <ActionButtons
+          canEndTurn={canEndTurn && humanCanInteract}
+          canRoll={playerCanRoll}
+          canUndo={canUndo}
+          onEndTurn={handleEndTurn}
+          onRoll={handleRoll}
+          onUndo={handleUndo}/>
+      ) : null}
+      backgroundImage={gameplayBackground}
+      centerOverlay={showCubeDecision ? (
+        <CubeOfferDecision
+          currentValue={match.cube.value}
+          offeredBy={pendingOffer}
+          onAccept={handleAcceptDouble}
+          onDrop={handleDropDouble}/>
+      ) : showGameEndModal ? (<EndOfGameModal
+        match={match}
+        matchOver={matchOver}
+        result={lastGameResult}
+        reward={matchReward ? {
+          xpAwarded: matchReward.xpAwarded,
+          xpMultiplier: matchReward.xpMultiplier,
+          coinsAwarded: matchReward.coinsAwarded,
+        } : null}
+        onNewMatch={() => {
+          showOverlay()
+          navigate("/play")
+        }}
+        onNextGame={handleNextGame}/>) : showIntroBanner ? (<button
+        className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm hover:brightness-105 active:scale-95 transition cursor-pointer"
+        type="button"
+        onClick={() => {
+          setIntroVisible(false)
+        }}>
+        <div className="font-display text-2xl uppercase tracking-wider mb-1">
+          {starterIsLocal ? "You roll first" : `${opponentIdentity.name} rolls first`}
+        </div>
+        <div className="text-sm">
+          {starterIsLocal ? `You start the match as ${starterColor}.` : `${opponentIdentity.name} starts the match as ${starterColor}.`}
+        </div>
+        <div className="text-[11px] text-amber-900/60 mt-2">Tap to dismiss</div>
+      </button>) : null}
+      header={<HotSeatMatchHeader/>}
+      opponentPanel={<HotSeatPlayerPanel
+        seat="opponent"/>}
+      selfPanel={(
+        <HotSeatPlayerPanel
+          autoRollEnabled={autoRollOn}
+          canDouble={canOfferDouble}
+          controlsVisible={!alignmentEnabled && !showGameEndModal && !showCubeDecision}
+          seat="self"
+          onAutoRollChange={setAutoRollOn}
+          onDouble={handleOfferDouble}/>
+      )}>
+      <HotSeatBoardSurface
+        alignmentDebug={alignmentDebug}
+        alignmentEnabled={alignmentEnabled}
+        alignmentLayout={alignmentLayout}
+        canvasMountAllowed={canvasMountAllowed}
+        selectedTheme={selectedTheme}
+        settleSide={isRollForSelf ? "right" : "left"}
+        onReady={handleBoardReady}/>
+      {alignmentEnabled && (
+        <AlignmentPanel
+          debug={alignmentDebug}
+          layout={alignmentLayout}
+          stackCount={alignmentStackCount}
+          onDebugChange={setAlignmentDebug}
+          onLayoutChange={setAlignmentLayout}
+          onReset={() => {
+            window.localStorage.removeItem(ALIGNMENT_STORAGE_KEY)
+            setAlignmentLayout(basePremiumLayout())
+          }}/>
+      )}
+    </BoardLayout>)
 }

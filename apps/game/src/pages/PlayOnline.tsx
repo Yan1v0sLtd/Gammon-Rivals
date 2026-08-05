@@ -3,19 +3,12 @@ import {useCallback, useEffect, useState} from "react"
 import {skipToken} from "@reduxjs/toolkit/query"
 import {Link, useNavigate, useParams, useSearchParams} from "react-router-dom"
 
-import type {AILevel} from "../../../../packages/ai/src/types"
-import {pipCount} from "../../../../packages/engine/src/board"
-import type {MatchState} from "../../../../packages/engine/src/match"
-import type {Database} from "../../../../packages/shared/src/database"
-import {getProfileProgression} from "../../../../packages/shared/src/progression"
-import {ActionButtons, MatchSecondaryControls} from "../components/ActionButtons"
-import {AutoRollToggle} from "../components/AutoRollToggle"
+import {ActionButtons} from "../components/ActionButtons"
 import {BoardLayout} from "../components/BoardLayout"
 import {CubeOfferDecision} from "../components/CubeOfferDecision"
 import {DICE_ANIMATION_MS} from "../components/diceTiming"
-import {MatchHeader} from "../components/MatchHeader"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
-import {selectAuthUserId, selectCurrentProfile, selectCurrentWallet, selectLevelConfigs, selectLevelStatusTiers, selectProfileProgression, selectAuthInitializing} from "../features/auth/authSelectors"
+import {selectAuthUserId, selectCurrentProfile, selectAuthInitializing} from "../features/auth/authSelectors"
 import {useBoardThemeConfig} from "../features/lobby/boardTheme"
 import {OnlineBoardSurface} from "../features/onlineMatch/OnlineBoardSurface"
 import {onlineAutoRollEligibilityChanged} from "../features/onlineMatch/onlineMatchActions"
@@ -33,9 +26,9 @@ import {
   useRollDiceMutation,
 } from "../features/onlineMatch/onlineMatchApi"
 import {buildFinalizeScores} from "../features/onlineMatch/onlineMatchData"
+import {OnlineMatchHeader} from "../features/onlineMatch/OnlineMatchHeader"
 import {
   selectBetweenGames,
-  selectBoard,
   selectCanClaimByInactivity,
   selectCanEndTurn,
   selectCanOfferDouble,
@@ -47,37 +40,21 @@ import {
   selectCurrentTurn,
   selectEffectiveTurn,
   selectFinishTurnPending,
-  selectGameWinner,
-  selectInCrawfordGame,
   selectIsLocalTurn,
   selectLocalColor,
   selectMatch,
   selectMatchFinished,
   selectOpponentPreviewKey,
-  selectRoll,
   selectRollPending,
-  selectTimerViewModel,
 } from "../features/onlineMatch/onlineMatchSelectors"
 import {onlineMatchActions} from "../features/onlineMatch/onlineMatchSlice"
+import {OnlinePlayerPanel} from "../features/onlineMatch/OnlinePlayerPanel"
 import {useGetProfileQuery} from "../features/playerData/playerDataApi"
 import {parseMatchEntryParams} from "../game/matchEntryPath"
-import {generateAIPersona} from "../lib/aiPersona"
-import {formatCompactNumber} from "../lib/format"
-import {aiIdentityFromSeed, aiRankLabel, type PlayerIdentity} from "../lib/identity"
+import {aiIdentityFromSeed} from "../lib/identity"
 import {useAutoRoll} from "../lib/useAutoRoll"
 import {toApiError} from "../store/baseApi"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
-
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
-
-function profileToIdentity(p: ProfileRow | null): PlayerIdentity | null {
-  if (!p) return null
-  return {
-    name: p.display_name,
-    avatarSeed: p.avatar_seed,
-    avatarUrl: p.avatar_url,
-  }
-}
 
 export function PlayOnline() {
   const {matchId} = useParams<{matchId: string}>()
@@ -85,10 +62,6 @@ export function PlayOnline() {
   const userId = useAppSelector(selectAuthUserId)
   const user = userId ? {id: userId} : null
   const profile = useAppSelector(selectCurrentProfile)
-  const wallet = useAppSelector(selectCurrentWallet)
-  const progression = useAppSelector(selectProfileProgression)
-  const levelConfigs = useAppSelector(selectLevelConfigs)
-  const levelStatusTiers = useAppSelector(selectLevelStatusTiers)
   const authLoading = useAppSelector(selectAuthInitializing)
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -142,24 +115,19 @@ export function PlayOnline() {
   const match = useAppSelector((state) => selectMatch(state, matchId))
   const currentGame = useAppSelector((state) => selectCurrentGame(state, matchId))
   const currentTurn = useAppSelector((state) => selectCurrentTurn(state, matchId))
-  const board = useAppSelector((state) => selectBoard(state, matchId))
   const effectiveTurn = useAppSelector((state) => selectEffectiveTurn(state, matchId))
   const localColor = useAppSelector((state) => selectLocalColor(state, matchId))
   const isLocalTurn = useAppSelector((state) => selectIsLocalTurn(state, matchId))
-  const roll = useAppSelector((state) => selectRoll(state, matchId))
   const canRoll = useAppSelector((state) => selectCanRoll(state, matchId))
   const canEndTurn = useAppSelector((state) => selectCanEndTurn(state, matchId))
-  const gameWinner = useAppSelector((state) => selectGameWinner(state, matchId))
   const matchFinished = useAppSelector((state) => selectMatchFinished(state, matchId))
   const cubeValue = useAppSelector((state) => selectCubeValue(state, matchId))
   const cubeOwner = useAppSelector((state) => selectCubeOwner(state, matchId))
   const cubeOffer = useAppSelector((state) => selectCubeOffer(state, matchId))
   const canOfferDouble = useAppSelector((state) => selectCanOfferDouble(state, matchId))
   const betweenGames = useAppSelector((state) => selectBetweenGames(state, matchId))
-  const inCrawfordGame = useAppSelector((state) => selectInCrawfordGame(state, matchId))
   const opponentPreviewKey = useAppSelector((state) => selectOpponentPreviewKey(state, matchId))
   const canClaimByInactivity = useAppSelector((state) => selectCanClaimByInactivity(state, matchId))
-  const timer = useAppSelector((state) => selectTimerViewModel(state, matchId))
 
   const rollDice = useCallback(async () => {
     if (!matchId || !canRoll || rollPending) return
@@ -339,6 +307,7 @@ export function PlayOnline() {
 
   if (!match || !user) return null
 
+  const stableMatchId = matchId ?? match.id
   const isOwner = user.id === match.owner_id
   const role: "owner" | "opponent" | "spectator" = isOwner ? "owner" : user.id === match.opponent_id ? "opponent" : "spectator"
   const waiting = match.opponent_id === null && !match.is_bot
@@ -375,14 +344,10 @@ export function PlayOnline() {
     )
   }
 
-  const whitePip = pipCount(board, "white")
-  const blackPip = pipCount(board, "black")
   const isSpectator = role === "spectator"
 
   // Bot identity: deterministic from matchId so it doesn't reshuffle.
   const isBotMatch = match.is_bot
-  const botLvl: AILevel = match.bot_level === "easy" || match.bot_level === "hard" ? match.bot_level : "medium"
-  const botPersona = isBotMatch ? generateAIPersona(matchId ?? null, botLvl) : null
   const botIdentity = isBotMatch ? aiIdentityFromSeed(matchId ?? "") : null
 
   // Map owner/opponent profiles to seats based on local color.
@@ -392,36 +357,9 @@ export function PlayOnline() {
   const selfProfile = profile
   const opponentProf = remoteProfile ?? null
   const selfColor = isOwnerLocal ? ownerColor : opponentColor
-  const oppColor = selfColor === "white" ? "black" : "white"
-  const selfPip = selfColor === "white" ? whitePip : blackPip
-  const oppPip = oppColor === "white" ? whitePip : blackPip
   const isRollForSelf = effectiveTurn === selfColor
-  const selfProgression = progression
-  const opponentProgression = getProfileProgression(opponentProf, levelConfigs, levelStatusTiers)
   const selfName = selfProfile?.display_name
   const oppName = isBotMatch ? botIdentity!.name : opponentProf?.display_name
-
-  const turnLabel = matchFinished
-    ? "match over"
-    : isSpectator
-      ? `${effectiveTurn} to ${roll === null ? "roll" : "move"}`
-      : gameWinner
-        ? `${gameWinner} wins game`
-        : !isLocalTurn
-          ? `${effectiveTurn}'s turn`
-          : roll === null
-            ? "your turn — roll"
-            : "your turn — move"
-
-  const headerMatch: MatchState = {
-    score: {white: match.white_score, black: match.black_score},
-    target: match.target,
-    cube: {value: cubeValue, owner: cubeOwner},
-    cubeOffer,
-    crawfordGameNumber: null,
-    gameNumber: 1,
-    winner: null,
-  }
 
   const showCubeDecisionCenter = cubeOffer !== null && localColor !== null && cubeOffer !== localColor && !matchFinished
   const showCubePending = cubeOffer !== null && cubeOffer === localColor && !matchFinished
@@ -533,56 +471,32 @@ export function PlayOnline() {
           )
         })()
       ) : null}
-      header={<MatchHeader
-        blackName={selfName ?? "Player"}
-        blackPip={selfPip}
-        inCrawford={inCrawfordGame}
-        match={headerMatch}
-        turnLabel={turnLabel}
-        whiteName={oppName ?? "Opponent"}
-        whitePip={oppPip}/>}
-      opponent={{
-        identity: isBotMatch ? botIdentity : profileToIdentity(opponentProf),
-        pipCount: oppPip,
-        scoreLabel: `${oppColor === "white" ? match.white_score : match.black_score} / ${match.target}`,
-        level: isBotMatch ? botPersona!.level : opponentProgression.level,
-        stateLabel: isBotMatch ? aiRankLabel(botLvl) : opponentProgression.statusLabel,
-        coinsLabel: "—",
-        isTurn: !isLocalTurn && !showMatchOver,
-        timerDeadlineMs: !isLocalTurn && !showMatchOver && !betweenGames ? (timer.deadlineMs ?? undefined) : undefined,
-        timerDurationMs: !isLocalTurn && !showMatchOver && !betweenGames ? (timer.durationMs ?? undefined) : undefined,
-      }}
-      self={{
-        identity: profileToIdentity(selfProfile),
-        pipCount: selfPip,
-        scoreLabel: `${selfColor === "white" ? match.white_score : match.black_score} / ${match.target}`,
-        level: selfProgression.level,
-        stateLabel: selfProgression.statusLabel,
-        coinsLabel: formatCompactNumber(wallet?.coins),
-        isTurn: isLocalTurn && !showMatchOver,
-        timerDeadlineMs: isLocalTurn && !showMatchOver && !betweenGames ? (timer.deadlineMs ?? undefined) : undefined,
-        timerDurationMs: isLocalTurn && !showMatchOver && !betweenGames ? (timer.durationMs ?? undefined) : undefined,
-        bottomSlot: showActions ? (
-          <MatchSecondaryControls
-            autoRollSlot={!isSpectator ? (
-              <AutoRollToggle
-                enabled={autoRollOn}
-                variant="inline"
-                onChange={setAutoRollOn} />
-            ) : null}
-            canDouble={canOfferDouble}
-            cubeValue={cubeValue}
-            showCube={match.target > 1}
-            onDouble={() => void offerDouble()}/>
-        ) : undefined,
-      }}>
+      header={(
+        <OnlineMatchHeader matchId={stableMatchId}/>
+      )}
+      opponentPanel={(
+        <OnlinePlayerPanel
+          isSpectator={isSpectator}
+          matchId={stableMatchId}
+          seat="opponent"/>
+      )}
+      selfPanel={(
+        <OnlinePlayerPanel
+          autoRollEnabled={autoRollOn}
+          canDouble={canOfferDouble}
+          controlsVisible={showActions}
+          isSpectator={isSpectator}
+          matchId={stableMatchId}
+          seat="self"
+          onAutoRollChange={setAutoRollOn}
+          onDouble={offerDouble}/>
+      )}>
       <OnlineBoardSurface
         isSpectator={isSpectator}
         matchId={match.id}
         selectedTheme={selectedTheme}
         settleSide={isRollForSelf ? "right" : "left"}
         onActionError={reportActionError}/>
-
       {!isSpectator && !matchFinished && canClaimByInactivity && (
         <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
           <span>Opponent disconnected</span>

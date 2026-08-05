@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from "react"
+import {memo, useEffect, useMemo, useRef} from "react"
 
 import type {DiceRoll, Die} from "../../../../packages/engine/src/types"
 
@@ -158,7 +158,7 @@ function diceToShow(roll: DiceRoll, remaining: readonly Die[]): {readonly id: "f
 
 /* ─── Component ────────────────────────────────────────────────── */
 
-export function DiceTray({
+export const DiceTray = memo(function DiceTray({
   roll,
   remaining,
   settleSide = "right",
@@ -175,14 +175,16 @@ export function DiceTray({
   return (<div
     aria-hidden
     className={`${styles.diceBoard} ${settleSide === "left" ? styles.diceBoardLeft : styles.diceBoardRight}`}>
-    {dice.map((d) => (<CssDie
-      key={`${rollId}-${d.id}`}
-      rollId={`${rollId}-${d.id}`}
-      sprite={themeSprite}
-      used={d.used}
-      value={d.value}/>))}
+    {dice.map((d) => (
+      <CssDie
+        key={`${rollId}-${d.id}`}
+        rollId={`${rollId}-${d.id}`}
+        sprite={themeSprite}
+        used={d.used}
+        value={d.value}/>
+    ))}
   </div>)
-}
+})
 
 /**
  * Single CSS 3D die. Six face divs in `transform-style: preserve-3d`,
@@ -268,20 +270,22 @@ function CssDie({
   // together. Without that, a "used" die went to 40% opacity but
   // its shadow stayed at full strength — players reported seeing
   // "shadow without die" after consuming a pip in a move.
-  return (<div className={`${styles.diceStand}${used ? ` ${styles.diceStandUsed}` : ""}`}>
-    <div
-      ref={dieRef}
-      className={className}
-      style={style}>
-      <div className={`${styles.diceFace} ${styles.diceFaceF1}`}>{renderPips(1)}</div>
-      <div className={`${styles.diceFace} ${styles.diceFaceF2}`}>{renderPips(2)}</div>
-      <div className={`${styles.diceFace} ${styles.diceFaceF3}`}>{renderPips(3)}</div>
-      <div className={`${styles.diceFace} ${styles.diceFaceF4}`}>{renderPips(4)}</div>
-      <div className={`${styles.diceFace} ${styles.diceFaceF5}`}>{renderPips(5)}</div>
-      <div className={`${styles.diceFace} ${styles.diceFaceF6}`}>{renderPips(6)}</div>
+  return (
+    <div className={`${styles.diceStand}${used ? ` ${styles.diceStandUsed}` : ""}`}>
+      <div
+        ref={dieRef}
+        className={className}
+        style={style}>
+        <div className={`${styles.diceFace} ${styles.diceFaceF1}`}>{renderPips(1)}</div>
+        <div className={`${styles.diceFace} ${styles.diceFaceF2}`}>{renderPips(2)}</div>
+        <div className={`${styles.diceFace} ${styles.diceFaceF3}`}>{renderPips(3)}</div>
+        <div className={`${styles.diceFace} ${styles.diceFaceF4}`}>{renderPips(4)}</div>
+        <div className={`${styles.diceFace} ${styles.diceFaceF5}`}>{renderPips(5)}</div>
+        <div className={`${styles.diceFace} ${styles.diceFaceF6}`}>{renderPips(6)}</div>
+      </div>
+      <div
+        aria-hidden
+        className={styles.diceShadow}/>
     </div>
-    <div
-      aria-hidden
-      className={styles.diceShadow}/>
-  </div>)
+  )
 }

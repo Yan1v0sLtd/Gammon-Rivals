@@ -1,30 +1,10 @@
-import type {PlayerIdentity} from "../lib/identity"
-import {useMediaQuery} from "../lib/useMediaQuery"
-
-import {SidePanel} from "./SidePanel"
-
-const MOBILE_LAYOUT_QUERY = "(max-aspect-ratio: 1.55/1)"
-
-type PlayerSeat = {
-  identity: PlayerIdentity | null,
-  pipCount?: number,
-  scoreLabel?: string,
-  doublesLabel?: string,
-  level?: number,
-  stateLabel?: string,
-  coinsLabel?: string,
-  isTurn?: boolean,
-  timerDeadlineMs?: number,
-  timerDurationMs?: number,
-  hudSlot?: React.ReactNode,
-  bottomSlot?: React.ReactNode,
-}
+import {useIsMobileLayout} from "../lib/useMediaQuery"
 
 type Props = {
   /** The opponent (top-of-screen / left side panel). */
-  opponent: PlayerSeat,
+  opponentPanel: React.ReactNode,
   /** The local player (bottom-of-screen / right side panel). */
-  self: PlayerSeat,
+  selfPanel: React.ReactNode,
   /** Top header (status, match score, nav). */
   header?: React.ReactNode,
   /** The board itself — children render in the centre table. */
@@ -47,67 +27,59 @@ type Props = {
  * stat images, timers) on every screen.
  */
 export function BoardLayout({
-  opponent,
-  self,
+  opponentPanel,
+  selfPanel,
   header,
   children,
   actionsOverlay,
   centerOverlay,
   backgroundImage,
 }: Props) {
-  const isMobileLayout = useMediaQuery(MOBILE_LAYOUT_QUERY)
+  const isMobileLayout = useIsMobileLayout()
 
-  return (<main className="game-screen">
-    {backgroundImage && (<>
-      <img
-        alt=""
-        className="game-background-image"
-        draggable={false}
-        src={backgroundImage}/>
-    </>)}
-    <div className="game-background-tone"/>
+  return (
+    <main className="game-screen">
+      {backgroundImage && (
+        <img
+          alt=""
+          className="game-background-image"
+          draggable={false}
+          src={backgroundImage}/>
+      )}
+      <div className="game-background-tone"/>
 
-    <div className="game-content">
-      {header}
+      <div className="game-content">
+        {header}
 
-      <div className="game-stage">
-        {isMobileLayout ? (<div className="game-mobile-players">
-          <SidePanel
-            compact
-            side="left"
-            {...opponent} />
-          <SidePanel
-            compact
-            side="right"
-            {...self} />
-        </div>) : (<>
-          <div className="game-side-slot game-side-slot--left">
-            <SidePanel
-              side="left"
-              {...opponent} />
+        <div className="game-stage">
+          {isMobileLayout ? (<div className="game-mobile-players">
+            {opponentPanel}
+            {selfPanel}
+          </div>) : (<>
+            <div className="game-side-slot game-side-slot--left">
+              {opponentPanel}
+            </div>
+
+            <div className="game-side-slot game-side-slot--right">
+              {selfPanel}
+            </div>
+          </>)}
+
+          <div className="game-board-column">
+            <div className="game-board-stage">
+              <div className="game-board-shell">{children}</div>
+            </div>
+
+            {actionsOverlay && (<div className="game-actions-layer">
+              <div className="game-actions-inner">{actionsOverlay}</div>
+            </div>)}
+
+            {centerOverlay && (<div className="game-center-layer">
+              <div className="game-center-inner">{centerOverlay}</div>
+            </div>)}
           </div>
-
-          <div className="game-side-slot game-side-slot--right">
-            <SidePanel
-              side="right"
-              {...self} />
-          </div>
-        </>)}
-
-        <div className="game-board-column">
-          <div className="game-board-stage">
-            <div className="game-board-shell">{children}</div>
-          </div>
-
-          {actionsOverlay && (<div className="game-actions-layer">
-            <div className="game-actions-inner">{actionsOverlay}</div>
-          </div>)}
-
-          {centerOverlay && (<div className="game-center-layer">
-            <div className="game-center-inner">{centerOverlay}</div>
-          </div>)}
         </div>
       </div>
-    </div>
-  </main>)
+    </main>
+  )
 }
