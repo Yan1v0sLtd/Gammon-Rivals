@@ -72,5 +72,3 @@ export function ActionButtons({
     </div>
   </div>)
 }
-
-

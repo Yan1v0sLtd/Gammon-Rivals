@@ -1,14 +1,14 @@
 import {memo} from "react"
 
-import {MatchSecondaryControls} from "../../components/MatchSecondaryControls"
 import {AutoRollToggle} from "../../components/AutoRollToggle"
 import {DoublesStat} from "../../components/DoublesStat"
+import {MatchSecondaryControls} from "../../components/MatchSecondaryControls"
 import {PipCountStat} from "../../components/PipCountStat"
+import {PlayerIdentityBlock} from "../../components/PlayerIdentityBlock"
+import {PlayerPanelShell} from "../../components/PlayerPanelShell"
 import {ScoreStat} from "../../components/ScoreStat"
 import {SeatTurnTimer} from "../../components/SeatTurnTimer"
 import {SelfIdentityBlock} from "../../components/SelfIdentityBlock"
-import {PlayerIdentityBlock} from "../../components/PlayerIdentityBlock"
-import {PlayerPanelShell} from "../../components/PlayerPanelShell"
 import {useIsMobileLayout} from "../../lib/useMediaQuery"
 import {useAppSelector} from "../../store/hooks"
 
