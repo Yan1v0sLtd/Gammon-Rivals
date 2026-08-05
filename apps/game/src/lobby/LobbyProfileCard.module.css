@@ -160,6 +160,7 @@
  * vertically inside the shield (no top-pad needed). Halved
  * relative to v2 so it no longer dominates the avatar. */
 .profilePillShield {
+  composes: textWhite from "../styles/shared.module.css";
   position: absolute;
   left: 50%;
   bottom: calc(-15 * var(--lobby-u));
@@ -179,7 +180,6 @@
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 900;
   font-size: calc(19.5 * var(--lobby-u));
-  color: #fff;
   text-shadow: 0 1px 0 #25235b;
 }
 

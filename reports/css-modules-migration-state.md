@@ -334,6 +334,24 @@ Tailwind utilities remain in any migrated component. Verified: lint, `tsc -b`,
 `git diff --check` all pass. Browser/manual visual checks and the full build
 (blocked by the known native Lightning CSS dependency) remain unverified.
 
+#### S11f — styling skill
+
+Created `.claude/skills/css-modules/SKILL.md` codifying the styling rules
+established during this migration: co-located CSS Modules, module as single
+source of truth, named descendant classes (no `:global()` spaghetti), shared
+styles via `composes:` (no `--var` design tokens), keyframes placement,
+Tailwind removal mapping, and the verification block (lint / tsc / diff-check /
+build). Discovered by pi via `.pi/settings.json` → `../.claude/skills`.
+
+#### S11e — `.textWhite` shared class
+
+Added `.textWhite { color: #fff }` to `shared.module.css` and composed it into
+8 rules across 5 modules (LobbySideOffers, LobbyActionCard, LobbyProfileCard,
+DailyBonusModal ×2, Profile ×3). Rules already composing `fontDisplay` now
+carry a second `composes` line. `background-color: #fff` and near-white
+`#fff7cd`/`#fff8c7` left as-is (different concerns). Verified: build passes,
+`.textWhite` emitted once.
+
 #### S11d — shared declared styles via `composes`
 
 Extracted repeated styles into `apps/game/src/styles/shared.module.css` and
