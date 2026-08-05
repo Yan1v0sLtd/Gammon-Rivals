@@ -219,29 +219,6 @@ html, body, #root {
 }
 
 /* Animating background-position-x from a NEGATIVE tile-width up to
-   0 shifts the image origin RIGHTWARD over time, which makes the
-   visible content scroll LEFTWARD relative to the element — wait,
-   no: a specific bubble at image x=10 sits at element x=(image_x +
-   position_x). So as position_x increases from -42 to 0, that
-   bubble moves from element x=-32 (off-screen left) → x=10 (in
-   view). The bubble appears to flow LEFT → RIGHT. */
-@keyframes lobby-progress-flow-slow {
-  0% {
-    background-position: -42px 50%, -42px 50%, -42px 50%;
-  }
-  100% {
-    background-position: 0 50%, 0 50%, 0 50%;
-  }
-}
-
-@keyframes lobby-progress-flow-fast {
-  0% {
-    background-position: -26px 50%, -26px 50%;
-  }
-  100% {
-    background-position: 0 50%, 0 50%;
-  }
-}
 
 .lobby-profile-progress-label {
   pointer-events: none;
@@ -6747,211 +6724,38 @@ html, body, #root {
   pointer-events: auto;
 }
 
-.lobby-pp-card {
-  --lobby-pp-radius: 0;
-  /* Stage-unit scaling (was clamp(px, vw, px)): the whole card now scales with
-     --lobby-u like the rest of the lobby, so the avatar is the same fraction of
-     the screen on phone and desktop. Factor 17.92 = the width-constrained
-     vw→u ratio, so the desktop look is preserved. */
-  --lobby-pp-pad: calc(21.5 * var(--lobby-u));
-  position: relative;
-  isolation: isolate;
-  /* Frameless widget — no border, no inner ring, no card frame.
-   * Profile info floats on a soft radial gradient that fades to
-   * transparent at the edges so the lobby art shows through.
-   * The gradient is denser in the centre (where the avatar +
-   * info live) and dissolves at the perimeter. A small backdrop
-   * blur softens the lobby art behind so the text reads cleanly. */
-  /* Hug the (now --lobby-u) content so the invisible hit-box matches the
-     visible avatar at every scale, and position it in stage units (was a
-     fixed 19rem cap + 14px/19px px margins, which didn't scale). */
-  width: max-content;
-  max-width: 100%;
-  margin: calc(24 * var(--lobby-u)) 0 0 calc(40 * var(--lobby-u));
-  padding: var(--lobby-pp-pad);
-  /* Frameless widget — the bottom padding is invisible but extends the
-     card's hit box ~12-17px below the XP bar, over the top of the first
-     side-offer card and stealing its taps. Drop it so the hit box ends at
-     the visible content; nothing moves visually (no frame/bg). */
-  padding-bottom: 0;
-  border: none;
-  border-radius: var(--lobby-pp-radius);
-  /* Background, mask, and backdrop-filter all moved to ::before
-   * so the card content (avatar, name, etc.) stays fully opaque.
-   * The previous version applied the mask to .lobby-pp-card
-   * itself, which made everything inside the card (including the
-   * avatar) fade with the ellipse — the avatar near the upper
-   * area of the mask was rendering at ~70% opacity. */
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-  text-align: left;
-  color: white;
-  cursor: pointer;
-}
 
 /* Backdrop layer — holds the radial purple gradient + mask +
  * backdrop-filter so the card content (avatar, name, etc.)
  * sits above it FULLY OPAQUE. The previous version applied the
  * mask to .lobby-pp-card itself, which faded everything inside
  * (including the avatar) along the elliptical falloff. */
-.lobby-pp-card::before {
-  /* Backdrop gradient + blur removed per operator request — the simplified
-   * widget (just avatar + XP bar) reads fine directly on the lobby art, so
-   * the soft purple ellipse and the backdrop-blur are gone. */
-  content: none;
-}
 
 /* All content sits above the ::before backdrop. */
-.lobby-pp-card > * {
-  position: relative;
-  z-index: 1;
-}
 
-.lobby-pp-card::after {
-  content: none;
-}
 
 /* Shine line was part of the frame chrome — hidden in v10's
  * frameless design. The element still renders in the JSX so we
  * can resurrect it with a single line if a frame returns. */
-.lobby-pp-shine {
-  display: none;
-}
 
-.lobby-pp-content {
-  position: relative;
-  z-index: 2;
-  /* Stacked + LEFT-aligned: avatar stays in its top-left spot, XP bar
-     directly below it (the name / rank / level row were removed — those
-     live on /profile now). */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: calc(9 * var(--lobby-u));
-}
 
 /* Identity column — avatar + level shield + name + rank stacked
  * vertically. Sits beside the XP card; the heights of the two
  * columns balance so the modal doesn't get taller than necessary. */
-.lobby-pp-identity {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: calc(7 * var(--lobby-u));
-  min-width: 0;
-}
 
 /* Avatar column — column 1, row 1. */
-.lobby-pp-avatar-wrap {
-  display: grid;
-  place-items: center;
-  padding-bottom: calc(12.5 * var(--lobby-u)); /* leaves room for the level shield */
-}
 
-.lobby-pp-avatar-ring {
-  position: relative;
-  width: calc(136 * var(--lobby-u));
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: calc(7.5 * var(--lobby-u)) solid transparent;
-  background: radial-gradient(circle at 46% 42%, #e88dff 0 12%, #b756f4 36%, #7420bd 65%, #27086c 100%) padding-box,
-  conic-gradient(
-    from 218deg,
-    #ff69f6,
-    #fff9be 10%,
-    #ff9b00 20%,
-    #fff3a0 32%,
-    #dc7a00 47%,
-    #7727ef 65%,
-    #ff72f8 82%,
-    #fff7ac 94%,
-    #ff69f6
-  ) border-box;
-  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.2),
-  0 0 0 2px rgba(25, 12, 80, 0.85),
-  0 0 18px rgba(178, 55, 255, 0.7),
-  0 8px 14px rgba(0, 0, 0, 0.35);
-  display: grid;
-  place-items: center;
-  overflow: visible;
-}
 
-.lobby-pp-avatar-ring::after {
-  /* inner soft glow behind the avatar */
-  content: "";
-  position: absolute;
-  inset: 9%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 60%);
-  pointer-events: none;
-}
 
-.lobby-pp-avatar-img {
-  position: relative;
-  z-index: 2;
-  width: 76%;
-  height: 76%;
-  border-radius: 50%;
-  overflow: hidden;
-  filter: drop-shadow(0 18px 14px rgba(0, 0, 0, 0.3));
-}
 
-.lobby-pp-avatar-img > * {
-  width: 100% !important;
-  height: 100% !important;
-}
 
-.lobby-pp-spark {
-  position: absolute;
-  width: calc(12.5 * var(--lobby-u));
-  aspect-ratio: 1;
-  background: white;
-  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px #ff9d00);
-  z-index: 4;
-  pointer-events: none;
-}
 
-.lobby-pp-spark.s1 {
-  top: 4%;
-  left: 1%;
-  transform: rotate(20deg);
-}
 
-.lobby-pp-spark.s2 {
-  right: 4%;
-  bottom: 14%;
-  transform: scale(0.72) rotate(-18deg);
-}
 
 /* Level shield — sits below the avatar ring, half-overlapping.
  * Crown decoration removed per request; the digit is now centered
  * vertically inside the shield (no top-pad needed). Halved
  * relative to v2 so it no longer dominates the avatar. */
-.lobby-pp-shield {
-  position: absolute;
-  left: 50%;
-  bottom: calc(-15 * var(--lobby-u));
-  transform: translateX(-50%);
-  width: calc(36 * var(--lobby-u));
-  aspect-ratio: 0.78;
-  display: grid;
-  place-items: center;
-  border: 1.5px solid #f2b633;
-  border-radius: 18% 18% 45% 45%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
-  linear-gradient(180deg, #20296d, #0b103e 72%);
-  box-shadow: inset 0 0 5px rgba(115, 98, 255, 0.38),
-  0 2px 5px rgba(0, 0, 0, 0.45),
-  0 0 4px rgba(255, 194, 50, 0.4);
-  z-index: 6;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 900;
-  font-size: calc(19.5 * var(--lobby-u));
-  color: #fff;
-  text-shadow: 0 1px 0 #25235b;
-}
 
 /* Profile-page shield — same rounded shape as .lobby-pp-shield, but
  * scaled up for the big profile avatar and anchored to the bottom-
@@ -7086,87 +6890,19 @@ html, body, #root {
   text-shadow: 0 2px 0 #8c4e00, 0 0 8px rgba(255, 202, 59, 0.5);
 }
 
-.lobby-pp-xp-bar {
-  position: relative;
-  /* Sized to the avatar circle (same clamp as .lobby-pp-avatar-ring) and
-   * centred below it — it's now the only text element in the card. */
-  width: calc(136 * var(--lobby-u));
-  height: calc(29 * var(--lobby-u));
-  border-radius: 999px;
-  padding: 2px;
-  background: linear-gradient(180deg, #070b22, #12142b) padding-box,
-  linear-gradient(90deg, #fff7b3, #ff9d00, #ff73f7, #fff7b3) border-box;
-  border: 1px solid transparent;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
-  0 0 0 1px rgba(255, 121, 226, 0.5),
-  0 0 6px rgba(255, 186, 41, 0.22);
-  overflow: hidden;
-}
 
-.lobby-pp-xp-fill {
-  position: relative;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #fff62f 0%, #ffc400 38%, #ff8c00 100%);
-  box-shadow: inset 0 3px 4px rgba(255, 255, 255, 0.46),
-  inset 0 -3px 4px rgba(196, 78, 0, 0.25),
-  0 0 8px rgba(255, 207, 28, 0.7);
-  transition: width 0.45s ease-out;
-  overflow: hidden;
-}
 
 /* Bubble layer reused from the old compact card — slow + fast
  * radial-gradient tiles that animate via background-position. The
  * keyframes (`lobby-progress-flow-slow` / `-fast`) are defined
  * higher in this file alongside the old `.lobby-profile-progress-*`
  * styles, so we just re-use them here. */
-.lobby-pp-xp-fill-bubbles {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  opacity: 0.95;
-  mix-blend-mode: screen;
-  background-image: radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
-  radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
-  radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
-  /* tile width MUST match the keyframe shift (-42px) so the loop is seamless */
-  background-size: 42px 100%, 42px 100%, 42px 100%;
-  background-repeat: repeat;
-  animation: lobby-progress-flow-slow 4.5s linear infinite;
-  will-change: background-position;
-}
 
-.lobby-pp-xp-fill-bubbles::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
-  radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
-  /* tile width MUST match the keyframe shift (-26px) for a seamless loop */
-  background-size: 26px 100%, 26px 100%;
-  background-repeat: repeat;
-  animation: lobby-progress-flow-fast 2.6s linear infinite;
-  will-change: background-position;
-}
 
 /* Text wrapped in a single inline child so `display: flex` doesn't
  * split the fragment children ("120" / "1000 XP") into separate
  * centered grid items (which previously stacked vertically and got
  * clipped by the bar's overflow). */
-.lobby-pp-xp-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-weight: 900;
-  font-size: calc(17 * var(--lobby-u));
-  color: white;
-  text-shadow: 0 1.5px 0 #070819, 0 0 4px rgba(0, 0, 0, 0.6);
-  white-space: nowrap;
-  z-index: 2;
-}
 
 .lobby-pp-xp-text b {
   color: #ffd237;

@@ -230,6 +230,53 @@ layer wrappers.
   source roots for remaining utilities/directives before removing configs and
   dependencies, then run `npm run build:all`.
 
+### S11 — LobbyProfileCard CSS Module slice
+
+- Moved the used `lobby-pp-*` rules from `apps/game/src/index.css` into
+  `apps/game/src/lobby/LobbyProfileCard.module.css`, renaming the opaque `pp`
+  prefix to the descriptive `profilePill*` locals (`profilePill`, `profilePillShine`,
+  `profilePillContent`, `profilePillIdentity`, `profilePillAvatarWrap`,
+  `profilePillAvatarRing`, `profilePillAvatarImg`, `profilePillSpark`/`Spark1`/`Spark2`,
+  `profilePillShield`, `profilePillXpBar`/`XpFill`/`XpFillBubbles`/`XpText`).
+- Updated `LobbyProfileCard.tsx` with a direct module import and explicit mappings;
+  the `group` Tailwind class and inline XP width remain. The `lobby-progress-flow-*`
+  keyframes stay global (shared with `.lobby-profile-progress-*`).
+- Removed only the migrated rules from `index.css`. The unused legacy `lobby-pp-*`
+  rules (name/rank/stats/coin/etc., not consumed by the component) remain as dead
+  legacy, consistent with the plan's "unused selectors are not moved" rule.
+- `lobby-pp-shell` in `LobbyTopBar.tsx` has no CSS rule (dead class) and is out of
+  scope for this slice.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
+  tsconfig.node.json`, and `git diff --check`. Browser/manual visual checks and the
+  full build (blocked by the known native Lightning CSS dependency) remain unverified.
+
+#### S11 reviewer remediation
+
+- **Global keyframes:** the XP bubble animations referenced the shared global
+  `lobby-progress-flow-slow`/`-fast` keyframes. Since a CSS Module scopes bare
+  animation names, both are now explicitly marked `global(...)` so they resolve to
+  the global keyframes (which correctly stay in `index.css` for the
+  `.lobby-profile-progress-*` consumers).
+- **Spark modifier specificity:** restored the original two-class specificity by
+  writing `.profilePillSpark.profilePillSpark1` / `.profilePillSpark2` instead of
+  single-class variants.
+- **Opaque custom props:** renamed `--lobby-pp-radius`/`--lobby-pp-pad` to
+  `--profile-pill-radius`/`--profile-pill-pad` (internal to the module).
+- **Root positioning:** kept normal-specificity `position: relative` on
+  `.profilePill` — exact parity with the original `.lobby-pp-card`; there is no
+  caller positioning utility, so the R2 `:where()` contract does not apply here.
+- Re-verified: lint, `tsc -b`, `git diff --check` all pass.
+
+#### S11 shared-keyframes extraction
+
+- Created `apps/game/src/keyframes.css` (next to `index.css`) to hold the shared
+  keyframes used by more than one consumer. Moved `lobby-progress-flow-slow` and
+  `lobby-progress-flow-fast` there (used by the global `.lobby-profile-progress-*`
+  rules and the `LobbyProfileCard` module). Imported `keyframes.css` in `main.tsx`
+  alongside `index.css` so the keyframes stay in global scope for the module's
+  `global(...)` references. Component-owned keyframes remain with their owning
+  module; only cross-consumer keyframes live in `keyframes.css`.
+
 ### R2 — Positioning contract regression remediation
 
 - **Symptom:** The migrated PlayButton was no longer visible in its board-center

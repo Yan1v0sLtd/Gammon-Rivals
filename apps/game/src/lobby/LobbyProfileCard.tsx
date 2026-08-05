@@ -4,6 +4,8 @@ import type {Database} from "../../../../packages/shared/src/database"
 import type {ProfileProgression} from "../../../../packages/shared/src/progression"
 import {Avatar} from "../components/Avatar"
 
+import styles from "./LobbyProfileCard.module.css"
+
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 
 type LobbyProfileCardProps = {
@@ -24,25 +26,25 @@ export function LobbyProfileCard({
 }: LobbyProfileCardProps) {
   return (<Link
     aria-label="Open profile"
-    className="lobby-pp-card group"
+    className={`${styles.profilePill} group`}
     data-fly-target="xp"
     to="/profile">
     <span
       aria-hidden="true"
-      className="lobby-pp-shine"/>
+      className={styles.profilePillShine}/>
 
-    <div className="lobby-pp-content">
-      <div className="lobby-pp-identity">
-        <div className="lobby-pp-avatar-wrap">
-          <div className="lobby-pp-avatar-ring">
+    <div className={styles.profilePillContent}>
+      <div className={styles.profilePillIdentity}>
+        <div className={styles.profilePillAvatarWrap}>
+          <div className={styles.profilePillAvatarRing}>
             <span
               aria-hidden="true"
-              className="lobby-pp-spark s1"/>
+              className={`${styles.profilePillSpark} ${styles.profilePillSpark1}`}/>
             <span
               aria-hidden="true"
-              className="lobby-pp-spark s2"/>
+              className={`${styles.profilePillSpark} ${styles.profilePillSpark2}`}/>
 
-            <div className="lobby-pp-avatar-img">
+            <div className={styles.profilePillAvatarImg}>
               <Avatar
                 imageUrl={profile?.avatar_url}
                 ring="none"
@@ -50,7 +52,7 @@ export function LobbyProfileCard({
                 size={240}/>
             </div>
 
-            <div className="lobby-pp-shield">
+            <div className={styles.profilePillShield}>
               <span>{progression.level}</span>
             </div>
           </div>
@@ -58,19 +60,19 @@ export function LobbyProfileCard({
       </div>
 
       {/* XP bar — directly below the avatar, sized to the avatar circle
-            (see .lobby-pp-content + .lobby-pp-xp-bar in index.css). It's the
-            only text element left in the card. */}
+            (see .profilePillContent + .profilePillXpBar in the module). It's
+            the only text element left in the card. */}
       <div
         aria-label="Level progress"
-        className="lobby-pp-xp-bar">
+        className={styles.profilePillXpBar}>
         <div
-          className="lobby-pp-xp-fill"
+          className={styles.profilePillXpFill}
           style={{width: `${Math.max(0, Math.min(100, progression.progressPercent))}%`}}>
           <span
             aria-hidden="true"
-            className="lobby-pp-xp-fill-bubbles"/>
+            className={styles.profilePillXpFillBubbles}/>
         </div>
-        <div className="lobby-pp-xp-text">
+        <div className={styles.profilePillXpText}>
           <span>{progression.xpBarLabel}</span>
         </div>
       </div>

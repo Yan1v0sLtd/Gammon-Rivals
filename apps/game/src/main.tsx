@@ -4,6 +4,7 @@ import {createRoot} from "react-dom/client"
 import {Provider} from "react-redux"
 
 import "./index.css"
+import "./keyframes.css"
 import {initializeClient} from "../../../packages/shared/src/clientBootstrap"
 
 import {App} from "./App.tsx"
