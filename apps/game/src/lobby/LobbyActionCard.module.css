@@ -1,0 +1,52 @@
+.actionCard {
+  /* 20 % smaller across the board. 350 -> 280, 125 -> 100. */
+  width: calc(280 * var(--lobby-u));
+  height: calc(100 * var(--lobby-u));
+  min-height: 0;
+  gap: calc(6 * var(--lobby-u));
+  border-width: calc(2 * var(--lobby-u));
+  border-radius: calc(11 * var(--lobby-u));
+  padding: calc(11 * var(--lobby-u)) calc(35 * var(--lobby-u)) calc(11 * var(--lobby-u)) calc(10 * var(--lobby-u));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16),
+  0 calc(8 * var(--lobby-u)) calc(18 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
+}
+
+.actionIcon {
+  width: calc(69 * var(--lobby-u));
+  height: calc(77 * var(--lobby-u));
+}
+
+.actionIcon img {
+  max-width: calc(69 * var(--lobby-u));
+  max-height: calc(69 * var(--lobby-u));
+}
+
+.actionIcon > span {
+  width: calc(56 * var(--lobby-u));
+  height: calc(56 * var(--lobby-u));
+  font-size: calc(29 * var(--lobby-u));
+}
+
+.actionBody {
+  width: calc(168 * var(--lobby-u));
+  flex: 0 0 calc(168 * var(--lobby-u));
+}
+
+.actionTitle {
+  font-size: calc(22 * var(--lobby-u));
+  line-height: 0.98;
+}
+
+.actionSubtitle {
+  margin-top: calc(6 * var(--lobby-u));
+  font-size: calc(13 * var(--lobby-u));
+  line-height: 1.15;
+}
+
+.actionChevron {
+  position: absolute;
+  right: calc(13 * var(--lobby-u));
+  top: 50%;
+  font-size: calc(34 * var(--lobby-u));
+  transform: translateY(-50%);
+}

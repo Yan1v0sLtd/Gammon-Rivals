@@ -1,5 +1,7 @@
 import {useEffect, useRef} from "react"
 
+import styles from "./Sunbeam.module.css"
+
 type Beam = {
   angle: number,
   length: number,
@@ -11,7 +13,7 @@ type Beam = {
 // pixel dimension by (renderedSize / BASE) so it looks identical at any
 // size — the lobby chrome scales with --lobby-u, so the canvas does too.
 // fadeRadius is BASE/2, so the glow fills the canvas to its rim; the
-// canvas CSS size (.lobby-sunbeam-canvas) is what sets its on-screen scale.
+// canvas CSS size (.sunbeamCanvas) is what sets its on-screen scale.
 const BASE = 460
 
 const CONFIG = {
@@ -173,5 +175,5 @@ export function Sunbeam() {
   return (<canvas
     ref={canvasRef}
     aria-hidden="true"
-    className="lobby-sunbeam-canvas"/>)
+    className={styles.sunbeamCanvas}/>)
 }

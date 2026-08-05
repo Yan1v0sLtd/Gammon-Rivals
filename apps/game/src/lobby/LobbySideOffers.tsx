@@ -1,4 +1,5 @@
 import {lobbyOffers} from "./lobbyData"
+import styles from "./LobbySideOffers.module.css"
 import {Sunbeam} from "./Sunbeam"
 
 type LobbySideOffersProps = {
@@ -8,7 +9,7 @@ type LobbySideOffersProps = {
    *  on the right — by mounting two instances. */
   readonly offerIds?: readonly string[],
   /** Which side of the board this rail sits on (drives left/right pinning
-   *  in index.css via `.lobby-offers--{side}`). */
+   *  in LobbySideOffers.module.css via `.offersRight`). */
   readonly side?: "left" | "right",
 }
 
@@ -21,11 +22,11 @@ export function LobbySideOffers({
     .map((id) => lobbyOffers.find((o) => o.id === id))
     .filter((o): o is (typeof lobbyOffers)[number] => Boolean(o)) : lobbyOffers
   return (<aside
-    className={`lobby-offers lobby-offers--${side} flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0`}>
+    className={`${styles.offers} ${side === "right" ? styles.offersRight : ""} flex flex-row gap-3 overflow-x-auto pb-1 xl:flex-col xl:overflow-visible xl:pb-0`}>
     {offers.map((offer) => (<button
       key={offer.id}
       aria-label={offer.title}
-      className={`lobby-offer-card relative flex min-w-[17.5rem] max-w-[17.5rem] items-center justify-center overflow-visible bg-transparent p-0 text-left outline-none ring-0 focus:outline-none focus-visible:outline-none transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${offer.image ? "border-0 shadow-none" : `min-h-[6.7rem] rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`}`}
+      className={`${styles.offerCard} relative flex min-w-[17.5rem] max-w-[17.5rem] items-center justify-center overflow-visible bg-transparent p-0 text-left outline-none ring-0 focus:outline-none focus-visible:outline-none transition hover:brightness-110 hover:scale-[1.03] active:translate-y-1 ${offer.image ? "border-0 shadow-none" : `min-h-[6.7rem] rounded-lg border border-white/25 bg-gradient-to-br ${offer.tone} shadow-[0_9px_18px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.18)]`}`}
       style={offer.image ? {aspectRatio: offer.aspectRatio} : undefined}
       type="button"
       onClick={() => onOfferClick?.(offer.id)}>
@@ -44,21 +45,21 @@ export function LobbySideOffers({
       </>) : (<>
         <span className="absolute inset-x-0 bottom-0 h-10 bg-black/16"/>
         <span
-          className="relative ml-4 grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-[#f9d96c] bg-gradient-to-b from-[#fff5a9] to-[#d79a20] text-3xl font-black text-[#351c05] shadow-[0_5px_0_rgba(0,0,0,0.25)]">
+          className={`${styles.offerIcon} relative ml-4 grid h-16 w-16 shrink-0 place-items-center rounded-full border-2 border-[#f9d96c] bg-gradient-to-b from-[#fff5a9] to-[#d79a20] text-3xl font-black text-[#351c05] shadow-[0_5px_0_rgba(0,0,0,0.25)]`}>
           {offer.symbol}
         </span>
-        <span className="relative min-w-0">
+        <span className={`${styles.offerBody} relative min-w-0`}>
           <span
-            className="block font-display text-xl font-black uppercase leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]">
+            className={`${styles.offerTitle} block font-display text-xl font-black uppercase leading-tight text-white drop-shadow-[0_2px_0_rgba(0,0,0,0.35)]`}>
             {offer.title}
           </span>
-          <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-white/70">
+          <span className={`${styles.offerSubtitle} mt-1 block text-xs font-semibold uppercase tracking-wide text-white/70`}>
             {offer.subtitle}
           </span>
         </span>
         <span
           aria-hidden="true"
-          className="lobby-offer-arrow">›</span>
+          className={styles.offerArrow}>›</span>
       </>)}
     </button>))}
   </aside>)

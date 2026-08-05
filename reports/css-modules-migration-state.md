@@ -267,6 +267,41 @@ layer wrappers.
   caller positioning utility, so the R2 `:where()` contract does not apply here.
 - Re-verified: lint, `tsc -b`, `git diff --check` all pass.
 
+#### S11b — LobbyActionCard / LobbySideOffers / Sunbeam modules
+
+- `Sunbeam.module.css` — `lobby-sunbeam-canvas` → `sunbeamCanvas`.
+- `LobbyActionCard.module.css` — `lobby-action-card/icon/title/subtitle` →
+  `actionCard/actionIcon/actionTitle/actionSubtitle` plus the descendant rules
+  (`.actionIcon img`, `.actionIcon > span`, `.actionCard > span.relative.min-w-0`,
+  `.actionCard > span:last-child`).
+- `LobbySideOffers.module.css` — `lobby-offers` → `offers`, `lobby-offers--right` →
+  `offersRight` (dynamic `side` prop now maps to `styles.offersRight`), the
+  `lobby-offer-card` `:has(> img)` / `:not(:has(> img))` variants → `offerCard`,
+  and `lobby-offer-arrow` → `offerArrow`. The shared `.lobby-offers,
+  .lobby-action-stack` rule was folded into `.offers` (the action-stack half is
+  dead — no TSX consumer — and its standalone rule at index.css:1271 was left in
+  place).
+- Removed the migrated rules from `index.css`. Remaining `lobby-*` refs there are
+  only comments and the dead `.lobby-action-stack` rule.
+- Verified: lint, `tsc -b`, `git diff --check` all pass. Browser/manual visual
+  checks and the full build (blocked by the known native Lightning CSS dependency)
+  remain unverified.
+
+#### S11b reviewer remediation
+
+- **Tailwind utility descendants scoped as module locals (p1):** descendant
+  selectors that referenced Tailwind classes (`.relative`, `.min-w-0`, `.grid`)
+  were being CSS-Module-scoped, so they no longer matched the literal Tailwind
+  classes in the DOM. Rather than reach into utility classes with `:global(...)`
+  (spaghetti), each descendant element was given its own descriptive module class
+  and styled directly:
+  - `LobbyActionCard`: text container → `actionBody`, chevron → `actionChevron`.
+  - `LobbySideOffers`: icon → `offerIcon`, text container → `offerBody`, title →
+    `offerTitle`, subtitle → `offerSubtitle`. These classes only exist in the
+    non-image branch, so the old `:not(:has(> img))` descendant prefixes were
+    dropped; the card-level `:has(> img)` / `:not(:has(> img))` sizing rules stay.
+- Re-verified: lint, `tsc -b`, `git diff --check` all pass.
+
 #### S11 shared-keyframes extraction
 
 - Created `apps/game/src/keyframes.css` (next to `index.css`) to hold the shared

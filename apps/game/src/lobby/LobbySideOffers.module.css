@@ -1,0 +1,121 @@
+.offers {
+  /* Shared rail contract (formerly `.lobby-offers, .lobby-action-stack` —
+     the action-stack half is dead and was folded here). */
+  align-self: start;
+  width: 100%;
+  /* Anchor the side cards below the top bar's profile widget. The extra
+     +47px (was +20px) drops the first card clear of the profile card's
+     box on short-landscape, where the two regions otherwise overlap by
+     ~25px and the profile card swallowed taps on the top of the first
+     offer (Special Offers "not clickable"). */
+  margin-top: calc(80 * var(--lobby-u) + 47px);
+
+  display: flex;
+  /* The grid's first column is now a flexible 1fr (so the centre board
+     column is screen-centred). Pin the offers to a fixed width at the
+     left edge of that column so they don't stretch across it and stay
+     exactly where they were before the centring change. Overrides the
+     width:100% from the shared rail contract above. */
+  width: calc(264 * var(--lobby-u));
+  justify-self: start;
+  margin-left: calc(55 * var(--lobby-u));
+  height: calc(400 * var(--lobby-u));
+  flex-direction: column;
+  /* Pack from the top so the first card aligns with the first
+     card of the right-side rail (which is a grid with
+     align-content: start). An earlier media-query rule sets
+     justify-content: center here, which left a ~21 px gap above
+     the first card and made the two stacks render at different
+     y-positions. */
+  justify-content: flex-start;
+  gap: calc(10 * var(--lobby-u));
+  overflow: visible;
+  padding: 0;
+  /* Sit above the carousel boards (data-slot selected=30 / side=20) so the
+     fanned-out side-board images, whose transparent boxes overflow into
+     this column, can't intercept taps meant for the offer cards. */
+  position: relative;
+  z-index: 31;
+}
+
+/* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
+   pinned to the right edge of the third grid column. Inherits the left
+   rail's top anchor (margin-top), width, height, gap, flex-column,
+   top-packing (flex-start) and z-index from .offers; only the
+   horizontal pin flips. */
+.offersRight {
+  justify-self: end;
+  margin-left: 0;
+  margin-right: calc(55 * var(--lobby-u));
+  /* The rail box is wider than the square icons; without this the icons
+     sit at the box's LEFT edge, leaving an oversized gap to the screen's
+     right edge. Right-align them so they hug the right with the same gap
+     the left rail's icons have from the left edge. */
+  align-items: flex-end;
+}
+
+/* Old text-tile cards — wide horizontal rectangle. Scoped to
+ * non-image variants so the new 400x400 icon cards aren't
+ * forced into a 264u x 100u shape. */
+.offerCard:not(:has(> img)) {
+  flex: 0 0 calc(100 * var(--lobby-u));
+  width: calc(264 * var(--lobby-u));
+  min-width: 0;
+  height: calc(100 * var(--lobby-u));
+  min-height: 0;
+  border-radius: calc(11 * var(--lobby-u));
+  gap: calc(10 * var(--lobby-u));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14),
+  0 calc(7 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.38);
+}
+
+/* Image icon cards — square, sized off lobby-u. 30% smaller
+ * than the prior round (240u → 168u) per operator request. */
+.offerCard:has(> img) {
+  flex: 0 0 calc(168 * var(--lobby-u)) !important;
+  width: calc(168 * var(--lobby-u)) !important;
+  height: calc(168 * var(--lobby-u)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 0;
+  gap: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.offerIcon {
+  width: calc(77 * var(--lobby-u));
+  height: calc(77 * var(--lobby-u));
+  margin-left: calc(18 * var(--lobby-u));
+  border-width: calc(2 * var(--lobby-u));
+  font-size: calc(37 * var(--lobby-u));
+}
+
+.offerBody {
+  width: calc(140 * var(--lobby-u));
+  padding-right: calc(32 * var(--lobby-u));
+}
+
+.offerTitle {
+  font-size: calc(22 * var(--lobby-u));
+  line-height: 0.98;
+}
+
+.offerSubtitle {
+  margin-top: calc(6 * var(--lobby-u));
+  font-size: calc(12 * var(--lobby-u));
+  line-height: 1.08;
+}
+
+.offerArrow {
+  position: absolute;
+  right: calc(20 * var(--lobby-u));
+  top: 50%;
+  color: #ffe29d;
+  font: 900 calc(44 * var(--lobby-u)) / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 calc(3 * var(--lobby-u)) 0 rgba(0, 0, 0, 0.48);
+  transform: translateY(-50%);
+}

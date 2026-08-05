@@ -1,0 +1,15 @@
+.sunbeamCanvas {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* 216% = 160% × (460/340): the effect is tuned against a 460px square
+     (see BASE in Sunbeam.tsx). Growing the canvas with that reference is
+     what actually enlarges the glow on screen — it renders ~35% bigger and
+     spills further past the Special Offers icon. */
+  width: 216%;
+  height: 216%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
