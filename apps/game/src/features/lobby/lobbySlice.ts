@@ -212,27 +212,6 @@ export const lobbySlice = createSlice({
   },
 })
 
-export const {
-  lobbyRouteEntered,
-  lobbyRouteExited,
-  boardSelected,
-  difficultyModalOpened,
-  boardPurchaseModalOpened,
-  dailyBonusModalOpened,
-  wheelModalOpened,
-  howToPlayModalOpened,
-  missionsModalOpened,
-  dailyBonusAutoOpenRequested,
-  lobbyModalClosed,
-  boardPurchaseFailed,
-  dailyBonusClaimFailed,
-  dailyBonusClaimSucceeded,
-  difficultyErrorShown,
-  matchmakingRequested,
-  matchmakingTicked,
-  matchmakingMatched,
-  matchmakingCancelled,
-  matchmakingFailed,
-} = lobbySlice.actions
+export const lobbyActions = lobbySlice.actions
 
 export const lobbyReducer = lobbySlice.reducer

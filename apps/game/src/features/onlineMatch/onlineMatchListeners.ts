@@ -3,7 +3,7 @@ import {isAnyOf, TaskAbortError} from "@reduxjs/toolkit"
 import {isSupabaseConfigured, supabase} from "../../lib/supabase"
 import type {AppStartListening} from "../../store/listenerTypes"
 import type {RootState} from "../../store/store"
-import {authSessionResolved, authSignedOut} from "../auth/authSlice"
+import {authSliceActions} from "../auth/authSlice"
 
 import {onlineAutoRollEligibilityChanged} from "./onlineMatchActions"
 import {finishTurnCacheKey, onlineMatchApi, rollDiceCacheKey} from "./onlineMatchApi"
@@ -25,23 +25,14 @@ import {
   selectRollPending,
   selectTurnDeadlineMs,
 } from "./onlineMatchSelectors"
-import {
-  checkerSelected,
-  localActivityObserved,
-  ONLINE_AUTO_ROLL_DELAY_MS,
-  onlineMatchRouteEntered,
-  onlineMatchRouteExited,
-  opponentActivityObserved,
-  opponentInactivityDeadlineReached,
-  opponentPresenceChanged,
-} from "./onlineMatchSlice"
+import {ONLINE_AUTO_ROLL_DELAY_MS, onlineMatchActions} from "./onlineMatchSlice"
 
 const snapshotFulfilled = onlineMatchApi.endpoints.getActiveMatch.matchFulfilled
 
 /** A local command in flight is itself an interaction, so it resets the turn timer. */
 const localCommandStarted = isAnyOf(onlineMatchApi.endpoints.rollDice.matchPending, onlineMatchApi.endpoints.finishTurn.matchPending, onlineMatchApi.endpoints.submitSubMove.matchPending)
 
-const activityInputs = isAnyOf(snapshotFulfilled, checkerSelected, onlineMatchApi.endpoints.rollDice.matchPending, onlineMatchApi.endpoints.finishTurn.matchPending, onlineMatchApi.endpoints.submitSubMove.matchPending)
+const activityInputs = isAnyOf(snapshotFulfilled, onlineMatchActions.checkerSelected, onlineMatchApi.endpoints.rollDice.matchPending, onlineMatchApi.endpoints.finishTurn.matchPending, onlineMatchApi.endpoints.submitSubMove.matchPending)
 
 function sessionMatchId(state: RootState): string | undefined {
   return state.onlineMatch.matchId ?? undefined
@@ -56,7 +47,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let presenceKey: string | null = null
 
   startListening({
-    matcher: isAnyOf(onlineMatchRouteEntered, onlineMatchRouteExited, authSessionResolved, authSignedOut),
+    matcher: isAnyOf(onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited, authSliceActions.authSessionResolved, authSliceActions.authSignedOut),
     effect: (_action, {
       dispatch,
       getState,
@@ -77,7 +68,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
       })
       const handleSync = () => {
         const online = Object.keys(channel.presenceState()).some((k) => k !== userId)
-        dispatch(opponentPresenceChanged({
+        dispatch(onlineMatchActions.opponentPresenceChanged({
           online,
           atMs: Date.now(),
         }))
@@ -111,21 +102,21 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
       const before = getOriginalState()
       const now = Date.now()
 
-      // checkerSelected writes nothing to the server, so without this the turn
+      // onlineMatchActions.checkerSelected writes nothing to the server, so without this the turn
       // timer would expire on a player who is actively picking a checker.
-      if (checkerSelected.match(action) || localCommandStarted(action)) {
-        dispatch(localActivityObserved({atMs: now}))
+      if (onlineMatchActions.checkerSelected.match(action) || localCommandStarted(action)) {
+        dispatch(onlineMatchActions.localActivityObserved({atMs: now}))
       }
 
       if (!snapshotFulfilled(action)) return
 
       // A turn handed to us starts a fresh turnSeconds window.
       if (selectIsLocalTurn(state, matchId) && !selectIsLocalTurn(before, matchId)) {
-        dispatch(localActivityObserved({atMs: now}))
+        dispatch(onlineMatchActions.localActivityObserved({atMs: now}))
       }
 
       if (selectOpponentActivitySignature(state, matchId) !== selectOpponentActivitySignature(before, matchId)) {
-        dispatch(opponentActivityObserved({atMs: now}))
+        dispatch(onlineMatchActions.opponentActivityObserved({atMs: now}))
       }
     },
   })
@@ -135,7 +126,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let armedTurnDeadline: number | null = null
 
   startListening({
-    matcher: isAnyOf(snapshotFulfilled, localActivityObserved, onlineMatchRouteEntered, onlineMatchRouteExited),
+    matcher: isAnyOf(snapshotFulfilled, onlineMatchActions.localActivityObserved, onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       delay,
@@ -143,7 +134,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
       getState,
       signal,
     }) => {
-      if (onlineMatchRouteExited.match(action) || onlineMatchRouteEntered.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteExited.match(action) || onlineMatchActions.onlineMatchRouteEntered.match(action)) {
         armedTurnDeadline = null
         cancelActiveListeners()
         return
@@ -191,7 +182,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let autoRollEnabled = false
 
   startListening({
-    matcher: isAnyOf(snapshotFulfilled, onlineAutoRollEligibilityChanged, onlineMatchRouteEntered, onlineMatchRouteExited),
+    matcher: isAnyOf(snapshotFulfilled, onlineAutoRollEligibilityChanged, onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       delay,
@@ -202,12 +193,12 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
       if (onlineAutoRollEligibilityChanged.match(action)) {
         autoRollEnabled = action.payload.enabled
       }
-      if (onlineMatchRouteExited.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteExited.match(action)) {
         autoRollEnabled = false
         cancelActiveListeners()
         return
       }
-      if (onlineMatchRouteEntered.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteEntered.match(action)) {
         cancelActiveListeners()
         return
       }
@@ -238,7 +229,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let armedClaimDeadline: number | null = null
 
   startListening({
-    matcher: isAnyOf(snapshotFulfilled, opponentActivityObserved, opponentPresenceChanged, onlineMatchRouteEntered, onlineMatchRouteExited),
+    matcher: isAnyOf(snapshotFulfilled, onlineMatchActions.opponentActivityObserved, onlineMatchActions.opponentPresenceChanged, onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       delay,
@@ -246,7 +237,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
       getState,
       signal,
     }) => {
-      if (onlineMatchRouteExited.match(action) || onlineMatchRouteEntered.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteExited.match(action) || onlineMatchActions.onlineMatchRouteEntered.match(action)) {
         armedClaimDeadline = null
         cancelActiveListeners()
         return
@@ -282,7 +273,7 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
         const byInactivity = liveInactivity !== null && now >= liveInactivity && !selectIsLocalTurn(live, matchId)
         if (!byDisconnect && !byInactivity) return
 
-        dispatch(opponentInactivityDeadlineReached())
+        dispatch(onlineMatchActions.opponentInactivityDeadlineReached())
         // Release the arm so the next trigger re-evaluates an already-expired
         // deadline: that is what lets a retryable conversion failure retry.
         armedClaimDeadline = null
@@ -300,14 +291,14 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let forfeitInFlight = false
 
   startListening({
-    matcher: isAnyOf(opponentInactivityDeadlineReached, onlineMatchRouteEntered, onlineMatchRouteExited),
+    matcher: isAnyOf(onlineMatchActions.opponentInactivityDeadlineReached, onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       dispatch,
       getState,
       signal,
     }) => {
-      if (onlineMatchRouteExited.match(action) || onlineMatchRouteEntered.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteExited.match(action) || onlineMatchActions.onlineMatchRouteEntered.match(action)) {
         forfeitInFlight = false
         cancelActiveListeners()
         return
@@ -373,14 +364,14 @@ export function startOnlineMatchListeners(startListening: AppStartListening): vo
   let lastPokedKey: string | null = null
 
   startListening({
-    matcher: isAnyOf(snapshotFulfilled, onlineMatchRouteEntered, onlineMatchRouteExited),
+    matcher: isAnyOf(snapshotFulfilled, onlineMatchActions.onlineMatchRouteEntered, onlineMatchActions.onlineMatchRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       dispatch,
       getState,
       signal,
     }) => {
-      if (onlineMatchRouteExited.match(action) || onlineMatchRouteEntered.match(action)) {
+      if (onlineMatchActions.onlineMatchRouteExited.match(action) || onlineMatchActions.onlineMatchRouteEntered.match(action)) {
         lastPokedKey = null
         cancelActiveListeners()
         return

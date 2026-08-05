@@ -4,16 +4,14 @@ import {baseApi} from "../../store/baseApi"
 import type {AppStartListening} from "../../store/listenerTypes"
 
 import {dailyBonusClaimConfirmed} from "./lobbyActions"
-import {
-  DAILY_BONUS_CLAIMED_MODAL_MS, dailyBonusClaimSucceeded, lobbyModalClosed, lobbyRouteExited,
-} from "./lobbySlice"
+import {DAILY_BONUS_CLAIMED_MODAL_MS, lobbyActions} from "./lobbySlice"
 
 // Let the reward-flight tokens land before the wallet ticks up — animation choreography.
 const DAILY_BONUS_WALLET_REFRESH_DELAY_MS = 600
 
 /**
  * The endpoint's dailyBonusClaimConfirmed refreshes server cache; the UI's
- * dailyBonusClaimSucceeded owns modal presentation.
+ * lobbyActions.dailyBonusClaimSucceeded owns modal presentation.
  */
 export function startDailyBonusListeners(startListening: AppStartListening): void {
   // A new claim supersedes a pending refresh (cancelActiveListeners); the
@@ -42,7 +40,7 @@ export function startDailyBonusListeners(startListening: AppStartListening): voi
   // A manual close or leaving the route retires the pending auto-close —
   // the timer outlives the component that started it.
   startListening({
-    matcher: isAnyOf(dailyBonusClaimSucceeded, lobbyModalClosed, lobbyRouteExited),
+    matcher: isAnyOf(lobbyActions.dailyBonusClaimSucceeded, lobbyActions.lobbyModalClosed, lobbyActions.lobbyRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       delay,
@@ -50,13 +48,13 @@ export function startDailyBonusListeners(startListening: AppStartListening): voi
       getState,
     }) => {
       cancelActiveListeners()
-      if (!dailyBonusClaimSucceeded.match(action)) return
+      if (!lobbyActions.dailyBonusClaimSucceeded.match(action)) return
       await delay(DAILY_BONUS_CLAIMED_MODAL_MS)
       // Close only the modal this claim belongs to: a modal reopened meanwhile
       // starts with justClaimed === null, so a stale timer cannot shut it.
       const {modal} = getState().lobby
       if (modal.kind !== "dailyBonus" || modal.justClaimed?.day !== action.payload.day) return
-      dispatch(lobbyModalClosed())
+      dispatch(lobbyActions.lobbyModalClosed())
     },
   })
 }

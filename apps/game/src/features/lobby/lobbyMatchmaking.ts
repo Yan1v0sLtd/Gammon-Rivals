@@ -12,7 +12,7 @@ import {selectAuthUserId, selectProfileProgression} from "../auth/authSelectors"
 
 import {useGetLobbyBoardsQuery, useGetUserBoardInventoryQuery} from "./lobbyApi"
 import {computeBoardState, selectOwnedBoardIds, selectSelectedLobbyBoard, selectEnteringRoomId, selectLobbyMatchmaking} from "./lobbySelectors"
-import {difficultyErrorShown, matchmakingCancelled, matchmakingRequested} from "./lobbySlice"
+import {lobbyActions} from "./lobbySlice"
 
 export type LobbyMatchmakingControls = {
   readonly busyId: string | null,
@@ -37,7 +37,7 @@ export function useLobbyMatchmaking(): LobbyMatchmakingControls {
   const start = (selection: DifficultySelection) => {
     if (busyId !== null) return
     if (!userId) {
-      dispatch(difficultyErrorShown({message: "Sign in to enter a room."}))
+      dispatch(lobbyActions.difficultyErrorShown({message: "Sign in to enter a room."}))
       return
     }
     const {selectedBoard} = selectedLobbyBoard
@@ -50,11 +50,11 @@ export function useLobbyMatchmaking(): LobbyMatchmakingControls {
         playerLevel: progression.level,
       })
       if (state !== "owned" && state !== "free-unlock") {
-        dispatch(difficultyErrorShown({message: "Unlock this board before entering a room."}))
+        dispatch(lobbyActions.difficultyErrorShown({message: "Unlock this board before entering a room."}))
         return
       }
     }
-    dispatch(matchmakingRequested({
+    dispatch(lobbyActions.matchmakingRequested({
       searchingForTier: selection.tableConfigId,
       tierDisplayName: selection.displayName,
       matchTarget: selection.matchTarget,
@@ -80,6 +80,6 @@ export function useLobbyMatchmaking(): LobbyMatchmakingControls {
     busyId,
     overlay: matchmaking.status === "idle" ? undefined : matchmaking,
     start,
-    cancel: () => dispatch(matchmakingCancelled()),
+    cancel: () => dispatch(lobbyActions.matchmakingCancelled()),
   }
 }

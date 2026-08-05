@@ -10,9 +10,7 @@ import type {MoveRow} from "../features/replay/replayData"
 import {
   selectClampedPly, selectCurrentBoard, selectIsPlaying, selectTotalPlies, type SubMove,
 } from "../features/replay/replaySelectors"
-import {
-  replayPause, replayPlay, replayRouteEntered, replayRouteExited, replaySeek,
-} from "../features/replay/replaySlice"
+import {replayActions} from "../features/replay/replaySlice"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
 const MODE_LABEL: Record<string, string> = {
@@ -48,9 +46,9 @@ export function Replay() {
 
   useEffect(() => {
     if (!gameId) return
-    dispatch(replayRouteEntered())
+    dispatch(replayActions.replayRouteEntered())
     return () => {
-      dispatch(replayRouteExited())
+      dispatch(replayActions.replayRouteExited())
     }
   }, [dispatch, gameId])
 
@@ -123,7 +121,7 @@ export function Replay() {
         min={0}
         type="range"
         value={clampedPly}
-        onChange={(e) => dispatch(replaySeek({
+        onChange={(e) => dispatch(replayActions.replaySeek({
           ply: parseInt(e.target.value, 10),
           totalPlies,
         }))}/>
@@ -131,7 +129,7 @@ export function Replay() {
       <div className="flex gap-2">
         <button
           className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm"
-          onClick={() => dispatch(replaySeek({
+          onClick={() => dispatch(replayActions.replaySeek({
             ply: 0,
             totalPlies,
           }))}>
@@ -140,7 +138,7 @@ export function Replay() {
         <button
           className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm disabled:opacity-40"
           disabled={clampedPly === 0}
-          onClick={() => dispatch(replaySeek({
+          onClick={() => dispatch(replayActions.replaySeek({
             ply: clampedPly - 1,
             totalPlies,
           }))}>
@@ -149,14 +147,14 @@ export function Replay() {
         <button
           className="px-4 py-1 rounded bg-amber-700 text-amber-50 border border-amber-900 text-sm hover:brightness-110 active:scale-95"
           onClick={() => {
-            if (isPlaying) dispatch(replayPause()); else dispatch(replayPlay({totalPlies}))
+            if (isPlaying) dispatch(replayActions.replayPause()); else dispatch(replayActions.replayPlay({totalPlies}))
           }}>
           {isPlaying ? "pause" : clampedPly >= totalPlies ? "replay" : "play"}
         </button>
         <button
           className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm disabled:opacity-40"
           disabled={clampedPly >= totalPlies}
-          onClick={() => dispatch(replaySeek({
+          onClick={() => dispatch(replayActions.replaySeek({
             ply: clampedPly + 1,
             totalPlies,
           }))}>
@@ -164,7 +162,7 @@ export function Replay() {
         </button>
         <button
           className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm"
-          onClick={() => dispatch(replaySeek({
+          onClick={() => dispatch(replayActions.replaySeek({
             ply: totalPlies,
             totalPlies,
           }))}>

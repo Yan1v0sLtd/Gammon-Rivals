@@ -7,9 +7,9 @@ import {playerDataApi} from "../playerData/playerDataApi"
 
 import {authInitializationRequested, authAnonymousSignInRequested, authCommandFailed, authCommandReset, authCommandStarted, authCommandSucceeded, authGoogleLinkRequested, authGoogleSignInRequested, authMagicLinkRequested, authOAuthCompletionRequested, authRefreshRequested, authSignOutRequested} from "./authActions"
 import {completeOAuthProfile, getSupabaseSession, linkGoogleIdentity, sendMagicLink, signInAnonymously, signInWithGoogle, signOut} from "./authData"
-import {authInitializationStarted, authSessionResolved, authSignedOut, type AuthIdentity} from "./authSlice"
+import {authSliceActions, type AuthIdentity} from "./authSlice"
 
-const authLifecycleMatcher = isAnyOf(authInitializationStarted, authSessionResolved, authSignedOut)
+const authLifecycleMatcher = isAnyOf(authSliceActions.authInitializationStarted, authSliceActions.authSessionResolved, authSliceActions.authSignedOut)
 
 function authIdentityFromSession(session: import("@supabase/supabase-js").Session): AuthIdentity {
   return {
@@ -20,8 +20,8 @@ function authIdentityFromSession(session: import("@supabase/supabase-js").Sessio
 }
 
 function authSessionAction(session: import("@supabase/supabase-js").Session | null) {
-  if (!session?.user) return authSignedOut()
-  return authSessionResolved(authIdentityFromSession(session))
+  if (!session?.user) return authSliceActions.authSignedOut()
+  return authSliceActions.authSessionResolved(authIdentityFromSession(session))
 }
 
 export function startAuthListeners(startListening: AppStartListening): void {
@@ -43,9 +43,9 @@ export function startAuthListeners(startListening: AppStartListening): void {
     effect: async (_action, {dispatch, signal}) => {
       if (initialized) return
       initialized = true
-      dispatch(authInitializationStarted())
+      dispatch(authSliceActions.authInitializationStarted())
       if (!isSupabaseConfigured) {
-        dispatch(authSignedOut())
+        dispatch(authSliceActions.authSignedOut())
         return
       }
 
@@ -66,7 +66,7 @@ export function startAuthListeners(startListening: AppStartListening): void {
       catch (err) {
         if (signal.aborted || authEventSeen) return
         console.error("Failed to restore the Supabase session:", err)
-        dispatch(authSignedOut())
+        dispatch(authSliceActions.authSignedOut())
       }
     },
   })
@@ -84,8 +84,10 @@ export function startAuthListeners(startListening: AppStartListening): void {
       try {
         if (authOAuthCompletionRequested.match(action)) {
           const session = await getSupabaseSession()
-          if (!session?.user) throw new Error("Google sign-in did not return a session. Please try again.")
-          dispatch(authSessionResolved(authIdentityFromSession(session)))
+          if (!session?.user) {
+            throw new Error("Google sign-in did not return a session. Please try again.")
+          }
+          dispatch(authSliceActions.authSessionResolved(authIdentityFromSession(session)))
           const profile = await completeOAuthProfile(session.user)
           if (!isCurrent()) return
           if (getState().auth.userId === session.user.id) {
@@ -154,12 +156,12 @@ export function startAuthListeners(startListening: AppStartListening): void {
         }
         lastAuthUserId = userId
       }
-      else if (!authSessionResolved.match(action)) {
+      else if (!authSliceActions.authSessionResolved.match(action)) {
         cleanupPresence()
         return
       }
 
-      if (!authSessionResolved.match(action)) {
+      if (!authSliceActions.authSessionResolved.match(action)) {
         cleanupPresence()
         return
       }
@@ -218,7 +220,7 @@ export function startAuthListeners(startListening: AppStartListening): void {
       const currentUserId = getState().auth.userId
       if (currentUserId === null || action.meta.arg.originalArgs !== currentUserId) return
       if (!action.payload?.deleted_at) return
-      dispatch(authSignedOut())
+      dispatch(authSliceActions.authSignedOut())
       void supabase.auth.signOut().catch((err: unknown) => {
         console.error("Supabase sign-out failed after account deletion:", err)
       })

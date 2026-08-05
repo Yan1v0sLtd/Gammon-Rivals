@@ -1,7 +1,7 @@
 import {lazy, Suspense, useCallback, useEffect} from "react"
 
 import {selectIsShopOpen} from "../features/appUi/appUiSelectors"
-import {shopClosed} from "../features/appUi/appUiSlice"
+import {appUiActions} from "../features/appUi/appUiSlice"
 import {shopWarmupRequested} from "../features/shop/shopActions"
 import {useBodyModalFlag} from "../lib/bodyModalFlag"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
@@ -23,7 +23,9 @@ const ShopModal = lazy(() => import("../pages/Shop").then((m) => ({default: m.Sh
 export function ShopHost() {
   const isShopOpen = useAppSelector(selectIsShopOpen)
   const dispatch = useAppDispatch()
-  const closeShop = useCallback(() => dispatch(shopClosed()), [dispatch])
+  const closeShop = useCallback(() => {
+    dispatch(appUiActions.shopClosed())
+  }, [dispatch])
   // Pause the lobby's ambient animations while the shop covers them.
   useBodyModalFlag(isShopOpen)
 

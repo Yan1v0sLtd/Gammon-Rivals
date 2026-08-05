@@ -3,7 +3,7 @@ import {useCallback} from "react"
 import {useAppDispatch, useAppSelector} from "../../store/hooks"
 
 import {selectIsShopOpen} from "./appUiSelectors"
-import {shopClosed, shopOpened} from "./appUiSlice"
+import {appUiActions} from "./appUiSlice"
 
 export type ShopControls = {
   readonly openShop: () => void,
@@ -21,8 +21,12 @@ export function useShop(): ShopControls {
   const isShopOpen = useAppSelector(selectIsShopOpen)
   // useCallback([dispatch]) keeps these stable so effects that depend on
   // openShop (e.g. ShopRoute's redirect) never re-fire on re-render.
-  const openShop = useCallback(() => dispatch(shopOpened()), [dispatch])
-  const closeShop = useCallback(() => dispatch(shopClosed()), [dispatch])
+  const openShop = useCallback(() => {
+    dispatch(appUiActions.shopOpened())
+  }, [dispatch])
+  const closeShop = useCallback(() => {
+    dispatch(appUiActions.shopClosed())
+  }, [dispatch])
   return {
     openShop,
     closeShop,

@@ -89,7 +89,7 @@ export function AuthCallback() {
       dispatch(authOAuthCompletionRequested())
     })()
 
-    void completionRef.current.catch((err: unknown) => {
+    void completionRef.current?.catch((err: unknown) => {
       if (!cancelled) setError(formatAuthError(err instanceof Error ? err.message : String(err)))
     })
 

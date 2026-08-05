@@ -56,12 +56,6 @@ export const appUiSlice = createSlice({
   },
 })
 
-export const {
-  shopOpened,
-  shopClosed,
-  navigationLoaderOverlayShown,
-  navigationLoaderOverlayFadeStarted,
-  navigationLoaderOverlayHidden,
-} = appUiSlice.actions
+export const appUiActions = appUiSlice.actions
 
 export const appUiReducer = appUiSlice.reducer

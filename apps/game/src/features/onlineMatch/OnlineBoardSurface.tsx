@@ -10,7 +10,7 @@ import {useAppDispatch, useAppSelector} from "../../store/hooks"
 
 import {useSubmitSubMoveMutation} from "./onlineMatchApi"
 import {encodeMove, selectBoardPositionViewModel, selectCurrentTurn, selectGameWinner, selectInteractionViewModel, selectLocalLegalMoves, selectMatch, selectSelectionViewModel} from "./onlineMatchSelectors"
-import {checkerSelected, checkerSelectionCancelled} from "./onlineMatchSlice"
+import {onlineMatchActions} from "./onlineMatchSlice"
 
 type Props = {
   readonly matchId: string,
@@ -44,10 +44,10 @@ export const OnlineBoardSurface = memo(function OnlineBoardSurface({matchId, sel
   const selectFrom = useCallback((pos: Position) => {
     if (isSpectator || !interaction.canInteract || gameWinner !== null || !currentTurn) return
     if (!selection.legalOrigins.includes(pos)) {
-      dispatch(checkerSelectionCancelled())
+      dispatch(onlineMatchActions.checkerSelectionCancelled())
       return
     }
-    dispatch(checkerSelected({from: pos}))
+    dispatch(onlineMatchActions.checkerSelected({from: pos}))
   }, [currentTurn, dispatch, gameWinner, interaction.canInteract, isSpectator, selection.legalOrigins])
 
   const selectTo = useCallback(async (pos: Position) => {
@@ -59,7 +59,7 @@ export const OnlineBoardSurface = memo(function OnlineBoardSurface({matchId, sel
     const newRemaining = index >= 0
       ? [...currentTurn.remaining.slice(0, index), ...currentTurn.remaining.slice(index + 1)]
       : [...currentTurn.remaining]
-    dispatch(checkerSelectionCancelled())
+    dispatch(onlineMatchActions.checkerSelectionCancelled())
     try {
       await triggerSubmitSubMove({matchId, currentTurn: {...currentTurn, subMoves: newSubMoves, remaining: newRemaining}}).unwrap()
     }
@@ -73,7 +73,7 @@ export const OnlineBoardSurface = memo(function OnlineBoardSurface({matchId, sel
     if (selection.selectedFrom === null) selectFrom(pos)
     else if (selection.validDestinations.includes(pos)) void selectTo(pos)
     else if (selection.legalOrigins.includes(pos)) selectFrom(pos)
-    else dispatch(checkerSelectionCancelled())
+    else dispatch(onlineMatchActions.checkerSelectionCancelled())
   }, [dispatch, gameWinner, interaction.canInteract, isSpectator, selectFrom, selectTo, selection])
 
   return (<>

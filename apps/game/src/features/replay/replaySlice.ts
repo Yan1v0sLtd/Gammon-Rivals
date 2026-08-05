@@ -55,13 +55,6 @@ export const replaySlice = createSlice({
   },
 })
 
-export const {
-  replayRouteEntered,
-  replayRouteExited,
-  replaySeek,
-  replayPlay,
-  replayPause,
-  replayTick,
-} = replaySlice.actions
+export const replayActions = replaySlice.actions
 
 export const replayReducer = replaySlice.reducer

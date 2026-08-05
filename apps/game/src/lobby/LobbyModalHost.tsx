@@ -11,9 +11,7 @@ import {boardPurchaseErrorMessage, dailyBonusErrorMessage} from "../features/lob
 import {useLobbyMatchmaking} from "../features/lobby/lobbyMatchmaking"
 import {selectLobbyModal} from "../features/lobby/lobbySelectors"
 import {computeDaysClaimedInCurrentStreak, computeUpcomingDay, selectLobbyBoards, todayET, type MissionsResult} from "../features/lobby/lobbySelectors"
-import {
-  boardPurchaseFailed, dailyBonusClaimFailed, dailyBonusClaimSucceeded, lobbyModalClosed,
-} from "../features/lobby/lobbySlice"
+import {lobbyActions} from "../features/lobby/lobbySlice"
 import {isSupabaseConfigured} from "../lib/supabase"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
@@ -72,7 +70,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
   const [purchaseBoardWithGems, {isLoading: isPurchasing}] = usePurchaseBoardWithGemsMutation()
   const [claimDailyBonusMutation, {isLoading: isClaiming}] = useClaimDailyBonusMutation()
 
-  const closeModal = useCallback(() => dispatch(lobbyModalClosed()), [dispatch])
+  const closeModal = useCallback(() => dispatch(lobbyActions.lobbyModalClosed()), [dispatch])
 
   if (modal.kind === "difficulty") {
     return (<>
@@ -85,12 +83,12 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
         onCancelMatchmaking={cancel}
         onClose={() => {
           if (busyId !== null) return
-          dispatch(lobbyModalClosed())
+          dispatch(lobbyActions.lobbyModalClosed())
         }}
         onGetCoins={() => {
           // No showOverlay() here — /shop renders instantly and must not
           // trap the user behind the route overlay.
-          dispatch(lobbyModalClosed())
+          dispatch(lobbyActions.lobbyModalClosed())
           openShop()
         }}
         onSelect={start}/>
@@ -108,7 +106,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
     const confirmPurchase = async () => {
       if (isPurchasing) return
       if (!isSupabaseConfigured || !userId) {
-        dispatch(boardPurchaseFailed({message: "Sign in to purchase boards."}))
+        dispatch(lobbyActions.boardPurchaseFailed({message: "Sign in to purchase boards."}))
         return
       }
       try {
@@ -118,10 +116,10 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
           boardId: board.id,
           userId,
         }).unwrap()
-        dispatch(lobbyModalClosed())
+        dispatch(lobbyActions.lobbyModalClosed())
       }
       catch (err) {
-        dispatch(boardPurchaseFailed({
+        dispatch(lobbyActions.boardPurchaseFailed({
           message: boardPurchaseErrorMessage(extractErrorMessage(err), board.unlockLevel),
         }))
       }
@@ -134,7 +132,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
       priceGems={board.priceGems}
       onCancel={() => {
         if (isPurchasing) return
-        dispatch(lobbyModalClosed())
+        dispatch(lobbyActions.lobbyModalClosed())
       }}
       onConfirm={confirmPurchase}/>)
   }
@@ -143,7 +141,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
     return (<DailyMissionsModal
       result={missionsResult}
       onClose={() => {
-        dispatch(lobbyModalClosed())
+        dispatch(lobbyActions.lobbyModalClosed())
         // Claims/rerolls/chests may have credited the wallet AND XP —
         // refresh both so the top-bar RollingNumber and the level
         // progress bar catch up.
@@ -173,7 +171,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
     const claimDailyBonus = async () => {
       if (isClaiming) return
       if (!isSupabaseConfigured || !userId) {
-        dispatch(dailyBonusClaimFailed({message: "Sign in to claim daily bonuses."}))
+        dispatch(lobbyActions.dailyBonusClaimFailed({message: "Sign in to claim daily bonuses."}))
         return
       }
       // Capture each currency's source element BEFORE the modal re-renders
@@ -193,7 +191,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
           gems: payload.reward_gems ?? 0,
           xp: payload.reward_xp ?? 0,
         }
-        dispatch(dailyBonusClaimSucceeded(reward))
+        dispatch(lobbyActions.dailyBonusClaimSucceeded(reward))
 
         // Spawn before the delayed wallet refresh lands so the tokens arrive
         // at a bumped balance. Fallback to the other source when a card has
@@ -208,7 +206,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
         }
       }
       catch (err) {
-        dispatch(dailyBonusClaimFailed({message: dailyBonusErrorMessage(extractErrorMessage(err))}))
+        dispatch(lobbyActions.dailyBonusClaimFailed({message: dailyBonusErrorMessage(extractErrorMessage(err))}))
       }
     }
 

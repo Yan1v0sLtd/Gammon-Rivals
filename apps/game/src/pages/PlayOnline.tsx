@@ -58,11 +58,7 @@ import {
   selectRollPending,
   selectTimerViewModel,
 } from "../features/onlineMatch/onlineMatchSelectors"
-import {
-  onlineMatchRouteEntered,
-  onlineMatchRouteExited,
-  opponentPreviewRevealed,
-} from "../features/onlineMatch/onlineMatchSlice"
+import {onlineMatchActions} from "../features/onlineMatch/onlineMatchSlice"
 import {useGetProfileQuery} from "../features/playerData/playerDataApi"
 import {parseMatchEntryParams} from "../game/matchEntryPath"
 import {generateAIPersona} from "../lib/aiPersona"
@@ -122,14 +118,14 @@ export function PlayOnline() {
   const error = actionError ?? fetchError
 
   useEffect(() => {
-    dispatch(onlineMatchRouteEntered({
+    dispatch(onlineMatchActions.onlineMatchRouteEntered({
       matchId: matchId ?? null,
       sessionStartedMs: Date.now(),
       turnSeconds: turnSecondsTotal,
       inactivityForfeitMs: inactivityForfeitMs ?? 5 * 60 * 1000,
     }))
     return () => {
-      dispatch(onlineMatchRouteExited())
+      dispatch(onlineMatchActions.onlineMatchRouteExited())
     }
   }, [dispatch, matchId, turnSecondsTotal, inactivityForfeitMs])
 
@@ -277,7 +273,7 @@ export function PlayOnline() {
   useEffect(() => {
     if (!opponentPreviewKey) return
     const timer = window.setTimeout(
-      () => dispatch(opponentPreviewRevealed({key: opponentPreviewKey})),
+      () => dispatch(onlineMatchActions.opponentPreviewRevealed({key: opponentPreviewKey})),
       DICE_ANIMATION_MS,
     )
     return () => {

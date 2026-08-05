@@ -2,7 +2,7 @@ import {useCallback} from "react"
 
 import {useAppDispatch} from "../../store/hooks"
 
-import {navigationLoaderOverlayFadeStarted, navigationLoaderOverlayShown} from "./appUiSlice"
+import {appUiActions} from "./appUiSlice"
 
 export type NavigationLoaderOverlayControls = {
   readonly show: () => void,
@@ -16,8 +16,8 @@ export type NavigationLoaderOverlayControls = {
  */
 export function useNavigationLoaderOverlay(): NavigationLoaderOverlayControls {
   const dispatch = useAppDispatch()
-  const show = useCallback(() => dispatch(navigationLoaderOverlayShown()), [dispatch])
-  const hide = useCallback(() => dispatch(navigationLoaderOverlayFadeStarted()), [dispatch])
+  const show = useCallback(() => dispatch(appUiActions.navigationLoaderOverlayShown()), [dispatch])
+  const hide = useCallback(() => dispatch(appUiActions.navigationLoaderOverlayFadeStarted()), [dispatch])
   return {
     show,
     hide,

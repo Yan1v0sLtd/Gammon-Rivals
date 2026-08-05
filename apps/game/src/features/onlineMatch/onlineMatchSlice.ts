@@ -129,16 +129,6 @@ export const onlineMatchSlice = createSlice({
   },
 })
 
-export const {
-  onlineMatchRouteEntered,
-  onlineMatchRouteExited,
-  checkerSelected,
-  checkerSelectionCancelled,
-  opponentPreviewRevealed,
-  localActivityObserved,
-  opponentActivityObserved,
-  opponentPresenceChanged,
-  opponentInactivityDeadlineReached,
-} = onlineMatchSlice.actions
+export const onlineMatchActions = onlineMatchSlice.actions
 
 export const onlineMatchReducer = onlineMatchSlice.reducer

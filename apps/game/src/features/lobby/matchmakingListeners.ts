@@ -6,17 +6,7 @@ import type {AppStartListening} from "../../store/listenerTypes"
 
 import {lobbyApi} from "./lobbyApi"
 import {matchmakingErrorMessage} from "./lobbyErrors"
-import {
-  lobbyRouteExited,
-  MATCHMAKING_MAX_SECONDS,
-  MATCHMAKING_POLL_MS,
-  matchmakingCancelled,
-  matchmakingFailed,
-  matchmakingMatched,
-  matchmakingRequested,
-  matchmakingTicked,
-  lobbyRouteEntered,
-} from "./lobbySlice"
+import {lobbyActions, MATCHMAKING_MAX_SECONDS, MATCHMAKING_POLL_MS} from "./lobbySlice"
 import {cancelMatchmakingRpc, enterRoomAiFallback, findMatchInTier} from "./matchmakingData"
 
 /**
@@ -26,7 +16,7 @@ import {cancelMatchmakingRpc, enterRoomAiFallback, findMatchInTier} from "./matc
  */
 export function startMatchmakingListeners(startListening: AppStartListening): void {
   startListening({
-    actionCreator: lobbyRouteEntered,
+    actionCreator: lobbyActions.lobbyRouteEntered,
     effect: async (_action, {cancelActiveListeners, dispatch, getState, pause}) => {
       cancelActiveListeners()
       const userId = getState().auth.userId
@@ -46,7 +36,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
   })
 
   startListening({
-    matcher: isAnyOf(matchmakingRequested, matchmakingCancelled, lobbyRouteExited),
+    matcher: isAnyOf(lobbyActions.matchmakingRequested, lobbyActions.matchmakingCancelled, lobbyActions.lobbyRouteExited),
     effect: async (action, {
       cancelActiveListeners,
       delay,
@@ -60,7 +50,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
       // Cancel/exit owns queue cleanup, and only while a search was running:
       // cancel_matchmaking must not touch an already-matched queue row.
       // getOriginalState because the reducer has already processed the action.
-      if (!matchmakingRequested.match(action)) {
+      if (!lobbyActions.matchmakingRequested.match(action)) {
         if (getOriginalState().lobby.matchmaking.status === "searching") {
           void cancelMatchmakingRpc().catch(() => undefined)
         }
@@ -91,7 +81,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
             refreshWallet()
             // The RPC may omit target/turn_seconds on matched rows — fall back
             // to the tier config carried on the request.
-            dispatch(matchmakingMatched({
+            dispatch(lobbyActions.matchmakingMatched({
               matchId: result.matchId,
               target: result.target ?? matchTarget,
               turnSeconds: result.turnSeconds ?? turnSeconds,
@@ -99,7 +89,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
             }))
             return
           }
-          dispatch(matchmakingTicked({elapsedSeconds: (Date.now() - searchStart) / 1000}))
+          dispatch(lobbyActions.matchmakingTicked({elapsedSeconds: (Date.now() - searchStart) / 1000}))
           await delay(MATCHMAKING_POLL_MS)
         }
 
@@ -109,7 +99,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
         refreshWallet()
         // Server-bot tiers route to /play (mode='online'); legacy tiers key
         // on the AI level the server picked.
-        dispatch(matchmakingMatched({
+        dispatch(lobbyActions.matchmakingMatched({
           matchId: fallback.matchId,
           target: fallback.target,
           turnSeconds: fallback.turnSeconds,
@@ -119,7 +109,7 @@ export function startMatchmakingListeners(startListening: AppStartListening): vo
       catch (err) {
         // Cancellation is owned by the cancel/exit branch above.
         if (err instanceof TaskAbortError) return
-        dispatch(matchmakingFailed({message: matchmakingErrorMessage(err)}))
+        dispatch(lobbyActions.matchmakingFailed({message: matchmakingErrorMessage(err)}))
         void cancelMatchmakingRpc().catch(() => undefined)
       }
     },

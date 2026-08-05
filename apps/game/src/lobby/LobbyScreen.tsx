@@ -9,18 +9,7 @@ import {selectAuthUserId, selectCurrentProfile, selectCurrentWallet, selectProfi
 import {useMarkTutorialCompleteMutation, useGetDailyBonusConfigsQuery, useGetDailyBonusStateQuery, useGetDailyMissionsQuery, useGetLobbyBoardsQuery, useGetUserBoardInventoryQuery} from "../features/lobby/lobbyApi"
 import type {LobbyBoard} from "../features/lobby/lobbyBoardData"
 import {selectIsLobbyModalOpen, computeBoardState, computeDaysClaimedInCurrentStreak, computeUpcomingDay, selectLobbyBoards, selectOwnedBoardIds, selectSelectedLobbyBoard, todayET} from "../features/lobby/lobbySelectors"
-import {
-  boardPurchaseModalOpened,
-  boardSelected,
-  dailyBonusAutoOpenRequested,
-  dailyBonusModalOpened,
-  difficultyModalOpened,
-  howToPlayModalOpened,
-  lobbyRouteEntered,
-  lobbyRouteExited,
-  missionsModalOpened,
-  wheelModalOpened,
-} from "../features/lobby/lobbySlice"
+import {lobbyActions} from "../features/lobby/lobbySlice"
 import {useBodyModalFlag} from "../lib/bodyModalFlag"
 import {isSupabaseConfigured} from "../lib/supabase"
 import {useImagePreloader} from "../lib/useImagePreloader"
@@ -191,9 +180,9 @@ export function LobbyScreen() {
   // Route enter/exit resets the lobby slice (modal, selected board,
   // daily-bonus auto-open latch), mirroring the Replay pattern.
   useEffect(() => {
-    dispatch(lobbyRouteEntered())
+    dispatch(lobbyActions.lobbyRouteEntered())
     return () => {
-      dispatch(lobbyRouteExited())
+      dispatch(lobbyActions.lobbyRouteExited())
     }
   }, [dispatch])
 
@@ -243,7 +232,7 @@ export function LobbyScreen() {
     if (dailyBonus.configs.length === 0) return
     // The open-at-most-once latch lives in the slice (dailyBonusAutoOpened),
     // so re-running this effect is safe.
-    dispatch(dailyBonusAutoOpenRequested())
+    dispatch(lobbyActions.dailyBonusAutoOpenRequested())
   }, [userId, dailyBonus.canClaim, dailyBonus.isLoading, dailyBonus.configs.length, tourPending, dispatch])
 
   // Persist the player's current board pick so match screens reached WITHOUT a
@@ -340,7 +329,7 @@ export function LobbyScreen() {
   // unconditionally (the modal still surfaces the 7-day grid even when
   // already claimed today); Coins routes to /shop; Connect opens the tutorial.
   const handleOfferClick = (offerId: string) => {
-    if (offerId === "daily") dispatch(dailyBonusModalOpened()); else if (offerId === "coins") openShop(); else if (offerId === "connect") dispatch(howToPlayModalOpened())
+    if (offerId === "daily") dispatch(lobbyActions.dailyBonusModalOpened()); else if (offerId === "coins") openShop(); else if (offerId === "connect") dispatch(lobbyActions.howToPlayModalOpened())
   }
 
   return (<main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
@@ -389,9 +378,9 @@ export function LobbyScreen() {
             selectedId={effectiveSelectedBoardId}
             walletGems={wallet?.gems ?? 0}
             onLockedTap={handleLockedTap}
-            onPlay={() => dispatch(difficultyModalOpened())}
-            onPurchaseTap={(board) => dispatch(boardPurchaseModalOpened(board.id))}
-            onSelectedIdChange={(id) => dispatch(boardSelected(id))}/>
+            onPlay={() => dispatch(lobbyActions.difficultyModalOpened())}
+            onPurchaseTap={(board) => dispatch(lobbyActions.boardPurchaseModalOpened(board.id))}
+            onSelectedIdChange={(id) => dispatch(lobbyActions.boardSelected(id))}/>
         </div>
 
         {/* Right rail: Daily Bonus (top, level with Special Offers) +
@@ -418,9 +407,9 @@ export function LobbyScreen() {
           // elapsed. The lobby pill already gates by canSpin, but
           // double-check here so a stale click during a re-fetch
           // doesn't open the modal in the wrong state.
-          if (wheel.canSpin) dispatch(wheelModalOpened())
+          if (wheel.canSpin) dispatch(lobbyActions.wheelModalOpened())
         }}
-        onOpenMissions={() => dispatch(missionsModalOpened())}/>
+        onOpenMissions={() => dispatch(lobbyActions.missionsModalOpened())}/>
     </div>
 
     {lockedTooltipFor ? (<BoardLockTooltip

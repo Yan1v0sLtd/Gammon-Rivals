@@ -4,7 +4,7 @@ import {pickMoveAsync} from "../../../../../packages/ai/src/client"
 import {applyMove, winner as engineWinner} from "../../../../../packages/engine/src/rules"
 import type {BoardState, Move} from "../../../../../packages/engine/src/types"
 import type {AppStartListening} from "../../store/listenerTypes"
-import {authSessionResolved, authSignedOut} from "../auth/authSlice"
+import {authSliceActions} from "../auth/authSlice"
 import {playerDataApi} from "../playerData/playerDataApi"
 
 import {autoRollEligibilityChanged} from "./gameplayActions"
@@ -344,7 +344,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
   // the local createMatch call entirely — the row already exists, the
   // entry fee was already debited server-side, and we should use that
   // id for all later writes (saveGame, finishMatch).
-  const persistenceMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, authSessionResolved, authSignedOut, matchIdAssigned, checkerMoved, doubleDropped)
+  const persistenceMatcher = isAnyOf(gameplayRouteEntered, gameplayRouteExited, authSliceActions.authSessionResolved, authSliceActions.authSignedOut, matchIdAssigned, checkerMoved, doubleDropped)
   let persistenceSession: PersistenceSession | null = null
 
   startListening({
@@ -379,7 +379,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         return
       }
 
-      if (authSessionResolved.match(action) && persistenceSession !== null) {
+      if (authSliceActions.authSessionResolved.match(action) && persistenceSession !== null) {
         if (persistenceSession.ownerUserId !== action.payload.userId && current.matchId === null) {
           // Match the old component effect: before an ID exists, a newly
           // resolved identity gets its own create attempt. A completed older
@@ -389,7 +389,7 @@ export function startGameplayListeners(startListening: AppStartListening): void 
         }
         persistenceSession.ownerUserId = action.payload.userId
       }
-      else if (authSignedOut.match(action) && persistenceSession !== null) {
+      else if (authSliceActions.authSignedOut.match(action) && persistenceSession !== null) {
         if (current.matchId === null) {
           persistenceSession.createPromise = null
           persistenceSession.createdMatchId = null

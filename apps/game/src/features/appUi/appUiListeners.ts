@@ -3,13 +3,15 @@ import {isAnyOf} from "@reduxjs/toolkit"
 import type {AppStartListening} from "../../store/listenerTypes"
 
 import {
+  appUiActions,
   NAV_LOADER_OVERLAY_FADE_OUT_MS,
-  navigationLoaderOverlayFadeStarted,
-  navigationLoaderOverlayHidden,
-  navigationLoaderOverlayShown,
 } from "./appUiSlice"
 
-const navigationLoaderOverlayMatcher = isAnyOf(navigationLoaderOverlayShown, navigationLoaderOverlayFadeStarted, navigationLoaderOverlayHidden)
+const navigationLoaderOverlayMatcher = isAnyOf(
+  appUiActions.navigationLoaderOverlayShown,
+  appUiActions.navigationLoaderOverlayFadeStarted,
+  appUiActions.navigationLoaderOverlayHidden,
+)
 
 export function startAppUiListeners(startListening: AppStartListening): void {
   // Owns the navigation loader overlay's fade-out→unmount timer. A re-show
@@ -26,16 +28,16 @@ export function startAppUiListeners(startListening: AppStartListening): void {
       dispatch,
       getOriginalState,
     }) => {
-      if (navigationLoaderOverlayFadeStarted.match(action)) {
+      if (appUiActions.navigationLoaderOverlayFadeStarted.match(action)) {
         // A redundant hide() while already fading is a reducer no-op; the old
         // useEffect([phase]) did not re-run, so the in-flight timer must survive.
         if (getOriginalState().appUi.navigationLoaderOverlayPhase !== "visible") return
         cancelActiveListeners()
         await delay(NAV_LOADER_OVERLAY_FADE_OUT_MS)
-        dispatch(navigationLoaderOverlayHidden())
+        dispatch(appUiActions.navigationLoaderOverlayHidden()) 
         return
       }
-      // navigationLoaderOverlayShown / navigationLoaderOverlayHidden supersede a pending unmount.
+      // appUiActions.navigationLoaderOverlayShown() / navigationLoaderOverlayHidden supersede a pending unmount.
       cancelActiveListeners()
     },
   })

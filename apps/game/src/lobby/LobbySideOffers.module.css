@@ -2,7 +2,6 @@
   /* Shared rail contract (formerly `.lobby-offers, .lobby-action-stack` —
      the action-stack half is dead and was folded here). */
   align-self: start;
-  width: 100%;
   /* Anchor the side cards below the top bar's profile widget. The extra
      +47px (was +20px) drops the first card clear of the profile card's
      box on short-landscape, where the two regions otherwise overlap by
