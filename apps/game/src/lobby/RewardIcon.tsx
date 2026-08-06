@@ -1,17 +1,15 @@
 import type {RewardItem} from "../features/lobby/lobbyData"
 
 import {hideImg} from "./missionHelpers"
+import styles from "./RewardIcon.module.css"
 
 function XpHex({size}: {readonly size: "md" | "lg"}) {
   const h = size === "lg" ? 48 : 38
   return (
     <svg
       aria-hidden="true"
-      style={{
-        height: h,
-        width: "auto",
-        filter: "drop-shadow(0 4px 5px rgba(0,0,0,0.4))",
-      }}
+      className={styles.xpHex}
+      style={{height: h}}
       viewBox="0 0 100 110">
       <defs>
         <linearGradient
@@ -66,7 +64,7 @@ export function RewardIcon({
   reward,
   size,
 }: {readonly reward: RewardItem, readonly size: "md" | "lg"}) {
-  const cls = size === "lg" ? "ri ri-lg" : "ri"
+  const cls = size === "lg" ? `${styles.rewardIcon} ${styles.rewardIconLg}` : styles.rewardIcon
   if (reward.reward_kind === "currency") {
     if (reward.currency_code === "xp") return <XpHex size={size}/>
     const src = reward.currency_code === "coins" ? "/lobby/icons/gold-coin.webp" : reward.currency_code === "gems" ? "/lobby/icons/gem.webp" : null
@@ -77,5 +75,5 @@ export function RewardIcon({
       src={src}
       onError={hideImg}/>)
   }
-  return <div className={`xp-token ${cls}`}>?</div>
+  return <div className={`${styles.xpToken} ${cls}`}>?</div>
 }

@@ -11,6 +11,7 @@ import {formatCountdown, type MissionsResult, nextResetMs} from "../features/lob
 import {createEmptyArray} from "../lib/constants.ts"
 import {useAppSelector} from "../store/hooks"
 
+import styles from "./DailyMissionsModal.module.css"
 import {MissionCard} from "./MissionCard"
 import {formatAmount, hideImg} from "./missionHelpers"
 import {RerollConfirmModal} from "./RerollConfirmModal"
@@ -26,8 +27,6 @@ type Props = {
 /**
  * Daily Missions modal.
  *
- * Styling lives in a single scoped <style> block — every selector is prefixed
- * with the `.dmx` root so nothing leaks into the global/Tailwind cascade.
  * Mission Points + the chest-milestone track stay gated behind CHESTS_ENABLED.
  */
 const DESIGN_W = 1536
@@ -224,37 +223,36 @@ export function DailyMissionsModal({
       closeOnBackdropClick={false}
       closeOnEscape={false}>
       <div
-        className="dmx"
+        className={styles.root}
         style={{
           transform: `scale(${scale})`,
           transformOrigin: "center",
         }}>
-        <style>{DM_STYLES}</style>
         <main
           aria-label="Daily Missions"
-          className="screen">
-          <header className="topbar">
-            <div className="brand-mark">
+          className={styles.screen}>
+          <header className={styles.topbar}>
+            <div className={styles.brandMark}>
               <img
                 alt=""
                 draggable={false}
                 src="/lobby/missions/dice-icon.webp"
                 onError={hideImg}/>
             </div>
-            <div className="brand-copy">
-              <h1 className="brand-title">Daily Missions</h1>
-              <p className="brand-subtitle">Complete missions to earn epic rewards!</p>
+            <div className={styles.brandCopy}>
+              <h1 className={styles.brandTitle}>Daily Missions</h1>
+              <p className={styles.brandSubtitle}>Complete missions to earn epic rewards!</p>
             </div>
-            <div className="header-spacer"/>
-            <section className="refresh-box">
+            <div className={styles.headerSpacer}/>
+            <section className={styles.refreshBox}>
               <div>
-                <div className="refresh-label">Refreshes in</div>
-                <div className="refresh-time">{formatCountdown(countdownMs)}</div>
+                <div className={styles.refreshLabel}>Refreshes in</div>
+                <div className={styles.refreshTime}>{formatCountdown(countdownMs)}</div>
               </div>
             </section>
             <button
               aria-label="Close"
-              className="close-button"
+              className={styles.closeButton}
               type="button"
               onClick={onClose}>
               <svg
@@ -270,11 +268,11 @@ export function DailyMissionsModal({
             </button>
           </header>
 
-          {isLoading && !state ? (<div className="dmx-status">Loading missions…</div>) : error ? (
-            <div className="dmx-status dmx-error">{error}</div>) : !state ? (
-            <div className="dmx-status">No missions today.</div>) : (<section className="content">
-            <section className="panel missions-panel">
-              <div className="mission-list">
+          {isLoading && !state ? (<div className={styles.status}>Loading missions…</div>) : error ? (
+            <div className={`${styles.status} ${styles.statusError}`}>{error}</div>) : !state ? (
+            <div className={styles.status}>No missions today.</div>) : (<section className={styles.content}>
+            <section className={`${styles.panel} ${styles.missionsPanel}`}>
+              <div className={styles.missionList}>
                 {orderedDailies.map((m) => (<MissionCard
                   key={m.id}
                   canReroll={canRerollAny}
@@ -287,11 +285,11 @@ export function DailyMissionsModal({
                     setRerollConfirmId(m.id)
                   }}/>))}
                 {dailies.length === 0 && (
-                  <div className="dmx-empty">No active missions. Come back at midnight UTC.</div>)}
+                  <div className={styles.empty}>No active missions. Come back at midnight UTC.</div>)}
               </div>
-              {actionError && <div className="dmx-action-error">{actionError}</div>}
-              <div className="missions-footer">
-                <span className="compact-button rerolls">
+              {actionError && <div className={styles.actionError}>{actionError}</div>}
+              <div className={styles.missionsFooter}>
+                <span className={`${styles.compactButton} ${styles.compactButtonRerolls}`}>
                   <svg
                     aria-hidden="true"
                     fill="none"
@@ -314,7 +312,7 @@ export function DailyMissionsModal({
                 </span>
                 <button
                   data-claim-all-btn
-                  className="compact-button claim-all"
+                  className={`${styles.compactButton} ${styles.compactButtonClaimAll}`}
                   disabled={claimableCount === 0 || claimingMissionId !== null}
                   type="button"
                   onClick={handleClaimAll}>
@@ -323,10 +321,10 @@ export function DailyMissionsModal({
               </div>
             </section>
 
-            <aside className="panel tabs-panel">
-              <nav className="tabs">
+            <aside className={`${styles.panel} ${styles.tabsPanel}`}>
+              <nav className={styles.tabs}>
                 <button
-                  className={`tab-button ${tab === "daily" ? "is-active" : ""}`}
+                  className={`${styles.tabButton} ${tab === "daily" ? styles.tabButtonActive : ""}`}
                   type="button"
                   onClick={() => {
                     setTab("daily")
@@ -334,25 +332,25 @@ export function DailyMissionsModal({
                   Daily
                 </button>
                 <button
-                  className={`tab-button ${tab === "weekly" ? "is-active" : ""}`}
+                  className={`${styles.tabButton} ${tab === "weekly" ? styles.tabButtonActive : ""}`}
                   type="button"
                   onClick={() => {
                     setTab("weekly")
                   }}>
-                  Weekly{weeklyClaimable && <i className="tab-dot"/>}
+                  Weekly{weeklyClaimable && <i className={styles.tabDot}/>}
                 </button>
               </nav>
 
-              {tab === "daily" ? (<section className="streak-panel">
-                <div className="streak-header">
-                  <h2 className="streak-title">Daily Streak</h2>
-                  <div className="streak-days">
+              {tab === "daily" ? (<section className={styles.streakPanel}>
+                <div className={styles.streakHeader}>
+                  <h2 className={styles.streakTitle}>Daily Streak</h2>
+                  <div className={styles.streakDays}>
                     {state.streak.current_streak_days} day{state.streak.current_streak_days === 1 ? "" : "s"}
                   </div>
                   <button
                     aria-expanded={howOpen}
                     aria-label="How it works"
-                    className="dm-info-btn"
+                    className={styles.infoButton}
                     type="button"
                     onClick={() => {
                       setHowOpen((v) => !v)
@@ -360,50 +358,50 @@ export function DailyMissionsModal({
                     i
                   </button>
                 </div>
-                <p className="streak-description">
+                <p className={styles.streakDescription}>
                   Complete all daily missions every day. Hit 7 days to open the streak chest.
                 </p>
 
-                <div className="streak-track">
+                <div className={styles.streakTrack}>
                   {[1, 2, 3, 4, 5, 6, 7].map((day) => (<div
                     key={day}
-                    className="track-day">
+                    className={styles.trackDay}>
                     <span>Day {day}</span>
-                    {day === 7 ? (<div className={`chest-node ${daysDone >= 7 ? "is-lit" : ""}`}>
+                    {day === 7 ? (<div className={`${styles.chestNode} ${daysDone >= 7 ? styles.chestNodeLit : ""}`}>
                       <img
                         alt=""
                         draggable={false}
                         src="/lobby/missions/chest-3.webp"
                         onError={hideImg}/>
                     </div>) : (<div
-                      className={`day-node ${day <= daysDone ? "is-done" : ""} ${day === daysDone + 1 ? "is-current" : ""}`}/>)}
+                      className={`${styles.dayNode} ${day <= daysDone ? styles.dayNodeDone : ""} ${day === daysDone + 1 ? styles.dayNodeCurrent : ""}`}/>)}
                   </div>))}
                 </div>
 
-                <div className="streak-rewards">
+                <div className={styles.streakRewards}>
                   {state.streak_chest_rewards.map((r) => (<div
                     key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
-                    className="streak-reward-item">
+                    className={styles.streakRewardItem}>
                     <RewardIcon
                       reward={r}
                       size="lg"/>
                     <span>+{formatAmount(r.amount)}</span>
                   </div>))}
                   {streakClaimable ? (<button
-                    className="streak-claim"
+                    className={styles.streakClaim}
                     type="button"
                     onClick={handleClaimStreak}>
                     Claim
-                  </button>) : (<div className="to-go">{7 - daysDone} to go</div>)}
+                  </button>) : (<div className={styles.toGo}>{7 - daysDone} to go</div>)}
                 </div>
 
                 {howOpen && (<div
                   aria-label="How it works"
-                  className="dm-how-popover"
+                  className={styles.howPopover}
                   role="dialog">
                   <button
                     aria-label="Close"
-                    className="dm-how-close"
+                    className={styles.howClose}
                     type="button"
                     onClick={() => {
                       setHowOpen(false)
@@ -419,9 +417,9 @@ export function DailyMissionsModal({
                         strokeWidth="2.6"/>
                     </svg>
                   </button>
-                  <h3 className="how-title">How it works</h3>
-                  <div className="how-line">
-                    <div className="how-icon">
+                  <h3 className={styles.howTitle}>How it works</h3>
+                  <div className={styles.howLine}>
+                    <div className={styles.howIcon}>
                       <svg
                         aria-hidden="true"
                         fill="currentColor"
@@ -431,8 +429,8 @@ export function DailyMissionsModal({
                     </div>
                     <div>Finish every daily mission to advance your streak and bank the chest.</div>
                   </div>
-                  <div className="how-line">
-                    <div className="how-icon">
+                  <div className={styles.howLine}>
+                    <div className={styles.howIcon}>
                       <svg
                         aria-hidden="true"
                         fill="none"
@@ -453,8 +451,8 @@ export function DailyMissionsModal({
                     <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
                   </div>
                 </div>)}
-              </section>) : (<section className="streak-panel weekly-tab">
-                {weeklies.length === 0 ? (<div className="weekly-empty">
+              </section>) : (<section className={`${styles.streakPanel} ${styles.weeklyTab}`}>
+                {weeklies.length === 0 ? (<div className={styles.weeklyEmpty}>
                   <img
                     alt=""
                     draggable={false}
@@ -490,206 +488,3 @@ export function DailyMissionsModal({
       onLanded={removeFlight}/>))}
   </>)
 }
-
-/* ───────────────────────── scoped styles ───────────────────────── */
-// Every selector is prefixed with `.dmx` so it never leaks into the global /
-// Tailwind cascade. The MP / chest-milestone strip is intentionally NOT
-// rendered in this design (chests stay hidden, per the product decision).
-
-const DM_STYLES = `
-.dmx { --gold:#ffd864; --green:#80e45d; --blue:#32baff; --purple:#b85cff; --muted:#b8c2e4;
-  font-synthesis:none; color:#f7f8ff;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
-.dmx *{ box-sizing:border-box; }
-.dmx button{ font:inherit; color:inherit; border:0; cursor:pointer; }
-.dmx .screen{ position:relative; width:${DESIGN_W}px; height:${DESIGN_H}px; border-radius:24px; overflow:hidden;
-  padding:26px 28px 28px;
-  background:linear-gradient(rgba(10,26,51,.55),rgba(10,26,51,.55)),radial-gradient(38% 48% at 18% 22%,rgba(56,189,248,.55),transparent 70%),radial-gradient(42% 52% at 84% 16%,rgba(250,204,21,.45),transparent 70%),radial-gradient(48% 58% at 78% 86%,rgba(139,92,246,.5),transparent 70%),radial-gradient(44% 54% at 22% 88%,rgba(16,185,129,.48),transparent 70%),#03070d;
-  border:1px solid rgba(116,168,255,.38);
-  box-shadow:0 30px 90px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.045),inset 0 0 90px rgba(54,104,255,.16);
-  isolation:isolate; }
-.dmx .screen::before{ display:none; }
-.dmx .topbar{ height:84px; display:flex; align-items:center; gap:18px; margin-bottom:12px; }
-.dmx .brand-mark{ flex:0 0 auto; display:grid; place-items:center; }
-.dmx .brand-mark img{ width:72px; height:72px; object-fit:contain; filter:drop-shadow(0 6px 10px rgba(0,0,0,.5)); }
-.dmx .brand-copy{ min-width:0; }
-.dmx .brand-title{ margin:0; font-family:inherit; font-size:42px;
-  line-height:.92; letter-spacing:.03em; color:#fff7dc; text-transform:uppercase;
-  text-shadow:0 2px 0 rgba(69,40,8,.85),0 7px 18px rgba(0,0,0,.48); }
-.dmx .brand-subtitle{ margin:6px 0 0; color:#cbd4fa; font-size:17px; letter-spacing:.01em; }
-.dmx .header-spacer{ flex:1; }
-.dmx .refresh-box{ width:214px; height:72px; display:grid; place-items:center; border-radius:14px;
-  background:linear-gradient(180deg,rgba(17,35,83,.96),rgba(8,16,42,.92));
-  border:1px solid rgba(124,168,255,.42); box-shadow:inset 0 0 18px rgba(50,115,255,.12),0 12px 24px rgba(0,0,0,.22); }
-.dmx .refresh-label{ color:var(--gold); font-size:14px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
-.dmx .refresh-time{ margin-top:4px; color:#fff; font-size:22px; font-weight:900; letter-spacing:.03em; font-variant-numeric:tabular-nums; }
-.dmx .close-button{ width:68px; height:68px; border-radius:50%; display:grid; place-items:center;
-  background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.2),transparent 22%),linear-gradient(180deg,#24283a,#070913 68%);
-  border:2px solid rgba(255,211,91,.88); color:#ffe084;
-  box-shadow:0 12px 22px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.08); transition:filter .12s ease, transform .12s ease; }
-.dmx .close-button:hover{ filter:brightness(1.1); } .dmx .close-button:active{ transform:scale(.95); }
-.dmx .close-button svg{ width:32px; height:32px; }
-.dmx .dmx-status{ padding:60px 0; text-align:center; color:rgba(255,228,160,.7); font-size:18px; }
-.dmx .dmx-error{ color:#ffb3b3; }
-.dmx .content{ height:calc(100% - 96px); display:grid; grid-template-columns:minmax(760px,1.52fr) minmax(500px,1fr); gap:20px; }
-.dmx .panel{ min-width:0; min-height:0; border-radius:22px;
-  background:linear-gradient(180deg,rgba(8,21,56,.78),rgba(3,10,29,.82));
-  border:1px solid rgba(121,161,255,.24); box-shadow:inset 0 0 0 1px rgba(255,255,255,.026),0 20px 42px rgba(0,0,0,.24); }
-.dmx .missions-panel{ padding:20px 20px 16px; display:flex; flex-direction:column; min-height:0; }
-.dmx .missions-footer{ margin-top:auto; display:flex; align-items:center; justify-content:flex-end; gap:14px; padding-top:12px; }
-.dmx .panel-heading{ height:44px; display:flex; align-items:center; gap:14px; margin-bottom:14px; flex:0 0 auto; }
-.dmx .panel-title{ margin:0; font-size:25px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
-.dmx .panel-actions{ margin-left:auto; display:flex; gap:14px; align-items:center; }
-.dmx .compact-button{ height:36px; min-width:96px; padding:0 16px; border-radius:9px; font-size:16px; font-weight:950;
-  letter-spacing:.02em; display:inline-flex; align-items:center; justify-content:center; gap:7px;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 8px 16px rgba(0,0,0,.24); }
-.dmx .compact-button.rerolls{ background:linear-gradient(180deg,#11571f,#082f12); border:1px solid rgba(95,255,115,.55); color:#a8ff88; }
-.dmx .compact-button.claim-all{ background:linear-gradient(180deg,#4f5668,#2d3342); border:1px solid rgba(179,190,219,.34); color:#cbd2e5; transition:filter .12s ease; }
-.dmx .compact-button.claim-all:not(:disabled):hover{ filter:brightness(1.12); }
-.dmx .compact-button.claim-all:disabled{ opacity:.5; cursor:not-allowed; }
-.dmx .mission-list{ display:grid; gap:8px; align-content:start; min-height:0; }
-.dmx .mission-card{ --accent:var(--green); --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d;
-  --card-start:#071f17; --card-mid:#0d3a24; --card-end:#071812;
-  position:relative; height:134px; border-radius:16px; display:grid;
-  grid-template-columns:138px minmax(160px,1fr) 1px 318px; align-items:center; padding:6px 20px 6px 14px;
-  background:radial-gradient(circle at 12% 50%,rgba(var(--accent-rgb),.18),transparent 42%),
-    linear-gradient(90deg,var(--card-start),var(--card-mid) 48%,var(--card-end));
-  border:1px solid rgba(var(--accent-rgb),.82);
-  box-shadow:0 10px 22px rgba(0,0,0,.25),inset 0 0 18px rgba(var(--accent-rgb),.07),inset 0 1px 0 rgba(255,255,255,.09);
-  overflow:hidden; }
-.dmx .mission-card::before{ content:""; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg,rgba(255,255,255,.09),transparent 34%,rgba(0,0,0,.10)),
-    linear-gradient(115deg,transparent 0 45%,rgba(255,255,255,.055) 50%,transparent 57%); opacity:.9; }
-.dmx .mission-card>*{ position:relative; z-index:1; }
-.dmx .mission-card.is-common{ --accent:#80e45d; --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d; --card-start:#061f16; --card-mid:#0d3a25; --card-end:#081b14; }
-.dmx .mission-card.is-rare{ --accent:#2abfff; --accent-rgb:42,191,255; --fill:#23c4ff; --fill-b:#7be7ff; --card-start:#061a33; --card-mid:#0a345d; --card-end:#07172c; }
-.dmx .mission-card.is-epic{ --accent:#bd59ff; --accent-rgb:189,89,255; --fill:#b445ff; --fill-b:#ef71ff; --card-start:#23103e; --card-mid:#3b1762; --card-end:#170927; }
-.dmx .mission-badge{ width:116px; height:122px; justify-self:center; display:grid; place-items:center; }
-.dmx .mission-badge img{ width:116px; height:122px; object-fit:contain; filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
-.dmx .mission-copy{ min-width:0; padding:0 18px 0 10px; display:flex; flex-direction:column; justify-content:center; }
-.dmx .mission-description{ margin:0 0 16px; font-size:24px; line-height:1.2; font-weight:600; color:#eef1ff;
-  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
-.dmx .progress-line{ display:flex; align-items:center; gap:14px; max-width:300px; }
-.dmx .progress-track{ position:relative; flex:1; height:15px; border-radius:999px; background:rgba(2,6,15,.72);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.11),0 4px 8px rgba(0,0,0,.18); overflow:hidden; }
-.dmx .progress-fill{ position:absolute; inset:2px auto 2px 2px; width:calc(var(--progress) * 1%); border-radius:inherit;
-  background:linear-gradient(180deg,rgba(255,255,255,.45),transparent 45%),linear-gradient(90deg,var(--fill),var(--fill-b));
-  box-shadow:0 0 11px rgba(var(--accent-rgb),.66),inset 0 -2px 0 rgba(0,0,0,.18); transition:width .4s ease; }
-.dmx .progress-count{ min-width:62px; display:inline-flex; justify-content:center; padding:4px 9px; border-radius:8px;
-  background:rgba(0,0,0,.25); color:#fff; font-weight:950; font-size:16px; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
-.dmx .mission-card.is-complete .progress-count{ color:#9cff75; }
-.dmx .mission-separator{ height:84px; background:linear-gradient(180deg,transparent,rgba(255,255,255,.22),transparent); }
-.dmx .mission-reward{ padding-left:20px; display:grid; grid-template-columns:minmax(110px,1fr) 124px; gap:26px; align-items:center; }
-.dmx .reward-title{ margin-bottom:8px; color:#c9d3f4; font-size:13px; font-weight:850; letter-spacing:.06em; text-transform:uppercase; }
-.dmx .reward-icons{ display:flex; align-items:center; gap:18px; }
-.dmx .reward-item{ display:grid; justify-items:center; gap:3px; min-width:45px; }
-.dmx .ri{ width:38px; height:38px; object-fit:contain; filter:drop-shadow(0 5px 5px rgba(0,0,0,.35)); }
-.dmx .reward-amount{ font-size:17px; font-weight:950; color:#fff; letter-spacing:.02em; }
-.dmx .mission-controls{ display:grid; justify-items:center; gap:8px; }
-.dmx .go-button{ width:122px; height:52px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; gap:8px;
-  background:linear-gradient(180deg,#27db74,#079044); border:0;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.22),0 8px 18px rgba(0,0,0,.35);
-  font-family:"Segoe UI",Inter,system-ui,sans-serif; color:#fff; font-size:24px; font-weight:900; letter-spacing:.02em; text-transform:uppercase;
-  text-shadow:0 2px 3px rgba(0,0,0,.55); transition:transform .12s ease,filter .12s ease; }
-.dmx .go-button:not(:disabled):hover{ filter:brightness(1.1); }
-.dmx .go-button:not(:disabled):active{ transform:translateY(1px); }
-.dmx .go-button svg{ width:19px; height:19px; }
-.dmx .go-button.is-purple{ background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 36%),linear-gradient(180deg,#bc61ff,#6b24c5); border-color:rgba(223,152,255,.92); }
-.dmx .go-button.is-claimed{ background:linear-gradient(180deg,rgba(255,255,255,.13),transparent 36%),linear-gradient(180deg,#386db8,#1c3a67);
-  border-color:rgba(108,164,255,.62); color:#dce9ff; font-family:inherit; font-size:18px; letter-spacing:.02em;
-  box-shadow:0 7px 12px rgba(0,0,0,.27),inset 0 1px 0 rgba(255,255,255,.18); cursor:default; }
-.dmx .go-button.is-claimed svg{ width:21px; height:21px; color:#46e6ff; filter:drop-shadow(0 0 4px rgba(70,230,255,.55)); }
-.dmx .reroll-note{ display:inline-flex; align-items:center; gap:6px; color:#c6cfed; font-size:14px; font-weight:700; white-space:nowrap; background:none; transition:color .12s ease; }
-.dmx .reroll-note:hover{ color:var(--gold); } .dmx .reroll-note svg{ width:16px; height:16px; color:var(--gold); }
-.dmx .reroll-confirm{ display:inline-flex; align-items:center; gap:6px; }
-.dmx .reroll-confirm .rc-no{ width:26px; height:26px; border-radius:7px; background:#2a1230; color:#e59ab8; border:1px solid rgba(217,76,255,.4); font-size:13px; }
-.dmx .reroll-confirm .rc-yes{ height:26px; padding:0 10px; border-radius:7px; background:linear-gradient(180deg,#5be52a,#1d8300); color:#fff; font-size:12px; font-weight:900; border:1px solid rgba(177,255,135,.7); }
-.dmx .dmx-empty,.dmx .dmx-action-error{ border-radius:10px; padding:14px; text-align:center; font-size:14px; }
-.dmx .dmx-empty{ background:rgba(29,36,96,.6); color:#c6b7d8; }
-.dmx .dmx-action-error{ margin-top:10px; background:rgba(80,20,20,.5); color:#ffb3b3; }
-.dmx .tabs-panel{ padding:0 16px 16px; display:grid; grid-template-rows:62px 1fr; }
-.dmx .tabs{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-self:end; }
-.dmx .tab-button{ position:relative; height:56px; border-radius:15px 15px 0 0; background:rgba(5,12,35,.74);
-  border:1px solid rgba(116,160,255,.24); border-bottom:0; color:rgba(222,228,252,.56); font-size:22px; font-weight:950;
-  letter-spacing:.05em; text-transform:uppercase; box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
-.dmx .tab-button.is-active{ color:#fff; background:linear-gradient(180deg,rgba(43,120,255,.96),rgba(23,55,171,.94));
-  border-color:rgba(94,168,255,.85); box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 0 20px rgba(50,120,255,.24); }
-.dmx .tab-dot{ position:absolute; top:10px; right:18px; width:11px; height:11px; border-radius:50%; background:#e9482f; border:1px solid #ff9d6a; box-shadow:0 0 8px rgba(255,75,45,.7); }
-.dmx .streak-panel{ position:relative; border-radius:0 0 18px 18px; border:1px solid rgba(116,160,255,.33);
-  background:radial-gradient(circle at 82% 16%,rgba(41,92,203,.22),transparent 42%),linear-gradient(180deg,rgba(8,19,52,.92),rgba(2,8,25,.9));
-  box-shadow:0 18px 42px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.025); padding:28px 30px 26px; min-height:0; display:flex; flex-direction:column; gap:22px; }
-.dmx .streak-header{ display:flex; align-items:center; gap:16px; }
-.dmx .streak-title{ margin:0; font-size:31px; line-height:1; font-weight:950; letter-spacing:.035em; text-transform:uppercase; text-shadow:0 3px 8px rgba(0,0,0,.42); }
-.dmx .streak-days{ height:38px; display:inline-flex; align-items:center; padding:0 14px; border-radius:9px;
-  background:rgba(12,37,95,.78); border:1px solid rgba(50,129,255,.64); color:#5db4ff; font-size:20px; font-weight:950; white-space:nowrap; }
-.dmx .dm-info-btn{ margin-left:auto; width:36px; height:36px; flex:0 0 auto; border-radius:50%; display:grid; place-items:center;
-  background:rgba(12,37,95,.82); border:1px solid rgba(50,129,255,.64); color:#5db4ff; font-family:Georgia,serif; font-style:italic; font-size:22px; font-weight:900; line-height:1; transition:filter .12s ease; }
-.dmx .dm-info-btn:hover{ filter:brightness(1.25); }
-.dmx .dm-how-popover{ position:absolute; top:74px; right:24px; z-index:6; width:380px; max-width:82%;
-  border-radius:14px; padding:18px 18px 18px; background:linear-gradient(180deg,#11214f,#070f29);
-  border:1px solid rgba(119,155,238,.45); box-shadow:0 22px 46px rgba(0,0,0,.62); }
-.dmx .dm-how-popover .how-line{ font-size:16px; }
-.dmx .dm-how-popover .how-line + .how-line{ margin-top:12px; }
-.dmx .dm-how-close{ position:absolute; top:8px; right:9px; width:28px; height:28px; display:grid; place-items:center; background:none; color:#9fb0d8; }
-.dmx .dm-how-close svg{ width:18px; height:18px; }
-.dmx .streak-description{ margin:-2px 0 0; color:#dde4ff; font-size:20px; line-height:1.4; }
-.dmx .streak-track{ position:relative; display:grid; grid-template-columns:repeat(7,1fr); align-items:start; height:120px; flex:0 0 120px; }
-.dmx .streak-track::before{ content:""; position:absolute; left:7%; right:7%; top:56px; height:5px; border-radius:999px;
-  background:linear-gradient(90deg,rgba(72,97,142,.9),rgba(107,114,137,.78)); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); }
-.dmx .track-day{ position:relative; z-index:1; display:grid; justify-items:center; gap:10px; color:#dce3ff; font-size:14px; font-weight:900; letter-spacing:.035em; text-transform:uppercase; }
-.dmx .day-node{ width:48px; height:48px; border-radius:50%;
-  background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.13),transparent 24%),linear-gradient(180deg,#17223c,#0a1021);
-  border:4px solid rgba(116,121,139,.82); box-shadow:0 6px 10px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,255,255,.035); }
-.dmx .day-node.is-done{ border-color:#5ee27a; background:radial-gradient(circle at 40% 32%,rgba(255,255,255,.2),transparent 26%),linear-gradient(180deg,#39c45a,#15772f);
-  box-shadow:0 0 14px rgba(73,255,55,.4),inset 0 0 0 1px rgba(255,255,255,.1); }
-.dmx .day-node.is-current{ border-color:#2fc9ff; box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 22px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
-@media (prefers-reduced-motion: no-preference){ .dmx .day-node.is-current{ animation:dmxDayPulse 2.2s ease-in-out infinite; } }
-@keyframes dmxDayPulse{
-  0%,100%{ box-shadow:0 0 0 4px rgba(47,201,255,.13),0 0 20px rgba(47,201,255,.72),inset 0 0 12px rgba(47,201,255,.18); }
-  50%{ box-shadow:0 0 0 8px rgba(47,201,255,.10),0 0 34px rgba(47,201,255,1),inset 0 0 15px rgba(47,201,255,.28); } }
-.dmx .chest-node{ width:58px; height:58px; border-radius:12px; display:grid; place-items:center;
-  background:radial-gradient(circle at 50% 0%,rgba(255,216,100,.18),transparent 44%),linear-gradient(180deg,#241032,#12091c);
-  border:2px solid rgba(255,216,100,.92); box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); }
-.dmx .chest-node.is-lit{ animation:dmxPulse 1.6s ease-in-out infinite; }
-@keyframes dmxPulse{ 0%,100%{ box-shadow:0 0 18px rgba(255,177,42,.32),inset 0 0 12px rgba(178,87,255,.22); } 50%{ box-shadow:0 0 28px rgba(255,200,70,.7),inset 0 0 14px rgba(178,87,255,.3); } }
-.dmx .chest-node img{ width:50px; height:50px; object-fit:contain; }
-.dmx .streak-rewards{ height:118px; flex:0 0 118px; border-radius:16px; display:flex; align-items:center; gap:36px; padding:0 28px;
-  background:radial-gradient(circle at 18% 30%,rgba(54,118,255,.18),transparent 46%),linear-gradient(180deg,rgba(22,39,88,.86),rgba(11,20,49,.9));
-  border:1px solid rgba(119,155,238,.34); box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),0 10px 20px rgba(0,0,0,.18); }
-.dmx .streak-reward-item{ min-width:58px; display:grid; justify-items:center; gap:5px; font-weight:950; color:#fff; }
-.dmx .ri-lg{ width:54px; height:54px; filter:drop-shadow(0 6px 6px rgba(0,0,0,.36)); }
-.dmx .streak-reward-item span{ font-size:22px; }
-.dmx .to-go{ margin-left:auto; color:#55b0ff; font-size:18px; font-weight:950; white-space:nowrap; }
-.dmx .streak-claim{ margin-left:auto; height:44px; padding:0 22px; border-radius:11px; font-size:18px; font-weight:950; text-transform:uppercase;
-  background:linear-gradient(180deg,#ffd864,#bf8124); color:#3a1f08; border:1px solid rgba(255,230,140,.8); box-shadow:0 8px 14px rgba(0,0,0,.3); }
-.dmx .how-panel{ align-self:stretch; margin-top:auto; border-radius:16px; padding:17px 22px; background:rgba(2,9,27,.44); border:1px solid rgba(119,155,238,.22); box-shadow:inset 0 0 0 1px rgba(255,255,255,.02); }
-.dmx .how-title{ margin:0 0 12px; font-size:17px; font-weight:950; letter-spacing:.07em; text-transform:uppercase; }
-.dmx .how-line{ display:grid; grid-template-columns:28px 1fr; gap:12px; align-items:center; color:#d3d9f1; font-size:15px; line-height:1.35; }
-.dmx .how-line + .how-line{ margin-top:10px; }
-.dmx .how-icon{ width:28px; height:28px; border-radius:50%; display:grid; place-items:center;
-  background:radial-gradient(circle at 40% 28%,rgba(255,255,255,.28),transparent 24%),linear-gradient(180deg,#548cff,#1658d6);
-  box-shadow:0 5px 10px rgba(0,0,0,.26),inset 0 0 0 1px rgba(255,255,255,.16); }
-.dmx .how-icon svg{ width:16px; height:16px; color:#fff; }
-.dmx .xp-token{ display:grid; place-items:center; border-radius:9px;
-  background:linear-gradient(180deg,rgba(255,255,255,.18),transparent 30%),linear-gradient(180deg,#b466ff,#7430d0);
-  border:1px solid rgba(226,178,255,.72); box-shadow:inset 0 -4px 0 rgba(0,0,0,.16); color:#fff; font-weight:950; font-size:14px; letter-spacing:.02em; }
-.dmx .ri-lg.xp-token{ font-size:17px; }
-.dmx .weekly-tab{ border-radius:0 0 18px 18px; }
-.dmx .weekly-card{ flex:1; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
-  gap:18px; border-radius:18px; padding:26px; position:relative; overflow:hidden;
-  --accent-rgb:128,228,93; --fill:#7ef043; --fill-b:#c9ff7d; --card-mid:#0d3a25; --card-end:#081b14;
-  background:radial-gradient(circle at 50% 0%,rgba(var(--accent-rgb),.22),transparent 54%),linear-gradient(180deg,var(--card-mid),var(--card-end));
-  border:1px solid rgba(var(--accent-rgb),.82);
-  box-shadow:0 14px 30px rgba(0,0,0,.32),inset 0 0 26px rgba(var(--accent-rgb),.08),inset 0 1px 0 rgba(255,255,255,.1); }
-.dmx .weekly-card.is-rare{ --accent-rgb:42,191,255; --fill:#23c4ff; --fill-b:#7be7ff; --card-mid:#0a345d; --card-end:#07172c; }
-.dmx .weekly-card.is-epic{ --accent-rgb:189,89,255; --fill:#b445ff; --fill-b:#ef71ff; --card-mid:#3b1762; --card-end:#170927; }
-.dmx .wk-badge{ width:128px; height:138px; display:grid; place-items:center; }
-.dmx .wk-badge img{ width:128px; height:138px; object-fit:contain; filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)); }
-.dmx .wk-title{ margin:0; font-family:inherit; font-size:30px; font-weight:800; line-height:1.12; color:#fffaf0; text-shadow:0 3px 8px rgba(0,0,0,.42); }
-.dmx .wk-desc{ margin:0; font-size:17px; color:#d4daf1; max-width:86%; line-height:1.4; }
-.dmx .wk-progress{ display:flex; align-items:center; gap:14px; width:min(440px,88%); }
-.dmx .wk-rewards{ display:flex; align-items:center; justify-content:center; gap:44px; }
-.dmx .wk-go{ width:210px; height:58px; margin-top:4px; }
-.dmx .weekly-empty{ margin:auto; text-align:center; color:#c6cfed; }
-.dmx .weekly-empty img{ width:60px; height:60px; object-fit:contain; opacity:.7; margin-bottom:10px; }
-`

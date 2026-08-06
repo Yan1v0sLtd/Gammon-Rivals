@@ -4,6 +4,13 @@ import type {Mission} from "../features/lobby/lobbyData"
 
 import {formatAmount, hideImg} from "./missionHelpers"
 import {RewardIcon} from "./RewardIcon"
+import styles from "./WeeklyCard.module.css"
+
+const rarityClass = {
+  common: "",
+  rare: styles.weeklyCardRare,
+  epic: styles.weeklyCardEpic,
+} as const
 
 export function WeeklyCard({
   mission,
@@ -22,31 +29,31 @@ export function WeeklyCard({
   const isActive = !isCompleted && !isClaimed
   const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100))
   return (
-    <article className={`weekly-card is-${mission.rarity} ${isCompleted ? "is-complete" : ""}`}>
-      <div className="wk-badge">
+    <article className={`${styles.weeklyCard} ${rarityClass[mission.rarity]}`}>
+      <div className={styles.weeklyBadge}>
         <img
           alt={`${mission.rarity} mission`}
           draggable={false}
           src={`/lobby/missions/badge-${mission.rarity}.webp`}
           onError={hideImg}/>
       </div>
-      <h3 className="wk-title">{mission.title}</h3>
-      {mission.subtitle && <p className="wk-desc">{mission.subtitle}</p>}
-      <div className="wk-progress">
-        <div className="progress-track">
+      <h3 className={styles.weeklyTitle}>{mission.title}</h3>
+      {mission.subtitle && <p className={styles.weeklyDescription}>{mission.subtitle}</p>}
+      <div className={styles.weeklyProgress}>
+        <div className={styles.progressTrack}>
           <div
-            className="progress-fill"
+            className={styles.progressFill}
             style={{"--progress": pct} as CSSProperties}/>
         </div>
-        <div className="progress-count">
+        <div className={styles.progressCount}>
           {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
         </div>
       </div>
-      <div className="wk-rewards">
+      <div className={styles.weeklyRewards}>
         {mission.rewards.map((r) => (
           <div
             key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
-            className="streak-reward-item">
+            className={styles.streakRewardItem}>
             <RewardIcon
               reward={r}
               size="lg"/>
@@ -56,7 +63,7 @@ export function WeeklyCard({
       </div>
       {isActive ? (
         <button
-          className="go-button wk-go"
+          className={`${styles.goButton} ${styles.weeklyGoButton}`}
           type="button"
           onClick={onGo}>
           Go
@@ -75,7 +82,7 @@ export function WeeklyCard({
       ) : isClaimed ? (
         <button
           disabled
-          className="go-button is-claimed wk-go"
+          className={`${styles.goButton} ${styles.goButtonClaimed} ${styles.weeklyGoButton}`}
           type="button">
           Claimed
           <svg
@@ -92,7 +99,7 @@ export function WeeklyCard({
         </button>) : (
         <button
           ref={btnRef}
-          className="go-button wk-go"
+          className={`${styles.goButton} ${styles.weeklyGoButton}`}
           disabled={isClaiming}
           type="button"
           onClick={() => {

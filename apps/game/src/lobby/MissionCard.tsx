@@ -2,8 +2,15 @@ import {type CSSProperties, useRef} from "react"
 
 import type {Mission} from "../features/lobby/lobbyData"
 
+import styles from "./MissionCard.module.css"
 import {formatAmount, hideImg} from "./missionHelpers"
 import {RewardIcon} from "./RewardIcon"
+
+const rarityClass = {
+  common: styles.missionCardCommon,
+  rare: styles.missionCardRare,
+  epic: styles.missionCardEpic,
+} as const
 
 export function MissionCard({
   mission,
@@ -32,8 +39,8 @@ export function MissionCard({
   const rerollFree = rerollCost === 0
 
   return (
-    <article className={`mission-card is-${mission.rarity} ${isCompleted ? "is-complete" : ""}`}>
-      <div className="mission-badge">
+    <article className={`${styles.missionCard} ${rarityClass[mission.rarity]} ${isCompleted ? styles.missionCardComplete : ""}`}>
+      <div className={styles.missionBadge}>
         <img
           alt={`${mission.rarity} mission`}
           draggable={false}
@@ -41,15 +48,15 @@ export function MissionCard({
           onError={hideImg}/>
       </div>
 
-      <div className="mission-copy">
-        <p className="mission-description">{mission.subtitle ?? mission.title}</p>
-        <div className="progress-line">
-          <div className="progress-track">
+      <div className={styles.missionCopy}>
+        <p className={styles.missionDescription}>{mission.subtitle ?? mission.title}</p>
+        <div className={styles.progressLine}>
+          <div className={styles.progressTrack}>
             <div
-              className="progress-fill"
+              className={styles.progressFill}
               style={{"--progress": pct} as CSSProperties}/>
           </div>
-          <div className="progress-count">
+          <div className={styles.progressCount}>
             {mission.progress.toLocaleString()} / {mission.resolved_goal.toLocaleString()}
           </div>
         </div>
@@ -57,29 +64,29 @@ export function MissionCard({
 
       <div
         aria-hidden="true"
-        className="mission-separator"/>
+        className={styles.missionSeparator}/>
 
-      <div className="mission-reward">
+      <div className={styles.missionReward}>
         <div>
-          <div className="reward-title">Reward</div>
-          <div className="reward-icons">
+          <div className={styles.rewardTitle}>Reward</div>
+          <div className={styles.rewardIcons}>
             {mission.rewards.map((r) => (
               <div
                 key={`${r.amount}-${r.currency_code ?? r.item_id ?? ""}`}
-                className="reward-item">
+                className={styles.rewardItem}>
                 <RewardIcon
                   reward={r}
                   size="md"/>
-                <div className="reward-amount">+{formatAmount(r.amount)}</div>
+                <div className={styles.rewardAmount}>+{formatAmount(r.amount)}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mission-controls">
+        <div className={styles.missionControls}>
           {isActive ? (
             <button
-              className="go-button"
+              className={styles.goButton}
               type="button"
               onClick={onGo}>
               Go
@@ -98,7 +105,7 @@ export function MissionCard({
           ) : isClaimed ? (
             <button
               disabled
-              className="go-button is-claimed"
+              className={`${styles.goButton} ${styles.goButtonClaimed}`}
               type="button">
               Claimed
               <svg
@@ -116,7 +123,7 @@ export function MissionCard({
           ) : (
             <button
               ref={btnRef}
-              className="go-button"
+              className={styles.goButton}
               disabled={isClaiming}
               type="button"
               onClick={() => {
@@ -128,7 +135,7 @@ export function MissionCard({
 
           {showReroll && (
             <button
-              className="reroll-note"
+              className={styles.rerollNote}
               type="button"
               onClick={onRerollClick}>
               <svg

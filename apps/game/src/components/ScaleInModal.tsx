@@ -1,5 +1,7 @@
 import {type CSSProperties, type MouseEvent, type ReactNode, useEffect, useState} from "react"
 
+import styles from "./ScaleInModal.module.css"
+
 type ScaleInModalProps = {
   /** Fired on backdrop click (if enabled) and on Escape. */
   readonly onClose?: () => void,
@@ -64,26 +66,11 @@ export function ScaleInModal({
   }
 
   return (<div
-    className="fixed inset-0 z-50 flex items-center justify-center p-4"
-    style={{
-      // Full-screen backdrop-filter blur was removed for mobile perf (a live
-      // blur over the whole animating lobby every time a modal opens). The
-      // slightly deeper dim compensates so content behind still recedes.
-      background: "radial-gradient(circle at center, rgba(28,20,46,0.58), rgba(0,0,0,0.87))",
-      opacity: entered ? 1 : 0,
-      transition: "opacity 220ms ease",
-    }}
+    className={`${styles.backdrop} ${entered ? styles.backdropEntered : ""}`}
     onClick={handleBackdrop}>
     <div
-      className={className}
-      style={{
-        transformOrigin: "center", // Match the board-purchase popup's springy emerge.
-        transform: entered ? "scaleX(1) scaleY(1)" : "scaleX(0.16) scaleY(0.12)",
-        opacity: entered ? 1 : 0,
-        transition: "transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease",
-        transitionDelay: entered ? "120ms" : "0ms",
-        ...style,
-      }}>
+      className={`${styles.content} ${entered ? styles.contentEntered : ""} ${className ?? ""}`}
+      style={style}>
       {children}
     </div>
   </div>)

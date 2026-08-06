@@ -1,0 +1,590 @@
+.root {
+  font-synthesis: none;
+  color: #f7f8ff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.root * {
+  box-sizing: border-box;
+}
+
+.root button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+}
+
+.screen {
+  position: relative;
+  width: 1536px;
+  height: 812px;
+  border-radius: 24px;
+  overflow: hidden;
+  padding: 26px 28px 28px;
+  background: linear-gradient(rgba(10, 26, 51, 0.55), rgba(10, 26, 51, 0.55)), radial-gradient(38% 48% at 18% 22%, rgba(56, 189, 248, 0.55), transparent 70%), radial-gradient(42% 52% at 84% 16%, rgba(250, 204, 21, 0.45), transparent 70%), radial-gradient(48% 58% at 78% 86%, rgba(139, 92, 246, 0.5), transparent 70%), radial-gradient(44% 54% at 22% 88%, rgba(16, 185, 129, 0.48), transparent 70%), #03070d;
+  border: 1px solid rgba(116, 168, 255, 0.38);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.045), inset 0 0 90px rgba(54, 104, 255, 0.16);
+  isolation: isolate;
+}
+
+.topbar {
+  height: 84px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.brandMark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.brandMark img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+
+.brandCopy {
+  min-width: 0;
+}
+
+.brandTitle {
+  margin: 0;
+  font-family: inherit;
+  font-size: 42px;
+  line-height: 0.92;
+  letter-spacing: 0.03em;
+  color: #fff7dc;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(69, 40, 8, 0.85), 0 7px 18px rgba(0, 0, 0, 0.48);
+}
+
+.brandSubtitle {
+  margin: 6px 0 0;
+  color: #cbd4fa;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+.headerSpacer {
+  flex: 1;
+}
+
+.refreshBox {
+  width: 214px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(17, 35, 83, 0.96), rgba(8, 16, 42, 0.92));
+  border: 1px solid rgba(124, 168, 255, 0.42);
+  box-shadow: inset 0 0 18px rgba(50, 115, 255, 0.12), 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+.refreshLabel {
+  color: #ffd864;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.refreshTime {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.closeButton {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.2), transparent 22%), linear-gradient(180deg, #24283a, #070913 68%);
+  border: 2px solid rgba(255, 211, 91, 0.88);
+  color: #ffe084;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: filter 0.12s ease, transform 0.12s ease;
+}
+
+.closeButton:hover {
+  filter: brightness(1.1);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+.closeButton svg {
+  width: 32px;
+  height: 32px;
+}
+
+.status {
+  padding: 60px 0;
+  text-align: center;
+  color: rgba(255, 228, 160, 0.7);
+  font-size: 18px;
+}
+
+.statusError {
+  color: #ffb3b3;
+}
+
+.content {
+  height: calc(100% - 96px);
+  display: grid;
+  grid-template-columns: minmax(760px, 1.52fr) minmax(500px, 1fr);
+  gap: 20px;
+}
+
+.panel {
+  min-width: 0;
+  min-height: 0;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(8, 21, 56, 0.78), rgba(3, 10, 29, 0.82));
+  border: 1px solid rgba(121, 161, 255, 0.24);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.026), 0 20px 42px rgba(0, 0, 0, 0.24);
+}
+
+.missionsPanel {
+  padding: 20px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.missionsFooter {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.compactButton {
+  height: 36px;
+  min-width: 96px;
+  padding: 0 16px;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 16px rgba(0, 0, 0, 0.24);
+}
+
+.compactButtonRerolls {
+  background: linear-gradient(180deg, #11571f, #082f12);
+  border: 1px solid rgba(95, 255, 115, 0.55);
+  color: #a8ff88;
+}
+
+.compactButtonClaimAll {
+  background: linear-gradient(180deg, #4f5668, #2d3342);
+  border: 1px solid rgba(179, 190, 219, 0.34);
+  color: #cbd2e5;
+  transition: filter 0.12s ease;
+}
+
+.compactButtonClaimAll:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.compactButtonClaimAll:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.missionList {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 0;
+}
+
+.empty {
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  font-size: 14px;
+  background: rgba(29, 36, 96, 0.6);
+  color: #c6b7d8;
+}
+
+.actionError {
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  font-size: 14px;
+  margin-top: 10px;
+  background: rgba(80, 20, 20, 0.5);
+  color: #ffb3b3;
+}
+
+.tabsPanel {
+  padding: 0 16px 16px;
+  display: grid;
+  grid-template-rows: 62px 1fr;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-self: end;
+}
+
+.tabButton {
+  position: relative;
+  height: 56px;
+  border-radius: 15px 15px 0 0;
+  background: rgba(5, 12, 35, 0.74);
+  border: 1px solid rgba(116, 160, 255, 0.24);
+  border-bottom: 0;
+  color: rgba(222, 228, 252, 0.56);
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.tabButtonActive {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(43, 120, 255, 0.96), rgba(23, 55, 171, 0.94));
+  border-color: rgba(94, 168, 255, 0.85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 20px rgba(50, 120, 255, 0.24);
+}
+
+.tabDot {
+  position: absolute;
+  top: 10px;
+  right: 18px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #e9482f;
+  border: 1px solid #ff9d6a;
+  box-shadow: 0 0 8px rgba(255, 75, 45, 0.7);
+}
+
+.streakPanel {
+  position: relative;
+  border-radius: 0 0 18px 18px;
+  border: 1px solid rgba(116, 160, 255, 0.33);
+  background: radial-gradient(circle at 82% 16%, rgba(41, 92, 203, 0.22), transparent 42%), linear-gradient(180deg, rgba(8, 19, 52, 0.92), rgba(2, 8, 25, 0.9));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  padding: 28px 30px 26px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.streakHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.streakTitle {
+  margin: 0;
+  font-size: 31px;
+  line-height: 1;
+  font-weight: 950;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.42);
+}
+
+.streakDays {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: rgba(12, 37, 95, 0.78);
+  border: 1px solid rgba(50, 129, 255, 0.64);
+  color: #5db4ff;
+  font-size: 20px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.infoButton {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(12, 37, 95, 0.82);
+  border: 1px solid rgba(50, 129, 255, 0.64);
+  color: #5db4ff;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  transition: filter 0.12s ease;
+}
+
+.infoButton:hover {
+  filter: brightness(1.25);
+}
+
+.howPopover {
+  position: absolute;
+  top: 74px;
+  right: 24px;
+  z-index: 6;
+  width: 380px;
+  max-width: 82%;
+  border-radius: 14px;
+  padding: 18px;
+  background: linear-gradient(180deg, #11214f, #070f29);
+  border: 1px solid rgba(119, 155, 238, 0.45);
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.62);
+}
+
+.howClose {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: none;
+  color: #9fb0d8;
+}
+
+.howClose svg {
+  width: 18px;
+  height: 18px;
+}
+
+.howTitle {
+  margin: 0 0 12px;
+  font-size: 17px;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.howLine {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 12px;
+  align-items: center;
+  color: #d3d9f1;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.howLine + .howLine {
+  margin-top: 12px;
+}
+
+.howIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 28%, rgba(255, 255, 255, 0.28), transparent 24%), linear-gradient(180deg, #548cff, #1658d6);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.26), inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+
+.howIcon svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+.streakDescription {
+  margin: -2px 0 0;
+  color: #dde4ff;
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+.streakTrack {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: start;
+  height: 120px;
+  flex: 0 0 120px;
+}
+
+.streakTrack::before {
+  content: "";
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  top: 56px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(72, 97, 142, 0.9), rgba(107, 114, 137, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.trackDay {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: #dce3ff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.dayNode {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, rgba(255, 255, 255, 0.13), transparent 24%), linear-gradient(180deg, #17223c, #0a1021);
+  border: 4px solid rgba(116, 121, 139, 0.82);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.dayNodeDone {
+  border-color: #5ee27a;
+  background: radial-gradient(circle at 40% 32%, rgba(255, 255, 255, 0.2), transparent 26%), linear-gradient(180deg, #39c45a, #15772f);
+  box-shadow: 0 0 14px rgba(73, 255, 55, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.dayNodeCurrent {
+  border-color: #2fc9ff;
+  box-shadow: 0 0 0 4px rgba(47, 201, 255, 0.13), 0 0 22px rgba(47, 201, 255, 0.72), inset 0 0 12px rgba(47, 201, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dayNodeCurrent {
+    animation: dayNodePulse 2.2s ease-in-out infinite;
+  }
+}
+
+@keyframes dayNodePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(47, 201, 255, 0.13), 0 0 20px rgba(47, 201, 255, 0.72), inset 0 0 12px rgba(47, 201, 255, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(47, 201, 255, 0.1), 0 0 34px rgba(47, 201, 255, 1), inset 0 0 15px rgba(47, 201, 255, 0.28);
+  }
+}
+
+.chestNode {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 216, 100, 0.18), transparent 44%), linear-gradient(180deg, #241032, #12091c);
+  border: 2px solid rgba(255, 216, 100, 0.92);
+  box-shadow: 0 0 18px rgba(255, 177, 42, 0.32), inset 0 0 12px rgba(178, 87, 255, 0.22);
+}
+
+.chestNodeLit {
+  animation: chestPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes chestPulse {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(255, 177, 42, 0.32), inset 0 0 12px rgba(178, 87, 255, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(255, 200, 70, 0.7), inset 0 0 14px rgba(178, 87, 255, 0.3);
+  }
+}
+
+.chestNode img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.streakRewards {
+  height: 118px;
+  flex: 0 0 118px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  padding: 0 28px;
+  background: radial-gradient(circle at 18% 30%, rgba(54, 118, 255, 0.18), transparent 46%), linear-gradient(180deg, rgba(22, 39, 88, 0.86), rgba(11, 20, 49, 0.9));
+  border: 1px solid rgba(119, 155, 238, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.035), 0 10px 20px rgba(0, 0, 0, 0.18);
+}
+
+.streakRewardItem {
+  min-width: 58px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  font-weight: 950;
+  color: #fff;
+}
+
+.streakRewardItem span {
+  font-size: 22px;
+}
+
+.toGo {
+  margin-left: auto;
+  color: #55b0ff;
+  font-size: 18px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.streakClaim {
+  margin-left: auto;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 11px;
+  font-size: 18px;
+  font-weight: 950;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffd864, #bf8124);
+  color: #3a1f08;
+  border: 1px solid rgba(255, 230, 140, 0.8);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.3);
+}
+
+.weeklyTab {
+  border-radius: 0 0 18px 18px;
+}
+
+.weeklyEmpty {
+  margin: auto;
+  text-align: center;
+  color: #c6cfed;
+}
+
+.weeklyEmpty img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}

@@ -1,0 +1,33 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  /* Full-screen backdrop-filter blur was removed for mobile perf (a live
+     blur over the whole animating lobby every time a modal opens). The
+     slightly deeper dim compensates so content behind still recedes. */
+  background: radial-gradient(circle at center, rgba(28, 20, 46, 0.58), rgba(0, 0, 0, 0.87));
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.backdropEntered {
+  opacity: 1;
+}
+
+.content {
+  transform-origin: center; /* Match the board-purchase popup's springy emerge. */
+  transform: scaleX(0.16) scaleY(0.12);
+  opacity: 0;
+  transition: transform 460ms cubic-bezier(0.2, 0.9, 0.2, 1.12), opacity 220ms ease;
+  transition-delay: 0ms;
+}
+
+.contentEntered {
+  transform: scaleX(1) scaleY(1);
+  opacity: 1;
+  transition-delay: 120ms;
+}

@@ -1,0 +1,189 @@
+.weeklyCard {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 18px;
+  border-radius: 18px;
+  padding: 26px;
+  position: relative;
+  overflow: hidden;
+  --accent-rgb: 128, 228, 93;
+  --fill: #7ef043;
+  --fill-b: #c9ff7d;
+  --card-mid: #0d3a25;
+  --card-end: #081b14;
+  background: radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.22), transparent 54%), linear-gradient(180deg, var(--card-mid), var(--card-end));
+  border: 1px solid rgba(var(--accent-rgb), 0.82);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32), inset 0 0 26px rgba(var(--accent-rgb), 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.weeklyCardRare {
+  --accent-rgb: 42, 191, 255;
+  --fill: #23c4ff;
+  --fill-b: #7be7ff;
+  --card-mid: #0a345d;
+  --card-end: #07172c;
+}
+
+.weeklyCardEpic {
+  --accent-rgb: 189, 89, 255;
+  --fill: #b445ff;
+  --fill-b: #ef71ff;
+  --card-mid: #3b1762;
+  --card-end: #170927;
+}
+
+.weeklyBadge {
+  width: 128px;
+  height: 138px;
+  display: grid;
+  place-items: center;
+}
+
+.weeklyBadge img {
+  width: 128px;
+  height: 138px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5));
+}
+
+.weeklyTitle {
+  margin: 0;
+  font-family: inherit;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.12;
+  color: #fffaf0;
+  text-shadow: 0 3px 8px rgba(0, 0, 0, 0.42);
+}
+
+.weeklyDescription {
+  margin: 0;
+  font-size: 17px;
+  color: #d4daf1;
+  max-width: 86%;
+  line-height: 1.4;
+}
+
+.weeklyProgress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(440px, 88%);
+}
+
+.progressTrack {
+  position: relative;
+  flex: 1;
+  height: 15px;
+  border-radius: 999px;
+  background: rgba(2, 6, 15, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11), 0 4px 8px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.progressFill {
+  position: absolute;
+  inset: 2px auto 2px 2px;
+  width: calc(var(--progress) * 1%);
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 45%), linear-gradient(90deg, var(--fill), var(--fill-b));
+  box-shadow: 0 0 11px rgba(var(--accent-rgb), 0.66), inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+  transition: width 0.4s ease;
+}
+
+.progressCount {
+  min-width: 62px;
+  display: inline-flex;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-weight: 950;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.weeklyRewards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 44px;
+}
+
+.streakRewardItem {
+  min-width: 58px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  font-weight: 950;
+  color: #fff;
+}
+
+.streakRewardItem span {
+  font-size: 22px;
+}
+
+.goButton {
+  width: 122px;
+  height: 52px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #27db74, #079044);
+  border: 0;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22), 0 8px 18px rgba(0, 0, 0, 0.35);
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.55);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.goButton:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.goButton:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.goButton svg {
+  width: 19px;
+  height: 19px;
+}
+
+.goButtonClaimed {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent 36%), linear-gradient(180deg, #386db8, #1c3a67);
+  border-color: rgba(108, 164, 255, 0.62);
+  color: #dce9ff;
+  font-family: inherit;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 7px 12px rgba(0, 0, 0, 0.27), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: default;
+}
+
+.goButtonClaimed svg {
+  width: 21px;
+  height: 21px;
+  color: #46e6ff;
+  filter: drop-shadow(0 0 4px rgba(70, 230, 255, 0.55));
+}
+
+.weeklyGoButton {
+  width: 210px;
+  height: 58px;
+  margin-top: 4px;
+}

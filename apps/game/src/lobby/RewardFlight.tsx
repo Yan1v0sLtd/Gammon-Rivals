@@ -1,5 +1,7 @@
 import {useEffect, useEffectEvent, useRef} from "react"
 
+import styles from "./RewardFlight.module.css"
+
 export type FlightCurrency = "coins" | "gems" | "xp"
 
 export type RewardFlightSpec = {
@@ -132,7 +134,7 @@ export function RewardFlight({
   return (<div
     ref={ref}
     aria-hidden="true"
-    className="pointer-events-none fixed z-[60] h-10 w-10 select-none drop-shadow-[0_4px_8px_rgba(0,0,0,0.45)]"
+    className={styles.flight}
     style={{
       left: `${spec.startX}px`,
       top: `${spec.startY}px`, // Initial transform is set so the element is centred on (startX,startY)
@@ -142,7 +144,7 @@ export function RewardFlight({
     }}>
     {spec.currency === "xp" ? (<XpHexInline/>) : (<img
       alt=""
-      className="h-full w-full"
+      className={styles.flightImg}
       draggable={false}
       src={ICONS[spec.currency]}/>)}
   </div>)
