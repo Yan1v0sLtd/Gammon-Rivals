@@ -1,12 +1,12 @@
 import {useEffect, useMemo, useRef, useState} from "react"
 
-import {extractErrorMessage} from "../../../../packages/shared/src/errors"
-import {ModalCloseButton} from "../components/ModalCloseButton"
-import {useSpinWheelMutation} from "../features/lobby/lobbyApi"
-import type {WheelSlot} from "../features/lobby/lobbyData"
+import {extractErrorMessage} from "../../../../../packages/shared/src/errors"
+import {ModalCloseButton} from "../../components/ModalCloseButton"
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../../components/RewardFlight"
+import {useSpinWheelMutation} from "../../features/lobby/lobbyApi"
+import type {WheelSlot} from "../../features/lobby/lobbyData"
+import type {WheelStateResult} from "../../lib/useWheelState"
 
-import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "./RewardFlight"
-import type {WheelStateResult} from "./useWheelState"
 import styles from "./WheelModal.module.css"
 
 /**

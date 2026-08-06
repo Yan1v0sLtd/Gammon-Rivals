@@ -1,6 +1,6 @@
-import {ModalCloseButton} from "../components/ModalCloseButton"
-import {ScaleInModal} from "../components/ScaleInModal"
-import type {DailyBonusConfig} from "../features/lobby/lobbySelectors"
+import {ModalCloseButton} from "../../components/ModalCloseButton"
+import {ScaleInModal} from "../../components/ScaleInModal"
+import type {DailyBonusConfig} from "../../features/lobby/lobbySelectors"
 
 import styles from "./DailyBonusModal.module.css"
 

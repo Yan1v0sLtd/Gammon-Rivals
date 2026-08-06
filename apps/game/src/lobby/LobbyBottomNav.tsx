@@ -1,10 +1,10 @@
 import {useEffect, useState} from "react"
 
 import type {LobbyFeatureConfigMap} from "../features/lobby/lobbyData"
+import type {WheelStateResult} from "../lib/useWheelState"
 
 import {HourlyBonusWidget} from "./HourlyBonusWidget"
 import {lobbyNavItems} from "./lobbyData"
-import type {WheelStateResult} from "./useWheelState"
 
 type Props = {
   readonly wheel: WheelStateResult,

@@ -3,6 +3,7 @@ import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from
 import {skipToken} from "@reduxjs/toolkit/query"
 
 import {setPersistedBoardId} from "../board/theme/selectedBoard"
+import {RewardFlight} from "../components/RewardFlight"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
 import {useShop} from "../features/appUi/useShop"
 import {selectAuthUserId, selectCurrentProfile, selectCurrentWallet, selectProfileProgression, selectIsGuest} from "../features/auth/authSelectors"
@@ -14,6 +15,7 @@ import {useBodyModalFlag} from "../lib/bodyModalFlag"
 import {isSupabaseConfigured} from "../lib/supabase"
 import {useImagePreloader} from "../lib/useImagePreloader"
 import {usePrefetchOnIdle} from "../lib/usePrefetchOnIdle"
+import {useWheelState} from "../lib/useWheelState"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
 import {BoardLockTooltip} from "./BoardLockTooltip"
@@ -23,10 +25,8 @@ import {LobbyModalHost} from "./LobbyModalHost"
 import {LobbySideOffers} from "./LobbySideOffers"
 import {LobbyTopBar} from "./LobbyTopBar"
 import {OnboardingTour} from "./OnboardingTour"
-import {RewardFlight} from "./RewardFlight"
 import {useLobbyFeatureConfigs} from "./useLobbyFeatureConfigs"
 import {useRewardFlights} from "./useRewardFlights"
-import {useWheelState} from "./useWheelState"
 
 // Static lobby assets — referenced unconditionally by sub-components,
 // so they're always part of the first-paint preload. Per-board imagery

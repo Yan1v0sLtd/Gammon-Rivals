@@ -1,12 +1,12 @@
 import {useEffect, useMemo} from "react"
 
-import type {Json} from "../../../../packages/shared/src/database"
-import {PlayButton} from "../components/PlayButton"
-import {useGetTableConfigsQuery} from "../features/lobby/lobbyApi"
-import type {TableConfigRow} from "../features/lobby/lobbyData"
-import {formatCompactNumber} from "../lib/format"
-import {isSupabaseConfigured} from "../lib/supabase"
-import {useImagePreloader} from "../lib/useImagePreloader"
+import type {Json} from "../../../../../packages/shared/src/database"
+import {PlayButton} from "../../components/PlayButton"
+import {useGetTableConfigsQuery} from "../../features/lobby/lobbyApi"
+import type {TableConfigRow} from "../../features/lobby/lobbyData"
+import {formatCompactNumber} from "../../lib/format"
+import {isSupabaseConfigured} from "../../lib/supabase"
+import {useImagePreloader} from "../../lib/useImagePreloader"
 
 /**
  * Server row shape we need. We only read enabled difficulty rows

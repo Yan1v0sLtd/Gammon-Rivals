@@ -5,7 +5,7 @@ import {useNavigate} from "react-router-dom"
 
 import {matchEntryPath} from "../../game/matchEntryPath"
 import {isSupabaseConfigured} from "../../lib/supabase"
-import type {DifficultySelection, MatchmakingOverlayState} from "../../lobby/DifficultyModal"
+import type {DifficultySelection, MatchmakingOverlayState} from "../../modals/Difficulty/DifficultyModal"
 import {useAppDispatch, useAppSelector} from "../../store/hooks"
 import {useNavigationLoaderOverlay} from "../appUi/useNavigationLoaderOverlay"
 import {selectAuthUserId, selectProfileProgression} from "../auth/authSelectors"

@@ -2,6 +2,7 @@ import {type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState
 
 import type {Database, Json} from "../../../../packages/shared/src/database"
 import {CurrencyPill} from "../components/CurrencyPill"
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../components/RewardFlight"
 import {ScaleInModal} from "../components/ScaleInModal"
 import {selectAuthUserId, selectCurrentWallet} from "../features/auth/authSelectors"
 import {shopGrantConfirmed} from "../features/shop/shopActions"
@@ -10,7 +11,6 @@ import {
 } from "../features/shop/shopApi"
 import {getBilling} from "../lib/billing/service"
 import {useImagePreloader} from "../lib/useImagePreloader"
-import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../lobby/RewardFlight"
 import {baseApi} from "../store/baseApi"
 import {useAppSelector, useAppDispatch} from "../store/hooks"
 

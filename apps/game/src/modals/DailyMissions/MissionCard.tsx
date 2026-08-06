@@ -1,6 +1,6 @@
 import {type CSSProperties, useRef} from "react"
 
-import type {Mission} from "../features/lobby/lobbyData"
+import type {Mission} from "../../features/lobby/lobbyData"
 
 import styles from "./MissionCard.module.css"
 import {formatAmount, hideImg} from "./missionHelpers"

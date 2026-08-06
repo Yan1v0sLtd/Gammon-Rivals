@@ -1,4 +1,4 @@
-import type {RewardItem} from "../features/lobby/lobbyData"
+import type {RewardItem} from "../../features/lobby/lobbyData"
 
 import {hideImg} from "./missionHelpers"
 import styles from "./RewardIcon.module.css"

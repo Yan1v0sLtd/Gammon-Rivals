@@ -70,7 +70,7 @@
 }
 
 .titlePlate {
-  composes: fontDisplay from "../styles/shared.module.css";
+  composes: fontDisplay from "../../styles/shared.module.css";
   display: grid;
   place-items: center;
   white-space: nowrap;
@@ -142,14 +142,14 @@
 }
 
 .centerHub {
-  composes: fontDisplay from "../styles/shared.module.css";
+  composes: fontDisplay from "../../styles/shared.module.css";
   position: absolute;
   display: grid;
   place-items: center;
 }
 
 .spinButton {
-  composes: fontDisplay from "../styles/shared.module.css";
+  composes: fontDisplay from "../../styles/shared.module.css";
   position: relative;
   z-index: 10;
   margin-top: 0.5rem;

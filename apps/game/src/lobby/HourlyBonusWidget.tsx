@@ -1,5 +1,6 @@
+import {formatCooldown, useCountdownSeconds, type WheelStateResult} from "../lib/useWheelState"
+
 import styles from "./HourlyBonusWidget.module.css"
-import {formatCooldown, useCountdownSeconds, type WheelStateResult} from "./useWheelState"
 
 type Props = {
   readonly result: WheelStateResult,

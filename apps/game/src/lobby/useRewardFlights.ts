@@ -1,6 +1,6 @@
 import {useCallback, useRef, useState} from "react"
 
-import type {FlightCurrency, RewardFlightSpec} from "./RewardFlight"
+import type {FlightCurrency, RewardFlightSpec} from "../components/RewardFlight"
 
 /**
  * Flying-token spawner. Start/end coordinates are DOM measurements taken at

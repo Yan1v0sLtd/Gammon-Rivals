@@ -1,6 +1,6 @@
-import {ModalCloseButton} from "../components/ModalCloseButton"
-import {ScaleInModal} from "../components/ScaleInModal"
-import {useImagePreloader} from "../lib/useImagePreloader"
+import {ModalCloseButton} from "../../components/ModalCloseButton"
+import {ScaleInModal} from "../../components/ScaleInModal"
+import {useImagePreloader} from "../../lib/useImagePreloader"
 
 type HowToPlayModalProps = {
   readonly onClose: () => void,

@@ -1,21 +1,21 @@
 import {useEffect, useMemo, useRef, useState} from "react"
 
-import {extractErrorMessage} from "../../../../packages/shared/src/errors"
-import {ScaleInModal} from "../components/ScaleInModal"
-import {selectAuthUserId} from "../features/auth/authSelectors"
+import {extractErrorMessage} from "../../../../../packages/shared/src/errors"
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../../components/RewardFlight"
+import {ScaleInModal} from "../../components/ScaleInModal"
+import {selectAuthUserId} from "../../features/auth/authSelectors"
 import {
   useClaimMissionMutation, useClaimStreakChestMutation, useRerollMissionMutation,
-} from "../features/lobby/lobbyApi"
-import type {Mission} from "../features/lobby/lobbyData"
-import {formatCountdown, type MissionsResult, nextResetMs} from "../features/lobby/lobbySelectors"
-import {createEmptyArray} from "../lib/constants.ts"
-import {useAppSelector} from "../store/hooks"
+} from "../../features/lobby/lobbyApi"
+import type {Mission} from "../../features/lobby/lobbyData"
+import {formatCountdown, type MissionsResult, nextResetMs} from "../../features/lobby/lobbySelectors"
+import {createEmptyArray} from "../../lib/constants.ts"
+import {useAppSelector} from "../../store/hooks"
 
 import styles from "./DailyMissionsModal.module.css"
 import {MissionCard} from "./MissionCard"
 import {formatAmount, hideImg} from "./missionHelpers"
 import {RerollConfirmModal} from "./RerollConfirmModal"
-import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "./RewardFlight"
 import {RewardIcon} from "./RewardIcon"
 import {WeeklyCard} from "./WeeklyCard"
 
