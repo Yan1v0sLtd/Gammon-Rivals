@@ -4,6 +4,7 @@ import type {LobbyFeatureConfigMap} from "../features/lobby/lobbyData"
 import type {WheelStateResult} from "../lib/useWheelState"
 
 import {HourlyBonusWidget} from "./HourlyBonusWidget"
+import styles from "./LobbyBottomNav.module.css"
 import {lobbyNavItems} from "./lobbyData"
 
 type Props = {
@@ -60,16 +61,16 @@ export function LobbyBottomNav({
 
   return (<nav
     aria-label="Lobby sections"
-    className="lobby-bottom-nav-shell">
+    className={styles.bottomNavShell}>
     <div
       aria-hidden="true"
-      className="lobby-bottom-nav-bar"/>
-    <div className="lobby-bottom-nav-row">
+      className={styles.bottomNavBar}/>
+    <div className={styles.bottomNavRow}>
       {lobbyNavItems.map((item) => {
         if (item.id === "placeholder") {
           return (<div
             key={item.id}
-            className="lobby-bottom-nav-slot lobby-bottom-nav-slot--hourly">
+            className={`${styles.bottomNavSlot} ${styles.bottomNavSlotHourly}`}>
             <HourlyBonusWidget
               result={wheel}
               onClaim={onClaimWheel}/>
@@ -84,9 +85,10 @@ export function LobbyBottomNav({
         if (locked && item.image) {
           return (<div
             key={item.id}
-            className="lobby-bottom-nav-slot is-locked">
+            className={`${styles.bottomNavSlot} ${styles.isLocked}`}>
             <img
               alt=""
+              className={styles.navItemImage}
               draggable={false}
               src={item.image}/>
             <NavFeatureLock
@@ -107,18 +109,19 @@ export function LobbyBottomNav({
         return item.image ? (<button
           key={item.id}
           aria-label={item.label}
-          className="lobby-bottom-nav-slot"
+          className={styles.bottomNavSlot}
           type="button"
           onClick={onClick}>
           <img
             alt=""
+            className={styles.navItemImage}
             draggable={false}
             src={item.image}/>
-          {badge ? <span className="lobby-nav-badge">{badge}</span> : null}
+          {badge ? <span className={styles.navBadge}>{badge}</span> : null}
         </button>) : (<span
           key={item.id}
           aria-hidden="true"
-          className="lobby-bottom-nav-slot is-placeholder"/>)
+          className={`${styles.bottomNavSlot} ${styles.isPlaceholder}`}/>)
       })}
     </div>
   </nav>)
@@ -141,7 +144,7 @@ type NavFeatureLockProps = {
  * again (or anywhere outside) collapses it. The pill auto-sizes to its text,
  * which the operator can override per feature (e.g. "Coming soon") — otherwise
  * it shows "Reach level N to unlock". The font matches the board carousel
- * pill. All of the motion is CSS — see the .lobby-nav-lock-* rules in index.css.
+ * pill. All of the motion is CSS — see the .navLock* rules in LobbyBottomNav.module.css.
  */
 function NavFeatureLock({
   level,
@@ -152,10 +155,10 @@ function NavFeatureLock({
   onToggle,
 }: NavFeatureLockProps) {
   const tipText = text?.trim() ? text.trim() : `Reach level ${level} to unlock`
-  return (<div className={`lobby-nav-lock-wrap ${open ? "is-open" : ""}`}>
+  return (<div className={`${styles.navLockWrap} ${open ? styles.isOpen : ""}`}>
     <button
       aria-label={open ? tipText : `${label} locked`}
-      className="lobby-nav-lock"
+      className={styles.navLock}
       type="button"
       // Stop the tap that opens/toggles the lock from reaching the
       // window-level outside-tap listener that closes it.
@@ -168,7 +171,7 @@ function NavFeatureLock({
       }}>
       <svg
         aria-hidden="true"
-        className="lobby-nav-lock-icon"
+        className={styles.navLockIcon}
         viewBox="0 0 24 24">
         <defs>
           <linearGradient
@@ -195,7 +198,7 @@ function NavFeatureLock({
     </button>
     <div
       aria-hidden={!open}
-      className="lobby-nav-lock-tip">
+      className={styles.navLockTip}>
       <span>{tipText}</span>
     </div>
   </div>)

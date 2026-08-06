@@ -484,3 +484,90 @@ HEAD, unrelated to the migration):
 - Full lobby/gameplay migration, remaining Tailwind conversion across
   game/admin/packages, Tailwind config/dependency removal, and final
   `npm run build:all` remain pending.
+
+### S12 — LobbyBottomNav CSS Module slice
+
+- Moved the bottom-navigator + level-lock tooltip + badge styling from
+  `apps/game/src/index.css` into `apps/game/src/lobby/LobbyBottomNav.module.css`,
+  renaming the `lobby-bottom-nav-*` / `lobby-nav-*` globals to descriptive
+  camelCase locals (`bottomNavShell/Bar/Row/Slot`, `bottomNavSlotHourly`,
+  `isPlaceholder`/`isLocked`/`isOpen` state locals, `navLockWrap/Lock/Icon/Tip`,
+  `navBadge`).
+- Consolidated three separate global sources into the module: the base block
+  (shell/bar/row/slot/lock/tip/badge), the `--lobby-u` layout overrides
+  (`.lobby-bottom-nav-shell` + `.lobby-nav-badge` in the unified layout block),
+  and the live `@media (max-width: 640px)` mobile override for the shell. The
+  `--lobby-u` override wins the cascade for overlapping props, so the merged
+  `.bottomNavShell` carries its values (position:absolute, bottom/width in
+  `--lobby-u`, z-index 35); the merged `.navBadge` carries the `--lobby-u`
+  top/right/min-width/padding/font-size over the base.
+- Moved the component-owned keyframes (`navLockWiggle/Settle/Stretch`) and the
+  `prefers-reduced-motion` block into the module with the component.
+- Updated `LobbyBottomNav.tsx` with a direct module import and explicit
+  mappings; the `is-locked`/`is-open`/`is-placeholder` state classes and the
+  `--hourly` slot modifier are now module locals. Component logic (open-lock
+  state, outside-tap collapse, gradient ids) unchanged.
+- Removed only the migrated rules from `index.css` (base block, hourly-slot
+  rule + comment, the two `--lobby-u` overrides, and the 640px shell override).
+  The dead legacy `.lobby-bottom-nav-item` / `.lobby-nav-icon` /
+  `.lobby-nav-label` rules (no TSX consumer) and the dead
+  `.lobby-bottom-nav-frame` rule remain as legacy, consistent with the plan's
+  "unused selectors are not moved" rule.
+- `lobby-bottom-nav-slot--hourly` was confirmed to have a single consumer
+  (`LobbyBottomNav.tsx`); `HourlyBonusWidget` uses its own module, so it moved
+  into the module rather than staying global.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b
+  apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
+  `git diff --check`. Built CSS confirms the module locals and keyframes are
+  emitted. Browser/manual visual checks remain pending.
+
+### S13 — LobbyBoardCarousel globals CSS Module slice
+
+- Folded the remaining live carousel globals into the existing
+  `apps/game/src/lobby/LobbyBoardCarousel.module.css`:
+  - The `.lobby-carousel-board` custom-property block (`--lobby-next-x`,
+    `--lobby-side-scale`, `--lobby-next-rotation`, `--lobby-incoming-next-x`,
+    `--lobby-incoming-scale`, `--lobby-incoming-next-rotation`, plus the
+    `--lobby-prev-*` set, `transform-origin`, `will-change`) merged into the
+    module's `.carouselBoard` rule. Custom properties are not renamed by CSS
+    Modules, so the JS `readLayoutFromSample` / `slotWidthPx` reads still work.
+  - The podium cross-fade `@keyframes lobbyPodiumFade` + `.lobby-podium-fade-in`
+    moved as component-owned `@keyframes podiumFade` + `.podiumFadeIn`.
+- Updated `LobbyBoardCarousel.tsx`: dropped the dead `lobby-carousel-section`,
+  `lobby-carousel-viewport`, `lobby-carousel-board`, and
+  `lobby-carousel-board-image` classes (no global rules existed for them — the
+  module classes already carried the styling); `lobby-podium-fade-in` →
+  `styles.podiumFadeIn`; and the two `querySelector(".lobby-carousel-board")`
+  calls now query `` `.${styles.carouselBoard}` `` so the JS still reads the
+  layout custom props off the board element.
+- Removed only the live rules from `index.css` (the `.lobby-carousel-board`
+  custom-props block and the podium-fade keyframe + rule). Left as dead legacy
+  (no TSX consumer): the `[data-slot]` / `[data-motion]` board rules and the
+  `lobby-board-*-*` keyframes (the component drives transforms via inline
+  `style`, not `data-slot`), `.lobby-carousel-viewport[data-dragging]`, and
+  `.lobby-podium-fade-out` + `lobbyPodiumFadeOut`.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b
+  apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
+  `git diff --check`. Built CSS confirms `.carouselBoard` carries the custom
+  props and `.podiumFadeIn` is emitted. Browser/manual visual checks remain
+  pending.
+
+#### S12/S13 reviewer remediation
+
+- **p1 (regression):** the migrated `.bottomNavSlot img` descendant rules were
+  emitted after `HourlyBonusWidget.module.css`, so they overrode the hourly
+  wheel's own `.image img` sizing/shadow/hover styling (the wheel lives inside
+  the nav's center slot). Scoped the nav icon styling to a dedicated
+  `navItemImage` class on the direct nav item images (locked + button slots)
+  instead of all descendant imgs; the hourly widget's img does not carry that
+  class, so it is isolated again. This also satisfies the "name descendants
+  directly" rule.
+- **p2:** `.navBadge` now `composes: textWhite` from `styles/shared.module.css`
+  instead of duplicating `color: white`.
+- **p3:** corrected the stale `index.css` comment that claimed the carousel
+  slide-position custom properties stayed global; they now live on
+  `.carouselBoard` in the module, and only the dead data-slot animation states
+  + keyframes remain global.
+- Re-verified: lint, `tsc -b`, `npm run build`, `git diff --check` all pass;
+  built CSS confirms no broad `.bottomNavSlot img` rule remains, `navItemImage`
+  is emitted, and the hourly `.image img` rules are intact.

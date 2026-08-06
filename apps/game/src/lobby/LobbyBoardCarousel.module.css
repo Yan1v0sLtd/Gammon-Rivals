@@ -137,6 +137,20 @@
    baseline) because a fixed px term is a different fraction of the scaled
    stage at each resolution and made the board <-> podium gap drift. */
 .carouselBoard {
+  /* Layout geometry consumed by the JS-driven transforms (readLayoutFromSample
+     reads these off the board element via getComputedStyle). */
+  --lobby-prev-x: -50%;
+  --lobby-next-x: 50%;
+  --lobby-side-scale: 0.72;
+  --lobby-incoming-prev-x: -84%;
+  --lobby-incoming-next-x: 84%;
+  --lobby-incoming-scale: 0.64;
+  --lobby-prev-rotation: -6deg;
+  --lobby-next-rotation: 6deg;
+  --lobby-incoming-prev-rotation: -8deg;
+  --lobby-incoming-next-rotation: 8deg;
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
   position: absolute;
   left: 50%;
   top: auto;
@@ -157,6 +171,22 @@
   width: 100%;
   object-fit: contain;
   filter: drop-shadow(0 18px 16px rgba(0, 0, 0, 0.42));
+}
+
+/* Podium cross-fade: the newest layer fades in over the old one when the
+   podium image swaps (e.g. a board with a dedicated holder). Driven by
+   PodiumImage in LobbyBoardCarousel. */
+@keyframes podiumFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.podiumFadeIn {
+  animation: podiumFade 450ms ease forwards;
 }
 
 .namePillWrap {

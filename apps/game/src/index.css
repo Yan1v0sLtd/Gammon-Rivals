@@ -285,21 +285,6 @@ html, body, #root {
   opacity: 0;
 }
 
-.lobby-carousel-board {
-  --lobby-prev-x: -50%;
-  --lobby-next-x: 50%;
-  --lobby-side-scale: 0.72;
-  --lobby-incoming-prev-x: -84%;
-  --lobby-incoming-next-x: 84%;
-  --lobby-incoming-scale: 0.64;
-  --lobby-prev-rotation: -6deg;
-  --lobby-next-rotation: 6deg;
-  --lobby-incoming-prev-rotation: -8deg;
-  --lobby-incoming-next-rotation: 8deg;
-  transform-origin: center center;
-  will-change: transform, opacity, filter;
-}
-
 .lobby-carousel-board[data-slot='selected'] {
   z-index: 30;
   opacity: 1;
@@ -344,303 +329,6 @@ html, body, #root {
    as <PlayButton> (sized in container-query units, positioned by
    .lockPillWrap), so the class had no element left to match. */
 
-/* --- Lobby bottom navigator ---
-   Locks the bar to the painted background's natural 1889x231 aspect
-   ratio so it never stretches into a thin strip on wide viewports.
-   Icons render in identical-sized square boxes via object-fit:
-   contain, so a wide icon (Tournaments, 1.36 aspect) and a tall one
-   (Events, 0.82 aspect) read at the same visual scale. */
-.lobby-bottom-nav-shell {
-  position: fixed;
-  left: 50%;
-  bottom: max(0.5rem, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  z-index: 40;
-  display: block;
-  width: min(64.4vw, 56rem);
-  aspect-ratio: 1889 / 231;
-  padding-bottom: 0;
-  overflow: visible;
-  background: transparent;
-  border: 0;
-  isolation: isolate;
-}
-
-.lobby-bottom-nav-bar {
-  position: absolute;
-  inset: 0;
-  background-image: url('/lobby/nav/nav-bg.webp');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.lobby-bottom-nav-row {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  justify-items: center;
-  height: 100%;
-  padding: 0 clamp(0.7rem, 2.1vw, 2.1rem);
-}
-
-.lobby-bottom-nav-slot {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  min-width: 0;
-  padding: 0;
-  background: none;
-  border: 0;
-  cursor: pointer;
-  color: inherit;
-  font: inherit;
-  transition: filter 160ms ease, transform 160ms ease;
-}
-
-.lobby-bottom-nav-slot.is-placeholder {
-  cursor: default;
-}
-
-.lobby-bottom-nav-slot img {
-  display: block;
-  /* Height-based sizing keeps every icon visually the same vertical
-     scale — the source webps are all ~613 px tall but vary in width,
-     so a square box made Tournaments (widest aspect) read as smaller.
-     Width auto + max-width: 100% lets each icon's natural aspect drive
-     its horizontal footprint. Size is 20 % larger than the previous
-     1.82–3.08 rem range. */
-  width: auto;
-  height: clamp(2.2rem, 3.86vw, 3.7rem);
-  max-width: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0.17rem 0.31rem rgba(0, 0, 0, 0.55));
-  pointer-events: none;
-  user-select: none;
-}
-
-.lobby-bottom-nav-slot:not(.is-placeholder):hover img {
-  filter: drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.6rem rgba(255, 196, 78, 0.45));
-}
-
-.lobby-bottom-nav-slot:not(.is-placeholder):active {
-  transform: translateY(1px);
-}
-
-/* Level-locked feature slot. The feature icon dims; a bare gold padlock (no
-   circular badge) sits over it. Tapping the lock wiggles it and pops a
-   gold-rimmed tooltip ABOVE it ("Reach level N to unlock") with a downward
-   pointer and a jelly stretch; it collapses on an outside tap. The tooltip
-   TEXT matches the board carousel pill (Segoe UI / gold) — see .gr-unlock-text.
-   Markup: NavFeatureLock in LobbyBottomNav.tsx. */
-.lobby-bottom-nav-slot.is-locked > img {
-  opacity: 0.4;
-  filter: grayscale(0.55) brightness(0.85);
-}
-
-/* Centered over the slot; tall z so the pop-up tooltip clears neighbours. */
-.lobby-nav-lock-wrap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 2.25rem;
-  height: 2.25rem;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-}
-
-/* Bare padlock button — no circle, just the gold lock glyph. */
-.lobby-nav-lock {
-  position: relative;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.lobby-nav-lock-icon {
-  width: 1.9rem;
-  height: 1.9rem;
-  display: block;
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35)) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 6px rgba(255, 211, 75, 0.38));
-  /* Settle on mount / when the tooltip closes. */
-  animation: lobby-nav-lock-settle 0.5s ease-out forwards;
-}
-
-.lobby-nav-lock-wrap.is-open .lobby-nav-lock-icon {
-  animation: lobby-nav-lock-wiggle 0.5s ease-out forwards;
-}
-
-/* Gold-rimmed dark tooltip bubble that flies up above the lock. */
-.lobby-nav-lock-tip {
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 50%;
-  /* Auto-size to the text: short copy ("Coming soon") gives a narrow pill,
-     longer copy ("Reach level N to unlock") a wider one. Padding sets the
-     horizontal breathing room; min/max keep it sane at the extremes. */
-  width: max-content;
-  min-width: 3.5rem;
-  max-width: min(80vw, 18rem);
-  height: 2.1rem;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: translateX(-50%);
-  background: radial-gradient(circle at 50% 35%, #202020 0%, #101010 58%, #050505 100%);
-  box-shadow: 0 0 0 1px #c99629,
-  inset 0 2px 8px rgba(255, 255, 255, 0.08),
-  inset 0 -7px 12px rgba(0, 0, 0, 0.72),
-  0 10px 25px rgba(0, 0, 0, 0.45);
-  white-space: nowrap;
-  pointer-events: none;
-  transition: opacity 0.15s ease-in, top 0.15s ease-in;
-}
-
-/* Downward pointer diamond. */
-.lobby-nav-lock-tip::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -5px;
-  width: 12px;
-  height: 12px;
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 3px;
-  background: #101010;
-  box-shadow: 1px 1px 0 0 #c99629;
-}
-
-/* Tooltip text — matches the board carousel pill (Segoe UI inherited, gold). */
-.lobby-nav-lock-tip span {
-  position: relative;
-  z-index: 2;
-  opacity: 0;
-  transform: translateY(6px);
-  font-size: 0.79rem;
-  font-weight: 700;
-  letter-spacing: 0.009em;
-  color: #ffe98b;
-  text-shadow: 0 0.045em 0 #7a4f0c,
-  0 0.091em 0.318em rgba(255, 216, 91, 0.38),
-  0 0.182em 0.455em rgba(0, 0, 0, 0.75);
-  transition: opacity 0.25s ease 0.35s, transform 0.25s ease 0.35s;
-}
-
-.lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip {
-  top: -3.4rem;
-  opacity: 1;
-  animation: lobby-nav-lock-stretch 1s ease-out forwards 0.15s;
-}
-
-.lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip span {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-@keyframes lobby-nav-lock-wiggle {
-  0% {
-    transform: rotate(0) scale(1);
-  }
-  20% {
-    transform: rotate(8deg) scale(0.93);
-  }
-  55% {
-    transform: rotate(-5deg) scale(0.97);
-  }
-  80% {
-    transform: rotate(3deg) scale(0.94);
-  }
-  100% {
-    transform: rotate(0) scale(0.95);
-  }
-}
-
-@keyframes lobby-nav-lock-settle {
-  0% {
-    transform: rotate(0) scale(0.95);
-  }
-  20% {
-    transform: rotate(-8deg);
-  }
-  55% {
-    transform: rotate(5deg);
-  }
-  80% {
-    transform: rotate(-3deg);
-  }
-  100% {
-    transform: rotate(0) scale(1);
-  }
-}
-
-@keyframes lobby-nav-lock-stretch {
-  0% {
-    transform: translateX(-50%) scale(1, 1);
-  }
-  10% {
-    transform: translateX(-50%) scale(1.1, 0.9);
-  }
-  30% {
-    transform: translateX(-50%) scale(0.9, 1.1);
-  }
-  50% {
-    transform: translateX(-50%) scale(1.05, 0.95);
-  }
-  100% {
-    transform: translateX(-50%) scale(1, 1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lobby-nav-lock-icon,
-  .lobby-nav-lock-wrap.is-open .lobby-nav-lock-icon,
-  .lobby-nav-lock-wrap.is-open .lobby-nav-lock-tip {
-    animation-duration: 1ms;
-  }
-}
-
-.lobby-nav-badge {
-  position: absolute;
-  top: 0.2rem;
-  right: 23%;
-  min-width: 1.45rem;
-  border-radius: 9999px;
-  background: #df3131;
-  color: white;
-  font: 900 0.82rem / 1 "Segoe UI", sans-serif;
-  padding: 0.2rem 0.36rem;
-  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.45);
-}
-
-/* ============================================================
-   Hourly bonus widget — lives in the navigator's middle slot.
-   Stack: wheel graphic on top, pill underneath. The graphic
-   pokes ABOVE the nav bar (negative top offset) so it reads as
-   a feature, not as a flat icon in line with the others.
-   ============================================================ */
-.lobby-bottom-nav-slot--hourly {
-  position: relative;
-  overflow: visible;
-}
 
 
 
@@ -1105,31 +793,16 @@ html, body, #root {
   transform: translateY(calc(-12 * var(--lobby-u)));
 }
 
-/* Section / viewport / board box geometry lives in
-   LobbyBoardCarousel.module.css; the slide-position custom properties and the
-   data-slot animation states stay global with the @keyframes that reference
-   them (single .lobby-carousel-board block further up). */
+/* Section / viewport / board box geometry and the slide-position custom
+   properties live in LobbyBoardCarousel.module.css (.carouselBoard). The
+   data-slot animation states below are dead legacy (the component drives
+   transforms via inline style, not data-slot) and stay global with the
+   @keyframes that reference them. */
 
 /* Podium sizing/position lives in LobbyBoardCarousel.module.css (.podiumImage).
    It used to be here, keyed on the Tailwind `pointer-events-none` utility that
    happened to sit on the <img> — a hook that silently died when the class list
    moved into the CSS module, taking the whole stand with it. */
-
-/* Podium cross-fade: the newest layer fades in over the old one when the
-   podium image swaps (e.g. a board with a dedicated holder). Driven by
-   PodiumImage in LobbyBoardCarousel. */
-@keyframes lobbyPodiumFade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.lobby-podium-fade-in {
-  animation: lobbyPodiumFade 450ms ease forwards;
-}
 
 /* NOTE: .lobby-podium-fade-out is no longer applied — the outgoing podium
    stays fully opaque under the fading-in one (see PodiumImage in
@@ -1171,23 +844,6 @@ html, body, #root {
 
 
 
-.lobby-bottom-nav-shell {
-  /* Width-only override; aspect-ratio (from the base rule) handles
-     height so the painted bar stays in its 1889:231 proportions. */
-  position: absolute;
-  left: 50%;
-  bottom: calc(15 * var(--lobby-u));
-  top: auto;
-  z-index: 35;
-  /* -15% (1099 -> 934): smaller navigator frees vertical room for the
-     board and de-emphasises it vs. the hero. Kept above ~900u so the
-     five slots stay comfortable tap targets on mobile. */
-  width: calc(934 * var(--lobby-u));
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  transform: translateX(-50%);
-}
 
 .lobby-bottom-nav-item:not(:first-child)::before {
   top: calc(25 * var(--lobby-u));
@@ -1227,13 +883,6 @@ html, body, #root {
   font-size: calc(18 * var(--lobby-u));
 }
 
-.lobby-nav-badge {
-  top: calc(11 * var(--lobby-u));
-  right: 24%;
-  min-width: calc(24 * var(--lobby-u));
-  padding: calc(4 * var(--lobby-u)) calc(7 * var(--lobby-u));
-  font-size: calc(16 * var(--lobby-u));
-}
 
 /* end unified lobby layout block */
 
@@ -1316,13 +965,6 @@ html, body, #root {
 
   .lobby-profile-progress-text {
     display: none;
-  }
-
-  .lobby-bottom-nav-shell {
-    width: calc(100% - 0.65rem);
-    min-height: 5.55rem;
-    padding-left: 0.55rem;
-    padding-right: 0.55rem;
   }
 
   .lobby-bottom-nav-frame {

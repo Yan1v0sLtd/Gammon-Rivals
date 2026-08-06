@@ -1,0 +1,311 @@
+/* Wood-bar navigator pinned to the bottom of the lobby stage. Locks the bar
+   to the painted background's natural 1889x231 aspect ratio so it never
+   stretches into a thin strip on wide viewports. Icons render in
+   identical-sized square boxes via object-fit: contain, so a wide icon
+   (Tournaments, 1.36 aspect) and a tall one (Events, 0.82 aspect) read at the
+   same visual scale. */
+.bottomNavShell {
+  /* Width-only override from the unified --lobby-u layout: the base
+     aspect-ratio (from the rule below) handles height so the painted bar
+     stays in its 1889:231 proportions. */
+  position: absolute;
+  left: 50%;
+  bottom: calc(15 * var(--lobby-u));
+  top: auto;
+  transform: translateX(-50%);
+  z-index: 35;
+  display: block;
+  /* -15% (1099 -> 934): smaller navigator frees vertical room for the
+     board and de-emphasises it vs. the hero. Kept above ~900u so the
+     five slots stay comfortable tap targets on mobile. */
+  width: calc(934 * var(--lobby-u));
+  aspect-ratio: 1889 / 231;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  isolation: isolate;
+}
+
+.bottomNavBar {
+  position: absolute;
+  inset: 0;
+  background-image: url('/lobby/nav/nav-bg.webp');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bottomNavRow {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: center;
+  justify-items: center;
+  height: 100%;
+  padding: 0 clamp(0.7rem, 2.1vw, 2.1rem);
+}
+
+.bottomNavSlot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.bottomNavSlot.isPlaceholder {
+  cursor: default;
+}
+
+.navItemImage {
+  display: block;
+  /* Height-based sizing keeps every icon visually the same vertical
+     scale — the source webps are all ~613 px tall but vary in width,
+     so a square box made Tournaments (widest aspect) read as smaller.
+     Width auto + max-width: 100% lets each icon's natural aspect drive
+     its horizontal footprint. Size is 20 % larger than the previous
+     1.82–3.08 rem range. */
+  width: auto;
+  height: clamp(2.2rem, 3.86vw, 3.7rem);
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0.17rem 0.31rem rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+  user-select: none;
+}
+
+.bottomNavSlot:not(.isPlaceholder):hover .navItemImage {
+  filter: drop-shadow(0 0.25rem 0.45rem rgba(0, 0, 0, 0.55)) drop-shadow(0 0 0.6rem rgba(255, 196, 78, 0.45));
+}
+
+.bottomNavSlot:not(.isPlaceholder):active {
+  transform: translateY(1px);
+}
+
+/* Level-locked feature slot. The feature icon dims; a bare gold padlock (no
+   circular badge) sits over it. Tapping the lock wiggles it and pops a
+   gold-rimmed tooltip ABOVE it ("Reach level N to unlock") with a downward
+   pointer and a jelly stretch; it collapses on an outside tap. The tooltip
+   TEXT matches the board carousel pill (Segoe UI / gold). */
+.bottomNavSlot.isLocked .navItemImage {
+  opacity: 0.4;
+  filter: grayscale(0.55) brightness(0.85);
+}
+
+/* Centered over the slot; tall z so the pop-up tooltip clears neighbours. */
+.navLockWrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+}
+
+/* Bare padlock button — no circle, just the gold lock glyph. */
+.navLock {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navLockIcon {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: block;
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.35)) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 6px rgba(255, 211, 75, 0.38));
+  /* Settle on mount / when the tooltip closes. */
+  animation: navLockSettle 0.5s ease-out forwards;
+}
+
+.navLockWrap.isOpen .navLockIcon {
+  animation: navLockWiggle 0.5s ease-out forwards;
+}
+
+/* Gold-rimmed dark tooltip bubble that flies up above the lock. */
+.navLockTip {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 50%;
+  /* Auto-size to the text: short copy ("Coming soon") gives a narrow pill,
+     longer copy ("Reach level N to unlock") a wider one. Padding sets the
+     horizontal breathing room; min/max keep it sane at the extremes. */
+  width: max-content;
+  min-width: 3.5rem;
+  max-width: min(80vw, 18rem);
+  height: 2.1rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateX(-50%);
+  background: radial-gradient(circle at 50% 35%, #202020 0%, #101010 58%, #050505 100%);
+  box-shadow: 0 0 0 1px #c99629,
+  inset 0 2px 8px rgba(255, 255, 255, 0.08),
+  inset 0 -7px 12px rgba(0, 0, 0, 0.72),
+  0 10px 25px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.15s ease-in, top 0.15s ease-in;
+}
+
+/* Downward pointer diamond. */
+.navLockTip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px;
+  background: #101010;
+  box-shadow: 1px 1px 0 0 #c99629;
+}
+
+/* Tooltip text — matches the board carousel pill (Segoe UI inherited, gold). */
+.navLockTip span {
+  position: relative;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(6px);
+  font-size: 0.79rem;
+  font-weight: 700;
+  letter-spacing: 0.009em;
+  color: #ffe98b;
+  text-shadow: 0 0.045em 0 #7a4f0c,
+  0 0.091em 0.318em rgba(255, 216, 91, 0.38),
+  0 0.182em 0.455em rgba(0, 0, 0, 0.75);
+  transition: opacity 0.25s ease 0.35s, transform 0.25s ease 0.35s;
+}
+
+.navLockWrap.isOpen .navLockTip {
+  top: -3.4rem;
+  opacity: 1;
+  animation: navLockStretch 1s ease-out forwards 0.15s;
+}
+
+.navLockWrap.isOpen .navLockTip span {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes navLockWiggle {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  20% {
+    transform: rotate(8deg) scale(0.93);
+  }
+  55% {
+    transform: rotate(-5deg) scale(0.97);
+  }
+  80% {
+    transform: rotate(3deg) scale(0.94);
+  }
+  100% {
+    transform: rotate(0) scale(0.95);
+  }
+}
+
+@keyframes navLockSettle {
+  0% {
+    transform: rotate(0) scale(0.95);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  55% {
+    transform: rotate(5deg);
+  }
+  80% {
+    transform: rotate(-3deg);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
+}
+
+@keyframes navLockStretch {
+  0% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+  10% {
+    transform: translateX(-50%) scale(1.1, 0.9);
+  }
+  30% {
+    transform: translateX(-50%) scale(0.9, 1.1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.05, 0.95);
+  }
+  100% {
+    transform: translateX(-50%) scale(1, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navLockIcon,
+  .navLockWrap.isOpen .navLockIcon,
+  .navLockWrap.isOpen .navLockTip {
+    animation-duration: 1ms;
+  }
+}
+
+.navBadge {
+  composes: textWhite from "../styles/shared.module.css";
+  position: absolute;
+  top: calc(11 * var(--lobby-u));
+  right: 24%;
+  min-width: calc(24 * var(--lobby-u));
+  border-radius: 9999px;
+  background: #df3131;
+  font: 900 0.82rem / 1 "Segoe UI", sans-serif;
+  font-size: calc(16 * var(--lobby-u));
+  padding: calc(4 * var(--lobby-u)) calc(7 * var(--lobby-u));
+  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.45);
+}
+
+/* Hourly-bonus slot — the wheel graphic pokes ABOVE the nav bar (negative
+   top offset) so it reads as a feature, not a flat icon in line with the
+   others. */
+.bottomNavSlotHourly {
+  position: relative;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .bottomNavShell {
+    width: calc(100% - 0.65rem);
+    min-height: 5.55rem;
+    padding-left: 0.55rem;
+    padding-right: 0.55rem;
+  }
+}

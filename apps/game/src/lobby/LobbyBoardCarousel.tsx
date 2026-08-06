@@ -12,7 +12,7 @@ import {useActivePodium} from "./useActivePodium"
  * Renders the lobby podium with a cross-fade when its image changes (e.g.
  * scrolling to a board that has its own holder image). The new image is
  * stacked on top and fades in over the previous one
- * (.lobby-podium-fade-in), then the old layer is pruned. Every layer gets
+ * (.podiumFadeIn), then the old layer is pruned. Every layer gets
  * .podiumImage so size, position and ground shadow apply to all of them.
  */
 function PodiumImage({src}: {readonly src: string}) {
@@ -39,7 +39,7 @@ function PodiumImage({src}: {readonly src: string}) {
       // out simultaneously — a "true" cross-fade — but two half-opaque
       // layers only cover ~75% at the midpoint, so the background dipped
       // through the podium: visible flicker on every board switch.)
-      const fadeClass = animating && isNewest ? " lobby-podium-fade-in" : ""
+      const fadeClass = animating && isNewest ? ` ${styles.podiumFadeIn}` : ""
       return (<img
         key={layer.id}
         alt=""
@@ -89,7 +89,7 @@ const COMMIT_THRESHOLD_VELOCITY = 0.0018
 // produced when transitioning.
 const RENDER_RADIUS = 2
 
-// Fallback layout (matches the base .lobby-carousel-board CSS vars). Used
+// Fallback layout (matches the base .carouselBoard CSS vars). Used
 // before we've measured the actual values from CSS, and as a safety net if
 // a custom property comes back as NaN.
 type Layout = {
@@ -326,13 +326,13 @@ export function LobbyBoardCarousel({
 
   //
   // The slot positions / scales / rotations live in responsive CSS rules on
-  // .lobby-carousel-board. We mirror them into state so the JS-driven
+  // .carouselBoard. We mirror them into state so the JS-driven
   // transforms match the breakpoint that's currently active.
   useLayoutEffect(() => {
     const node = viewportRef.current
     if (!node) return
     const measure = () => {
-      const sample = node.querySelector<HTMLElement>(".lobby-carousel-board")
+      const sample = node.querySelector<HTMLElement>(`.${styles.carouselBoard}`)
       const next = readLayoutFromSample(sample)
       setLayout((prev) => (layoutsEqual(prev, next) ? prev : next))
     }
@@ -384,7 +384,7 @@ export function LobbyBoardCarousel({
     // the viewport's — so a 1:1 finger-to-board-movement ratio requires
     // dividing finger pixels by the board's natural (untransformed) width
     // times slotX/100. offsetWidth ignores transform: scale().
-    const sample = node.querySelector<HTMLElement>(".lobby-carousel-board")
+    const sample = node.querySelector<HTMLElement>(`.${styles.carouselBoard}`)
     const boardWidthPx = sample?.offsetWidth ?? node.clientWidth * 0.6
     return Math.max(40, (boardWidthPx * layout.slotX) / 100)
   }, [layout.slotX])
@@ -500,10 +500,10 @@ export function LobbyBoardCarousel({
   // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
     return (<div
-      className={`lobby-carousel-section ${styles.carouselSectionEmpty}`}>
+      className={styles.carouselSectionEmpty}>
       <div
         ref={viewportRef}
-        className={`lobby-carousel-viewport ${styles.carouselViewportEmpty}`}>
+        className={styles.carouselViewportEmpty}>
         <p className={styles.carouselEmptyText}>
           Loading boards…
         </p>
@@ -549,10 +549,10 @@ export function LobbyBoardCarousel({
   // The pill / lock overlay logic for locked/purchasable boards
   // still uses getBoardState(board) inside the loop.
 
-  return (<div className={`lobby-carousel-section ${styles.carouselSection}`}>
+  return (<div className={styles.carouselSection}>
     <div
       ref={viewportRef}
-      className={`lobby-carousel-viewport ${styles.carouselViewport}`}
+      className={styles.carouselViewport}
       data-dragging={isDragging ? "true" : "false"}
       onPointerCancel={handlePointerEnd}
       onPointerDown={handlePointerDown}
@@ -587,13 +587,13 @@ export function LobbyBoardCarousel({
           const style = boardTransform(d, layout)
           return (<div
             key={key}
-            className={`lobby-carousel-board ${styles.carouselBoard}`}
+            className={styles.carouselBoard}
             data-board-signed-idx={signedIdx}
             data-state={state}
             style={style}>
             <img
               alt={isCenter ? `${board.name} board preview` : ""}
-              className={`lobby-carousel-board-image ${styles.carouselBoardImage}`}
+              className={styles.carouselBoardImage}
               draggable={false}
               src={board.image}/>
             {showLock ? (// Expandable lock pill. Collapsed size tracks the old
