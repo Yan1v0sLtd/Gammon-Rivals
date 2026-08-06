@@ -283,20 +283,20 @@ export function PlayOnline() {
 
   if (authLoading || loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center text-board-felt/60">
+      <div className="min-h-screen flex items-center justify-center text-board-felt/60">
         Loading…
-      </main>
+      </div>
     )
   }
 
   if (error) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center text-rose-400 gap-3 p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center text-rose-400 gap-3 p-6">
         <div>Error: {error}</div>
         <Link
           className="text-board-accent text-sm"
           to="/play">← Home</Link>
-      </main>
+      </div>
     )
   }
 
@@ -309,7 +309,7 @@ export function PlayOnline() {
 
   if (waiting) {
     return (
-      <main className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
+      <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
         <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
           <Link
             className="text-board-accent text-sm"
@@ -335,7 +335,7 @@ export function PlayOnline() {
             </button>
           )}
         </div>
-      </main>
+      </div>
     )
   }
 

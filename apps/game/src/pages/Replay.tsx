@@ -61,18 +61,18 @@ export function Replay() {
   const {theme: selectedTheme} = useBoardThemeConfig(boardParam)
 
   if (error) {
-    return (<main className="min-h-screen flex flex-col items-center justify-center text-board-felt/70 gap-4">
+    return (<div className="min-h-screen flex flex-col items-center justify-center text-board-felt/70 gap-4">
       <div>Could not load replay: {error.message}</div>
       <Link
         className="text-board-accent"
         to="/profile">← Back</Link>
-    </main>)
+    </div>)
   }
 
   if (isLoading || !data || !currentBoard) {
-    return (<main className="min-h-screen flex items-center justify-center text-board-felt/60">
+    return (<div className="min-h-screen flex items-center justify-center text-board-felt/60">
       Loading replay…
-    </main>)
+    </div>)
   }
 
   const turnDescription = clampedPly === 0 ? "starting position" : describeTurn(data.moves[clampedPly - 1])
@@ -80,7 +80,7 @@ export function Replay() {
   const modeLabel = MODE_LABEL[data.match.mode] ?? data.match.mode
   const winnerLine = data.game.winner ? `${data.game.winner} ${data.game.dropped_double ? "wins by drop" : data.game.win_type ?? "wins"} +${data.game.points_awarded}` : "unfinished"
 
-  return (<main className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
+  return (<div className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
     <header className="flex items-center justify-between px-4 py-2 text-board-felt/80 gap-3">
       <Link
         className="text-board-accent text-sm"
@@ -170,5 +170,5 @@ export function Replay() {
         </button>
       </div>
     </div>
-  </main>)
+  </div>)
 }

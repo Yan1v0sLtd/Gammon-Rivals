@@ -332,7 +332,7 @@ export function LobbyScreen() {
     if (offerId === "daily") dispatch(lobbyActions.dailyBonusModalOpened()); else if (offerId === "coins") openShop(); else if (offerId === "connect") dispatch(lobbyActions.howToPlayModalOpened())
   }
 
-  return (<main className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
+  return (<div className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
     {/* Keys are the BOARD id (not the role) so a board switching from
           entering→leaving keeps its DOM element — its already-painted img
           never remounts/re-decodes (the old remount was the mobile dark
@@ -429,5 +429,5 @@ export function LobbyScreen() {
           (balances loaded, board rendered) so the spotlight never lands on a
           skeleton. Gated to brand-new players via profiles.tutorial_completed_at. */}
     {lobbyReady && tourPending ? <OnboardingTour onDone={handleTourDone}/> : null}
-  </main>)
+  </div>)
 }

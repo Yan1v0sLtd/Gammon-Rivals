@@ -499,7 +499,7 @@ export function LobbyBoardCarousel({
 
   // Empty placeholder (e.g. while Back Office query resolves).
   if (boards.length === 0) {
-    return (<section
+    return (<div
       className={`lobby-carousel-section ${styles.carouselSectionEmpty}`}>
       <div
         ref={viewportRef}
@@ -508,7 +508,7 @@ export function LobbyBoardCarousel({
           Loading boards…
         </p>
       </div>
-    </section>)
+    </div>)
   }
 
   // Build the list of rendered boards (signed index, distance from center).
@@ -549,7 +549,7 @@ export function LobbyBoardCarousel({
   // The pill / lock overlay logic for locked/purchasable boards
   // still uses getBoardState(board) inside the loop.
 
-  return (<section className={`lobby-carousel-section ${styles.carouselSection}`}>
+  return (<div className={`lobby-carousel-section ${styles.carouselSection}`}>
     <div
       ref={viewportRef}
       className={`lobby-carousel-viewport ${styles.carouselViewport}`}
@@ -703,5 +703,5 @@ export function LobbyBoardCarousel({
             into the exact same position. */}
 
     </div>
-  </section>)
+  </div>)
 }

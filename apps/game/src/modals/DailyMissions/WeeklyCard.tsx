@@ -29,7 +29,7 @@ export function WeeklyCard({
   const isActive = !isCompleted && !isClaimed
   const pct = Math.min(100, Math.round((mission.progress / Math.max(1, mission.resolved_goal)) * 100))
   return (
-    <article className={`${styles.weeklyCard} ${rarityClass[mission.rarity]}`}>
+    <div className={`${styles.weeklyCard} ${rarityClass[mission.rarity]}`}>
       <div className={styles.weeklyBadge}>
         <img
           alt={`${mission.rarity} mission`}
@@ -108,6 +108,6 @@ export function WeeklyCard({
           {isClaiming ? "…" : "Claim"}
         </button>
       )}
-    </article>
+    </div>
   )
 }

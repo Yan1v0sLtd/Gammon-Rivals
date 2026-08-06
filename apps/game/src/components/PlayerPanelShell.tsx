@@ -27,7 +27,7 @@ export const PlayerPanelShell = memo(function PlayerPanelShell({
     return (
       <aside
         className={`game-player-panel game-player-panel--${side} ${turnClass}`}>
-        <section className="game-player-card">
+        <div className="game-player-card">
           <div className="game-player-card-glow"/>
           <div className="game-player-top">
             {identity}
@@ -43,7 +43,7 @@ export const PlayerPanelShell = memo(function PlayerPanelShell({
           </div>
 
           {timer}
-        </section>
+        </div>
         {bottomSlot && <div className="game-panel-bottom">{bottomSlot}</div>}
       </aside>
     )

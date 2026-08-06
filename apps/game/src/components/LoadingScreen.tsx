@@ -25,7 +25,7 @@ export const LoadingScreen: FC<Props> = ({
 }) => {
   const pct = typeof progress === "number" ? Math.round(Math.max(0, Math.min(1, progress)) * 100) : null
 
-  return (<main
+  return (<div
     aria-busy="true"
     aria-label={pct !== null ? `${label} ${pct}%` : label}
     aria-live="polite"
@@ -66,5 +66,5 @@ export const LoadingScreen: FC<Props> = ({
         </div>
       </div>
     </div>
-  </main>)
+  </div>)
 }

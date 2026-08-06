@@ -59,7 +59,7 @@ export function ProfileMatchHistory() {
   // wrapper applied around .profile-history-list in the JSX below.
   const visibleMatches = matches ?? null
 
-  return (<section className={styles.profileHistoryPanel}>
+  return (<div className={styles.profileHistoryPanel}>
     <h2>Match History</h2>
     {historyError && (<div className={`${styles.profilePanelMessage} ${styles.profilePanelMessageError}`}>
       {errorMessage(historyError)}
@@ -114,5 +114,5 @@ export function ProfileMatchHistory() {
           })}
         </ul>
       </div>)}
-  </section>)
+  </div>)
 }

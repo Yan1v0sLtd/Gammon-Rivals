@@ -228,7 +228,7 @@ export function DailyMissionsModal({
           transform: `scale(${scale})`,
           transformOrigin: "center",
         }}>
-        <main
+        <div
           aria-label="Daily Missions"
           className={styles.screen}>
           <header className={styles.topbar}>
@@ -244,12 +244,12 @@ export function DailyMissionsModal({
               <p className={styles.brandSubtitle}>Complete missions to earn epic rewards!</p>
             </div>
             <div className={styles.headerSpacer}/>
-            <section className={styles.refreshBox}>
+            <div className={styles.refreshBox}>
               <div>
                 <div className={styles.refreshLabel}>Refreshes in</div>
                 <div className={styles.refreshTime}>{formatCountdown(countdownMs)}</div>
               </div>
-            </section>
+            </div>
             <button
               aria-label="Close"
               className={styles.closeButton}
@@ -270,8 +270,8 @@ export function DailyMissionsModal({
 
           {isLoading && !state ? (<div className={styles.status}>Loading missions…</div>) : error ? (
             <div className={`${styles.status} ${styles.statusError}`}>{error}</div>) : !state ? (
-            <div className={styles.status}>No missions today.</div>) : (<section className={styles.content}>
-            <section className={`${styles.panel} ${styles.missionsPanel}`}>
+            <div className={styles.status}>No missions today.</div>) : (<div className={styles.content}>
+            <div className={`${styles.panel} ${styles.missionsPanel}`}>
               <div className={styles.missionList}>
                 {orderedDailies.map((m) => (<MissionCard
                   key={m.id}
@@ -319,7 +319,7 @@ export function DailyMissionsModal({
                   {claimableCount > 0 ? `Claim All (${claimableCount})` : "Claim All"}
                 </button>
               </div>
-            </section>
+            </div>
 
             <aside className={`${styles.panel} ${styles.tabsPanel}`}>
               <nav className={styles.tabs}>
@@ -341,7 +341,7 @@ export function DailyMissionsModal({
                 </button>
               </nav>
 
-              {tab === "daily" ? (<section className={styles.streakPanel}>
+              {tab === "daily" ? (<div className={styles.streakPanel}>
                 <div className={styles.streakHeader}>
                   <h2 className={styles.streakTitle}>Daily Streak</h2>
                   <div className={styles.streakDays}>
@@ -451,7 +451,7 @@ export function DailyMissionsModal({
                     <div>Don’t like a mission? Reroll it — the first one each day is free.</div>
                   </div>
                 </div>)}
-              </section>) : (<section className={`${styles.streakPanel} ${styles.weeklyTab}`}>
+              </div>) : (<div className={`${styles.streakPanel} ${styles.weeklyTab}`}>
                 {weeklies.length === 0 ? (<div className={styles.weeklyEmpty}>
                   <img
                     alt=""
@@ -465,10 +465,10 @@ export function DailyMissionsModal({
                   mission={m}
                   onClaim={(el) => handleClaim(m.id, el)}
                   onGo={onClose}/>)))}
-              </section>)}
+              </div>)}
             </aside>
-          </section>)}
-        </main>
+          </div>)}
+        </div>
       </div>
     </ScaleInModal>
 

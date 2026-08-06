@@ -43,7 +43,7 @@ export function ProfileStats() {
   const userId = useAppSelector(selectAuthUserId)
   const {data: stats} = useGetOwnerStatsQuery(userId ?? skipToken)
 
-  return (<section
+  return (<div
     aria-label="Player stats"
     className={styles.profileStatGrid}>
     <Stat
@@ -62,5 +62,5 @@ export function ProfileStats() {
       icon="hotseat"
       label="Hot-seat"
       value={stats?.hotseatPlayed ?? 0}/>
-  </section>)
+  </div>)
 }

@@ -88,7 +88,7 @@ function AuthScreen() {
     }
   }
 
-  return (<main className="relative grid min-h-dvh place-items-center overflow-hidden bg-[#071120] px-4 text-white">
+  return (<div className="relative grid min-h-dvh place-items-center overflow-hidden bg-[#071120] px-4 text-white">
     <img
       alt=""
       className="absolute inset-0 h-full w-full object-cover opacity-55 blur-sm scale-105"
@@ -97,7 +97,7 @@ function AuthScreen() {
     <div
       className="absolute inset-0 bg-[radial-gradient(circle_at_50%_15%,rgba(28,127,185,0.32),rgba(5,12,24,0.88)_62%,rgba(2,8,16,0.96))]"/>
 
-    <section
+    <div
       className="relative z-10 w-full max-w-md rounded-2xl border border-white/15 bg-[#101a2a]/88 p-6 shadow-2xl backdrop-blur-md">
       <div className="text-center">
         <div className="font-display text-xs font-black uppercase tracking-[0.42em] text-[#f6d770]">
@@ -151,8 +151,8 @@ function AuthScreen() {
         <div className="mt-4 rounded-lg border border-rose-300/25 bg-rose-950/45 px-3 py-2 text-xs text-rose-100">
           {error}
         </div>)}
-    </section>
-  </main>)
+    </div>
+  </div>)
 }
 
 export function AuthGate({children}: {readonly children: ReactNode}) {

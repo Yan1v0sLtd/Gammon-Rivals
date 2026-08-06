@@ -13,14 +13,14 @@ export function Profile() {
   const isLoading = useAppSelector(selectAuthInitializing)
 
   if (isLoading) {
-    return (<main className={`${styles.profilePage} ${styles.profilePageLoading}`}>
+    return (<div className={`${styles.profilePage} ${styles.profilePageLoading}`}>
       <div className={styles.profileLoadingText}>
         Loading
       </div>
-    </main>)
+    </div>)
   }
 
-  return (<main className={styles.profilePage}>
+  return (<div className={styles.profilePage}>
     <div className={styles.profileScreen}>
       <ProfileTopNav/>
 
@@ -46,5 +46,5 @@ export function Profile() {
         <ProfileMatchHistory/>
       </div>
     </div>
-  </main>)
+  </div>)
 }

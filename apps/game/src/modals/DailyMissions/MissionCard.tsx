@@ -39,7 +39,7 @@ export function MissionCard({
   const rerollFree = rerollCost === 0
 
   return (
-    <article className={`${styles.missionCard} ${rarityClass[mission.rarity]} ${isCompleted ? styles.missionCardComplete : ""}`}>
+    <div className={`${styles.missionCard} ${rarityClass[mission.rarity]} ${isCompleted ? styles.missionCardComplete : ""}`}>
       <div className={styles.missionBadge}>
         <img
           alt={`${mission.rarity} mission`}
@@ -159,6 +159,6 @@ export function MissionCard({
           )}
         </div>
       </div>
-    </article>
+    </div>
   )
 }

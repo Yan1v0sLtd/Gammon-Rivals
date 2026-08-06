@@ -107,13 +107,13 @@ export function AuthCallback() {
   }, [authCommand, navigate, params])
 
   if (!error) {
-    return (<main
+    return (<div
       aria-label="Completing sign-in"
       className="min-h-dvh bg-[#071120]"/>)
   }
 
-  return (<main className="grid min-h-dvh place-items-center bg-[#071120] px-4 text-white">
-    <section
+  return (<div className="grid min-h-dvh place-items-center bg-[#071120] px-4 text-white">
+    <div
       className="w-full max-w-md rounded-2xl border border-white/12 bg-[#101a2a]/88 p-6 text-center shadow-2xl">
       <div className="font-display text-xs font-black uppercase tracking-[0.42em] text-[#f6d770]">
         Gammon Rivals
@@ -127,6 +127,6 @@ export function AuthCallback() {
         to="/play">
         Back to lobby
       </Link>
-    </section>
-  </main>)
+    </div>
+  </div>)
 }

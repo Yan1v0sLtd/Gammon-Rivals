@@ -42,7 +42,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
         error,
         info,
       } = this.state
-      return (<main
+      return (<div
         className="min-h-screen bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt p-6 flex flex-col gap-4 overflow-auto">
         <div className="font-display text-2xl text-rose-300">
           Page crashed — please report this
@@ -75,7 +75,7 @@ export class RouteErrorBoundary extends Component<Props, State> {
             Reload page
           </button>
         </div>
-      </main>)
+      </div>)
     }
     return this.props.children
   }

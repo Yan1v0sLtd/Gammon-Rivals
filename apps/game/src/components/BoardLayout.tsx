@@ -38,7 +38,7 @@ export function BoardLayout({
   const isMobileLayout = useIsMobileLayout()
 
   return (
-    <main className="game-screen">
+    <div className="game-screen">
       {backgroundImage && (
         <img
           alt=""
@@ -80,6 +80,6 @@ export function BoardLayout({
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

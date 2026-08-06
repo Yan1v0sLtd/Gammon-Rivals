@@ -493,7 +493,7 @@ function BundleCard({
   bundle: Bundle, isBusy: boolean, bonusPercent: number, onBuy: () => void,
 }) {
   const onSale = bonusPercent > 0
-  return (<article
+  return (<div
     className="relative flex h-full min-h-[30rem] flex-1 flex-col overflow-hidden rounded-2xl border border-[#ffc93d]/85 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.35)]">
     {/* Title bar — optional. Hidden entirely when no header text is configured
           in the BO. Background/text colours are BO-overridable; unset falls back
@@ -557,7 +557,7 @@ function BundleCard({
           priceUsd={bundle.priceUsd}/>
       </button>
     </div>
-  </article>)
+  </div>)
 }
 
 function PackCard({
@@ -573,7 +573,7 @@ function PackCard({
   const base = pack.baseAmount
   const onSale = bonusPercent > 0 && base !== null
   const boosted = base !== null ? Math.round(base * (1 + bonusPercent / 100)) : null
-  return (<article
+  return (<div
     className="relative flex h-[18rem] flex-col overflow-hidden rounded-2xl border border-[#4a7ecc]/55 bg-gradient-to-b from-[#0c1e39] to-[#071326] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_16px_32px_rgba(0,0,0,0.25)]">
     {/* Title bar — optional. Hidden when no header text is configured; the
           card is a fixed-height flex column, so the body just fills the freed
@@ -618,7 +618,7 @@ function PackCard({
           priceUsd={pack.priceUsd}/>
       </button>
     </div>
-  </article>)
+  </div>)
 }
 
 function SectionTitle({
@@ -643,11 +643,11 @@ function ShopSkeleton() {
   return (<div
     aria-hidden="true"
     className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
-    <section className="flex flex-col">
+    <div className="flex flex-col">
       <SectionTitle compact>Featured Pack</SectionTitle>
       <div className="min-h-[30rem] flex-1 animate-pulse rounded-2xl border border-[#ffc93d]/20 bg-[#0c1e39]/60"/>
-    </section>
-    <section className="min-w-0">
+    </div>
+    <div className="min-w-0">
       <SectionTitle>Packs</SectionTitle>
       <div className="grid grid-cols-4 gap-6">
         {SHOP_SKELETON_KEYS.map((skeletonKey) => (
@@ -655,7 +655,7 @@ function ShopSkeleton() {
             key={skeletonKey}
             className="h-[18rem] animate-pulse rounded-2xl border border-[#4a7ecc]/25 bg-[#0c1e39]/60"/>))}
       </div>
-    </section>
+    </div>
   </div>)
 }
 
@@ -870,7 +870,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
       <div
         className="origin-center"
         style={{transform: `scale(${scale})`}}>
-        <main
+        <div
           className="relative isolate flex flex-col overflow-hidden rounded-[22px] border border-[#ffc93d]/40 text-[#f6f0df] shadow-[0_26px_70px_rgba(0,0,0,0.55)]"
           style={{width: PANEL_DESIGN_W}}>
           {/* ---- Liquid-glass surface (replaces the flat blue panel) ----
@@ -987,7 +987,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
             <ShopSkeleton/>) : (<div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
             {/* No divider; the column is a flex stack so the bundle below the
                   title stretches to the exact height of the two pack rows. */}
-            <section className="flex flex-col">
+            <div className="flex flex-col">
               <SectionTitle compact>Featured Pack</SectionTitle>
               {data.bundles.length > 0 ? (<div className="flex flex-1 flex-col">
                 {data.bundles.slice(0, 1).map((b) => (<BundleCard
@@ -1008,9 +1008,9 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                 className="grid flex-1 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
                 No featured packs yet.
               </div>)}
-            </section>
+            </div>
 
-            <section className="min-w-0">
+            <div className="min-w-0">
               <SectionTitle>Packs</SectionTitle>
               {data.packs.length > 0 ? (<div className="grid grid-cols-4 gap-6">
                 {data.packs.map((p) => (<PackCard
@@ -1031,12 +1031,12 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                 className="grid h-64 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
                 No packs available.
               </div>)}
-            </section>
+            </div>
           </div>)}
 
           {/* Live sale countdown — only when a running sale has a scheduled end. */}
           {contentReady && sale?.endsAt ? <SaleCountdown endsAt={sale.endsAt}/> : null}
-        </main>
+        </div>
       </div>
     </ScaleInModal>
 

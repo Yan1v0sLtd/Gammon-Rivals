@@ -2600,7 +2600,7 @@ export function Admin() {
     const title = accessState === "missing-config" ? "Supabase is not configured" : accessState === "migration-missing" ? "Back Office database is not ready" : needsGoogleSignIn ? "Back Office sign-in required" : accessState === "denied" ? "Admin access required" : "Checking admin access"
     const message = accessState === "migration-missing" ? "Apply the latest Back Office migration to add email-based admin access and the required management tables." : needsGoogleSignIn ? "Sign in with Google using an allowlisted admin email to unlock the Back Office." : accessState === "denied" ? "This Google account is not on the Back Office admin email list." : accessState === "missing-config" ? "Add the Supabase URL and publishable key to your local environment to use Back Office." : "One moment while the access check finishes."
 
-    return (<main className="min-h-screen bg-[#061225] text-white">
+    return (<div className="min-h-screen bg-[#061225] text-white">
       <div
         className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
         <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
@@ -2631,10 +2631,10 @@ export function Admin() {
             </div>)}
         </div>
       </div>
-    </main>)
+    </div>)
   }
 
-  return (<main className="min-h-screen bg-[#061225] text-white">
+  return (<div className="min-h-screen bg-[#061225] text-white">
     {confirmUI}
     <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
       <div className="flex items-center justify-between gap-4">
@@ -2663,7 +2663,7 @@ export function Admin() {
         </button>))}
       </aside>
 
-      <section className="min-w-0">
+      <div className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/35">
@@ -4351,7 +4351,7 @@ export function Admin() {
           {boards.length === 0 ? (
             <EmptyState text="No board themes yet. Use Populate Current Boards or Add Board to create one."/>) : (
             <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {boards.map((row) => (<article
+              {boards.map((row) => (<div
                 key={row.id}
                 className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-amber-200/45"
                 onClick={() => {
@@ -4419,7 +4419,7 @@ export function Admin() {
                     </div>
                   </div>
                 </div>
-              </article>))}
+              </div>))}
             </div>)}
 
           {boardEditorOpen && (
@@ -4713,7 +4713,7 @@ export function Admin() {
                       setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
                         ...r,
                         level,
-                      } : r)) 
+                      } : r))
                     }}/>
                 </div>
                 <Toggle
@@ -4723,7 +4723,7 @@ export function Admin() {
                     setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
                       ...r,
                       enabled,
-                    } : r)) 
+                    } : r))
                   }}/>
                 <div className="basis-full">
                   <Field
@@ -4734,7 +4734,7 @@ export function Admin() {
                       setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
                         ...r,
                         tooltip,
-                      } : r)) 
+                      } : r))
                     }}/>
                 </div>
                 <PrimaryButton
@@ -5472,9 +5472,9 @@ export function Admin() {
             </div>
           </div>
         </div>)}
-      </section>
+      </div>
     </div>
-  </main>)
+  </div>)
 }
 
 function ConfigTable({

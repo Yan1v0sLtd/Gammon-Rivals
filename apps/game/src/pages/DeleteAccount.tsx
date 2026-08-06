@@ -57,7 +57,7 @@ export function DeleteAccount() {
     }
   }
 
-  return (<main className="grid min-h-screen place-items-center bg-[#061225] px-4 py-10 text-white">
+  return (<div className="grid min-h-screen place-items-center bg-[#061225] px-4 py-10 text-white">
     <div
       className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 sm:p-8">
       <h1 className="text-2xl font-black tracking-tight">Delete your Gammon Rivals account</h1>
@@ -169,5 +169,5 @@ export function DeleteAccount() {
         </p>
       </>)}
     </div>
-  </main>)
+  </div>)
 }
