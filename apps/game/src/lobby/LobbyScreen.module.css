@@ -1,0 +1,112 @@
+/* LobbyScreen — the lobby route root: a full-viewport stage that centres the
+   scaled 1792x828 design canvas (.lobbyShell) and hosts the crossfading
+   background layers behind it. --lobby-u is the shared scaling unit consumed
+   by every lobby module. */
+
+.lobbyScreen {
+  composes: textWhite from "../styles/shared.module.css";
+  position: relative;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  display: grid;
+  place-items: center;
+  background-color: #071120;
+}
+
+.lobbyScreen::after {
+  display: none;
+}
+
+.lobbyShell {
+  --lobby-u: min(0.055804dvw, 0.120773dvh);
+  position: relative;
+  z-index: 10;
+  display: block;
+  width: calc(1792 * var(--lobby-u));
+  height: calc(828 * var(--lobby-u));
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+/* Full-viewport-width grid so the centre (board) column is centred to the
+   SCREEN. The two 1fr side columns are equal, so the fixed 1032u board column
+   always resolves to exactly 50dvw — the same axis the bottom nav and the top
+   balance pills sit on. minmax(0,1fr) (not bare 1fr) for the side columns so
+   they shrink equally and the board column is truly centred. */
+.lobbyMainGrid {
+  position: absolute;
+  left: 0;
+  top: calc(94 * var(--lobby-u));
+  z-index: 20;
+  display: grid;
+  width: 100%;
+  height: calc(490 * var(--lobby-u));
+  grid-template-columns: minmax(0, 1fr) calc(1032 * var(--lobby-u)) minmax(0, 1fr);
+  column-gap: calc(72 * var(--lobby-u));
+  align-items: start;
+  padding: 0;
+}
+
+.lobbyBoardRegion {
+  display: block;
+  width: calc(1032 * var(--lobby-u));
+  height: calc(490 * var(--lobby-u));
+  min-width: 0;
+  overflow: visible;
+  transform: translateY(calc(-12 * var(--lobby-u)));
+}
+
+/* One full-screen background layer. THE FLICKER RULE: the screen must be
+   covered by a fully-painted layer at every frame of a board switch. */
+.backgroundLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+.backgroundLayerEntering {
+  animation: backgroundFadeIn 520ms ease-out both;
+}
+
+/* Do NOT fade the outgoing board out — it stays fully opaque UNDERNEATH while
+   the new one fades in ON TOP (the entering layer is the later DOM element, so
+   it paints above at equal z-index). The screen is thus always fully covered. */
+.backgroundLayerLeaving {
+  opacity: 1;
+}
+
+.backgroundLayerCurrent {
+  opacity: 1;
+}
+
+/* An incoming board whose image hasn't DECODED yet. Waits invisible while the
+   previous board (fully opaque below) keeps covering the screen; once the image
+   is ready the class flips to --entering and the fade-in runs. */
+.backgroundLayerEnteringPending {
+  opacity: 0;
+}
+
+.backgroundImage {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.backgroundTone {
+  position: absolute;
+  inset: 0;
+}
+
+@keyframes backgroundFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

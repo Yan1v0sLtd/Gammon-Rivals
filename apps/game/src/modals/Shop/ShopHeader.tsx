@@ -28,10 +28,10 @@ export function ShopHeader({
     </h1>
     <div className={styles.headerRight}>
       {/* Same balance element as the lobby, with the real wallet. The lobby pill
-            sizes itself off `--lobby-u` (defined on .lobby-shell); outside the
-            lobby we scope a fixed unit + a definite height so it renders at the
-            right size — the same trick the profile page (.profile-top-currency)
-            uses. No "+" here — you're already in the shop. */}
+            sizes itself off `--lobby-u` (defined on .lobbyShell in
+            LobbyScreen.module.css); outside the lobby we scope a fixed unit +
+            a definite height so it renders at the right size — the same trick
+            the profile page (.profile-top-currency) uses. No "+" here — you're already in the shop. */}
       <div className={styles.currencyCluster}>
         <CurrencyPill
           flyTarget="coins"

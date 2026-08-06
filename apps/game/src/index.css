@@ -250,81 +250,6 @@ html, body, #root {
   display: none;
 }
 
-.lobby-background-layer {
-  pointer-events: none;
-  will-change: opacity;
-}
-
-.lobby-background-layer--entering {
-  animation: lobby-background-fade-in 520ms ease-out both;
-}
-
-.lobby-background-layer--leaving {
-  /* Do NOT fade the outgoing board out. Crossfading BOTH layers dipped their
-     combined opacity below 1 at the midpoint (~0.5 over ~0.5 composites to only
-     ~0.75 coverage), letting the dark base (#071120) bleed through — that was
-     the flicker when scrolling between boards. Instead the outgoing board stays
-     fully opaque UNDERNEATH while the new one fades in ON TOP (--entering is the
-     later DOM element, so it paints above at equal z-index). The screen is thus
-     always fully covered. LobbyScreen prunes this layer on the entering layer's
-     animationend — invisible, since the new board fully covers it by then. */
-  opacity: 1;
-}
-
-/* The steady-state background (no crossfade in progress). */
-.lobby-background-layer--current {
-  opacity: 1;
-}
-
-/* An incoming board whose image hasn't DECODED yet. It waits invisible while
-   the previous board (fully opaque below) keeps covering the screen; once the
-   image is ready the class flips to --entering and the fade-in runs. Without
-   this hold, phones started the fade on a still-decoding image — blank frames
-   over the dark base = the carousel flicker. */
-.lobby-background-layer--entering-pending {
-  opacity: 0;
-}
-
-.lobby-carousel-board[data-slot='selected'] {
-  z-index: 30;
-  opacity: 1;
-  transform: translateX(-50%) translateX(var(--drag-x, 0px)) scale(1);
-  animation: lobby-board-selected-next 390ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
-  /* Tight, dark contact shadow under the centred board so it reads as
-     sitting on the podium (selected board only — side boards stay flat). */
-  filter: drop-shadow(0 calc(13 * var(--lobby-u)) calc(9 * var(--lobby-u)) rgba(0, 0, 0, 0.68));
-}
-
-.lobby-carousel-board[data-slot='previous'] {
-  z-index: 20;
-  opacity: 1;
-  transform: translateX(-50%) translateX(calc(var(--lobby-prev-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  animation: lobby-board-previous-next 390ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
-}
-
-.lobby-carousel-board[data-slot='next'] {
-  z-index: 20;
-  opacity: 1;
-  transform: translateX(-50%) translateX(calc(var(--lobby-next-x) + var(--drag-x, 0px))) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  animation: lobby-board-next-next 390ms cubic-bezier(0.18, 0.85, 0.2, 1) both;
-}
-
-.lobby-carousel-viewport[data-dragging='true'] .lobby-carousel-board {
-  animation: none !important;
-}
-
-.lobby-carousel-board[data-slot='selected'][data-motion='previous'] {
-  animation-name: lobby-board-selected-previous;
-}
-
-.lobby-carousel-board[data-slot='previous'][data-motion='previous'] {
-  animation-name: lobby-board-previous-previous;
-}
-
-.lobby-carousel-board[data-slot='next'][data-motion='previous'] {
-  animation-name: lobby-board-next-previous;
-}
-
 /* .lobby-play-button was dropped: the PLAY button moved onto the centred board
    as <PlayButton> (sized in container-query units, positioned by
    .lockPillWrap), so the class had no element left to match. */
@@ -363,79 +288,6 @@ html, body, #root {
    the timer doesn't jitter as numbers tick. */
 
 /* Unavailable: muted gray, matching the wheel's "off" state. */
-
-.lobby-screen {
-  /* Lobby never scrolls — content always fits within the viewport.
-     Was previously only locked at landscape <= 720 px height; now
-     applies globally per the user's spec. */
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-/* Animated sunbeam glow behind the Special Offers icon (see Sunbeam.tsx).
-   Lives inside the offer-card button, centred and a touch larger than the
-   icon so the rays radiate around it; the icon itself is lifted above via
-   z-[1]. pointer-events:none so taps still hit the button. */
-
-
-/* Lobby premium landscape pass, mapped from the 1792x828 mobile mockup. */
-.lobby-screen::after {
-  /* Was a stacked vignette + edge-darkening overlay; removed per
-     user request so the lobby background reads at full brightness
-     edge to edge. */
-  display: none;
-}
-
-.lobby-background-layer {
-  z-index: 0;
-}
-
-/* Unified lobby layout — was previously gated behind
-   @media (orientation: landscape) and (max-height: 720px) so the
-   --lobby-u proportional grid only ran on iPhone landscape. Lifted
-   to base so desktop / tablet / phone all render the same lobby
-   chrome scaled proportionally by --lobby-u. */
-.lobby-screen {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-  /* Centre the fixed-aspect lobby "stage" (.lobby-shell) in the viewport
-     so the lobby reads identically — just scaled — on every aspect ratio
-     (mobile / web / Android / iOS). Any letterbox space (viewport aspect
-     != the 1792x828 canvas) is filled by the fixed background layers
-     behind the stage. */
-  display: grid;
-  place-items: center;
-}
-
-.lobby-shell {
-  --lobby-u: min(0.055804dvw, 0.120773dvh);
-  position: relative;
-  display: block;
-  /* The lobby "stage" IS the 1792x828 design canvas, scaled to fit via
-     --lobby-u and centred by .lobby-screen. Every element positions
-     within this canvas, so the whole composition stays consistent across
-     devices instead of anchoring to the raw viewport edges (which made
-     the board/nav spread apart on wide desktop viewports). */
-  width: calc(1792 * var(--lobby-u));
-  height: calc(828 * var(--lobby-u));
-  min-height: 0;
-  overflow: visible;
-  padding: 0;
-}
-
-.lobby-topbar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: 40;
-  display: block;
-  width: 100%;
-  height: calc(140 * var(--lobby-u));
-  padding: 0;
-}
 
 .lobby-profile-card {
   position: absolute;
@@ -601,164 +453,6 @@ html, body, #root {
   display: none;
 }
 
-.lobby-topbar-actions {
-  position: absolute;
-  inset: 0;
-  display: block;
-}
-
-.lobby-currency-strip {
-  /* Horizontally centred on the viewport. Sizes here were halved
-     from the original design grid (590×82 → 472×66 etc.) to take
-     20% off the visual footprint per the user's spec — every
-     numeric multiplier on var(--lobby-u) in this block and the
-     four .lobby-currency-* rules below was scaled by 0.8. The
-     earlier Tailwind shrink in LobbyTopBar.tsx was a no-op
-     because THIS block applies at all viewports and overrides
-     utility classes via source order. */
-  position: absolute;
-  left: 50%;
-  /* Nudged up from the design grid's 32u (now 18u) so the balances clear
-     the top edge of the (smaller, top-down) board. Clamped so it can never
-     cross the top of the lobby canvas (the phone's screen frame). */
-  top: max(0px, calc(18 * var(--lobby-u) - 5px));
-  transform: translateX(-50%);
-  display: grid;
-  width: calc(472 * var(--lobby-u));
-  height: calc(66 * var(--lobby-u));
-  grid-template-columns: 1fr 1fr;
-  gap: 0;
-  border: 1px solid rgba(199, 143, 65, 0.78);
-  border-radius: calc(19 * var(--lobby-u));
-  background: linear-gradient(180deg, rgba(18, 22, 33, 0.94), rgba(7, 10, 20, 0.98)),
-  radial-gradient(circle at 50% 0, rgba(255, 213, 102, 0.11), transparent 70%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12),
-  inset 0 -1px 0 rgba(255, 205, 80, 0.08),
-  0 calc(6 * var(--lobby-u)) calc(14 * var(--lobby-u)) rgba(0, 0, 0, 0.4);
-}
-
-.lobby-currency-strip::after {
-  content: '';
-  position: absolute;
-  /* 50% of the new 472-unit width — 236. */
-  left: calc(236 * var(--lobby-u));
-  top: calc(13 * var(--lobby-u));
-  width: calc(2 * var(--lobby-u));
-  height: calc(40 * var(--lobby-u));
-  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.16), transparent);
-}
-
-.lobby-currency-pill {
-  display: grid;
-  min-width: 0;
-  height: 100%;
-  grid-template-columns: calc(48 * var(--lobby-u)) minmax(0, 1fr) calc(44 * var(--lobby-u));
-  align-items: center;
-  gap: calc(10 * var(--lobby-u));
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  padding: 0 calc(16 * var(--lobby-u)) 0 calc(19 * var(--lobby-u));
-}
-
-.lobby-currency-icon {
-  width: calc(46 * var(--lobby-u));
-  height: calc(46 * var(--lobby-u));
-  margin-left: 0;
-}
-
-.lobby-currency-value {
-  height: auto;
-  min-width: 0;
-  justify-content: center;
-  margin-left: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
-  font-size: calc(26 * var(--lobby-u));
-}
-
-.lobby-currency-add {
-  width: calc(44 * var(--lobby-u));
-  height: calc(44 * var(--lobby-u));
-  margin-right: 0;
-  border: 1px solid rgba(203, 255, 147, 0.42);
-  border-radius: calc(9 * var(--lobby-u));
-}
-
-.lobby-currency-add > span:first-child {
-  width: calc(6 * var(--lobby-u));
-  height: calc(26 * var(--lobby-u));
-}
-
-.lobby-currency-add > span:last-child {
-  width: calc(26 * var(--lobby-u));
-  height: calc(6 * var(--lobby-u));
-}
-
-.lobby-topbar nav[aria-label='Lobby shortcuts'] {
-  position: absolute;
-  right: calc(32 * var(--lobby-u));
-  top: calc(34 * var(--lobby-u));
-  display: flex;
-  gap: calc(25 * var(--lobby-u));
-}
-
-.lobby-topbar nav[aria-label='Lobby shortcuts'] button {
-  width: calc(110 * var(--lobby-u));
-  min-width: 0;
-  gap: calc(4 * var(--lobby-u));
-  font-size: calc(17 * var(--lobby-u));
-  line-height: 1;
-}
-
-.lobby-topbar nav[aria-label='Lobby shortcuts'] button > span:first-child {
-  width: calc(64 * var(--lobby-u));
-  height: calc(64 * var(--lobby-u));
-}
-
-.lobby-main-grid {
-  /* Full-viewport-width grid so the centre (board) column is centred to
-     the SCREEN. The two 1fr side columns are equal, so the fixed 1032u
-     board column always resolves to exactly 50dvw — the same axis the
-     bottom nav (left:50%) and the top balance pills sit on. The u terms
-     cancel: 1fr = (100% - 1032u - 2*gap)/2, so the board centre =
-     1fr + gap + 516u = 50dvw on EVERY aspect ratio.
-     Before: a fixed 1720u block pinned at left:55u with asymmetric side
-     columns (264u | 1032u | 280u). The board centre landed ~11u right of
-     the canvas centre, AND the whole canvas was left-anchored — so when
-     the scaled 1792x828 canvas was letterboxed (any viewport != ~2.16:1)
-     the board drifted off-centre and FLIPPED side between web (wide) and
-     the Android landscape viewport (tall-ish). That was the off-centre
-     board + the cross-platform inconsistency. Centring the board column
-     to the viewport puts board + podium + nav + balances on one axis
-     everywhere. The left offers stay pinned to the left edge via their
-     own fixed width + margin-left (see .lobby-offers).
-     (top kept at 94u so the lowered podium + Play button don't slide
-     under the bottom navigator on short landscape viewports.) */
-  position: absolute;
-  left: 0;
-  top: calc(94 * var(--lobby-u));
-  z-index: 20;
-  display: grid;
-  width: 100%;
-  height: calc(490 * var(--lobby-u));
-  /* minmax(0, 1fr) — NOT plain 1fr — for the side columns. A bare 1fr
-     has an implicit min-content floor, so the left offers (264u + margin)
-     forced col 1 wider than col 3 and shoved the board ~11u right of
-     centre, misaligning it with the viewport-centred nav. minmax(0,1fr)
-     lets both sides shrink equally so the board column is truly centred
-     (offers harmlessly overflow into the empty gap on narrow widths). */
-  grid-template-columns: minmax(0, 1fr) calc(1032 * var(--lobby-u)) minmax(0, 1fr);
-  column-gap: calc(72 * var(--lobby-u));
-  align-items: start;
-  padding: 0;
-}
-
-
 /* Right rail (Daily Bonus + How to Play) — mirror of the left rail,
    pinned to the right edge of the third grid column. Inherits the left
    rail's top anchor (margin-top), width, height, gap, flex-column,
@@ -777,49 +471,10 @@ html, body, #root {
 
 
 
-.lobby-board-region {
-  /* 20 % wider than the previous 860 x 490. Height stays at 490 so
-     the Play button below the carousel doesn't slide into the
-     bottom navigator at short iPhone-landscape viewports. The
-     boards still read as larger because they're sized by width. */
-  display: block;
-  width: calc(1032 * var(--lobby-u));
-  height: calc(490 * var(--lobby-u));
-  min-width: 0;
-  overflow: visible;
-  /* Small lift; no scale now — board size is the .lobby-carousel-board
-     width, and the board is bottom-anchored so it sits on the podium.
-     Only the carousel moves — the offers rail (grid col 1) is untouched. */
-  transform: translateY(calc(-12 * var(--lobby-u)));
-}
-
-/* Section / viewport / board box geometry and the slide-position custom
-   properties live in LobbyBoardCarousel.module.css (.carouselBoard). The
-   data-slot animation states below are dead legacy (the component drives
-   transforms via inline style, not data-slot) and stay global with the
-   @keyframes that reference them. */
-
 /* Podium sizing/position lives in LobbyBoardCarousel.module.css (.podiumImage).
    It used to be here, keyed on the Tailwind `pointer-events-none` utility that
    happened to sit on the <img> — a hook that silently died when the class list
    moved into the CSS module, taking the whole stand with it. */
-
-/* NOTE: .lobby-podium-fade-out is no longer applied — the outgoing podium
-   stays fully opaque under the fading-in one (see PodiumImage in
-   LobbyBoardCarousel: double-fading dipped combined opacity below 1 and
-   flashed the background through the podium). Kept for reference. */
-@keyframes lobbyPodiumFadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-.lobby-podium-fade-out {
-  animation: lobbyPodiumFadeOut 450ms ease forwards;
-}
 
 /* Removed two `[class*=...]` hides plus the prev/next arrow sizing rules — the
    arrows and the pagination dots they targeted are both gone from the JSX.
@@ -3049,90 +2704,6 @@ html, body, #root {
     height: clamp(0.75rem, 2.35vw, 1rem);
   }
 
-}
-
-@keyframes lobby-background-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes lobby-background-fade-out {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes lobby-board-selected-next {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-next-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(0) scale(1) rotate(0deg);
-  }
-}
-
-@keyframes lobby-board-selected-previous {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-prev-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(0) scale(1) rotate(0deg);
-  }
-}
-
-@keyframes lobby-board-previous-next {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(0) scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-prev-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  }
-}
-
-@keyframes lobby-board-next-next {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-incoming-next-x)) scale(var(--lobby-incoming-scale)) rotate(var(--lobby-incoming-next-rotation));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-next-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  }
-}
-
-@keyframes lobby-board-previous-previous {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-incoming-prev-x)) scale(var(--lobby-incoming-scale)) rotate(var(--lobby-incoming-prev-rotation));
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-prev-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-prev-rotation));
-  }
-}
-
-@keyframes lobby-board-next-previous {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateX(0) scale(1) rotate(0deg);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateX(var(--lobby-next-x)) scale(var(--lobby-side-scale)) rotate(var(--lobby-next-rotation));
-  }
 }
 
 /* Asset-led gameplay skin: based on the 1846 x 852 gameplay mockup. */
@@ -6077,20 +5648,6 @@ html, body, #root {
  * widths even without changing the scale.
  */
 
-/* The top-bar actions row (currency pills + Rewards/Friends/Settings) is a
-   wide flex container whose empty left area overlaps the profile widget /
-   avatar, intercepting taps meant for the "Open profile" link — only the
-   lower shield was reachable. Make the container click-through and re-enable
-   its actual controls so the whole avatar circle opens the profile. */
-.lobby-topbar-actions {
-  pointer-events: none;
-}
-
-.lobby-topbar-actions > * {
-  pointer-events: auto;
-}
-
-
 /* Backdrop layer — holds the radial purple gradient + mask +
  * backdrop-filter so the card content (avatar, name, etc.)
  * sits above it FULLY OPAQUE. The previous version applied the
@@ -6127,22 +5684,6 @@ html, body, #root {
  * scaled up for the big profile avatar and anchored to the bottom-
  * centre of the avatar circle (the avatar is 220px, centred in
  * .profile-avatar-stage). Replaces the old pointy hex. */
-
-/* Landscape overrides for the profile currency pills + level shield.
- * MUST live HERE — after the base `.profile-top-currency` and
- * `.profile-pp-shield` rules above — so it wins the cascade. An
- * identical block up in the main @media(orientation:landscape) section
- * (line ~3042) loses, because those base rules are defined LATER in the
- * file and media queries add no specificity. */
-@media (orientation: landscape) {
-  /* Currency pills: match the lobby top bar 1:1 — same --lobby-u formula
-   * as `.lobby-shell`, so the reused `.lobby-currency-*` rules render at
-   * the identical flat, --lobby-u-scaled size. (Portrait keeps the fixed
-   * 0.62px fallback set on the base `.profile-top-currency` rule.) */
-
-  /* Level shield: shrink from ~46% of the avatar width to ~27% and nudge
-   * it a touch lower so it sits cleanly on the avatar's bottom edge. */
-}
 
 /* Right column — name+rank row + XP card. Column 2, row 1. */
 .lobby-pp-main {

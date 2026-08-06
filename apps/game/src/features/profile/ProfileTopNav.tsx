@@ -9,12 +9,14 @@ import styles from "./ProfileTopNav.module.css"
 
 /**
  * Profile-page CurrencyPill — same visual design as the lobby's top-bar
- * pill. It reuses the `.lobby-currency-*` class hooks but must supply
- * `--lobby-u` itself on `.profile-top-currency` (landscape uses the same
- * formula as `.lobby-shell`; portrait a fixed fallback) plus an explicit
- * pill height. Without `--lobby-u` the lobby's `calc(46 * var(--lobby-u))`
- * width override is invalid and the icon renders at its intrinsic webp
- * size (~512-1024px) — full-screen on the profile page.
+ * pill. The `profileCurrency*` module classes carry the full look; the
+ * --lobby-u-scaled padding/height are baked into `profileCurrencyPill`
+ * directly (no shared global hooks). `--lobby-u` is supplied by the
+ * `.profileTopCurrency` wrapper (landscape uses the same formula as
+ * `.lobbyShell`; portrait a fixed fallback). Without `--lobby-u` the
+ * `calc(… * var(--lobby-u))` overrides are invalid and the icon renders
+ * at its intrinsic webp size (~512-1024px) — full-screen on the profile
+ * page.
  */
 function CurrencyPill({
   flyTarget,
@@ -31,21 +33,21 @@ function CurrencyPill({
 }) {
   return (<div
     aria-label={`${label}: ${value ?? 0}`}
-    className={`lobby-currency-pill ${styles.profileCurrencyPill}`}
+    className={styles.profileCurrencyPill}
     data-fly-target={flyTarget}>
-    <span className={`lobby-currency-icon ${styles.profileCurrencyIcon}`}>
+    <span className={styles.profileCurrencyIcon}>
       <img
         alt=""
         className={styles.profileCurrencyImg}
         draggable={false}
         src={icon}/>
     </span>
-    <span className={`lobby-currency-value ${styles.profileCurrencyValue}`}>
+    <span className={styles.profileCurrencyValue}>
       {formatCompactNumber(value)}
     </span>
     <button
       aria-label={`Get more ${label}`}
-      className={`lobby-currency-add ${styles.profileCurrencyAdd}`}
+      className={styles.profileCurrencyAdd}
       type="button"
       onClick={onAdd}>
       <span className={`${styles.profileCurrencyPlus} ${styles.profileCurrencyPlusH}`}/>

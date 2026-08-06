@@ -4,6 +4,7 @@ import {CurrencyPill} from "../components/CurrencyPill"
 import {useShop} from "../features/appUi/useShop"
 
 import {LobbyProfileCard} from "./LobbyProfileCard"
+import styles from "./LobbyTopBar.module.css"
 import {XpBoostBadge} from "./XpBoostBadge"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
@@ -38,8 +39,8 @@ export function LobbyTopBar({
   }] as const
 
   return (
-    <header className="lobby-topbar relative z-20 grid gap-3 py-3 md:grid-cols-[minmax(16rem,1fr)_auto] md:items-start">
-      <div className="lobby-pp-shell relative flex min-w-0 flex-col gap-2">
+    <header className={styles.topBar}>
+      <div className={styles.profileShell}>
         <LobbyProfileCard
           profile={profile}
           progression={progression}/>
@@ -48,13 +49,13 @@ export function LobbyTopBar({
             no boost is active. The guest "Save progress" CTA that
             used to live here was removed per operator request —
             guests can still link Google from the /profile page. */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={styles.xpBoostRow}>
           <XpBoostBadge/>
         </div>
       </div>
 
-      <div className="lobby-topbar-actions flex flex-wrap items-start justify-end gap-3">
-        <div className="lobby-currency-strip flex flex-wrap justify-end gap-3">
+      <div className={styles.topBarActions}>
+        <div className={styles.currencyStrip}>
           {currencies.map((currency) => (<CurrencyPill
             key={currency.id}
             {...currency}

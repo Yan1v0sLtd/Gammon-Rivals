@@ -22,6 +22,7 @@ import {BoardLockTooltip} from "./BoardLockTooltip"
 import {LobbyBoardCarousel} from "./LobbyBoardCarousel"
 import {LobbyBottomNav} from "./LobbyBottomNav"
 import {LobbyModalHost} from "./LobbyModalHost"
+import styles from "./LobbyScreen.module.css"
 import {LobbySideOffers} from "./LobbySideOffers"
 import {LobbyTopBar} from "./LobbyTopBar"
 import {OnboardingTour} from "./OnboardingTour"
@@ -95,11 +96,11 @@ function LobbyBackgroundLayer({
     }
   }, [mode, ready, board.background])
 
-  const stateClass = mode === "leaving" ? "lobby-background-layer--leaving" : mode === "entering" ? ready ? "lobby-background-layer--entering" : "lobby-background-layer--entering-pending" : "lobby-background-layer--current"
+  const stateClass = mode === "leaving" ? styles.backgroundLayerLeaving : mode === "entering" ? ready ? styles.backgroundLayerEntering : styles.backgroundLayerEnteringPending : styles.backgroundLayerCurrent
 
   return (<div
     aria-hidden="true"
-    className={`lobby-background-layer fixed inset-0 ${stateClass}`}
+    className={`${styles.backgroundLayer} ${stateClass}`}
     onAnimationEnd={mode === "entering" && ready ? (event) => {
       if (event.target === event.currentTarget) onEntered?.(board.id)
     } : undefined}>
@@ -108,11 +109,11 @@ function LobbyBackgroundLayer({
         tone overlay below already softens the art. */}
     <img
       alt=""
-      className="h-full w-full object-cover"
+      className={styles.backgroundImage}
       draggable={false}
       src={board.background}/>
     <div
-      className="absolute inset-0"
+      className={styles.backgroundTone}
       style={{background: board.backgroundTone}}/>
   </div>)
 }
@@ -332,7 +333,7 @@ export function LobbyScreen() {
     if (offerId === "daily") dispatch(lobbyActions.dailyBonusModalOpened()); else if (offerId === "coins") openShop(); else if (offerId === "connect") dispatch(lobbyActions.howToPlayModalOpened())
   }
 
-  return (<div className="lobby-screen relative min-h-dvh overflow-x-hidden bg-[#071120] text-white">
+  return (<div className={styles.lobbyScreen}>
     {/* Keys are the BOARD id (not the role) so a board switching from
           entering→leaving keeps its DOM element — its already-painted img
           never remounts/re-decodes (the old remount was the mobile dark
@@ -349,29 +350,24 @@ export function LobbyScreen() {
       onEntered={handleBackgroundEntered}/>) : null}
 
     <div
-      className="lobby-shell relative z-10 flex min-h-dvh flex-col px-4 pb-0 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 lg:px-9">
+      className={styles.lobbyShell}>
       <LobbyTopBar
         isGuest={isGuest}
         profile={profile}
         progression={progression}
         wallet={wallet}/>
 
-      {/* Layout is fully owned by `.lobby-main-grid` in index.css (the
-            absolute, 3-column `minmax(0,1fr) [board] minmax(0,1fr)` canvas
-            grid). The old Tailwind `xl:grid-cols-[18.5rem_…]` /
-            `2xl:grid-cols-…` utilities were overriding that rule on desktop
-            (≥1280px) — a 2-column [rail | board] grid that pushed the board
-            into an offset right column, so the board was centred on mobile
-            but off-centre on web. Removed so the index.css grid wins on
-            every breakpoint and the board is consistently screen-centred. */}
-      <div className="lobby-main-grid">
+      {/* Layout is fully owned by `.lobbyMainGrid` in LobbyScreen.module.css
+            (the absolute, 3-column `minmax(0,1fr) [board] minmax(0,1fr)`
+            canvas grid). */}
+      <div className={styles.lobbyMainGrid}>
         {/* Left rail: Special Offers only (stays put per operator). */}
         <LobbySideOffers
           offerIds={["coins"]}
           side="left"
           onOfferClick={handleOfferClick}/>
 
-        <div className="lobby-board-region min-w-0">
+        <div className={styles.lobbyBoardRegion}>
           <LobbyBoardCarousel
             boards={boards}
             getBoardState={boardStateOf}
