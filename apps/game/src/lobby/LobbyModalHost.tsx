@@ -85,8 +85,8 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
           dispatch(lobbyActions.lobbyModalClosed())
         }}
         onGetCoins={() => {
-          // No showOverlay() here — /shop renders instantly and must not
-          // trap the user behind the route overlay.
+          // The shop is an app-wide popup, not a route — no navigation, so no
+          // route overlay to show.
           dispatch(lobbyActions.lobbyModalClosed())
           openShop()
         }}

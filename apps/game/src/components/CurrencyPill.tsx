@@ -7,6 +7,19 @@ import {RollingNumber} from "../lobby/RollingNumber"
  * reward-flight animations keep aiming at it. Sizing/markup are unchanged from
  * the original lobby pill; callers control behaviour via `onAdd`.
  */
+type CurrencyPillProps = {
+  readonly flyTarget: "coins" | "gems",
+  readonly label: string,
+  readonly value: number | null | undefined,
+  readonly icon: string,
+} & (
+  /* The green "+" that opens the shop is shown by default (lobby behaviour)
+     and needs a handler; hiding it (e.g. inside the shop itself) makes the
+     handler meaningless, so the union keeps the two in sync at compile time
+     instead of leaving a dead/throwing callback behind. */
+  {readonly showAdd?: true, readonly onAdd: () => void} | {readonly showAdd: false, readonly onAdd?: never}
+)
+
 export function CurrencyPill({
   flyTarget,
   label,
@@ -14,16 +27,7 @@ export function CurrencyPill({
   icon,
   onAdd,
   showAdd = true,
-}: {
-  readonly flyTarget: "coins" | "gems",
-  readonly label: string,
-  readonly value: number | null | undefined,
-  readonly icon: string,
-  readonly onAdd: () => void,
-  /** The green "+" that opens the shop. Hidden where it's redundant (e.g.
-   *  inside the shop itself). Defaults to shown (lobby behaviour). */
-  readonly showAdd?: boolean,
-}) {
+}: CurrencyPillProps) {
   return (<div
     aria-label={`${label}: ${value ?? 0}`}
     className="lobby-currency-pill relative flex h-[2.76rem] min-w-[7.87rem] items-center rounded-md border border-[#28577d]/80 bg-gradient-to-b from-[#114f83]/80 to-[#073768]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.26),0_7px_14px_rgba(0,0,0,0.32)] backdrop-blur"

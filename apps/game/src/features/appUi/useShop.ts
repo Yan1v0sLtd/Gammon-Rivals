@@ -12,15 +12,16 @@ export type ShopControls = {
 }
 
 /**
- * Compatibility hook over the appUi slice for the app-wide shop popup.
- * The slice is the single owner of `shopOpen`; consumers keep the exact
- * `{ openShop, closeShop, isShopOpen }` shape the old shop context gave.
+ * Controls for the app-wide shop popup. The appUi slice is the single owner
+ * of `shopOpen`; every entry point (lobby top-bar balances, Special Offers,
+ * the Difficulty modal's "Get Coins", the Profile balances) goes through
+ * here, and ShopHost renders whatever the flag says.
  */
 export function useShop(): ShopControls {
   const dispatch = useAppDispatch()
   const isShopOpen = useAppSelector(selectIsShopOpen)
-  // useCallback([dispatch]) keeps these stable so effects that depend on
-  // openShop (e.g. ShopRoute's redirect) never re-fire on re-render.
+  // useCallback([dispatch]) keeps these stable so callers can depend on them
+  // in effects without re-firing on every render.
   const openShop = useCallback(() => {
     dispatch(appUiActions.shopOpened())
   }, [dispatch])

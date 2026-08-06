@@ -10,6 +10,13 @@ import {
   type ShopStoreConfig,
 } from "./shopData"
 
+/**
+ * Storefront queries. No `keepUnusedDataFor` override and no tags: the
+ * boot-time warm-up (see shopListeners) holds an app-lifetime subscription so
+ * these entries stay resident for the session instead of expiring on a timer,
+ * and the Shop refetches all three on open so a resident entry can't go stale.
+ * Nothing on the client mutates the catalog, so there is no tag to invalidate.
+ */
 export const shopApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getShopCatalog: build.query<readonly ShopItemRow[], void>({
@@ -20,12 +27,7 @@ export const shopApi = baseApi.injectEndpoints({
         catch (err) {
           return {error: toApiError(err)}
         }
-      }, // 30 minutes: the boot-time prefetch (see shopListeners) stays warm until
-      // the player opens the Store minutes later — this replaces the old
-      // permanent module-level shop cache. No tag invalidation: nothing on
-      // the client mutates the catalog, so these entries are refreshed by
-      // refetch()/cache expiry instead.
-      keepUnusedDataFor: 1800,
+      },
     }),
     getStoreSale: build.query<ShopSale | null, void>({
       queryFn: async () => {
@@ -36,7 +38,6 @@ export const shopApi = baseApi.injectEndpoints({
           return {error: toApiError(err)}
         }
       },
-      keepUnusedDataFor: 1800,
     }),
     getStoreConfig: build.query<ShopStoreConfig | null, void>({
       queryFn: async () => {
@@ -47,7 +48,6 @@ export const shopApi = baseApi.injectEndpoints({
           return {error: toApiError(err)}
         }
       },
-      keepUnusedDataFor: 1800,
     }),
     purchaseShopItem: build.mutation<void, {itemId: string, userId: string}>({
       queryFn: async ({itemId}) => {

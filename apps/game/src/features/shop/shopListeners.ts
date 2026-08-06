@@ -17,16 +17,25 @@ export function startShopListeners(startListening: AppStartListening): void {
         // Keep the boot-time work off the lobby's startup path; cancellation
         // also prevents duplicate StrictMode mounts from warming twice.
         await delay(SHOP_WARMUP_DELAY_MS)
-        void import("../../pages/Shop").catch(() => undefined)
+        void import("../../modals/Shop/ShopModal").catch(() => undefined)
+        // Subscribed deliberately, and never unsubscribed: keepUnusedDataFor
+        // only starts counting once the LAST subscriber leaves, so a
+        // `subscribe: false` prefetch begins expiring immediately and a player
+        // who idles in the lobby gets a cold Store open anyway. This
+        // app-lifetime subscription keeps the three storefront entries
+        // resident for the whole session; the Shop refetches them on open, so
+        // resident never means stale. Discarding the handles is safe: a repeat
+        // warm-up only bumps the refcount on the same cache keys, and
+        // permanent residency is the point.
         const [catalog, config] = await Promise.all([
-          dispatch(shopApi.endpoints.getShopCatalog.initiate(undefined, {subscribe: false}))
+          dispatch(shopApi.endpoints.getShopCatalog.initiate(undefined))
             .unwrap()
             .catch(() => []),
-          dispatch(shopApi.endpoints.getStoreConfig.initiate(undefined, {subscribe: false}))
+          dispatch(shopApi.endpoints.getStoreConfig.initiate(undefined))
             .unwrap()
             .catch(() => null),
         ])
-        void dispatch(shopApi.endpoints.getStoreSale.initiate(undefined, {subscribe: false}))
+        void dispatch(shopApi.endpoints.getStoreSale.initiate(undefined))
         warmImages([...catalog.map((row) => row.image_url), config?.bgImageUrl])
       }
       catch {

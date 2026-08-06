@@ -104,12 +104,12 @@ layer wrappers.
     other direct JSX consumers found.
   - **Dice:** `components/DiceTray.tsx` is the only direct consumer of
     `.dice-*`. `lobby/DailyMissionsModal.tsx` uses a dice asset but no
-    `.dice-*`; `pages/Shop.tsx` has no direct dice/shop selector consumer.
+    `.dice-*`; `modals/Shop/ShopModal.tsx` has no direct dice/shop selector consumer.
   - **Profile:** `pages/Profile.tsx` consumes `.profile-*`,
     `.lobby-profile-progress*`, and `.lobby-currency-*`; it also has duplicate
     currency markup. `components/CurrencyPill.tsx` consumes
     `.lobby-currency-*`; `lobby/LobbyTopBar.tsx` consumes
-    `.lobby-currency-strip`; `pages/Shop.tsx` renders `CurrencyPill`. The
+    `.lobby-currency-strip`; `modals/Shop/ShopModal.tsx` renders `CurrencyPill`. The
     currency rules therefore need shared-component/layout treatment. No direct
     consumer was found for `.lobby-profile-card`,
     `.lobby-profile-avatar-*`, `.lobby-profile-copy`, and related legacy rules.
@@ -161,7 +161,7 @@ layer wrappers.
 - Updated `apps/game/src/lib/bodyModalFlag.ts` and
   `apps/game/src/lobby/Sunbeam.tsx` to use the consistent
   `data-fullscreen-modal` / `dataset.fullscreenModal` contract.
-- The modal writers/owners remain `components/ShopHost.tsx` and
+- The modal writers/owners remain `features/shop/ShopHost.tsx` and
   `lobby/LobbyScreen.tsx` through `useBodyModalFlag`; `lobby/Sunbeam.tsx` is
   the reader. The global pause selectors and PlayButton selector were renamed
   consistently. This contract pauses known background animation while a
@@ -475,7 +475,7 @@ HEAD, unrelated to the migration):
   wheel/daily-bonus, modern dice, and profile-owned rules. Tailwind directives,
   shared globals and contracts, and the legacy `.game-*` dice CSS remain. The
   retained `data-fullscreen-modal` contract is written by
-  `ShopHost.tsx`/`LobbyScreen.tsx` through `useBodyModalFlag` and read by
+  `features/shop/ShopHost.tsx`/`LobbyScreen.tsx` through `useBodyModalFlag` and read by
   `Sunbeam.tsx` to pause background animation while a full-screen modal is open.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b
   apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and

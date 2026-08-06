@@ -327,7 +327,7 @@ export function LobbyScreen() {
   // Side-rail offer routing, shared by the left rail (Special Offers) and
   // the right rail (Daily Bonus + How to Play). Daily Bonus opens
   // unconditionally (the modal still surfaces the 7-day grid even when
-  // already claimed today); Coins routes to /shop; Connect opens the tutorial.
+  // already claimed today); Coins pops the shop; Connect opens the tutorial.
   const handleOfferClick = (offerId: string) => {
     if (offerId === "daily") dispatch(lobbyActions.dailyBonusModalOpened()); else if (offerId === "coins") openShop(); else if (offerId === "connect") dispatch(lobbyActions.howToPlayModalOpened())
   }

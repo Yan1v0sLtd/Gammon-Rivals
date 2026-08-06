@@ -1,18 +1,18 @@
 import {type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState} from "react"
 
-import type {Database, Json} from "../../../../packages/shared/src/database"
-import {CurrencyPill} from "../components/CurrencyPill"
-import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../components/RewardFlight"
-import {ScaleInModal} from "../components/ScaleInModal"
-import {selectAuthUserId, selectCurrentWallet} from "../features/auth/authSelectors"
-import {shopGrantConfirmed} from "../features/shop/shopActions"
+import type {Database, Json} from "../../../../../packages/shared/src/database"
+import {CurrencyPill} from "../../components/CurrencyPill"
+import {type FlightCurrency, RewardFlight, type RewardFlightSpec} from "../../components/RewardFlight"
+import {ScaleInModal} from "../../components/ScaleInModal"
+import {selectAuthUserId, selectCurrentWallet} from "../../features/auth/authSelectors"
+import {shopGrantConfirmed} from "../../features/shop/shopActions"
 import {
   useGetShopCatalogQuery, useGetStoreConfigQuery, useGetStoreSaleQuery, usePurchaseShopItemMutation,
-} from "../features/shop/shopApi"
-import {getBilling} from "../lib/billing/service"
-import {useImagePreloader} from "../lib/useImagePreloader"
-import {baseApi} from "../store/baseApi"
-import {useAppSelector, useAppDispatch} from "../store/hooks"
+} from "../../features/shop/shopApi"
+import {getBilling} from "../../lib/billing/service"
+import {useImagePreloader} from "../../lib/useImagePreloader"
+import {baseApi} from "../../store/baseApi"
+import {useAppSelector, useAppDispatch} from "../../store/hooks"
 
 // Redesigned Store. Two sections, no category tabs (per current direction):
 //   • Featured Packs — bundles (shop_items.kind = 'bundle')
@@ -706,13 +706,13 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
   const nextFlightIdRef = useRef(1)
   const [purchaseShopItem] = usePurchaseShopItemMutation()
 
-  const catalogQuery = useGetShopCatalogQuery()
-  // The running sale drives a live countdown, so it is the one query worth
-  // re-checking each time the Store opens; the catalog + storefront config
-  // come straight from the boot prefetch (see ShopHost) so a warmed open
-  // issues no request at all.
+  // All three refetch on open: the boot warm-up (see ShopHost) keeps them
+  // resident for the whole session, so without this an operator's price, sale
+  // or artwork change would never reach a long-lived tab. Cached data stays on
+  // screen while the refetch runs, so a warmed open still reveals instantly.
+  const catalogQuery = useGetShopCatalogQuery(undefined, {refetchOnMountOrArgChange: true})
   const saleQuery = useGetStoreSaleQuery(undefined, {refetchOnMountOrArgChange: true})
-  const configQuery = useGetStoreConfigQuery()
+  const configQuery = useGetStoreConfigQuery(undefined, {refetchOnMountOrArgChange: true})
 
   const data = useMemo(() => mapShop(catalogQuery.data ?? []), [catalogQuery.data])
   const sale = saleQuery.data ?? null
@@ -735,7 +735,14 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
   // BO images pop in.) Errors don't block the gate — a missing image can't hang it.
   const shopImageUrls = useMemo(() => [...data.bundles.map((b) => b.imageUrl), ...data.packs.map((p) => p.imageUrl), storeConfig.bgImageUrl], [data, storeConfig])
   const {ready: shopImagesReady} = useImagePreloader(shopImageUrls)
-  const contentReady = status === "ready" && shopImagesReady
+  // Sale and config must have settled too, not just the catalog: the sale
+  // multiplies every reward amount on screen, and the config carries the
+  // themed background. Revealing before either lands re-prices the store or
+  // re-closes the gate (a late background URL grows the preload set) in front
+  // of the player. Both data sources resolve to null instead of rejecting, so
+  // an `undefined` check is a settled-check that cannot hang the gate.
+  const storefrontSettled = saleQuery.data !== undefined && configQuery.data !== undefined
+  const contentReady = status === "ready" && storefrontSettled && shopImagesReady
 
   useEffect(() => {
     const update = () => {
@@ -877,10 +884,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                 A colourful base (stands in for the lobby behind the modal) gives
                 the refraction edges to bend; the effect layer blurs + distorts it;
                 the dark tint keeps it on-theme and the content readable; the
-                shine adds the glossy rim.
-                NOTE: backdrop-filter + the SVG displacement filter are GPU-heavy
-                and Chromium-centric — fine on web / Android WebView, but worth a
-                perf check on low-end devices. Tune via the inline values below. */}
+                shine adds the glossy rim. */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-0"
@@ -888,7 +892,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
               background: "radial-gradient(38% 48% at 18% 22%, rgba(56,189,248,0.55), transparent 70%)," + "radial-gradient(42% 52% at 84% 16%, rgba(250,204,21,0.45), transparent 70%)," + "radial-gradient(48% 58% at 78% 86%, rgba(139,92,246,0.50), transparent 70%)," + "radial-gradient(44% 54% at 22% 88%, rgba(16,185,129,0.48), transparent 70%)," + "#03070d",
             }}/>
           {/* The frosted-glass layer (backdrop-filter blur(14px)+saturate +
-                an SVG displacement filter) was REMOVED for mobile perf — it was
+                an SVG feDisplacementMap) was REMOVED for mobile perf — it was
                 the single heaviest surface in the app, and all it blurred was
                 the static gradient layer above (already smooth, so the visual
                 delta is tiny). If the glass texture is ever missed, bake it
@@ -945,19 +949,13 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                   icon="/lobby/icons/gold-coin.webp"
                   label="Coins"
                   showAdd={false}
-                  value={wallet?.coins}
-                  onAdd={() => {
-                    throw new Error("Not implemented")
-                  }}/>
+                  value={wallet?.coins}/>
                 <CurrencyPill
                   flyTarget="gems"
                   icon="/lobby/icons/gem.webp"
                   label="Gems"
                   showAdd={false}
-                  value={wallet?.gems}
-                  onAdd={() => {
-                    throw new Error("Not implemented")
-                  }}/>
+                  value={wallet?.gems}/>
               </div>
               {/* App-standard close: golden frame, black fill (matches the
                     board / other modals). */}
@@ -1039,41 +1037,6 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
         </div>
       </div>
     </ScaleInModal>
-
-    {/* SVG displacement filter powering the liquid-glass refraction above.
-          Hidden; referenced by the effect layer via url(#shop-glass-distortion).
-          Trimmed to the 3 primitives that actually feed the output (the source
-          effect carried 3 dead ones); scale 150 matches the reference warp. */}
-    <svg
-      aria-hidden="true"
-      className="absolute"
-      height="0"
-      width="0">
-      <filter
-        filterUnits="objectBoundingBox"
-        height="100%"
-        id="shop-glass-distortion"
-        width="100%"
-        x="0%"
-        y="0%">
-        <feTurbulence
-          baseFrequency="0.01 0.01"
-          numOctaves="1"
-          result="turbulence"
-          seed="5"
-          type="fractalNoise"/>
-        <feGaussianBlur
-          in="turbulence"
-          result="softMap"
-          stdDeviation="3"/>
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="softMap"
-          scale="150"
-          xChannelSelector="R"
-          yChannelSelector="G"/>
-      </filter>
-    </svg>
 
     {rewardFlights.map((spec) => (<RewardFlight
       key={spec.id}

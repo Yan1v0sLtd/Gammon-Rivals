@@ -1,12 +1,11 @@
 import {lazy, Suspense, useEffect} from "react"
 
-import {BrowserRouter, Navigate, Route, Routes, useNavigate} from "react-router-dom"
+import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom"
 
 import {AuthGate} from "./components/AuthGate"
 import {LoadingScreen} from "./components/LoadingScreen"
 import {RouteErrorBoundary} from "./components/RouteErrorBoundary"
-import {ShopHost} from "./components/ShopHost"
-import {useShop} from "./features/appUi/useShop"
+import {ShopHost} from "./features/shop/ShopHost"
 import {refreshLoadingScreenImage} from "./lib/loadingScreenImage"
 import {Home} from "./pages/Home"
 
@@ -18,26 +17,6 @@ const Replay = lazy(() => import("./pages/Replay").then((m) => ({default: m.Repl
 const PlayOnline = lazy(() => import("./pages/PlayOnline").then((m) => ({default: m.PlayOnline})))
 const AuthCallback = lazy(() => import("./pages/AuthCallback").then((m) => ({default: m.AuthCallback})))
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount").then((m) => ({default: m.DeleteAccount})))
-
-/**
- * The shop is no longer a full-screen page — it's an app-wide scale-in
- * popup (see ShopHost). The /shop URL is kept as a deep link: it
- * pops the shop open and bounces to the lobby so the popup floats over
- * the game like every other entry point.
- */
-function ShopRoute() {
-  const {openShop} = useShop()
-  const navigate = useNavigate()
-  useEffect(() => {
-    // Open the popup, then bounce to the lobby so it floats over the game.
-    // Imperative redirect (not <Navigate>) so openShop fires reliably
-    // before this route unmounts — the popup state lives in the appUi
-    // slice, which sits above the router and survives the redirect.
-    openShop()
-    navigate("/play", {replace: true})
-  }, [openShop, navigate])
-  return null
-}
 
 function RouteFallback() {
   return <LoadingScreen/>
@@ -92,9 +71,6 @@ export function App() {
             <Route
               element={<AuthGate><PlayOnline/></AuthGate>}
               path="/play/:matchId"/>
-            <Route
-              element={<AuthGate><ShopRoute/></AuthGate>}
-              path="/shop"/>
             {/* Any unmatched path (e.g. a stale native deep link, or a
                 future bundle boot path) bounces to the lobby instead of a
                 blank screen. Defined routes above still win over this. */}
@@ -106,9 +82,10 @@ export function App() {
           </Routes>
         </Suspense>
       </RouteErrorBoundary>
-      {/* Shop popup host — a sibling of, not inside, RouteErrorBoundary,
-            so it keeps today's tree semantics: the modal floats above every
-            route and outlives route transitions. */}
+      {/* Shop popup host — a sibling of, not inside, RouteErrorBoundary, so
+            the modal floats above every route and outlives route
+            transitions. Mounted here unconditionally because it also kicks
+            off the boot-time store prefetch (see ShopHost). */}
       <ShopHost/>
     </BrowserRouter>)
 }
