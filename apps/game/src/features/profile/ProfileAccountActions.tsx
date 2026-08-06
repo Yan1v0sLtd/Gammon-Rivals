@@ -2,10 +2,11 @@ import {useEffect, useState} from "react"
 
 import {Link, useNavigate} from "react-router-dom"
 
-import styles from "../../pages/Profile.module.css"
 import {useAppDispatch, useAppSelector} from "../../store/hooks"
 import {authSignOutRequested} from "../auth/authActions"
 import {selectAuthCommand} from "../auth/authSelectors"
+
+import styles from "./ProfileAccountActions.module.css"
 
 export function ProfileAccountActions() {
   const dispatch = useAppDispatch()

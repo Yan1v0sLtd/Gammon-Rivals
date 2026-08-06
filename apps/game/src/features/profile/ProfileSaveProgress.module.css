@@ -1,0 +1,107 @@
+/* Guest "Connect with Google" CTA banner. */
+
+.profileSaveProgress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 1.2rem;
+}
+
+.profileGoogleButton {
+  border: 1px solid rgba(255, 220, 100, 0.76);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffe77b, #c87e18);
+  color: #241109;
+  font-weight: 900;
+  padding: 0.85rem 1.1rem;
+  box-shadow: 0 0.28rem 0 #704000;
+}
+
+/* Guest "Connect with Google" CTA. Moved out of the crammed profile-card
+ * info column to its own full-width banner row in the left stack (below
+ * the card). A single clear call-to-action instead of a tiny button
+ * squeezed under the XP bar. */
+.profileSaveProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.profileGoogleButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid rgba(255, 220, 100, 0.76);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffe77b, #c87e18);
+  color: #241109;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.7rem 1.1rem;
+  box-shadow: 0 0.28rem 0 #704000;
+}
+
+.profileGoogleButton:disabled {
+  opacity: 0.72;
+}
+
+/* White roundel with the Google "G" so the CTA reads as a Google action
+ * without bundling the brand SVG. Scoped under the button so it isn't
+ * caught by the pink error-text rule. */
+.profileGoogleButton .profileGoogleGlyph {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #1a73e8;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.profileSaveProgressErr {
+  color: #ff9eb0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+@media (orientation: landscape) {
+  .profileSaveProgress {
+    gap: calc(6 * var(--profile-u));
+    margin: 0;
+  }
+
+  .profileGoogleButton {
+    width: 100%;
+    min-height: calc(74 * var(--profile-u));
+    gap: calc(10 * var(--profile-u));
+    border-radius: calc(16 * var(--profile-u));
+    padding: calc(10 * var(--profile-u)) calc(20 * var(--profile-u));
+    font-size: calc(24 * var(--profile-u));
+    box-shadow: 0 calc(4 * var(--profile-u)) 0 #704000;
+  }
+
+  .profileGoogleButton .profileGoogleGlyph {
+    width: calc(34 * var(--profile-u));
+    height: calc(34 * var(--profile-u));
+    font-size: calc(22 * var(--profile-u));
+  }
+
+  .profileSaveProgressErr {
+    font-size: calc(16 * var(--profile-u));
+  }
+}

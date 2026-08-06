@@ -1,4 +1,3 @@
-import styles from "../../pages/Profile.module.css"
 import type {MatchSummary} from "../playerData/matchHistoryData"
 
 export const MODE_LABEL: Record<string, string> = {
@@ -40,17 +39,4 @@ export function modeIcon(mode: string): "hotseat" | "online" | "ai" {
   if (mode === "hotseat") return "hotseat"
   if (mode.startsWith("ai-")) return "ai"
   return "online"
-}
-
-export const MATCH_ICON_CLASS: Record<ReturnType<typeof modeIcon>, string> = {
-  hotseat: styles.profileMatchIconHotseat,
-  online: styles.profileMatchIconOnline,
-  ai: styles.profileMatchIconAi,
-}
-
-export const HISTORY_OUTCOME_CLASS: Record<ReturnType<typeof ownerOutcome>, string> = {
-  won: styles.profileHistoryStatusWon,
-  lost: styles.profileHistoryStatusLost,
-  open: styles.profileHistoryStatusOpen,
-  hotseat: styles.profileHistoryStatusHotseat,
 }

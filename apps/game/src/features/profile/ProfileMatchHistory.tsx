@@ -1,7 +1,6 @@
 import {skipToken} from "@reduxjs/toolkit/query/react"
 import {Link, useNavigate} from "react-router-dom"
 
-import styles from "../../pages/Profile.module.css"
 import {useAppSelector} from "../../store/hooks"
 import {selectAuthUserId} from "../auth/authSelectors"
 import {
@@ -12,12 +11,24 @@ import {
 import {
   errorMessage,
   formatDate,
-  HISTORY_OUTCOME_CLASS,
-  MATCH_ICON_CLASS,
   MODE_LABEL,
   modeIcon,
   ownerOutcome,
 } from "./profileHelpers"
+import styles from "./ProfileMatchHistory.module.css"
+
+export const MATCH_ICON_CLASS: Record<ReturnType<typeof modeIcon>, string> = {
+  hotseat: styles.profileMatchIconHotseat,
+  online: styles.profileMatchIconOnline,
+  ai: styles.profileMatchIconAi,
+}
+
+export const HISTORY_OUTCOME_CLASS: Record<ReturnType<typeof ownerOutcome>, string> = {
+  won: styles.profileHistoryStatusWon,
+  lost: styles.profileHistoryStatusLost,
+  open: styles.profileHistoryStatusOpen,
+  hotseat: styles.profileHistoryStatusHotseat,
+}
 
 export function ProfileMatchHistory() {
   const userId = useAppSelector(selectAuthUserId)

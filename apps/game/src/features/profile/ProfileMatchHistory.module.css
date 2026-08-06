@@ -1,0 +1,378 @@
+/* Match history panel (right column). */
+
+
+.profileHistoryPanel {
+  border: 1px solid rgba(174, 112, 50, 0.82);
+  background:
+    radial-gradient(circle at 12% 50%, rgba(143, 43, 185, 0.16), transparent 25rem),
+    linear-gradient(180deg, rgba(16, 18, 37, 0.96), rgba(7, 7, 20, 0.985));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 184, 0.14),
+    inset 0 0 0 1px rgba(140, 70, 22, 0.15),
+    0 0.9rem 1.8rem rgba(0, 0, 0, 0.35);
+  margin-top: 1.05rem;
+  border-radius: 1.2rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+}
+
+.profileHistoryRow {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: clamp(0.65rem, 2vw, 1.35rem);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, rgba(26, 25, 55, 0.94), rgba(11, 10, 31, 0.96));
+  padding: 0.88rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.profileHistoryRow:disabled {
+  cursor: default;
+}
+
+.profileMatchIcon {
+  position: relative;
+  display: grid;
+  width: 3.8rem;
+  height: 3.8rem;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, rgba(103, 31, 255, 0.42), rgba(24, 10, 55, 0.9));
+  box-shadow: inset 0 0 0 1px rgba(190, 95, 255, 0.54);
+}
+
+.profileMatchIcon span {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileMatchIcon span::before {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileMatchIcon span::after {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileMatchIconHotseat span {
+  width: 1.9rem;
+  height: 1.55rem;
+  border-radius: 0.45rem 0.45rem 0.25rem 0.25rem;
+  background: linear-gradient(180deg, #e07dff, #8615d0);
+}
+
+.profileMatchIconOnline span {
+  width: 2rem;
+  height: 2rem;
+  border: 0.2rem solid #67ff8f;
+  border-radius: 50%;
+}
+
+.profileMatchIconAi span {
+  width: 2.1rem;
+  height: 1.65rem;
+  border-radius: 0.42rem;
+  background: linear-gradient(180deg, #68dbff, #2055ff);
+}
+
+.profileMatchIconAi span::before {
+  top: 0.55rem;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: white;
+}
+
+.profileMatchIconAi span::after {
+  top: 0.55rem;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: white;
+}
+
+.profileMatchIconAi span::before {
+  left: 0.55rem;
+}
+
+.profileMatchIconAi span::after {
+  right: 0.55rem;
+}
+
+.profileHistoryScore {
+  min-width: 5.6rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding-left: clamp(0.7rem, 2vw, 1.35rem);
+  text-align: center;
+  font: 900 1.55rem / 1 "Segoe UI", sans-serif;
+  color: white;
+}
+
+.profileHistoryStatus {
+  min-width: 7rem;
+  text-align: right;
+  font: 900 1rem / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profileHistoryStatusWon {
+  color: #6dff9a;
+}
+
+.profileHistoryStatusLost {
+  color: #ff6b8b;
+}
+
+.profileHistoryStatusOpen {
+  color: #ffe33d;
+}
+
+.profileHistoryStatusHotseat {
+  color: #ffe33d;
+}
+
+@media (max-width: 640px) {
+  .profileHistoryRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .profileHistoryScore {
+    grid-column: 2;
+    min-width: 0;
+    border-left: 0;
+    padding-left: 0;
+    text-align: left;
+  }
+
+  .profileHistoryStatus {
+    grid-column: 2;
+    min-width: 0;
+    border-left: 0;
+    padding-left: 0;
+    text-align: left;
+  }
+}
+
+.profileHistoryPanel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 1.5rem;
+  padding: clamp(0.75rem, 1.9dvh, 1.25rem) clamp(1rem, 1.67vw, 2rem);
+}
+
+.profileHistoryPanel h2 {
+  color: white;
+  font: 900 clamp(1.15rem, 1.78vw, 2.125rem) / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profileHistoryList {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: clamp(0.45rem, 1.3dvh, 0.875rem);
+  margin-top: clamp(0.55rem, 1.5dvh, 1rem);
+}
+
+.profileHistoryRow {
+  display: grid;
+  grid-template-columns: clamp(2.6rem, 2.7vw, 3.25rem) minmax(0, 1fr) minmax(5rem, 7.5rem) minmax(6.4rem, 9.6rem) auto;
+  gap: clamp(0.8rem, 1.25vw, 1.5rem);
+  height: clamp(3.55rem, 6.67dvh, 4.5rem);
+  border-color: rgba(255, 255, 255, 0.06);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(180deg, rgba(24, 24, 47, 0.9), rgba(10, 10, 28, 0.98));
+  padding: 0 clamp(0.75rem, 1.35vw, 1.5rem);
+}
+
+.profileMatchIcon {
+  width: clamp(2.6rem, 2.7vw, 3.25rem);
+  height: clamp(2.6rem, 2.7vw, 3.25rem);
+  border-radius: 0.65rem;
+}
+
+.profileHistoryCopy {
+  min-width: 0;
+  text-align: left;
+}
+
+.profileHistoryCopy span {
+  display: block;
+  overflow: hidden;
+  color: white;
+  font: 900 clamp(1.05rem, 1.45vw, 1.75rem) / 1.05 "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileHistoryCopy em {
+  color: rgba(255, 255, 255, 0.56);
+  font-style: normal;
+}
+
+.profileHistoryCopy span::first-letter {
+  text-transform: uppercase;
+}
+
+.profileHistoryCopy small {
+  display: block;
+  margin-top: 0.22rem;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.56);
+  font: 700 clamp(0.85rem, 1.15vw, 1.35rem) / 1 "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileHistoryScore {
+  min-width: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding-left: clamp(0.8rem, 1.25vw, 1.5rem);
+  font-size: clamp(1.05rem, 1.45vw, 1.75rem);
+}
+
+.profileHistoryStatus {
+  min-width: 0;
+  font-size: clamp(0.78rem, 1.05vw, 1.25rem);
+}
+
+.profileHistoryChevron {
+  color: #ffd14e;
+  font: 900 clamp(1.8rem, 2vw, 2.4rem) / 1 "Segoe UI", sans-serif;
+}
+
+.profilePanelMessage {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 800;
+}
+
+.profilePanelMessage a {
+  color: #ffd54d;
+}
+
+.profilePanelMessageError {
+  color: #ff9eb0;
+}
+
+@media (orientation: landscape) {
+
+  /* History sits in the SAME body row as the left column, so its top must
+   * line up with the profile card's top. The base rule carries a
+   * margin-top: 1.05rem (a leftover from the old stacked layout) which
+   * pushed the panel ~17px lower than the card and made it overflow the
+   * row. Zero it out for the side-by-side landscape layout. */
+  .profileHistoryPanel {
+    margin-top: 0;
+  }
+
+  .profileHistoryPanel {
+    border-radius: calc(24 * var(--profile-u));
+    padding: calc(12 * var(--profile-u)) calc(26 * var(--profile-u));
+  }
+
+  .profileHistoryPanel h2 {
+    font-size: calc(34 * var(--profile-u));
+  }
+
+  .profileHistoryList {
+    gap: calc(14 * var(--profile-u));
+    margin-top: calc(12 * var(--profile-u));
+  }
+
+  .profileHistoryRow {
+    grid-template-columns:
+      calc(52 * var(--profile-u)) minmax(0, 1fr) calc(120 * var(--profile-u)) calc(150 * var(--profile-u)) calc(26 * var(--profile-u));
+    gap: calc(18 * var(--profile-u));
+    height: calc(72 * var(--profile-u));
+    border-radius: calc(18 * var(--profile-u));
+    padding: 0 calc(16 * var(--profile-u));
+  }
+
+  .profileMatchIcon {
+    width: calc(52 * var(--profile-u));
+    height: calc(52 * var(--profile-u));
+    border-radius: calc(10 * var(--profile-u));
+  }
+
+  .profileHistoryCopy span {
+    font-size: calc(28 * var(--profile-u));
+  }
+
+  .profileHistoryScore {
+    font-size: calc(28 * var(--profile-u));
+  }
+
+  .profileHistoryCopy small {
+    margin-top: calc(4 * var(--profile-u));
+    font-size: calc(20 * var(--profile-u));
+  }
+
+  .profileHistoryScore {
+    padding-left: calc(20 * var(--profile-u));
+
+  }
+
+  .profileHistoryStatus {
+    font-size: calc(20 * var(--profile-u));
+
+  }
+
+  .profileHistoryChevron {
+    font-size: calc(38 * var(--profile-u));
+  }
+
+  .profilePanelMessage {
+    font-size: calc(26 * var(--profile-u));
+  }
+}
+
+/* Tighten the profile-history-list so the new scroll wrapper
+   (max-h: 17rem; overflow-y: auto) fits ~4 rows cleanly. The
+   .profileHistoryRow has its own padding which is already tuned;
+   this just removes the panel-level max-height/overflow that
+   competed with the new scroll wrapper. */
+.profileHistoryPanel ul.profileHistoryList {
+  max-height: none;
+  overflow: visible;
+}
+
+/* History panel takes the full height of the right column and scrolls
+ * internally — more rows visible without scrolling the page itself. */
+.profileHistoryPanel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profileHistoryScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (orientation: landscape) and (max-height: 540px) {
+  .profileHistoryPanel {
+    height: auto;
+    max-height: 80dvh;
+  }
+}
+
+@media (max-width: 760px),
+(orientation: portrait) {
+  .profileHistoryPanel {
+    min-height: 22rem;
+  }
+}

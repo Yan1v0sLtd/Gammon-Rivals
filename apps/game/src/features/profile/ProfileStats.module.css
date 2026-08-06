@@ -1,0 +1,274 @@
+/* Player stats — 4 stat cards under the main card. */
+
+
+.profileStatGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.55rem;
+  border-radius: 1.35rem;
+  padding: 0.9rem;
+}
+
+.profileStatCard {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(146, 80, 255, 0.42);
+  border-radius: 0.85rem;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(146, 67, 255, 0.24), transparent 52%),
+    rgba(9, 9, 34, 0.78);
+  text-align: center;
+  padding: 1.05rem 0.6rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.profileStatCardWide {
+  grid-column: span 2;
+  min-height: 8rem;
+  grid-template-columns: auto auto 1fr;
+  justify-content: center;
+  column-gap: 1rem;
+  text-align: left;
+}
+
+.profileStatIcon {
+  position: relative;
+  display: grid;
+  width: 4.3rem;
+  height: 4.3rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 223, 91, 0.25), rgba(65, 23, 118, 0.82));
+  box-shadow: 0 0 1rem rgba(139, 53, 255, 0.42);
+}
+
+.profileStatIcon span {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileStatIcon span::before {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileStatIcon span::after {
+  position: absolute;
+  content: '';
+  display: block;
+}
+
+.profileStatIconFinished span {
+  width: 2rem;
+  height: 2rem;
+  border-left: 0.32rem solid #f5f5ff;
+  border-bottom: 0.32rem solid #f5f5ff;
+  transform: rotate(-45deg);
+}
+
+.profileStatIconWins span {
+  width: 2.25rem;
+  height: 1.9rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+  background: linear-gradient(180deg, #fff2a4, #d89216);
+}
+
+.profileStatIconLosses span {
+  width: 2.4rem;
+  height: 2.7rem;
+  clip-path: polygon(50% 0, 92% 16%, 84% 74%, 50% 100%, 16% 74%, 8% 16%);
+  background: linear-gradient(180deg, #d798ff, #7527d9 52%, #35105f);
+}
+
+.profileStatIconHotseat span {
+  width: 1.9rem;
+  height: 2.3rem;
+  border-radius: 48% 48% 42% 42%;
+  background: linear-gradient(180deg, #fff17b, #ff7d1d 42%, #b0002c);
+}
+
+@media (max-width: 900px) {
+  .profileStatGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .profileStatCard {
+    grid-column: span 1;
+    min-height: 10rem;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .profileStatCardWide {
+    grid-column: span 1;
+    min-height: 10rem;
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+
+.profileStatGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 8.75rem));
+  grid-template-rows: minmax(7.5rem, 10rem) minmax(5.8rem, 7.5rem);
+  justify-content: center;
+  align-content: center;
+  gap: clamp(0.8rem, 1vw, 1.25rem);
+  min-width: 0;
+  margin-top: 0;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 0 0 clamp(1.2rem, 1.9vw, 2.25rem);
+}
+
+.profileStatCard {
+  display: grid;
+  min-height: 0;
+  place-items: center;
+  border: 1px solid rgba(132, 73, 191, 0.32);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 50% 0, rgba(116, 50, 180, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(24, 20, 45, 0.86), rgba(10, 10, 27, 0.96));
+  text-align: center;
+  padding: 0.85rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -1px 0 rgba(255, 211, 82, 0.04);
+}
+
+.profileStatCardWide {
+  grid-column: span 2;
+  grid-template-columns: auto auto;
+  column-gap: 1rem;
+}
+
+.profileStatIcon {
+  width: clamp(2.6rem, 3.1vw, 3.7rem);
+  height: clamp(2.6rem, 3.1vw, 3.7rem);
+  background: transparent;
+  box-shadow: none;
+}
+
+.profileStatCard strong {
+  color: white;
+  font: 900 clamp(1.85rem, 2.85vw, 3.35rem) / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 0.2rem 0 rgba(0, 0, 0, 0.42);
+}
+
+.profileStatCard small {
+  color: rgba(255, 255, 255, 0.68);
+  font: 900 clamp(0.8rem, 1.25vw, 1.5rem) / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+@media (orientation: portrait),
+(max-width: 980px) {
+  .profileStatGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+@media (orientation: landscape) {
+
+  /* NOTE: the landscape overrides for --lobby-u (currency pills) and
+   * .profilePpShield live in a SEPARATE landscape block near the end
+   * of the file — their base rules (.profileTopCurrency,
+   * .profilePpShield) are defined LATER than this block, so an
+   * override here would lose the cascade to them. */
+  .profileStatGrid {
+    grid-template-columns: repeat(4, calc(140 * var(--profile-u)));
+    /* ONE row. The 4 stat cards fill a single row of 4 columns, so the
+     * old second row (calc(120 * u)) was always empty — ~95px of dead
+     * space that pushed the Log Out button down and stranded it. The
+     * wallet coins/gems cards that once occupied row 2 were removed from
+     * the JSX (the top bar shows balances now). */
+    grid-template-rows: calc(160 * var(--profile-u));
+    gap: calc(20 * var(--profile-u));
+    align-content: center;
+    justify-content: center;
+    margin-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
+    padding: 0 0 0 calc(24 * var(--profile-u));
+  }
+
+  .profileStatCard {
+    border-radius: calc(20 * var(--profile-u));
+    padding: calc(12 * var(--profile-u));
+  }
+
+  .profileStatCardWide {
+    grid-column: span 2;
+    grid-template-columns: auto auto;
+    column-gap: calc(16 * var(--profile-u));
+  }
+
+  .profileStatIcon {
+    width: calc(58 * var(--profile-u));
+    height: calc(58 * var(--profile-u));
+  }
+
+  .profileStatIconFinished span {
+    width: calc(36 * var(--profile-u));
+    height: calc(36 * var(--profile-u));
+    border-left-width: calc(6 * var(--profile-u));
+    border-bottom-width: calc(6 * var(--profile-u));
+  }
+
+  .profileStatIconWins span {
+    width: calc(42 * var(--profile-u));
+    height: calc(36 * var(--profile-u));
+  }
+
+  .profileStatIconLosses span {
+    width: calc(42 * var(--profile-u));
+    height: calc(48 * var(--profile-u));
+  }
+
+  .profileStatIconHotseat span {
+    width: calc(38 * var(--profile-u));
+    height: calc(50 * var(--profile-u));
+  }
+
+  .profileStatCard strong {
+    font-size: calc(54 * var(--profile-u));
+  }
+
+  .profileStatCard small {
+    font-size: calc(24 * var(--profile-u));
+  }
+}
+
+/* Stat row: 4 equal cards laid out in one row under the avatar card.
+ * Wallet coins/gems duplicates have been removed from the JSX (the top
+ * bar already shows them) so we only have 4 stats now. */
+.profileStatGrid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  border-left: 0 !important;
+  padding: 0 !important;
+  gap: 0.75rem;
+}
+
+@media (max-width: 760px),
+(orientation: portrait) {
+  .profileStatGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.profileStatValue {
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+}

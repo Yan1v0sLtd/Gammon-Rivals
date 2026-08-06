@@ -1,10 +1,11 @@
 import {Link} from "react-router-dom"
 
 import {formatCompactNumber} from "../../lib/format"
-import styles from "../../pages/Profile.module.css"
 import {useAppSelector} from "../../store/hooks"
 import {useShop} from "../appUi/useShop"
 import {selectCurrentWallet} from "../auth/authSelectors"
+
+import styles from "./ProfileTopNav.module.css"
 
 /**
  * Profile-page CurrencyPill — same visual design as the lobby's top-bar

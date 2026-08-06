@@ -1,0 +1,616 @@
+/* Profile main card — avatar, name, rank, XP, next reward. */
+
+/* Shared card surface (border/bg/shadow) kept inline per module instead of
+ * composes from shared.module.css: Vite emits the composed file AFTER the
+ * consuming module, so a composed base would override the per-component
+ * border/background overrides below. */
+.profileMainCard {
+  border: 1px solid rgba(174, 112, 50, 0.82);
+  background:
+    radial-gradient(circle at 12% 50%, rgba(143, 43, 185, 0.16), transparent 25rem),
+    linear-gradient(180deg, rgba(16, 18, 37, 0.96), rgba(7, 7, 20, 0.985));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 184, 0.14),
+    inset 0 0 0 1px rgba(140, 70, 22, 0.15),
+    0 0.9rem 1.8rem rgba(0, 0, 0, 0.35);
+}
+
+.profileAvatarStage {
+  position: relative;
+  display: grid;
+  min-height: 16.5rem;
+  place-items: center;
+}
+
+.profileAvatarGlow {
+  position: absolute;
+  width: min(92%, 15.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 48% 45%, rgba(224, 132, 255, 0.86), rgba(115, 27, 197, 0.54) 54%, transparent 70%);
+  filter: blur(0.15rem);
+  box-shadow: 0 0 2.2rem rgba(176, 68, 255, 0.82);
+}
+
+.profileAvatarImage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #fff4b1, #cf861e 48%, #6027af);
+  box-shadow:
+    0 0 0 0.35rem #17133b,
+    0 0 0 0.62rem #ffd159,
+    0 0 0 0.78rem rgba(255, 255, 255, 0.34),
+    0 0.9rem 1.4rem rgba(0, 0, 0, 0.45);
+}
+
+.profileNameEditor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.profileNameInput {
+  min-width: min(100%, 22rem);
+  flex: 1 1 16rem;
+  border: 1px solid rgba(255, 214, 91, 0.45);
+  border-radius: 0.7rem;
+  background: rgba(0, 0, 0, 0.36);
+  color: white;
+  font: 900 1.6rem / 1 "Segoe UI", sans-serif;
+  padding: 0.85rem 1rem;
+  outline: none;
+}
+
+.profileNameInput:focus {
+  border-color: #ffd85d;
+  box-shadow: 0 0 0 0.2rem rgba(255, 216, 93, 0.16);
+}
+
+.profileSmallAction {
+  border-radius: 0.7rem;
+  background: linear-gradient(180deg, #ffe27c, #e49a20);
+  color: #26120a;
+  font-weight: 900;
+  padding: 0.72rem 1rem;
+  box-shadow: 0 0.24rem 0 #784100;
+}
+
+.profileSmallActionGhost {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  box-shadow: none;
+}
+
+.profileEditButton {
+  position: relative;
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(255, 220, 101, 0.38);
+  border-radius: 0.6rem;
+  background: rgba(7, 8, 28, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.profileEditButton span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.2rem;
+  height: 0.35rem;
+  border-radius: 9999px;
+  background: #ffc940;
+  transform: translate(-50%, -50%) rotate(-38deg);
+}
+
+.profileEditButton span::after {
+  content: '';
+  position: absolute;
+  right: -0.28rem;
+  top: 0.01rem;
+  width: 0;
+  height: 0;
+  border-left: 0.34rem solid #ffc940;
+  border-top: 0.16rem solid transparent;
+  border-bottom: 0.16rem solid transparent;
+}
+
+.profileRankBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid #ffd462;
+  border-radius: 0.8rem;
+  background:
+    linear-gradient(180deg, rgba(255, 226, 108, 0.96), #b56a14 48%, #74400b);
+  color: #211004;
+  font: 900 clamp(1.35rem, 3.1vw, 2rem) / 1 "Segoe UI", sans-serif;
+  padding: 0.22rem 1rem 0.34rem 0.28rem;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 0.45rem 0.95rem rgba(0, 0, 0, 0.38);
+}
+
+.profileRankShield {
+  position: relative;
+  display: grid;
+  width: 3rem;
+  height: 3.45rem;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 18%, 84% 76%, 50% 100%, 16% 76%, 8% 18%);
+  background: linear-gradient(180deg, #ffd765, #8d500f);
+}
+
+.profileRankShield span {
+  width: 1.72rem;
+  height: 1.72rem;
+  clip-path: polygon(50% 0, 62% 34%, 98% 35%, 69% 56%, 79% 91%, 50% 70%, 21% 91%, 31% 56%, 2% 35%, 38% 34%);
+  background: linear-gradient(180deg, #fff8b8, #ffc11f 55%, #ae5c09);
+}
+
+.profileRating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgba(255, 255, 255, 0.65);
+  font: 800 1.25rem / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profileRating strong {
+  color: #ffd449;
+}
+
+.profileRatingCup {
+  width: 1.35rem;
+  height: 1.15rem;
+  border-radius: 0 0 0.55rem 0.55rem;
+  background: linear-gradient(180deg, #fff3ad, #d58e18);
+  box-shadow: 0 0 0.45rem rgba(255, 197, 51, 0.45);
+}
+
+@media (max-width: 900px) {
+  .profileNameEditor {
+    justify-content: center;
+
+  }
+}
+
+@media (max-width: 640px) {
+  .profileMainCard {
+    padding: 1rem;
+  }
+
+  .profileAvatarStage {
+    min-height: 13.4rem;
+  }
+
+  .profileAvatarImage {
+    transform: scale(0.82);
+  }
+}
+
+.profileMainCard {
+  display: grid;
+  grid-template-columns: clamp(15rem, 17.2vw, 20.625rem) minmax(27rem, 1fr) minmax(34rem, 43.5rem);
+  gap: clamp(1.5rem, 1.9vw, 2.25rem);
+  align-items: center;
+  margin-inline: clamp(0.65rem, 0.94vw, 1.125rem);
+  overflow: hidden;
+  border-radius: 1.75rem;
+  padding: clamp(1.5rem, 3.7dvh, 2.5rem) clamp(1.65rem, 2.2vw, 2.625rem);
+}
+
+.profileAvatarStage {
+  /* Shrink-wrap the avatar (don't stretch to the card height) so the
+   * level shield can anchor to the avatar's actual bottom edge. */
+  min-height: 0;
+  place-items: center;
+  align-self: center;
+  padding-top: 0;
+}
+
+.profileAvatarGlow {
+  width: clamp(11rem, 11.5vw, 13.75rem);
+  filter: blur(0.1rem);
+  opacity: 0.86;
+  box-shadow: 0 0 1.65rem rgba(189, 70, 255, 0.44);
+}
+
+.profileAvatarImage {
+  width: clamp(11rem, 11.5vw, 13.75rem) !important;
+  height: clamp(11rem, 11.5vw, 13.75rem) !important;
+  box-shadow:
+    0 0 0 0.28rem #151128,
+    0 0 0 0.54rem #f4c64a,
+    0 0 0 0.7rem rgba(255, 244, 177, 0.48),
+    0 0.75rem 1.35rem rgba(0, 0, 0, 0.46);
+}
+
+.profileInfoColumn {
+  min-width: 0;
+}
+
+.profileNameRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1.125rem;
+}
+
+.profileNameRow h1 {
+  min-width: 0;
+  overflow: hidden;
+  color: white;
+  font: 900 clamp(2.55rem, 3.35vw, 4rem) / 1 "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.22rem 0 rgba(0, 0, 0, 0.52);
+  white-space: nowrap;
+}
+
+.profileEditButton {
+  width: clamp(2.1rem, 2.2vw, 2.625rem);
+  height: clamp(2.1rem, 2.2vw, 2.625rem);
+  border-radius: 0.7rem;
+}
+
+.profileNameEditor {
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.profileNameInput {
+  max-width: 28rem;
+  min-width: 18rem;
+  border-radius: 0.8rem;
+  font-size: clamp(1.6rem, 2.3vw, 2.4rem);
+  padding: 0.65rem 0.9rem;
+}
+
+.profileSmallAction {
+  min-height: 2.7rem;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.95rem;
+}
+
+.profileRankRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 1.05rem;
+}
+
+.profileRankBadge {
+  min-width: clamp(10.5rem, 11.5vw, 13.75rem);
+  min-height: clamp(3.15rem, 3.35vw, 4rem);
+  gap: 0.75rem;
+  border-radius: 1.125rem;
+  font-size: clamp(1.25rem, 1.55vw, 1.75rem);
+  padding: 0.28rem 1.05rem 0.34rem 0.42rem;
+}
+
+.profileRankShield {
+  width: clamp(2.3rem, 2.5vw, 3rem);
+  height: clamp(2.72rem, 2.9vw, 3.45rem);
+}
+
+.profileRankShield span {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.profileRating {
+  gap: 0.62rem;
+  font-size: clamp(1.1rem, 1.25vw, 1.5rem);
+}
+
+.profileRatingCup {
+  width: 1.55rem;
+  height: 1.32rem;
+}
+
+.profileXpSection {
+  width: min(100%, 38.75rem);
+  margin-top: 1.45rem;
+}
+
+.profileLevelRow {
+  display: flex;
+  justify-content: space-between;
+  color: white;
+  font: 900 clamp(1.05rem, 1.25vw, 1.5rem) / 1 "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.profileLevelRow span:last-child {
+  color: #d24cff;
+}
+
+.profileXpRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.45rem;
+  margin-top: 0.8rem;
+}
+
+.profileNextReward {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  color: rgba(255, 255, 255, 0.58);
+  font: 800 clamp(1rem, 1.45vw, 1.75rem) / 1 "Segoe UI", sans-serif;
+}
+
+.profileNextReward img {
+  width: clamp(1.25rem, 1.35vw, 1.625rem);
+  height: clamp(1.25rem, 1.35vw, 1.625rem);
+}
+
+.profileNextReward strong {
+  color: #ffd322;
+}
+
+@media (orientation: portrait),
+(max-width: 980px) {
+  .profileMainCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (orientation: landscape) {
+  .profileMainCard {
+    /* Auto height so the info column (name → rank → XP → next reward →
+     * Google) flows naturally instead of overflowing a fixed 420u slot
+     * and overlapping (the XP bar over the Google button). */
+    height: auto;
+    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr);
+    gap: calc(40 * var(--profile-u));
+    margin-inline: var(--profile-side-inset);
+    border-radius: calc(28 * var(--profile-u));
+    padding: calc(40 * var(--profile-u)) calc(42 * var(--profile-u));
+  }
+
+  .profileAvatarStage {
+    /* Shrink-wrap the avatar so the level shield anchors to its real
+     * bottom edge (was stretched → shield floated below the avatar). */
+    align-self: center;
+    min-height: 0;
+    place-items: center;
+    padding-top: 0;
+
+  }
+
+  .profileAvatarGlow {
+    width: calc(220 * var(--profile-u)) !important;
+    height: calc(220 * var(--profile-u)) !important;
+  }
+
+  .profileAvatarImage {
+    width: calc(220 * var(--profile-u)) !important;
+    height: calc(220 * var(--profile-u)) !important;
+  }
+
+  .profileAvatarGlow {
+    filter: blur(calc(2 * var(--profile-u)));
+  }
+
+  .profileAvatarImage {
+    box-shadow:
+      0 0 0 calc(5 * var(--profile-u)) #151128,
+      0 0 0 calc(10 * var(--profile-u)) #f4c64a,
+      0 0 0 calc(13 * var(--profile-u)) rgba(255, 244, 177, 0.48),
+      0 calc(14 * var(--profile-u)) calc(25 * var(--profile-u)) rgba(0, 0, 0, 0.46);
+  }
+
+  .profileInfoColumn {
+    align-self: center;
+    min-width: 0;
+  }
+
+  .profileNameRow {
+    gap: calc(18 * var(--profile-u));
+  }
+
+  .profileNameRow h1 {
+    font-size: calc(64 * var(--profile-u));
+  }
+
+  .profileEditButton {
+    width: calc(42 * var(--profile-u));
+    height: calc(42 * var(--profile-u));
+    border-radius: calc(10 * var(--profile-u));
+  }
+
+  .profileEditButton span {
+    width: calc(19 * var(--profile-u));
+    height: calc(6 * var(--profile-u));
+  }
+
+  .profileEditButton span::after {
+    right: calc(-5 * var(--profile-u));
+    border-left-width: calc(6 * var(--profile-u));
+    border-top-width: calc(3 * var(--profile-u));
+    border-bottom-width: calc(3 * var(--profile-u));
+  }
+
+  .profileRankRow {
+    gap: calc(10 * var(--profile-u));
+    margin-top: calc(14 * var(--profile-u));
+  }
+
+  .profileRankBadge {
+    min-width: calc(220 * var(--profile-u));
+    min-height: calc(64 * var(--profile-u));
+    gap: calc(12 * var(--profile-u));
+    border-radius: calc(18 * var(--profile-u));
+    padding: calc(5 * var(--profile-u)) calc(18 * var(--profile-u)) calc(7 * var(--profile-u)) calc(8 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
+
+  .profileRankShield {
+    width: calc(48 * var(--profile-u));
+    height: calc(55 * var(--profile-u));
+  }
+
+  .profileRankShield span {
+    width: calc(25 * var(--profile-u));
+    height: calc(25 * var(--profile-u));
+  }
+
+  .profileRating {
+    gap: calc(10 * var(--profile-u));
+    font-size: calc(24 * var(--profile-u));
+  }
+
+  .profileRatingCup {
+    width: calc(28 * var(--profile-u));
+    height: calc(24 * var(--profile-u));
+  }
+
+  .profileXpSection {
+    width: min(100%, calc(620 * var(--profile-u)));
+    margin-top: calc(24 * var(--profile-u));
+  }
+
+  .profileLevelRow {
+    font-size: calc(24 * var(--profile-u));
+  }
+
+  .profileXpRow {
+    position: relative;
+    display: block;
+    margin-top: calc(12 * var(--profile-u));
+  }
+
+  /* Desktop-landscape sizing for the lobby-style XP bar on the
+     profile page. Scales with --profile-u so it matches the rest
+     of the desktop profile layout (the original .profileXpBar
+     used `width: min(100%, calc(580 * var(--profile-u))); height:
+     calc(34 * var(--profile-u))` — we mirror those values). */
+  :global(.lobby-profile-progress).profileXpWide {
+    width: min(100%, calc(580 * var(--profile-u)));
+    height: calc(34 * var(--profile-u));
+  }
+
+  .profileXpWide :global(.lobby-profile-progress-label) {
+    font-size: calc(20 * var(--profile-u));
+  }
+
+  .profileNextReward {
+    gap: calc(8 * var(--profile-u));
+    margin-top: calc(14 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
+
+  .profileNextReward img {
+    width: calc(26 * var(--profile-u));
+    height: calc(26 * var(--profile-u));
+  }
+}
+
+/* Widen the lobby progress bar to fill the profile XP row, and
+   use a bigger height matching the original .profileXpBar
+   (clamp(1.55rem, 1.78vw, 2.125rem)) so the bar feels weighty
+   on the profile card rather than the lobby's compact bar.
+   The lobby's default is `width: clamp(6.4rem, 13vw, 11rem)` —
+   sized for the lobby's tiny top-bar slot. */
+:global(.lobby-profile-progress).profileXpWide {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: clamp(1.55rem, 1.78vw, 2.125rem);
+}
+
+.profileXpWide :global(.lobby-profile-progress-label) {
+  font-size: clamp(0.85rem, 1.05vw, 1.15rem);
+}
+
+/* Main card: was a 3-column grid (avatar | info | stats). Now it only
+ * holds avatar + info — stats moved out to a sibling. So this becomes a
+ * 2-column grid. The .profileStatGrid rule below restyles the moved
+ * stats independently. */
+.profileMainCard {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  gap: 1.5rem !important;
+  padding: 1.5rem !important;
+  align-items: center !important;
+}
+
+@media (orientation: landscape) {
+
+  /* The main card no longer needs to be a fixed 420px tall slot — it
+   * sits inside the left stack with `height: auto`. */
+  .profileMainCard {
+    height: auto !important;
+    grid-template-columns: calc(330 * var(--profile-u)) minmax(0, 1fr) !important;
+  }
+}
+
+@media (orientation: portrait) {
+  .profileMainCard {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* The base name size effectively pins to ~2.55rem (~41px) on phones —
+   * its 3.35vw term only overtakes the min past ~1200px wide — so a
+   * 13-char name like "Yaniv Alfassi" lands ~1px wider than the column
+   * and the ellipsis clips it to "Yaniv Alfa...". Scale the name with
+   * the viewport in portrait so typical names fit with margin; very long
+   * names still ellipsize gracefully. */
+  .profileNameRow h1 {
+    font-size: clamp(1.6rem, 6.4vw, 2.55rem);
+  }
+}
+
+/* Profile-page shield — same rounded shape as :global(.lobby-pp-shield), but
+ * scaled up for the big profile avatar and anchored to the bottom-
+ * centre of the avatar circle (the avatar is 220px, centred in
+ * .profileAvatarStage). Replaces the old pointy hex. */
+.profilePpShield {
+  composes: textWhite from "../../styles/shared.module.css";
+  position: absolute;
+  left: 50%;
+  /* Stage shrink-wraps the avatar, so its bottom edge IS the avatar's
+   * bottom — sit the shield straddling it, bottom-centre. */
+  top: auto;
+  bottom: -0.6rem;
+  transform: translateX(-50%);
+  width: clamp(2.3rem, 3.6vw, 3rem);
+  aspect-ratio: 0.78;
+  display: grid;
+  place-items: center;
+  border: 2px solid #f2b633;
+  border-radius: 18% 18% 45% 45%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 25%),
+    linear-gradient(180deg, #20296d, #0b103e 72%);
+  box-shadow:
+    inset 0 0 6px rgba(115, 98, 255, 0.38),
+    0 3px 7px rgba(0, 0, 0, 0.5),
+    0 0 5px rgba(255, 194, 50, 0.4);
+  z-index: 6;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  text-shadow: 0 1px 0 #25235b;
+}
+
+@media (orientation: landscape) {
+
+  /* Level shield: shrink from ~46% of the avatar width to ~27% and nudge
+   * it a touch lower so it sits cleanly on the avatar's bottom edge. */
+  .profilePpShield {
+    width: calc(60 * var(--profile-u));
+    bottom: calc(-30 * var(--profile-u));
+    border-width: calc(2 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
+}

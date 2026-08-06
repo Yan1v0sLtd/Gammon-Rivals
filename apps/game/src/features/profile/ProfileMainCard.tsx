@@ -2,10 +2,11 @@ import {useState} from "react"
 
 import {Avatar} from "../../components/Avatar"
 import {formatCompactNumber} from "../../lib/format"
-import styles from "../../pages/Profile.module.css"
 import {useAppSelector} from "../../store/hooks"
 import {selectAuthUserId, selectCurrentProfile, selectProfileProgression} from "../auth/authSelectors"
 import {useUpdateDisplayNameMutation} from "../playerData/playerDataApi"
+
+import styles from "./ProfileMainCard.module.css"
 
 export function ProfileMainCard() {
   const userId = useAppSelector(selectAuthUserId)

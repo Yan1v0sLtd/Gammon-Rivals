@@ -1,0 +1,266 @@
+/* Profile top bar — back button + wallet pills. */
+
+.profileIconButton {
+  position: relative;
+  display: grid;
+  width: clamp(3.4rem, 7vw, 4.9rem);
+  height: clamp(3.4rem, 7vw, 4.9rem);
+  place-items: center;
+  border: 1px solid rgba(255, 201, 57, 0.85);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(180deg, rgba(31, 32, 61, 0.94), rgba(10, 11, 34, 0.98)),
+    radial-gradient(circle at 50% 0, rgba(255, 211, 70, 0.15), transparent 62%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 0 1px rgba(145, 71, 255, 0.32),
+    0 0.45rem 1rem rgba(0, 0, 0, 0.42);
+}
+
+.profileBackChevron {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-left: 0.42rem solid #ffcc47;
+  border-bottom: 0.42rem solid #ffcc47;
+  transform: rotate(45deg) translateX(0.12rem);
+  filter: drop-shadow(0 0.12rem 0 rgba(0, 0, 0, 0.5));
+}
+
+.profileTopNav {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.profileIconButton {
+  width: clamp(3.75rem, 3.75vw, 4.5rem);
+  height: clamp(3.75rem, 3.75vw, 4.5rem);
+  border: 1px solid rgba(255, 211, 74, 0.95);
+  border-radius: 1.125rem;
+  background:
+    linear-gradient(180deg, rgba(22, 24, 42, 0.98), rgba(8, 9, 22, 0.99)),
+    radial-gradient(circle at 50% 0, rgba(255, 209, 74, 0.15), transparent 68%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(255, 211, 74, 0.12),
+    0 0.5rem 1.25rem rgba(0, 0, 0, 0.38);
+}
+
+.profileBackChevron {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-left-width: 0.48rem;
+  border-bottom-width: 0.48rem;
+}
+
+.profileCurrencyPill {
+  display: grid;
+  grid-template-columns: clamp(2.5rem, 2.5vw, 3rem) minmax(4.2rem, auto) clamp(2rem, 2vw, 2.375rem);
+  align-items: center;
+  gap: clamp(0.65rem, 0.9vw, 1rem);
+  color: white;
+  font: 900 clamp(1.35rem, 1.55vw, 1.8rem) / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 0.12rem 0 rgba(0, 0, 0, 0.65);
+}
+
+.profileCurrencyPill img {
+  width: clamp(2.5rem, 2.5vw, 3rem);
+  height: clamp(2.5rem, 2.5vw, 3rem);
+  object-fit: contain;
+  filter: drop-shadow(0 0.28rem 0.35rem rgba(0, 0, 0, 0.45));
+}
+
+.profileCurrencyPill button {
+  width: clamp(2rem, 2vw, 2.375rem);
+  height: clamp(2rem, 2vw, 2.375rem);
+  border: 1px solid rgba(255, 188, 60, 0.78);
+  border-radius: 0.55rem;
+  background: linear-gradient(180deg, #ffd45d, #9b5a12);
+  color: #160b05;
+  font: 900 clamp(1.35rem, 1.55vw, 1.75rem) / 1 "Segoe UI", sans-serif;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 0.22rem 0 rgba(70, 38, 0, 0.78);
+}
+
+@media (orientation: portrait),
+(max-width: 980px) {
+  .profileTopNav {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+@media (orientation: landscape) {
+  .profileTopNav {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+
+  .profileIconButton {
+    width: calc(72 * var(--profile-u));
+    height: calc(72 * var(--profile-u));
+    border-radius: calc(18 * var(--profile-u));
+  }
+
+  .profileBackChevron {
+    width: calc(22 * var(--profile-u));
+    height: calc(22 * var(--profile-u));
+    border-left-width: calc(8 * var(--profile-u));
+    border-bottom-width: calc(8 * var(--profile-u));
+  }
+
+  .profileCurrencyPill {
+    grid-template-columns:
+      calc(48 * var(--profile-u)) minmax(calc(72 * var(--profile-u)), auto) calc(38 * var(--profile-u));
+    gap: calc(12 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
+
+  .profileCurrencyPill img {
+    width: calc(48 * var(--profile-u));
+    height: calc(48 * var(--profile-u));
+  }
+
+  .profileCurrencyPill button {
+    width: calc(38 * var(--profile-u));
+    height: calc(38 * var(--profile-u));
+    border-radius: calc(9 * var(--profile-u));
+    font-size: calc(28 * var(--profile-u));
+  }
+}
+
+/* Top bar: keep the back button on the left, center the currency cluster,
+ * and shrink the pills ~20 %. The `.profileTopCurrency` wrapper is an
+ * absolute-positioned centred row so it doesn't get squeezed by the
+ * back button. */
+.profileTopNav {
+  position: relative;
+}
+
+.profileTopCurrency {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  /* The pills reuse the lobby's `.lobby-currency-*` styling so they look
+   * IDENTICAL to the lobby top bar (flat, green-bordered "+",
+   * --lobby-u-scaled). Those rules need --lobby-u, normally defined on
+   * `.lobby-shell` — supply it here. Portrait uses a fixed fallback
+   * because the lobby's dvw-based formula collapses to a few px when the
+   * viewport is tall-and-narrow; landscape (below) uses the real
+   * formula so it matches the lobby pixel-for-pixel. */
+  --lobby-u: 0.62px;
+  gap: calc(14 * var(--lobby-u));
+}
+
+/* Explicit pill height so the lobby rule's `height: 100%` resolves
+ * against a real box. (The old `transform: scale(0.8)` shrink hack is
+ * gone — it blurred the pills and never matched the lobby's size.) */
+.profileTopCurrency :global(.lobby-currency-pill) {
+  height: calc(62 * var(--lobby-u));
+}
+
+@media (orientation: landscape) {
+
+  /* Currency pills: match the lobby top bar 1:1 — same --lobby-u formula
+   * as `:global(.lobby-shell)`, so the reused `:global(.lobby-currency-)*` rules render at
+   * the identical flat, --lobby-u-scaled size. (Portrait keeps the fixed
+   * 0.62px fallback set on the base `.profileTopCurrency` rule.) */
+  .profileTopCurrency {
+    --lobby-u: min(0.055804dvw, 0.120773dvh);
+  }
+}
+
+.profileCurrencyPill {
+  position: relative;
+  display: flex;
+  height: 2.76rem;
+  min-width: 7.87rem;
+  align-items: center;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(40 87 119 / 0.8);
+  background-image: linear-gradient(to bottom, rgb(17 79 131 / 0.8), rgb(7 55 104 / 0.88));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.26), 0 7px 14px rgb(0 0 0 / 0.32);
+  backdrop-filter: blur(4px);
+}
+
+.profileCurrencyIcon {
+  display: grid;
+  margin-left: -0.92rem;
+  height: 3.22rem;
+  width: 3.22rem;
+  flex-shrink: 0;
+  place-items: center;
+}
+
+.profileCurrencyImg {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.42));
+}
+
+.profileCurrencyValue {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  composes: textWhite from "../../styles/shared.module.css";
+  display: flex;
+  margin-left: -0.46rem;
+  height: 2.35rem;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  background-color: rgb(7 31 63 / 0.82);
+  padding: 0 0.92rem;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.35));
+}
+
+.profileCurrencyAdd {
+  position: relative;
+  display: grid;
+  margin-right: 0.23rem;
+  height: 2.3rem;
+  width: 2.3rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 0.25rem;
+  background-image: linear-gradient(to bottom, #8dff68, #47d039, #17831c);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), 0 3px 0 #0c5710;
+  transition: filter 150ms ease, transform 150ms ease;
+}
+
+.profileCurrencyAdd:hover {
+  filter: brightness(1.1);
+}
+
+.profileCurrencyAdd:active {
+  transform: translateY(1px);
+}
+
+.profileCurrencyPlus {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 1.38rem;
+  width: 0.345rem;
+  transform: translate(-50%, -50%);
+  border-radius: 0.25rem;
+  background-color: #fff;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.profileCurrencyPlusH {
+  height: 0.345rem;
+  width: 1.38rem;
+}

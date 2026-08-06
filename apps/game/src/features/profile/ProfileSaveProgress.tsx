@@ -1,9 +1,10 @@
 import {useEffect, useState} from "react"
 
-import styles from "../../pages/Profile.module.css"
 import {useAppDispatch, useAppSelector} from "../../store/hooks"
 import {authGoogleLinkRequested} from "../auth/authActions"
 import {selectAuthCommand, selectIsGuest} from "../auth/authSelectors"
+
+import styles from "./ProfileSaveProgress.module.css"
 
 export function ProfileSaveProgress() {
   const dispatch = useAppDispatch()
