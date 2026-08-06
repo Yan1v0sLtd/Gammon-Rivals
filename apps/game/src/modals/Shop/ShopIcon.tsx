@@ -2,12 +2,14 @@
 // price button, hero fallback). Sub-renders are private; only the kind-based
 // entry point is public.
 
+import styles from "./ShopIcon.module.css"
+
 export type ShopIconKind = "coins" | "gems" | "xp" | "dice"
 
 function GemIcon({className = ""}: {className?: string}) {
   return (<img
     alt=""
-    className={`select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+    className={`${styles.icon} ${className}`}
     draggable={false}
     src="/lobby/carousel/gem.webp"/>)
 }
@@ -15,7 +17,7 @@ function GemIcon({className = ""}: {className?: string}) {
 function CoinIcon({className = ""}: {className?: string}) {
   return (<img
     alt=""
-    className={`select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+    className={`${styles.icon} ${className}`}
     draggable={false}
     src="/lobby/icons/gold-coin.webp"/>)
 }
@@ -23,7 +25,7 @@ function CoinIcon({className = ""}: {className?: string}) {
 function XpBadge({className = ""}: {className?: string}) {
   return (<svg
     aria-hidden="true"
-    className={`w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+    className={`${styles.vectorIcon} ${className}`}
     viewBox="0 0 100 110">
     <defs>
       <linearGradient
@@ -76,7 +78,7 @@ function XpBadge({className = ""}: {className?: string}) {
 function DiceIcon({className = ""}: {className?: string}) {
   return (<svg
     aria-hidden="true"
-    className={`w-auto drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+    className={`${styles.vectorIcon} ${className}`}
     viewBox="0 0 100 80">
     <defs>
       <linearGradient

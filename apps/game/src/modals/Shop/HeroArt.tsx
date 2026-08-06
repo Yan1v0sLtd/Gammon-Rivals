@@ -1,3 +1,4 @@
+import styles from "./HeroArt.module.css"
 import type {HeadlineKind} from "./shopCatalog"
 import {type ShopIconKind, ShopIcon} from "./ShopIcon"
 
@@ -28,7 +29,7 @@ export function HeroArt({
   if (imageUrl) {
     return (<img
       alt=""
-      className={`select-none object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.4)] ${className}`}
+      className={`${styles.heroImage} ${className}`}
       draggable={false}
       src={imageUrl}
       onError={(e) => {

@@ -1,3 +1,4 @@
+import styles from "./PriceLabel.module.css"
 import {ShopIcon} from "./ShopIcon"
 
 export function PriceLabel({
@@ -5,12 +6,12 @@ export function PriceLabel({
   priceGems,
 }: {priceUsd: number | null, priceGems: number | null}) {
   if (priceGems !== null) {
-    return (<span className="flex items-center justify-center gap-1.5">
+    return (<span className={styles.priceRow}>
       <ShopIcon
-        className="h-7 w-7"
+        className={styles.gemIcon}
         kind="gems"/>
-      <span className="tabular-nums">{priceGems.toLocaleString()}</span>
+      <span className={styles.priceValue}>{priceGems.toLocaleString()}</span>
     </span>)
   }
-  return <span className="tabular-nums">${(priceUsd ?? 0).toFixed(2)}</span>
+  return <span className={styles.priceValue}>${(priceUsd ?? 0).toFixed(2)}</span>
 }

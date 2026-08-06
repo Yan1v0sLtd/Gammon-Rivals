@@ -1,0 +1,10 @@
+.icon {
+  composes: iconBase from "../../styles/shared.module.css";
+}
+
+/* SVG-only icons (XP badge, dice) keep `width: auto` so the caller's explicit
+ * width/height drives the box, matching the original `w-auto` utility. */
+.vectorIcon {
+  composes: iconBase from "../../styles/shared.module.css";
+  width: auto;
+}

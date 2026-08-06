@@ -1,0 +1,205 @@
+.bundleCard {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 30rem;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 201, 61, 0.85);
+  background-image: linear-gradient(to bottom, #0c1e39, #071326);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 16px 32px rgba(0, 0, 0, 0.35);
+}
+
+/* Title bar — optional. Background/text colours are BO-overridable; unset falls
+ * back to the default gold plate + cream text (headerBarGold). */
+.headerBar {
+  composes: plateText from "../../styles/shared.module.css";
+  padding: 1rem;
+  text-align: center;
+  font-size: 1.5rem;
+  letter-spacing: 0.12em;
+}
+
+.headerBarGold {
+  composes: goldPlate from "../../styles/shared.module.css";
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+/* -mx-5 -mt-5 bleeds the hero back out to the card frame, cancelling the body's
+ * padding for THIS block only, so the corner ribbon reaches the edges. */
+.hero {
+  position: relative;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  margin-top: -1.25rem;
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.heroArt {
+  width: 16rem;
+  height: 16rem;
+}
+
+.rewardsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 0;
+}
+
+.rewardSlot {
+  display: flex;
+  min-width: 7rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background-color: rgba(24, 55, 99, 0.7);
+  padding: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.rewardIcon {
+  width: 3.7rem;
+  height: 3.7rem;
+}
+
+.rewardAmounts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.struckAmount {
+  composes: textMuted from "../../styles/shared.module.css";
+  composes: tabularNums from "../../styles/shared.module.css";
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-decoration: line-through;
+}
+
+.boostedAmount {
+  composes: textWhite from "../../styles/shared.module.css";
+  composes: tabularNums from "../../styles/shared.module.css";
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.plainAmount {
+  composes: textWhite from "../../styles/shared.module.css";
+  composes: tabularNums from "../../styles/shared.module.css";
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.buyButton {
+  composes: priceShadow from "../../styles/shared.module.css";
+  composes: textWhite from "../../styles/shared.module.css";
+  composes: fontDisplay from "../../styles/shared.module.css";
+  margin-top: auto;
+  height: 4rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  background-image: linear-gradient(to bottom, #27db74, #079044);
+  font-size: 1.9rem;
+  font-weight: 900;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22), 0 8px 18px rgba(0, 0, 0, 0.35);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.buyButton:hover {
+  filter: brightness(1.1);
+}
+
+.buyButton:active {
+  transform: translateY(1px);
+}
+
+.buyButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* Diagonal corner banner. The wide, centred band's ends run past the clip box,
+ * so it reads as a corner ribbon touching BOTH edges. */
+.ribbon {
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+  top: -1px;
+  height: 7rem;
+  width: 7rem;
+  overflow: hidden;
+}
+
+.ribbonLeft {
+  left: -1px;
+}
+
+.ribbonRight {
+  right: -1px;
+}
+
+.ribbonBand {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  position: absolute;
+  left: -34%;
+  top: 17%;
+  width: 168%;
+  padding: 0.25rem 0;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1.25;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+.ribbonBandLeft {
+  transform: rotate(-45deg);
+}
+
+.ribbonBandRight {
+  transform: rotate(45deg);
+}
+
+.ribbonGold {
+  background-image: linear-gradient(to bottom, #ffe08a, #b8801f);
+  color: #3a2406;
+}
+
+.ribbonRose {
+  background-image: linear-gradient(to bottom, #f43f5e, #be123c);
+  color: #fff;
+}
+
+.ribbonViolet {
+  background-image: linear-gradient(to bottom, #8b5cf6, #6d28d9);
+  color: #fff;
+}

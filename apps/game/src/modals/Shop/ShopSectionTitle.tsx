@@ -1,5 +1,7 @@
 import type {ReactNode} from "react"
 
+import styles from "./ShopSectionTitle.module.css"
+
 export function SectionTitle({
   children,
   compact = false,
@@ -8,10 +10,9 @@ export function SectionTitle({
   // long label like "Featured Pack" stays on one line in the narrow column. The
   // fixed height keeps both section titles the same height even at different font
   // sizes, so the bundle and the packs grid below them start (and end) level.
-  return (<h2
-    className={`mb-8 flex h-10 items-center justify-center gap-3 font-display font-black uppercase leading-none text-[#ffc93d] ${compact ? "whitespace-nowrap text-[1.5rem] tracking-[0.12em]" : "text-[2.4rem] tracking-[0.26em]"}`}>
-    <span className={compact ? "text-sm" : "text-xl"}>✦</span>
+  return (<h2 className={`${styles.sectionTitle} ${compact ? styles.compact : styles.large}`}>
+    <span className={compact ? styles.starSmall : styles.starLarge}>✦</span>
     {children}
-    <span className={compact ? "text-sm" : "text-xl"}>✦</span>
+    <span className={compact ? styles.starSmall : styles.starLarge}>✦</span>
   </h2>)
 }

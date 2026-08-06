@@ -14,6 +14,7 @@ import {PackCard} from "./PackCard"
 import {SaleCountdown} from "./SaleCountdown"
 import {mapShop, type HeadlineKind} from "./shopCatalog"
 import {ShopHeader} from "./ShopHeader"
+import styles from "./ShopModal.module.css"
 import {SectionTitle} from "./ShopSectionTitle"
 import {useShopPurchase} from "./useShopPurchase"
 
@@ -34,18 +35,18 @@ const SHOP_SKELETON_KEYS = ["shop-skeleton-1", "shop-skeleton-2", "shop-skeleton
 function ShopSkeleton() {
   return (<div
     aria-hidden="true"
-    className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
-    <div className="flex flex-col">
+    className={styles.content}>
+    <div className={styles.featuredColumn}>
       <SectionTitle compact>Featured Pack</SectionTitle>
-      <div className="min-h-[30rem] flex-1 animate-pulse rounded-2xl border border-[#ffc93d]/20 bg-[#0c1e39]/60"/>
+      <div className={styles.skeletonFeatured}/>
     </div>
-    <div className="min-w-0">
+    <div className={styles.packsColumn}>
       <SectionTitle>Packs</SectionTitle>
-      <div className="grid grid-cols-4 gap-6">
+      <div className={styles.packsGrid}>
         {SHOP_SKELETON_KEYS.map((skeletonKey) => (
           <div
             key={skeletonKey}
-            className="h-[18rem] animate-pulse rounded-2xl border border-[#4a7ecc]/25 bg-[#0c1e39]/60"/>))}
+            className={styles.skeletonPack}/>))}
       </div>
     </div>
   </div>)
@@ -54,12 +55,12 @@ function ShopSkeleton() {
 // Shown when the catalog fetch fails, so a network error surfaces as a retry
 // instead of masquerading as an empty store on the screen where players pay.
 function ShopError({onRetry}: {onRetry: () => void}) {
-  return (<div className="relative z-[3] flex flex-col items-center justify-center gap-5 px-10 py-24 text-center">
-    <p className="max-w-md font-display text-lg font-bold text-[#f6e6b8]">
+  return (<div className={styles.error}>
+    <p className={styles.errorText}>
       The store couldn’t load. Check your connection and try again.
     </p>
     <button
-      className="rounded-xl border border-[#ffc93d]/60 bg-gradient-to-b from-[#f6cf5e] to-[#a06f16] px-6 py-3 font-display text-lg font-black uppercase tracking-[0.06em] text-[#3a2406] shadow-[0_4px_10px_rgba(0,0,0,0.35)] transition hover:brightness-110 active:translate-y-[1px]"
+      className={styles.errorButton}
       type="button"
       onClick={onRetry}>
       Try again
@@ -129,11 +130,9 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
   return (<>
     <ScaleInModal onClose={onClose}>
       <div
-        className="origin-center"
+        className={styles.scaleWrap}
         style={{transform: `scale(${scale})`}}>
-        <div
-          className="relative isolate flex flex-col overflow-hidden rounded-[22px] border border-[#ffc93d]/40 text-[#f6f0df] shadow-[0_26px_70px_rgba(0,0,0,0.55)]"
-          style={{width: PANEL_DESIGN_W}}>
+        <div className={styles.panel}>
           {/* ---- Liquid-glass surface (replaces the flat blue panel) ----
                 A colourful base (stands in for the lobby behind the modal) gives
                 the refraction edges to bend; the effect layer blurs + distorts it;
@@ -141,10 +140,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                 shine adds the glossy rim. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-0"
-            style={{
-              background: "radial-gradient(38% 48% at 18% 22%, rgba(56,189,248,0.55), transparent 70%)," + "radial-gradient(42% 52% at 84% 16%, rgba(250,204,21,0.45), transparent 70%)," + "radial-gradient(48% 58% at 78% 86%, rgba(139,92,246,0.50), transparent 70%)," + "radial-gradient(44% 54% at 22% 88%, rgba(16,185,129,0.48), transparent 70%)," + "#03070d",
-            }}/>
+            className={styles.glassBase}/>
           {/* The frosted-glass layer (backdrop-filter blur(14px)+saturate +
                 an SVG feDisplacementMap) was REMOVED for mobile perf — it was
                 the single heaviest surface in the app, and all it blurred was
@@ -153,12 +149,10 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                 into a static overlay image instead of a live filter. */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-[1]"
-            style={{background: "rgba(10,26,51,0.55)"}}/>
+            className={styles.glassTint}/>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 z-[2]"
-            style={{boxShadow: "inset 2px 2px 1px 0 rgba(255,255,255,0.5), inset -1px -1px 1px 1px rgba(255,255,255,0.22)"}}/>
+            className={styles.glassShine}/>
 
           <ShopHeader
             storeConfig={storeConfig}
@@ -168,12 +162,12 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
           {/* Content: Featured Pack | Packs grid — skeleton while the catalog
                 loads, a retry on failure, otherwise the two sections. */}
           {status === "error" ? (<ShopError onRetry={() => void catalogQuery.refetch()}/>) : !contentReady ? (
-            <ShopSkeleton/>) : (<div className="relative z-[3] grid grid-cols-[340px_1fr] gap-8 p-10">
+            <ShopSkeleton/>) : (<div className={styles.content}>
             {/* No divider; the column is a flex stack so the bundle below the
                   title stretches to the exact height of the two pack rows. */}
-            <div className="flex flex-col">
+            <div className={styles.featuredColumn}>
               <SectionTitle compact>Featured Pack</SectionTitle>
-              {data.bundles.length > 0 ? (<div className="flex flex-1 flex-col">
+              {data.bundles.length > 0 ? (<div className={styles.bundleStack}>
                 {data.bundles.slice(0, 1).map((b) => (<BundleCard
                   key={b.id}
                   bonusPercent={sale?.bonusPercent ?? 0}
@@ -188,15 +182,14 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                       flightKind: flightKindOf(b.headlineKind),
                     })
                   }}/>))}
-              </div>) : (<div
-                className="grid flex-1 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
+              </div>) : (<div className={styles.emptyState}>
                 No featured packs yet.
               </div>)}
             </div>
 
-            <div className="min-w-0">
+            <div className={styles.packsColumn}>
               <SectionTitle>Packs</SectionTitle>
-              {data.packs.length > 0 ? (<div className="grid grid-cols-4 gap-6">
+              {data.packs.length > 0 ? (<div className={styles.packsGrid}>
                 {data.packs.map((p) => (<PackCard
                   key={p.id}
                   bonusPercent={sale?.bonusPercent ?? 0}
@@ -211,8 +204,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
                       flightKind: flightKindOf(p.headlineKind),
                     })
                   }}/>))}
-              </div>) : (<div
-                className="grid h-64 place-items-center rounded-2xl border border-dashed border-[#9aabc5]/25 text-center text-sm text-[#9aabc5]">
+              </div>) : (<div className={styles.emptyStateTall}>
                 No packs available.
               </div>)}
             </div>
@@ -230,7 +222,7 @@ export function ShopModal({onClose}: {readonly onClose: () => void}) {
       onLanded={removeFlight}/>))}
 
     {toast ? (<div
-      className={"pointer-events-none fixed left-1/2 top-6 z-50 -translate-x-1/2 rounded-lg px-4 py-2 font-bold shadow-2xl " + (toast.kind === "success" ? "border border-emerald-700/60 bg-gradient-to-b from-emerald-100 to-emerald-300 text-emerald-950" : toast.kind === "error" ? "border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 text-rose-950" : "border border-amber-700/60 bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950")}>
+      className={`${styles.toast} ${toast.kind === "success" ? styles.toastSuccess : toast.kind === "error" ? styles.toastError : styles.toastInfo}`}>
       {toast.text}
     </div>) : null}
   </>)

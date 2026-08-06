@@ -1,0 +1,203 @@
+.scaleWrap {
+  transform-origin: center;
+}
+
+.panel {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 201, 61, 0.4);
+  color: #f6f0df;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
+  width: 1320px;
+}
+
+/* ---- Liquid-glass surface (replaces the flat blue panel) ----
+ * A colourful base (stands in for the lobby behind the modal) gives the
+ * refraction edges to bend; the effect layer blurs + distorts it; the dark tint
+ * keeps it on-theme and the content readable; the shine adds the glossy rim. */
+.glassBase {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(38% 48% at 18% 22%, rgba(56, 189, 248, 0.55), transparent 70%), radial-gradient(42% 52% at 84% 16%, rgba(250, 204, 21, 0.45), transparent 70%), radial-gradient(48% 58% at 78% 86%, rgba(139, 92, 246, 0.5), transparent 70%), radial-gradient(44% 54% at 22% 88%, rgba(16, 185, 129, 0.48), transparent 70%), #03070d;
+}
+
+.glassTint {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(10, 26, 51, 0.55);
+}
+
+.glassShine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.22);
+}
+
+/* Content: Featured Pack | Packs grid. */
+.content {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 2rem;
+  padding: 2.5rem;
+}
+
+.featuredColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.bundleStack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.packsColumn {
+  min-width: 0;
+}
+
+.packsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.emptyState {
+  composes: textMuted from "../../styles/shared.module.css";
+  display: grid;
+  flex: 1;
+  place-items: center;
+  border-radius: 1rem;
+  border: 1px dashed rgba(154, 171, 197, 0.25);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.emptyStateTall {
+  composes: textMuted from "../../styles/shared.module.css";
+  display: grid;
+  height: 16rem;
+  place-items: center;
+  border-radius: 1rem;
+  border: 1px dashed rgba(154, 171, 197, 0.25);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+/* Placeholder catalog shown while shop_items loads — mirrors the real layout
+ * (one featured column + an 8-card grid) so nothing jumps when data arrives. */
+.skeletonFeatured {
+  min-height: 30rem;
+  flex: 1;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 201, 61, 0.2);
+  background-color: rgba(12, 30, 57, 0.6);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeletonPack {
+  height: 18rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(74, 126, 204, 0.25);
+  background-color: rgba(12, 30, 57, 0.6);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Shown when the catalog fetch fails, so a network error surfaces as a retry
+ * instead of masquerading as an empty store on the screen where players pay. */
+.error {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 6rem 2.5rem;
+  text-align: center;
+}
+
+.errorText {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  max-width: 28rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #f6e6b8;
+}
+
+.errorButton {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 201, 61, 0.6);
+  background-image: linear-gradient(to bottom, #f6cf5e, #a06f16);
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #3a2406;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.errorButton:hover {
+  filter: brightness(1.1);
+}
+
+.errorButton:active {
+  transform: translateY(1px);
+}
+
+.toast {
+  pointer-events: none;
+  position: fixed;
+  left: 50%;
+  top: 1.5rem;
+  z-index: 50;
+  transform: translateX(-50%);
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.toastSuccess {
+  border: 1px solid rgba(4, 120, 87, 0.6);
+  background-image: linear-gradient(to bottom, #d1fae5, #6ee7b7);
+  color: #022c22;
+}
+
+.toastError {
+  border: 1px solid rgba(190, 18, 60, 0.6);
+  background-image: linear-gradient(to bottom, #ffe4e6, #fda4af);
+  color: #4c0519;
+}
+
+.toastInfo {
+  border: 1px solid rgba(180, 83, 9, 0.6);
+  background-image: linear-gradient(to bottom, #fef3c7, #fcd34d);
+  color: #451a03;
+}

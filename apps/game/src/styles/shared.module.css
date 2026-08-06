@@ -8,3 +8,42 @@
 .textWhite {
   color: #fff;
 }
+
+.textGold {
+  color: #ffc93d;
+}
+
+.textMuted {
+  color: #9aabc5;
+}
+
+.tabularNums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Shop currency icons (img + svg) and the pack/bundle hero art. object-fit and
+ * user-select are no-ops on SVG, so one class covers both element types. */
+.iconBase {
+  user-select: none;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+/* Gold "name-plate" gradient for the bundle/pack title bars. */
+.goldPlate {
+  background-image: linear-gradient(to bottom, #f6cf5e, #d9a531, #a06f16);
+}
+
+/* Light text that rides on the gold plate, with a dark shadow for legibility. */
+.plateText {
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #fff7dc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Dark shadow under the white price so it reads on the bright green button. */
+.priceShadow {
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.55);
+}
