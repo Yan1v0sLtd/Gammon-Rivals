@@ -10,9 +10,9 @@ type PlayerStatRowProps = {
 const statClasses = {
   desktop: {
     row: {
-      dice: "game-stat-row game-stat-row--pip",
-      score: "game-stat-row game-stat-row--score",
-      cube: "game-stat-row game-stat-row--doubles",
+      dice: "game-stat-row",
+      score: "game-stat-row",
+      cube: "game-stat-row",
     },
     icon: {
       dice: "game-stat-icon game-stat-icon--dice",

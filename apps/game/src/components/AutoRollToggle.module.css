@@ -1,0 +1,303 @@
+.autoToggle {
+  composes: actionButtonReset from "../styles/shared.module.css";
+  display: flex;
+  width: clamp(7.8rem, 9.9vw, 11.5rem);
+  min-height: clamp(4.4rem, 8.6dvh, 7rem);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.55rem, 1vw, 1rem);
+  border-radius: clamp(0.9rem, 1.4vw, 1.55rem);
+  padding: 0 clamp(0.65rem, 1vw, 1.2rem);
+  box-shadow: inset 0 0 0.65rem rgba(255, 220, 111, 0.06), 0 0 0 0.12rem rgba(0, 0, 0, 0.56);
+}
+
+.autoToggle:hover {
+  filter: brightness(1.12);
+}
+
+.autoToggle:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.autoSwitch {
+  position: relative;
+  width: clamp(3.2rem, 4.8vw, 5.4rem);
+  height: clamp(1.75rem, 3vw, 3rem);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #3a352d, #0d0f14);
+  box-shadow: inset 0 0.15rem 0.35rem rgba(0, 0, 0, 0.72);
+}
+
+.autoKnob {
+  position: absolute;
+  left: 0.16rem;
+  top: 50%;
+  width: calc(50% - 0.22rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 28%, #fff8d9, #eed18a);
+  box-shadow: 0 0.18rem 0.42rem rgba(0, 0, 0, 0.5);
+  transform: translateY(-50%);
+  transition: transform 180ms ease;
+}
+
+.on .autoKnob {
+  transform: translate(100%, -50%);
+}
+
+.autoLabel {
+  color: #f3daa0;
+  font-size: clamp(0.78rem, 1.25vw, 1.55rem);
+  font-weight: 950;
+  letter-spacing: 0.04em;
+}
+
+@media (orientation: landscape) and (max-width: 1023px) {
+  .autoToggle {
+    height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    min-height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    border-radius: clamp(0.42rem, 1.3vw, 0.62rem);
+  }
+
+  .autoToggle {
+    width: clamp(2.95rem, 9.5vw, 4rem);
+  }
+
+  .autoLabel {
+    font-size: clamp(0.36rem, 1.32vw, 0.48rem);
+    letter-spacing: 0.06em;
+  }
+
+  .autoToggle {
+    gap: 0.24rem;
+    padding: 0 0.3rem;
+  }
+
+  .autoSwitch {
+    width: clamp(1.35rem, 4.3vw, 1.85rem);
+    height: clamp(0.75rem, 2.35vw, 1rem);
+  }
+}
+
+/* The inline variant always renders inside `.game-controls-secondary >
+   .game-auto-slot` (both call sites), so the slot-fill reflow rules fold in
+   as plain locals. The slot itself is a square badge; the toggle fills it. */
+.autoToggle {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  gap: 6%;
+  padding: 0;
+  border-radius: 22%;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.autoSwitch {
+  width: 66%;
+  height: 30%;
+  flex: 0 0 auto;
+}
+
+.autoLabel {
+  font-size: clamp(0.38rem, 1.05vw, 0.6rem);
+  line-height: 1;
+}
+
+.autoLabel {
+  font-size: clamp(0.61rem, 1.68vw, 0.96rem);
+}
+
+/* Pass 2 — art-led skin: the toggle becomes a two-column grid pill
+   (switch track on the left, label on the right). */
+.autoToggle {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 43% 1fr;
+  align-items: center;
+  gap: 0;
+  padding: 0 12% 0 13%;
+  border: 0;
+  background: transparent;
+  color: #ffe7a5;
+}
+
+.autoSwitch {
+  position: relative;
+  width: 76%;
+  aspect-ratio: 1.9 / 1;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #1c1813, #0a0a0d);
+  box-shadow: inset 0 0.12rem 0.4rem rgba(0, 0, 0, 0.85),
+  inset 0 0 0 0.08rem rgba(255, 204, 101, 0.22);
+  transition: background 220ms ease, box-shadow 220ms ease;
+}
+
+/* ON state — green pill with a soft outer glow. */
+.on .autoSwitch {
+  background: linear-gradient(180deg, #1bb55a 0%, #07703a 100%);
+  box-shadow: inset 0 0.12rem 0.35rem rgba(0, 0, 0, 0.42),
+  inset 0 0 0 0.08rem rgba(180, 255, 196, 0.55),
+  0 0 0.55em rgba(40, 210, 100, 0.45);
+}
+
+.autoKnob {
+  position: absolute;
+  top: 50%;
+  /* Knob fits snugly inside the track with a small inset on each side.
+     left/right offsets are derived from a 4% rail-inset. */
+  left: 4%;
+  width: 47%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 26%, #fff8db 0 34%, #f7d37b 70%, #a86d18 100%);
+  box-shadow: 0 0.18rem 0.42rem rgba(0, 0, 0, 0.55),
+  inset 0 -0.06rem 0.12rem rgba(0, 0, 0, 0.18),
+  inset 0 0.05rem 0.1rem rgba(255, 255, 255, 0.45);
+  transform: translateY(-50%);
+  transition: left 220ms cubic-bezier(0.4, 0, 0.2, 1),
+  background 220ms ease;
+}
+
+.on .autoKnob {
+  /* Slide the knob to the right rail; the earlier base rule's
+     translate(100%, -50%) is overridden back to translateY(-50%) so the
+     knob doesn't shift twice and overshoot the track. */
+  left: 49%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 32% 26%, #ffffff 0 34%, #ecfff1 60%, #a8e7bb 100%);
+}
+
+.autoLabel {
+  justify-self: start;
+  font-size: clamp(0.62rem, 1.38vw, 1.22rem);
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+/* Pass 3 — precision / pointer layering. */
+.autoToggle {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.autoLabel {
+  font-size: clamp(0.52rem, 1.08vw, 1.04rem);
+}
+
+.autoToggle {
+  padding: 0 14% 0 12%;
+}
+
+.autoToggle {
+  position: relative;
+  z-index: 270 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.autoToggle {
+  display: grid;
+  grid-template-columns: 1fr;
+  /* auto-sized rows so each child gets exactly the space it needs and
+     they never overlap. */
+  grid-template-rows: auto auto;
+  align-items: center;
+  justify-items: center;
+  gap: clamp(0.12rem, 0.55vw, 0.32rem);
+  padding: 14% 10% 12%;
+}
+
+.autoLabel {
+  grid-row: 1;
+  justify-self: center;
+  align-self: center;
+  width: 100%;
+  font-size: clamp(0.42rem, 0.74vw, 0.74rem);
+  line-height: 1;
+  text-align: center;
+}
+
+.autoSwitch {
+  grid-row: 2;
+  justify-self: center;
+  align-self: center;
+  width: 72%;
+}
+
+/* Panel variant — vertical switch + label, currently unused in production
+   (both call sites pass variant="inline") but kept for API parity. */
+.panelToggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  user-select: none;
+}
+
+.panelSwitch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 3rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  border: 1px solid #44403c;
+  background: rgba(41, 37, 36, 0.8);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.on .panelSwitch {
+  background: rgba(217, 119, 6, 0.9);
+  border-color: #92400e;
+}
+
+.panelKnob {
+  position: absolute;
+  top: 0.125rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: #fef3c7;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  transition: transform 150ms ease;
+  transform: translateX(0.125rem);
+}
+
+.on .panelKnob {
+  transform: translateX(1.25rem);
+}
+
+.panelState {
+  composes: fontDisplay from "../styles/shared.module.css";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.375rem;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  color: #a8a29e;
+  justify-content: flex-end;
+}
+
+.on .panelState {
+  color: #fffbeb;
+  justify-content: flex-start;
+}
+
+.panelLabel {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: rgba(253, 230, 138, 0.7);
+  text-transform: uppercase;
+  transition: color 150ms ease;
+}
+
+.panelToggle:hover .panelLabel {
+  color: #fde68a;
+}

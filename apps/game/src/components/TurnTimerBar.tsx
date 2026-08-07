@@ -32,7 +32,7 @@ export function TurnTimerBar({
   const secondsLeft = Math.ceil(remainingMs / 1000)
   const progress = validDeadline && validDuration ? remainingMs / durationMs : 0
   const clamped = Math.max(0, Math.min(1, progress))
-  const tone = clamped > 0.34 ? "is-safe" : clamped > 0.16 ? "is-warning" : "is-danger"
+  const tone = clamped > 0.34 ? "" : clamped > 0.16 ? "is-warning" : "is-danger"
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = String(secondsLeft % 60).padStart(2, "0")
   const timerStyle = {"--timer-progress": clamped} as CSSProperties

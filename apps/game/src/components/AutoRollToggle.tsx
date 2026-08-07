@@ -1,3 +1,5 @@
+import styles from "./AutoRollToggle.module.css"
+
 type Props = {
   enabled: boolean,
   onChange: (next: boolean) => void,
@@ -19,16 +21,16 @@ export function AutoRollToggle({
   if (variant === "inline") {
     return (<button
       aria-pressed={enabled}
-      className={`game-auto-toggle ${enabled ? "is-on" : ""} ${className}`}
+      className={`${styles.autoToggle} ${enabled ? styles.on : ""} ${className}`}
       title={enabled ? "Auto-roll is on" : "Auto-roll is off"}
       type="button"
       onClick={() => {
         onChange(!enabled)
       }}>
-      <span className="game-auto-switch">
-        <span className="game-auto-knob"/>
+      <span className={styles.autoSwitch}>
+        <span className={styles.autoKnob}/>
       </span>
-      <span className="game-auto-label">
+      <span className={styles.autoLabel}>
         Auto
       </span>
     </button>)
@@ -36,23 +38,19 @@ export function AutoRollToggle({
 
   return (<button
     aria-pressed={enabled}
-    className={`flex flex-col items-center gap-1 select-none group ${className}`}
+    className={`${styles.panelToggle} ${enabled ? styles.on : ""} ${className}`}
     title={enabled ? "Auto-roll is on" : "Auto-roll is off"}
     type="button"
     onClick={() => {
       onChange(!enabled)
     }}>
-    <span
-      className={`relative inline-flex items-center w-12 h-7 rounded-full border transition ${enabled ? "bg-amber-600/90 border-amber-800" : "bg-stone-800/80 border-stone-700"}`}>
-      <span
-        className={`absolute top-0.5 w-6 h-6 rounded-full bg-amber-100 shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0.5"}`}/>
-      <span
-        className={`absolute inset-0 flex items-center px-1.5 text-[9px] font-display tracking-wider ${enabled ? "text-amber-50 justify-start" : "text-stone-400 justify-end"}`}>
+    <span className={styles.panelSwitch}>
+      <span className={styles.panelKnob}/>
+      <span className={styles.panelState}>
         {enabled ? "ON" : "OFF"}
       </span>
     </span>
-    <span
-      className="text-[10px] font-display tracking-wider text-amber-200/70 group-hover:text-amber-200 transition uppercase">
+    <span className={styles.panelLabel}>
       Auto Roll
     </span>
   </button>)

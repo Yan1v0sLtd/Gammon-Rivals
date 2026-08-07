@@ -17,7 +17,6 @@ html, body, #root {
   text-size-adjust: 100%;
 }
 
-
 /* Gameplay v2: responsive landscape table layout */
 .game-screen {
   position: relative;
@@ -48,22 +47,6 @@ html, body, #root {
   background: radial-gradient(ellipse at 50% 42%, rgba(102, 60, 24, 0.1), transparent 46%),
   radial-gradient(ellipse at 50% 105%, rgba(138, 83, 25, 0.22), transparent 36%),
   linear-gradient(180deg, rgba(3, 4, 9, 0.82), rgba(8, 6, 8, 0.7) 48%, rgba(3, 3, 5, 0.95));
-}
-
-.game-table-plate {
-  pointer-events: none;
-  position: absolute;
-  left: 50%;
-  top: 13.2dvh;
-  width: min(62vw, 72rem);
-  height: min(72dvh, 48rem);
-  border: 1px solid rgba(204, 151, 55, 0.26);
-  border-radius: clamp(1.2rem, 2vw, 2.4rem);
-  background: radial-gradient(ellipse at 50% 20%, rgba(255, 202, 87, 0.08), transparent 36%),
-  linear-gradient(180deg, rgba(26, 17, 13, 0.58), rgba(15, 12, 12, 0.24));
-  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.42),
-  inset 0 0 2rem rgba(255, 205, 82, 0.06);
-  transform: translateX(-50%);
 }
 
 .game-content {
@@ -192,40 +175,6 @@ html, body, #root {
   font-family: inherit;
 }
 
-.game-home-icon {
-  position: relative;
-  display: grid;
-  width: clamp(2.3rem, 3.5vw, 3.9rem);
-  height: clamp(2.3rem, 3.5vw, 3.9rem);
-  place-items: center;
-  border: 1px solid rgba(255, 196, 66, 0.48);
-  border-radius: 999px;
-  background: rgba(8, 10, 17, 0.72);
-  color: #f5c75c;
-  box-shadow: inset 0 0 0.8rem rgba(255, 202, 82, 0.08);
-}
-
-.game-home-icon::before {
-  content: '';
-  width: 0.78em;
-  height: 0.78em;
-  border-bottom: 0.18em solid currentColor;
-  border-left: 0.18em solid currentColor;
-  transform: rotate(45deg) translate(0.06em, -0.04em);
-}
-
-.game-home-icon::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0.96em;
-  height: 0.16em;
-  border-radius: 999px;
-  background: currentColor;
-  transform: translate(-32%, -50%);
-}
-
 .game-match-hud {
   /* Score / "MATCH TO N" capsule HIDDEN — match-to-N scoring isn't a live
      feature yet, so the notch was pure clutter; hiding it lets the board
@@ -256,22 +205,6 @@ html, body, #root {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-shadow: 0 0.1rem 0.2rem #000;
-}
-
-.game-score-strip {
-  position: relative;
-  display: grid;
-  min-width: min(42vw, 45rem);
-  grid-template-columns: minmax(7.1rem, 1fr) clamp(11rem, 14.5vw, 17rem) minmax(7.1rem, 1fr);
-  align-items: center;
-}
-
-.game-score-strip::before {
-  content: '';
-  position: absolute;
-  inset: 50% -2rem auto;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(231, 170, 58, 0.62), transparent);
 }
 
 .game-score-player {
@@ -391,54 +324,6 @@ html, body, #root {
   background: rgba(255, 195, 66, 0.16);
   padding: 0.15rem 0.5rem;
   font-size: 0.62em;
-}
-
-.game-header-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: clamp(0.55rem, 1vw, 1.3rem);
-}
-
-.game-header-action {
-  display: grid;
-  width: clamp(2.8rem, 4.1vw, 4.85rem);
-  height: clamp(2.8rem, 4.1vw, 4.85rem);
-  place-items: center;
-  border: 1px solid rgba(255, 201, 74, 0.62);
-  border-radius: clamp(0.8rem, 1vw, 1.15rem);
-  background: linear-gradient(180deg, rgba(32, 35, 43, 0.95), rgba(7, 11, 19, 0.98));
-  box-shadow: inset 0 0 0.9rem rgba(255, 211, 82, 0.08), 0 0.35rem 0.9rem rgba(0, 0, 0, 0.45);
-}
-
-.game-header-icon {
-  position: relative;
-  display: block;
-  color: #f0c15b;
-  filter: drop-shadow(0 0.2rem 0.18rem rgba(0, 0, 0, 0.65));
-}
-
-.game-header-icon--stats {
-  width: 1.7rem;
-  height: 2rem;
-  border-right: 0.42rem solid currentColor;
-  border-left: 0.42rem solid currentColor;
-}
-
-.game-header-icon--stats::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 0.42rem;
-  height: 2rem;
-  background: currentColor;
-  transform: translateX(-50%);
-}
-
-.game-header-icon--settings::before {
-  content: '⚙';
-  font-size: clamp(1.9rem, 2.9vw, 3.2rem);
-  line-height: 1;
 }
 
 .game-player-panel {
@@ -1046,8 +931,7 @@ html, body, #root {
 
 .game-cube-button,
 .game-double-button,
-.game-roll-button,
-.game-auto-toggle {
+.game-roll-button {
   border: 1px solid rgba(225, 165, 49, 0.76);
   background: linear-gradient(180deg, rgba(28, 31, 39, 0.98), rgba(6, 11, 19, 0.98));
   color: #f5d083;
@@ -1090,14 +974,12 @@ html, body, #root {
 }
 
 .game-double-button.is-enabled:hover,
-.game-roll-button:not(:disabled):hover,
-.game-auto-toggle:hover {
+.game-roll-button:not(:disabled):hover {
   filter: brightness(1.12);
 }
 
 .game-double-button.is-enabled:active,
-.game-roll-button:not(:disabled):active,
-.game-auto-toggle:active {
+.game-roll-button:not(:disabled):active {
   transform: translateY(1px) scale(0.99);
 }
 
@@ -1123,311 +1005,6 @@ html, body, #root {
 
 .game-auto-slot {
   flex: 0 0 auto;
-}
-
-.game-auto-toggle {
-  display: flex;
-  width: clamp(7.8rem, 9.9vw, 11.5rem);
-  min-height: clamp(4.4rem, 8.6dvh, 7rem);
-  align-items: center;
-  justify-content: center;
-  gap: clamp(0.55rem, 1vw, 1rem);
-  border-radius: clamp(0.9rem, 1.4vw, 1.55rem);
-  padding: 0 clamp(0.65rem, 1vw, 1.2rem);
-  box-shadow: inset 0 0 0.65rem rgba(255, 220, 111, 0.06), 0 0 0 0.12rem rgba(0, 0, 0, 0.56);
-}
-
-.game-auto-switch {
-  position: relative;
-  width: clamp(3.2rem, 4.8vw, 5.4rem);
-  height: clamp(1.75rem, 3vw, 3rem);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #3a352d, #0d0f14);
-  box-shadow: inset 0 0.15rem 0.35rem rgba(0, 0, 0, 0.72);
-}
-
-.game-auto-knob {
-  position: absolute;
-  left: 0.16rem;
-  top: 50%;
-  width: calc(50% - 0.22rem);
-  aspect-ratio: 1;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 28%, #fff8d9, #eed18a);
-  box-shadow: 0 0.18rem 0.42rem rgba(0, 0, 0, 0.5);
-  transform: translateY(-50%);
-  transition: transform 180ms ease;
-}
-
-.game-auto-toggle.is-on .game-auto-knob {
-  transform: translate(100%, -50%);
-}
-
-.game-auto-label {
-  color: #f3daa0;
-  font-size: clamp(0.78rem, 1.25vw, 1.55rem);
-  font-weight: 950;
-  letter-spacing: 0.04em;
-}
-
-.game-dice-tray {
-  pointer-events: none;
-  z-index: 8;
-}
-
-.game-dice-tray--board {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
-}
-
-.game-dice-tray--hud {
-  position: relative;
-  display: block;
-  width: 10rem;
-  height: 5rem;
-  overflow: visible;
-}
-
-.game-dice-stage {
-  position: absolute;
-  inset: 0;
-  overflow: visible;
-  pointer-events: none;
-}
-
-.game-dice-tray--hud .game-dice-stage {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.game-die {
-  --dice-size: 42px;
-  --dice-start-x: 0px;
-  --dice-start-y: 0px;
-  --dice-hop-a-x: 0px;
-  --dice-hop-a-y: 0px;
-  --dice-hop-b-x: 0px;
-  --dice-hop-b-y: 0px;
-  --dice-hop-c-x: 0px;
-  --dice-hop-c-y: 0px;
-  --dice-bounce-x: 0px;
-  --dice-bounce-y: 0px;
-  --dice-end-x: 0px;
-  --dice-end-y: 0px;
-  --dice-start-rot: 0deg;
-  --dice-hop-a-rot: 420deg;
-  --dice-hop-b-rot: 620deg;
-  --dice-mid-rot: 720deg;
-  --dice-end-rot: 8deg;
-  --dice-delay: 0ms;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1em;
-  height: 1em;
-  font-size: var(--dice-size);
-  transform: translate3d(var(--dice-end-x), var(--dice-end-y), 0) rotate(var(--dice-end-rot));
-  transform-origin: center;
-  animation: game-die-flight 980ms cubic-bezier(0.18, 0.78, 0.18, 1) both;
-  animation-delay: var(--dice-delay);
-  filter: drop-shadow(0 0.32rem 0.28rem rgba(0, 0, 0, 0.42));
-  transition: filter 180ms ease, opacity 180ms ease;
-}
-
-.game-die.is-used {
-  opacity: 0.42;
-  filter: saturate(0.5) brightness(0.82) drop-shadow(0 0.22rem 0.2rem rgba(0, 0, 0, 0.32));
-}
-
-.game-die-shadow {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 1.18em;
-  height: 0.38em;
-  border-radius: 999px;
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.48), rgba(0, 0, 0, 0.14) 58%, transparent 72%);
-  transform: translate(-48%, 62%) scale(1);
-  transform-origin: center;
-  animation: game-die-shadow 980ms cubic-bezier(0.18, 0.78, 0.18, 1) both;
-  animation-delay: var(--dice-delay);
-}
-
-.game-die-cube {
-  position: absolute;
-  inset: 0;
-  transform: rotateX(14deg) rotateY(-18deg);
-  transform-origin: center;
-  animation: game-die-tumble 980ms cubic-bezier(0.18, 0.78, 0.18, 1) both;
-  animation-delay: var(--dice-delay);
-}
-
-.game-die-face,
-.game-die-side {
-  position: absolute;
-  border-radius: 0.13em;
-}
-
-/* Face is now a frame for the inline-SVG DieFace sprite which handles
-   the bevel, gradient, and pips. We just clip it cleanly. */
-.game-die-face {
-  inset: 0;
-  z-index: 2;
-  overflow: hidden;
-  border-radius: 0.16em;
-  background: transparent;
-}
-
-.game-die-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.game-die-side {
-  z-index: 1;
-  background: linear-gradient(180deg, #c47d2a, #7c4214);
-  box-shadow: inset 0 0.12rem 0.18rem rgba(255, 226, 144, 0.28);
-}
-
-.game-die-side--right {
-  right: -0.17em;
-  top: 0.13em;
-  width: 0.28em;
-  height: 0.86em;
-  transform: skewY(36deg);
-  transform-origin: left top;
-}
-
-.game-die-side--bottom {
-  left: 0.13em;
-  bottom: -0.17em;
-  width: 0.87em;
-  height: 0.28em;
-  transform: skewX(36deg);
-  transform-origin: left top;
-  background: linear-gradient(90deg, #b66b21, #6f3912);
-}
-
-/* .game-die-pips / .game-die-pip rules removed — pips are now rendered
-   by the DieFace SVG sprite inside .game-die-face. */
-
-/* Dice flight — translate + rotate from the off-screen start point to
-   the settle position. Removed the scale pop (1.18 → 0.92 → 1.06 → 0.96
-   → 1) that made the dice feel like they were squashing in mid-air;
-   real dice don't change size while rolling. The TumblingDieFace
-   component handles the "face changing during the roll" feel. */
-@keyframes game-die-flight {
-  0% {
-    opacity: 0;
-    transform: translate3d(var(--dice-start-x), var(--dice-start-y), 0) rotate(var(--dice-start-rot)) scale(0.9);
-  }
-  8% {
-    opacity: 1;
-  }
-  32% {
-    transform: translate3d(var(--dice-hop-a-x), var(--dice-hop-a-y), 0) rotate(var(--dice-hop-a-rot)) scale(1);
-  }
-  58% {
-    transform: translate3d(var(--dice-hop-b-x), var(--dice-hop-b-y), 0) rotate(var(--dice-hop-b-rot)) scale(1);
-  }
-  80% {
-    transform: translate3d(var(--dice-hop-c-x), var(--dice-hop-c-y), 0) rotate(var(--dice-mid-rot)) scale(1);
-  }
-  92% {
-    /* Tiny settle bounce — keeps the "landing impact" feel without
-       the mid-flight size jumps. */
-    transform: translate3d(var(--dice-bounce-x), var(--dice-bounce-y), 0) rotate(var(--dice-end-rot)) scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(var(--dice-end-x), var(--dice-end-y), 0) rotate(var(--dice-end-rot)) scale(1);
-  }
-}
-
-@keyframes game-die-tumble {
-  0% {
-    transform: rotateX(64deg) rotateY(-54deg) rotateZ(-10deg);
-  }
-  30% {
-    transform: rotateX(-48deg) rotateY(62deg) rotateZ(18deg);
-  }
-  55% {
-    transform: rotateX(42deg) rotateY(35deg) rotateZ(-12deg);
-  }
-  80% {
-    transform: rotateX(20deg) rotateY(-28deg) rotateZ(5deg);
-  }
-  100% {
-    transform: rotateX(14deg) rotateY(-18deg) rotateZ(0deg);
-  }
-}
-
-@keyframes game-die-shadow {
-  0% {
-    opacity: 0;
-    transform: translate(-48%, 62%) scale(0.38);
-  }
-  28% {
-    opacity: 0.16;
-    transform: translate(-48%, 62%) scale(0.72);
-  }
-  50% {
-    opacity: 0.42;
-    transform: translate(-48%, 62%) scale(1.05);
-  }
-  72% {
-    opacity: 0.2;
-    transform: translate(-48%, 62%) scale(0.82);
-  }
-  100% {
-    opacity: 0.44;
-    transform: translate(-48%, 62%) scale(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .game-die,
-  .game-die-cube,
-  .game-die-shadow {
-    animation-duration: 1ms;
-    animation-delay: 0ms;
-  }
-}
-
-.game-decor {
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
-  display: none;
-}
-
-.game-decor--glass {
-  left: clamp(0.5rem, 1.5vw, 1.8rem);
-  bottom: clamp(0.2rem, 1.2dvh, 0.85rem);
-  width: clamp(5rem, 8.4vw, 10rem);
-  height: clamp(5.8rem, 9.9vw, 11.9rem);
-  border: 2px solid rgba(255, 225, 174, 0.48);
-  border-radius: 50% 50% 42% 42%;
-  background: radial-gradient(ellipse at 50% 78%, rgba(214, 122, 19, 0.84), rgba(91, 38, 7, 0.66) 44%, transparent 47%),
-  radial-gradient(ellipse at 50% 20%, rgba(255, 247, 217, 0.26), transparent 54%);
-  box-shadow: inset 0 0 1rem rgba(255, 255, 255, 0.18), 0 1.1rem 1.8rem rgba(0, 0, 0, 0.48);
-  transform: rotate(-10deg);
-}
-
-.game-decor--cup {
-  right: clamp(0.3rem, 1.3vw, 1.4rem);
-  bottom: clamp(0.5rem, 1.5dvh, 1rem);
-  width: clamp(5rem, 8.85vw, 10.6rem);
-  height: clamp(6.2rem, 10.9vw, 13rem);
-  border: 2px solid rgba(199, 119, 74, 0.5);
-  border-radius: 48% 48% 30% 30%;
-  background: radial-gradient(ellipse at 50% 12%, rgba(22, 7, 12, 0.98), rgba(70, 22, 32, 0.94) 44%, transparent 46%),
-  linear-gradient(90deg, rgba(71, 26, 33, 0.8), rgba(130, 65, 66, 0.82), rgba(37, 15, 22, 0.9));
-  box-shadow: inset 0 0 1.2rem rgba(255, 190, 128, 0.11), 0 1.1rem 1.8rem rgba(0, 0, 0, 0.52);
-  transform: rotate(10deg);
 }
 
 @media (orientation: landscape) and (min-width: 1024px) {
@@ -1513,15 +1090,8 @@ html, body, #root {
 
   .game-match-label,
   .game-score-player,
-  .game-turn-pill,
-  .game-header-actions,
-  .game-new-match-button {
+  .game-turn-pill {
     display: none;
-  }
-
-  .game-score-strip {
-    min-width: 0;
-    grid-template-columns: 1fr;
   }
 
   .game-score-core {
@@ -1560,11 +1130,6 @@ html, body, #root {
     font-size: clamp(0.58rem, 2vw, 0.76rem);
   }
 
-  .game-home-icon {
-    width: clamp(1.28rem, 3.55vw, 1.65rem);
-    height: clamp(1.28rem, 3.55vw, 1.65rem);
-  }
-
   .game-match-hud {
     min-width: min(36vw, 17rem);
     transform: translateY(0);
@@ -1575,15 +1140,6 @@ html, body, #root {
     margin-bottom: 0;
     font-size: clamp(0.34rem, 1.12vw, 0.48rem);
     letter-spacing: 0.06em;
-  }
-
-  .game-score-strip {
-    min-width: min(34vw, 16rem);
-    grid-template-columns: minmax(2.8rem, 1fr) clamp(4.65rem, 11.2vw, 5.9rem) minmax(2.8rem, 1fr);
-  }
-
-  .game-score-strip::before {
-    inset-inline: -0.55rem;
   }
 
   .game-score-player--left {
@@ -1814,15 +1370,13 @@ html, body, #root {
   }
 
   .game-double-button,
-  .game-auto-toggle,
   .game-roll-button {
     height: clamp(1.55rem, 6.5dvh, 2.05rem);
     min-height: clamp(1.55rem, 6.5dvh, 2.05rem);
     border-radius: clamp(0.42rem, 1.3vw, 0.62rem);
   }
 
-  .game-double-button,
-  .game-auto-toggle {
+  .game-double-button {
     width: clamp(2.95rem, 9.5vw, 4rem);
   }
 
@@ -1830,8 +1384,7 @@ html, body, #root {
     font-size: clamp(0.68rem, 2.7vw, 1rem);
   }
 
-  .game-double-button span,
-  .game-auto-label {
+  .game-double-button span {
     font-size: clamp(0.36rem, 1.32vw, 0.48rem);
     letter-spacing: 0.06em;
   }
@@ -1849,16 +1402,6 @@ html, body, #root {
 
   .game-roll-button span {
     display: none;
-  }
-
-  .game-auto-toggle {
-    gap: 0.24rem;
-    padding: 0 0.3rem;
-  }
-
-  .game-auto-switch {
-    width: clamp(1.35rem, 4.3vw, 1.85rem);
-    height: clamp(0.75rem, 2.35vw, 1rem);
   }
 
 }
@@ -1930,7 +1473,6 @@ html, body, #root {
 
 .game-match-header .game-nav-home,
 .game-match-header .game-match-hud,
-.game-match-header .game-header-actions,
 .game-match-header a,
 .game-match-header button {
   pointer-events: auto;
@@ -2067,37 +1609,9 @@ html, body, #root {
   aspect-ratio: 1 / 1;
 }
 
-/* The inline auto-toggle is a WIDE pill by default (switch + "Auto" label in a
-   row, width 7.8-11.5rem). Inside the secondary row's small square slot it
-   overflowed and distorted (badly at 4K). Reflow it to FILL the square slot —
-   switch on top, label below — sized relative to the slot so it never
-   overflows at any resolution. */
 .game-controls-secondary .game-auto-slot {
   display: grid;
   place-items: center;
-}
-
-.game-controls-secondary .game-auto-toggle {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  flex-direction: column;
-  gap: 6%;
-  padding: 0;
-  border-radius: 22%;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.game-controls-secondary .game-auto-switch {
-  width: 66%;
-  height: 30%;
-  flex: 0 0 auto;
-}
-
-.game-controls-secondary .game-auto-label {
-  font-size: clamp(0.38rem, 1.05vw, 0.6rem);
-  line-height: 1;
 }
 
 /* AUTO enlarged (operator pass, 2026-07): the shared square-slot size above
@@ -2108,10 +1622,6 @@ html, body, #root {
 .game-controls-secondary > .game-auto-slot {
   width: clamp(2.56rem, 7.36vw, 4.32rem);
   height: clamp(2.56rem, 7.36vw, 4.32rem);
-}
-
-.game-controls-secondary .game-auto-label {
-  font-size: clamp(0.61rem, 1.68vw, 0.96rem);
 }
 
 /* Cube / Double badge text must fit the small square slot. At the 4K clamp
@@ -2364,74 +1874,6 @@ html, body, #root {
   filter: saturate(0.75);
 }
 
-.game-auto-toggle {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 43% 1fr;
-  align-items: center;
-  gap: 0;
-  padding: 0 12% 0 13%;
-  border: 0;
-  background: transparent;
-  color: #ffe7a5;
-}
-
-.game-auto-switch {
-  position: relative;
-  width: 76%;
-  aspect-ratio: 1.9 / 1;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #1c1813, #0a0a0d);
-  box-shadow: inset 0 0.12rem 0.4rem rgba(0, 0, 0, 0.85),
-  inset 0 0 0 0.08rem rgba(255, 204, 101, 0.22);
-  transition: background 220ms ease, box-shadow 220ms ease;
-}
-
-/* ON state — green pill with a soft outer glow. */
-.game-auto-toggle.is-on .game-auto-switch {
-  background: linear-gradient(180deg, #1bb55a 0%, #07703a 100%);
-  box-shadow: inset 0 0.12rem 0.35rem rgba(0, 0, 0, 0.42),
-  inset 0 0 0 0.08rem rgba(180, 255, 196, 0.55),
-  0 0 0.55em rgba(40, 210, 100, 0.45);
-}
-
-.game-auto-knob {
-  position: absolute;
-  top: 50%;
-  /* Knob fits snugly inside the track with a small inset on each side.
-     left/right offsets are derived from a 4% rail-inset. */
-  left: 4%;
-  width: 47%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 32% 26%, #fff8db 0 34%, #f7d37b 70%, #a86d18 100%);
-  box-shadow: 0 0.18rem 0.42rem rgba(0, 0, 0, 0.55),
-  inset 0 -0.06rem 0.12rem rgba(0, 0, 0, 0.18),
-  inset 0 0.05rem 0.1rem rgba(255, 255, 255, 0.45);
-  transform: translateY(-50%);
-  transition: left 220ms cubic-bezier(0.4, 0, 0.2, 1),
-  background 220ms ease;
-}
-
-.game-auto-toggle.is-on .game-auto-knob {
-  /* Slide the knob to the right rail. The earlier base rule (around
-     line 4463) applies a `transform: translate(100%, -50%)` to the
-     on-state knob — we override it back to translateY(-50%) so the
-     knob doesn't shift twice and overshoot the track. */
-  left: 49%;
-  transform: translateY(-50%);
-  background: radial-gradient(circle at 32% 26%, #ffffff 0 34%, #ecfff1 60%, #a8e7bb 100%);
-}
-
-.game-auto-label {
-  justify-self: start;
-  font-size: clamp(0.62rem, 1.38vw, 1.22rem);
-  font-weight: 950;
-  letter-spacing: 0.08em;
-}
-
 .game-match-header {
   z-index: 42;
 }
@@ -2460,26 +1902,6 @@ html, body, #root {
   display: block;
   width: clamp(2.6rem, 5vw, 4.2rem);
   height: auto;
-}
-
-.game-home-icon {
-  display: grid;
-  width: clamp(2rem, 3.8vw, 3.45rem);
-  aspect-ratio: 1;
-  place-items: center;
-  border: 0.12rem solid rgba(218, 164, 52, 0.68);
-  border-radius: 999px;
-  background: rgba(4, 5, 9, 0.54);
-  box-shadow: inset 0 0 0.5rem rgba(0, 0, 0, 0.55);
-}
-
-.game-home-icon::before {
-  content: '';
-  width: 36%;
-  height: 36%;
-  border-left: 0.22rem solid currentColor;
-  border-bottom: 0.22rem solid currentColor;
-  transform: translateX(12%) rotate(45deg);
 }
 
 /* Header HUD is a vertical column: "MATCH TO N" label sits ABOVE a
@@ -2559,40 +1981,6 @@ html, body, #root {
   font-size: clamp(0.68rem, 1.28vw, 1.18rem);
 }
 
-/* Horizontal gold lines fill the remaining space outside the names,
-   fading away from the names so the header reads as a banner. */
-.game-score-rail {
-  position: static;
-  flex: 1 1 0;
-  min-width: 0;
-  height: 0.18rem;
-  background: none;
-  box-shadow: 0 0 0.45em rgba(255, 209, 102, 0.38);
-  border-radius: 999px;
-  pointer-events: none;
-  align-self: center;
-}
-
-.game-score-rail--left {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(217, 162, 64, 0.92) 30%,
-    #f1c772 75%,
-    #ffd87a 100%
-  );
-}
-
-.game-score-rail--right {
-  background: linear-gradient(
-    90deg,
-    #ffd87a 0%,
-    #f1c772 25%,
-    rgba(217, 162, 64, 0.92) 70%,
-    transparent 100%
-  );
-}
-
 .game-score-core {
   position: absolute;
   left: 50%;
@@ -2663,31 +2051,6 @@ html, body, #root {
   padding: 0.25em 0.5em;
 }
 
-.game-header-actions {
-  position: absolute;
-  right: 1.8%;
-  top: 2.4%;
-  z-index: 4;
-  display: flex;
-  gap: 1.35rem;
-}
-
-.game-header-icon-button {
-  width: clamp(2.25rem, 4.25vw, 3.95rem);
-  aspect-ratio: 1;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  filter: drop-shadow(0 0.25rem 0.38rem rgba(0, 0, 0, 0.48));
-}
-
-.game-header-icon-button img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .game-side-slot {
   position: absolute;
   z-index: 18;
@@ -2734,35 +2097,6 @@ html, body, #root {
 
 .game-player-card-glow {
   display: none;
-}
-
-/* The .webp frame art is no longer rendered, but keep the rule scoped
- * to a hard `display: none` so older builds / cached HTML can't surface
- * it during transitions. */
-.game-player-frame-art {
-  display: none;
-}
-
-.game-player-neon-rail {
-  position: absolute;
-  top: 3.5%;
-  bottom: 0;
-  width: 1.1%;
-  border-radius: 999px;
-  opacity: 0.92;
-  pointer-events: none;
-}
-
-.game-player-panel--left .game-player-neon-rail {
-  left: -4.4%;
-  background: linear-gradient(180deg, transparent, #c545ff 8%, #ac29ff 72%, transparent);
-  box-shadow: 0 0 0.9rem rgba(190, 59, 255, 0.82);
-}
-
-.game-player-panel--right .game-player-neon-rail {
-  right: -4.4%;
-  background: linear-gradient(180deg, transparent, #35baff 8%, #1aa7ff 72%, transparent);
-  box-shadow: 0 0 0.9rem rgba(39, 177, 255, 0.82);
 }
 
 .game-player-top {
@@ -3164,8 +2498,7 @@ html, body, #root {
 
 .game-actions-inner,
 .game-action-row button,
-.game-auto-slot,
-.game-auto-toggle {
+.game-auto-slot {
   pointer-events: auto !important;
   touch-action: manipulation;
 }
@@ -3198,14 +2531,6 @@ html, body, #root {
   font-size: clamp(0.46rem, 0.86vw, 0.82rem);
 }
 
-.game-auto-label {
-  font-size: clamp(0.52rem, 1.08vw, 1.04rem);
-}
-
-.game-auto-toggle {
-  padding: 0 14% 0 12%;
-}
-
 .game-nav-home {
   left: 1.85%;
   top: 2.5%;
@@ -3214,10 +2539,6 @@ html, body, #root {
 .game-home-link {
   gap: 0.52em;
   font-size: clamp(0.72rem, 1.3vw, 1.24rem);
-}
-
-.game-home-icon {
-  width: clamp(1.85rem, 3vw, 2.85rem);
 }
 
 /* HUD spans between home (~13%) and settings icons (~13%); the column
@@ -3269,16 +2590,6 @@ html, body, #root {
   box-shadow: none !important;
 }
 
-.game-header-actions {
-  right: 2%;
-  top: 2.6%;
-  gap: clamp(0.65rem, 1.8vw, 1.65rem);
-}
-
-.game-header-icon-button {
-  width: clamp(1.95rem, 3.35vw, 3.2rem);
-}
-
 .game-side-slot {
   top: 15.1%;
   width: 19.35%;
@@ -3291,24 +2602,6 @@ html, body, #root {
 
 .game-side-slot--right {
   right: 5.05%;
-}
-
-.game-player-frame-art {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
-.game-player-neon-rail {
-  display: none !important;
-}
-
-.game-player-panel--left .game-player-neon-rail {
-  left: -6.1%;
-}
-
-.game-player-panel--right .game-player-neon-rail {
-  right: -6.1%;
 }
 
 .game-player-top {
@@ -3614,18 +2907,6 @@ html, body, #root {
   box-shadow: 0 0 0.78rem rgba(48, 177, 255, 0.82);
 }
 
-.game-player-frame-art {
-  width: 94.8%;
-}
-
-.game-player-panel--left .game-player-frame-art {
-  left: 3.6%;
-}
-
-.game-player-panel--right .game-player-frame-art {
-  right: 3.6%;
-}
-
 .game-player-top {
   inset-inline: 3.6%;
 }
@@ -3845,13 +3126,6 @@ html, body, #root {
   line-height: 0.95;
 }
 
-/* Rails are baked into the new header image — hide the CSS rail
-   elements (kept in DOM for accessibility neutrality / backwards
-   compatibility, but invisible). */
-.game-score-rail {
-  display: none !important;
-}
-
 .game-score-core {
   position: absolute;
   left: 50%;
@@ -3951,12 +3225,6 @@ html, body, #root {
 .game-player-card::before {
   display: none !important;
   content: none !important;
-}
-
-.game-player-frame-art {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
 }
 
 /* This is the painted box the player sees. Confined to the avatar +
@@ -4303,8 +3571,7 @@ html, body, #root {
 }
 
 .game-action-row button,
-.game-auto-slot,
-.game-auto-toggle {
+.game-auto-slot {
   position: relative;
   z-index: 270 !important;
   pointer-events: auto !important;
@@ -4313,35 +3580,6 @@ html, body, #root {
 
 .game-auto-slot {
   aspect-ratio: 500 / 493;
-}
-
-.game-auto-toggle {
-  display: grid;
-  grid-template-columns: 1fr;
-  /* auto-sized rows so each child gets exactly the space it needs and
-     they never overlap. */
-  grid-template-rows: auto auto;
-  align-items: center;
-  justify-items: center;
-  gap: clamp(0.12rem, 0.55vw, 0.32rem);
-  padding: 14% 10% 12%;
-}
-
-.game-auto-label {
-  grid-row: 1;
-  justify-self: center;
-  align-self: center;
-  width: 100%;
-  font-size: clamp(0.42rem, 0.74vw, 0.74rem);
-  line-height: 1;
-  text-align: center;
-}
-
-.game-auto-switch {
-  grid-row: 2;
-  justify-self: center;
-  align-self: center;
-  width: 72%;
 }
 
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {

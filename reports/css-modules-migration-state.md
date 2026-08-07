@@ -666,3 +666,61 @@ HEAD, unrelated to the migration):
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
   tsconfig.node.json`, `npm run build`, `git diff --check` (after stripping one trailing
   blank at EOF). Browser/manual visual checks remain pending.
+
+### C0 — Dead gameplay purge (index.css slimming)
+
+- Deleted all dead `.game-*` content from `apps/game/src/index.css` (no consumer anywhere in apps/packages — verified by grep):
+  - Pass 1: `.game-table-plate`, `.game-home-icon` base + `::before`/`::after`, `.game-score-strip` + `::before`,
+    `.game-header-actions` + `.game-header-action`/`.game-header-icon`/`--stats`/`--settings`,
+    the whole legacy dice block (`.game-dice-tray*`, `.game-dice-stage`, `.game-die*`, `.game-die-side*`,
+    `@keyframes game-die-flight/-tumble/-shadow`, `@media (prefers-reduced-motion)`), `.game-decor`/`--glass`/`--cup`.
+  - Pass 2: `.game-home-icon` + `::before`, `.game-score-rail` + `--left`/`--right` (+ their comments),
+    `.game-header-actions`, `.game-header-icon-button` + `img`, `.game-player-frame-art` (the `display:none` safety rule),
+    `.game-player-neon-rail` + `--left`/`--right`.
+  - Pass 3: `.game-home-icon`, `.game-header-actions`, `.game-header-icon-button`, `.game-player-frame-art`,
+    `.game-player-neon-rail` + mirrors, `.game-score-rail` (`display:none` rule + comment), `.game-player-frame-art` again.
+  - Media-query edits (in-place, not whole-block): removed `.game-header-actions`/`.game-new-match-button` from the
+    ≤760px hide list, the `.game-score-strip` rule in that block, the `.game-home-icon` rule, and the `.game-score-strip`
+    + `::before` rules in the landscape-≤1023px block, and the dead `.game-match-header .game-header-actions,` line from
+    the pass-2 pointer-events list.
+- Dropped dead classNames: `game-stat-row--pip/--score/--doubles` in `PlayerStatRow.tsx` (no CSS rules existed — the
+  variants did nothing), and the `is-safe` tone in `TurnTimerBar.tsx` (no CSS rule).
+- `apps/game/src/index.css` went 4,458 → 3,896 lines (562 deleted). Brace/paren balance verified; zero dead selectors
+  remain in source and in the built CSS. Remaining content: Tailwind directives, base styles, and live gameplay rules.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json tsconfig.node.json`,
+  `git diff --check`, `npm run build` (only the existing chunk-size warning). Browser/manual visual checks remain
+  pending.
+
+### C1 — AutoRollToggle CSS Module slice
+
+- Created `apps/game/src/components/AutoRollToggle.module.css` and updated `AutoRollToggle.tsx` with a direct module
+  import. Both variants are now module-only (zero Tailwind, zero `game-auto-*` literals):
+  - **Inline variant** (the only variant used in production — `HotSeatPlayerPanel.tsx:56`,
+    `OnlinePlayerPanel.tsx:121`): locals `autoToggle` (+`:hover`/`:active`), `autoSwitch`, `autoKnob`, `autoLabel`,
+    and the `on` state class. Pulled per-selector from all four passes of `index.css`, preserving the load-bearing
+    cascade order: pass-1 base → landscape-≤1023px media block → the `.game-controls-secondary .game-auto-*` slot-fill
+    reflow (folded in as plain locals — the inline variant always renders inside
+    `.game-controls-secondary > .game-auto-slot`, so the descendant context is unconditional) → pass-2 art-led grid
+    (43%/1fr columns, green ON switch, knob slide) → pass-3 calibration/precision (grid 1fr + rows auto/auto,
+    z-index 270, pointer layering).
+  - **Panel variant** (unused in production, kept for API parity): decomposed its Tailwind pile into `panelToggle`,
+    `panelSwitch` (+`.on` amber state), `panelKnob` (translate-x-5 / translate-x-0.5), `panelState`, `panelLabel`
+    (+`.panelToggle:hover .panelLabel` replacing `group-hover:`).
+  - Added `.actionButtonReset` to `styles/shared.module.css` (the shared cube/double/roll/auto reset: border,
+    gradient background, gold text, fontDisplay, uppercase, transition) and composed it into `.autoToggle`. The
+    temporary global grouped rule in `index.css` still carries the reset for cube/double/roll until C3 composes it.
+- Removed the migrated rules from `index.css` (14 edits): the base toggle/switch/knob/label family, the three
+  `game-auto-toggle` lines from the grouped reset/hover/active rules, the auto-toggle parts of the landscape-≤1023px
+  media block (grouped height/width rules slimmed to double/roll and double), the four
+  `.game-controls-secondary .game-auto-*` descendant rules + their comment (slot rules stay global), the pass-2
+  art-led toggle family, and the pass-3/pointer precision toggle/label/switch rules (the grouped pointer-events and
+  z-index lists slimmed to action-row buttons + slot).
+- Retained global for C3 (MatchSecondaryControls): `.game-auto-slot` rules (square-slot sizing, `auto.webp`
+  background art, aspect-ratio 500/493, media 2866) — the slot element is rendered by MatchSecondaryControls, not
+  by the toggle.
+- `apps/game/src/index.css` went 3,896 → 3,696 lines. Brace balance verified; zero `.game-auto-toggle/switch/knob/
+  label` rules remain in source or built CSS; `.game-auto-slot` rules intact.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json tsconfig.node.json`,
+  `git diff --check`, `npm run build`. Built CSS (`useAutoRoll` chunk) confirms the module locals, the composed
+  `actionButtonReset` (emitted once), the media query (minified to `width<=1023px`), and the `.on` state selectors
+  (green switch, knob slide, amber panel state). Browser/manual visual checks remain pending.
