@@ -1,5 +1,7 @@
 import type {GameResult, MatchState} from "../../../../packages/engine/src/match"
 
+import styles from "./EndOfGameModal.module.css"
+
 /**
  * Optional reward summary attached to the match-over state. Populated
  * by the server-side finish_match RPC when the match was started from
@@ -46,57 +48,55 @@ export function EndOfGameModal({
   // a difficulty match still calls finish_match, but xp/coins come
   // back as 0, and we don't want a "+0" chip.
   const showReward = matchOver && reward !== undefined && reward !== null && (reward.xpAwarded > 0 || reward.coinsAwarded > 0)
-  return (<div className="absolute inset-0 flex items-center justify-center bg-black/65 z-30">
-    <div
-      className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-md">
+  return (<div className={styles.overlay}>
+    <div className={styles.card}>
       {matchOver ? (<>
-        <div className="font-display text-3xl uppercase tracking-wider mb-1">
+        <div className={styles.title}>
           {singleGame ? "Game over" : "Match over"}
         </div>
-        {singleGame ? (<div className="capitalize text-xl mb-5 font-display">
+        {singleGame ? (<div className={styles.subtitle}>
           {result.winner} {verb}
         </div>) : (<>
-          <div className="capitalize text-xl mb-3 font-display">
+          <div className={styles.subtitleMatch}>
             {match.winner} wins {match.score.white}–{match.score.black}
           </div>
-          <div className="text-xs text-amber-900/80 mb-5 capitalize">{gameLine}</div>
+          <div className={styles.gameLine}>{gameLine}</div>
         </>)}
-        {showReward ? (<div
-          className="mb-4 flex items-center justify-center gap-3 rounded-lg border border-amber-600/40 bg-amber-50/60 px-3 py-2">
-          {reward.xpAwarded > 0 ? (<span className="flex items-baseline gap-1">
-            <span className="font-display text-lg font-black tabular-nums text-violet-700">
+        {showReward ? (<div className={styles.rewardRow}>
+          {reward.xpAwarded > 0 ? (<span className={styles.rewardItem}>
+            <span className={styles.rewardValue}>
               +{reward.xpAwarded.toLocaleString()}
             </span>
-            <span className="text-xs font-bold uppercase tracking-wide text-violet-900/80">
+            <span className={styles.rewardLabel}>
               XP{reward.xpMultiplier > 1 ? ` (×${reward.xpMultiplier})` : ""}
             </span>
           </span>) : null}
-          {reward.coinsAwarded > 0 ? (<span className="flex items-baseline gap-1">
-            <span className="font-display text-lg font-black tabular-nums text-amber-700">
+          {reward.coinsAwarded > 0 ? (<span className={styles.rewardItem}>
+            <span className={styles.rewardValueGold}>
               +{reward.coinsAwarded.toLocaleString()}
             </span>
-            <span className="text-xs font-bold uppercase tracking-wide text-amber-900/80">
+            <span className={styles.rewardLabelGold}>
               coins
             </span>
           </span>) : null}
         </div>) : null}
         <button
-          className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium border border-amber-900 shadow hover:brightness-110 active:scale-95 transition"
+          className={styles.primaryButton}
           onClick={onNewMatch}>
           {singleGame ? "Play again" : "New match"}
         </button>
       </>) : (<>
-        <div className="font-display text-2xl uppercase tracking-wider mb-1 capitalize">
+        <div className={styles.titleSmall}>
           {gameLine}
         </div>
-        {!result.droppedDouble && result.cubeValue > 1 && (<div className="text-xs text-amber-900/80 mb-2">
+        {!result.droppedDouble && result.cubeValue > 1 && (<div className={styles.cubeLine}>
           {result.winType} × cube {result.cubeValue}
         </div>)}
-        <div className="text-sm mb-4 text-amber-900/90">
+        <div className={styles.matchLine}>
           Match {match.score.white}–{match.score.black} (to {match.target})
         </div>
         <button
-          className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium border border-amber-900 shadow hover:brightness-110 active:scale-95 transition"
+          className={styles.primaryButton}
           onClick={onNextGame}>
           Next game
         </button>

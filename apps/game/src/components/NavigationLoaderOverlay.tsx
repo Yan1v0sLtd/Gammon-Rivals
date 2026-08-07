@@ -3,6 +3,7 @@ import {NAV_LOADER_OVERLAY_FADE_OUT_MS} from "../features/appUi/appUiSlice"
 import {useAppSelector} from "../store/hooks"
 
 import {LoadingScreen} from "./LoadingScreen"
+import styles from "./NavigationLoaderOverlay.module.css"
 
 /**
  * Renders the route-spanning navigation loader overlay that lives above all
@@ -21,7 +22,7 @@ export function NavigationLoaderOverlay() {
 
   return (<div
     aria-hidden={phase !== "visible"}
-    className="fixed inset-0 z-[9999]"
+    className={styles.overlay}
     style={{
       opacity: phase === "visible" ? 1 : 0,
       transition: `opacity ${NAV_LOADER_OVERLAY_FADE_OUT_MS}ms ease-out`,

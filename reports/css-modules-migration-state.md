@@ -989,3 +989,33 @@ HEAD, unrelated to the migration):
   parity with HEAD. Rebuilt; minifier normalizes to single-colon in output (behaviorally identical).
 - Reviewer confirmed no code regression: TSX structure + all 16 local mappings, side-slot variants, grouped rules,
   translateZ(0) + translateX(-50%), clean index.css, preserved media/rule order, no scope creep.
+
+### C8 — Overlay Tailwind decomposition
+
+- Decomposed Tailwind utilities out of the 3 live board-overlay components into co-located modules:
+  `EndOfGameModal.module.css`, `CubeOfferDecision.module.css`, `NavigationLoaderOverlay.module.css`. TSX rewritten
+  to module locals only (zero Tailwind in className).
+- **Deleted `DoublingCube.tsx`** — dead code (not imported anywhere; user approved removal). No references remain;
+  its Tailwind classes (`w-[8%]`/`sm:w-[7%]`, `animate-pulse`, `ring-2`, etc.) are gone from the build.
+- **Parity with current rendering** (values extracted from the built Tailwind CSS):
+  - `capitalize` wins over `uppercase` on EndOfGameModal titleSmall (built order `.uppercase` < `.capitalize`) →
+    `text-transform: capitalize`.
+  - hover/active preserved: `:hover { filter: brightness(1.1) }`, `:active { transform: scale(0.95) }`.
+  - Colors hardcoded from Tailwind palette (amber/stone/violet/board-felt) incl. opacity modifiers
+    (`bg-black/65` → `rgba(0,0,0,0.65)`, `text-amber-900/80` → `rgba(120,53,15,0.8)`); shadows, gradients,
+    border widths, spacing, font sizes/weights, letter-spacing, z-index, max-width, full `transition` semantics.
+- **composes**: `fontDisplay` + `tabularNums` composed from `shared.module.css` (first declaration, `from` clause);
+  no duplicated font-family/tabular-nums.
+- Verification: lint, `tsc -b`, `git diff --check`, `npm run build` (`✓ built in 2.42s`) all pass. Built-CSS asserts:
+  EndOfGameModal locals + hover/active + shared fontDisplay in the HotSeat chunk (lazy-loaded); CubeOfferDecision
+  locals + hover/active in the main chunk; NavigationLoaderOverlay `z-index:9999` in the entry chunk; DoublingCube
+  absent. Browser/manual visual checks remain pending.
+
+### C8 review (reviewer agent)
+
+- Reviewer confirmed (static): faithful Tailwind→CSS translation incl. palette opacity values, gradients, shadows,
+  spacing, full transition semantics, `titleSmall` capitalization, all six hover/active rules; composes correct;
+  DoublingCube deletion clean; no scope creep; lint + diff-check pass.
+- p1 (fresh build not independently verifiable in read-only review) resolved: re-ran `tsc -b` (exit 0) and
+  `npm run build` (`✓ built in 2.42s`) on the final tree, plus fresh built-CSS asserts across the HotSeat / main /
+  entry chunks confirming module locals, composed classes, hover/active selectors, and DoublingCube absence.
