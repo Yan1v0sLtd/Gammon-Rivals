@@ -138,8 +138,8 @@ export const OnlinePlayerPanel = memo(function OnlinePlayerPanel({
       identity={identity}
       innerAvatarSize={Math.round((compact ? 58 : 106) * 0.66)}
       level={level}
-      stateLabel={stateLabel}
-      textAlign="text-center"/>)
+      side={seat === "opponent" ? "left" : "right"}
+      stateLabel={stateLabel}/>)
   const stats = isSpectator ? (<>
     <SpectatorPipCountStat
       compact={compact}

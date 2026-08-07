@@ -38,8 +38,8 @@ const OpponentIdentity = memo(function OpponentIdentity({compact}: {readonly com
     identity={identity}
     innerAvatarSize={Math.round(avatarSize * 0.66)}
     level={level}
-    stateLabel={stateLabel}
-    textAlign="text-center"/>)
+    side="left"
+    stateLabel={stateLabel}/>)
 })
 
 const HotSeatControls = memo(function HotSeatControls({

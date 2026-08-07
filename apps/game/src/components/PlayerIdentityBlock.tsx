@@ -3,6 +3,7 @@ import {memo} from "react"
 import type {PlayerIdentity} from "../lib/identity"
 
 import {Avatar} from "./Avatar"
+import styles from "./PlayerIdentityBlock.module.css"
 
 const PLACEHOLDER_NAME = "— —"
 
@@ -18,9 +19,9 @@ type PlayerIdentityBlockProps = {
   stateLabel: string,
   coinsLabel: string,
   compact: boolean,
+  side: "left" | "right",
   avatarSize: number,
   innerAvatarSize: number,
-  textAlign: string,
 }
 
 export const PlayerIdentityBlock = memo(function PlayerIdentityBlock({
@@ -29,48 +30,49 @@ export const PlayerIdentityBlock = memo(function PlayerIdentityBlock({
   stateLabel,
   coinsLabel,
   compact,
+  side,
   avatarSize,
   innerAvatarSize,
-  textAlign,
 }: PlayerIdentityBlockProps) {
   const displayName = firstNameOnly(identity?.name)
+  const sideClass = side === "right" ? styles.right : styles.left
 
   if (compact) {
     return (
       <>
         <div
-          className="game-compact-avatar-stage"
+          className={`${styles.compactAvatarStage} ${sideClass}`}
           style={{
             width: avatarSize,
             height: avatarSize,
           }}>
           <Avatar
-            className="game-compact-avatar-image"
+            className={styles.compactAvatarImage}
             imageUrl={identity?.avatarUrl}
             ring="none"
             seed={identity?.avatarSeed ?? "placeholder"}
             size={innerAvatarSize}/>
-          <span className="game-compact-level">
+          <span className={styles.compactLevel}>
             {level}
           </span>
         </div>
-        <div className={`game-compact-identity ${textAlign}`}>
-          <div className="game-compact-name">
+        <div className={`${styles.compactIdentity} ${sideClass}`}>
+          <div className={styles.compactName}>
             {displayName}
           </div>
-          <div className="game-compact-details">
-            <div className="game-compact-line">
-              <span className="game-compact-meta game-compact-meta--level">
+          <div className={styles.compactDetails}>
+            <div className={styles.compactLine}>
+              <span className={`${styles.compactMeta} ${styles.compactMetaLevel}`}>
                 ★
               </span>
               <span>Level {level}</span>
             </div>
-            <div className="game-compact-line">
-              <span className="game-compact-meta game-compact-meta--flag"/>
+            <div className={styles.compactLine}>
+              <span className={`${styles.compactMeta} ${styles.compactMetaFlag}`}/>
               <span>{stateLabel}</span>
             </div>
-            <div className="game-compact-line">
-              <span className="game-compact-meta game-compact-meta--coin">
+            <div className={styles.compactLine}>
+              <span className={`${styles.compactMeta} ${styles.compactMetaCoin}`}>
                 $
               </span>
               <span>{coinsLabel}</span>
@@ -83,33 +85,33 @@ export const PlayerIdentityBlock = memo(function PlayerIdentityBlock({
 
   return (
     <>
-      <div className="game-avatar-stage">
+      <div className={`${styles.avatarStage} ${sideClass}`}>
         <div
           aria-hidden="true"
-          className="game-avatar-ring"/>
-        <div className="game-avatar-clip">
+          className={styles.avatarRing}/>
+        <div className={styles.avatarClip}>
           <Avatar
-            className="game-avatar-image"
+            className={styles.avatarImage}
             imageUrl={identity?.avatarUrl}
             ring="none"
             seed={identity?.avatarSeed ?? "placeholder"}
             size={104}/>
         </div>
-        <span className="game-level-shield">{level}</span>
+        <span className={styles.levelShield}>{level}</span>
       </div>
 
-      <div className={`game-player-identity ${textAlign}`}>
+      <div className={`${styles.playerIdentity} ${sideClass}`}>
         <h2>{displayName}</h2>
-        <div className="game-player-line">
-          <span className="game-meta-icon game-meta-icon--level">★</span>
+        <div className={styles.playerLine}>
+          <span className={`${styles.metaIcon} ${styles.metaIconLevel}`}>★</span>
           <span>Level {level}</span>
         </div>
-        <div className="game-player-line">
-          <span className="game-meta-flag"/>
+        <div className={styles.playerLine}>
+          <span className={styles.metaFlag}/>
           <span>{stateLabel}</span>
         </div>
-        <div className="game-player-line">
-          <span className="game-meta-icon game-meta-icon--coin">$</span>
+        <div className={styles.playerLine}>
+          <span className={`${styles.metaIcon} ${styles.metaIconCoin}`}>$</span>
           <span>{coinsLabel}</span>
         </div>
       </div>

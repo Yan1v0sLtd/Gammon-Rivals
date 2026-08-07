@@ -873,3 +873,46 @@ HEAD, unrelated to the migration):
   2.38s`) with stdout attached. Fresh built-CSS asserts on useAutoRoll-C_VXXpWI: zero global leftovers; `.hud`
   none!important@9968 < flex@14992; pointer-events compound with all 4 selectors; `turnPill>span:nth-child(2)`;
   `scoreCore:before/:after` `display:none!important` — all present.
+
+### C5 — PlayerIdentityBlock CSS Module slice
+
+- Created `PlayerIdentityBlock.module.css`; rewrote `PlayerIdentityBlock.tsx` to hashed locals. All 17 identity
+  classes confirmed exclusive to this component (avatar-stage/ring/clip/image, level-shield, player-identity,
+  player-line, meta-icon/flag + level/coin, compact-avatar-stage/image/level/identity/name/details/line/meta +
+  level/flag/coin).
+- **Side-mirroring via `side` prop (C2 precedent)**: the old `.game-player-panel--left/--right .X` parent-scoped
+  selectors (which depended on PlayerPanelShell's global class, C6) are replaced by `.left`/`.right` variant classes
+  applied to the avatar-stage and identity elements, threaded through a new required `side: "left" | "right"` prop.
+  Compounds (`.right.avatarStage`) and descendants (`.right .avatarRing`) preserve original specificity (0,2,0).
+  Callers: SelfIdentityBlock hardcodes `side="right"` (self panel is always right); HotSeatPlayerPanel + OnlinePlayerPanel
+  opponent blocks pass `side="left"`.
+- **Dropped dead `textAlign` prop**: it was always `"text-center"` with no `.text-center` rule (Tailwind removed) —
+  a no-op. Removed the prop + all 3 call sites per the "drop dead utilities" rule.
+- **Cascade preserved verbatim**: pass-1 (base + compact) → 1024-media compact → pass-2 → pass-3 → pass-4 → pass-5 →
+  aspect-media avatar-stage → 620-media identity. `.avatarStage` resolution verified across all 5 passes + aspect
+  media in built CSS.
+- index.css purge (text-anchored, assert-once): 1,900 → 1,083 lines (−817). `.game-stat-list`/`.game-player-top`/
+  `.game-player-panel--left/--right`/`.game-side-slot`/`.game-compact-panel`/`.game-compact-top`/`.game-compact-stat-list`
+  untouched (C6 scope). Braces 148/148.
+- Verification: lint (fixed one import-order error), `tsc -b`, `git diff --check`, `npm run build` (`✓ built in
+  2.33s`). Built-CSS asserts: zero global identity leftovers; all 17 module locals in the useAutoRoll chunk
+  (`_avatarStage_135ki_10`, `_levelShield_135ki_37`, `_playerIdentity_135ki_55`, …); side compounds/descendants
+  (`.right.avatarStage`, `.right .avatarRing`, `.right .levelShield`, `.right .playerLine`, `.right .metaIconLevel`,
+  `.right.compactAvatarStage`, `.right .compactLevel`, `.right .compactLine`, `.left.playerIdentity`,
+  `.right.playerIdentity`); `avatarImage` grouped selector, `levelShield:before`, `playerLine>:last-child`,
+  `playerIdentity h2`; media blocks (1024/1.95/620) present. Browser/manual visual checks remain pending.
+
+### C5 review fixes (reviewer agent)
+
+- **p1 — compact media breakpoint inverted**: the compact rules live in `@media (orientation: landscape) and
+  (max-width: 1023px)` (HEAD:578), but the module used `min-width: 1024px` — this dropped the compact sizing from
+  phone-landscape and applied it to desktop/tablet. Restored `max-width: 1023px`.
+- **p1 — spectator self panel side**: the direct `PlayerIdentityBlock` branch in OnlinePlayerPanel hardcoded
+  `side="left"`, but in spectator mode `seat="self"` uses that branch while its PlayerPanelShell is right-sided —
+  the self avatar/shield/identity lost right-side mirroring. Changed to
+  `side={seat === "opponent" ? "left" : "right"}`.
+- **p2 — pass-2 metaFlag box-shadow dropped**: the migrated `.metaFlag` omitted
+  `box-shadow: 0 0.08rem 0.2rem rgba(0,0,0,0.38)` (HEAD:1035-1041), flattening the state flag. Restored.
+- Re-ran lint, `tsc -b`, `git diff --check`, fresh `npm run build` (`✓ built in 2.34s`). Fresh built-CSS asserts on
+  useAutoRoll-DcXOJB_k (module hash now `1lg9p`): compact rules under `(width<=1023px)`; metaFlag box-shadow present;
+  zero global identity leftovers.

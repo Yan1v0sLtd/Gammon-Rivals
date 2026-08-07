@@ -1,0 +1,848 @@
+/* PlayerIdentityBlock: avatar stage + level shield + identity column
+ * (name + level/state/coins meta lines), plus the compact variant.
+ * Rules copied verbatim from index.css in source order — the five passes
+ * and media interleave are load-bearing. `.left`/`.right` are side
+ * variant classes applied to the avatar-stage and identity elements
+ * (threaded via the `side` prop), replacing the old
+ * `.game-player-panel--left/--right` parent-scoped selectors. */
+
+/* Pass 1 — base layout. */
+.avatarStage {
+  position: relative;
+  display: grid;
+  width: clamp(5.35rem, 6.5vw, 7.6rem);
+  height: clamp(5.35rem, 6.5vw, 7.6rem);
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.avatarRing {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 220, 95, 0.92);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(118, 60, 184, 0.55), rgba(37, 19, 58, 0.35) 62%, transparent 64%);
+  box-shadow: 0 0 1rem rgba(173, 78, 255, 0.62), inset 0 0 0.7rem rgba(255, 255, 255, 0.15);
+}
+
+.right .avatarRing {
+  box-shadow: 0 0 1rem rgba(69, 169, 255, 0.7), inset 0 0 0.7rem rgba(255, 255, 255, 0.15);
+}
+
+.avatarImage {
+  position: relative;
+  z-index: 1;
+}
+
+.levelShield {
+  position: absolute;
+  right: -0.18rem;
+  bottom: -0.18rem;
+  z-index: 2;
+  display: grid;
+  width: clamp(2rem, 2.35vw, 2.85rem);
+  height: clamp(2.35rem, 2.7vw, 3.35rem);
+  place-items: center;
+  clip-path: polygon(50% 0, 93% 16%, 85% 76%, 50% 100%, 15% 76%, 7% 16%);
+  background: linear-gradient(180deg, #273246, #080d18);
+  color: #ffe083;
+  font-size: clamp(0.92rem, 1.18vw, 1.45rem);
+  font-weight: 950;
+  text-shadow: 0 0.12rem 0.12rem #000;
+  box-shadow: 0 0 0 2px #d5a338;
+}
+
+.playerIdentity {
+  display: grid;
+  min-width: 0;
+  gap: clamp(0.28rem, 0.48dvh, 0.46rem);
+  color: #f7efdc;
+}
+
+.playerIdentity h2 {
+  /* 100% of the grid cell (identity has min-width: 0), NOT a fixed rem —
+     a fixed max-width wider than the card let long names paint past the
+     card frame before the ellipsis kicked in. */
+  max-width: 100%;
+  overflow: hidden;
+  margin: 0 0 0.2rem;
+  color: #fffaf0;
+  font-size: clamp(1.05rem, 1.28vw, 1.55rem);
+  font-weight: 950;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.15rem 0.18rem rgba(0, 0, 0, 0.72);
+  white-space: nowrap;
+}
+
+.playerLine {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(255, 241, 213, 0.82);
+  font-size: clamp(0.76rem, 0.94vw, 1.08rem);
+  font-weight: 800;
+}
+
+.right .playerLine {
+  justify-content: flex-end;
+}
+
+.metaIcon {
+  display: grid;
+  width: clamp(1.1rem, 1.32vw, 1.55rem);
+  height: clamp(1.1rem, 1.32vw, 1.55rem);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  color: white;
+  font-size: 0.8em;
+  font-weight: 950;
+  box-shadow: 0 0.18rem 0.35rem rgba(0, 0, 0, 0.38);
+}
+
+.metaIconLevel {
+  background: radial-gradient(circle at 35% 25%, #f1d4ff, #ad63ff 65%, #6127ac);
+}
+
+.metaIconCoin {
+  background: radial-gradient(circle at 35% 25%, #fff0a0, #e0a52f 64%, #8a5308);
+  color: #3b2405;
+}
+
+.metaFlag {
+  width: clamp(1.1rem, 1.32vw, 1.55rem);
+  height: clamp(1.1rem, 1.32vw, 1.55rem);
+  flex: 0 0 auto;
+  border-radius: 0.22rem;
+  background: linear-gradient(90deg, #2445ff, #ffdf50 50%, #d63336);
+  box-shadow: 0 0.18rem 0.35rem rgba(0, 0, 0, 0.38);
+}
+
+/* Pass 1 — compact variant. */
+.compactAvatarStage {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255, 220, 95, 0.92);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(118, 60, 184, 0.55), rgba(37, 19, 58, 0.35) 62%, transparent 64%);
+  box-shadow: 0 0 0.75rem rgba(173, 78, 255, 0.5), inset 0 0 0.55rem rgba(255, 255, 255, 0.13);
+}
+
+.right.compactAvatarStage {
+  box-shadow: 0 0 0.75rem rgba(69, 169, 255, 0.58), inset 0 0 0.55rem rgba(255, 255, 255, 0.13);
+}
+
+.compactAvatarImage {
+  position: relative;
+  z-index: 1;
+  overflow: hidden !important;
+  border-radius: 999px;
+}
+
+/* Compact-mode level badge — same hexagon look as the full panel. */
+.compactLevel {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.18rem;
+  z-index: 2;
+  display: grid;
+  width: 1.3rem;
+  height: auto;
+  aspect-ratio: 1 / 1.15;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: linear-gradient(180deg, #f6d281 0%, #c08b27 60%, #7a4f10 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  color: #ffe083;
+  font-size: 0.58rem;
+  font-weight: 950;
+  text-shadow: 0 0.1rem 0.1rem #000;
+  isolation: isolate;
+}
+
+.compactLevel::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  background: linear-gradient(180deg, #2b3858 0%, #0a0f1d 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: -1;
+}
+
+.right .compactLevel {
+  right: auto;
+  left: -0.2rem;
+}
+
+.compactIdentity {
+  display: grid;
+  min-width: 0;
+  gap: 0.18rem;
+  color: #f7efdc;
+}
+
+.compactName {
+  /* See .playerIdentity h2 — cell-relative so names can never bleed
+     past the card frame; ellipsis below handles the truncation. */
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: #fffaf0;
+  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 950;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.13rem 0.18rem rgba(0, 0, 0, 0.72);
+  white-space: nowrap;
+}
+
+.compactDetails {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.compactLine {
+  display: flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: rgba(255, 241, 213, 0.84);
+  font-size: 0.66rem;
+  font-weight: 850;
+  line-height: 1.05;
+}
+
+.right .compactLine {
+  justify-content: flex-end;
+}
+
+.compactMeta {
+  display: grid;
+  width: 0.88rem;
+  height: 0.88rem;
+  flex: 0 0 auto;
+  place-items: center;
+  font-size: 0.48rem;
+  font-weight: 950;
+}
+
+.compactMetaLevel {
+  border-radius: 999px;
+  background: #2aa8ef;
+  color: #fff;
+}
+
+.compactMetaFlag {
+  border-radius: 0.18rem;
+  background: linear-gradient(90deg, #1e5df0, #fff064 48%, #ef3f35);
+}
+
+.compactMetaCoin {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe27b, #c98019);
+  color: #4a2605;
+}
+
+@media (orientation: landscape) and (max-width: 1023px) {
+  .compactAvatarStage {
+    width: clamp(2.24rem, 7.2dvh, 2.72rem) !important;
+    height: clamp(2.24rem, 7.2dvh, 2.72rem) !important;
+  }
+
+  .compactAvatarImage {
+    width: 68% !important;
+    height: 68% !important;
+  }
+
+  .compactLevel {
+    min-width: 1.05rem;
+    height: 1.05rem;
+    font-size: 0.5rem;
+  }
+
+  .compactName {
+    max-width: 5rem !important;
+    font-size: clamp(0.48rem, 1.65vw, 0.64rem) !important;
+    text-shadow: 0 0.12rem 0.2rem #000;
+  }
+
+  .compactDetails {
+    gap: 0.11rem !important;
+  }
+
+  .compactLine {
+    gap: 0.18rem;
+    font-size: clamp(0.42rem, 1.35vw, 0.52rem);
+  }
+
+  .compactMeta {
+    width: 0.66rem;
+    height: 0.66rem;
+    font-size: 0.34rem;
+  }
+}
+
+/* Pass 2 — the avatar becomes a positioned slot on the painted card. */
+.avatarStage {
+  position: absolute;
+  top: 7%;
+  width: 34.5%;
+  aspect-ratio: 1;
+}
+
+.left.avatarStage {
+  left: 4.5%;
+}
+
+.right.avatarStage {
+  right: 4.5%;
+}
+
+.avatarRing {
+  position: absolute;
+  inset: -5%;
+  border-radius: 50%;
+  border: 0.14rem solid rgba(255, 205, 76, 0.86);
+  background: rgba(10, 10, 12, 0.34);
+  box-shadow: 0 0 1.1rem rgba(190, 53, 255, 0.68),
+  inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
+}
+
+.right .avatarRing {
+  box-shadow: 0 0 1.1rem rgba(53, 173, 255, 0.72),
+  inset 0 0 0.6rem rgba(255, 255, 255, 0.08);
+}
+
+.avatarImage {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+}
+
+.avatarImage img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.levelShield {
+  position: absolute;
+  right: -7%;
+  bottom: -8%;
+  display: grid;
+  min-width: 30%;
+  height: 30%;
+  place-items: center;
+  border: 0.09rem solid rgba(255, 208, 86, 0.95);
+  border-radius: 30% 30% 38% 38%;
+  background: linear-gradient(180deg, #161b25, #05060a);
+  color: #ffd75e;
+  font-size: clamp(0.62rem, 1.28vw, 1.12rem);
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: 0 0.18rem 0.35rem rgba(0, 0, 0, 0.62);
+}
+
+.playerIdentity {
+  position: absolute;
+  top: 7%;
+  width: 54%;
+  height: 78%;
+  display: grid;
+  align-content: center;
+  gap: 6%;
+  color: #fffaf2;
+}
+
+.left.playerIdentity {
+  left: 49%;
+  /* Text + icon rows aligned to the LEFT of the identity container.
+     For the left player that's toward the avatar; for the right
+     player the identity is on the opposite side of the avatar but
+     still left-aligned, so the icons line up on the same column
+     across both cards. */
+  text-align: left;
+  justify-items: stretch;
+}
+
+.right.playerIdentity {
+  right: 49%;
+  text-align: left;
+  justify-items: stretch;
+}
+
+.playerIdentity h2 {
+  max-width: 100%;
+  overflow: hidden;
+  color: #fffaf4;
+  font-size: clamp(0.82rem, 1.46vw, 1.35rem);
+  font-weight: 950;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  text-shadow: 0 0.08em 0.14em rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.playerLine {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 0.48em;
+  color: #f5e5c2;
+  font-size: clamp(0.58rem, 1.05vw, 0.98rem);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: none;
+}
+
+.metaIcon {
+  display: grid;
+  width: 1.05em;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 0.72em;
+  color: #fff;
+}
+
+.metaIconLevel {
+  background: #ab59ff;
+}
+
+.right .metaIconLevel {
+  background: #24aef5;
+}
+
+.metaIconCoin {
+  background: linear-gradient(180deg, #ffe36d, #e49721);
+  color: #17100a;
+  font-weight: 950;
+}
+
+.metaFlag {
+  width: 1.05em;
+  height: 1.05em;
+  border-radius: 0.16em;
+  background: linear-gradient(90deg, #3675ff, #ffe15b 50%, #f34747);
+  box-shadow: 0 0.08rem 0.2rem rgba(0, 0, 0, 0.38);
+}
+
+/* Pass 3 — neon halo ring + clip. */
+.avatarStage {
+  top: 8%;
+  width: 34%;
+  overflow: visible;
+}
+
+.avatarClip {
+  position: absolute;
+  inset: 5.5%;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+/* Neon halo behind the avatar. Painted in CSS so the ring scales with
+ * the avatar slot and stays sharp at any resolution. Purple on the
+ * left, blue on the right — matches the side-accent border on the
+ * card. Pointer-events off so it never intercepts taps on the avatar
+ * underneath. */
+.avatarRing {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 50%;
+  border: 0.18rem solid rgba(195, 76, 255, 0.95);
+  background: radial-gradient(circle at center, transparent 58%, rgba(38, 14, 64, 0.45) 70%, transparent 80%);
+  box-shadow: 0 0 1.1rem 0.15rem rgba(196, 76, 255, 0.6),
+  0 0 2rem 0.4rem rgba(196, 76, 255, 0.3),
+  inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.right .avatarRing {
+  border-color: rgba(51, 178, 255, 0.95);
+  box-shadow: 0 0 1.1rem 0.15rem rgba(51, 178, 255, 0.65),
+  0 0 2rem 0.4rem rgba(51, 178, 255, 0.3),
+  inset 0 0 0.55rem rgba(255, 255, 255, 0.12);
+}
+
+.avatarImage {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+}
+
+.avatarImage img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.levelShield {
+  right: -9%;
+  bottom: -7%;
+  min-width: 32%;
+  height: 32%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #ffde61;
+  font-size: clamp(0.56rem, 1.08vw, 1.05rem);
+  text-shadow: 0 0.08em 0.08em rgba(0, 0, 0, 0.84),
+  0 0 0.35em rgba(255, 208, 76, 0.34);
+}
+
+.right .levelShield {
+  right: auto;
+  left: -9%;
+}
+
+.playerIdentity {
+  top: 6.5%;
+  width: 52%;
+  gap: 7%;
+}
+
+.left.playerIdentity {
+  left: 48.5%;
+}
+
+.right.playerIdentity {
+  right: 48.5%;
+}
+
+.playerIdentity h2 {
+  font-size: clamp(0.68rem, 1.12vw, 1.14rem);
+}
+
+.playerLine {
+  gap: 0.52em;
+  font-size: clamp(0.5rem, 0.9vw, 0.9rem);
+}
+
+.metaIcon,
+.metaFlag {
+  width: 1.12em;
+  height: 1.12em;
+  flex: 0 0 1.12em;
+}
+
+.metaIcon {
+  font-size: 0.78em;
+  line-height: 1;
+}
+
+/* Pass 4 — final geometry calibration. */
+.avatarStage {
+  top: 7.1%;
+  width: 29.8%;
+}
+
+.left.avatarStage {
+  left: 12.6%;
+}
+
+.right.avatarStage {
+  right: 12.1%;
+}
+
+.avatarClip {
+  inset: 12.8%;
+}
+
+.levelShield {
+  width: 28%;
+  min-width: 0;
+  height: 28%;
+  padding: 0 0 0.04em;
+  font-size: clamp(0.58rem, 1vw, 1rem);
+  line-height: 1;
+  text-align: center;
+}
+
+.left .levelShield {
+  right: 0.2%;
+  bottom: 0.5%;
+}
+
+.right .levelShield {
+  left: 0.2%;
+  bottom: 0.5%;
+}
+
+.playerIdentity {
+  top: 6.8%;
+}
+
+.playerLine {
+  gap: 0.44em;
+  font-weight: 760;
+}
+
+.metaIcon,
+.metaFlag {
+  width: 1.32em;
+  height: 1.32em;
+  flex-basis: 1.32em;
+}
+
+.metaIcon {
+  font-size: 0.92em;
+}
+
+/* Pass 5 — asset-led skin: avatar fills the stage, hex shield painted in
+   CSS, identity column pinned to the card's painted pill. */
+/* The avatar stage matches the gold/purple ring baked into the panel
+   art (left-player.webp / right-player.webp). The ring's inner edge is
+   ~28-32% of slot width. Stage is sized + positioned to fill the ring
+   with no visible gap. Values are relative to .playerTop (which
+   is 91.6% of slot wide × 31.8% of slot tall). */
+.avatarStage {
+  top: 7%;
+  width: 34.8%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  overflow: visible;
+  z-index: 4;
+}
+
+.left.avatarStage {
+  left: 9.2%;
+}
+
+.right.avatarStage {
+  right: 9.2%;
+}
+
+.avatarClip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden !important;
+  border-radius: 50%;
+  /* Fill the whole stage square with the avatar — the panel art's gold
+     ring sits at the stage edge. */
+  clip-path: circle(50% at 50% 50%);
+  z-index: 2;
+}
+
+.avatarImage,
+.avatarImage > *,
+.avatarImage img,
+.avatarImage svg {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.avatarImage img {
+  transform: none !important;
+}
+
+/* The hexagonal badge shape is already baked into the panel art image
+   (left-player.webp / right-player.webp). We don't draw our own hex —
+   we just position the level number to overlay the existing hexagon
+   in the art at the correct panel-coordinate location. */
+/* Hex paint comes from CSS now. Strategy:
+ *   .levelShield is the OUTER gold hex (background + clip-path).
+ *   ::before is the INNER dark hex (slightly inset, same clip-path).
+ *   The "level" text sits on top, centred by the grid layout.
+ * Using two stacked clipped hexes is the simplest way to get a clean
+ * stroke around the path — `box-shadow: 0 0 0 2px` follows the
+ * border-box rectangle, not the clip-path, so it wouldn't paint a
+ * hex-shaped rim. */
+/* Hex sizes shrunk ~25 % per user feedback (was 1.85-2.7rem wide /
+ * 0.72-1.35rem font). Clamp ranges intentionally narrow (~20 % spread
+ * floor→ceiling) so the hex reads at the same proportion across web /
+ * tablet / mobile. */
+.levelShield {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: clamp(1.35rem, 1.7vw, 1.95rem);
+  height: clamp(1.55rem, 1.95vw, 2.25rem);
+  aspect-ratio: auto;
+  min-width: 0;
+  padding: 0;
+  background: linear-gradient(180deg, #f5d27a 0%, #d5a338 55%, #b8861d 100%);
+  clip-path: polygon(50% 0, 93% 16%, 85% 76%, 50% 100%, 15% 76%, 7% 16%);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: #ffe083;
+  font-size: clamp(0.55rem, 0.85vw, 0.95rem);
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 0.08em 0.1em rgba(0, 0, 0, 0.85),
+  0 0 0.35em rgba(255, 208, 76, 0.32);
+  isolation: auto;
+  pointer-events: none;
+}
+
+.levelShield::before {
+  content: '';
+  display: block;
+  position: absolute;
+  inset: 9%;
+  z-index: -1;
+  background: linear-gradient(180deg, #273246, #080d18);
+  clip-path: polygon(50% 0, 93% 16%, 85% 76%, 50% 100%, 15% 76%, 7% 16%);
+  pointer-events: none;
+}
+
+/* The hexagon sits ~21% slot-w / ~25% slot-h offset from the stage
+   center. With stage at 55×55 viewport px, that's 88% / 95% of stage
+   width from the TL corner — so we anchor the shield there and use
+   translate(-50%, -50%) to centre the number ON the hex. */
+.left .levelShield {
+  left: 88%;
+  top: 95%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+
+.right .levelShield {
+  right: 88%;
+  top: 95%;
+  left: auto;
+  bottom: auto;
+  transform: translate(50%, -50%);
+}
+
+/* Identity sits to the right of the avatar in the top block — pushed
+   further from the ring (left:52%) so there's clear breathing room.
+   top is biased slightly upward to compensate for the avatar's own
+   7 % top inset (the avatar centre sits ~9 % above the player-top
+   midline, so we shift the identity column to match). align-content
+   keeps the lines vertically centred within the identity box. */
+/* Identity column. `min-width: 0` is the magic bit: without it, a
+ * flex/grid item's intrinsic min-width is its content size, so a long
+ * "MEDIUM" / "$22.7K" / a multi-digit coin amount would expand the
+ * column past its 44 % box on narrow viewports and the text would
+ * spill past the painted card's right edge. Combined with
+ * overflow:hidden on the descendants, anything too wide gets
+ * ellipsised instead of escaping the frame. */
+.playerIdentity {
+  top: -9%;
+  height: 100%;
+  width: 44%;
+  min-width: 0;
+  align-content: center;
+  gap: 5.5%;
+  overflow: hidden;
+}
+
+.left.playerIdentity {
+  left: 52%;
+}
+
+.right.playerIdentity {
+  right: 52%;
+}
+
+/* Tighter clamp ranges across all identity text so the panel reads at
+ * the same proportion regardless of viewport — BUT floors lowered after
+ * mobile testing showed even short labels ("Level 40", "MEDIUM") were
+ * truncating to ellipsis. At phone-landscape the identity column ends
+ * up ~70 px wide; with the previous 0.7rem (≈11 px) floor and a 1.42 em
+ * icon + 0.48 em gap, 8-char labels overflowed by ~2 px. Lower floor +
+ * smaller icon footprint gives back enough horizontal room to fit
+ * "Level 40" without truncation while staying readable. */
+.playerIdentity h2 {
+  font-size: clamp(0.78rem, 1vw, 1.1rem);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.playerLine {
+  gap: 0.35em;
+  font-size: clamp(0.55rem, 0.78vw, 0.85rem);
+  line-height: 1.05;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.playerLine > :last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metaIcon,
+.metaFlag {
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 1.15em;
+}
+
+.metaIcon {
+  font-size: 0.82em;
+}
+
+@media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .avatarStage {
+    width: 34.8%;
+  }
+
+  .left.avatarStage {
+    left: 9.2%;
+  }
+
+  .right.avatarStage {
+    right: 9.2%;
+  }
+}
+
+/* Phone-landscape readability pass — keyed on HEIGHT (a short landscape
+   viewport is a phone regardless of reported width). Values are the live
+   rules above scaled ×1.3. */
+@media (orientation: landscape) and (max-height: 620px) {
+  /* Name row must stay inside the painted pill. The design offsets the
+     identity column above the pill (top: -9%) for optical centring, and
+     with phone font metrics (Roboto/SF render taller line boxes than the
+     desktop's Segoe UI) the centred content grows past the pill's top
+     edge — the name painted over the frame on real devices while fitting
+     in desktop Chrome at the same viewport. Pin the column to the pill's
+     box (identity already has overflow:hidden, so worst case is a clipped
+     descender, never a name over the frame) and tighten the row gap to
+     buy back the lost slack. */
+  .playerIdentity {
+    top: 0;
+    gap: 3.5%;
+  }
+
+  .playerIdentity h2 {
+    line-height: 1.12;
+  }
+
+  /* Level / rank / coins meta lines were the smallest text on screen
+     (~8.8px on a phone) — +25% for legibility. */
+  .playerLine {
+    font-size: clamp(0.69rem, 0.98vw, 1.06rem);
+  }
+}

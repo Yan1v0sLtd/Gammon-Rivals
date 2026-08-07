@@ -26,7 +26,7 @@ export const SelfIdentityBlock = memo(function SelfIdentityBlock({compact = fals
       identity={identity}
       innerAvatarSize={Math.round(avatarSize * 0.66)}
       level={progression.level}
-      stateLabel={progression.statusLabel}
-      textAlign="text-center"/>
+      side="right"
+      stateLabel={progression.statusLabel}/>
   )
 })
