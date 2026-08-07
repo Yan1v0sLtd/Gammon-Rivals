@@ -1,0 +1,393 @@
+/* PlayerPanelShell — the side player card (non-compact) and the compact
+   mobile player strip. Side mirroring is resolved via .left / .right
+   variant classes applied to the panel element (C2/C5 precedent); the
+   old .game-player-panel--left/--right parent-scoped selectors are gone. */
+
+/* Pass 1 — base card + compact strip. */
+.panel {
+  position: relative;
+  z-index: 13;
+  height: min(57dvh, 34rem);
+  min-height: 23rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid rgba(214, 157, 49, 0.54);
+  border-radius: clamp(1rem, 1.5vw, 1.5rem);
+  background: radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+  linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow: inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+  0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+}
+
+.cardGlow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 166, 0.08);
+}
+
+/* No glow on the player card when it's the player's turn — the avatar
+   ring colour change (and the timer animation) already telegraph it.
+   The previous box-shadow rendered as a rectangular dark halo around
+   the painted card (since box-shadow follows the element bounding
+   box, ignoring the painted rounded corners), so the active player
+   read as "card sitting in a square shadow". */
+.panel.isTurn .card {
+  box-shadow: none;
+}
+
+.left .card {
+  border-left: 0.18rem solid rgba(193, 78, 255, 0.82);
+}
+
+.right .card {
+  border-right: 0.18rem solid rgba(31, 181, 255, 0.82);
+}
+
+.top {
+  position: relative;
+  display: flex;
+  gap: clamp(0.65rem, 0.95vw, 1.1rem);
+  align-items: center;
+  padding: clamp(0.75rem, 1.05vw, 1.25rem);
+}
+
+.right .top {
+  flex-direction: row-reverse;
+}
+
+.statList {
+  display: grid;
+  border-top: 1px solid rgba(255, 227, 172, 0.07);
+  border-bottom: 1px solid rgba(255, 227, 172, 0.07);
+}
+
+.panelBottom {
+  /* The premium player card is position:absolute (inset:0), so an in-flow
+     bottom slot would collapse to the panel's TOP (over the avatar). Pin it
+     just BELOW the card instead — i.e. directly under the player's details +
+     turn timer, which is where the secondary controls (Cube/Double/Auto)
+     belong. (The mobile-compact layout uses a different wrapper, so this
+     only affects the side-panel layout.) */
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  margin-top: 0.35rem;
+  z-index: 14;
+}
+
+.compactPanel {
+  position: relative;
+  z-index: 13;
+  display: flex;
+  width: min(100%, 13.6rem);
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(214, 157, 49, 0.54);
+  border-radius: clamp(0.8rem, 1.5vw, 1.1rem);
+  background: radial-gradient(circle at 24% 14%, rgba(124, 52, 168, 0.25), transparent 31%),
+  linear-gradient(180deg, rgba(31, 25, 28, 0.96), rgba(10, 10, 12, 0.95));
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 166, 0.06),
+  0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
+}
+
+.compactPanel.left {
+  border-left: 0.14rem solid rgba(193, 78, 255, 0.82);
+}
+
+.compactPanel.right {
+  border-right: 0.14rem solid rgba(31, 181, 255, 0.82);
+}
+
+.compactPanel.isTurn {
+  box-shadow: 0 0 1rem rgba(126, 207, 255, 0.2),
+  inset 0 0 0 1px rgba(255, 230, 166, 0.07),
+  0 0.85rem 1.5rem rgba(0, 0, 0, 0.42);
+}
+
+.compactTop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.55rem 0.45rem;
+}
+
+.right.compactPanel .compactTop {
+  flex-direction: row-reverse;
+}
+
+.compactStatList {
+  display: grid;
+  border-top: 1px solid rgba(255, 227, 172, 0.06);
+}
+
+/* Phone-landscape compact strip sizing. */
+@media (orientation: landscape) and (max-width: 1023px) {
+  .compactPanel {
+    width: clamp(7.2rem, 18vw, 8.45rem);
+    height: clamp(8.8rem, 64dvh, 12.7rem);
+    max-width: none !important;
+    border-radius: 0.55rem;
+    gap: 0 !important;
+    pointer-events: auto;
+  }
+
+  .compactTop {
+    gap: 0.34rem;
+    padding: 0.4rem 0.4rem 0.32rem;
+  }
+
+  .compactStatList {
+    margin-top: 0.16rem;
+  }
+}
+
+/* Pass 2 — asset-led skin: card becomes a transparent positioning
+   container; the painted box moves to .top. */
+.panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: none;
+}
+
+/* CSS-painted card frame — replaces left-player.webp / right-player.webp.
+ * The actual painted box lives on .top (the avatar + identity row) — see
+ * further down. `.card` stays as a transparent positioning container so
+ * the absolutely-positioned children (top, statList, timer bar) can still
+ * compute their percentage offsets relative to it. */
+.card {
+  position: absolute;
+  inset: 0;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cardGlow {
+  display: none;
+}
+
+.top {
+  position: absolute;
+  inset-inline: 4.6%;
+  top: 4.5%;
+  z-index: 2;
+  display: block;
+  height: 31%;
+  padding: 0;
+}
+
+.right .top {
+  transform: none;
+}
+
+.statList {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40.2%;
+  bottom: 14.4%;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.statsArt {
+  position: absolute;
+  top: 1%;
+  bottom: 1%;
+  width: 14.5%;
+  height: 98%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.left .statsArt {
+  left: 6.2%;
+}
+
+.right .statsArt {
+  right: 6.2%;
+  transform: scaleX(-1);
+}
+
+/* Pass 3 — premium mockup calibration. */
+.top {
+  inset-inline: 4.2%;
+  top: 4%;
+  height: 32.5%;
+}
+
+.statList {
+  top: 38.6%;
+  bottom: 11.8%;
+}
+
+.statsArt {
+  top: 1.5%;
+  bottom: 1.5%;
+  width: 14%;
+  height: 97%;
+}
+
+/* Pass 4 — side panel calibration: align live data inside the supplied
+   player art. */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 4.8%;
+  bottom: 2.8%;
+  z-index: 1;
+  width: 0.42%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.left .card::before {
+  left: -6.4%;
+  background: linear-gradient(180deg, transparent, #d760ff 8%, #b532ff 74%, transparent);
+  box-shadow: 0 0 0.78rem rgba(191, 57, 255, 0.8);
+}
+
+.right .card::before {
+  right: -6.4%;
+  background: linear-gradient(180deg, transparent, #4fc5ff 8%, #22aaff 74%, transparent);
+  box-shadow: 0 0 0.78rem rgba(48, 177, 255, 0.82);
+}
+
+.top {
+  inset-inline: 3.6%;
+}
+
+.statList {
+  top: 36.6%;
+  bottom: 11.8%;
+}
+
+.statsArt {
+  width: 15.8%;
+}
+
+.left .statsArt {
+  left: 5.7%;
+}
+
+.right .statsArt {
+  right: 5.7%;
+}
+
+/* Pass 5 — precision pass: the painted box confined to the avatar +
+   identity row only. */
+.card::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* This is the painted box the player sees. Confined to the avatar +
+ * identity row only — the Pip / Score / Doubles strip and the timer
+ * sit OUTSIDE the painted box, directly on the gameplay background.
+ * Matches the reference mockup. */
+.top {
+  inset-inline: 4%;
+  top: 4.2%;
+  height: 31.8%;
+  border: 1px solid rgba(214, 157, 49, 0.54);
+  border-radius: clamp(1rem, 1.5vw, 1.5rem);
+  background: radial-gradient(circle at 26% 18%, rgba(112, 49, 159, 0.22), transparent 32%),
+  linear-gradient(180deg, rgba(32, 26, 29, 0.96), rgba(12, 11, 13, 0.96));
+  box-shadow: inset 0 0 1.1rem rgba(255, 217, 113, 0.05),
+  0 1.1rem 2rem rgba(0, 0, 0, 0.44);
+}
+
+.left .top {
+  border-left: 0.18rem solid rgba(193, 78, 255, 0.82);
+}
+
+.right .top {
+  border-right: 0.18rem solid rgba(31, 181, 255, 0.82);
+}
+
+.statList {
+  top: 36.9%;
+  bottom: 14.5%;
+}
+
+.statsArt {
+  top: 1.4%;
+  bottom: 1.4%;
+  /* Bigger icon strip (was 15.6%) so the dice / trophy / cube glyphs
+     read clearly. */
+  width: 22%;
+  height: 97.2%;
+  object-fit: contain;
+}
+
+.left .statsArt {
+  left: 5.5%;
+}
+
+.right .statsArt {
+  right: 5.5%;
+}
+
+/* Phone-landscape readability pass: stat list bottom edge raised so the
+   taller countdown pill still fits under the Doubles row. */
+@media (orientation: landscape) and (max-height: 620px) {
+  /* Countdown pill: raised twice on operator review — net ~+70% height vs
+     the base 9.5% (the 22% inner track scales with it). The stat list's
+     bottom edge moves 14.5%→17% so the taller pill still fits under the
+     Doubles row (pill spans 0.9%..17.0%). Width grows 58%→76% to match:
+     height alone left the pill narrow and the +30% digits overflowed
+     their fixed 25% grid slice past the pill's right edge (on-device
+     review) — the digits column now auto-sizes to its content. */
+  .statList {
+    bottom: 17%;
+  }
+}
+
+/* Compact bottom-slot wrapper (was Tailwind flex flex-col gap-2 w-full). */
+.bottomSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.bottomSlotStart {
+  align-items: flex-start;
+}
+
+.bottomSlotEnd {
+  align-items: flex-end;
+}
+
+/* Compact panel grid placement within .game-mobile-players. */
+.justifyEnd {
+  justify-self: end;
+}
+
+.justifyStart {
+  justify-self: start;
+}

@@ -916,3 +916,41 @@ HEAD, unrelated to the migration):
 - Re-ran lint, `tsc -b`, `git diff --check`, fresh `npm run build` (`✓ built in 2.34s`). Fresh built-CSS asserts on
   useAutoRoll-DcXOJB_k (module hash now `1lg9p`): compact rules under `(width<=1023px)`; metaFlag box-shadow present;
   zero global identity leftovers.
+
+### C6 — PlayerPanelShell CSS Module slice
+
+- Created `PlayerPanelShell.module.css`; rewrote `PlayerPanelShell.tsx` to hashed locals. All 12 panel classes
+  confirmed exclusive to this component (panel, card, cardGlow, top, statList, statsArt, panelBottom, compactPanel,
+  compactTop, compactStatList, isTurn, + side variants).
+- **Side-mirroring via existing `side` prop**: the aside already receives `side`, so `.left`/`.right` variant classes
+  replace the `.game-player-panel--left/--right` parent-scoped selectors. Compounds (`.compactPanel.left`,
+  `.panel.isTurn .card`, `.right.compactPanel .compactTop`) and descendants (`.left .card`, `.right .top`,
+  `.left .statsArt`, `.left .card::before`) preserve original specificity (0,2,0 / 0,3,0).
+- **Tailwind decomposed**: compact aside `justify-self-end/start` → `.justifyEnd`/`.justifyStart`; bottom-slot wrapper
+  `flex flex-col gap-2 w-full` + `items-start/end` → `.bottomSlot` + `.bottomSlotStart`/`.bottomSlotEnd` (align prop
+  mapped by value).
+- **Cascade preserved verbatim**: pass-1 (base + compact) → 1023-media compact → pass-2 → pass-3 → pass-4 → pass-5 →
+  620-media statList. `.panel`/`.top`/`.card`/`.card::before`/`.statList` resolution verified across passes in built
+  CSS. Comments moved with their rules (is-turn glow, panel-bottom, pass-2 card frame, pass-5 painted box, 620
+  countdown pill).
+- index.css purge (text-anchored, assert-once): 1,083 → 730 lines (−353). `.game-side-slot`/`.game-actions-layer`/
+  `.game-actions-inner`/`.game-board-column`/`.game-center-layer` untouched (C7 scope). Braces 98/98.
+- Verification: lint, `tsc -b`, `git diff --check`, `npm run build` (`✓ built in 2.40s`). Built-CSS asserts on
+  useAutoRoll-7Gdu596U (module hash `ce9ws`): zero global panel leftovers; all 12 locals emitted; side compounds/
+  descendants present; media blocks (1023/620) present. **Accepted minifier dead-code elimination**: pass-3/pass-4
+  `.statList` (`top:38.6%/36.6%;bottom:11.8%`) are fully overridden by pass-5 (`top:36.9%;bottom:14.5%`, same
+  selector, later source) — dropped by lightningcss, identical rendered result to the original build. Browser/manual
+  visual checks remain pending.
+
+### C6 review fixes (reviewer agent)
+
+- **p1 — fresh verification re-run on final tree**: lint, `tsc -b`, `git diff --check`, `npm run build`
+  (`✓ built in 2.34s`) all pass. Fresh built-CSS asserts on useAutoRoll-7Gdu596U (module hash `ce9ws`): zero global
+  panel leftovers; `panel.isTurn .card`, `left .card`, `right .top`, `compactPanel.left`,
+  `right.compactPanel .compactTop`, `left .card:before`, `bottomSlot`, `justifyEnd` present; 1023/620 media blocks
+  present; statList cascade confirms pass-5 wins (pass-3/4 dead-dropped, identical to original build).
+- **p2 — diff-check coverage of untracked module**: the worktree index is read-only (`git add -N` fails), so used
+  `git diff --no-index --check /dev/null PlayerPanelShell.module.css` — no whitespace errors (exit 1 is only the
+  expected "files differ").
+- Reviewer confirmed no code regression: all 49 migrated rules match HEAD after the selector mapping; side
+  specificity/placement and Tailwind decomposition correct; pass-3/pass-4 statList genuinely dead (not a parity issue).

@@ -1,5 +1,7 @@
 import {memo, type ReactNode} from "react"
 
+import styles from "./PlayerPanelShell.module.css"
+
 type PlayerPanelShellProps = {
   side: "left" | "right",
   compact: boolean,
@@ -21,22 +23,22 @@ export const PlayerPanelShell = memo(function PlayerPanelShell({
   bottomSlot,
   align,
 }: PlayerPanelShellProps) {
-  const turnClass = isTurn ? "is-turn" : ""
+  const turnClass = isTurn ? styles.isTurn : ""
 
   if (!compact) {
     return (
       <aside
-        className={`game-player-panel game-player-panel--${side} ${turnClass}`}>
-        <div className="game-player-card">
-          <div className="game-player-card-glow"/>
-          <div className="game-player-top">
+        className={`${styles.panel} ${styles[side]} ${turnClass}`}>
+        <div className={styles.card}>
+          <div className={styles.cardGlow}/>
+          <div className={styles.top}>
             {identity}
           </div>
 
-          <div className="game-stat-list">
+          <div className={styles.statList}>
             <img
               alt=""
-              className="game-player-stats-art"
+              className={styles.statsArt}
               draggable={false}
               src="/gameplay/premium-purple/player-stats.webp"/>
             {stats}
@@ -44,24 +46,24 @@ export const PlayerPanelShell = memo(function PlayerPanelShell({
 
           {timer}
         </div>
-        {bottomSlot && <div className="game-panel-bottom">{bottomSlot}</div>}
+        {bottomSlot && <div className={styles.panelBottom}>{bottomSlot}</div>}
       </aside>
     )
   }
 
   return (
     <aside
-      className={`game-compact-panel game-player-panel--${side} ${turnClass} ${side === "right" ? "justify-self-end" : "justify-self-start"}`}>
-      <div className="game-compact-top">
+      className={`${styles.compactPanel} ${styles[side]} ${turnClass} ${side === "right" ? styles.justifyEnd : styles.justifyStart}`}>
+      <div className={styles.compactTop}>
         {identity}
       </div>
 
-      <div className="game-compact-stat-list">
+      <div className={styles.compactStatList}>
         {stats}
       </div>
 
       {timer}
-      {bottomSlot && <div className={`flex flex-col ${align} gap-2 w-full`}>{bottomSlot}</div>}
+      {bottomSlot && <div className={`${styles.bottomSlot} ${align === "items-end" ? styles.bottomSlotEnd : styles.bottomSlotStart}`}>{bottomSlot}</div>}
     </aside>
   )
 })
