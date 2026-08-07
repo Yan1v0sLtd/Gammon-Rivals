@@ -16,6 +16,7 @@ export const SpectatorPipCountStat = memo(function SpectatorPipCountStat({matchI
       compact={compact}
       icon="dice"
       label="Pip Count"
+      side={seat === "opponent" ? "left" : "right"}
       value={pipCount}/>
   )
 })

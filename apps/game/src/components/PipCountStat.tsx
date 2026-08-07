@@ -23,6 +23,7 @@ export const PipCountStat = memo(function PipCountStat({mode, seat, matchId, com
       compact={compact}
       icon="dice"
       label="Pip Count"
+      side={seat === "opponent" ? "left" : "right"}
       value={pipCount}/>
   )
 })

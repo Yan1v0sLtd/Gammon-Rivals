@@ -1,0 +1,289 @@
+/* Pass 1 — base pill. The `.right` class is applied to the same element as
+   `.timer` (side prop); `.compact`/`.warning`/`.danger` are state classes. */
+.timer {
+  display: grid;
+  width: min(15rem, calc(100% - 2rem));
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin: auto clamp(1rem, 1.55vw, 1.75rem) clamp(0.95rem, 1.4vw, 1.5rem);
+  border: 1px solid rgba(179, 93, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(4, 7, 14, 0.75);
+  padding: 0.32rem 0.7rem;
+  box-shadow: inset 0 0.12rem 0.28rem rgba(0, 0, 0, 0.7);
+}
+
+.right.timer {
+  border-color: rgba(70, 185, 255, 0.58);
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+  border: 0.16rem solid currentColor;
+  border-radius: 999px;
+  color: #b65fff;
+}
+
+.right .icon {
+  color: #4bbdff;
+}
+
+.track {
+  height: 0.42rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #baff62, #34e346 55%, #069b1d);
+  transform: scaleX(var(--timer-progress, 1));
+  transform-origin: left center;
+  transition: transform 180ms linear;
+}
+
+.timer.warning .fill {
+  background: linear-gradient(90deg, #fff071, #ffb22e 58%, #d67205);
+}
+
+.timer.danger .fill {
+  background: linear-gradient(90deg, #ff927c, #ef3f3f 58%, #981b1b);
+}
+
+.timer strong {
+  color: #ffe7a4;
+  font-size: clamp(0.78rem, 1vw, 1.15rem);
+  font-weight: 950;
+}
+
+.compact.timer {
+  width: 100%;
+  max-width: 9rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0;
+  padding: 0.22rem;
+}
+
+.compact .icon,
+.compact.timer strong {
+  display: none;
+}
+
+/* Compact variant on phone / portrait viewports (was
+   `.game-mobile-players .game-turn-timer` — the wrapper only renders when
+   the compact variant is active, so the fold is exact). */
+@media (max-width: 760px), (orientation: portrait) {
+  .compact.timer {
+    width: calc(100% - 0.7rem);
+    max-width: none;
+    grid-template-columns: 0.55rem minmax(0, 1fr) auto;
+    gap: 0.18rem;
+    margin: auto auto 0.34rem;
+    border-color: rgba(150, 86, 241, 0.72);
+    background: rgba(4, 7, 14, 0.78);
+    padding: 0.12rem 0.28rem;
+  }
+
+  .right.compact.timer {
+    border-color: rgba(70, 185, 255, 0.68);
+  }
+
+  .compact .icon,
+  .compact.timer strong {
+    display: block;
+  }
+
+  .compact .icon {
+    width: 0.48rem;
+    height: 0.48rem;
+    border-width: 0.09rem;
+  }
+
+  .compact .track {
+    height: 0.3rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .compact .fill {
+    background: linear-gradient(90deg, #baff62, #34e346 55%, #069b1d) !important;
+    box-shadow: 0 0 0.32rem rgba(66, 255, 77, 0.34);
+  }
+
+  .compact.timer strong {
+    color: #ffe7a4;
+    font-size: clamp(0.38rem, 1.22vw, 0.48rem);
+    line-height: 1;
+  }
+}
+
+/* Pass 2 — art-led premium pill over the painted card. */
+.timer {
+  position: absolute;
+  left: 6%;
+  right: auto;
+  bottom: 2.4%;
+  z-index: 3;
+  display: grid;
+  width: 55%;
+  max-width: none;
+  height: 9.1%;
+  grid-template-columns: 17% minmax(0, 1fr) 26%;
+  align-items: center;
+  gap: 3%;
+  margin: 0;
+  padding: 0 7%;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-image: url('/gameplay/premium-purple/left-timer.webp');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  box-shadow: none;
+}
+
+.right.timer {
+  left: auto;
+  right: 6%;
+  background-image: url('/gameplay/premium-purple/right-timer.webp');
+}
+
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  border-width: 0.13rem;
+  color: #b745ff;
+}
+
+.right .icon {
+  color: #28b7ff;
+}
+
+.track {
+  height: 28%;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.fill {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ceff72, #38e942 58%, #049419);
+  box-shadow: 0 0 0.45rem rgba(55, 255, 70, 0.42);
+  transform: scaleX(var(--timer-progress, 1));
+  transform-origin: left center;
+  transition: transform 220ms linear;
+}
+
+.timer strong {
+  color: #ffe7a7;
+  font-size: clamp(0.58rem, 1.1vw, 1rem);
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* Pass 3 — calibration. */
+.timer {
+  left: 6.4%;
+  bottom: 1.6%;
+  width: 56.2%;
+  height: 9.2%;
+  grid-template-columns: 16% minmax(0, 1fr) 26%;
+  padding: 0 7.2%;
+}
+
+.right.timer {
+  right: 6.4%;
+}
+
+.track {
+  height: 24%;
+}
+
+.icon {
+  display: none !important;
+}
+
+.track {
+  grid-column: 2;
+}
+
+.timer strong {
+  grid-column: 3;
+  font-size: clamp(0.5rem, 0.9vw, 0.88rem);
+}
+
+/* Pass 3 continued. */
+.timer {
+  width: 58.5%;
+  grid-template-columns: 25% minmax(0, 1fr) 25%;
+  gap: 2.5%;
+  padding: 0 7.8%;
+}
+
+.track {
+  height: 19%;
+}
+
+.timer strong {
+  font-weight: 850;
+}
+
+/* Pass 4 — precision. Pulled tighter to the stat list (was bottom:2.4%) so
+   the timer sits just under the last stat row, like the mockup. */
+.timer {
+  left: 5.5%;
+  bottom: 3.5%;
+  width: 58%;
+  height: 9.5%;
+  grid-template-columns: 20% minmax(0, 1fr) 25%;
+  gap: 2.2%;
+  padding: 0 6.7%;
+  z-index: 6;
+}
+
+.right.timer {
+  left: auto;
+  right: 5.5%;
+}
+
+.icon {
+  display: none !important;
+}
+
+.track {
+  grid-column: 2;
+  height: 22%;
+  margin-inline-start: 0;
+}
+
+.timer strong {
+  grid-column: 3;
+  font-size: clamp(0.48rem, 0.84vw, 0.82rem);
+}
+
+/* Phone-landscape readability pass — values are the live rules above scaled
+   ~×1.3. Keep in lockstep with the "Premium gameplay precision pass". */
+@media (orientation: landscape) and (max-height: 620px) {
+  .timer {
+    width: 76%;
+    height: 16.1%;
+    bottom: 0.9%;
+    grid-template-columns: 16% minmax(0, 1fr) auto;
+    gap: 3%;
+    padding: 0 5.5%;
+  }
+
+  .timer strong {
+    font-size: clamp(0.81rem, 1.42vw, 1.39rem);
+    white-space: nowrap;
+  }
+}

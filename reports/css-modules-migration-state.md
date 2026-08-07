@@ -724,3 +724,66 @@ HEAD, unrelated to the migration):
   `git diff --check`, `npm run build`. Built CSS (`useAutoRoll` chunk) confirms the module locals, the composed
   `actionButtonReset` (emitted once), the media query (minified to `width<=1023px`), and the `.on` state selectors
   (green switch, knob slide, amber panel state). Browser/manual visual checks remain pending.
+
+### C2 — TurnTimerBar + PlayerStatRow CSS Module slices
+
+- Created `TurnTimerBar.module.css` and `PlayerStatRow.module.css`; both components now import their module directly and
+  use hashed locals exclusively (zero `game-turn-timer-*` / `game-stat-*` literals remain in TSX).
+- **Side-mirror resolution (the cross-module dependency)**: each leaf now carries its own side variant class instead of
+  relying on `.game-player-panel--left/--right` ancestor selectors (hashed module classes can't match across files).
+  - `TurnTimerBar` already had a `side` prop — `game-turn-timer--${side}` becomes `styles.right` on the same element;
+    `.game-player-panel--right .game-turn-timer{...}` folds to `.right.timer` (compound, same 0,2,0 specificity) and
+    `.game-turn-timer--right ...` folds to `.right.timer` / `.right .icon`.
+  - `PlayerStatRow` gained a `side?: "left" | "right"` prop (default "left") applied as `styles.sideRight` on the row;
+    `.game-player-panel--right .game-stat-row/icon/copy` fold to `.sideRight.row` / `.sideRight .icon` / `.sideRight
+    .copy`; `.game-player-panel--right.game-compact-panel ...` compact mirrors fold to `.sideRight.compactRow` /
+    `.sideRight .compactIcon` / `.sideRight .compactCopy`.
+  - Wrappers thread side internally from their existing `seat` prop (PipCountStat, ScoreStat, SpectatorPipCountStat);
+    DoublesStat gained a `seat` prop (now `SeatProps`) since it had none — two call sites updated
+    (HotSeatPlayerPanel, OnlinePlayerPanel). OnlinePlayerPanel's direct spectator `PlayerStatRow` calls pass `side` too.
+- **Media-1081 `.game-mobile-players` folds**: the mobile timer/compact-stat overrides were folded into the modules
+  scoped to `.compact.timer` / `.compact .*` / `.right.compact.timer` under the identical `(max-width: 760px),
+  (orientation: portrait)` query — exact because the `game-mobile-players` wrapper renders iff the compact variant is
+  active (same `useIsMobileLayout()` source).
+- **Specificity preserved**: `.right.timer`/`.sideRight.row` compounds keep 0,2,0; `.timer strong`/`.copy strong`
+  descendants keep 0,1,1; `:last-child`/`:first-of-type` keep 0,2,0; media-620 label/value overrides and both
+  `--timer-progress` `scaleX(var(--timer-progress, 1))` consumption sites (pass-1 180ms + pass-2 220ms transitions)
+  moved verbatim. Pass order 1 → media-1081 → 2 → 3 → 3-cont → 4 → media-620 preserved within each module.
+- Removed the migrated rules from `index.css` (15 exact-block deletions): pass-1 stat/icon/copy/label/strong +
+  compact family + timer family, the media-1081 compact-stat and mobile-players timer blocks, pass-2 art-led stat rows
+  + timer (incl. `left-timer.webp`/`right-timer.webp` art, right-icon colors), pass-3/3-cont/4 calibration + precision
+  rules, and the media-620 label/value/timer blocks. `.game-stat-list` / `.game-compact-stat-list` stay global
+  (PlayerPanelShell owns them — C6 scope).
+- `apps/game/src/index.css` went 3,696 → 3,083 lines. Brace balance verified; zero `.game-turn-timer-*`/`.game-stat-*`
+  rules remain in source or built CSS (the only remaining `game-compact-stat` is the C6 list selector).
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json tsconfig.node.json`,
+  `git diff --check`, `npm run build`. Built CSS (`useAutoRoll` chunk) confirms: module locals emitted, compound
+  `.right.timer`/`.sideRight.row` mirrors (pass-1 border, pass-2 right-timer art + icon, pass-3/4 positions),
+  `.right.compact.timer` media fold, `--timer-progress` consumed twice, and both media queries present (minified to
+  `width<=760px` / `height<=620px`). Browser/manual visual checks remain pending.
+
+### C2 review fixes (reviewer agent)
+
+- **p1 — compact timer state selectors**: `.compact .timer strong` (descendant chain) never matched — the `<strong>`
+  is a DIRECT child of the timer root (there is no nested `.timer` element). Rewrote all three occurrences
+  (base `display:none`, media `display:block`, media color/font-size) as `.compact.timer strong` — specificity
+  (0,2,1) equals the original `.game-turn-timer.is-compact strong`.
+- **p2 — pass-2 `.right.timer` grid-columns**: folding `.game-turn-timer--right` (0,1,0) into `.right.timer` (0,2,0)
+  made its `grid-template-columns: 17% minmax(0,1fr) 26%` beat the later pass-3-cont/pass-4 side-agnostic grid-cols
+  rules, pinning the right player's timer columns to the pass-2 value. The property was redundant in the original
+  cascade (later `.game-turn-timer` rules always re-set columns for both sides), so it was dropped from the module's
+  pass-2 right rule — final columns now resolve to the same `20% minmax(0,1fr) 25%` / media-620 `16% minmax(0,1fr)
+  auto` as before.
+- **p2 — warning/danger fill specificity**: `.game-turn-timer.is-warning .game-turn-timer-fill` (0,3,0) was folded
+  to `.warning .fill` (0,2,0); restored exact parity with `.timer.warning .fill` / `.timer.danger .fill` (0,3,0).
+- **p2 — orphaned comment**: the pass-4 "narrower invisible icon column" comment sat above the unrelated
+  `.game-actions-layer` rule after the stat-row deletion; removed (the rationale already lives in
+  `PlayerStatRow.module.css` pass-4 copy).
+- **Accepted drift (documented, not fixed)**: `.game-player-panel--right.game-compact-panel .game-compact-stat-row/
+  icon/copy` (0,3,0) fold to `.sideRight.compactRow` / `.sideRight .compactIcon` / `.sideRight .compactCopy`
+  (0,2,0). Reproducing 0,3,0 would require an ancestor panel class that belongs to PlayerPanelShell's future module;
+  since no rule at ≥0,2,0 sets those properties on compact rows (the only competitors are `.compactRow` (0,1,0)
+  base/media rules), the resolved styles are identical.
+- Re-verified after fixes: lint, `tsc -b`, `npm run build`, `git diff --check` all pass; built CSS confirms
+  `._compact_nv5uo_2._timer_nv5uo_2 strong` (display none/block), `.timer.warning/danger .fill` (0,3,0 compounds),
+  right-timer rules free of grid-columns, and zero `game-turn-timer`/`game-stat-*` selectors.

@@ -1,5 +1,7 @@
 import {useEffect, useState, type CSSProperties} from "react"
 
+import styles from "./TurnTimerBar.module.css"
+
 type Props = {
   readonly deadlineMs: number,
   readonly durationMs: number,
@@ -32,17 +34,17 @@ export function TurnTimerBar({
   const secondsLeft = Math.ceil(remainingMs / 1000)
   const progress = validDeadline && validDuration ? remainingMs / durationMs : 0
   const clamped = Math.max(0, Math.min(1, progress))
-  const tone = clamped > 0.34 ? "" : clamped > 0.16 ? "is-warning" : "is-danger"
+  const tone = clamped > 0.34 ? "" : clamped > 0.16 ? styles.warning : styles.danger
   const minutes = Math.floor(secondsLeft / 60)
   const seconds = String(secondsLeft % 60).padStart(2, "0")
   const timerStyle = {"--timer-progress": clamped} as CSSProperties
 
-  return (<div className={`game-turn-timer game-turn-timer--${side} ${compact ? "is-compact" : ""} ${tone}`}>
+  return (<div className={`${styles.timer} ${side === "right" ? styles.right : ""} ${compact ? styles.compact : ""} ${tone}`}>
     <div
       aria-label={`${secondsLeft} seconds left`}
-      className="game-turn-timer-track"
+      className={styles.track}
       style={timerStyle}>
-      <div className="game-turn-timer-fill"/>
+      <div className={styles.fill}/>
     </div>
     <strong>{minutes}:{seconds}</strong>
   </div>)

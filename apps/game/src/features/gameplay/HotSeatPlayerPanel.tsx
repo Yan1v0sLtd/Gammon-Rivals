@@ -92,7 +92,8 @@ export const HotSeatPlayerPanel = memo(function HotSeatPlayerPanel({
       seat={seat}/>
     <DoublesStat
       compact={compact}
-      mode="hotseat"/>
+      mode="hotseat"
+      seat={seat}/>
   </>)
   const bottomSlot = seat === "self" && controlsVisible
     ? (<HotSeatControls

@@ -26,6 +26,7 @@ export const ScoreStat = memo(function ScoreStat({mode, seat, matchId, compact =
       compact={compact}
       icon="score"
       label="Score"
+      side={seat === "opponent" ? "left" : "right"}
       value={`${score} / ${target}`}/>
   )
 })

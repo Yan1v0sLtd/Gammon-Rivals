@@ -149,11 +149,13 @@ export const OnlinePlayerPanel = memo(function OnlinePlayerPanel({
       compact={compact}
       icon="score"
       label="Score"
+      side={seat === "opponent" ? "left" : "right"}
       value={`${score} / ${target}`}/>
     <PlayerStatRow
       compact={compact}
       icon="cube"
       label="Doubles"
+      side={seat === "opponent" ? "left" : "right"}
       value={cubeValue > 1 ? String(cubeValue) : "0"}/>
   </>) : (<>
     <PipCountStat
@@ -169,7 +171,8 @@ export const OnlinePlayerPanel = memo(function OnlinePlayerPanel({
     <DoublesStat
       compact={compact}
       matchId={matchId}
-      mode="online"/>
+      mode="online"
+      seat={seat}/>
   </>)
 
   return (<PlayerPanelShell
