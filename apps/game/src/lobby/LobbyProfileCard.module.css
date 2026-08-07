@@ -215,8 +215,7 @@
 /* Bubble layer reused from the old compact card — slow + fast
  * radial-gradient tiles that animate via background-position. The
  * keyframes (`lobby-progress-flow-slow` / `-fast`) are defined
- * globally in index.css alongside the `.lobby-profile-progress-*`
- * styles, so we just re-use them here. */
+ * in keyframes.css (shared), so we just re-use them here. */
 .profilePillXpFillBubbles {
   pointer-events: none;
   position: absolute;

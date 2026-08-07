@@ -571,3 +571,98 @@ HEAD, unrelated to the migration):
 - Re-verified: lint, `tsc -b`, `npm run build`, `git diff --check` all pass;
   built CSS confirms no broad `.bottomNavSlot img` rule remains, `navItemImage`
   is emitted, and the hourly `.image img` rules are intact.
+
+### S14 — Profile XP progress family CSS Module slice
+
+- Moved the live `.lobby-profile-progress*` family from `apps/game/src/index.css`
+  into `apps/game/src/features/profile/ProfileMainCard.module.css` as descriptive
+  locals: `.xpBar` (track), `.xpBarFill`, `.xpBarBubbles` (+`::after`), `.xpBarLabel`,
+  plus the `.xpBarWide` widening modifier (renamed from `.profileXpWide`).
+- The bubbles animations now reference the shared keyframes via
+  `animation: global(lobby-progress-flow-slow/fast) ...` (they live in
+  `keyframes.css`; bare names would be module-scoped).
+- Updated `ProfileMainCard.tsx`: the four literal legacy classes
+  (`lobby-profile-progress`, `-fill`, `-bubbles`, `-label`) are now module locals;
+  the `:global(...)` composition in the module (the last global↔module coupling)
+  is gone. Keyframe references remain, but no `.lobby-profile-progress*` class
+  is referenced from TSX anywhere.
+- Cascade parity preserved: the legacy lobby-u override block (index.css:426/441,
+  `position:absolute; left:0` + `var(--lobby-u)` sizes) is carried into the module
+  as later same-class `.xpBar` / `.xpBarLabel` rules. On the profile page
+  `--lobby-u` is never defined, so only `position:absolute; left:0` and
+  `letter-spacing:0` compute; the `var()` sizes are invalid-at-computed-value
+  and drop — identical computed behavior to the old global cascade. Built CSS
+  confirms both rules emit in the same order and `.xpBar.xpBarWide` (0,2,0)
+  still wins width/height/display.
+- The `body[data-fullscreen-modal]` pause rule moved into the module as
+  `:global(body[data-fullscreen-modal]) .xpBarBubbles[, ::after]` (the same
+  data-fullscreen-modal contract already used by PlayButton/HourlyBonusWidget).
+- Removed only the migrated live rules from `index.css` (base family 147–247,
+  lobby-u overrides 426–444, pause 6115–6116). The dead `.lobby-profile-progress-text`
+  no-op rules (150/329/502) and stale comments remain as legacy for the purge slice.
+- **Discovered issue (flagged for the pending visual check):** the legacy lobby-u
+  override leaks `position:absolute; left:0` onto the profile page (its `--lobby-u`
+  sizes are dead there, and the profile page has no positioned ancestor for the bar).
+  The historical `.profileXpBar` was `position:relative` in-flow, so this looks like
+  a lobby-card leak, not intended profile styling. Preserved verbatim for parity;
+  if the visual check shows the bar misplaced, deleting the override rule in
+  `ProfileMainCard.module.css` (making `.xpBar` stay relative) is the fix.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
+  tsconfig.node.json`, `npm run build`, `git diff --check`. Built CSS (Profile chunk)
+  confirms `_xpBar*` locals emit, the global keyframes resolve, and the
+  data-fullscreen-modal pause targets the module-scoped bubbles class.
+  Browser/manual visual checks remain pending.
+
+#### S14 reviewer remediation
+
+- Removed the three dead `.lobby-profile-progress-text` no-op rules from
+  `index.css` (base 150-152, lobby-u block 329-331, 640px media 502) — no
+  consumer exists anywhere (their own comments said "no longer in markup"),
+  so the "safety no-op" rationale is void.
+- Fixed stale keyframe-ownership comments: `keyframes.css` header and
+  `LobbyProfileCard.module.css` bubble comment claimed the keyframes lived
+  "in index.css alongside the `.lobby-profile-progress-*` styles"; both now
+  point at `keyframes.css` and the migrated module consumers. The stale
+  mention at `index.css:5669` sits inside the comment-only region that Slice
+  B (dead-lobby purge) deletes wholesale.
+- Reviewer confirmed cascade parity (base family, lobby-u override ordering,
+  label override, fullscreen-modal pause, landscape/portrait widen variants)
+  and zero missed consumers.
+- Re-verified: lint, `tsc -b`, `npm run build`, `git diff --check` all pass.
+  Browser/manual visual checks (including the flagged `position:absolute;
+  left:0` leak question) remain pending.
+
+### S15 — Dead-lobby purge (index.css slimming)
+
+- Deleted all remaining dead lobby content from `apps/game/src/index.css`:
+  - `.lobby-profile-*` base block + lobby-u override block, `.lobby-profile-copy > button`,
+    orphaned HourlyBonusWidget/Google-CTA comments, `.lobby-action-stack`,
+    `.lobby-bottom-nav-item`/`.lobby-nav-*`/`.lobby-bottom-nav-frame` overrides, and the
+    `/* end unified lobby layout block */` marker.
+  - Empty `@media (max-width: 900px)` and `@media (orientation: portrait)` blocks, the
+    dead 640px mobile lobby block, and the comment-only Profile-v2 / Google-CTA /
+    landscape comment blocks.
+  - The dead tail: `@property --daily-bonus-rotate` + `@keyframes daily-bonus-spin`
+    (DailyBonusModal.module.css has its own local copy), the comment-only DiceTray /
+    Wheel / profile notes, four empty profile media queries, the `.lobby-pp-*` premium
+    card block, `@property --gr-shimmer` + `gr-*` keyframes, and the migrated
+    PlayButton/UnlockPill/LoadingScreen comment tail.
+- File went 5,976 → 4,458 lines (−1,518: 1,516 deleted lobby lines + two
+  trailing blank lines after the gameplay block, stripped for `git diff --check`).
+  Remaining content: Tailwind directives,
+  document base (`html, body, #root`), and the gameplay block only. Zero
+  `.lobby-*`/`.dice-*`/`.wheel-*`/`.daily-*` rules remain.
+- Safety verified before deletion: whole-repo grep for every dead prefix found only
+  comments or the DailyBonusModal module's own migrated `--daily-bonus-rotate`.
+- Content parity verified mechanically: the surviving gameplay block (HEAD lines
+  728–5166) diffs rule-identical against the post-deletion file; `wc` math checks
+  (5,976 − 707 − 809 = 4,460 pre-whitespace-strip, then −2 trailing blanks = 4,458).
+- Built CSS confirmed: live `game-*` rules intact (game-screen, game-table-plate,
+  game-actions-layer ×9, game-dice-tray, …), dead lobby selectors absent.
+- The intentionally retained legacy gameplay-dead rules (`.game-dice-*`/`.game-die-*`
+  block + keyframes, `.game-decor`, `.game-table-plate`, `.game-header-action*`,
+  `.game-score-strip`, etc.) remain in place for the Slice C gameplay migration, which
+  will delete them while moving live rules into modules.
+- Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
+  tsconfig.node.json`, `npm run build`, `git diff --check` (after stripping one trailing
+  blank at EOF). Browser/manual visual checks remain pending.

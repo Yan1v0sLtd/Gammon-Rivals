@@ -358,6 +358,136 @@
   color: #ffd322;
 }
 
+/* --- XP lava bar (migrated from the global .lobby-profile-progress-* rules) --- */
+
+/* Track: dark rounded shell with an inset rim. Width is overridden by
+   .xpBarWide on the profile page (the lobby's compact width below is the
+   default the lobby card used). */
+.xpBar {
+  position: relative;
+  display: block;
+  width: clamp(6.4rem, 13vw, 11rem);
+  height: 1.35rem;
+  overflow: hidden;
+  border: 2px solid rgba(3, 9, 20, 0.72);
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #04070f, #182235);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.75),
+  0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+/* Fill: horizontal lava sweep over the bubble layer, sized inline (percent). */
+.xpBarFill {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: /* A subtle horizontal sweep that rides on top of the bubble layer
+       to keep the bar reading as a single liquid surface. */ linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 36%),
+  linear-gradient(90deg, #ff5d1f 0%, #ff9d1f 35%, #ffd040 70%, #ffe166 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 240, 200, 0.45),
+  0 0 0.85rem rgba(255, 165, 45, 0.85);
+}
+
+/* Water-tank bubble flow. Two horizontally-scrolling layers of
+   small round bubbles, tileable so each loops seamlessly. The
+   bubble TILE has a fixed pixel width per layer; the animation
+   shifts background-position-x by exactly one tile-width per cycle
+   so the visible pattern is continuous (no jump at the wrap). Both
+   layers live INSIDE the fill so the effect only paints on the
+   earned portion of the bar. Flow direction is LEFT → RIGHT
+   (background-position-x animates from 0 to NEGATIVE, which shifts
+   the image origin leftward and makes the visible content scroll
+   rightward). */
+.xpBarBubbles {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  /* Three bubbles per tile at staggered vertical positions, so the
+     tile reads as a small "pocket" of bubbles rather than a single
+     dot. The bubble itself is a small radial gradient with a soft
+     falloff. */
+  background-image: radial-gradient(circle at 18% 72%, rgba(255, 255, 240, 0.85) 0 18%, transparent 22%),
+  radial-gradient(circle at 52% 38%, rgba(255, 255, 240, 0.7) 0 14%, transparent 18%),
+  radial-gradient(circle at 82% 62%, rgba(255, 248, 215, 0.78) 0 16%, transparent 20%);
+  background-size: 42px 100%,
+  42px 100%,
+  42px 100%;
+  background-repeat: repeat;
+  animation: global(lobby-progress-flow-slow) 4.5s linear infinite;
+  will-change: background-position;
+}
+
+.xpBarBubbles::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Faster, smaller golden embers — a thinner tile (26px) so they
+     pass through more frequently. Different tile width from the
+     slow layer means the two patterns never sync up — combined
+     they never repeat in a way the eye catches. */
+  background-image: radial-gradient(circle at 32% 80%, rgba(255, 218, 120, 0.9) 0 14%, transparent 18%),
+  radial-gradient(circle at 68% 45%, rgba(255, 200, 80, 0.7) 0 11%, transparent 14%);
+  background-size: 26px 100%,
+  26px 100%;
+  background-repeat: repeat;
+  animation: global(lobby-progress-flow-fast) 2.6s linear infinite;
+  will-change: background-position;
+}
+
+/* In-bar percent label: black stroke (4-direction shadow trick) + soft
+   drop-shadow so the text reads on the dark empty AND bright lava
+   portions of the bar without knowing the fill percentage. */
+.xpBarLabel {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: white;
+  font: 900 0.72rem / 1 "Segoe UI", sans-serif;
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8),
+  -1px 0 0 rgba(0, 0, 0, 0.85),
+  1px 0 0 rgba(0, 0, 0, 0.85),
+  0 -1px 0 rgba(0, 0, 0, 0.85),
+  0 1px 0 rgba(0, 0, 0, 0.85),
+  0 2px 4px rgba(0, 0, 0, 0.55);
+  letter-spacing: 0.02em;
+  z-index: 2;
+}
+
+/* Legacy lobby-card overrides (from the old global .lobby-profile-progress
+   rules in index.css). The lobby card positioned its children absolutely at
+   --lobby-u scale; on the profile page --lobby-u is never defined, so only
+   the plain declarations compute — position:absolute + left:0 leak, the
+   var() sizes are invalid-at-computed-value and drop. Preserved verbatim
+   for cascade parity; if a visual check shows the bar misplaced, deleting
+   this override (making .xpBar stay relative) is the intended fix. */
+.xpBar {
+  position: absolute;
+  left: 0;
+  top: calc(110 * var(--lobby-u));
+  width: calc(160 * var(--lobby-u));
+  height: calc(34 * var(--lobby-u));
+  border-width: calc(3 * var(--lobby-u));
+}
+
+/* Same legacy override for the in-bar label: letter-spacing:0 computes,
+   the var() font-size drops on the profile page. */
+.xpBarLabel {
+  font-size: calc(17 * var(--lobby-u));
+  letter-spacing: 0;
+}
+
+/* Full-screen modals pause the bubble flow (data-fullscreen-modal contract). */
+:global(body[data-fullscreen-modal]) .xpBarBubbles,
+:global(body[data-fullscreen-modal]) .xpBarBubbles::after {
+  animation-play-state: paused;
+}
+
 @media (orientation: portrait),
 (max-width: 980px) {
   .profileMainCard {
@@ -495,12 +625,12 @@
      of the desktop profile layout (the original .profileXpBar
      used `width: min(100%, calc(580 * var(--profile-u))); height:
      calc(34 * var(--profile-u))` — we mirror those values). */
-  :global(.lobby-profile-progress).profileXpWide {
+  .xpBar.xpBarWide {
     width: min(100%, calc(580 * var(--profile-u)));
     height: calc(34 * var(--profile-u));
   }
 
-  .profileXpWide :global(.lobby-profile-progress-label) {
+  .xpBarWide .xpBarLabel {
     font-size: calc(20 * var(--profile-u));
   }
 
@@ -522,14 +652,14 @@
    on the profile card rather than the lobby's compact bar.
    The lobby's default is `width: clamp(6.4rem, 13vw, 11rem)` —
    sized for the lobby's tiny top-bar slot. */
-:global(.lobby-profile-progress).profileXpWide {
+.xpBar.xpBarWide {
   display: block;
   width: 100%;
   max-width: 100%;
   height: clamp(1.55rem, 1.78vw, 2.125rem);
 }
 
-.profileXpWide :global(.lobby-profile-progress-label) {
+.xpBarWide .xpBarLabel {
   font-size: clamp(0.85rem, 1.05vw, 1.15rem);
 }
 

@@ -116,22 +116,22 @@ export function ProfileMainCard() {
           <span>Level {progression.level}</span>
           <span>Level {nextLevelLabel}</span>
         </div>
-        {/* Lobby lava-XP bar — reuses the .lobby-profile-progress
-            * class (orange→yellow gradient with animated bubble
-            * layers riding the filled portion). profile-xp-wide
-            * scope widens it to the profile card's column. */}
+        {/* Lobby lava-XP bar — the module-local xpBar (migrated from
+            * .lobby-profile-progress) with the xpBarWide widening modifier
+            * (orange→yellow gradient with animated bubble layers riding
+            * the filled portion). */}
         <div className={styles.profileXpRow}>
           <span
             aria-label={`XP progress ${progression.progressLabel}`}
-            className={`lobby-profile-progress ${styles.profileXpWide}`}>
+            className={`${styles.xpBar} ${styles.xpBarWide}`}>
             <span
-              className="lobby-profile-progress-fill"
+              className={styles.xpBarFill}
               style={{width: `${progression.progressPercent}%`}}>
               <span
                 aria-hidden="true"
-                className="lobby-profile-progress-bubbles"/>
+                className={styles.xpBarBubbles}/>
             </span>
-            <span className="lobby-profile-progress-label">{xpText}</span>
+            <span className={styles.xpBarLabel}>{xpText}</span>
           </span>
         </div>
         <div className={styles.profileNextReward}>

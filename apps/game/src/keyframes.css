@@ -1,9 +1,10 @@
-/* Shared keyframes — used by more than one consumer (global rules in
- * index.css AND co-located CSS Modules). Component-owned keyframes stay
- * with their owning module; only cross-consumer keyframes live here. */
+/* Shared keyframes — used by more than one consumer (co-located CSS
+ * Modules). Component-owned keyframes stay with their owning module;
+ * only cross-consumer keyframes live here. */
 
-/* XP progress bubble flow — used by the global `.lobby-profile-progress-*`
- * rules (index.css) and the `LobbyProfileCard` module. */
+/* XP progress bubble flow — used by the ProfileMainCard module (the
+ * migrated `.lobby-profile-progress-*` family) and the LobbyProfileCard
+ * module. */
 @keyframes lobby-progress-flow-slow {
   0% {
     background-position: -42px 50%, -42px 50%, -42px 50%;
