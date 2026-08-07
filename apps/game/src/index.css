@@ -140,191 +140,6 @@ html, body, #root {
   justify-content: center;
 }
 
-.game-match-header {
-  position: relative;
-  z-index: 30;
-  display: grid;
-  min-height: clamp(3.9rem, 8dvh, 6rem);
-  flex: 0 0 auto;
-  grid-template-columns: minmax(9rem, 1fr) auto minmax(9rem, 1fr);
-  align-items: start;
-  gap: 0.75rem;
-}
-
-.game-nav-home {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.game-home-link {
-  display: inline-flex;
-  align-items: center;
-  gap: clamp(0.45rem, 0.75vw, 0.72rem);
-  color: #f0d086;
-  font-size: clamp(0.95rem, 1.35vw, 1.45rem);
-  font-weight: 850;
-  text-decoration: none;
-  text-shadow: 0 0.16rem 0.18rem rgba(0, 0, 0, 0.75);
-  /* Reset button chrome — this class is now used on a <button> so it
-     can intercept the click and put the loader up before navigating. */
-  border: 0;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.game-match-hud {
-  /* Score / "MATCH TO N" capsule HIDDEN — match-to-N scoring isn't a live
-     feature yet, so the notch was pure clutter; hiding it lets the board
-     reclaim the top space. Pip counts live on the side panels and the active
-     player's highlight + timer show whose turn it is. Re-enable (restore
-     display: grid, ideally gated on match.target > 1) when tournaments /
-     match play ship. !important because the notch is re-styled across ~8
-     aspect-ratio blocks that would otherwise win over this base rule. */
-  display: none !important;
-  min-width: min(43vw, 43rem);
-  justify-items: center;
-  color: #f5d27c;
-}
-
-.game-match-hud-row {
-  /* Top score notch shrunk 15% for the top-down board layout so it no longer
-     crowds the board's top edge. Scaled from the top so it stays pinned to
-     the top of the screen. */
-  transform: scale(0.85);
-  transform-origin: top center;
-}
-
-.game-match-label {
-  margin-bottom: 0.22rem;
-  color: #e8c378;
-  font-size: clamp(0.72rem, 1.05vw, 1rem);
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-shadow: 0 0.1rem 0.2rem #000;
-}
-
-.game-score-player {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 0.05rem;
-  color: #fff7df;
-  font-weight: 950;
-  line-height: 1.02;
-  text-transform: uppercase;
-}
-
-.game-score-player--left {
-  justify-items: end;
-  padding-right: clamp(0.7rem, 1.4vw, 1.5rem);
-}
-
-.game-score-player--right {
-  justify-items: start;
-  padding-left: clamp(0.7rem, 1.4vw, 1.5rem);
-}
-
-.game-score-player span {
-  max-width: 9rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: clamp(0.86rem, 1.18vw, 1.45rem);
-}
-
-.game-score-player strong {
-  color: #ffce45;
-  font-size: clamp(0.92rem, 1.26vw, 1.48rem);
-}
-
-.game-score-core {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  min-height: clamp(3.7rem, 7.2dvh, 5.4rem);
-  align-items: center;
-  justify-content: center;
-  gap: clamp(0.45rem, 0.85vw, 0.95rem);
-  border: 2px solid rgba(215, 155, 43, 0.82);
-  border-radius: clamp(1.35rem, 2.15vw, 2.35rem);
-  background: radial-gradient(circle at 50% 20%, rgba(255, 212, 99, 0.14), transparent 38%),
-  linear-gradient(180deg, rgba(20, 20, 22, 0.98), rgba(5, 8, 15, 0.98));
-  box-shadow: 0 0 0 0.12rem rgba(0, 0, 0, 0.62),
-  0 0.85rem 1.55rem rgba(0, 0, 0, 0.5),
-  inset 0 0.12rem 0 rgba(255, 239, 176, 0.24);
-  color: #ffd45f;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(2rem, 4.5vw, 4.5rem);
-  font-weight: 950;
-  letter-spacing: 0.03em;
-  line-height: 1;
-  text-shadow: 0 0.12rem 0.08rem rgba(0, 0, 0, 0.75);
-}
-
-.game-score-core::before,
-.game-score-core::after {
-  content: '';
-  position: absolute;
-  top: 12%;
-  bottom: 12%;
-  width: 1.65rem;
-  border: 2px solid rgba(215, 155, 43, 0.55);
-  background: linear-gradient(180deg, rgba(24, 23, 24, 0.92), rgba(8, 9, 13, 0.94));
-  z-index: -1;
-}
-
-.game-score-core::before {
-  right: 96%;
-  border-right: 0;
-  border-radius: 1.4rem 0 0 1.4rem;
-}
-
-.game-score-core::after {
-  left: 96%;
-  border-left: 0;
-  border-radius: 0 1.4rem 1.4rem 0;
-}
-
-.game-score-separator {
-  color: #f5d589;
-  transform: translateY(-0.04em);
-}
-
-.game-turn-pill {
-  display: inline-flex;
-  min-height: clamp(1.75rem, 3.7dvh, 2.65rem);
-  align-items: center;
-  gap: 0.55rem;
-  margin-top: -0.18rem;
-  padding: 0 clamp(1rem, 1.8vw, 2rem);
-  border-radius: 0 0 1.1rem 1.1rem;
-  background: linear-gradient(180deg, rgba(51, 32, 15, 0.96), rgba(16, 11, 9, 0.98));
-  box-shadow: inset 0 0.08rem 0 rgba(255, 228, 151, 0.16), 0 0.5rem 1rem rgba(0, 0, 0, 0.34);
-  color: #f8df9a;
-  font-size: clamp(0.78rem, 1.15vw, 1.32rem);
-  font-weight: 950;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.game-turn-dot {
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 999px;
-  background: radial-gradient(circle at 34% 28%, #fff9dd, #e8c06e 62%, #8b520e);
-  box-shadow: 0 0 0.55rem rgba(255, 220, 142, 0.56);
-}
-
-.game-crawford-pill {
-  border-radius: 999px;
-  background: rgba(255, 195, 66, 0.16);
-  padding: 0.15rem 0.5rem;
-  font-size: 0.62em;
-}
 
 .game-player-panel {
   position: relative;
@@ -700,17 +515,6 @@ html, body, #root {
     padding: clamp(0.7rem, 1.35vw, 1.65rem) clamp(1rem, 1.85vw, 2.25rem) 0;
   }
 
-  .game-match-header {
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-  }
-
-  .game-nav-home,
-  .game-match-hud {
-    transform: translateY(clamp(0.55rem, 1.45dvh, 1.1rem));
-  }
-
   .game-stage {
     grid-template-columns:
       clamp(12.2rem, 16.2vw, 20rem)
@@ -748,10 +552,6 @@ html, body, #root {
 }
 
 @media (orientation: landscape) and (min-width: 1500px) {
-  .game-match-header {
-    min-height: clamp(4.2rem, 6.6dvh, 5rem);
-  }
-
   .game-board-stage {
     width: min(57vw, 68rem, calc((100dvh - 16.2rem) * 1.333));
     max-height: calc(100dvh - 16.2rem);
@@ -767,26 +567,6 @@ html, body, #root {
 }
 
 @media (max-width: 760px), (orientation: portrait) {
-  .game-match-header {
-    min-height: 4.2rem;
-    grid-template-columns: auto 1fr auto;
-  }
-
-  .game-match-hud {
-    min-width: 0;
-  }
-
-  .game-match-label,
-  .game-score-player,
-  .game-turn-pill {
-    display: none;
-  }
-
-  .game-score-core {
-    min-height: 2.6rem;
-    padding: 0 1rem;
-    font-size: 1.7rem;
-  }
 
   .game-board-stage {
     width: min(100%, calc((100dvh - 12rem) * 1.333));
@@ -800,85 +580,6 @@ html, body, #root {
     padding: max(0.35rem, env(safe-area-inset-top)) max(0.7rem, env(safe-area-inset-right)) max(0.3rem, env(safe-area-inset-bottom)) max(0.7rem, env(safe-area-inset-left));
   }
 
-  .game-match-header {
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    min-height: 2.35rem;
-    grid-template-columns: minmax(5.4rem, 1fr) auto minmax(5.4rem, 1fr);
-    padding-inline: max(0.7rem, env(safe-area-inset-left)) max(0.7rem, env(safe-area-inset-right));
-  }
-
-  .game-home-link {
-    gap: 0.24rem;
-    font-size: clamp(0.58rem, 2vw, 0.76rem);
-  }
-
-  .game-match-hud {
-    min-width: min(36vw, 17rem);
-    transform: translateY(0);
-  }
-
-  .game-match-label {
-    display: block;
-    margin-bottom: 0;
-    font-size: clamp(0.34rem, 1.12vw, 0.48rem);
-    letter-spacing: 0.06em;
-  }
-
-  .game-score-player--left {
-    padding-right: 0.32rem;
-  }
-
-  .game-score-player--right {
-    padding-left: 0.32rem;
-  }
-
-  .game-score-player {
-    display: grid;
-  }
-
-  .game-score-player span {
-    max-width: 3.9rem;
-    font-size: clamp(0.42rem, 1.35vw, 0.56rem);
-  }
-
-  .game-score-player strong {
-    font-size: clamp(0.48rem, 1.55vw, 0.66rem);
-  }
-
-  .game-score-core {
-    min-height: clamp(1.38rem, 5.45dvh, 1.82rem);
-    gap: 0.15rem;
-    border-width: 1px;
-    border-radius: 0.72rem;
-    font-size: clamp(1rem, 3.35vw, 1.42rem);
-    box-shadow: 0 0 0 0.08rem rgba(0, 0, 0, 0.62),
-    0 0.45rem 0.75rem rgba(0, 0, 0, 0.46),
-    inset 0 0.08rem 0 rgba(255, 239, 176, 0.22);
-  }
-
-  .game-score-core::before,
-  .game-score-core::after {
-    top: 16%;
-    bottom: 16%;
-    width: 0.58rem;
-    border-width: 1px;
-  }
-
-  .game-turn-pill {
-    min-height: clamp(0.75rem, 2.95dvh, 0.98rem);
-    gap: 0.18rem;
-    margin-top: -0.06rem;
-    padding: 0 0.46rem;
-    border-radius: 0 0 0.45rem 0.45rem;
-    font-size: clamp(0.39rem, 1.32vw, 0.54rem);
-  }
-
-  .game-turn-dot {
-    width: 0.46rem;
-    height: 0.46rem;
-  }
 
   .game-stage {
     grid-template-rows: minmax(0, 1fr);
@@ -1028,29 +729,14 @@ html, body, #root {
   overflow: visible;
 }
 
-.game-stage,
-.game-match-header {
+.game-stage {
   position: absolute;
   inset: 0;
   display: block;
   min-height: 0;
 }
 
-/* The header layer fills the viewport so its absolutely-positioned
-   children (home link, HUD, action icons) can be placed against the
-   premium mockup. The layer itself must NOT capture clicks — otherwise
-   it sits on top of the action bar at z-index 42 and swallows ROLL /
-   AUTO taps. Re-enable pointer events on each interactive child. */
-.game-match-header {
-  pointer-events: none;
-}
 
-.game-match-header .game-nav-home,
-.game-match-header .game-match-hud,
-.game-match-header a,
-.game-match-header button {
-  pointer-events: auto;
-}
 
 .game-mobile-players {
   display: none !important;
@@ -1144,182 +830,6 @@ html, body, #root {
 }
 
 
-.game-match-header {
-  z-index: 42;
-}
-
-.game-nav-home {
-  position: absolute;
-  left: 1.7%;
-  top: 2.4%;
-  z-index: 4;
-}
-
-.game-home-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.65em;
-  color: #ffe5a0;
-  font-size: clamp(0.82rem, 1.72vw, 1.62rem);
-  font-weight: 900;
-  text-decoration: none;
-  text-shadow: 0 0.08em 0.12em rgba(0, 0, 0, 0.72);
-}
-
-/* New lobby button is a self-contained square image (gold arrow + LOBBY
-   label baked in), so it replaces the CSS icon + text entirely. */
-.game-home-image {
-  display: block;
-  width: clamp(2.6rem, 5vw, 4.2rem);
-  height: auto;
-}
-
-/* Header HUD is a vertical column: "MATCH TO N" label sits ABOVE a
-   row containing [rail-L][name-L][pill][name-R][rail-R]. The pill
-   holds the score core (central oval) and the "WHITE TO ROLL" turn
-   pill (in the bottom tab). */
-.game-match-hud {
-  position: absolute;
-  left: 13%;
-  right: 13%;
-  top: 0.4%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.08rem;
-}
-
-.game-match-hud-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.game-match-hud-pill {
-  position: relative;
-  display: block;
-  flex: 0 0 auto;
-  /* New header art is 2170 x 332 (≈6.535:1). Spans the full row width. */
-  width: 100%;
-  aspect-ratio: 2170 / 332;
-}
-
-.game-match-hud-art {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  pointer-events: none;
-  filter: drop-shadow(0 0.38rem 0.42rem rgba(0, 0, 0, 0.42));
-}
-
-.game-match-label {
-  position: static;
-  margin: 0 0 0.05rem;
-  color: #ffe1a0;
-  font-size: clamp(0.5rem, 1vw, 0.92rem);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 0.08em 0.1em rgba(0, 0, 0, 0.68);
-  line-height: 1;
-  text-align: center;
-}
-
-/* Names sit OUTSIDE the pill, between the rail and the pill. */
-.game-score-player {
-  position: static;
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.06em;
-  color: #fff9ef;
-  font-size: clamp(0.6rem, 1.15vw, 1.05rem);
-  font-weight: 950;
-  line-height: 1.05;
-  text-transform: uppercase;
-  text-shadow: 0 0.08em 0.13em rgba(0, 0, 0, 0.7);
-  text-align: center;
-  white-space: nowrap;
-}
-
-.game-score-player strong {
-  color: #ffd85c;
-  font-size: clamp(0.68rem, 1.28vw, 1.18rem);
-}
-
-.game-score-core {
-  position: absolute;
-  left: 50%;
-  /* The pill's aspect-ratio includes the bottom tab so geometric 50%
-     of the pill sits BELOW the oval. The visual oval center is at
-     ~42% of pill height. */
-  top: 42%;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15em;
-  transform: translate(-50%, -50%);
-  color: #ffd96d;
-  font-size: clamp(1.2rem, 3.4vw, 3.05rem);
-  font-weight: 950;
-  line-height: 1;
-  text-shadow: 0 0.05em 0.08em rgba(0, 0, 0, 0.72),
-  0 0 0.22em rgba(255, 209, 90, 0.22);
-}
-
-.game-score-separator {
-  color: #ffe6a3;
-  opacity: 0.95;
-}
-
-.game-turn-pill {
-  position: absolute;
-  left: 50%;
-  top: 86%;
-  z-index: 6;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5em;
-  padding: 0 0.7em;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #ffe8a8;
-  font-size: clamp(0.5rem, 1vw, 0.9rem);
-  font-weight: 950;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  text-shadow: 0 0.08em 0.12em rgba(0, 0, 0, 0.72);
-  white-space: nowrap;
-  transform: translate(-50%, -50%);
-  box-shadow: none;
-}
-
-.game-turn-dot {
-  width: 0.9em;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff4d0, #d4a63d 72%, #5f3b08);
-  box-shadow: 0 0 0.7em rgba(255, 203, 96, 0.7);
-}
-
-.game-crawford-pill {
-  position: absolute;
-  right: -2.4rem;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: rgba(75, 37, 10, 0.88);
-  color: #ffe49b;
-  font-size: 0.54em;
-  padding: 0.25em 0.5em;
-}
 
 .game-side-slot {
   position: absolute;
@@ -1639,64 +1149,6 @@ html, body, #root {
   touch-action: manipulation;
 }
 
-.game-nav-home {
-  left: 1.85%;
-  top: 2.5%;
-}
-
-.game-home-link {
-  gap: 0.52em;
-  font-size: clamp(0.72rem, 1.3vw, 1.24rem);
-}
-
-/* HUD spans between home (~13%) and settings icons (~13%); the column
-   stacks "MATCH TO N" above the header art pill, with the turn pill
-   below. Height is intrinsic so the children flow naturally. */
-.game-match-hud {
-  left: 13%;
-  right: 13%;
-  width: auto;
-  top: 0.5%;
-  height: auto;
-}
-
-/* Pill geometry (width: 100%, aspect-ratio: 3.104/1) comes from the
-   asset-led skin's base rule — calibration just tweaks typography. */
-
-.game-match-label {
-  font-size: clamp(0.46rem, 0.98vw, 0.88rem);
-}
-
-.game-score-core::before,
-.game-score-core::after {
-  display: none !important;
-  content: none !important;
-}
-
-.game-score-player {
-  font-size: clamp(0.54rem, 1.04vw, 0.96rem);
-}
-
-.game-score-player strong {
-  font-size: clamp(0.6rem, 1.14vw, 1.06rem);
-}
-
-.game-score-core {
-  font-size: clamp(1.18rem, 3.05vw, 2.92rem);
-  min-height: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  font-family: inherit;
-}
-
-.game-turn-pill {
-  font-size: clamp(0.5rem, 1.04vw, 0.95rem);
-  border: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
 
 .game-side-slot {
   top: 15.1%;
@@ -2051,142 +1503,7 @@ html, body, #root {
   }
 }
 
-/* Premium gameplay precision pass: side panels, header, timers, and tap targets. */
-.game-match-hud {
-  top: 0.3%;
-  left: 13%;
-  right: 13%;
-  width: auto;
-  height: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.05rem;
-  overflow: visible;
-  z-index: 62;
-}
-
-/* The new header art already includes the rails baked into the image,
-   so the row just centres the pill. */
-.game-match-hud-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.game-match-hud-pill {
-  position: relative;
-  flex: 0 0 auto;
-  /* New header art is 2170 x 332 (≈6.535:1). Half the previous width
-     (was 100% of wrapper). */
-  width: 50%;
-  aspect-ratio: 2170 / 332;
-}
-
-.game-match-hud-art {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.game-match-label {
-  position: static;
-  margin: 0;
-  z-index: 4;
-  font-size: clamp(0.48rem, 0.98vw, 0.88rem);
-  letter-spacing: 0.065em;
-  line-height: 1;
-  text-align: center;
-}
-
-/* Names overlay the LEFT and RIGHT rail areas of the new header art,
-   centred vertically with the score's oval. */
-.game-score-player {
-  position: absolute;
-  top: 35%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.04em;
-  transform: translateY(-50%);
-  font-size: clamp(0.58rem, 1.12vw, 1rem);
-  line-height: 1;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.game-score-player--left {
-  /* Push the name ~10px further to the side. Pill width ≈ 345px at
-     viewport 932, so 10px ≈ 3% of pill width. */
-  left: 15%;
-  width: 12%;
-  right: auto;
-}
-
-.game-score-player--right {
-  right: 15%;
-  width: 12%;
-  left: auto;
-}
-
-.game-score-player span {
-  max-width: none;
-  overflow: visible;
-  text-overflow: clip;
-}
-
-.game-score-player strong {
-  font-size: clamp(0.66rem, 1.22vw, 1.1rem);
-  line-height: 0.95;
-}
-
-.game-score-core {
-  position: absolute;
-  left: 50%;
-  /* New header art's central oval centres at ~30% of pill height (the
-     pill aspect-ratio bounding box includes the bottom tab so geometric
-     50% sits BELOW the oval). Nudged up from 35% — the score's optical
-     center sits slightly below its bounding-box center, so this puts
-     it visually in the middle of the oval. */
-  top: 30%;
-  z-index: 5;
-  width: 22%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.12em;
-  transform: translate(-50%, -50%);
-  font-size: clamp(1.32rem, 3.3vw, 3.02rem);
-  line-height: 1;
-  text-align: center;
-}
-
-.game-turn-pill {
-  position: absolute;
-  left: 50%;
-  /* In the new header art the bottom tab centres at ~80% of pill height. */
-  top: 80%;
-  width: auto;
-  height: auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.42em;
-  margin: 0;
-  padding: 0 0.6em;
-  white-space: nowrap;
-  text-align: center;
-  transform: translate(-50%, -50%);
-  font-size: clamp(0.48rem, 0.95vw, 0.88rem);
-  z-index: 6;
-}
-
-.game-turn-pill > span:nth-child(2) {
-  display: inline-block;
-  white-space: nowrap;
-  text-align: center;
-}
+/* Premium gameplay precision pass: side panels, timers, and tap targets. */
 
 /* Fixed aspect-ratio so the side panel preserves its proportions when
    the viewport's aspect ratio changes. Without this, slot height
@@ -2498,13 +1815,6 @@ html, body, #root {
 }
 
 @media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
-  .game-match-hud {
-    top: 0.1%;
-    left: 13%;
-    right: 13%;
-    width: auto;
-  }
-
   .game-side-slot--left {
     left: 1.2%;
   }

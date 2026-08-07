@@ -838,3 +838,38 @@ HEAD, unrelated to the migration):
   `_actionButtonReset_1xgle_11`/`_actionButtonChrome_1xgle_23`; the grouped `.primary .rollButton, .primary
   .pairButton` (0,2,0) shorthand rule, both `.actionRow button` `!important` rules (pass-3 auto, pass-4 z-270),
   `.actionRow{pointer-events:none!important}` and pass-2 `filter:none` — all present in the same cascade order.
+
+### C4 — MatchHeader CSS Module slice
+
+- Created `MatchHeader.module.css`; rewritten `MatchHeader.tsx` to hashed locals. All 18 MatchHeader-exclusive
+  classes confirmed (no other TSX uses them): `header`/`navHome`/`homeLink`/`homeImage`/`hud`/`hudRow`/`hudPill`/
+  `hudArt`/`label`/`scorePlayer`(+Left/Right)/`scoreCore`/`scoreSeparator`/`turnPill`/`turnDot`/`crawfordPill`.
+- **Cascade preserved verbatim**: pass-1 (143-325) → 1024-media → 1500-media → portrait → 1023-media → pass-2 →
+  pass-3 → pass-4 → 1.95/1-media. The load-bearing `display: none !important` (pass-1 hud) still precedes pass-2/4
+  `display: flex`; media interleave intact. `.hud` resolution verified in built CSS across all 9 rule positions.
+- **Grouped-rule splits**: `.game-stage, .game-match-header` (pass-2 absolute/inset/block/min-height) → index.css
+  keeps `.game-stage`, module gets `.header`. The pointer-events compound
+  (`.header .navHome, .header .hud, .header a, .header button`) moves whole — all four selectors are
+  MatchHeader-scoped (the bare `a`/`button` elements stay unscoped, matching original specificity). Minifier merged
+  the split `.header` rule with the pointer-events rule (same specificity, adjacent — safe).
+- index.css purge (text-anchored, assert-once): 2,590 → 1,900 lines (−690). `.game-actions-inner`/
+  `.game-board-column`/`.game-side-slot` untouched; `.game-stage` survives the split; braces 251/251.
+- Verification: lint, `tsc -b`, `git diff --check`, `npm run build` (`✓ built in 2.34s`). Built-CSS asserts: zero
+  global `game-match-*`/`game-score-*`/`game-turn-*`/`game-home-*`/`game-nav-*` leftovers; all 18 module locals in
+  the useAutoRoll chunk (`_header_18abm_5`, `_hud_18abm_40`, `_scoreCore_18abm_106`, …); `.hud` cascade order
+  pass-1 none!important → media → pass-2 flex → pass-3 → pass-4 z-62 → aspect; pointer-events compound with all 4
+  selectors; `scoreCore:before/:after` (single-colon form is the minifier's) incl. pass-3 `display:none!important`;
+  `turnPill > span:nth-child(2)`. TSX has zero `game-*` literals. Browser/manual visual checks remain pending.
+
+### C4 review fixes (reviewer agent)
+
+- **p2 — stale banner comment**: the "Premium gameplay precision pass" banner still listed "header" among its
+  subjects though all header rules moved to MatchHeader.module.css. Trimmed to "side panels, timers, and tap
+  targets." (index.css:1506). The second reference at index.css:1851 points at the section name, which still exists.
+- **p2 — report-entry scope**: reviewer flagged the C4 entry in this tracking document as scope drift. The report is
+  the migration's working tracker and every slice (S1-S15, C0-C3) appended its entry as part of the accepted
+  process; kept, no code impact.
+- **p2 — verification output**: re-ran lint, `tsc -b`, `git diff --check`, fresh `npm run build` (`✓ built in
+  2.38s`) with stdout attached. Fresh built-CSS asserts on useAutoRoll-C_VXXpWI: zero global leftovers; `.hud`
+  none!important@9968 < flex@14992; pointer-events compound with all 4 selectors; `turnPill>span:nth-child(2)`;
+  `scoreCore:before/:after` `display:none!important` — all present.

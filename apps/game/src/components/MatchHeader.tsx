@@ -5,6 +5,8 @@ import {useNavigate} from "react-router-dom"
 import type {MatchState} from "../../../../packages/engine/src/match"
 import {useNavigationLoaderOverlay} from "../features/appUi/useNavigationLoaderOverlay"
 
+import styles from "./MatchHeader.module.css"
+
 type Props = {
   match: MatchState,
   whitePip: number,
@@ -44,62 +46,62 @@ export const MatchHeader = memo(function MatchHeader({
   }
 
   return (
-    <header className="game-match-header">
-      <div className="game-nav-home">
+    <header className={styles.header}>
+      <div className={styles.navHome}>
         <button
           aria-label="Back to lobby"
-          className="game-home-link"
+          className={styles.homeLink}
           type="button"
           onClick={goHome}>
           <img
             alt=""
-            className="game-home-image"
+            className={styles.homeImage}
             draggable={false}
             src="/gameplay/premium-purple/lobby.webp"/>
         </button>
       </div>
 
-      <div className="game-match-hud">
+      <div className={styles.hud}>
         {/* "MATCH TO N" sits ABOVE the header asset, not inside it.
          * Hidden for quick-match (target=1) — every match is a single
          * game so the framing is just noise. The label comes back as
          * soon as tournaments use a larger target. */}
-        {match.target > 1 && (<div className="game-match-label">Match to {match.target}</div>)}
+        {match.target > 1 && (<div className={styles.label}>Match to {match.target}</div>)}
 
         {/* The new header art has the rails baked in, so the row just
             contains the pill with the score overlay + turn label. The
             player names overlay the rail areas of the art at left/right. */}
-        <div className="game-match-hud-row">
-          <div className="game-match-hud-pill">
+        <div className={styles.hudRow}>
+          <div className={styles.hudPill}>
             <img
               alt=""
-              className="game-match-hud-art"
+              className={styles.hudArt}
               draggable={false}
               src="/gameplay/premium-purple/header.webp"/>
             <div
               aria-label={`${whiteDisplayName} pip count`}
-              className="game-score-player game-score-player--left">
+              className={`${styles.scorePlayer} ${styles.scorePlayerLeft}`}>
               <span>{whiteDisplayName}</span>
               <strong>{whitePip}</strong>
             </div>
-            <div className="game-score-core">
+            <div className={styles.scoreCore}>
               {match.target > 1 ? (<>
                 <span>{match.score.white}</span>
-                <span className="game-score-separator">:</span>
+                <span className={styles.scoreSeparator}>:</span>
                 <span>{match.score.black}</span>
-              </>) : (<span className="game-score-separator">VS</span>)}
+              </>) : (<span className={styles.scoreSeparator}>VS</span>)}
             </div>
             <div
               aria-label={`${blackDisplayName} pip count`}
-              className="game-score-player game-score-player--right">
+              className={`${styles.scorePlayer} ${styles.scorePlayerRight}`}>
               <span>{blackDisplayName}</span>
               <strong>{blackPip}</strong>
             </div>
             {/* Turn indicator sits in the BOTTOM tab of the header art. */}
-            <div className="game-turn-pill">
-              <span className="game-turn-dot"/>
+            <div className={styles.turnPill}>
+              <span className={styles.turnDot}/>
               <span>{cleanTurnLabel}</span>
-              {inCrawford && <span className="game-crawford-pill">Crawford</span>}
+              {inCrawford && <span className={styles.crawfordPill}>Crawford</span>}
             </div>
           </div>
         </div>
