@@ -1,0 +1,226 @@
+/* SECONDARY controls — Cube / ×2 Double / Auto. Rendered in the LOCAL
+   player's side panel via its bottomSlot, so they sit directly under that
+   player's details + turn timer (matching the reference layout). Anchored to
+   the panel DOM rather than positioned over the board, so they track the
+   panel across aspect ratios with no magic offsets. */
+
+.cubeButton {
+  composes: actionButtonReset actionButtonChrome from "../styles/shared.module.css";
+  width: clamp(4.1rem, 6.25vw, 7.5rem);
+}
+
+.doubleButton {
+  composes: actionButtonReset actionButtonChrome from "../styles/shared.module.css";
+  width: clamp(7.8rem, 9.9vw, 11.5rem);
+  padding: 0 clamp(0.55rem, 0.9vw, 0.9rem);
+}
+
+.cubeButton,
+.doubleButton {
+  display: grid;
+  height: clamp(4.4rem, 8.6dvh, 7rem);
+  place-items: center;
+  border-radius: clamp(0.8rem, 1.2vw, 1.4rem);
+  box-shadow: inset 0 0 0.65rem rgba(255, 220, 111, 0.06), 0 0 0 0.12rem rgba(0, 0, 0, 0.56);
+}
+
+.cubeButton strong,
+.doubleButton strong {
+  color: #ffd35b;
+  font-size: clamp(1.55rem, 2.15vw, 2.65rem);
+  line-height: 1;
+}
+
+.cubeButton span,
+.doubleButton span {
+  color: #f0d69e;
+  font-size: clamp(0.72rem, 0.95vw, 1.08rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.doubleButton.isEnabled:hover {
+  filter: brightness(1.12);
+}
+
+.doubleButton.isEnabled:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.doubleButton.isDisabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  filter: grayscale(0.55);
+}
+
+.autoSlot {
+  composes: actionButtonChrome from "../styles/shared.module.css";
+  flex: 0 0 auto;
+}
+
+@media (orientation: landscape) and (max-width: 1023px) {
+  .doubleButton {
+    height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    min-height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    border-radius: clamp(0.42rem, 1.3vw, 0.62rem);
+    width: clamp(2.95rem, 9.5vw, 4rem);
+  }
+
+  .doubleButton strong {
+    font-size: clamp(0.68rem, 2.7vw, 1rem);
+  }
+
+  .doubleButton span {
+    font-size: clamp(0.36rem, 1.32vw, 0.48rem);
+    letter-spacing: 0.06em;
+  }
+}
+
+/* Pass 2 — asset-led gameplay skin. Chrome (shared reset) is composed; here
+   only the per-button art and text are local. */
+.secondary {
+  /* Cube / x2 Double / Auto. Rendered in the local player's panel bottom
+     slot (under their details + turn timer), NOT over the board — so it
+     tracks the panel across aspect ratios with no magic offsets. A simple
+     centred row of square badges sized to fit the panel width. */
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.28rem, 1.1vw, 0.6rem);
+  pointer-events: auto;
+}
+
+.secondary > .cubeButton,
+.secondary > .doubleButton,
+.secondary > .autoSlot {
+  position: relative;
+  flex: 0 0 auto;
+  /* vw-based so the badges scale with the (vw-relative) panel width and
+     three always fit in a row. */
+  width: clamp(1.6rem, 4.6vw, 2.7rem);
+  height: clamp(1.6rem, 4.6vw, 2.7rem);
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+}
+
+.secondary .autoSlot {
+  display: grid;
+  place-items: center;
+}
+
+/* AUTO enlarged (operator pass, 2026-07): the shared square-slot size above
+   made the toggle a fiddly tap target, especially on phones. Only the AUTO
+   slot grows — Cube/Double keep the shared size. The switch/label scale
+   with the slot (percentage-based). First doubled, then pulled back 20%
+   ("too big" on-device review) → net 1.6× the shared slot. */
+.secondary > .autoSlot {
+  width: clamp(2.56rem, 7.36vw, 4.32rem);
+  height: clamp(2.56rem, 7.36vw, 4.32rem);
+}
+
+/* Cube / Double badge text must fit the small square slot. At the 4K clamp
+   cap (~43px badge) the base value font (32px) and the wide "Double" label
+   overflowed the badge. Scale both down + centre + clip any residual spill. */
+.secondary .cubeButton,
+.secondary .doubleButton {
+  display: grid;
+  place-items: center;
+  gap: 4%;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.secondary .cubeButton > strong,
+.secondary .doubleButton > strong {
+  font-size: clamp(0.5rem, 1.25vw, 0.92rem);
+  line-height: 1;
+}
+
+.secondary .cubeButton > span,
+.secondary .doubleButton > span {
+  font-size: clamp(0.3rem, 0.7vw, 0.5rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.cubeButton {
+  background-image: url('/gameplay/premium-purple/cube.webp');
+}
+
+.doubleButton {
+  background-image: url('/gameplay/premium-purple/double.webp');
+}
+
+.autoSlot {
+  background-image: url('/gameplay/premium-purple/auto.webp');
+}
+
+.cubeButton strong,
+.doubleButton strong {
+  display: block;
+  margin-top: 4%;
+  font-size: clamp(0.95rem, 2.8vw, 2.34rem);
+  font-weight: 950;
+  line-height: 0.9;
+  color: #ffd761;
+  text-shadow: 0 0.08em 0.08em rgba(0, 0, 0, 0.66);
+}
+
+.cubeButton span,
+.doubleButton span {
+  display: block;
+  margin-top: 5%;
+  font-size: clamp(0.5rem, 1.02vw, 0.95rem);
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  color: #ffe8a8;
+  text-shadow: 0 0.07em 0.1em rgba(0, 0, 0, 0.75);
+}
+
+.doubleButton.isDisabled,
+.cubeButton:disabled {
+  cursor: default;
+  opacity: 0.72;
+  filter: saturate(0.75);
+}
+
+/* Pass 3 — calibration. */
+.cubeButton,
+.doubleButton,
+.autoSlot {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 500 / 493;
+  flex: 0 0 auto;
+  pointer-events: auto;
+}
+
+.cubeButton strong,
+.doubleButton strong {
+  font-size: clamp(0.82rem, 2.22vw, 2rem);
+}
+
+.cubeButton span,
+.doubleButton span {
+  font-size: clamp(0.46rem, 0.86vw, 0.82rem);
+}
+
+@media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .autoSlot {
+    aspect-ratio: 500 / 493;
+    background-size: contain;
+  }
+}
+
+/* Pass 4 — precision. */
+.autoSlot {
+  position: relative;
+  z-index: 270 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.autoSlot {
+  aspect-ratio: 500 / 493;
+}

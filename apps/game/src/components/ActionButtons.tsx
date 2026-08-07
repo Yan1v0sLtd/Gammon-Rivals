@@ -1,3 +1,5 @@
+import styles from "./ActionButtons.module.css"
+
 type Props = {
   /** Show + enable the ROLL button. The big right-side action. */
   canRoll: boolean,
@@ -14,7 +16,7 @@ type Props = {
 /**
  * PRIMARY action control — Roll / Undo / End-turn. Rendered as the board's
  * `actionsOverlay`; CSS positions it as circular button(s) on the right-middle
- * of the board (see `.game-controls-primary` in index.css). The secondary
+ * of the board (see `primary` in ActionButtons.module.css). The secondary
  * controls (Cube / Double / Auto) live in the local player's panel instead —
  * see {@link MatchSecondaryControls}.
  */
@@ -40,15 +42,15 @@ export function ActionButtons({
   const rollSlotOnClick = rollSlotState === "undo" ? onUndo : onRoll
   const rollSlotLabel = rollSlotState === "undo" ? "Undo last move" : "Roll the dice"
 
-  return (<div className="game-action-row">
+  return (<div className={styles.actionRow}>
     {/* PRIMARY action — Roll / Undo / End-turn. Positioned by CSS as
           circular button(s) on the right-middle of the board. Text labels
           render inside the CSS circles. */}
-    <div className="game-controls-primary">
-      {showEndTurnPair ? (<div className="game-end-turn-pair">
+    <div className={styles.primary}>
+      {showEndTurnPair ? (<div className={styles.pair}>
         <button
           aria-label="Undo last move"
-          className="game-end-turn-pair-button game-end-turn-pair-button--undo"
+          className={`${styles.pairButton} ${styles.pairButtonUndo}`}
           disabled={!canUndo}
           type="button"
           onClick={canUndo ? onUndo : undefined}>
@@ -56,14 +58,14 @@ export function ActionButtons({
         </button>
         <button
           aria-label="End turn"
-          className="game-end-turn-pair-button game-end-turn-pair-button--end"
+          className={`${styles.pairButton} ${styles.pairButtonEnd}`}
           type="button"
           onClick={onEndTurn}>
           <span>Done</span>
         </button>
       </div>) : (<button
         aria-label={rollSlotLabel}
-        className={`game-roll-button game-roll-button--${rollSlotState}`}
+        className={`${styles.rollButton} ${rollSlotState === "roll" ? styles.rollButtonRoll : styles.rollButtonUndo}`}
         disabled={rollSlotDisabled}
         type="button"
         onClick={rollSlotDisabled ? undefined : rollSlotOnClick}>

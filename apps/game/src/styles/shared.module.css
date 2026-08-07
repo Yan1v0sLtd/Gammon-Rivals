@@ -6,8 +6,8 @@
 }
 
 /* Action-button family reset (cube / double / roll / auto-toggle). Composed
- * into each button module; the temporary global grouped rule in index.css
- * shrinks as those modules migrate. */
+ * into each button module; the former global grouped rule in index.css is
+ * fully folded in since the action-button modules migrated. */
 .actionButtonReset {
   composes: fontDisplay;
   border: 1px solid rgba(225, 165, 49, 0.76);
@@ -15,6 +15,28 @@
   color: #f5d083;
   text-transform: uppercase;
   transition: filter 160ms ease, transform 160ms ease;
+}
+
+/* Art-led button chrome (pass 2): strips the pass-1 pill chrome and paints
+ * transparent containers the per-button background images ride on. Must come
+ * after actionButtonReset in this file so its longhands beat the shorthand. */
+.actionButtonChrome {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  place-items: center;
+  padding: 0;
+  overflow: visible;
+  color: #ffe7a2;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  box-shadow: none;
+  text-transform: uppercase;
 }
 
 .textWhite {

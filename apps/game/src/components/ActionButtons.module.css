@@ -1,0 +1,273 @@
+/* PRIMARY action controls — Roll / Undo / End-turn. Rendered as the board's
+   `actionsOverlay`; `.primary` is position:fixed, anchored to the board
+   column's translateZ(0) containing block, so it tracks the board's
+   right-middle across aspect ratios. The secondary controls (Cube / Double /
+   Auto) live in the local player's panel instead — see
+   MatchSecondaryControls.module.css. */
+
+.actionRow {
+  display: flex;
+  max-width: min(100%, 58rem);
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(0.65rem, 1.15vw, 1.25rem);
+  filter: drop-shadow(0 0.75rem 1rem rgba(0, 0, 0, 0.58));
+}
+
+.rollButton {
+  composes: actionButtonReset actionButtonChrome from "../styles/shared.module.css";
+  /* The roll/undo/end-turn slot is sized to leave room for the image
+     asset; the actual button visuals come from the background-image
+     set later in the precision pass. No live text — the asset has it
+     baked in. */
+  display: grid;
+  width: clamp(19rem, 25vw, 30rem);
+  min-height: clamp(4.4rem, 8.6dvh, 7rem);
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+@media (max-width: 760px), (orientation: portrait) {
+  .actionRow {
+    gap: 0.45rem;
+    transform: scale(0.86);
+    transform-origin: bottom center;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 1023px) {
+  .actionRow {
+    width: 100%;
+    max-width: 22rem;
+    gap: clamp(0.16rem, 0.65vw, 0.32rem);
+    filter: drop-shadow(0 0.22rem 0.42rem rgba(0, 0, 0, 0.58));
+  }
+
+  .rollButton {
+    height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    min-height: clamp(1.55rem, 6.5dvh, 2.05rem);
+    border-radius: clamp(0.42rem, 1.3vw, 0.62rem);
+    flex: 1 1 auto;
+    width: auto;
+    min-width: clamp(5.8rem, 18vw, 7.75rem);
+    border-width: 1px;
+  }
+
+  .rollButton strong {
+    font-size: clamp(0.92rem, 3.45vw, 1.32rem);
+  }
+
+  .rollButton span {
+    display: none;
+  }
+}
+
+/* Pass 2 — asset-led gameplay skin. */
+.actionRow {
+  /* No longer a bottom grid bar. The two control groups inside are pinned
+     to the right side with position:fixed, so they escape this box; this
+     element only needs to stop imposing the old 4-column grid. */
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: none;
+  transform: none;
+}
+
+/* PRIMARY action — Roll / Undo / End-turn — circular CSS buttons stacked on
+   the board's right-middle (replaces the wide pill assets). */
+.primary {
+  position: fixed;
+  right: 17.5%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+  z-index: 270;
+}
+
+.primary .pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+}
+
+.primary .rollButton,
+.primary .pairButton {
+  width: clamp(3.5rem, 13dvh, 5.2rem);
+  height: clamp(3.5rem, 13dvh, 5.2rem);
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  /* The circular button ART (gold ring + fill + label) is baked into each
+     image, so no CSS chrome — paint the asset and let it own the look.
+     `background` shorthand (no !important) lets the per-state image rules
+     below override the base pill asset. */
+  background: center / contain no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: filter 140ms ease, transform 120ms ease;
+}
+
+/* Labels are baked into the art — hide the fallback text spans. */
+.primary .rollButton span,
+.primary .pairButton span {
+  display: none;
+}
+
+/* Roll (green) / Undo (orange) / End-turn (red) — supplied as circular art. */
+.primary .rollButtonRoll {
+  background-image: url('/gameplay/premium-purple/roll.webp');
+}
+
+.primary .rollButtonUndo,
+.primary .pairButtonUndo {
+  background-image: url('/gameplay/premium-purple/undo.webp');
+}
+
+.primary .pairButtonEnd {
+  background-image: url('/gameplay/premium-purple/end-turn.webp');
+}
+
+.primary button:not(:disabled):hover {
+  filter: brightness(1.1);
+}
+
+.primary button:not(:disabled):active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.primary button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.rollButton {
+  background-image: url('/gameplay/premium-purple/roll.webp');
+}
+
+.rollButtonRoll {
+  background-image: url('/gameplay/premium-purple/roll.webp');
+}
+
+.rollButtonUndo {
+  background-image: url('/gameplay/premium-purple/undo.webp');
+}
+
+/* Dual-button pair shown on the last move so the player can still undo
+   instead of being forced to end the turn. The pair occupies the SAME
+   slot the single ROLL button would have taken (so the action row stays
+   proportional), but each child is square — matching the new
+   undo-square.webp / end-turn-square.webp asset aspect (~1:1). */
+/* Container takes the SAME slot dimensions as a single .rollButton
+   (height: 100% of the action row, aspect-ratio: 1505/500 — the same
+   override applied to the other action-row buttons in the calibration
+   block). That keeps CUBE / DOUBLE / AUTO from shifting when the pair
+   replaces the single roll button. */
+.pair {
+  display: flex;
+  /* Match the action row's button-to-button gap (~25px at 932 viewport)
+     so the spacing between UNDO and END TURN reads the same as
+     CUBE↔DOUBLE and PAIR↔AUTO. */
+  gap: clamp(1rem, 2.7vw, 2rem);
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1505 / 500;
+  flex: 0 0 auto;
+  padding: 0;
+  pointer-events: auto;
+}
+
+/* Each child is a SQUARE the height of the row — matching the visual
+   height of CUBE / DOUBLE / AUTO. Two squares + gap are centred inside
+   the wider ROLL slot. */
+.pairButton {
+  flex: 0 0 auto;
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.pairButton:not(:disabled):hover {
+  filter: brightness(1.12);
+}
+
+.pairButton:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.pairButton:disabled {
+  cursor: default;
+  opacity: 0.55;
+  filter: saturate(0.7);
+}
+
+.pairButtonUndo {
+  background-image: url('/gameplay/premium-purple/undo-square.webp');
+}
+
+.pairButtonEnd {
+  background-image: url('/gameplay/premium-purple/end-turn-square.webp');
+}
+
+/* Pass 3 — calibration. */
+.actionRow {
+  position: relative;
+  z-index: 121 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3.15%;
+  pointer-events: auto !important;
+}
+
+.actionRow button {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.rollButton {
+  width: auto;
+  height: 100%;
+  aspect-ratio: 1505 / 500;
+  flex: 0 0 auto;
+  pointer-events: auto;
+}
+
+@media (min-aspect-ratio: 1.95/1) and (orientation: landscape) {
+  .actionRow {
+    gap: 4.6%;
+  }
+}
+
+/* Pass 4 — precision. */
+.actionRow {
+  pointer-events: none !important;
+}
+
+.actionRow button {
+  position: relative;
+  z-index: 270 !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}

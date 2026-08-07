@@ -787,3 +787,54 @@ HEAD, unrelated to the migration):
 - Re-verified after fixes: lint, `tsc -b`, `npm run build`, `git diff --check` all pass; built CSS confirms
   `._compact_nv5uo_2._timer_nv5uo_2 strong` (display none/block), `.timer.warning/danger .fill` (0,3,0 compounds),
   right-timer rules free of grid-columns, and zero `game-turn-timer`/`game-stat-*` selectors.
+
+### C3 — MatchSecondaryControls + ActionButtons CSS Module slices
+
+- Created `ActionButtons.module.css` and `MatchSecondaryControls.module.css`; both components now use only hashed
+  locals. DOM ownership confirmed: ActionButtons renders `actionRow`/`primary`/`rollButton`/`pair`/`pairButton`;
+  MatchSecondaryControls renders `secondary`/`cubeButton`/`doubleButton`/`autoSlot`. Zero `game-action-*` /
+  `game-controls-*` / `game-auto-slot` / `game-end-turn-pair` literals remain in TSX or index.css.
+- **Shared resets folded in (C1's "temporary" global rule fully dies)**:
+  - `actionButtonReset` (composed) — covers the old pass-1 grouped reset for cube/double/roll.
+  - New `actionButtonChrome` in shared.module.css — the old pass-2 four-way grouped rule (position:relative,
+    display:grid, min-w/h:0, place-items, padding:0, overflow:visible, color, border:0, background longhands,
+    box-shadow:none, uppercase), placed AFTER `actionButtonReset` so its longhands beat the reset shorthand.
+    Composed into rollButton/cubeButton/doubleButton (both resets) and autoSlot (chrome only).
+  - `composes` needed the `from "../styles/shared.module.css"` clause (build caught the missing reference first try).
+- **Cascade preserved**: modules follow index.css line order exactly — pass-1 → portrait media → 1023-media → pass-2 →
+  pass-3 → 1.95/1-media → pass-4. Load-bearing media interleave verified in built CSS (`_actionRow` resolves:
+  pass-1 drop-shadow → portrait scale(.86) → 1023 filter/gap/width → pass-2 filter:none/transform:none →
+  pass-3 flex/gap 3.15%/z-index 121 → 1.95/1 gap 4.6% → pass-4 pointer-events:none !important).
+- **C7 grouped-rule splits**: the three rules grouping `.game-actions-inner` with action-row/button/auto-slot were
+  split — index.css keeps the `.game-actions-inner` halves (pass-3 auto + pass-4 none, standalone rules), the
+  ActionButtons halves move to its module, the auto-slot halves to MatchSecondaryControls'. Order-safe per-module
+  since each file keeps its own rules in source order.
+- **Specificity preserved**: `.primary .rollButton`/`.pairButton` (0,2,0, incl. the `background: center / contain
+  no-repeat` shorthand whose reset is undone by the (0,3,0) state-image rules — verified in built CSS), `.primary
+  button:not(:disabled):hover` (0,2,2), `.secondary > .*` (0,2,0) compounds, `.secondary .* > strong/span` (0,2,1).
+  Cascade-dead rules (e.g. the whole 1023-media double/roll block, `.rollButton` pass-2 image) kept verbatim for
+  parity, same as C2.
+- Removed migrated rules from `index.css` (text-anchored, assert-once purge script): pass-1 controls block, portrait
+  media action-row, 1023-media controls block, pass-2 controls block, pass-3 block (replaced with the standalone
+  `.game-actions-inner` rule), 1.95/1-media action-row + auto-slot, pass-4 block (replaced with `.game-actions-inner`
+  none rule). `index.css` went 3,081 → 2,590 lines; braces balanced (331/331); only `.game-actions-layer` /
+  `.game-actions-inner` / `.game-board-column` / `.game-side-slot` controls-adjacent rules remain (C6/C7 scope).
+- Verification passed: `npm run lint`, `tsc -b`, `git diff --check`, `npm run build`. Built CSS asserts: zero global
+  leftovers in every chunk; module locals emitted (useAutoRoll chunk); composed `_actionButtonReset_` +
+  `_actionButtonChrome_` emitted once per chunk; compound mirrors and the `!important` pointer-events/z-index chain
+  intact; media minified to `width<=760px`, `width<=1023px`, `aspect-ratio>=1.95`. `background:transparent` →
+  `background:0 0` is lightningcss's own minification (equivalent shorthand) — not a regression. Browser/manual
+  visual checks remain pending.
+
+### C3 review fixes (reviewer agent)
+
+- **p2 — stale selector documentation**: AutoRollToggle.module.css still referenced the deleted global selectors
+  `.game-controls-secondary > .game-auto-slot` in the inline-variant comment. Reworded to describe the structural
+  relationship ("the secondary controls' auto slot") without dead selector names.
+- **p1 — verification output**: re-ran lint, `tsc -b`, `git diff --check`, and a fresh `npm run build` after the fix
+  and attached stdout: all pass, `✓ built in 2.32s`. Fresh built-CSS asserts on the new chunk (useAutoRoll-D0amDZCA):
+  zero global `game-action-*`/`game-controls-*`/`game-auto-slot`/`game-end-turn-pair` selectors; locals
+  `_rollButton_1db6e_17`/`_cubeButton_1syvm_7`/`_autoSlot_1syvm_56`/`_primary_1db6e_2` etc. + composed
+  `_actionButtonReset_1xgle_11`/`_actionButtonChrome_1xgle_23`; the grouped `.primary .rollButton, .primary
+  .pairButton` (0,2,0) shorthand rule, both `.actionRow button` `!important` rules (pass-3 auto, pass-4 z-270),
+  `.actionRow{pointer-events:none!important}` and pass-2 `filter:none` — all present in the same cascade order.

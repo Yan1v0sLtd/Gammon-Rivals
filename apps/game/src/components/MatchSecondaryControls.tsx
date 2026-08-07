@@ -1,3 +1,5 @@
+import styles from "./MatchSecondaryControls.module.css"
+
 type SecondaryProps = {
   /** Show + enable the DOUBLE button. */
   canDouble: boolean,
@@ -26,19 +28,19 @@ export function MatchSecondaryControls({
 }: SecondaryProps) {
   const nextCube = cubeValue * 2
 
-  return (<div className="game-controls-secondary">
+  return (<div className={styles.secondary}>
     {showCube && (<>
       <button
         disabled
         aria-label={`Cube value ${cubeValue}`}
-        className="game-cube-button"
+        className={styles.cubeButton}
         type="button">
         <strong>{cubeValue}</strong>
         <span>Cube</span>
       </button>
 
       <button
-        className={`game-double-button ${canDouble ? "is-enabled" : "is-disabled"}`}
+        className={`${styles.doubleButton} ${canDouble ? styles.isEnabled : styles.isDisabled}`}
         disabled={!canDouble}
         type="button"
         onClick={canDouble ? onDouble : undefined}>
@@ -47,6 +49,6 @@ export function MatchSecondaryControls({
       </button>
     </>)}
 
-    {autoRollSlot && <div className="game-auto-slot">{autoRollSlot}</div>}
+    {autoRollSlot && <div className={styles.autoSlot}>{autoRollSlot}</div>}
   </div>)
 }

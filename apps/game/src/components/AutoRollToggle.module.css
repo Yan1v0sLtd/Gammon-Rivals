@@ -79,9 +79,9 @@
   }
 }
 
-/* The inline variant always renders inside `.game-controls-secondary >
-   .game-auto-slot` (both call sites), so the slot-fill reflow rules fold in
-   as plain locals. The slot itself is a square badge; the toggle fills it. */
+/* The inline variant always renders inside the secondary controls' auto
+   slot (both call sites), so the slot-fill reflow rules fold in as plain
+   locals. The slot is a square badge; the toggle fills it. */
 .autoToggle {
   width: 100%;
   height: 100%;
