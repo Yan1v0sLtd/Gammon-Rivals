@@ -1,5 +1,7 @@
 import {useIsMobileLayout} from "../lib/useMediaQuery"
 
+import styles from "./BoardLayout.module.css"
+
 type Props = {
   /** The opponent (top-of-screen / left side panel). */
   opponentPanel: React.ReactNode,
@@ -38,44 +40,44 @@ export function BoardLayout({
   const isMobileLayout = useIsMobileLayout()
 
   return (
-    <div className="game-screen">
+    <div className={styles.screen}>
       {backgroundImage && (
         <img
           alt=""
-          className="game-background-image"
+          className={styles.backgroundImage}
           draggable={false}
           src={backgroundImage}/>
       )}
-      <div className="game-background-tone"/>
+      <div className={styles.backgroundTone}/>
 
-      <div className="game-content">
+      <div className={styles.content}>
         {header}
 
-        <div className="game-stage">
-          {isMobileLayout ? (<div className="game-mobile-players">
+        <div className={styles.stage}>
+          {isMobileLayout ? (<div className={styles.mobilePlayers}>
             {opponentPanel}
             {selfPanel}
           </div>) : (<>
-            <div className="game-side-slot game-side-slot--left">
+            <div className={`${styles.sideSlot} ${styles.sideSlotLeft}`}>
               {opponentPanel}
             </div>
 
-            <div className="game-side-slot game-side-slot--right">
+            <div className={`${styles.sideSlot} ${styles.sideSlotRight}`}>
               {selfPanel}
             </div>
           </>)}
 
-          <div className="game-board-column">
-            <div className="game-board-stage">
-              <div className="game-board-shell">{children}</div>
+          <div className={styles.boardColumn}>
+            <div className={styles.boardStage}>
+              <div className={styles.boardShell}>{children}</div>
             </div>
 
-            {actionsOverlay && (<div className="game-actions-layer">
-              <div className="game-actions-inner">{actionsOverlay}</div>
+            {actionsOverlay && (<div className={styles.actionsLayer}>
+              <div className={styles.actionsInner}>{actionsOverlay}</div>
             </div>)}
 
-            {centerOverlay && (<div className="game-center-layer">
-              <div className="game-center-inner">{centerOverlay}</div>
+            {centerOverlay && (<div className={styles.centerLayer}>
+              <div className={styles.centerInner}>{centerOverlay}</div>
             </div>)}
           </div>
         </div>

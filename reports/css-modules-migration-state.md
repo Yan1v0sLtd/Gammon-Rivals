@@ -954,3 +954,38 @@ HEAD, unrelated to the migration):
   expected "files differ").
 - Reviewer confirmed no code regression: all 49 migrated rules match HEAD after the selector mapping; side
   specificity/placement and Tailwind decomposition correct; pass-3/pass-4 statList genuinely dead (not a parity issue).
+
+### C7 — BoardLayout CSS Module slice
+
+- Created `BoardLayout.module.css`; rewrote `BoardLayout.tsx` to hashed locals. All 16 layout classes confirmed
+  exclusive to this component (screen, backgroundImage, backgroundTone, content, stage, mobilePlayers, sideSlot,
+  sideSlotLeft, sideSlotRight, boardColumn, boardStage, boardShell, actionsLayer, actionsInner, centerLayer,
+  centerInner).
+- **Side-slot mirroring via variant classes**: `game-side-slot--left/--right` → `sideSlotLeft`/`sideSlotRight`
+  (applied alongside `sideSlot`).
+- **Cascade preserved verbatim**: pass-1 (Gameplay v2) → 1024/1500/760/1023 media → pass-2 (asset-led) → 1.55 media
+  → pass-3 (calibration) → max-1.95 media → min-1.95 media → pass-4 (side calibration) → min-1.95 media → pass-5
+  (precision) → min-1.95 media → 620 media. `.boardColumn`/`.sideSlot`/`.actionsLayer`/`.actionsInner` resolution
+  verified across passes in built CSS. Grouped rules preserved (`.actionsInner,.centerInner`,
+  `.boardShell:before/:after,.boardStage:before`, `.boardShell>div:first-child,.boardShell canvas`).
+- **Containing-block transform preserved**: `.boardColumn { transform: translateZ(0) }` (and the phone
+  `translateX(-50%)`) kept — this is what anchors ActionButtons' `.primary` position:fixed to the board's right-middle
+  (the old `.game-controls-primary` note; the class was since renamed to `.primary` in ActionButtons.module.css).
+- index.css purge (text-anchored): 730 → 18 lines (Tailwind directives + html/body/#root base only). Braces 1/1.
+- Verification: lint, `tsc -b`, `git diff --check`, `npm run build` (`✓ built in 2.32s`). Built-CSS asserts on
+  useAutoRoll-BYCKhWny (module hash `3huox`): zero global layout leftovers; all 16 locals emitted; cascade orders +
+  media interleave (1024/1500/760/1023/1.55/1.95/620) verified; grouped rules + transforms present. Browser/manual
+  visual checks remain pending.
+
+### C7 review fixes (reviewer agent)
+
+- **p1 — fresh verification re-run on final tree**: lint, `tsc -b`, `git diff --check`, `npm run build`
+  (`✓ built in 2.41s`) all pass. Fresh built-CSS asserts on useAutoRoll-FfLXRiMP (module hash `1jgdu`): zero global
+  layout leftovers; grouped rules (boardShell:before/after/boardStage:before, boardShell>div:first-child/canvas,
+  actionsInner/centerInner pointer-events:auto) present; `boardColumn` translateZ(0) + translate(-50%) present;
+  actionsLayer z-index:260; sideSlot aspect-ratio 174/252; all media blocks (1024/1500/760/1023/1.55/1.95/620)
+  present (620 minified to `height<=620px`).
+- **p2 — restored `::before`/`::after`** in BoardLayout.module.css (was single-colon `:before`/`:after`) for verbatim
+  parity with HEAD. Rebuilt; minifier normalizes to single-colon in output (behaviorally identical).
+- Reviewer confirmed no code regression: TSX structure + all 16 local mappings, side-slot variants, grouped rules,
+  translateZ(0) + translateX(-50%), clean index.css, preserved media/rule order, no scope creep.
