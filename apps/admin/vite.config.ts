@@ -8,7 +8,8 @@ import {buildDefines, projectRoot, vendorChunkGroups} from "../../config/vite.sh
 export default defineConfig({
   root: path.join(projectRoot, "apps/admin"),
   envDir: projectRoot,
-  publicDir: path.join(projectRoot, "public"),
+  publicDir: path.join(projectRoot, "packages/brand-assets/public"),
+  base: "/admin/",
   plugins: [react()],
   define: buildDefines(),
   server: {
@@ -19,7 +20,7 @@ export default defineConfig({
     include: ["pixi.js"],
   },
   build: {
-    outDir: path.join(projectRoot, "dist-admin"),
+    outDir: path.join(projectRoot, "dist/admin"),
     emptyOutDir: true,
     rolldownOptions: {
       output: {

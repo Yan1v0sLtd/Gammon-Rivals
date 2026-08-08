@@ -1,26 +1,26 @@
 # Pre-commit safety net: catches the recurring "I dropped a new
-# image into public/ but forgot to `git add` it" mistake.
+# image into packages/brand-assets/public/ but forgot to `git add` it" mistake.
 #
 # Every time we've replaced an asset in this repo (nav icons,
 # carousel pill/lock/gem, daily-bonus frame, gold-coin), the new
 # file landed on disk but never made it into a commit, so Vercel
 # kept serving the old asset and the user wondered why prod looked
 # wrong. This hook blocks the commit if there are unstaged changes
-# under public/ — forcing you to either stage them or explicitly
+# under packages/brand-assets/public/ — forcing you to either stage them or explicitly
 # bypass the check.
 
-# What's modified but NOT staged under public/ ?
-unstaged_public=$(git diff --name-only -- 'public/' 2>/dev/null)
+# What's modified but NOT staged under packages/brand-assets/public/ ?
+unstaged_public=$(git diff --name-only -- 'packages/brand-assets/public/' 2>/dev/null)
 
-# Are there NEW (untracked) files under public/ ?
-untracked_public=$(git ls-files --others --exclude-standard -- 'public/' 2>/dev/null)
+# Are there NEW (untracked) files under packages/brand-assets/public/ ?
+untracked_public=$(git ls-files --others --exclude-standard -- 'packages/brand-assets/public/' 2>/dev/null)
 
 if [ -z "$unstaged_public" ] && [ -z "$untracked_public" ]; then
   exit 0
 fi
 
 echo ""
-echo "⚠️  public/ has changes that won't ship with this commit:"
+echo "⚠️  packages/brand-assets/public/ has changes that won't ship with this commit:"
 echo ""
 if [ -n "$unstaged_public" ]; then
   echo "  Modified but unstaged:"
@@ -32,7 +32,7 @@ if [ -n "$untracked_public" ]; then
 fi
 echo ""
 echo "These will 404 on Vercel until they're committed. To fix:"
-echo "  git add public/"
+echo "  git add packages/brand-assets/public/"
 echo "  git commit --amend --no-edit   # roll them into this commit"
 echo ""
 echo "Or to commit anyway and deal with assets later:"

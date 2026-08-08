@@ -18,7 +18,7 @@ function LoadingFallback() {
 }
 
 export function App() {
-  return (<BrowserRouter>
+  return (<BrowserRouter basename="/admin">
     <Suspense fallback={<LoadingFallback/>}>
       <Routes>
         <Route

@@ -10,11 +10,11 @@ lerna-debug.log*
 node_modules
 .pnpm-store
 dist
-dist-admin
 dist-ssr
 tmp/
 *.local
 supabase/.temp/
+.astro
 
 # Editor directories and files
 .vscode/*
@@ -29,10 +29,10 @@ supabase/.temp/
 .env*.local
 .pi
 
-# Generated brand asset PNG masters (rebuild via `npm run android:assets`).
-# The SVG sources in assets/ ARE committed; the PNGs are regenerable.
-assets/icon-only.png
-assets/icon-foreground.png
-assets/icon-background.png
-assets/splash.png
-assets/splash-dark.png
+# Generated brand asset PNG masters (rebuild via `pnpm run android:assets`).
+# The SVG sources in packages/brand-assets/native/ ARE committed; the PNGs are regenerable.
+packages/brand-assets/native/icon-only.png
+packages/brand-assets/native/icon-foreground.png
+packages/brand-assets/native/icon-background.png
+packages/brand-assets/native/splash.png
+packages/brand-assets/native/splash-dark.png

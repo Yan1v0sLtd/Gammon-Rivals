@@ -69,7 +69,7 @@ export function AdminAuthProvider({children}: {children: ReactNode}) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!isAdminSupabaseConfigured) throw new Error(missingConfigMessage)
-    const redirectTo = `${window.location.origin}/auth/callback`
+    const redirectTo = `${window.location.origin}/admin/auth/callback`
     const {
       data,
       error,

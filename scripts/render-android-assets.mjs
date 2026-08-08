@@ -12,19 +12,20 @@
  *     dev dependency).
  *
  * Inputs (committed to the repo):
- *   assets/icon-source.svg       Full icon (background + foreground)
- *   assets/icon-foreground.svg   Foreground layer only, transparent bg
- *   assets/splash-source.svg     Splash screen master
+ *   packages/brand-assets/native/icon-source.svg      Full icon (background + foreground)
+ *   packages/brand-assets/native/icon-foreground.svg  Foreground layer only, transparent bg
+ *   packages/brand-assets/native/splash-source.svg    Splash screen master
+ *   assets/icon-art.png                               Optional full-art icon override (repo root)
  *
  * Outputs (NOT committed -- listed in .gitignore, regenerable):
- *   assets/icon-only.png         1024 px square, full icon
- *   assets/icon-foreground.png   1024 px square, foreground layer
- *   assets/icon-background.png   1024 px square, solid navy
- *   assets/splash.png            2732 px square, splash master
- *   assets/splash-dark.png       2732 px square, dark variant
+ *   packages/brand-assets/native/icon-only.png         1024 px square, full icon
+ *   packages/brand-assets/native/icon-foreground.png   1024 px square, foreground layer
+ *   packages/brand-assets/native/icon-background.png   1024 px square, solid navy
+ *   packages/brand-assets/native/splash.png            2732 px square, splash master
+ *   packages/brand-assets/native/splash-dark.png       2732 px square, dark variant
  *
  * Usage:
- *   npm run android:assets   -- renders PNGs + runs @capacitor/assets
+ *   pnpm run android:assets   -- renders PNGs + runs @capacitor/assets
  */
 import sharp from 'sharp';
 import { readFile, mkdir, access } from 'node:fs/promises';
@@ -32,7 +33,10 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ASSETS_DIR = join(__dirname, '..', 'assets');
+// PNG masters are rendered into packages/brand-assets/native alongside the
+// committed SVG sources. The icon-art override still lives at the repo root.
+const ASSETS_DIR = join(__dirname, '..', 'packages', 'brand-assets', 'native');
+const ICON_ART = join(__dirname, '..', 'assets', 'icon-art.png');
 
 /** True if a file exists (icon-art override check). */
 async function exists(path) {
@@ -58,15 +62,15 @@ async function svgToPng({ svgPath, outPath, size, background }) {
     pipeline.flatten({ background });
   }
   await pipeline.png({ compressionLevel: 9 }).toFile(outPath);
-  console.log(`  wrote ${outPath.replace(ASSETS_DIR, 'assets')} (${size} px)`);
+  console.log(`  wrote ${outPath.replace(ASSETS_DIR, 'packages/brand-assets/native')} (${size} px)`);
 }
 
 async function main() {
   await mkdir(ASSETS_DIR, { recursive: true });
 
-  // Art-based icon override: when assets/icon-art.png exists (a full-bleed
-  // 1024px square render of the brand icon artwork), it takes precedence
-  // over the SVG sources. Layering for Android adaptive icons:
+  // Art-based icon override: when assets/icon-art.png exists at the repo root
+  // (a full-bleed 1024px square render of the brand icon artwork), it takes
+  // precedence over the SVG sources. Layering for Android adaptive icons:
   //   • icon-background.png = the art, full-bleed. The launcher mask
   //     (circle / squircle / rounded square) crops its edges — the art is
   //     designed to survive that (scene continues to the edges).
@@ -74,7 +78,7 @@ async function main() {
   //     in the background layer, so the parallax float effect on some
   //     launchers simply doesn't shift the art (safe default).
   //   • icon-only.png       = the same art, used by legacy launchers as-is.
-  const iconArt = join(ASSETS_DIR, 'icon-art.png');
+  const iconArt = ICON_ART;
   if (await exists(iconArt)) {
     console.log('Using icon-art.png override (full-art icon)...');
     await sharp(iconArt)
@@ -82,14 +86,14 @@ async function main() {
       .flatten({ background: { r: 10, g: 14, b: 43 } })
       .png({ compressionLevel: 9 })
       .toFile(join(ASSETS_DIR, 'icon-only.png'));
-    console.log('  wrote assets/icon-only.png (1024 px, from art)');
+    console.log('  wrote packages/brand-assets/native/icon-only.png (1024 px, from art)');
 
     await sharp(iconArt)
       .resize(1024, 1024, { fit: 'cover' })
       .flatten({ background: { r: 10, g: 14, b: 43 } })
       .png({ compressionLevel: 9 })
       .toFile(join(ASSETS_DIR, 'icon-background.png'));
-    console.log('  wrote assets/icon-background.png (1024 px, from art)');
+    console.log('  wrote packages/brand-assets/native/icon-background.png (1024 px, from art)');
 
     await sharp({
       create: {
@@ -101,9 +105,9 @@ async function main() {
     })
       .png({ compressionLevel: 9 })
       .toFile(join(ASSETS_DIR, 'icon-foreground.png'));
-    console.log('  wrote assets/icon-foreground.png (transparent, from art)');
+    console.log('  wrote packages/brand-assets/native/icon-foreground.png (transparent, from art)');
   } else {
-    console.log('Rendering icon-only.png (full icon, 1024 px)...');
+    console.log('Rendering packages/brand-assets/native/icon-only.png (full icon, 1024 px)...');
     await svgToPng({
       svgPath: join(ASSETS_DIR, 'icon-source.svg'),
       outPath: join(ASSETS_DIR, 'icon-only.png'),
@@ -113,14 +117,14 @@ async function main() {
       background: { r: 10, g: 14, b: 43, alpha: 1 },
     });
 
-    console.log('Rendering icon-foreground.png (transparent bg, 1024 px)...');
+    console.log('Rendering packages/brand-assets/native/icon-foreground.png (transparent bg, 1024 px)...');
     await svgToPng({
       svgPath: join(ASSETS_DIR, 'icon-foreground.svg'),
       outPath: join(ASSETS_DIR, 'icon-foreground.png'),
       size: 1024,
     });
 
-    console.log('Rendering icon-background.png (solid navy, 1024 px)...');
+    console.log('Rendering packages/brand-assets/native/icon-background.png (solid navy, 1024 px)...');
     // Background layer is just a solid color. No need for an SVG;
     // generate a 1024x1024 flat color image directly.
     await sharp({
@@ -133,10 +137,10 @@ async function main() {
     })
       .png({ compressionLevel: 9 })
       .toFile(join(ASSETS_DIR, 'icon-background.png'));
-    console.log('  wrote assets/icon-background.png (1024 px)');
+    console.log('  wrote packages/brand-assets/native/icon-background.png (1024 px)');
   }
 
-  console.log('Rendering splash.png (2732 px)...');
+  console.log('Rendering packages/brand-assets/native/splash.png (2732 px)...');
   await svgToPng({
     svgPath: join(ASSETS_DIR, 'splash-source.svg'),
     outPath: join(ASSETS_DIR, 'splash.png'),
@@ -147,7 +151,7 @@ async function main() {
   // Dark variant -- same artwork since our brand is already dark.
   // Without this file @capacitor/assets warns; with it we control
   // the dark-mode splash too.
-  console.log('Rendering splash-dark.png (2732 px)...');
+  console.log('Rendering packages/brand-assets/native/splash-dark.png (2732 px)...');
   await svgToPng({
     svgPath: join(ASSETS_DIR, 'splash-source.svg'),
     outPath: join(ASSETS_DIR, 'splash-dark.png'),
@@ -155,7 +159,7 @@ async function main() {
     background: { r: 5, g: 5, b: 16, alpha: 1 },
   });
 
-  console.log('\nAll PNG masters rendered. Run `npx @capacitor/assets generate --android` next.');
+  console.log('\nAll PNG masters rendered. Run `pnpm exec @capacitor/assets generate --android` next.');
 }
 
 main().catch((err) => {

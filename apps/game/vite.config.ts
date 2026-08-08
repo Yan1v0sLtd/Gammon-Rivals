@@ -8,7 +8,7 @@ import {buildDefines, projectRoot, vendorChunkGroups} from "../../config/vite.sh
 export default defineConfig({
   root: path.join(projectRoot, "apps/game"),
   envDir: projectRoot,
-  publicDir: path.join(projectRoot, "public"),
+  publicDir: path.join(projectRoot, "packages/brand-assets/public"),
   plugins: [react()],
   css: {
     modules: {

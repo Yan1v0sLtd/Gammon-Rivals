@@ -12,7 +12,6 @@ export default createConfig(
     tsconfigRootDir: import.meta.dirname,
     ignores: [
       'dist',
-      'dist-admin',
       'android',
       'tmp',
       'reports',
@@ -25,6 +24,8 @@ export default createConfig(
       'tailwind.admin.config.js',
       'vitest.config.ts',
       '**/vite.config.*',
+      '**/astro.config.mjs',
+      '**/.astro',
       'public/sw.js',
       'supabase/functions/**',
     ],
