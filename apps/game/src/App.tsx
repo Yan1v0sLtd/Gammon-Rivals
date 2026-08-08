@@ -58,12 +58,6 @@ export function App() {
             <Route
               element={<AuthCallback/>}
               path="/auth/callback"/>
-            {/* Public + ungated: the in-app deletion target AND the
-                account-deletion URL required by Google Play (must be reachable
-                without signing in). */}
-            <Route
-              element={<DeleteAccount/>}
-              path="/delete-account"/>
             <Route
               element={<AuthGate><HotSeat/></AuthGate>}
               path="/hotseat"/>

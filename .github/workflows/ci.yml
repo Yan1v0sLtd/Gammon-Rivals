@@ -20,10 +20,10 @@ jobs:
       - name: install pnpm and node
         uses: pnpm/setup@v2
         with:
-          version: 11.20
+          version: 11.20.0
           runtime: node@24
           install: false
-          token: ''
+          token: ""
       - name: Cache pnpm store
         uses: actions/cache@v6
         with:
@@ -32,7 +32,7 @@ jobs:
           restore-keys: |
             pnpm-install-
       - name: Install dependencies
-#        working-directory: web
+        #        working-directory: web
         run: pnpm install --frozen-lockfile --store-dir "$PNPM_STORE_DIR"
       - name: Tests (blocking)
         run: pnpm test

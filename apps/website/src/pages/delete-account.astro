@@ -5,10 +5,12 @@ import ContactUs from '../components/ContactUs.astro'
 
 <!--
   Phase D6: static delete-account page on the shared LegalLayout. Pure
-  content — no form, no script, no auth, no API call. Wording mirrors the
-  deletion section (Section 10) and retention section (Section 9) of the
-  Privacy Policy (public/privacy.html) verbatim; nothing is asserted that the
-  Policy does not state. Contact details render the shared ContactUs block.
+  content — no form, no script, no auth, no API call. Wording is kept in step
+  with the deletion section (Section 10) and retention section (Section 9) of
+  privacy.astro, which Phase E revised to email-only deletion; nothing is
+  asserted that the Policy does not state. Do not restore the legacy
+  public/privacy.html wording — it still describes the removed in-app flow.
+  Contact details render the shared ContactUs block.
 -->
 <LegalLayout
   title="Delete Your Account — Gammon Rivals"
@@ -17,8 +19,7 @@ import ContactUs from '../components/ContactUs.astro'
 >
   <h1>Delete Your Account</h1>
   <p class="doc-meta">
-    Data controller: Yanivos Ltd &middot; Tel Aviv, Israel &middot;
-    <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+    Data controller: Yanivos Ltd &middot; Tel Aviv, Israel &middot; <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
   </p>
   <p>
     As described in our <a href="/privacy">Privacy Policy</a> (Section 10), you can
@@ -28,8 +29,8 @@ import ContactUs from '../components/ContactUs.astro'
 
   <h2>How to request deletion</h2>
   <p>
-    To request deletion, email <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
-    from the address associated with your account, with a clear subject line such
+    To request deletion, email <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> from
+    the address associated with your account, with a clear subject line such
     as &ldquo;Account deletion request&rdquo;.
   </p>
 
@@ -49,7 +50,7 @@ import ContactUs from '../components/ContactUs.astro'
 
   <h2>What deletion covers</h2>
   <p>
-    Deletion is immediate and irreversible and removes your account, profile,
+    Deletion is permanent and irreversible and removes your account, profile,
     balances, transaction history, match history, and in-game items.
   </p>
 

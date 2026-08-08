@@ -171,7 +171,7 @@ import ContactUs from '../components/ContactUs.astro'
   </ul>
   <p>
     You can request deletion of your account and its data at any time (Section 10),
-    which is immediate rather than waiting out any retention period above.
+    rather than waiting out any retention period above.
   </p>
 
   <h2>10. Your rights and account deletion</h2>
@@ -186,15 +186,22 @@ import ContactUs from '../components/ContactUs.astro'
     We will respond within the time required by applicable law and may need to verify
     your identity.
   </p>
-  <p><strong>Deleting your account.</strong> You can permanently delete your account and associated data at any time:</p>
-  <ul>
-    <li><strong>In the app:</strong> Profile &rarr; Delete account, then confirm.</li>
-    <li><strong>On the web (no app needed):</strong> <a href="https://gammonrivals.com/delete-account">gammonrivals.com/delete-account</a>, which lets you delete in-app or request deletion by email.</li>
-  </ul>
+  <!-- Phase E: the in-app deletion flow was removed, so this section
+       intentionally diverges from the legacy public/privacy.html (which still
+       lists "Profile → Delete account"). Do NOT "fix" this back to the legacy
+       text — deletion is now email-only. -->
   <p>
-    Deletion is immediate and irreversible and removes your account, profile, balances,
-    transaction history, match history, and in-game items (it does not refund prior
-    purchases; store-side purchase records are managed by Apple/Google).
+    <strong>Deleting your account.</strong> You can permanently delete your account and
+    associated data at any time by emailing <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> from
+    the email address associated with your account. See <a href="https://gammonrivals.com/delete-account">gammonrivals.com/delete-account</a> for
+    what to include in your request.
+  </p>
+  <p>
+    We will respond within the time required by applicable law and may need to verify that
+    you own the account before we act on the request. Deletion is permanent and irreversible
+    and removes your account, profile, balances, transaction history, match history, and
+    in-game items (it does not refund prior purchases; store-side purchase records are
+    managed by Apple/Google).
   </p>
   <p>
     If you are in the EEA/UK, you may also lodge a complaint with your local data
