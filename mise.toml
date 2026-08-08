@@ -11,7 +11,7 @@ node = "26.6.0"
 opencode = "1.14.51"
 pi = "0.83.0"
 "npm:@colbymchenry/codegraph" = "1.4.0"
-
+pnpm = "11.20.0"
 
 [tasks.setup]
 run = """
