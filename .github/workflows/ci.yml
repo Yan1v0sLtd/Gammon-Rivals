@@ -1,10 +1,9 @@
 name: CI
 
-# Quality gate for an auto-deploying repo: every push to main and every PR runs
-# a typecheck+build and the test suite. Configure the deployment platform (or branch protection)
-# to require the "verify" check before a production deploy so a broken commit
-# can't ship to gammonrivals.com. Lint runs but is non-blocking for now (there
-# is pre-existing lint debt — see the audit; tighten to blocking once cleaned).
+# Quality gate for the repo: every push to main and every PR runs the test
+# suite. Configure the deployment platform (or branch protection) to require
+# the "verify" check before a production deploy. Lint runs but is non-blocking
+# for now (there is pre-existing lint debt; tighten to blocking once cleaned).
 
 on:
   push:
