@@ -22,6 +22,14 @@ function RouteFallback() {
   return <LoadingScreen/>
 }
 
+function IndexRedirect() {
+  return (
+    <Navigate
+      replace
+      to="/play"/>
+  )
+}
+
 export function App() {
   // Sync the BO-managed loading-screen art into the localStorage cache
   // (fire-and-forget; the CURRENT loading screen already painted from the
@@ -36,15 +44,12 @@ export function App() {
         <Suspense fallback={<RouteFallback/>}>
           <Routes>
             {/* On the web, `/` is the marketing landing page
-                (public/landing.html, served via the vercel.json rewrite)
                 and never reaches this router. Inside the Capacitor bundle
                 there is NO rewrite: the WebView boots at `/`, so without
                 this redirect the router matches no route and renders a
                 black screen. Send the native app straight to the lobby. */}
             <Route
-              element={<Navigate
-                replace
-                to="/play"/>}
+              element={<IndexRedirect/>}
               path="/"/>
             {/* The game / lobby lives at `/play`. */}
             <Route
@@ -75,9 +80,7 @@ export function App() {
                 future bundle boot path) bounces to the lobby instead of a
                 blank screen. Defined routes above still win over this. */}
             <Route
-              element={<Navigate
-                replace
-                to="/play"/>}
+              element={<IndexRedirect/>}
               path="*"/>
           </Routes>
         </Suspense>

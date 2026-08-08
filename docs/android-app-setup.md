@@ -21,14 +21,14 @@ Gammon Rivals now has a Capacitor Android shell.
 3. Install or select a JDK. Android Studio usually includes one.
 4. Create an Android emulator in Android Studio Device Manager, or connect a physical Android device with USB debugging enabled.
 
-## Daily Dev Workflow — "Vercel for mobile"
+## Daily Dev Workflow
 
 The Android app's WebView is configured (in `capacitor.config.ts` via
-`server.url`) to load `https://gammon-rivals.vercel.app` directly. So
+`server.url`) to load `https://gammonrivals.com` directly. So
 the day-to-day flow on mobile mirrors the web flow exactly:
 
 ```text
-edit code → git push → Vercel auto-deploys → restart the app on phone → see new code
+edit code → git push → Auto-deploy → restart the app on phone → see new code
 ```
 
 **No APK rebuild needed** for any React / CSS / Supabase / Pixi
