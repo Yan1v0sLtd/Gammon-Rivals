@@ -34,7 +34,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.gammonrivals.app',
   appName: 'Gammon Rivals',
-  webDir: 'dist',
+  webDir: 'dist/play',
   // server block DISABLED for the self-contained test/release AAB: this bundles
   // dist/ INSIDE the app so the cordova-plugin-purchase global (CdvPurchase) is
   // present (it isn't reachable over a remote server.url). Re-enable to restore

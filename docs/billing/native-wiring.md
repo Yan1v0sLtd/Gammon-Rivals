@@ -55,8 +55,8 @@ automatically. NEVER commit the JSON (repo is public).
 
 ## 2. Install the plugin
 ```sh
-npm i cordova-plugin-purchase capacitor-plugin-cdv-purchase
-npx cap sync android
+pnpm add cordova-plugin-purchase capacitor-plugin-cdv-purchase
+pnpm exec cap sync android
 ```
 
 ## 3. Implement `src/lib/billing/nativeBilling.ts`
@@ -122,7 +122,7 @@ await store.initialize([Platform.GOOGLE_PLAY]);
 ## 4. Build the AAB for the testing track
 The store needs a self-contained bundle (not the remote `server.url`):
 - In `capacitor.config.ts`, comment out the `server` block (so `dist/` is bundled).
-- `npm run build && npx cap sync android`
+- `pnpm run build && pnpm exec cap sync android`
 - In Android Studio: Build → Generated Signed App Bundle (or `./gradlew bundleRelease`).
 - Upload the `.aab` to **Internal testing**, add testers, share the opt-in link.
 

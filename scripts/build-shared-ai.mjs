@@ -1,7 +1,7 @@
 // Generate a Deno-native mirror of packages/ai/src for Supabase edge
 // functions — server-authored AI turns (Phase 2b, layer 2). Sibling of the
 // engine mirror (build-shared-engine.mjs). packages/ai/src stays the source of
-// truth; never edit generated files — re-run `npm run build:shared-ai` after
+// truth; never edit generated files — re-run `pnpm run build:shared-ai` after
 // any picker change. The generated tree is committed so the edge deploy can
 // bundle it.
 //
@@ -26,7 +26,7 @@ const BANNER = [
   '// GENERATED FILE — DO NOT EDIT.',
   '// Deno mirror of packages/ai/src for Supabase edge functions',
   '// (server-authored AI turns). packages/ai/src is the source of truth;',
-  '// regenerate with:  npm run build:shared-ai',
+  '// regenerate with:  pnpm run build:shared-ai',
   '',
   '',
 ].join('\n');

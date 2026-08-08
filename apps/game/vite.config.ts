@@ -24,7 +24,7 @@ export default defineConfig({
     include: ["cannon-es", "three"],
   },
   build: {
-    outDir: path.join(projectRoot, "dist"),
+    outDir: path.join(projectRoot, "dist/play"),
     emptyOutDir: true,
     rolldownOptions: {
       output: {

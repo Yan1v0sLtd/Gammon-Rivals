@@ -9,11 +9,11 @@
 // this script boots a Vite dev server in middlewareMode just long enough to
 // load and run packages/sim/src/runSim.ts.
 //
-//   npm run sim                 → full report, 1000 games per pairing
-//   SIM_GAMES=4000 npm run sim  → more games
+//   pnpm run sim                 → full report, 1000 games per pairing
+//   SIM_GAMES=4000 pnpm run sim  → more games
 import { createServer } from 'vite';
 
-// No explicit root: npm scripts run with cwd = repo root, which is where the
+// No explicit root: pnpm scripts run with cwd = repo root, which is where the
 // /apps/... module specifier below resolves from.
 const server = await createServer({
   server: { middlewareMode: true },

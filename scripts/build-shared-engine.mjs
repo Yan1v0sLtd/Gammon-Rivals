@@ -7,7 +7,7 @@
 // copies the pure engine and rewrites its relative import/export specifiers.
 //
 // packages/engine stays the SINGLE SOURCE OF TRUTH. Never edit generated files;
-// re-run `npm run build:shared-engine` after any engine change. The generated
+// re-run `pnpm run build:shared-engine` after any engine change. The generated
 // tree is committed so the edge-function deploy can bundle it.
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -21,7 +21,7 @@ const BANNER = [
   '// GENERATED FILE — DO NOT EDIT.',
   '// Deno mirror of packages/engine for Supabase edge functions (server-side',
   '// move/outcome validation). packages/engine is the single source of truth;',
-  '// regenerate with:  npm run build:shared-engine',
+  '// regenerate with:  pnpm run build:shared-engine',
   '',
   '',
 ].join('\n');

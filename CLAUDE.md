@@ -74,7 +74,7 @@ apps/
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests
 ├── ai/src/                        → Pure AI decision logic (picker/evaluator/strength) + Worker bridge
-├── sim/src/                       → Headless economy + AI-ladder simulator (`npm run sim`)
+├── sim/src/                       → Headless economy + AI-ladder simulator (`pnpm run sim`)
 ├── board-renderer/src/            → Shared Pixi renderer and geometry
 ├── board-preview/src/             → Back Office board preview
 └── shared/src/                    → Shared database types and pure utilities
@@ -163,7 +163,7 @@ If anything in the rules code seems backwards, run the engine tests first — th
 
 ## Tests
 
-- `npm test` runs the Vitest suite once. `npm run test:watch` for TDD on engine work.
+- `pnpm test` runs the Vitest suite once. `pnpm run test:watch` for TDD on engine work.
 - **Packages are tested; apps are not.** `vitest.config.ts` is scoped to `packages/**`. What's covered is the pure
   deterministic logic: engine rules, AI decision logic, the economy sim, and board hit-area geometry. `fuzz.test.ts`
   guards the `legalMoves`/`applyMove` invariant that would otherwise surface as a mid-match desync in live PvP;
@@ -176,8 +176,8 @@ If anything in the rules code seems backwards, run the engine tests first — th
   not widen the Vitest glob to `apps/**`, without discussing it first.
 - The split is mechanical, not a convention to remember: if logic deserves a test, it belongs in `packages/`, and the
   boundary checker guarantees `packages/` can never reach into `apps/`.
-- `npm run sim` runs the Monte-Carlo economy + AI-ladder harness (`scripts/run-economy-sim.mjs` →
-  `packages/sim/src/runSim.ts`) — `SIM_GAMES=4000 npm run sim` for a longer run.
+- `pnpm run sim` runs the Monte-Carlo economy + AI-ladder harness (`scripts/run-economy-sim.mjs` →
+  `packages/sim/src/runSim.ts`) — `SIM_GAMES=4000 pnpm run sim` for a longer run.
 
 ---
 

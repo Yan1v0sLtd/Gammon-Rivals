@@ -8,7 +8,7 @@ Gammon Rivals now has a Capacitor Android shell.
 - The Android project lives in `android/`.
 - App name: `Gammon Rivals`
 - Android package id: `com.gammonrivals.app`
-- Web build output is copied into Android with `npm run android:sync`.
+- Web build output is copied into Android with `pnpm run android:sync`.
 
 ## Install First
 
@@ -50,7 +50,7 @@ Rare — only for:
 Rebuild the APK after a native change:
 
 ```bash
-npm run android:sync        # build web + copy capacitor.config + plugins into android/
+pnpm run android:sync        # build web + copy capacitor.config + plugins into android/
 cd android && ./gradlew.bat assembleDebug
 # APK lands at android/app/build/outputs/apk/debug/app-debug.apk
 ```
@@ -58,7 +58,7 @@ cd android && ./gradlew.bat assembleDebug
 Open Android Studio:
 
 ```bash
-npm run android:open
+pnpm run android:open
 ```
 
 If the terminal says Java is missing on Windows, use Android Studio's
@@ -85,8 +85,8 @@ and will need a Play Store keystore later (Phase 6).
 
 ## First Android Studio Run
 
-1. Run `npm run android:sync`.
-2. Run `npm run android:open`.
+1. Run `pnpm run android:sync`.
+2. Run `pnpm run android:open`.
 3. Wait for Android Studio Gradle sync to finish.
 4. Choose an emulator or connected device.
 5. Press Run.

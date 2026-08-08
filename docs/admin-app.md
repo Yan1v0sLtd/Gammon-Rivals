@@ -14,8 +14,8 @@ Shared ownership is explicit:
 Run each app in its own terminal:
 
 ```bash
-npm run dev
-npm run dev:admin
+pnpm run dev
+pnpm run dev:admin
 ```
 
 - Game: `http://127.0.0.1:5174`
@@ -25,9 +25,9 @@ npm run dev:admin
 ## Production builds
 
 ```bash
-npm run build       # dist/
-npm run build:admin # dist-admin/
-npm run build:all
+pnpm run build       # dist/
+pnpm run build:admin # dist-admin/
+pnpm run build:all
 ```
 
 Deploy `dist/` and `dist-admin/` as separate sites. Both deployments require `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.

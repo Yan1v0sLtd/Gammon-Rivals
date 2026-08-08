@@ -60,10 +60,8 @@
 }
 
 .metaLine {
-  font-family: var(--font-display), sans-serif;
+  font-family: "Liberation Mono", "Courier New", monospace;
   font-size: 0.75rem;
-  font-family: monospace;
-    "Liberation Mono", "Courier New", monospace;
 }
 
 .pipWhite {
