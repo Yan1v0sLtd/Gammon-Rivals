@@ -1,0 +1,26 @@
+---
+// Shared site footer. Each page historically omitted its own link from the
+// cross-links, so the current page is excluded entirely.
+const { pathname } = Astro.url
+
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/how-to-play', label: 'How to Play' },
+  { href: '/terms', label: 'Terms' },
+  { href: '/privacy', label: 'Privacy' },
+]
+
+const visibleLinks = links.filter(({ href }) => pathname !== href)
+---
+
+<footer class="site-footer">
+  <span>© 2026 Gammon Rivals</span>
+  {
+    visibleLinks.map(({ href, label }) => (
+      <Fragment>
+        <span class="dot">·</span>
+        <a href={href}>{label}</a>
+      </Fragment>
+    ))
+  }
+</footer>

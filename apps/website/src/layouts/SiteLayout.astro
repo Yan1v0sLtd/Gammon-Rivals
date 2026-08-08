@@ -1,0 +1,72 @@
+---
+import '../styles/global.css'
+import SiteHeader from '../components/SiteHeader.astro'
+import SiteFooter from '../components/SiteFooter.astro'
+
+interface Props {
+  /** Document <title>, also feeds the Open Graph/Twitter title. */
+  title: string
+  /** Meta description, also feeds the Open Graph/Twitter description. */
+  description: string
+  /** Canonical URL override; defaults to the current page's URL. */
+  canonical?: string
+  /** Root-relative or absolute share image URL; defaults to the site background. */
+  ogImage?: string
+  /** Twitter card type; defaults to summary_large_image. */
+  twitterCard?: string
+  /** Mobile browser chrome color; defaults to the site background. */
+  themeColor?: string
+  /** <html lang>; defaults to "en". */
+  lang?: string
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogImage = '/lobby/backgrounds/classic-green.webp',
+  twitterCard = 'summary_large_image',
+  themeColor = '#071120',
+  lang = 'en',
+} = Astro.props
+
+// Astro.site is not configured until Phase D7; anchor social/canonical URLs
+// to the production origin so they stay stable in the meantime.
+const site = Astro.site ?? new URL('https://gammonrivals.com')
+const canonicalUrl = canonical ? new URL(canonical, site).href : new URL(Astro.url.pathname, site).href
+const ogImageUrl = new URL(ogImage, site).href
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content={themeColor} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph / social share -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+  </head>
+  <body>
+    <div class="site-bg" aria-hidden="true"></div>
+    <div class="site-shell">
+      <SiteHeader />
+      <main class="site-main">
+        <slot />
+      </main>
+      <SiteFooter />
+    </div>
+  </body>
+</html>

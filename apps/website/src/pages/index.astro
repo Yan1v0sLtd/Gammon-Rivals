@@ -1,11 +1,108 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Gammon Rivals</title>
-  </head>
-  <body>
-    <h1>Gammon Rivals</h1>
-  </body>
-</html>
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+import { Image } from 'astro:assets'
+import logo from '../../../../packages/brand-assets/imported/logo.webp'
+---
+
+<!--
+  Phase D3: landing page ported from public/landing.html onto the shared
+  SiteLayout shell. The legacy covert wordmark link to the old game route is
+  dropped — that route no longer exists on the web — so SiteHeader/SiteFooter
+  own all chrome and the hero stays just the logo + Coming Soon CTA.
+-->
+<SiteLayout
+  title="Gammon Rivals — Play Backgammon Online"
+  description="Roll dice, race your checkers, win the match. Play backgammon online against real opponents or AI. Free to play."
+  canonical="https://gammonrivals.com/"
+  ogImage="/lobby/backgrounds/classic-green.webp"
+>
+  <!-- Stronger hero background than the shared .site-bg; covers it fully.
+       /lobby/backgrounds/classic-green.webp is shared game imagery and keeps
+       its stable URL — never copied into imported/. -->
+  <div class="bg" aria-hidden="true"></div>
+
+  <section class="landing">
+    <h1 class="landing-heading">
+      <Image
+        class="logo"
+        src={logo}
+        alt="Gammon Rivals — Roll. Strategize. Win."
+        width={logo.width}
+        height={logo.height}
+      />
+    </h1>
+    <!-- Pre-launch "Coming Soon" CTA. Same pill silhouette as the legacy
+         .play-btn but visually passive: gold outline on dark fill, no
+         hover/active states, default cursor. When the game is ready, swap
+         back to a play button linking to the game route. -->
+    <span class="cta-soon">Coming Soon</span>
+  </section>
+</SiteLayout>
+
+<style>
+  .bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: url('/lobby/backgrounds/classic-green.webp');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.55) saturate(1.05);
+  }
+  .bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 35%, rgba(28, 127, 185, 0.28), rgba(5, 12, 24, 0.92) 62%, rgba(2, 8, 16, 0.98));
+  }
+
+  /* Hero area between the shared header and footer — the legacy .stage's
+     middle 1fr row. Header and footer rows belong to SiteLayout. */
+  .landing {
+    position: relative;
+    min-height: calc(100dvh - 8rem);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    gap: clamp(1.5rem, 4vw, 2.5rem);
+    padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem);
+  }
+
+  .landing-heading { margin: 0; line-height: 0; }
+
+  .logo {
+    width: 100%;
+    max-width: clamp(18rem, 62vw, 36rem);
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 14px 32px rgba(0, 0, 0, 0.55));
+  }
+
+  .cta-soon {
+    display: inline-grid;
+    place-items: center;
+    min-width: 14rem;
+    height: 4rem;
+    padding: 0 2.5rem;
+    font-weight: 900;
+    font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: #f6d770;
+    border: 2px solid rgba(246, 215, 112, 0.55);
+    border-radius: 9999px;
+    background:
+      linear-gradient(180deg, rgba(70, 50, 18, 0.55) 0%, rgba(20, 12, 4, 0.7) 100%);
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 235, 180, 0.2);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+    cursor: default;
+    user-select: none;
+  }
+
+  @media (max-width: 480px) {
+    .cta-soon { width: 100%; max-width: 22rem; }
+  }
+</style>

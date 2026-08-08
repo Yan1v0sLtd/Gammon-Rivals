@@ -1,0 +1,22 @@
+---
+// Shared site header: wordmark + primary nav. The current page is marked
+// with aria-current so .site-nav highlights it.
+const { pathname } = Astro.url
+
+const links = [
+  { href: '/how-to-play', label: 'How to Play' },
+  { href: '/terms', label: 'Terms' },
+  { href: '/privacy', label: 'Privacy' },
+]
+---
+
+<header class="site-header">
+  <a class="site-brand" href="/"><img src="/favicon.svg" alt="" aria-hidden="true" />Gammon Rivals</a>
+  <nav class="site-nav" aria-label="Site">
+    {
+      links.map(({ href, label }) => (
+        <a href={href} aria-current={pathname === href ? 'page' : undefined}>{label}</a>
+      ))
+    }
+  </nav>
+</header>
