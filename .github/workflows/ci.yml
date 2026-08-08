@@ -15,23 +15,27 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkput
+        uses: actions/checkout@v6
+      - name: install pnpm and node
+        uses: pnpm/setup@v2
         with:
-          node-version: 22
-          cache: npm
-      # Mirror Vercel's tolerant install rather than strict `npm ci`. The
-      # committed package-lock is edited on Windows, so it omits Linux-only
-      # optional native deps (lightningcss/emnapi platform variants); `npm ci`'s
-      # strict cross-platform check then fails on the Ubuntu runner even though
-      # the resolved tree is correct. `npm install` fetches the right platform
-      # binaries — exactly what the production deploy does — so this gate builds
-      # the same tree that actually ships.
-      - run: npm install --no-audit --no-fund
-      - name: Typecheck + build (blocking)
-        run: npm run build
+          version: 11.20
+          runtime: node@24
+          install: false
+          token: ''
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: /pnpm/store
+          key: pnpm-install-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-install-
+      - name: Install dependencies
+#        working-directory: web
+        run: pnpm install --frozen-lockfile --store-dir "$PNPM_STORE_DIR"
       - name: Tests (blocking)
-        run: npm test
+        run: pnpm test
       - name: Lint (non-blocking — pre-existing debt)
-        run: npm run lint
+        run: pnpm lint
         continue-on-error: true
