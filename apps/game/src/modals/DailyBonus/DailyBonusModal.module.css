@@ -50,7 +50,7 @@
 }
 
 .rewardValue {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.2em;
   font-weight: 900;
   line-height: 1;
@@ -129,7 +129,7 @@
 }
 
 .claimedRibbon {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../../styles/shared.module.css";
   position: absolute;
   left: -1.6em;
@@ -186,7 +186,7 @@
 }
 
 .dayHeaderText {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   white-space: nowrap;
   font-size: 0.95em;
   font-weight: 900;
@@ -229,7 +229,7 @@
 }
 
 .claimButton {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../../styles/shared.module.css";
   white-space: nowrap;
   border-radius: 0.375rem;
@@ -321,7 +321,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   white-space: nowrap;
   background-image: linear-gradient(to bottom, #fdeb8f, #f0ad3d, #a4611a);
   background-clip: text;

@@ -46,7 +46,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
   font-weight: 900;
   line-height: 1.25;
@@ -86,7 +86,7 @@
 }
 
 .ctaButton {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   border-radius: 0.5rem;
   background-image: linear-gradient(to bottom, #ffd96a, #f4c23a, #e09a17);
   padding: 0.5rem 1.25rem;

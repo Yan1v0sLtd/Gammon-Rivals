@@ -272,7 +272,7 @@
 }
 
 .panelState {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   position: absolute;
   inset: 0;
   display: flex;
@@ -290,7 +290,7 @@
 }
 
 .panelLabel {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 10px;
   letter-spacing: 0.05em;
   color: rgba(253, 230, 138, 0.7);

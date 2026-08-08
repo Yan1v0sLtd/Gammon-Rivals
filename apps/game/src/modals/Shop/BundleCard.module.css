@@ -117,7 +117,7 @@
 .buyButton {
   composes: priceShadow from "../../styles/shared.module.css";
   composes: textWhite from "../../styles/shared.module.css";
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   margin-top: auto;
   height: 4rem;
   width: 100%;
@@ -165,7 +165,7 @@
 }
 
 .ribbonBand {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   position: absolute;
   left: -34%;
   top: 17%;

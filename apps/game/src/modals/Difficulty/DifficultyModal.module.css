@@ -58,7 +58,7 @@
 }
 
 .tierName {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   white-space: nowrap;
   font-weight: 900;
   text-transform: uppercase;
@@ -158,7 +158,7 @@
 }
 
 .statValue {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: tabularNums from "../../styles/shared.module.css";
   white-space: nowrap;
   font-weight: 900;
@@ -199,7 +199,7 @@
 /* Non-Play CTA (Get Coins / Unlocks at Lv N) — shared shape; palette is
  * swapped per state via the cta* variant classes below. */
 .ctaButton {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../../styles/shared.module.css";
   display: block;
   width: 100%;
@@ -382,7 +382,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   background-image: linear-gradient(to bottom, #fde68a, #fcd34d, #a16207);
   background-clip: text;
   font-size: 1rem;
@@ -583,7 +583,7 @@
 }
 
 .mmVs {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   position: relative;
   font-size: 1.125rem;
   font-weight: 900;
@@ -591,7 +591,7 @@
 }
 
 .mmTitle {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -621,7 +621,7 @@
 }
 
 .mmCancel {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   margin-top: 0.5rem;
   border-radius: 0.375rem;
   border: 1px solid rgb(255 255 255 / 0.15);

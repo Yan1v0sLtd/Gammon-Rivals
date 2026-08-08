@@ -23,7 +23,7 @@ html, body {
   min-height: 100%;
   background: var(--site-bg);
   color: var(--site-cream);
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: var(--font-display), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 

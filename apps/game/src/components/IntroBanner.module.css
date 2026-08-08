@@ -22,7 +22,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
   line-height: 2rem;
   text-transform: uppercase;

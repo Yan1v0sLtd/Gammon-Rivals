@@ -14,11 +14,11 @@
 }
 
 .errorMessage {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
 }
 
 .backLink {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   color: #e7c66a;
 }
 
@@ -31,12 +31,12 @@
 }
 
 .loadingText {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
 }
 
 /* --- Page shell --- */
 .page {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   display: flex;
   min-height: 100vh;
   flex-direction: column;
@@ -54,15 +54,15 @@
 }
 
 .profileLink {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   color: #e7c66a;
   font-size: 0.875rem;
 }
 
 .metaLine {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.75rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  font-family: monospace;
     "Liberation Mono", "Courier New", monospace;
 }
 
@@ -96,7 +96,7 @@
 }
 
 .plyCounter {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.75rem;
   color: rgb(243 234 211 / 0.6);
   white-space: nowrap;
@@ -134,7 +134,7 @@
 }
 
 .turnDescription {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   min-height: 1.2em;
   font-size: 0.75rem;
   color: rgb(243 234 211 / 0.7);
@@ -157,7 +157,7 @@
 }
 
 .navButton {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   padding: 0.25rem 0.75rem;
   border: 1px solid rgb(243 234 211 / 0.2);
   border-radius: 0.25rem;
@@ -174,7 +174,7 @@
 }
 
 .playButton {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   padding: 0.25rem 1rem;
   border: 1px solid #78350f;
   border-radius: 0.25rem;

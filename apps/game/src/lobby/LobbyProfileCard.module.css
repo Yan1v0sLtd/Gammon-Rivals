@@ -177,7 +177,7 @@
   0 2px 5px rgba(0, 0, 0, 0.45),
   0 0 4px rgba(255, 194, 50, 0.4);
   z-index: 6;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-weight: 900;
   font-size: calc(19.5 * var(--lobby-u));
   text-shadow: 0 1px 0 #25235b;
@@ -255,7 +255,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-weight: 900;
   font-size: calc(17 * var(--lobby-u));
   color: white;

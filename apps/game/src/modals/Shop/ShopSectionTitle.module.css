@@ -1,6 +1,6 @@
 .sectionTitle {
   composes: textGold from "../../styles/shared.module.css";
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   margin-bottom: 2rem;
   display: flex;
   height: 2.5rem;

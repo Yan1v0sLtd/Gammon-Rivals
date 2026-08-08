@@ -190,7 +190,7 @@
 }
 
 .namePillWrap {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   position: absolute;
   left: 50%;
   top: 2%;

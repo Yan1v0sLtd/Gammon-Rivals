@@ -10,7 +10,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
   line-height: 2rem;
   color: #fda4af;
@@ -29,8 +29,7 @@
   padding: 0.75rem;
   font-size: 0.75rem;
   line-height: 1rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  font-family: monospace;
   color: #fecdd3;
   white-space: pre-wrap;
   word-break: break-all;

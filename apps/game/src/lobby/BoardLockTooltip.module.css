@@ -9,7 +9,7 @@
 }
 
 .tooltip {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   pointer-events: auto;
   border-radius: 0.75rem;
   border: 2px solid #b45309;

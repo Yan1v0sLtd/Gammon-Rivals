@@ -3,11 +3,13 @@
 @tailwind utilities;
 
 html, body, #root {
+  --font-display: 'Segoe UI', Inter, system-ui, sans-serif;
+
   height: 100%;
   margin: 0;
   background: #1a1410;
   color: #f3ead3;
-  font-family: 'Segoe UI', Inter, system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
   -webkit-font-smoothing: antialiased;
   /* iOS Safari inflates text on landscape/zoomed pages unless this is
      pinned. The match HUD sizes boxes in % of the viewport but some text

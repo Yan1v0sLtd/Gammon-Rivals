@@ -24,7 +24,7 @@
 }
 
 .brand {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.75rem;
   line-height: 1rem;
   font-weight: 900;
@@ -34,7 +34,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   margin-top: 1rem;
   font-size: 1.5rem;
   line-height: 2rem;

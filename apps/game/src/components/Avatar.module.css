@@ -28,7 +28,7 @@
 }
 
 .badge {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   position: absolute;
   right: -0.25rem;
   bottom: -0.25rem;

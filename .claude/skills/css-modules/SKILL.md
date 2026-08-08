@@ -63,10 +63,6 @@ and composed into consumers:
 
 ```css
 /* styles/shared.module.css */
-.fontDisplay {
-  font-family: "Segoe UI", Inter, system-ui, sans-serif;
-}
-
 .textWhite {
   color: #fff;
 }
@@ -75,7 +71,7 @@ and composed into consumers:
 ```css
 /* LobbyActionCard.module.css */
 .actionTitle {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../styles/shared.module.css";
   display: block;
   font-weight: 900;
@@ -115,7 +111,7 @@ Tailwind is removed. When you see a Tailwind utility in `className`, decompose i
 
 - Breakpoints: `sm` = 640px, `lg` = 1024px, `xl` = 1280px, `2xl` = 1536px.
 - Opacity modifiers: `text-white/78` = `rgba(255, 255, 255, 0.78)`.
-- `font-display` = `font-family: "Segoe UI", Inter, system-ui, sans-serif`.
+- `font-display` = `font-family: var(--font-display), sans-serif;`.
 - `!important` utilities (`!text-[1.35rem]`) become `font-size: 1.35rem !important`.
 
 ## Global styles

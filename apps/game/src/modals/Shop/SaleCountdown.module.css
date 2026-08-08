@@ -11,7 +11,7 @@
 }
 
 .label {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -22,7 +22,7 @@
 .timer {
   composes: textGold from "../../styles/shared.module.css";
   composes: tabularNums from "../../styles/shared.module.css";
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.25rem;
   font-weight: 900;
   letter-spacing: 0.1em;

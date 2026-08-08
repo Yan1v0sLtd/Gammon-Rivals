@@ -10,7 +10,7 @@
   overflow: hidden;
   background: #05070d;
   color: #f8edd0;
-  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
 }
 
 .backgroundImage {

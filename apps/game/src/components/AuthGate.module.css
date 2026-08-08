@@ -45,7 +45,7 @@
 }
 
 .authBrand {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.75rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -54,7 +54,7 @@
 }
 
 .authTitle {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../styles/shared.module.css";
   margin-top: 1rem;
   font-size: 1.875rem;
@@ -87,7 +87,7 @@
 }
 
 .authButton {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   border-radius: 0.75rem;
   padding: 0.75rem 1.25rem;
   font-weight: 900;

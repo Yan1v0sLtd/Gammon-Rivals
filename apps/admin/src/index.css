@@ -7,10 +7,11 @@
 html,
 body,
 #root {
+  --font-display: "Segoe UI", Inter, system-ui, sans-serif;
   min-height: 100%;
   margin: 0;
   background: #061225;
   color: white;
-  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
   -webkit-font-smoothing: antialiased;
 }

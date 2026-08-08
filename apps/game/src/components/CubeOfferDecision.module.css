@@ -22,7 +22,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.125rem;
   line-height: 1.75rem;
   text-transform: uppercase;
@@ -38,7 +38,7 @@
 }
 
 .cubeValue {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   margin: 0.75rem 0;
   display: inline-flex;
   align-items: center;

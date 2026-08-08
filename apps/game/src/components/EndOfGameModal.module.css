@@ -22,7 +22,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.875rem;
   line-height: 2.25rem;
   text-transform: uppercase;
@@ -31,7 +31,7 @@
 }
 
 .subtitle {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   text-transform: capitalize;
   font-size: 1.25rem;
   line-height: 1.75rem;
@@ -39,7 +39,7 @@
 }
 
 .subtitleMatch {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   text-transform: capitalize;
   font-size: 1.25rem;
   line-height: 1.75rem;
@@ -73,7 +73,7 @@
 }
 
 .rewardValue {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: tabularNums from "../styles/shared.module.css";
   font-size: 1.125rem;
   line-height: 1.75rem;
@@ -82,7 +82,7 @@
 }
 
 .rewardValueGold {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: tabularNums from "../styles/shared.module.css";
   font-size: 1.125rem;
   line-height: 1.75rem;
@@ -130,7 +130,7 @@
 }
 
 .titleSmall {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 1.5rem;
   line-height: 2rem;
   text-transform: capitalize;

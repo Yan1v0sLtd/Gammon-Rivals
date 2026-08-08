@@ -24,7 +24,7 @@
 }
 
 .title {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textGold from "../../styles/shared.module.css";
   text-align: center;
   font-size: 2.9rem;

@@ -159,7 +159,7 @@
   place-items: center;
 }
 .profileLoadingText {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   font-size: 0.875rem;
   text-transform: uppercase;
   color: rgb(247 215 107 / 0.7);

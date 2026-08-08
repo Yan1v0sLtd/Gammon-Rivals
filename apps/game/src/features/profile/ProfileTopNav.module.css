@@ -207,7 +207,7 @@
 }
 
 .profileCurrencyValue {
-  composes: fontDisplay from "../../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   composes: textWhite from "../../styles/shared.module.css";
   display: flex;
   margin-left: -0.46rem;

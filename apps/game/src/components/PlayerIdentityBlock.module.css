@@ -193,7 +193,7 @@
   min-width: 0;
   overflow: hidden;
   color: #fffaf0;
-  font-family: "Segoe UI", Inter, system-ui, sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: 0.86rem;
   font-weight: 950;
   line-height: 1.05;

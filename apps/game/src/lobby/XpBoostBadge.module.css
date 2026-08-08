@@ -1,5 +1,5 @@
 .pill {
-  composes: fontDisplay from "../styles/shared.module.css";
+  font-family: var(--font-display), sans-serif;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
