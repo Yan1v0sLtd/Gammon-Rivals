@@ -1,0 +1,59 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+---
+
+<!--
+  Phase D7: 404 page on the shared SiteLayout shell, styled like the other
+  marketing pages. Static hosts serve 404.html for unknown routes; nginx (Phase
+  F) maps the status code. Content stays minimal: heading, message, home link.
+-->
+<SiteLayout
+  title="Page Not Found — Gammon Rivals"
+  description="The page you're looking for doesn't exist. Head back to the Gammon Rivals home page."
+  ogDescription="The page you're looking for doesn't exist. Head back to the Gammon Rivals home page."
+>
+  <div class="not-found">
+    <h1>Page not found</h1>
+    <p>
+      Sorry, the page you're looking for doesn't exist. It may have been moved,
+      or the link may be out of date.
+    </p>
+    <a class="back-home" href="/">Back to Home</a>
+  </div>
+</SiteLayout>
+
+<style>
+  .not-found {
+    min-height: calc(100dvh - 8rem);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .not-found h1 {
+    margin: 0;
+    color: var(--site-gold);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+  }
+  .not-found p {
+    margin: 0;
+    max-width: 32rem;
+    line-height: 1.7;
+    color: var(--site-cream-dim);
+  }
+  .back-home {
+    margin-top: 0.75rem;
+    padding: 0.8rem 2rem;
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #071120;
+    background: var(--site-gold);
+    border-radius: 9999px;
+  }
+  .back-home:hover { filter: brightness(1.08); }
+</style>

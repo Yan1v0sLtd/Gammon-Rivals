@@ -8,6 +8,10 @@ interface Props {
   title: string
   /** Meta description, also feeds the Open Graph/Twitter description. */
   description: string
+  /** Open Graph/Twitter description; defaults to the meta description. The
+      legacy marketing pages shipped a distinct share blurb from the meta
+      description, so allow pages to express that split. */
+  ogDescription?: string
   /** Canonical URL override; defaults to the current page's URL. */
   canonical?: string
   /** Root-relative or absolute share image URL; defaults to the site background. */
@@ -23,6 +27,7 @@ interface Props {
 const {
   title,
   description,
+  ogDescription = description,
   canonical,
   ogImage = '/lobby/backgrounds/classic-green.webp',
   twitterCard = 'summary_large_image',
@@ -30,9 +35,9 @@ const {
   lang = 'en',
 } = Astro.props
 
-// Astro.site is not configured until Phase D7; anchor social/canonical URLs
-// to the production origin so they stay stable in the meantime.
-const site = Astro.site ?? new URL('https://gammonrivals.com')
+// Astro.site comes from the `site` option in astro.config.mjs (set in Phase
+// D7); the pre-D7 hardcoded fallback was dead code and has been removed.
+const site = Astro.site
 const canonicalUrl = canonical ? new URL(canonical, site).href : new URL(Astro.url.pathname, site).href
 const ogImageUrl = new URL(ogImage, site).href
 ---
@@ -51,12 +56,12 @@ const ogImageUrl = new URL(ogImage, site).href
     <!-- Open Graph / social share -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:description" content={ogDescription} />
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImageUrl} />
     <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
+    <meta name="twitter:description" content={ogDescription} />
     <meta name="twitter:image" content={ogImageUrl} />
   </head>
   <body>

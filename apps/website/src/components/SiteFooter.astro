@@ -3,6 +3,11 @@
 // cross-links, so the current page is excluded entirely.
 const { pathname } = Astro.url
 
+// Astro's default build.format="directory" emits pages at trailing-slash
+// URLs (/how-to-play/), so compare the normalized path to keep the exact
+// match working (root "/" is left intact).
+const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
+
 const links = [
   { href: '/', label: 'Home' },
   { href: '/how-to-play', label: 'How to Play' },
@@ -10,7 +15,7 @@ const links = [
   { href: '/privacy', label: 'Privacy' },
 ]
 
-const visibleLinks = links.filter(({ href }) => pathname !== href)
+const visibleLinks = links.filter(({ href }) => current !== href)
 ---
 
 <footer class="site-footer">

@@ -1,0 +1,65 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import ContactUs from '../components/ContactUs.astro'
+---
+
+<!--
+  Phase D6: static delete-account page on the shared LegalLayout. Pure
+  content — no form, no script, no auth, no API call. Wording mirrors the
+  deletion section (Section 10) and retention section (Section 9) of the
+  Privacy Policy (public/privacy.html) verbatim; nothing is asserted that the
+  Policy does not state. Contact details render the shared ContactUs block.
+-->
+<LegalLayout
+  title="Delete Your Account — Gammon Rivals"
+  description="How to request deletion of your Gammon Rivals account — email support@gammonrivals.com from the address associated with your account."
+  canonical="https://gammonrivals.com/delete-account"
+>
+  <h1>Delete Your Account</h1>
+  <p class="doc-meta">
+    Data controller: Yanivos Ltd &middot; Tel Aviv, Israel &middot;
+    <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+  </p>
+  <p>
+    As described in our <a href="/privacy">Privacy Policy</a> (Section 10), you can
+    permanently delete your account and associated data at any time. This page
+    explains how to request deletion by email.
+  </p>
+
+  <h2>How to request deletion</h2>
+  <p>
+    To request deletion, email <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+    from the address associated with your account, with a clear subject line such
+    as &ldquo;Account deletion request&rdquo;.
+  </p>
+
+  <h2>What to include in your request</h2>
+  <p>So we can identify your account, please include:</p>
+  <ul>
+    <li>the email address associated with your account (e.g. your Google account email if you sign in with Google);</li>
+    <li>your sign-in method (e.g. Google, or a guest/device account); and</li>
+    <li>your in-game display name.</li>
+  </ul>
+
+  <h2>Verifying ownership</h2>
+  <p>
+    We will respond within the time required by applicable law and may need to
+    verify your identity before we act on the request.
+  </p>
+
+  <h2>What deletion covers</h2>
+  <p>
+    Deletion is immediate and irreversible and removes your account, profile,
+    balances, transaction history, match history, and in-game items.
+  </p>
+
+  <h2>What deletion does not cover</h2>
+  <p>
+    Deletion does not refund prior purchases; store-side purchase records are
+    managed by Apple/Google.
+  </p>
+
+  <h2>Contact us</h2>
+  <p>For privacy questions or to exercise your rights:</p>
+  <ContactUs />
+</LegalLayout>

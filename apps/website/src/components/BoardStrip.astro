@@ -1,0 +1,19 @@
+---
+// Board theme previews from the legacy how-to-play page, extracted per
+// Phase D4. Shared/DB-seeded assets — reference by stable public URL, never
+// copied into brand-assets/imported/.
+const boards = [
+  { src: '/lobby/board-previews/classic-green.webp', alt: 'Classic Green board theme' },
+  { src: '/lobby/board-previews/ocean-blue.webp', alt: 'Ocean Blue board theme' },
+  { src: '/lobby/board-previews/royal-purple.webp', alt: 'Royal Purple board theme' },
+  { src: '/lobby/board-previews/vegas-nights.webp', alt: 'Vegas Nights board theme' },
+  { src: '/lobby/board-previews/ZenGarden.webp', alt: 'Zen Garden board theme' },
+]
+---
+
+<div class="board-strip-wrap">
+  <h2>A board for every mood</h2>
+  <div class="board-strip">
+    {boards.map(({ src, alt }) => <img src={src} alt={alt} loading="lazy" />)}
+  </div>
+</div>

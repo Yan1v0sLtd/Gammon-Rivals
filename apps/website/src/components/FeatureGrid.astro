@@ -1,0 +1,51 @@
+---
+// Feature cards from the legacy how-to-play page, extracted per Phase D4.
+// Lobby icons are shared/DB-seeded assets — keep their stable public URLs
+// and never copy them into brand-assets/imported/.
+// The one inline link (card 3's /terms anchor, styling and all) stays in the
+// body string and is rendered with set:html so the markup survives verbatim.
+const features = [
+  {
+    icon: '/lobby/icons/trophy.webp',
+    title: 'Difficulty tiers',
+    body: 'Pick a tier that matches your skill and start a match — from casual games to tougher, higher-stakes tables.',
+  },
+  {
+    icon: '/lobby/icons/online-players.webp',
+    title: 'Real opponents, or AI',
+    body: "Matchmaking pairs you with another player when one's available, and with an AI opponent when it isn't — so there's always a game to play.",
+  },
+  {
+    icon: '/lobby/icons/gold-coin.webp',
+    title: 'Coins & Gems',
+    body: 'Every match plays for in-game Coins and Gems — virtual currency used only inside the app, with no cash value. See our <a href="/terms" style="color: var(--site-gold);">Terms</a> for details.',
+  },
+  {
+    icon: '/lobby/icons/gem.webp',
+    title: 'Board themes',
+    body: 'Unlock new board designs as you play and personalize your table.',
+  },
+  {
+    icon: '/lobby/icons/rewards-gift.webp',
+    title: 'Daily & hourly rewards',
+    body: 'Come back for daily missions, an hourly bonus wheel, and streak rewards.',
+  },
+  {
+    icon: '/lobby/icons/friends.webp',
+    title: 'Level up',
+    body: 'Earn XP from every match and climb through ranks as your profile grows.',
+  },
+]
+---
+
+<div class="feature-grid">
+  {
+    features.map(({ icon, title, body }) => (
+      <div class="feature-card">
+        <img src={icon} alt="" loading="lazy" />
+        <h3>{title}</h3>
+        <p set:html={body} />
+      </div>
+    ))
+  }
+</div>

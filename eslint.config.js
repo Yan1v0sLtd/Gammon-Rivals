@@ -26,7 +26,7 @@ export default createConfig(
       '**/vite.config.*',
       '**/astro.config.mjs',
       '**/.astro',
-      'public/sw.js',
+      '**/public/sw.js',
       'supabase/functions/**',
     ],
   },

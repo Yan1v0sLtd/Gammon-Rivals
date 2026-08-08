@@ -1,0 +1,96 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+import FeatureGrid from '../components/FeatureGrid.astro'
+import BoardStrip from '../components/BoardStrip.astro'
+---
+
+<!--
+  Phase D4: how-to-play page ported from public/how-to-play.html onto the
+  shared SiteLayout shell. Body content is verbatim; only the legacy inline
+  style attributes were moved into the scoped <style> below with the same
+  declarations. Feature cards and board previews live in FeatureGrid /
+  BoardStrip; board previews, lobby icons, and the tutorial card are shared
+  game imagery referenced by stable public URL, never copied into imported/.
+-->
+<SiteLayout
+  title="How to Play — Gammon Rivals"
+  description="Learn how Gammon Rivals works: roll dice, race your checkers home, and win matches against real players or AI opponents across five difficulty tiers."
+  ogDescription="Roll dice, race your checkers, win the match. Here's how Gammon Rivals works."
+  canonical="https://gammonrivals.com/how-to-play"
+  ogImage="/lobby/backgrounds/classic-green.webp"
+>
+  <div class="doc-page">
+    <!-- The legacy page's inner max-width container (was an inline
+         style="width: 100%; max-width: 64rem;") — class added so the
+         scoped style below can reproduce it. -->
+    <div class="how-to-play-inner">
+      <div class="feature-intro">
+        <h1>How to Play</h1>
+        <p>
+          Gammon Rivals is classic backgammon, reimagined for quick matches on your phone.
+          Roll the dice, race your fifteen checkers around the board and home, and be the
+          first to bear them all off. Play against real opponents online, or an AI
+          opponent when no one else is available — either way, every match plays by the
+          same rules.
+        </p>
+      </div>
+
+      <div class="tutorial-figure">
+        <img
+          src="/lobby/cards/how-to-play-popup.webp"
+          alt="Gammon Rivals tutorial: how dice, checkers, and the doubling cube work on the board"
+          loading="lazy"
+        />
+      </div>
+
+      <FeatureGrid />
+
+      <BoardStrip />
+
+      <div class="doc-cta">
+        <p>Gammon Rivals is in final testing ahead of launch.</p>
+        <span class="cta-soon">Coming Soon</span>
+      </div>
+    </div>
+  </div>
+</SiteLayout>
+
+<style>
+  /* Legacy inline style attributes from public/how-to-play.html reproduced
+     exactly as scoped declarations: the h1 color/font-size/margin, the inner
+     container width/max-width, the .doc-cta paragraph margin, and the
+     .cta-soon pill (legacy lines 111-117). This page's .cta-soon is
+     intentionally smaller than the landing page's variant, so the two are
+     not shared. */
+  .how-to-play-inner {
+    width: 100%;
+    max-width: 64rem;
+  }
+
+  .feature-intro h1 {
+    color: var(--site-gold);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    margin-bottom: 0.9rem;
+  }
+
+  .doc-cta p {
+    margin-bottom: 1.2rem;
+  }
+
+  .cta-soon {
+    display: inline-grid;
+    place-items: center;
+    min-width: 14rem;
+    height: 3.4rem;
+    padding: 0 2rem;
+    font-weight: 900;
+    font-size: 1.05rem;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #f6d770;
+    border: 2px solid rgba(246, 215, 112, 0.55);
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(70, 50, 18, 0.55), rgba(20, 12, 4, 0.7));
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 235, 180, 0.2);
+  }
+</style>
