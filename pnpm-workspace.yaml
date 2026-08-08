@@ -9,7 +9,7 @@ allowBuilds:
 shellEmulator: true
 
 # DO NOT REMOVE THIS LINE
-storeDir: ${PNPM_STORE_DIR}
+storeDir: ${PNPM_STORE_DIR:-.pnpm-store}
 
 supportedArchitectures:
   cpu: [ arm64, x64 ]
