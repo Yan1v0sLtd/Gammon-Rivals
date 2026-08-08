@@ -3,7 +3,7 @@
 #
 # Every time we've replaced an asset in this repo (nav icons,
 # carousel pill/lock/gem, daily-bonus frame, gold-coin), the new
-# file landed on disk but never made it into a commit, so Vercel
+# file landed on disk but never made it into a commit, so the deployment
 # kept serving the old asset and the user wondered why prod looked
 # wrong. This hook blocks the commit if there are unstaged changes
 # under packages/brand-assets/public/ — forcing you to either stage them or explicitly
@@ -31,7 +31,7 @@ if [ -n "$untracked_public" ]; then
   echo "$untracked_public" | sed 's|^|    - |'
 fi
 echo ""
-echo "These will 404 on Vercel until they're committed. To fix:"
+echo "These will 404 in production until they're committed. To fix:"
 echo "  git add packages/brand-assets/public/"
 echo "  git commit --amend --no-edit   # roll them into this commit"
 echo ""

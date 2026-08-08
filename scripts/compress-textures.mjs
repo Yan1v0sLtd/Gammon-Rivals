@@ -2,7 +2,7 @@ import sharp from 'sharp';
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
 
-const dir = 'public/themes/wood';
+const dir = 'packages/brand-assets/public/themes/wood';
 const TARGET_SIZE = 512;
 const QUALITY = 82;
 

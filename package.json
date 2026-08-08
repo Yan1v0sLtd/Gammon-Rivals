@@ -21,7 +21,6 @@
     "android:debug": "pnpm run android:sync && cd android && ./gradlew assembleDebug",
     "android:build": "pnpm run build && pnpm exec cap build android",
     "android:assets": "node scripts/render-android-assets.mjs && pnpm exec capacitor-assets generate --android --assetPath packages/brand-assets/native",
-    "android:reload": "node scripts/android-reload.mjs",
     "preview": "vite preview",
     "sim": "node scripts/run-economy-sim.mjs",
     "test": "vitest run",

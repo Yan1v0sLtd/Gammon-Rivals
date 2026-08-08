@@ -16,7 +16,6 @@ const Profile = lazy(() => import("./pages/Profile").then((m) => ({default: m.Pr
 const Replay = lazy(() => import("./pages/Replay").then((m) => ({default: m.Replay})))
 const PlayOnline = lazy(() => import("./pages/PlayOnline").then((m) => ({default: m.PlayOnline})))
 const AuthCallback = lazy(() => import("./pages/AuthCallback").then((m) => ({default: m.AuthCallback})))
-const DeleteAccount = lazy(() => import("./pages/DeleteAccount").then((m) => ({default: m.DeleteAccount})))
 
 function RouteFallback() {
   return <LoadingScreen/>

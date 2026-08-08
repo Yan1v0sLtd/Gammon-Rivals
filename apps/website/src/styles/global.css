@@ -1,8 +1,9 @@
 /*
  * Shared chrome for the marketing/legal pages (landing, how-to-play, terms,
- * privacy). The game itself (/play, /admin) is a separate React app with its
- * own stylesheet — this file is deliberately independent so the two never
- * fight over class names or load unrelated CSS.
+ * privacy). The game is a separate React app in the Capacitor bundle, and the
+ * admin app is served under /admin. Both have their own stylesheet — this file
+ * is deliberately independent so the apps never fight over class names or
+ * load unrelated CSS.
  */
 
 :root {

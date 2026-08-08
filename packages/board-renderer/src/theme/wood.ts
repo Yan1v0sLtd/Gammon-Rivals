@@ -1,7 +1,7 @@
 import {defaultTheme} from "./default"
 import type {Theme} from "./types"
 
-// Image-based theme. Drop matching files into public/themes/wood/ to activate.
+// Image-based theme. Drop matching files into packages/brand-assets/public/themes/wood/ to activate.
 // Any missing file gracefully falls back to procedural rendering using the
 // inherited color palette below.
 export const woodTheme: Theme = {

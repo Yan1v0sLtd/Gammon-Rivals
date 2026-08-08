@@ -1,6 +1,6 @@
 <!--
   Splash screen master. Shown while the Capacitor WebView boots and
-  fetches the Vercel bundle (~1-3s typical). 2732×2732 so it can be
+  loads the bundled game. 2732×2732 so it can be
   cropped to any aspect ratio without quality loss (Capacitor's asset
   generator pulls portrait + landscape variants from the same square).
 
