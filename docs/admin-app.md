@@ -20,16 +20,24 @@ pnpm run dev:admin
 
 - Game: `http://127.0.0.1:5174`
 - Back Office: `http://127.0.0.1:5175`
-- Admin OAuth callback: `http://127.0.0.1:5175/auth/callback`
+- Admin OAuth callback: `http://127.0.0.1:5175/admin/auth/callback`
 
 ## Production builds
 
 ```bash
-pnpm run build       # dist/
-pnpm run build:admin # dist-admin/
-pnpm run build:all
+pnpm run build           # game/Capacitor bundle → dist/play
+pnpm run build:admin     # admin SPA → dist/admin
+pnpm run build:website   # Astro marketing/legal site → dist/web
+pnpm run build:all       # all three (boundary check + game + admin + website)
 ```
 
-Deploy `dist/` and `dist-admin/` as separate sites. Both deployments require `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+Deployment is a single site (see `nginx.conf`): `dist/web` serves the domain root
+and `dist/admin` is served under `/admin`. `dist/play` is bundled into the
+Capacitor app only and is **not** web-served — there is no `/play` route on the
+public website.
 
-Add the admin origin's `/auth/callback` URL to the Supabase Auth redirect allowlist. Admin authorization remains enforced by `admin_roles`, `admin_email_allowlist`, guarded RPCs, and RLS.
+All builds require `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+
+Add the admin origin's `/admin/auth/callback` URL to the Supabase Auth redirect
+allowlist. Admin authorization remains enforced by `admin_roles`,
+`admin_email_allowlist`, guarded RPCs, and RLS.

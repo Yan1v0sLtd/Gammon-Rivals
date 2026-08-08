@@ -120,8 +120,9 @@ await store.initialize([Platform.GOOGLE_PLAY]);
 ```
 
 ## 4. Build the AAB for the testing track
-The store needs a self-contained bundle (not the remote `server.url`):
-- In `capacitor.config.ts`, comment out the `server` block (so `dist/` is bundled).
+The store needs a self-contained bundle. The config is already one:
+`capacitor.config.ts` sets `webDir: 'dist/play'` and has no `server.url`
+(the game is Capacitor-only and `/play` is not web-served).
 - `pnpm run build && pnpm exec cap sync android`
 - In Android Studio: Build → Generated Signed App Bundle (or `./gradlew bundleRelease`).
 - Upload the `.aab` to **Internal testing**, add testers, share the opt-in link.
@@ -131,4 +132,5 @@ Install via the testing link on a device signed in as a license tester → open 
 → Buy → Google's test purchase dialog → token → our edge fn validates → gems/coins
 land. `purchases` row recorded as `provider=google`. Re-buying the same token is a
 no-op (idempotent). Then build P4 (refund handling via Real-time Developer
-Notifications) and flip `capacitor.config.ts` back to `server.url` for normal dev.
+Notifications). Normal dev continues on the bundled `dist/play`: `pnpm run
+android:sync` + rebuild/reinstall — no remote `server.url` workflow remains.

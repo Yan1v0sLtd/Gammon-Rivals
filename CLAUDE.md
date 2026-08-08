@@ -11,26 +11,8 @@
 generated up front by `legalMoves()`. The UI never validates moves on click; it asks the engine what's legal and offers
 those choices. This is what makes online play and AI possible without rewriting logic.
 
-When adding a feature, ask: *does this belong in the engine (rules/state) or in the view (Pixi/React)?* Mixing them is
+When adding a feature, ask: _does this belong in the engine (rules/state) or in the view (Pixi/React)?_ Mixing them is
 the most common bug source.
-
----
-
-## Phase roadmap — respect the order
-
-| Phase | Scope                                                                                   | Status                                                                                                                                                                                                                                                                                                       |
-|-------|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1     | Pure TS rules engine, board UI in PixiJS, dice physics, hot-seat 2-player, single games | 🟢 Done                                                                                                                                                                                                                                                                                                      |
-| 2     | Match play, Crawford rule, doubling cube offer/accept/drop                              | 🟢 Engine + UI done — `packages/engine/src/match.ts` + 32 tests; `MatchHeader`, `CubeOfferDecision`, `EndOfGameModal` wired in hot-seat and online. **Defaults to target=1 (single-game quick matches)** — the N-point + Crawford + cube infrastructure stays in place but is unused until tournaments ship. |
-| 3     | AI opponent (3 tiers), Web Worker eval                                                  | 🟡 Mostly done — AI plays online matches as a **fallback** when matchmaking can't find a human opponent. Pure PvP is the primary mode.                                                                                                                                                                       |
-| 4     | Supabase auth + guest sessions, profile, match history, replays, ELO/Glicko             | 🟢 Auth + guests + profile done; replays shipped as the Redux Toolkit/RTK Query pilot; ELO TBD                                                                                                                                                                                                               |
-| 5     | Online multiplayer — server-authoritative dice, Realtime moves, reconnect               | 🟢 Done — invite creation is not implemented: no server path writes `invite_code`, and the client invite/join surfaces were removed.                                                                                                                                                                         |
-| 6     | Public lobby, ELO matchmaking, spectator mode                                           | 🟡 Matchmaking RPC wired; the legacy public-lobby client was removed while the `join_public_match` / `matchmake` RPCs remain available server-side; ELO + spectator TBD                                                                                                                                      |
-| 7     | Variants — Nackgammon, hyper-gammon, acey-deucey                                        | ⬜                                                                                                                                                                                                                                                                                                           |
-
-> **Direction update**: the app is primarily a real-time PvP backgammon game. AI matches are the fallback when
-> matchmaking can't pair the player with a human. Phase ordering above reflects the original plan; current focus is on the
-> live PvP experience, the lobby/shop/daily-bonus surface, and gameplay polish (image→CSS conversions).
 
 ---
 
@@ -60,7 +42,7 @@ the most common bug source.
 
 ```text
 apps/
-├── game/src/                      → Player application
+├── game/src/                      → Player application — Capacitor-only, NOT web-served
 │   ├── game/                      → React-side session state
 │   ├── board/                     → Player board data adapters
 │   ├── store/                     → Redux store, typed hooks, listener middleware, shared RTK Query API
@@ -70,18 +52,32 @@ apps/
 │   ├── lib/
 │   ├── App.tsx
 │   └── main.tsx
-└── admin/src/                     → Independent Back Office application
+├── admin/src/                     → Independent Back Office application — web-served under `/admin`
+└── website/src/                   → Astro marketing/legal site — web-served at the domain root
+    ├── layouts/                   → SiteLayout + LegalLayout shells
+    ├── components/                → Header/footer, feature grid, board strip
+    ├── pages/                     → index, how-to-play, legal, delete-account, 404
+    └── styles/
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests
 ├── ai/src/                        → Pure AI decision logic (picker/evaluator/strength) + Worker bridge
 ├── sim/src/                       → Headless economy + AI-ladder simulator (`pnpm run sim`)
 ├── board-renderer/src/            → Shared Pixi renderer and geometry
 ├── board-preview/src/             → Back Office board preview
+├── brand-assets/                  → Shared stable/native/website asset sources (public/, native/, imported/)
 └── shared/src/                    → Shared database types and pure utilities
 ```
 
+The game is **Capacitor-only on the web**: its `dist/play` bundle is synced into
+the native shell (`capacitor.config.ts` → `webDir: 'dist/play'`, no `server.url`)
+and is **not** served from `gammonrivals.com` — there is no `/play` route. Admin
+is web-served under `/admin`, and the Astro website (`dist/web`) is the document
+root. `packages/brand-assets` is the shared asset source for all three: `public/`
+(stable URLs), `native/` (app icon/splash masters), `imported/` (website-exclusive
+imagery).
+
 **`packages/` is shared logic; `apps/` is UI and client state.** Nothing under `packages/` may import from `apps/` —
-`scripts/check-app-boundaries.mjs` enforces it. `engine`, `ai` and `sim` are additionally *dependency-free*: engine +
+`scripts/check-app-boundaries.mjs` enforces it. `engine`, `ai` and `sim` are additionally _dependency-free_: engine +
 siblings only, no npm imports (the checker rejects bare specifiers there). That's what lets `build-shared-ai.mjs` mirror
 `packages/ai/src` verbatim into a Deno edge function for server-side bots. Two exceptions to headlessness live in
 `packages/`: `ai/client.ts` + `ai/worker.ts` (Web Worker bridge) and all of `board-renderer` (Pixi) — both are browser
@@ -150,8 +146,8 @@ If anything in the rules code seems backwards, run the engine tests first — th
   timers/polling; the workflow is cancelled by dispatching a matched control action.
 - **A feature owns its whole vertical slice.** Slice, selectors, injected endpoints, Supabase reads/RPC wrappers and
   listeners all sit in `features/<feature>/`. Once a route is migrated its data access moves out of `lib/`; `lib/` keeps
-   infrastructure (`supabase.ts`, auth, billing). The Redux migration is complete. See
-   `.claude/skills/redux-integration/SKILL.md` for the current file-role authority.
+  infrastructure (`supabase.ts`, auth, billing). The Redux migration is complete. See
+  `.claude/skills/redux-integration/SKILL.md` for the current file-role authority.
 - **Redux state must be serializable.** No `Set`, `Map`, class instances, Pixi objects, Realtime channels, promises,
   abort controllers, DOM elements, or values that can be reliably derived. Route params (`gameId`), totals, and boards
   are derived via memoized selectors (`createSelector`), never stored.

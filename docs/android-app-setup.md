@@ -23,27 +23,33 @@ Gammon Rivals now has a Capacitor Android shell.
 
 ## Daily Dev Workflow
 
-The Android app's WebView is configured (in `capacitor.config.ts` via
-`server.url`) to load `https://gammonrivals.com` directly. So
-the day-to-day flow on mobile mirrors the web flow exactly:
+The game is bundled into the native shell, not loaded from the web.
+`capacitor.config.ts` sets `webDir: 'dist/play'` and does not configure a
+remote `server.url` — `/play` no longer exists on the public website, so
+the old "Vercel-for-mobile" live-reload workflow is dead.
+
+The day-to-day flow is a bundle + sync cycle:
 
 ```text
-edit code → git push → Auto-deploy → restart the app on phone → see new code
+edit code → pnpm run android:sync → rebuild/reinstall (or Run from Android Studio) → see new code
 ```
 
-**No APK rebuild needed** for any React / CSS / Supabase / Pixi
-change. Just push. The next time the app cold-starts (or you swipe
-it away and re-open), it pulls the fresh bundle from Vercel.
+**Every React / CSS / Supabase / Pixi change requires a bundle/APK
+refresh.** `pnpm run android:sync` rebuilds the game into `dist/play` and
+syncs it into the `android/` project; the APK must then be rebuilt and
+reinstalled (or re-run from Android Studio). There is no push-and-reload
+shortcut anymore.
 
-### When you DO need a new APK
+### Additional APK reasons
 
-Rare — only for:
+On top of every code change above, a new APK is also needed for:
 
 - Adding a native Capacitor plugin (push, billing, biometrics, …)
 - Changing native config (app icon, splash, app name, deep-link
   scheme)
-- Shipping to Play Store (comment out `server.url`, `cap sync`
-  bundles `dist/` into the APK so it works offline + passes review)
+- Shipping to Play Store — release builds use the self-contained
+  `dist/play` bundle (already what `webDir` points at), so the APK
+  works offline and passes review
 
 ### Commands
 
@@ -77,7 +83,7 @@ export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"
 adb devices                                                                       # list connected devices
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk                 # install (or replace) the APK
 adb shell am start -n com.gammonrivals.app/com.gammonrivals.app.MainActivity     # launch (or just tap the icon)
-adb logcat | grep Capacitor                                                       # tail logs to verify it's loading from Vercel
+adb logcat | grep Capacitor                                                       # tail logs to verify the app is running
 ```
 
 The `android:build` command is reserved for a signed release build
