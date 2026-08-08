@@ -56,6 +56,8 @@ import {useAutoRoll} from "../lib/useAutoRoll"
 import {toApiError} from "../store/baseApi"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./PlayOnline.module.css"
+
 export function PlayOnline() {
   const {matchId} = useParams<{matchId: string}>()
   const [params] = useSearchParams()
@@ -283,7 +285,7 @@ export function PlayOnline() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-board-felt/60">
+      <div className={styles.loadingScreen}>
         Loading…
       </div>
     )
@@ -291,10 +293,10 @@ export function PlayOnline() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-rose-400 gap-3 p-6">
+      <div className={styles.errorScreen}>
         <div>Error: {error}</div>
         <Link
-          className="text-board-accent text-sm"
+          className={styles.backLink}
           to="/play">← Home</Link>
       </div>
     )
@@ -309,23 +311,23 @@ export function PlayOnline() {
 
   if (waiting) {
     return (
-      <div className="min-h-screen flex flex-col items-center bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-        <header className="w-full flex items-center justify-between px-4 py-3 text-board-felt/80">
+      <div className={styles.page}>
+        <header className={styles.header}>
           <Link
-            className="text-board-accent text-sm"
+            className={styles.backLink}
             to="/play">← Home</Link>
-          <div className="text-xs text-board-felt/50">Online{match.target > 1 ? ` · to ${match.target}` : ""}</div>
+          <div className={styles.onlineLabel}>Online{match.target > 1 ? ` · to ${match.target}` : ""}</div>
           <Link
-            className="text-xs text-board-felt/60 hover:text-board-accent"
+            className={styles.profileLink}
             to="/profile">Profile</Link>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center gap-6 max-w-md w-full p-6">
-          <div className="font-display text-3xl text-board-accent text-center">
+        <div className={styles.waitingCenter}>
+          <div className={styles.waitingTitle}>
             Waiting for opponent…
           </div>
           {isOwner && (
             <button
-              className="text-xs text-board-felt/50 hover:text-rose-400 transition"
+              className={styles.cancelButton}
               onClick={async () => {
                 if (!confirm("Cancel this online match?")) return
                 await triggerCancelMatch(match.id)
@@ -384,12 +386,12 @@ export function PlayOnline() {
           onAccept={() => void acceptDouble()}
           onDrop={() => void dropDouble()}/>
       ) : showCubePending ? (
-        <div className="bg-amber-100/95 text-amber-950 px-6 py-4 rounded-xl border-2 border-amber-700 text-sm">
+        <div className={styles.cubePendingCard}>
           Waiting for opponent to accept or drop…
         </div>
       ) : showBetweenGames ? (
-        <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center max-w-sm">
-          <div className="font-display text-2xl uppercase tracking-wider mb-1 capitalize">
+        <div className={styles.betweenGamesCard}>
+          <div className={styles.betweenGamesTitle}>
             {currentGame.winner} wins
             {currentGame.dropped_double
               ? " by drop"
@@ -397,17 +399,17 @@ export function PlayOnline() {
                 ? ` ${currentGame.win_type}`
                 : ""}
           </div>
-          <div className="text-sm mb-3">
+          <div className={styles.betweenGamesScore}>
             +{currentGame.points_awarded} · match {match.white_score}–{match.black_score} (to {match.target})
           </div>
-          <div className="text-xs text-amber-900/70">
+          <div className={styles.resultHint}>
             {localColor === effectiveTurn
               ? "Roll to start the next game."
               : `Waiting for ${effectiveTurn} to roll the next game…`}
           </div>
           {localColor === effectiveTurn && (
             <button
-              className="mt-4 px-5 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+              className={styles.amberButton}
               onClick={() => void rollDice()}>
               Roll · next game
             </button>
@@ -420,22 +422,22 @@ export function PlayOnline() {
           const localWon = match.winner === localColor
           const showForfeit = abandoner !== null && localWon
           return (
-            <div className="bg-gradient-to-b from-amber-100 to-amber-300 text-amber-950 px-8 py-6 rounded-xl shadow-2xl border-2 border-amber-700 text-center">
-              <div className="font-display text-3xl uppercase tracking-wider mb-1">
+            <div className={styles.matchOverCard}>
+              <div className={styles.matchOverTitle}>
                 {showForfeit ? "Opponent forfeited" : "Match over"}
               </div>
-              <div className="capitalize text-xl mb-3 font-display">
+              <div className={styles.matchOverSubtitle}>
                 {showForfeit
                   ? `You win ${match.white_score}–${match.black_score}`
                   : `${match.winner ?? "Unknown player"} wins ${match.white_score}–${match.black_score}`}
               </div>
               {showForfeit && (
-                <div className="text-xs text-amber-900/70 mb-3">
+                <div className={styles.forfeitNote}>
                   Your opponent disconnected. The win + payout have been credited to you.
                 </div>
               )}
               <button
-                className="px-6 py-2 rounded-md bg-amber-700 text-amber-50 font-medium hover:brightness-110 active:scale-95 transition"
+                className={styles.amberButton}
                 onClick={() => navigate("/play")}>
                 Home
               </button>
@@ -470,10 +472,10 @@ export function PlayOnline() {
         settleSide={isRollForSelf ? "right" : "left"}
         onActionError={reportActionError}/>
       {!isSpectator && !matchFinished && canClaimByInactivity && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 border border-board-felt/20 text-board-felt/80 text-xs px-3 py-1.5 rounded z-20 flex items-center gap-2 backdrop-blur">
+        <div className={styles.inactivityBanner}>
           <span>Opponent disconnected</span>
           <button
-            className="px-2 py-0.5 rounded bg-amber-700 text-amber-50 hover:brightness-110"
+            className={styles.claimButton}
             onClick={async () => {
               await claimByInactivity()
             }}>

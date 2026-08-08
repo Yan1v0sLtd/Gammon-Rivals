@@ -13,6 +13,8 @@ import {
 import {replayActions} from "../features/replay/replaySlice"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./Replay.module.css"
+
 const MODE_LABEL: Record<string, string> = {
   hotseat: "Hot-seat",
   "ai-easy": "AI · Easy",
@@ -61,17 +63,17 @@ export function Replay() {
   const {theme: selectedTheme} = useBoardThemeConfig(boardParam)
 
   if (error) {
-    return (<div className="min-h-screen flex flex-col items-center justify-center text-board-felt/70 gap-4">
-      <div>Could not load replay: {error.message}</div>
+    return (<div className={styles.errorScreen}>
+      <div className={styles.errorMessage}>Could not load replay: {error.message}</div>
       <Link
-        className="text-board-accent"
+        className={styles.backLink}
         to="/profile">← Back</Link>
     </div>)
   }
 
   if (isLoading || !data || !currentBoard) {
-    return (<div className="min-h-screen flex items-center justify-center text-board-felt/60">
-      Loading replay…
+    return (<div className={styles.loadingScreen}>
+      <span className={styles.loadingText}>Loading replay…</span>
     </div>)
   }
 
@@ -80,43 +82,43 @@ export function Replay() {
   const modeLabel = MODE_LABEL[data.match.mode] ?? data.match.mode
   const winnerLine = data.game.winner ? `${data.game.winner} ${data.game.dropped_double ? "wins by drop" : data.game.win_type ?? "wins"} +${data.game.points_awarded}` : "unfinished"
 
-  return (<div className="min-h-screen flex flex-col bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt">
-    <header className="flex items-center justify-between px-4 py-2 text-board-felt/80 gap-3">
+  return (<div className={styles.page}>
+    <header className={styles.header}>
       <Link
-        className="text-board-accent text-sm"
+        className={styles.profileLink}
         to="/profile">← Profile</Link>
-      <div className="text-xs font-mono">
-        <span className="text-chip-cream">w {pipCount(currentBoard, "white")}</span>
-        <span className="mx-2 text-board-felt/40">·</span>
-        <span className="text-board-felt">b {pipCount(currentBoard, "black")} </span>
-        <span className="text-board-felt/40 ml-3">{modeLabel}</span>
-        <span className="text-board-felt/40 ml-2">game {data.game.game_number}</span>
-        <span className="text-board-felt/40 ml-2 capitalize">{winnerLine}</span>
+      <div className={styles.metaLine}>
+        <span className={styles.pipWhite}>w {pipCount(currentBoard, "white")}</span>
+        <span className={styles.metaSep}>·</span>
+        <span className={styles.pipBlack}>b {pipCount(currentBoard, "black")} </span>
+        <span className={styles.metaMode}>{modeLabel}</span>
+        <span className={styles.metaGame}>game {data.game.game_number}</span>
+        <span className={styles.metaWinner}>{winnerLine}</span>
       </div>
-      <div className="text-xs text-board-felt/60 whitespace-nowrap">
+      <div className={styles.plyCounter}>
         ply {clampedPly} / {totalPlies}
       </div>
     </header>
 
-    <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
-      <div className="relative w-full max-w-[1100px] aspect-[3/2] rounded-lg overflow-hidden shadow-2xl">
+    <div className={styles.boardArea}>
+      <div className={styles.boardFrame}>
         <BoardCanvas
           state={currentBoard}
           theme={selectedTheme}/>
       </div>
     </div>
 
-    <div className="px-4 pb-4 flex flex-col items-center gap-3 max-w-2xl mx-auto w-full">
-      <div className="text-xs text-board-felt/70 capitalize text-center min-h-[1.2em]">
+    <div className={styles.controls}>
+      <div className={styles.turnDescription}>
         {clampedPly > 0 && (<>
-          <strong className="text-board-accent">{data.moves[clampedPly - 1].player}</strong>{" "}
+          <strong className={styles.turnPlayer}>{data.moves[clampedPly - 1].player}</strong>{" "}
           {turnDescription}
         </>)}
         {clampedPly === 0 && <em>{turnDescription}</em>}
       </div>
 
       <input
-        className="w-full accent-amber-500"
+        className={styles.seekSlider}
         max={totalPlies}
         min={0}
         type="range"
@@ -126,9 +128,9 @@ export function Replay() {
           totalPlies,
         }))}/>
 
-      <div className="flex gap-2">
+      <div className={styles.buttonRow}>
         <button
-          className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm"
+          className={styles.navButton}
           onClick={() => dispatch(replayActions.replaySeek({
             ply: 0,
             totalPlies,
@@ -136,7 +138,7 @@ export function Replay() {
           ⏮
         </button>
         <button
-          className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm disabled:opacity-40"
+          className={styles.navButton}
           disabled={clampedPly === 0}
           onClick={() => dispatch(replayActions.replaySeek({
             ply: clampedPly - 1,
@@ -145,14 +147,14 @@ export function Replay() {
           ◀ prev
         </button>
         <button
-          className="px-4 py-1 rounded bg-amber-700 text-amber-50 border border-amber-900 text-sm hover:brightness-110 active:scale-95"
+          className={styles.playButton}
           onClick={() => {
             if (isPlaying) dispatch(replayActions.replayPause()); else dispatch(replayActions.replayPlay({totalPlies}))
           }}>
           {isPlaying ? "pause" : clampedPly >= totalPlies ? "replay" : "play"}
         </button>
         <button
-          className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm disabled:opacity-40"
+          className={styles.navButton}
           disabled={clampedPly >= totalPlies}
           onClick={() => dispatch(replayActions.replaySeek({
             ply: clampedPly + 1,
@@ -161,7 +163,7 @@ export function Replay() {
           next ▶
         </button>
         <button
-          className="px-3 py-1 rounded bg-board-felt/10 hover:bg-board-felt/20 border border-board-felt/20 text-sm"
+          className={styles.navButton}
           onClick={() => dispatch(replayActions.replaySeek({
             ply: totalPlies,
             totalPlies,

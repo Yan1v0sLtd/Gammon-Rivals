@@ -1,6 +1,7 @@
 import {type CSSProperties, useCallback, useEffect, useRef, useState} from "react"
 
 import {ONBOARDING_STEPS, type TourStep} from "./onboardingSteps"
+import styles from "./OnboardingTour.module.css"
 
 /**
  * First-run onboarding tour. A dimmed overlay with a spotlight cutout that
@@ -155,16 +156,15 @@ export function OnboardingTour({
   return (<div
     aria-live="polite"
     aria-modal="true"
-    className="fixed inset-0 z-[120]"
+    className={styles.overlay}
     role="dialog">
     {/* Full-screen click absorber: blocks interaction with the lobby beneath
           for the duration of the tour. Transparent when a spotlight is shown
           (the cutout's box-shadow does the dimming); dimmed itself otherwise. */}
     <div
-      className="absolute inset-0"
+      className={styles.clickAbsorber}
       style={{
         background: rect ? "transparent" : "rgba(3,9,20,0.82)",
-        pointerEvents: "auto",
       }}
       onClick={(e) => {
         e.stopPropagation()
@@ -173,49 +173,44 @@ export function OnboardingTour({
     {/* Spotlight cutout — a transparent rect whose giant box-shadow dims
           everything around it, revealing the anchored element. */}
     {rect ? (<div
-      className="pointer-events-none absolute rounded-xl"
+      className={styles.spotlight}
       style={{
         top: rect.top - PAD,
         left: rect.left - PAD,
         width: rect.width + PAD * 2,
         height: rect.height + PAD * 2,
-        boxShadow: "0 0 0 9999px rgba(3,9,20,0.82)",
-        outline: "2px solid rgba(252,211,77,0.9)",
-        outlineOffset: "2px",
-        transition: "top 120ms ease, left 120ms ease, width 120ms ease, height 120ms ease",
       }}/>) : null}
 
     {/* Step card */}
     <div
-      className="absolute flex flex-col gap-3 rounded-2xl border border-amber-300/30 bg-gradient-to-b from-[#0c2c4d] to-[#071a30] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.55)]"
+      className={styles.stepCard}
       style={{
         ...cardStyle,
-        pointerEvents: "auto",
       }}>
-      <div className="flex items-center gap-2">
-        <span className="text-[0.7rem] font-bold uppercase tracking-widest text-amber-300/70">
+      <div className={styles.counterRow}>
+        <span className={styles.counter}>
           {index + 1} / {steps.length}
         </span>
       </div>
-      <h2 className="font-display text-2xl font-black leading-tight text-amber-200 drop-shadow">
+      <h2 className={styles.title}>
         {step.title}
       </h2>
-      <div className="flex flex-col gap-2">
+      <div className={styles.body}>
         {step.body.map((p) => (<p
           key={p}
-          className="text-sm leading-relaxed text-white/85">
+          className={styles.paragraph}>
           {p}
         </p>))}
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3">
+      <div className={styles.footerRow}>
         {!isLast ? (<button
-          className="text-sm font-semibold text-white/55 transition hover:text-white/80"
+          className={styles.skipButton}
           type="button"
           onClick={finish}>
           Skip
         </button>) : (<span/>)}
         <button
-          className="rounded-lg bg-gradient-to-b from-[#ffd96a] via-[#f4c23a] to-[#e09a17] px-5 py-2 font-display text-base font-black text-[#3a2406] shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_4px_0_#a86a0e] transition hover:brightness-110 active:translate-y-[1px]"
+          className={styles.ctaButton}
           type="button"
           onClick={next}>
           {step.cta}

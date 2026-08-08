@@ -1,0 +1,218 @@
+/* PlayOnline page — loading / error / waiting shells and the match-over
+ * overlays. Colors are decomposed from the Tailwind board/chip palette
+ * (see tailwind.config.js) and the amber accent used by the result cards. */
+
+/* --- Loading / error states --- */
+.loadingScreen {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  color: rgb(243 234 211 / 0.6);
+}
+
+.errorScreen {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  color: #fb7185;
+}
+
+.backLink {
+  composes: fontDisplay from "../styles/shared.module.css";
+  color: #e7c66a;
+  font-size: 0.875rem;
+}
+
+/* --- Waiting-for-opponent shell --- */
+.page {
+  composes: fontDisplay from "../styles/shared.module.css";
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  background-image: linear-gradient(to bottom, #1a1410, #0d0907);
+  color: #f3ead3;
+}
+
+.header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  color: rgb(243 234 211 / 0.8);
+}
+
+.onlineLabel {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  color: rgb(243 234 211 / 0.5);
+}
+
+.profileLink {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  color: rgb(243 234 211 / 0.6);
+}
+
+.profileLink:hover {
+  color: #e7c66a;
+}
+
+.waitingCenter {
+  display: flex;
+  width: 100%;
+  max-width: 28rem;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.waitingTitle {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 1.875rem;
+  color: #e7c66a;
+  text-align: center;
+}
+
+.cancelButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  color: rgb(243 234 211 / 0.5);
+  transition: color 160ms ease;
+}
+
+.cancelButton:hover {
+  color: #fb7185;
+}
+
+/* --- Result / status cards (cube pending, between games, match over) --- */
+.resultCard {
+  border: 2px solid #b45309;
+  border-radius: 0.75rem;
+  background-image: linear-gradient(to bottom, #fef3c7, #fcd34d);
+  color: #451a03;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+.cubePendingCard {
+  composes: resultCard;
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.betweenGamesCard {
+  composes: resultCard;
+  max-width: 24rem;
+  padding: 1.5rem 2rem;
+}
+
+.matchOverCard {
+  composes: resultCard;
+  padding: 1.5rem 2rem;
+}
+
+.resultTitle {
+  composes: fontDisplay from "../styles/shared.module.css";
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.betweenGamesTitle {
+  composes: resultTitle;
+  font-size: 1.5rem;
+  text-transform: capitalize;
+}
+
+.matchOverTitle {
+  composes: resultTitle;
+  font-size: 1.875rem;
+}
+
+.resultSubtitle {
+  composes: fontDisplay from "../styles/shared.module.css";
+  margin-bottom: 0.75rem;
+  text-transform: capitalize;
+}
+
+.matchOverSubtitle {
+  composes: resultSubtitle;
+  font-size: 1.25rem;
+}
+
+.betweenGamesScore {
+  composes: fontDisplay from "../styles/shared.module.css";
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.resultHint {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  color: rgb(120 53 15 / 0.7);
+}
+
+.forfeitNote {
+  composes: resultHint;
+  margin-bottom: 0.75rem;
+}
+
+.amberButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  margin-top: 1rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.375rem;
+  background-color: #b45309;
+  color: #fffbeb;
+  font-weight: 500;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.amberButton:hover {
+  filter: brightness(1.1);
+}
+
+.amberButton:active {
+  transform: scale(0.95);
+}
+
+/* --- Inactivity claim banner --- */
+.inactivityBanner {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transform: translateX(-50%);
+  padding: 0.375rem 0.75rem;
+  border: 1px solid rgb(243 234 211 / 0.2);
+  border-radius: 0.25rem;
+  background-color: rgb(0 0 0 / 0.6);
+  color: rgb(243 234 211 / 0.8);
+  font-size: 0.75rem;
+  backdrop-filter: blur(4px);
+}
+
+.claimButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  background-color: #b45309;
+  color: #fffbeb;
+}
+
+.claimButton:hover {
+  filter: brightness(1.1);
+}

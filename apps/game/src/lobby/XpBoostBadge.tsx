@@ -4,6 +4,8 @@ import {authRefreshRequested} from "../features/auth/authActions"
 import {selectActiveXpBoost} from "../features/auth/authSelectors"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./XpBoostBadge.module.css"
+
 /**
  * Formats milliseconds-remaining into the most useful coarse unit.
  *
@@ -75,13 +77,13 @@ export function XpBoostBadge() {
   if (remaining <= 0) return null
 
   return (<span
-    className="inline-flex items-center gap-1 rounded-full border border-violet-400/60 bg-gradient-to-b from-[#7c3aed]/85 to-[#4c1d95]/95 px-2 py-0.5 text-[0.62rem] font-black uppercase tracking-wider text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_2px_4px_rgba(0,0,0,0.45)]"
+    className={styles.pill}
     title={`Active XP boost expires ${new Date(activeXpBoost.expiresAt).toLocaleString()}`}>
-    <span className="text-amber-300">×{activeXpBoost.multiplier}</span>
-    <span className="text-white/80">XP</span>
+    <span className={styles.multiplier}>×{activeXpBoost.multiplier}</span>
+    <span className={styles.xpLabel}>XP</span>
     <span
       aria-hidden="true"
-      className="text-amber-300/70">·</span>
-    <span className="tabular-nums text-white/90">{formatRemaining(remaining)}</span>
+      className={styles.separator}>·</span>
+    <span className={styles.time}>{formatRemaining(remaining)}</span>
   </span>)
 }

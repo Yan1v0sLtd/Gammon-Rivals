@@ -1,0 +1,39 @@
+.pill {
+  composes: fontDisplay from "../styles/shared.module.css";
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(167, 139, 250, 0.6);
+  background-image: linear-gradient(
+    to bottom,
+    rgba(124, 58, 237, 0.85),
+    rgba(76, 29, 149, 0.95)
+  );
+  padding: 0.125rem 0.5rem;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fde68a;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.multiplier {
+  color: #fcd34d;
+}
+
+.xpLabel {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.separator {
+  color: rgba(252, 211, 77, 0.7);
+}
+
+.time {
+  composes: tabularNums from "../styles/shared.module.css";
+  color: rgba(255, 255, 255, 0.9);
+}

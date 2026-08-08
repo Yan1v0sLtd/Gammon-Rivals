@@ -1,5 +1,7 @@
 import {useEffect} from "react"
 
+import styles from "./BoardLockTooltip.module.css"
+
 type BoardLockTooltipProps = {
   readonly requiredLevel: number,
   readonly onDismiss: () => void,
@@ -16,9 +18,8 @@ export function BoardLockTooltip({
     }
   }, [onDismiss])
 
-  return (<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
-    <div
-      className="pointer-events-auto rounded-xl border-2 border-amber-700 bg-gradient-to-b from-amber-100 to-amber-300 px-6 py-4 text-center font-display text-base font-black uppercase tracking-[0.12em] text-amber-950 shadow-2xl">
+  return (<div className={styles.overlay}>
+    <div className={styles.tooltip}>
       Reach level {requiredLevel} to unlock
     </div>
   </div>)

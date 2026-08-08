@@ -1,0 +1,373 @@
+/* BoardPurchaseModal — carnival/fortune-card confirmation modal matching
+ * the lobby chrome (HourlyBonus). Heavy gold rim, decorative corner
+ * rivets, big red close orb, dark-red name ribbon, gold price plate,
+ * Yes/No 3D buttons. */
+
+/* Full-screen dimmed backdrop. The radial dim is static; the fade-in
+ * opacity + transition are dynamic (driven by the `entered` state) and
+ * stay inline. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  /* backdrop-filter blur removed for mobile perf; deeper dim compensates. */
+  background: radial-gradient(circle at center, rgba(92, 48, 14, 0.45), rgba(0, 0, 0, 0.84));
+}
+
+/* Gold modal frame. The scale-up "emerge" entrance transform/opacity/
+ * transition/transitionDelay are dynamic and stay inline. */
+.frame {
+  position: relative;
+  text-align: center;
+  width: min(92vw, 30rem);
+  padding: clamp(1.6rem, 5vmin, 2.4rem) clamp(1.5rem, 5vmin, 2.8rem) clamp(1.4rem, 4.5vmin, 2.2rem);
+  border-radius: 22px;
+  /* Multiple stacked box-shadows fake the orange-rim-on-gold rim-on-brown
+   * trim from the reference. */
+  background: linear-gradient(rgba(255, 255, 255, 0.22), transparent 26%), radial-gradient(circle at 50% 12%, #fff7bc 0%, #f7d374 34%, #dfa045 72%, #b96b1f 100%);
+  border: 5px solid #ffd057;
+  color: #4b2108;
+  box-shadow: 0 0 0 2px #8a3d08, 0 0 0 6px #ffb321, 0 18px 36px rgba(0, 0, 0, 0.6), inset 0 4px 0 rgba(255, 255, 255, 0.7), inset 0 -8px 0 rgba(89, 38, 9, 0.25), inset 0 0 45px rgba(95, 43, 8, 0.22);
+  transform-origin: center;
+}
+
+/* Decorative inset border ring. */
+.insetRing {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 14px;
+  inset: 14px;
+  border: 1px solid rgba(115, 52, 9, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 0 24px rgba(120, 50, 8, 0.16);
+}
+
+/* Close orb — large red sphere with thick gold rim. */
+.closeButton {
+  position: absolute;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  right: -1.1rem;
+  top: -1.1rem;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  border: 4px solid #ffe06c;
+  background: radial-gradient(circle at 35% 25%, #fff18b 0% 12%, #ffb229 13% 32%, #ef4c17 60%, #921707 100%);
+  color: #fff2a5;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 3px 0 #8a1608;
+  box-shadow: 0 6px 0 #6b2106, 0 12px 18px rgba(0, 0, 0, 0.45), inset 0 3px 0 rgba(255, 255, 255, 0.55);
+}
+
+.closeButton:active {
+  transform: translateY(1px);
+}
+
+.closeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Four gold corner rivets — L-shaped border w/ a gold disc in each corner. */
+.rivet {
+  position: absolute;
+  width: 3.8rem;
+  height: 3.8rem;
+  border: 5px solid #ffd65b;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.rivetTl {
+  top: -5px;
+  left: -5px;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 20px 0 0 0;
+}
+
+.rivetTr {
+  top: -5px;
+  right: -5px;
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 0 20px 0 0;
+}
+
+.rivetBl {
+  bottom: -5px;
+  left: -5px;
+  border-right: 0;
+  border-top: 0;
+  border-radius: 0 0 0 20px;
+}
+
+.rivetBr {
+  bottom: -5px;
+  right: -5px;
+  border-left: 0;
+  border-top: 0;
+  border-radius: 0 0 20px 0;
+}
+
+.rivetDisc {
+  position: absolute;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff5a5, #d78416 65%, #7c3508);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.55);
+}
+
+.rivetDiscTl {
+  top: 6px;
+  left: 6px;
+}
+
+.rivetDiscTr {
+  top: 6px;
+  right: 6px;
+}
+
+.rivetDiscBl {
+  bottom: 6px;
+  left: 6px;
+}
+
+.rivetDiscBr {
+  bottom: 6px;
+  right: 6px;
+}
+
+/* Title — ✦ UNLOCK BOARD ✦ with the multi-layer text shadow from the
+ * reference (gold-on-cream-on-brown stack). Sized down + whitespace-nowrap
+ * so the title stays on one line even at the narrow modal-width breakpoint. */
+.title {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  position: relative;
+  white-space: nowrap;
+  z-index: 2;
+  margin: 0;
+  margin-bottom: clamp(0.8rem, 2vmin, 1.2rem);
+  font-size: clamp(1.2rem, 4.2vmin, 1.9rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #5d3208;
+  text-shadow: 0 1px 0 rgba(255, 251, 222, 0.8), 0 2px 2px rgba(255, 247, 200, 0.3), 0 -1px 1px rgba(35, 14, 2, 0.45);
+}
+
+/* ✦ glyphs flanking the title. */
+.titleStar {
+  font-size: 0.6em;
+  margin: 0 0.5rem;
+  color: #8a5410;
+}
+
+/* Board name ribbon — dark-red banner with diamond caps. */
+.nameRibbon {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  min-width: 14rem;
+  height: clamp(2.4rem, 6vmin, 3rem);
+  margin-bottom: clamp(1rem, 3vmin, 1.5rem);
+  padding: 0 1.6rem;
+  background: linear-gradient(#7c360a, #3e1503 62%, #2a0c02);
+  border: 2px solid #e9ad29;
+  border-radius: 8px;
+  color: white;
+  font-size: clamp(1rem, 3vmin, 1.4rem);
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.2), inset 0 -3px 0 rgba(0, 0, 0, 0.35), 0 5px 9px rgba(0, 0, 0, 0.32);
+}
+
+/* Diamond caps on each end of the ribbon. */
+.ribbonCap {
+  position: absolute;
+  top: 50%;
+  width: 1.1rem;
+  height: 1.1rem;
+  background: #e9ad29;
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: inset 0 0 0 3px #6b2a05;
+}
+
+.ribbonCapLeft {
+  left: -0.55rem;
+}
+
+.ribbonCapRight {
+  right: -0.55rem;
+}
+
+/* Price plate — gold rounded card with the actual gem.webp asset + the
+ * price number. */
+.pricePlate {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  width: min(85%, 22rem);
+  height: clamp(5rem, 13vmin, 7rem);
+  margin-bottom: clamp(1.2rem, 3.5vmin, 1.8rem);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), transparent 38%), radial-gradient(circle at center, #fff0a5 0%, #f6ca62 60%, #c88022 100%);
+  border: 4px solid #e39a19;
+  box-shadow: 0 0 0 2px #ffdc60, 0 8px 14px rgba(0, 0, 0, 0.35), inset 0 3px 0 rgba(255, 255, 255, 0.65), inset 0 -5px 0 rgba(107, 48, 8, 0.22);
+  gap: clamp(1rem, 3vmin, 2rem);
+}
+
+/* Sheen highlight on the top-left of the price plate. */
+.sheen {
+  pointer-events: none;
+  position: absolute;
+  left: 8%;
+  top: 14%;
+  width: 40%;
+  height: 22%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  filter: blur(6px);
+}
+
+/* The gem.webp currency icon. */
+.gemIcon {
+  width: clamp(3rem, 8vmin, 4.5rem);
+  height: clamp(3rem, 8vmin, 4.5rem);
+  object-fit: contain;
+  filter: drop-shadow(0 6px 4px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 10px rgba(0, 210, 255, 0.5));
+}
+
+/* Price number. */
+.priceValue {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  composes: tabularNums from "../../styles/shared.module.css";
+  font-size: clamp(2.6rem, 8vmin, 4rem);
+  font-weight: 900;
+  color: #3c1704;
+  line-height: 1;
+  text-shadow: 0 2px 0 #fff3ad, 0 5px 6px rgba(0, 0, 0, 0.28);
+}
+
+/* Confirmation prompt. */
+.prompt {
+  position: relative;
+  font-weight: 700;
+  z-index: 2;
+  margin: 0;
+  margin-bottom: clamp(0.8rem, 2vmin, 1.2rem);
+  font-size: clamp(0.9rem, 2.6vmin, 1.2rem);
+  color: #572607;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* The "Gems?" amount inside the prompt. */
+.promptStrong {
+  font-weight: 900;
+}
+
+/* Decorative divider with the ✤ glyph in the centre. */
+.divider {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
+  width: 80%;
+  margin-bottom: clamp(0.8rem, 2vmin, 1.2rem);
+  color: rgba(146, 70, 12, 0.6);
+  font-size: clamp(1rem, 3vmin, 1.4rem);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* The fading lines either side of the ✤ glyph. */
+.dividerLine {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(146, 70, 12, 0.55), transparent);
+}
+
+/* Error message (RPC failures). */
+.error {
+  position: relative;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 2;
+  max-width: 85%;
+  margin-bottom: clamp(0.8rem, 2vmin, 1.2rem);
+  border-radius: 8px;
+  border: 1px solid rgba(190, 18, 60, 0.4);
+  background: #fff1f1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #9f1239;
+}
+
+/* Yes / No button row. */
+.buttonRow {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  gap: clamp(1.5rem, 5vmin, 3rem);
+}
+
+/* Yes / No 3D pill buttons — shared geometry. */
+.actionButton {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  width: clamp(7rem, 22vmin, 9rem);
+  height: clamp(2.8rem, 7vmin, 3.4rem);
+  border-radius: 9999px;
+  font-size: clamp(1.2rem, 3.6vmin, 1.7rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.actionButton:active {
+  transform: translateY(2px);
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Yes — green/lime palette matching the lobby PLAY button. */
+.actionButtonYes {
+  border: 2px solid rgba(224, 255, 143, 0.95);
+  color: #132109;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.74) 0%, rgba(191, 255, 88, 0.86) 13%, transparent 39%), linear-gradient(180deg, #d6ff73 0%, #8cf244 40%, #20bd1f 68%, #07810d 100%);
+  box-shadow: 0 5px 0 #06450a, 0 13px 22px rgba(0, 0, 0, 0.34), inset 0 2px 0 rgba(255, 255, 255, 0.74), inset 0 -5px 0 rgba(0, 78, 5, 0.34), 0 0 0 2px rgba(7, 27, 11, 0.85);
+}
+
+/* No — same shape but a charcoal palette. */
+.actionButtonNo {
+  border: 2px solid rgba(220, 220, 220, 0.95);
+  color: #1a1a1a;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7) 0%, rgba(210, 210, 210, 0.86) 13%, transparent 39%), linear-gradient(180deg, #e2e2e2 0%, #a8a8a8 40%, #6a6a6a 68%, #3a3a3a 100%);
+  box-shadow: 0 5px 0 #1f1f1f, 0 13px 22px rgba(0, 0, 0, 0.34), inset 0 2px 0 rgba(255, 255, 255, 0.7), inset 0 -5px 0 rgba(0, 0, 0, 0.28), 0 0 0 2px rgba(15, 15, 15, 0.85);
+}

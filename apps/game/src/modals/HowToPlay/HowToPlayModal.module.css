@@ -1,0 +1,45 @@
+/* How-to-Play tutorial popup. The image is rendered at 75% of its natural
+ * size (operator spec — "25% smaller than its original") via `width: 75%`
+ * on the modal wrapper, capped at 1100px. */
+
+.modalRoot {
+  position: relative;
+  width: 75%;
+  max-width: 1100px;
+}
+
+.tutorialImg {
+  display: block;
+  width: 100%;
+  user-select: none;
+  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.55));
+}
+
+.closeButton {
+  position: absolute;
+  right: 2.6%;
+  top: 4%;
+  z-index: 1;
+}
+
+.loadingGrid {
+  display: grid;
+  height: 12rem;
+  width: 100%;
+  place-items: center;
+}
+
+.spinner {
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  animation: howToPlaySpin 1s linear infinite;
+}
+
+@keyframes howToPlaySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

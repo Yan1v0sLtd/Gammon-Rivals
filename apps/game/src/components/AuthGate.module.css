@@ -1,0 +1,170 @@
+.authShell {
+  composes: textWhite from "../styles/shared.module.css";
+  position: relative;
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  overflow: hidden;
+  background-color: #071120;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.authBackdrop {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  filter: blur(4px);
+  transform: scale(1.05);
+}
+
+.authOverlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 15%, rgba(28, 127, 185, 0.32), rgba(5, 12, 24, 0.88) 62%, rgba(2, 8, 16, 0.96));
+}
+
+.authCard {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background-color: rgba(16, 26, 42, 0.88);
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+}
+
+.authHeader {
+  text-align: center;
+}
+
+.authBrand {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  color: #f6d770;
+}
+
+.authTitle {
+  composes: fontDisplay from "../styles/shared.module.css";
+  composes: textWhite from "../styles/shared.module.css";
+  margin-top: 1rem;
+  font-size: 1.875rem;
+  font-weight: 900;
+}
+
+.authSubtitle {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.authNotice {
+  margin-top: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(244, 210, 110, 0.35);
+  background-color: rgba(7, 20, 41, 0.72);
+  padding: 1rem 1.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #f7da7d;
+}
+
+.authButtons {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.authButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 900;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease, filter 150ms ease, opacity 150ms ease;
+}
+
+.authButton:disabled {
+  opacity: 0.55;
+}
+
+.authButtonGoogle {
+  composes: authButton;
+  background: linear-gradient(to bottom, #ffffff, #dbe8ff);
+  font-size: 1.125rem;
+  color: #16233b;
+  box-shadow: 0 5px 0 #7a8cac, 0 14px 22px rgba(0, 0, 0, 0.34);
+}
+
+.authButtonGoogle:hover {
+  filter: brightness(1.1);
+}
+
+.authButtonGoogle:active {
+  transform: translateY(0.25rem);
+  box-shadow: 0 2px 0 #7a8cac, 0 8px 14px rgba(0, 0, 0, 0.3);
+}
+
+.authButtonGuest {
+  composes: authButton;
+  border: 1px solid rgba(244, 210, 110, 0.75);
+  background-color: rgba(7, 20, 41, 0.72);
+  font-size: 1rem;
+  color: #f7da7d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.authButtonGuest:hover {
+  background-color: #0d2142;
+}
+
+.authButtonGuest:active {
+  transform: translateY(0.125rem);
+}
+
+.authButtonTest {
+  composes: authButton;
+  border: 1px solid rgba(196, 181, 253, 0.5);
+  background-color: rgba(76, 29, 149, 0.4);
+  font-size: 1rem;
+  color: #ede9fe;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+
+.authButtonTest:hover {
+  background-color: rgba(91, 33, 182, 0.6);
+}
+
+.authButtonTest:active {
+  transform: translateY(0.125rem);
+}
+
+.authWarning {
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(252, 211, 77, 0.25);
+  background-color: rgba(120, 53, 15, 0.25);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: #fef3c7;
+}
+
+.authError {
+  margin-top: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(253, 164, 175, 0.25);
+  background-color: rgba(76, 5, 25, 0.45);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: #ffe4e6;
+}

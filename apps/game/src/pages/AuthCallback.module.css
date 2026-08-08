@@ -1,0 +1,60 @@
+.loadingScreen {
+  min-height: 100dvh;
+  background-color: #071120;
+}
+
+.errorScreen {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 1rem;
+  background-color: #071120;
+  color: #fff;
+}
+
+.errorCard {
+  width: 100%;
+  max-width: 28rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background-color: rgba(16, 26, 42, 0.88);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.brand {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  color: #f6d770;
+}
+
+.title {
+  composes: fontDisplay from "../styles/shared.module.css";
+  margin-top: 1rem;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 900;
+  color: #fff;
+}
+
+.message {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #ffe4e6;
+}
+
+.backLink {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  background-color: #f6d770;
+  font-weight: 900;
+  color: #101a2a;
+}

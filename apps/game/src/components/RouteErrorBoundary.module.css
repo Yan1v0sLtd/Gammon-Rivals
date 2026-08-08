@@ -1,0 +1,84 @@
+.page {
+  min-height: 100vh;
+  background-image: linear-gradient(to bottom, #1a1410, #0d0907);
+  color: #f3ead3;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: auto;
+}
+
+.title {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 1.5rem;
+  line-height: 2rem;
+  color: #fda4af;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(243, 234, 211, 0.7);
+}
+
+.details {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(251, 113, 133, 0.3);
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  color: #fecdd3;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.errorName {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.stack {
+  opacity: 0.8;
+}
+
+.stackHeader {
+  font-weight: 700;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.homeLink {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  background-color: #b45309;
+  color: #fffbeb;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.homeLink:hover {
+  filter: brightness(1.1);
+}
+
+.reloadButton {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  background-color: rgba(243, 234, 211, 0.1);
+  border: 1px solid rgba(243, 234, 211, 0.2);
+  color: rgba(243, 234, 211, 0.8);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.reloadButton:hover {
+  background-color: rgba(243, 234, 211, 0.15);
+}

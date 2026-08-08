@@ -23,6 +23,8 @@ import {HowToPlayModal} from "../modals/HowToPlay/HowToPlayModal"
 import {WheelModal} from "../modals/Wheel/WheelModal"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./LobbyModalHost.module.css"
+
 type LobbyModalHostProps = {
   /** Reward flights render inside LobbyScreen, so spawning stays owned there. */
   readonly onSpawnFlights: (currency: FlightCurrency, sourceEl: Element, count: number) => void,
@@ -91,8 +93,7 @@ export function LobbyModalHost({onSpawnFlights}: LobbyModalHostProps) {
           openShop()
         }}
         onSelect={start}/>
-      {modal.error ? (<div
-        className="pointer-events-none fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-rose-700/60 bg-gradient-to-b from-rose-100 to-rose-300 px-4 py-2 font-bold text-rose-950 shadow-2xl">
+      {modal.error ? (<div className={styles.errorToast}>
         {modal.error}
       </div>) : null}
     </>)

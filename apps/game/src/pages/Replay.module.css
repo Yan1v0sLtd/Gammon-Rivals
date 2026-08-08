@@ -1,0 +1,198 @@
+/* Replay page — full-screen shell, board frame, and transport controls.
+ * Colors are decomposed from the Tailwind board/chip palette (see
+ * tailwind.config.js) and the amber accent used by the play button. */
+
+/* --- Loading / error states --- */
+.errorScreen {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: rgb(243 234 211 / 0.7);
+}
+
+.errorMessage {
+  composes: fontDisplay from "../styles/shared.module.css";
+}
+
+.backLink {
+  composes: fontDisplay from "../styles/shared.module.css";
+  color: #e7c66a;
+}
+
+.loadingScreen {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  color: rgb(243 234 211 / 0.6);
+}
+
+.loadingText {
+  composes: fontDisplay from "../styles/shared.module.css";
+}
+
+/* --- Page shell --- */
+.page {
+  composes: fontDisplay from "../styles/shared.module.css";
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background-image: linear-gradient(to bottom, #1a1410, #0d0907);
+  color: #f3ead3;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  color: rgb(243 234 211 / 0.8);
+}
+
+.profileLink {
+  composes: fontDisplay from "../styles/shared.module.css";
+  color: #e7c66a;
+  font-size: 0.875rem;
+}
+
+.metaLine {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+.pipWhite {
+  color: #f6efd6;
+}
+
+.metaSep {
+  margin: 0 0.5rem;
+  color: rgb(243 234 211 / 0.4);
+}
+
+.pipBlack {
+  color: #f3ead3;
+}
+
+.metaMode {
+  margin-left: 0.75rem;
+  color: rgb(243 234 211 / 0.4);
+}
+
+.metaGame {
+  margin-left: 0.5rem;
+  color: rgb(243 234 211 / 0.4);
+}
+
+.metaWinner {
+  margin-left: 0.5rem;
+  color: rgb(243 234 211 / 0.4);
+  text-transform: capitalize;
+}
+
+.plyCounter {
+  composes: fontDisplay from "../styles/shared.module.css";
+  font-size: 0.75rem;
+  color: rgb(243 234 211 / 0.6);
+  white-space: nowrap;
+}
+
+/* --- Board area --- */
+.boardArea {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.boardFrame {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* --- Transport controls --- */
+.controls {
+  display: flex;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem 1rem;
+}
+
+.turnDescription {
+  composes: fontDisplay from "../styles/shared.module.css";
+  min-height: 1.2em;
+  font-size: 0.75rem;
+  color: rgb(243 234 211 / 0.7);
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.turnPlayer {
+  color: #e7c66a;
+}
+
+.seekSlider {
+  width: 100%;
+  accent-color: #f59e0b;
+}
+
+.buttonRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  padding: 0.25rem 0.75rem;
+  border: 1px solid rgb(243 234 211 / 0.2);
+  border-radius: 0.25rem;
+  background-color: rgb(243 234 211 / 0.1);
+  font-size: 0.875rem;
+}
+
+.navButton:hover {
+  background-color: rgb(243 234 211 / 0.2);
+}
+
+.navButton:disabled {
+  opacity: 0.4;
+}
+
+.playButton {
+  composes: fontDisplay from "../styles/shared.module.css";
+  padding: 0.25rem 1rem;
+  border: 1px solid #78350f;
+  border-radius: 0.25rem;
+  background-color: #b45309;
+  color: #fffbeb;
+  font-size: 0.875rem;
+}
+
+.playButton:hover {
+  filter: brightness(1.1);
+}
+
+.playButton:active {
+  transform: scale(0.95);
+}
+
+@media (min-width: 640px) {
+  .boardArea {
+    padding: 1rem;
+  }
+}

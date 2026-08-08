@@ -8,6 +8,8 @@ import {formatCompactNumber} from "../../lib/format"
 import {isSupabaseConfigured} from "../../lib/supabase"
 import {useImagePreloader} from "../../lib/useImagePreloader"
 
+import styles from "./DifficultyModal.module.css"
+
 /**
  * Server row shape we need. We only read enabled difficulty rows
  * (kind = 'difficulty') so the lobby grid stays clean even if BO
@@ -131,7 +133,7 @@ function paletteFor(slug: string): TierPalette {
 function XpHexIcon() {
   return (<svg
     aria-hidden
-    className="h-4 w-4 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9"
+    className={styles.statIcon}
     viewBox="0 0 100 110">
     <defs>
       <linearGradient
@@ -171,7 +173,7 @@ function XpHexIcon() {
 function CoinIcon() {
   return (<img
     alt=""
-    className="h-4 w-4 shrink-0 object-contain drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9"
+    className={styles.statIcon}
     draggable={false}
     src="/lobby/icons/gold-coin.webp"/>)
 }
@@ -181,7 +183,7 @@ function CoinIcon() {
 function ClockIcon() {
   return (<svg
     aria-hidden
-    className="h-4 w-4 shrink-0 drop-shadow-[0_2px_3px_rgba(0,0,0,0.55)] sm:h-6 sm:w-6 lg:h-9 lg:w-9"
+    className={styles.statIcon}
     viewBox="0 0 40 40">
     <circle
       cx="20"
@@ -220,13 +222,6 @@ function ClockIcon() {
       r="1.5"/>
   </svg>)
 }
-
-/* Earlier iterations of this modal experimented with a chamfered /
- * octagonal SELECT button (gold-rim hex). The user asked to revert
- * to the original rounded-rect CTA (green Play / orange Get Coins /
- * grey Unlocks) so the chamfer helper is gone. The tier accent
- * still drives the title strip + stat values; the button colour is
- * now status-driven (playable / shop nudge / locked). */
 
 function formatSeconds(s: number): string {
   if (s < 60) return `${s}s`
@@ -288,29 +283,19 @@ function DifficultyCard({
   // tier accent, so the green / orange / grey treatment reads as
   // a universal play / shop-nudge / locked signal. (Tier identity
   // lives in the tier name strip + stat values.)
-  const ctaClass = levelLocked ? "border border-slate-700/70 bg-gradient-to-b from-slate-500 to-slate-700 cursor-not-allowed opacity-90" : affordable ? "border border-emerald-900/60 bg-gradient-to-b from-emerald-400 to-emerald-700 hover:brightness-110 disabled:cursor-wait disabled:opacity-60" // "Get Coins" gets the orange palette so it reads as a
+  const ctaClass = levelLocked ? styles.ctaLocked : affordable ? styles.ctaPlay // "Get Coins" gets the orange palette so it reads as a
     // separate-from-Play CTA — a nudge toward the shop, not a
     // normal positive action.
-    : "border border-amber-900/60 bg-gradient-to-b from-amber-400 to-orange-600 hover:brightness-110 disabled:cursor-wait disabled:opacity-60"
+    : styles.ctaGetCoins
 
   return (<div
-    className="flex flex-col overflow-hidden rounded-2xl bg-[#1a120a]"
+    className={styles.card}
     style={{
       // Per-tier halo glow only — no scale on any card so the
       // five tiles share one footprint (matches the user's
       // "make sure it's the same size" feedback on the Pro
       // card).
       boxShadow: `${palette.halo}, 0 14px 26px rgba(0,0,0,0.55)`,
-      border: "1px solid rgba(211,160,78,0.35)", // Container query anchor — every `cqi` unit inside this
-      // card now resolves to 1% of THIS card's actual width
-      // (not viewport-width). That's what lets text/icons in
-      // the card scale with the card itself: when 5 cards
-      // share a 1200px row each card is ~230px wide, when 5
-      // cards share a 400px row each is ~76px wide, and
-      // `clamp(min, Xcqi, max)` adapts smoothly in both.
-      // Browser support: Chrome 105+, Firefox 110+, Safari 16+
-      // (Baseline since Feb 2023 — fine for this app).
-      containerType: "inline-size",
     }}>
     {/* Tier name strip — sits above the hero on the dark card
           background, rendered in the tier accent so the difficulty
@@ -319,19 +304,11 @@ function DifficultyCard({
           modal. whitespace-nowrap + container-query font scales
           the longest expected name ("GRAND MASTER") down on
           narrow cards so all five tiles share one height. */}
-    <div className="px-1 pt-1 pb-0.5 text-center lg:px-3 lg:pt-2">
+    <div className={styles.tierNameWrap}>
       <div
-        className="font-display font-black uppercase whitespace-nowrap"
+        className={styles.tierName}
         style={{
           color: palette.title,
-          textShadow: "0 2px 0 rgba(0,0,0,0.55)", // 6.2cqi ≈ 6.2% of card width — at 380px → 23.5px,
-          // at 200px → 12.4px, at 80px → 5px. Clamped so it
-          // never gets bigger than 1.1rem (~17.5px) or smaller
-          // than 0.5rem (~8px).
-          fontSize: "clamp(0.5rem, 6.2cqi, 1.1rem)", // Tracking scales with font-size — 0.08em widens to
-          // ~1.4px at 17.5px and tightens to ~0.6px at 8px so
-          // the GRAND MASTER name always fits the strip.
-          letterSpacing: "0.08em",
         }}>
         {row.display_name}
       </div>
@@ -345,11 +322,8 @@ function DifficultyCard({
           phone without vertical scroll. */}
     <div
       aria-hidden
-      className="w-full"
-      style={{
-        ...heroStyle,
-        aspectRatio: "16 / 9",
-      }}/>
+      className={styles.heroPanel}
+      style={heroStyle}/>
 
     {/* Stats panel — cream rounded outer card containing three
           icon-rows (XP boost / entry fee / time to move). Each
@@ -357,69 +331,54 @@ function DifficultyCard({
           numbers ("500%", "150K") shrink-to-fit on narrow cards
           instead of overflowing the pill. */}
     <div
-      className="m-1 rounded-md border border-amber-700/40 bg-[#f4e7c5] p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] sm:m-2 sm:rounded-lg sm:p-1.5 lg:m-2.5 lg:rounded-xl lg:p-2">
-      <div className="space-y-0.5 sm:space-y-1 lg:space-y-1.5">
+      className={styles.statsPanel}>
+      <div className={styles.statsStack}>
         <div
-          className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
+          className={styles.statRow}>
           <XpHexIcon/>
-          <div className="min-w-0 flex-1">
+          <div className={styles.statTextWrap}>
             <div
-              className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
-              style={{
-                fontSize: "clamp(0.4rem, 3cqi, 0.65rem)",
-                letterSpacing: "0.05em",
-              }}>
+              className={styles.statLabel}>
               XP Boost
             </div>
             <div
-              className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+              className={styles.statValue}
               style={{
                 color: palette.title,
-                fontSize: "clamp(0.65rem, 6cqi, 1.1rem)",
               }}>
               {row.xp_multiplier_pct}%
             </div>
           </div>
         </div>
         <div
-          className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
+          className={styles.statRow}>
           <CoinIcon/>
-          <div className="min-w-0 flex-1">
+          <div className={styles.statTextWrap}>
             <div
-              className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
-              style={{
-                fontSize: "clamp(0.4rem, 3cqi, 0.65rem)",
-                letterSpacing: "0.05em",
-              }}>
+              className={styles.statLabel}>
               Entry Fee
             </div>
             <div
-              className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+              className={styles.statValue}
               style={{
                 color: palette.title,
-                fontSize: "clamp(0.65rem, 6cqi, 1.1rem)",
               }}>
               {formatCompactNumber(row.entry_fee_coins)}
             </div>
           </div>
         </div>
         <div
-          className="flex items-center gap-1 rounded border border-amber-700/15 bg-[#fdf6e3] px-1 py-0.5 sm:gap-1.5 sm:rounded-md sm:px-1.5 sm:py-1 lg:gap-2 lg:rounded-lg lg:px-2 lg:py-1">
+          className={styles.statRow}>
           <ClockIcon/>
-          <div className="min-w-0 flex-1">
+          <div className={styles.statTextWrap}>
             <div
-              className="font-bold uppercase text-amber-900/70 whitespace-nowrap"
-              style={{
-                fontSize: "clamp(0.4rem, 3cqi, 0.65rem)",
-                letterSpacing: "0.05em",
-              }}>
+              className={styles.statLabel}>
               Time to Move
             </div>
             <div
-              className="font-display font-black leading-none tabular-nums whitespace-nowrap"
+              className={styles.statValue}
               style={{
                 color: palette.title,
-                fontSize: "clamp(0.65rem, 6cqi, 1.1rem)",
               }}>
               {formatSeconds(row.turn_seconds)}
             </div>
@@ -440,7 +399,7 @@ function DifficultyCard({
           longest label ("UNLOCKS AT LV 10") always fit a single
           line at any card width — no more two-line wrap on the
           locked-tier cards. */}
-    <div className="px-1 pb-1 sm:px-2 sm:pb-2 lg:px-2.5 lg:pb-2.5">
+    <div className={styles.ctaWrap}>
       {affordable && !levelLocked ? (// Standardized premium Play button, full-width to match the
         // cream stats block above (same horizontal inset). `block`
         // stretches it; font-size only drives the height, scaled via
@@ -452,16 +411,12 @@ function DifficultyCard({
           // Taller font-size so the button height matches the grey
           // "Unlocks at Lv N" / orange "Get Coins" buttons rather
           // than reading as a thin strip.
-          wrapStyle={{fontSize: "clamp(13px, 7cqi, 18px)"}}
+          wrapClassName={styles.playCtaFontSize}
           onClick={onPlay}/>) : (// Non-Play states keep their distinct treatment: orange
         // "Get Coins" (shop nudge) and grey "Unlocks at Lv N".
         <button
-          className={"block w-full rounded py-1 font-display font-black uppercase text-white shadow-md transition active:translate-y-[1px] disabled:active:translate-y-0 whitespace-nowrap sm:rounded-md sm:py-1.5 lg:py-2 " + ctaClass}
+          className={`${styles.ctaButton} ${ctaClass}`}
           disabled={buttonDisabled}
-          style={{
-            fontSize: "clamp(0.5rem, 4.8cqi, 1rem)",
-            letterSpacing: "0.05em",
-          }}
           type="button"
           onClick={levelLocked ? undefined : onGetCoins}>
           {buttonLabel}
@@ -520,17 +475,11 @@ export function DifficultyModal({
   return (<div
     aria-label="Select room difficulty"
     aria-modal="true"
-    className="fixed inset-0 z-50 grid place-items-center bg-black/80 backdrop-blur-sm p-1 sm:p-2 lg:p-4"
+    className={styles.backdrop}
     role="dialog"
     onClick={onClose}>
     <div
-      className="relative w-[min(99vw,80rem)] max-h-[98vh] overflow-y-auto rounded-xl sm:max-h-[96vh] sm:rounded-2xl lg:w-[min(96vw,80rem)] lg:max-h-[94vh]"
-      style={{
-        background: "radial-gradient(circle at 50% 0%, rgba(70,42,12,0.45) 0%, rgba(8,5,3,0.92) 60%), linear-gradient(180deg, #100a06 0%, #050302 100%)",
-        border: "2px solid #d3a04e",
-        boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.55), 0 30px 60px rgba(0,0,0,0.7)",
-        padding: "clamp(0.4rem, 1.4vw, 1.75rem)",
-      }}
+      className={styles.panel}
       onClick={(e) => {
         e.stopPropagation()
       }}>
@@ -538,22 +487,22 @@ export function DifficultyModal({
             Vertical margins tightened across all breakpoints to
             free up more room for the 5-card grid so the modal
             fits the viewport without scrolling. */}
-      <div className="relative mb-1 flex flex-col items-center text-center sm:mb-2 lg:mb-4">
-        <div className="flex items-center gap-1.5 sm:gap-3 lg:gap-4">
-          <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
+      <div className={styles.header}>
+        <div className={styles.titleRow}>
+          <span className={styles.titleStar}>✦</span>
           <h2
-            className="bg-gradient-to-b from-[#fde68a] via-[#fcd34d] to-[#a16207] bg-clip-text font-display text-base font-black uppercase tracking-[0.12em] text-transparent sm:text-xl sm:tracking-[0.18em] lg:text-2xl md:text-3xl">
+            className={styles.title}>
             Select Room
           </h2>
-          <span className="text-sm text-amber-300/70 sm:text-xl lg:text-2xl">✦</span>
+          <span className={styles.titleStar}>✦</span>
         </div>
         <button
           aria-label="Close"
-          className="absolute right-0 top-0 grid h-6 w-6 place-items-center rounded-full border-2 border-[#c89a47] bg-[#0c0908]/80 text-[#ffd16f] shadow-[0_4px_8px_rgba(0,0,0,0.5)] transition hover:brightness-110 active:scale-95 sm:h-8 sm:w-8 lg:h-10 lg:w-10"
+          className={styles.closeButton}
           type="button"
           onClick={onClose}>
           <svg
-            className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5"
+            className={styles.closeIcon}
             fill="none"
             stroke="currentColor"
             strokeLinecap="round"
@@ -575,15 +524,15 @@ export function DifficultyModal({
       </div>
 
       {loadError ? (<div
-        className="grid place-items-center py-12 text-amber-200/80">{loadError}</div>) : loading || (rows.length > 0 && !heroImagesReady) ? (
-        <div className="grid place-items-center py-12 text-amber-200/60">Loading…</div>) : rows.length === 0 ? (
-        <div className="grid place-items-center py-12 text-amber-200/60">
+        className={styles.statusMessage}>{loadError}</div>) : loading || (rows.length > 0 && !heroImagesReady) ? (
+        <div className={`${styles.statusMessage} ${styles.statusMessageMuted}`}>Loading…</div>) : rows.length === 0 ? (
+        <div className={`${styles.statusMessage} ${styles.statusMessageMuted}`}>
           No difficulties configured yet.
         </div>) : (// 5-up grid at EVERY breakpoint per user spec ("all 5
         // difficulties should fit 1 line"). Card internals are
         // responsive (tiny on phones, full-size on desktop) so
         // they don't force horizontal overflow.
-        <div className="grid grid-cols-5 gap-1 pt-1 sm:gap-2 sm:pt-2 lg:gap-5">
+        <div className={styles.grid}>
           {rows.map((row) => (<DifficultyCard
             key={row.id}
             affordable={walletCoins >= row.entry_fee_coins}
@@ -605,22 +554,19 @@ export function DifficultyModal({
       {/* Footer legend — two short tips. The "entry fee deducted
             on join" tip was dropped per user request; the entry-fee
             row on each card is already self-explanatory.
-            Hidden on phones AND tablets (`hidden lg:grid`) so the
-            5-card grid + header fit the viewport without scrolling.
-            The stat icons + labels on each card are already self-
-            explanatory; the legend is purely a nice-to-have on
-            desktop. */}
+            Hidden below 1024px (`display: none` by default) and
+            shown as a two-column grid only at `min-width: 1024px`,
+            so the 5-card grid + header fit the viewport without
+            scrolling on phones and tablets. The stat icons + labels
+            on each card are already self-explanatory; the legend is
+            purely a nice-to-have on desktop. */}
       <div
-        className="mt-3 hidden gap-3 rounded-xl border p-3 text-xs font-bold text-white/75 lg:mt-4 lg:grid lg:grid-cols-2 lg:p-4 lg:text-sm"
-        style={{
-          background: "linear-gradient(180deg, #14100a 0%, #080604 100%)",
-          borderColor: "#5a3a14",
-        }}>
-        <div className="flex items-start gap-3">
+        className={styles.legend}>
+        <div className={styles.legendItem}>
           <XpHexIcon/>
           <span>Higher difficulty grants more XP per match.</span>
         </div>
-        <div className="flex items-start gap-3">
+        <div className={styles.legendItem}>
           <ClockIcon/>
           <span>Time to move is the total time you have for each turn.</span>
         </div>
@@ -629,35 +575,35 @@ export function DifficultyModal({
       {/* Matchmaking overlay — unchanged. Mounts over the card grid
             while the parent polls find_match_in_tier. */}
       {matchmaking?.searchingForTier ? (
-        <div className="absolute inset-0 z-10 grid place-items-center rounded-2xl bg-black/85 backdrop-blur-sm">
+        <div className={styles.mmOverlay}>
           {/* Compact self-contained dialog — the matchmaking state has little
                 content, so it reads as a small popup rather than filling the
                 whole room frame. */}
           <div
-            className="flex w-[min(86vw,20rem)] flex-col items-center gap-4 rounded-2xl border border-emerald-400/25 bg-gradient-to-b from-[#0c1c1a] to-[#050d10] px-7 py-8 text-center shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
-            <div className="relative grid h-16 w-16 place-items-center">
-              <span className="absolute inset-0 animate-ping rounded-full border-2 border-emerald-300/40"/>
-              <span className="absolute inset-2 animate-pulse rounded-full border-2 border-emerald-400/60"/>
-              <span className="relative font-display text-lg font-black text-emerald-200">vs</span>
+            className={styles.mmDialog}>
+            <div className={styles.mmIconWrap}>
+              <span className={styles.mmPing}/>
+              <span className={styles.mmPulse}/>
+              <span className={styles.mmVs}>vs</span>
             </div>
             <div>
-              <div className="font-display text-2xl font-black uppercase tracking-[0.18em] text-emerald-200">
+              <div className={styles.mmTitle}>
                 Finding opponent
               </div>
-              <div className="mt-1 text-sm font-bold text-emerald-100/70">
+              <div className={styles.mmSubtitle}>
                 {matchmaking.tierDisplayName} room ·{" "}
                 {Math.ceil(Math.max(0, matchmaking.maxSeconds - matchmaking.elapsedSeconds))}s
               </div>
             </div>
-            <div className="h-1 w-48 overflow-hidden rounded-full bg-emerald-900/50">
+            <div className={styles.mmTrack}>
               <div
-                className="h-full bg-emerald-400 transition-[width] duration-200"
+                className={styles.mmFill}
                 style={{
                   width: `${Math.min(100, (matchmaking.elapsedSeconds / matchmaking.maxSeconds) * 100)}%`,
                 }}/>
             </div>
             {onCancelMatchmaking ? (<button
-              className="mt-2 rounded-md border border-white/15 bg-white/[0.06] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/70 transition hover:bg-white/[0.12]"
+              className={styles.mmCancel}
               type="button"
               onClick={onCancelMatchmaking}>
               Cancel

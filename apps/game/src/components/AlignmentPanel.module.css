@@ -1,0 +1,265 @@
+/* AlignmentPanel — the draggable board-alignment debug panel. The panel is
+   corner-anchored via .panelLeft / .panelRight variant classes; once the
+   user drags it, inline left/top override those anchors (see the component's
+   dragStyle). */
+
+.panel {
+  position: fixed;
+  top: 0.75rem;
+  z-index: 50;
+  max-height: calc(100dvh - 1.5rem);
+  width: min(92vw, 430px);
+  overflow: auto;
+  border: 1px solid rgba(103, 232, 249, 0.3);
+  border-radius: 0.5rem;
+  background-color: rgba(7, 17, 31, 0.95);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #f1f5f9;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.panelLeft {
+  left: 0.75rem;
+}
+
+.panelRight {
+  right: 0.75rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.header:active {
+  cursor: grabbing;
+}
+
+.headerTitle {
+  font-weight: 600;
+  color: #cffafe;
+}
+
+.headerButton {
+  border: 1px solid rgba(103, 232, 249, 0.3);
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #cffafe;
+}
+
+.subtitle {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(165, 243, 252, 0.7);
+}
+
+.section {
+  margin-bottom: 0.75rem;
+}
+
+.sectionLabel {
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #94a3b8;
+}
+
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.grid12 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.grid2Cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.grid4Cols {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.mt3 {
+  margin-top: 0.75rem;
+}
+
+/* Shared idle look for the unselected segment buttons. */
+.segmentIdle {
+  border: 1px solid #475569;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.targetButton {
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.targetButtonSelected {
+  border: 1px solid #6ee7b7;
+  background-color: #6ee7b7;
+  color: #020617;
+}
+
+.rowButton {
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.rowButtonSelected {
+  border: 1px solid #67e8f9;
+  background-color: #67e8f9;
+  color: #020617;
+}
+
+.anchorButton {
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.anchorButtonSelected {
+  border: 1px solid #f0abfc;
+  background-color: #f0abfc;
+  color: #020617;
+}
+
+.pointButton {
+  height: 1.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.pointButtonSelected {
+  border: 1px solid #fcd34d;
+  background-color: #fcd34d;
+  color: #020617;
+}
+
+.nudgeButton {
+  border-radius: 0.25rem;
+  background-color: #1e293b;
+  padding: 0.5rem;
+}
+
+.valueRow {
+  display: grid;
+  grid-template-columns: 1fr 8rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  border: 1px solid #334155;
+  border-radius: 0.25rem;
+  background-color: #020617;
+  padding: 0.25rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #cbd5e1;
+}
+
+.valueInput {
+  border: 1px solid #334155;
+  border-radius: 0.25rem;
+  background-color: #0f172a;
+  padding: 0.25rem 0.5rem;
+  text-align: right;
+  color: #f1f5f9;
+}
+
+.numberInput {
+  width: 100%;
+  margin-top: 0.25rem;
+  border: 1px solid #334155;
+  border-radius: 0.25rem;
+  background-color: #020617;
+  padding: 0.25rem 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #f1f5f9;
+}
+
+.footer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.copyButton {
+  flex: 1 1 0%;
+  border-radius: 0.25rem;
+  background-color: #67e8f9;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #020617;
+}
+
+.resetButton {
+  border: 1px solid #475569;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.copyState {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #a5f3fc;
+}
+
+.exportTextarea {
+  width: 100%;
+  height: 6rem;
+  margin-top: 0.5rem;
+  resize: none;
+  border: 1px solid #334155;
+  border-radius: 0.25rem;
+  background-color: #020617;
+  padding: 0.5rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.offGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}

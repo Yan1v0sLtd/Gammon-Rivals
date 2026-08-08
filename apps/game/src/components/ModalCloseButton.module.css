@@ -1,0 +1,34 @@
+/* Shared modal close (✕) button — a gold-rimmed dark disc, fixed at 1.875rem
+ * (30px). Positioning is intentionally NOT set here: callers supply it via
+ * their own CSS Module `className` (e.g. `styles.closeButton` in the modal's
+ * module), so every modal's close button is pixel-identical and callers
+ * control only where it sits. */
+
+.closeButton {
+  display: grid;
+  height: 1.875rem;
+  width: 1.875rem;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid #c89a47;
+  background: linear-gradient(to bottom, #2b2421, #161210, #0c0908);
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffd16f;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 212, 135, 0.22);
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.closeButton:hover {
+  filter: brightness(1.1);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+.closeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

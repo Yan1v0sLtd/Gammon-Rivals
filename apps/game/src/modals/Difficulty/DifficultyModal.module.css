@@ -1,0 +1,653 @@
+/* Difficulty-select modal + per-tier cards. The tier accent (title colour,
+ * SELECT gradient, hero fallback, halo) is injected per-card via inline
+ * style from the TS palette map; this module owns the shared layout,
+ * typography and CTA-state treatment. */
+
+/* -------------------------------------------------------------------------- */
+/* Stat icons (XP / coin / clock) — responsive sizing so five cards fit a row */
+/* -------------------------------------------------------------------------- */
+
+.statIcon {
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+@media (min-width: 640px) {
+  .statIcon {
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statIcon {
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Card                                                                       */
+/* -------------------------------------------------------------------------- */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1rem;
+  background-color: #1a120a;
+  /* Container query anchor — every `cqi` unit inside this card now
+     resolves to 1% of THIS card's actual width (not viewport-width),
+     so text/icons scale with the card itself. */
+  border: 1px solid rgba(211, 160, 78, 0.35);
+  container-type: inline-size;
+}
+
+.tierNameWrap {
+  padding: 0.25rem 0.25rem 0.125rem;
+  text-align: center;
+}
+
+@media (min-width: 1024px) {
+  .tierNameWrap {
+    padding: 0.5rem 0.75rem 0.125rem;
+  }
+}
+
+.tierName {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  white-space: nowrap;
+  font-weight: 900;
+  text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+  /* 6.2cqi ≈ 6.2% of card width — clamped so it never exceeds 1.1rem
+     or drops below 0.5rem. Tracking scales with font-size. */
+  font-size: clamp(0.5rem, 6.2cqi, 1.1rem);
+  letter-spacing: 0.08em;
+}
+
+.heroPanel {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.statsPanel {
+  margin: 0.25rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(180 83 9 / 0.4);
+  background-color: #f4e7c5;
+  padding: 0.125rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+@media (min-width: 640px) {
+  .statsPanel {
+    margin: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.375rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statsPanel {
+    margin: 0.625rem;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+  }
+}
+
+.statsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+@media (min-width: 640px) {
+  .statsStack {
+    gap: 0.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statsStack {
+    gap: 0.375rem;
+  }
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgb(180 83 9 / 0.15);
+  background-color: #fdf6e3;
+  padding: 0.125rem 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .statRow {
+    gap: 0.375rem;
+    border-radius: 0.375rem;
+    padding: 0.25rem 0.375rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .statRow {
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+.statTextWrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.statLabel {
+  white-space: nowrap;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: rgb(120 53 15 / 0.7);
+  font-size: clamp(0.4rem, 3cqi, 0.65rem);
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  composes: tabularNums from "../../styles/shared.module.css";
+  white-space: nowrap;
+  font-weight: 900;
+  line-height: 1;
+  font-size: clamp(0.65rem, 6cqi, 1.1rem);
+}
+
+.ctaWrap {
+  padding: 0 0.25rem 0.25rem;
+}
+
+/* PlayButton wrap — taller font-size so the premium Play button's
+ * height matches the grey "Unlocks at Lv N" / orange "Get Coins"
+ * buttons rather than reading as a thin strip. Container-query unit
+ * scales it with the card width.
+ *
+ * The wrap also carries PlayButton's preset size class (e.g.
+ * .playButtonLarge), which sets font-size at the same specificity, so
+ * the winner would otherwise depend on CSS-module import order. The
+ * doubled class bumps this selector to (0,2,0) so the override always
+ * wins regardless of import order. */
+.playCtaFontSize.playCtaFontSize {
+  font-size: clamp(13px, 7cqi, 18px);
+}
+
+@media (min-width: 640px) {
+  .ctaWrap {
+    padding: 0 0.5rem 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ctaWrap {
+    padding: 0 0.625rem 0.625rem;
+  }
+}
+
+/* Non-Play CTA (Get Coins / Unlocks at Lv N) — shared shape; palette is
+ * swapped per state via the cta* variant classes below. */
+.ctaButton {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  composes: textWhite from "../../styles/shared.module.css";
+  display: block;
+  width: 100%;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: filter 150ms ease, transform 150ms ease;
+  font-size: clamp(0.5rem, 4.8cqi, 1rem);
+  letter-spacing: 0.05em;
+}
+
+@media (min-width: 640px) {
+  .ctaButton {
+    border-radius: 0.375rem;
+    padding: 0.375rem 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ctaButton {
+    padding: 0.5rem 0;
+  }
+}
+
+.ctaButton:active {
+  transform: translateY(1px);
+}
+
+.ctaButton:disabled:active {
+  transform: translateY(0);
+}
+
+/* CTA state variants — status-driven (playable / shop nudge / locked),
+ * independent of the tier accent. */
+.ctaLocked {
+  border: 1px solid rgb(51 65 85 / 0.7);
+  background-image: linear-gradient(to bottom, #64748b, #334155);
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+.ctaPlay {
+  border: 1px solid rgb(6 78 59 / 0.6);
+  background-image: linear-gradient(to bottom, #34d399, #047857);
+}
+
+.ctaPlay:hover {
+  filter: brightness(1.1);
+}
+
+.ctaPlay:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.ctaGetCoins {
+  border: 1px solid rgb(120 53 15 / 0.6);
+  background-image: linear-gradient(to bottom, #fbbf24, #ea580c);
+}
+
+.ctaGetCoins:hover {
+  filter: brightness(1.1);
+}
+
+.ctaGetCoins:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Modal                                                                      */
+/* -------------------------------------------------------------------------- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background-color: rgb(0 0 0 / 0.8);
+  backdrop-filter: blur(4px);
+  padding: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .backdrop {
+    padding: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .backdrop {
+    padding: 1rem;
+  }
+}
+
+.panel {
+  position: relative;
+  width: min(99vw, 80rem);
+  max-height: 98vh;
+  overflow-y: auto;
+  border-radius: 0.75rem;
+  background: radial-gradient(circle at 50% 0%, rgba(70, 42, 12, 0.45) 0%, rgba(8, 5, 3, 0.92) 60%), linear-gradient(180deg, #100a06 0%, #050302 100%);
+  border: 2px solid #d3a04e;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55), 0 30px 60px rgba(0, 0, 0, 0.7);
+  padding: clamp(0.4rem, 1.4vw, 1.75rem);
+}
+
+@media (min-width: 640px) {
+  .panel {
+    max-height: 96vh;
+    border-radius: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    width: min(96vw, 80rem);
+    max-height: 94vh;
+  }
+}
+
+.header {
+  position: relative;
+  margin-bottom: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .header {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header {
+    margin-bottom: 1rem;
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+@media (min-width: 640px) {
+  .titleRow {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .titleRow {
+    gap: 1rem;
+  }
+}
+
+.titleStar {
+  font-size: 0.875rem;
+  color: rgb(252 211 77 / 0.7);
+}
+
+@media (min-width: 640px) {
+  .titleStar {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .titleStar {
+    font-size: 1.5rem;
+  }
+}
+
+.title {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  background-image: linear-gradient(to bottom, #fde68a, #fcd34d, #a16207);
+  background-clip: text;
+  font-size: 1rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: transparent;
+}
+
+@media (min-width: 640px) {
+  .title {
+    font-size: 1.25rem;
+    letter-spacing: 0.18em;
+  }
+}
+
+@media (min-width: 768px) {
+  .title {
+    font-size: 1.875rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .title {
+    font-size: 2rem;
+  }
+}
+
+.closeButton {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: grid;
+  height: 1.5rem;
+  width: 1.5rem;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid #c89a47;
+  background-color: rgb(12 9 8 / 0.8);
+  color: #ffd16f;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  transition: filter 150ms ease, transform 150ms ease;
+}
+
+.closeButton:hover {
+  filter: brightness(1.1);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+@media (min-width: 640px) {
+  .closeButton {
+    height: 2rem;
+    width: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .closeButton {
+    height: 2.5rem;
+    width: 2.5rem;
+  }
+}
+
+.closeIcon {
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .closeIcon {
+    height: 1rem;
+    width: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .closeIcon {
+    height: 1.25rem;
+    width: 1.25rem;
+  }
+}
+
+.statusMessage {
+  display: grid;
+  place-items: center;
+  padding: 3rem 0;
+  color: rgb(253 230 138 / 0.8);
+}
+
+.statusMessageMuted {
+  color: rgb(253 230 138 / 0.6);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding-top: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    gap: 1.25rem;
+  }
+}
+
+.legend {
+  margin-top: 0.75rem;
+  display: none;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #5a3a14;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.75);
+  background: linear-gradient(180deg, #14100a 0%, #080604 100%);
+}
+
+@media (min-width: 1024px) {
+  .legend {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    font-size: 0.875rem;
+  }
+}
+
+.legendItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Matchmaking overlay                                                        */
+/* -------------------------------------------------------------------------- */
+
+.mmOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  background-color: rgb(0 0 0 / 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.mmDialog {
+  display: flex;
+  width: min(86vw, 20rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 1rem;
+  border: 1px solid rgb(52 211 153 / 0.25);
+  background-image: linear-gradient(to bottom, #0c1c1a, #050d10);
+  padding: 2rem 1.75rem;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.mmIconWrap {
+  position: relative;
+  display: grid;
+  height: 4rem;
+  width: 4rem;
+  place-items: center;
+}
+
+.mmPing {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid rgb(110 231 183 / 0.4);
+  animation: mmPing 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.mmPulse {
+  position: absolute;
+  inset: 0.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgb(52 211 153 / 0.6);
+  animation: mmPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.mmVs {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  position: relative;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #a7f3d0;
+}
+
+.mmTitle {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #a7f3d0;
+}
+
+.mmSubtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: rgb(209 250 229 / 0.7);
+}
+
+.mmTrack {
+  height: 0.25rem;
+  width: 12rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background-color: rgb(6 78 59 / 0.5);
+}
+
+.mmFill {
+  height: 100%;
+  background-color: #34d399;
+  transition: width 200ms ease;
+}
+
+.mmCancel {
+  composes: fontDisplay from "../../styles/shared.module.css";
+  margin-top: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  background-color: rgb(255 255 255 / 0.06);
+  padding: 0.375rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgb(255 255 255 / 0.7);
+  transition: background-color 150ms ease;
+}
+
+.mmCancel:hover {
+  background-color: rgb(255 255 255 / 0.12);
+}
+
+@keyframes mmPing {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes mmPulse {
+  50% {
+    opacity: 0.5;
+  }
+}

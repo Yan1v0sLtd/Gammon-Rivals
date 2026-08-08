@@ -3,6 +3,8 @@ import {useEffect, useMemo, useRef, useState} from "react"
 import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/BoardRenderer"
 import type {ThemeLayout} from "../../../../packages/board-renderer/src/theme/types"
 
+import styles from "./AlignmentPanel.module.css"
+
 type RatioKey = | "topPointCenterXRatios" | "bottomPointCenterXRatios" | "topPointTipXRatios" | "bottomPointTipXRatios"
 type OffsetKey = "topCheckerOffsetXRatios" | "bottomCheckerOffsetXRatios"
 type EdgeKey = "topPointYRatio" | "bottomPointYRatio"
@@ -184,8 +186,8 @@ export function AlignmentPanel({
   // When the user snaps back to a corner (dragPos -> null), the inline
   // left/top/right/bottom we wrote imperatively during drag would
   // otherwise persist and keep the panel stuck where it was. Clear
-  // them whenever dragPos becomes null so the Tailwind corner anchors
-  // (top-3 + left-3/right-3) take over again.
+  // them whenever dragPos becomes null so the CSS Module corner anchors
+  // (panelLeft/panelRight) take over again.
   useEffect(() => {
     if (dragPos !== null) return
     const el = panelRef.current
@@ -419,9 +421,9 @@ export function AlignmentPanel({
     }
   }
 
-  const panelPosition = panelSide === "left" ? "left-3" : "right-3"
+  const panelPosition = panelSide === "left" ? styles.panelLeft : styles.panelRight
   // While the user has manually dragged the panel, anchor it to (x, y)
-  // via inline styles. Otherwise let the Tailwind corner classes pin it.
+  // via inline styles. Otherwise let the CSS Module corner anchors pin it.
   const dragStyle: React.CSSProperties | undefined = dragPos ? {
     left: dragPos.x,
     top: dragPos.y,
@@ -431,16 +433,15 @@ export function AlignmentPanel({
 
   return (<div
     ref={panelRef}
-    className={`fixed top-3 ${panelPosition} z-50 max-h-[calc(100dvh-1.5rem)] w-[min(92vw,430px)] overflow-auto rounded-lg border border-cyan-300/30 bg-[#07111f]/95 p-3 text-sm text-slate-100 shadow-[0_18px_48px_rgba(0,0,0,0.55)] backdrop-blur`}
+    className={`${styles.panel} ${panelPosition}`}
     style={dragStyle}>
     <div
-      className="mb-2 flex cursor-grab items-center justify-between gap-3 active:cursor-grabbing select-none"
-      style={{touchAction: "none"}}
+      className={styles.header}
       title="Drag to move"
       onPointerDown={startDrag}>
-      <div className="font-semibold text-cyan-100">⋮⋮ Alignment mode</div>
+      <div className={styles.headerTitle}>⋮⋮ Alignment mode</div>
       <button
-        className="rounded border border-cyan-300/30 px-2 py-1 text-xs text-cyan-100"
+        className={styles.headerButton}
         type="button"
         onClick={(e) => {
           e.stopPropagation()
@@ -451,17 +452,17 @@ export function AlignmentPanel({
         {dragPos ? "Snap corner" : "Move panel"}
       </button>
     </div>
-    <div className="mb-2 text-xs text-cyan-200/70">
+    <div className={styles.subtitle}>
       {(debug.target ?? "point") === "point" ? `${debug.side} ${debug.column + 1} · ${debug.anchor === "topChecker" ? "top checker" : debug.anchor}` : `${debug.target === "offWhite" ? "white" : "black"} off-tray`}
     </div>
 
-    <div className="mb-3">
-      <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Target</div>
-      <div className="grid grid-cols-3 gap-1">
+    <div className={styles.section}>
+      <div className={styles.sectionLabel}>Target</div>
+      <div className={styles.grid3}>
         {([["point", "Point"], ["offWhite", "Off (white)"], ["offBlack", "Off (black)"]] as const).map(([value, label]) => (
           <button
             key={value}
-            className={`rounded border px-2 py-1 text-xs ${(debug.target ?? "point") === value ? "border-emerald-300 bg-emerald-300 text-slate-950" : "border-slate-600 bg-slate-900 text-slate-200"}`}
+            className={`${styles.targetButton} ${(debug.target ?? "point") === value ? styles.targetButtonSelected : styles.segmentIdle}`}
             type="button"
             onClick={() => {
               updateDebug({target: value})
@@ -478,13 +479,13 @@ export function AlignmentPanel({
         setCopyState("")
         onLayoutChange(next)
       }}/>) : (<>
-      <div className="grid grid-cols-2 gap-2">
+      <div className={styles.grid2Cols}>
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Row</div>
-          <div className="grid grid-cols-2 gap-1">
+          <div className={styles.sectionLabel}>Row</div>
+          <div className={styles.grid2}>
             {(["bottom", "top"] as const).map((side) => (<button
               key={side}
-              className={`rounded border px-2 py-1 ${debug.side === side ? "border-cyan-300 bg-cyan-300 text-slate-950" : "border-slate-600 bg-slate-900 text-slate-200"}`}
+              className={`${styles.rowButton} ${debug.side === side ? styles.rowButtonSelected : styles.segmentIdle}`}
               type="button"
               onClick={() => {
                 updateDebug({side})
@@ -495,11 +496,11 @@ export function AlignmentPanel({
         </div>
 
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Anchor</div>
-          <div className="grid grid-cols-3 gap-1">
+          <div className={styles.sectionLabel}>Anchor</div>
+          <div className={styles.grid3}>
             {(["base", "tip", "topChecker"] as const).map((anchor) => (<button
               key={anchor}
-              className={`rounded border px-2 py-1 ${debug.anchor === anchor ? "border-fuchsia-300 bg-fuchsia-300 text-slate-950" : "border-slate-600 bg-slate-900 text-slate-200"}`}
+              className={`${styles.anchorButton} ${debug.anchor === anchor ? styles.anchorButtonSelected : styles.segmentIdle}`}
               type="button"
               onClick={() => {
                 updateDebug({anchor})
@@ -510,12 +511,12 @@ export function AlignmentPanel({
         </div>
       </div>
 
-      <div className="mt-3">
-        <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Point</div>
-        <div className="grid grid-cols-12 gap-1">
+      <div className={styles.mt3}>
+        <div className={styles.sectionLabel}>Point</div>
+        <div className={styles.grid12}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((point) => (<button
             key={point}
-            className={`h-7 rounded border text-xs ${debug.column === point - 1 ? "border-amber-300 bg-amber-300 text-slate-950" : "border-slate-600 bg-slate-900 text-slate-200"}`}
+            className={`${styles.pointButton} ${debug.column === point - 1 ? styles.pointButtonSelected : styles.segmentIdle}`}
             type="button"
             onClick={() => {
               updateDebug({column: point - 1})
@@ -525,9 +526,9 @@ export function AlignmentPanel({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-4 gap-2">
+      <div className={`${styles.grid4Cols} ${styles.mt3}`}>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(-0.008)
@@ -535,7 +536,7 @@ export function AlignmentPanel({
           ← 12px
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(-0.002)
@@ -543,7 +544,7 @@ export function AlignmentPanel({
           ← 3px
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(0.002)
@@ -551,7 +552,7 @@ export function AlignmentPanel({
           3px →
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(0.008)
@@ -561,10 +562,10 @@ export function AlignmentPanel({
       </div>
 
       <div
-        className="mt-2 grid grid-cols-[1fr_8rem] items-center gap-2 rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-xs text-slate-300">
+        className={styles.valueRow}>
         <span>{debug.anchor === "topChecker" ? `${checkerOffsetKey}[${debug.column}]` : `${key}[${debug.column}]`}</span>
         <input
-          className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-right text-slate-100"
+          className={styles.valueInput}
           max={debug.anchor === "topChecker" ? 0.25 : 1}
           min={debug.anchor === "topChecker" ? -0.25 : 0}
           step={0.001}
@@ -575,12 +576,12 @@ export function AlignmentPanel({
           }}/>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={`${styles.grid2Cols} ${styles.mt3}`}>
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Row edge</div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className={styles.sectionLabel}>Row edge</div>
+          <div className={styles.grid4}>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeEdge(-0.02)
@@ -588,7 +589,7 @@ export function AlignmentPanel({
               ↑ big
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeEdge(-0.005)
@@ -596,7 +597,7 @@ export function AlignmentPanel({
               ↑
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeEdge(0.005)
@@ -604,7 +605,7 @@ export function AlignmentPanel({
               ↓
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeEdge(0.02)
@@ -614,7 +615,7 @@ export function AlignmentPanel({
           </div>
           <input
             aria-label={sideEdgeKey}
-            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            className={styles.numberInput}
             max={EDGE_MAX}
             min={EDGE_MIN}
             step={0.001}
@@ -626,12 +627,12 @@ export function AlignmentPanel({
         </div>
 
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+          <div className={styles.sectionLabel}>
             Point depth ({debug.side})
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className={styles.grid4}>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePointHeight(-0.03)
@@ -639,7 +640,7 @@ export function AlignmentPanel({
               -big
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePointHeight(-0.006)
@@ -647,7 +648,7 @@ export function AlignmentPanel({
               -
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePointHeight(0.006)
@@ -655,7 +656,7 @@ export function AlignmentPanel({
               +
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePointHeight(0.03)
@@ -665,7 +666,7 @@ export function AlignmentPanel({
           </div>
           <input
             aria-label={pointHeightKey}
-            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            className={styles.numberInput}
             max={POINT_HEIGHT_MAX}
             min={POINT_HEIGHT_MIN}
             step={0.001}
@@ -677,12 +678,12 @@ export function AlignmentPanel({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className={`${styles.grid2Cols} ${styles.mt3}`}>
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">Board padding</div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className={styles.sectionLabel}>Board padding</div>
+          <div className={styles.grid4}>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePadding(-0.3)
@@ -690,7 +691,7 @@ export function AlignmentPanel({
               -big
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePadding(-0.08)
@@ -698,7 +699,7 @@ export function AlignmentPanel({
               -
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePadding(0.08)
@@ -706,7 +707,7 @@ export function AlignmentPanel({
               +
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgePadding(0.3)
@@ -716,7 +717,7 @@ export function AlignmentPanel({
           </div>
           <input
             aria-label={sidePaddingKey}
-            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            className={styles.numberInput}
             max={PADDING_MAX}
             min={PADDING_MIN}
             step={0.01}
@@ -728,12 +729,12 @@ export function AlignmentPanel({
         </div>
 
         <div>
-          <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">
+          <div className={styles.sectionLabel}>
             Checker spacing ({debug.side})
           </div>
-          <div className="grid grid-cols-4 gap-1">
+          <div className={styles.grid4}>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeSpacing(-0.16)
@@ -741,7 +742,7 @@ export function AlignmentPanel({
               -big
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeSpacing(-0.04)
@@ -749,7 +750,7 @@ export function AlignmentPanel({
               -
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeSpacing(0.04)
@@ -757,7 +758,7 @@ export function AlignmentPanel({
               +
             </button>
             <button
-              className="rounded bg-slate-800 px-2 py-2"
+              className={styles.nudgeButton}
               type="button"
               onClick={() => {
                 nudgeSpacing(0.16)
@@ -767,7 +768,7 @@ export function AlignmentPanel({
           </div>
           <input
             aria-label={spacingKey}
-            className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+            className={styles.numberInput}
             max={SPACING_MAX}
             min={SPACING_MIN}
             step={0.01}
@@ -781,25 +782,25 @@ export function AlignmentPanel({
 
     </>)}
 
-    <div className="mt-3 flex gap-2">
+    <div className={styles.footer}>
       <button
-        className="flex-1 rounded bg-cyan-300 px-3 py-2 font-semibold text-slate-950"
+        className={styles.copyButton}
         type="button"
         onClick={copy}>
         Copy numbers
       </button>
       <button
-        className="rounded border border-slate-600 px-3 py-2"
+        className={styles.resetButton}
         type="button"
         onClick={onReset}>
         Reset
       </button>
     </div>
-    {copyState && <div className="mt-2 text-xs text-cyan-200">{copyState}</div>}
+    {copyState && <div className={styles.copyState}>{copyState}</div>}
 
     <textarea
       readOnly
-      className="mt-2 h-24 w-full resize-none rounded border border-slate-700 bg-slate-950 p-2 font-mono text-[11px] text-slate-300"
+      className={styles.exportTextarea}
       value={exportText}/>
   </div>)
 }
@@ -868,10 +869,10 @@ function OffTrayControls({
 
   const row = (label: string, value: number, onNudge: (d: number) => void, onSet: (v: number) => void, bigStep: number, smallStep: number, min: number, max: number, decimals = 4) => (
     <div>
-      <div className="mb-1 text-xs uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="grid grid-cols-4 gap-1">
+      <div className={styles.sectionLabel}>{label}</div>
+      <div className={styles.grid4}>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             onNudge(-bigStep)
@@ -879,7 +880,7 @@ function OffTrayControls({
           -big
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             onNudge(-smallStep)
@@ -887,7 +888,7 @@ function OffTrayControls({
           -
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             onNudge(smallStep)
@@ -895,7 +896,7 @@ function OffTrayControls({
           +
         </button>
         <button
-          className="rounded bg-slate-800 px-2 py-2"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             onNudge(bigStep)
@@ -905,7 +906,7 @@ function OffTrayControls({
       </div>
       <input
         aria-label={label}
-        className="mt-1 w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 font-mono text-[11px] text-slate-100"
+        className={styles.numberInput}
         max={max}
         min={min}
         step={smallStep}
@@ -917,7 +918,7 @@ function OffTrayControls({
         }}/>
     </div>)
 
-  return (<div className="grid grid-cols-2 gap-2">
+  return (<div className={styles.offGrid}>
     {row("Tray X", x, nudgeX, setX, 0.02, 0.004, OFF_X_MIN, OFF_X_MAX)}
     {row("Tray top", top, nudgeTop, setTop, 0.02, 0.004, OFF_TOP_MIN, OFF_TOP_MAX)}
     {row("Tray height", height, nudgeHeight, setHeight, 0.02, 0.004, OFF_HEIGHT_MIN, OFF_HEIGHT_MAX)}

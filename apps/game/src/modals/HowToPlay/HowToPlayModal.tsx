@@ -2,6 +2,8 @@ import {ModalCloseButton} from "../../components/ModalCloseButton"
 import {ScaleInModal} from "../../components/ScaleInModal"
 import {useImagePreloader} from "../../lib/useImagePreloader"
 
+import styles from "./HowToPlayModal.module.css"
+
 type HowToPlayModalProps = {
   readonly onClose: () => void,
 }
@@ -32,12 +34,12 @@ export function HowToPlayModal({onClose}: HowToPlayModalProps) {
   const {ready} = useImagePreloader(HOW_TO_PLAY_ASSETS)
 
   return (<ScaleInModal
-    className="relative w-[75%] max-w-[1100px]"
+    className={styles.modalRoot}
     onClose={onClose}>
     {ready ? (<>
       <img
         alt="How to play backgammon"
-        className="block w-full select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.55)]"
+        className={styles.tutorialImg}
         draggable={false}
         src={HOW_TO_PLAY_IMG}/>
 
@@ -48,12 +50,12 @@ export function HowToPlayModal({onClose}: HowToPlayModalProps) {
            *  close buttons are identical in size + style. */}
       <ModalCloseButton
         ariaLabel="Close how to play"
-        className="absolute right-[2.6%] top-[4%] z-[1]"
+        className={styles.closeButton}
         onClose={onClose}/>
     </>) : (// Brief placeholder so the panel has size while the image decodes
       // (only visible if opened before the idle prefetch warmed the cache).
-      <div className="grid h-48 w-full place-items-center">
-        <span className="h-9 w-9 animate-spin rounded-full border-2 border-white/25 border-t-white/90"/>
+      <div className={styles.loadingGrid}>
+        <span className={styles.spinner}/>
       </div>)}
   </ScaleInModal>)
 }

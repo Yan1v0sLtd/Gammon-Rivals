@@ -214,18 +214,21 @@ layer wrappers.
 
 ## Current resumable state
 
-- **Completed:** S1 through S9, including the pilot, name-pill/modal contract,
-  selective global cleanup, wheel/daily-bonus, modern DiceTray, and profile
-  CSS Module slices.
-- **Pending:** full lobby and gameplay migration; remaining Tailwind conversion
-  across game/admin/packages; Tailwind config and dependency removal; lockfile
-  update; final `build:all` verification; and the intentionally retained legacy
-  `.game-*` dice CSS.
+- **Completed:** S1 through S15, C0 through C8, and the S16/C9 game utility
+  batch. This includes the pilot, name-pill/modal contract, selective global
+  cleanup, wheel/daily-bonus, modern DiceTray, profile, lobby, gameplay, and
+  the remaining 16 game-app utility targets. `apps/game/src/index.css` is now
+  18 lines: Tailwind entry directives plus the document base styles.
+- **Pending:** remaining Tailwind conversion across admin/packages; Tailwind
+  config and dependency removal; lockfile update; final `build:all`
+  verification.
 - **Manual checks pending:** browser visual, responsive, animation, pointer,
   modal-pause, and interaction checks for the completed slices and each future
   slice.
-- **Exact next recommended slice:** lobby only, after confirming ownership and
-  consumers; do not include the legacy `.game-*` dice block in that slice.
+- **Exact next recommended slice:** begin admin and shared-package conversion
+  (plan step 7). The S16/C9 review cleanup is complete; runtime drag, measured
+  spotlight, per-tier palette, hero, progress, and entrance-animation values
+  remain inline by design.
 - **Final migration checks still required:** inspect all four Tailwind-scanned
   source roots for remaining utilities/directives before removing configs and
   dependencies, then run `npm run build:all`.
@@ -1019,3 +1022,27 @@ HEAD, unrelated to the migration):
 - p1 (fresh build not independently verifiable in read-only review) resolved: re-ran `tsc -b` (exit 0) and
   `npm run build` (`✓ built in 2.42s`) on the final tree, plus fresh built-CSS asserts across the HotSeat / main /
   entry chunks confirming module locals, composed classes, hover/active selectors, and DoublingCube absence.
+
+### S16/C9 — Game utility conversion batch
+
+- Converted the final 15 game-app utility targets plus the shared
+  `ModalCloseButton` to co-located CSS Modules: AlignmentPanel, AuthGate,
+  Avatar, RouteErrorBoundary, BoardLockTooltip, LobbyModalHost, OnboardingTour,
+  XpBoostBadge, BoardPurchaseModal, DifficultyModal, HowToPlayModal,
+  AuthCallback, DeleteAccount, PlayOnline, and Replay.
+- Removed Tailwind utility class strings from those TSX files, preserved
+  dynamic variants and caller-owned positioning, and moved the static
+  BoardPurchase/Difficulty modal styling into their modules. `ModalCloseButton`
+  retains its public positioning `className` contract.
+- Preserved the reviewed Difficulty fidelity values: the desktop title is
+  `2rem` at `min-width: 1024px`, and desktop `tierNameWrap` bottom padding is
+  `0.125rem`. The two stale AlignmentPanel Tailwind comments were also updated.
+- Targeted lint, TypeScript, build, and `git diff --check` checks passed during
+  implementation. Browser/manual visual checks remain pending.
+- **Review follow-ups resolved:** moved AlignmentPanel's static
+  `touch-action: none` and OnboardingTour's static spotlight styling into
+  modules; moved DifficultyModal's PlayButton font size to a deterministic
+  module override via `wrapClassName`; removed stale historical comments; and
+  updated ModalCloseButton documentation to describe CSS Module positioning.
+  Runtime drag, measured spotlight geometry, per-tier palette, hero, progress,
+  and entrance-animation values remain legitimate inline values.

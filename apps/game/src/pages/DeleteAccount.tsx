@@ -7,6 +7,8 @@ import {useDeleteMyAccountMutation} from "../features/auth/authApi"
 import {selectAuthUserId, selectAuthEmail, selectCurrentProfile, selectAuthInitializing} from "../features/auth/authSelectors"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./DeleteAccount.module.css"
+
 // Public, ungated page (see App.tsx routing). It serves two purposes:
 //  1. The in-app account-deletion flow (linked from Profile).
 //  2. The publicly reachable account-deletion URL required by Google Play
@@ -57,59 +59,57 @@ export function DeleteAccount() {
     }
   }
 
-  return (<div className="grid min-h-screen place-items-center bg-[#061225] px-4 py-10 text-white">
-    <div
-      className="w-full max-w-lg rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/40 sm:p-8">
-      <h1 className="text-2xl font-black tracking-tight">Delete your Gammon Rivals account</h1>
+  return (<div className={styles.page}>
+    <div className={styles.card}>
+      <h1 className={styles.title}>Delete your Gammon Rivals account</h1>
 
-      {done ? (<div className="mt-6 space-y-4">
-        <div
-          className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+      {done ? (<div className={styles.doneSection}>
+        <div className={styles.successBox}>
           Your account and all associated data have been permanently deleted.
         </div>
-        <p className="text-sm text-white/55">
+        <p className={styles.doneText}>
           Thanks for playing. You can start fresh any time.
         </p>
         <Link
-          className="inline-block rounded-lg bg-amber-300 px-4 py-2 text-sm font-black text-[#1b1202] transition hover:brightness-105"
+          className={styles.amberButton}
           to="/play">
           Back to Gammon Rivals
         </Link>
       </div>) : (<>
-        <p className="mt-3 text-sm text-white/65">
-          Deleting your account is <strong className="text-white">permanent and cannot be
+        <p className={styles.intro}>
+          Deleting your account is <strong className={styles.strong}>permanent and cannot be
             undone</strong>. It immediately removes:
         </p>
-        <ul className="mt-3 space-y-1.5 text-sm text-white/70">
+        <ul className={styles.list}>
           {DELETED_ITEMS.map((item) => (<li
             key={item}
-            className="flex gap-2">
+            className={styles.listItem}>
             <span
               aria-hidden="true"
-              className="text-rose-300/70">•</span>
+              className={styles.bullet}>•</span>
             <span>{item}</span>
           </li>))}
         </ul>
-        <p className="mt-3 text-xs text-white/40">
+        <p className={styles.note}>
           Deletion does not refund prior purchases. Purchase records held by the Apple App
           Store or Google Play are managed by those stores under their own terms.
         </p>
 
-        {isLoading ? (<div className="mt-6 text-sm text-white/45">Checking your session…</div>) : signedIn ? (
-          <div className="mt-6 space-y-3">
-            <div className="text-sm text-white/55">
+        {isLoading ? (<div className={styles.loading}>Checking your session…</div>) : signedIn ? (
+          <div className={styles.signedInSection}>
+            <div className={styles.signedInText}>
               Signed in as{" "}
-              <strong className="text-white">
+              <strong className={styles.strong}>
                 {profile?.display_name ?? email ?? "your account"}
               </strong>
               .
             </div>
-            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/45">
-              Type <span className="text-rose-300">DELETE</span> to confirm
+            <label className={styles.label}>
+              Type <span className={styles.labelHighlight}>DELETE</span> to confirm
               <input
                 autoCapitalize="characters"
                 autoComplete="off"
-                className="mt-1 w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none focus:border-rose-300/60"
+                className={styles.input}
                 placeholder="DELETE"
                 value={confirmText}
                 onChange={(e) => {
@@ -117,33 +117,33 @@ export function DeleteAccount() {
                 }}/>
             </label>
             {error && (
-              <div className="rounded-lg border border-rose-300/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-100">
+              <div className={styles.errorBox}>
                 {error}
               </div>)}
             <button
-              className="w-full rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className={styles.deleteButton}
               disabled={!canDelete || deleting}
               type="button"
               onClick={() => void handleDelete()}>
               {deleting ? "Deleting…" : "Permanently delete my account"}
             </button>
             <Link
-              className="block text-center text-xs font-semibold text-white/45 transition hover:text-white/70"
+              className={styles.cancelLink}
               to="/profile">
               Cancel
             </Link>
-          </div>) : (<div className="mt-6 space-y-3 text-sm text-white/65">
+          </div>) : (<div className={styles.signedOutSection}>
           <p>To delete your account, choose either option:</p>
-          <ol className="space-y-2">
+          <ol className={styles.steps}>
             <li>
-              <span className="font-bold text-white">In the app:</span> open Gammon Rivals →{" "}
-              <span className="text-white">Profile</span> →{" "}
-              <span className="text-white">Delete account</span>.
+              <span className={styles.stepLabel}>In the app:</span> open Gammon Rivals →{" "}
+              <span className={styles.stepValue}>Profile</span> →{" "}
+              <span className={styles.stepValue}>Delete account</span>.
             </li>
             <li>
-              <span className="font-bold text-white">By email:</span> write to{" "}
+              <span className={styles.stepLabel}>By email:</span> write to{" "}
               <a
-                className="text-amber-200 underline"
+                className={styles.emailLink}
                 href={`mailto:${SUPPORT_EMAIL}`}>
                 {SUPPORT_EMAIL}
               </a>{" "}
@@ -152,16 +152,16 @@ export function DeleteAccount() {
             </li>
           </ol>
           <Link
-            className="mt-2 inline-block rounded-lg bg-amber-300 px-4 py-2 text-sm font-black text-[#1b1202] transition hover:brightness-105"
+            className={styles.amberButton}
             to="/play">
             Open the app
           </Link>
         </div>)}
 
-        <p className="mt-6 border-t border-white/10 pt-4 text-xs text-white/40">
+        <p className={styles.footer}>
           Questions about deletion or your data? Contact{" "}
           <a
-            className="text-amber-200/80 underline"
+            className={styles.footerLink}
             href={`mailto:${SUPPORT_EMAIL}`}>
             {SUPPORT_EMAIL}
           </a>

@@ -2,6 +2,8 @@ import {Component, type ErrorInfo, type ReactNode} from "react"
 
 import {Link} from "react-router-dom"
 
+import styles from "./RouteErrorBoundary.module.css"
+
 type Props = {
   readonly children: ReactNode,
 }
@@ -42,32 +44,30 @@ export class RouteErrorBoundary extends Component<Props, State> {
         error,
         info,
       } = this.state
-      return (<div
-        className="min-h-screen bg-gradient-to-b from-[#1a1410] to-[#0d0907] text-board-felt p-6 flex flex-col gap-4 overflow-auto">
-        <div className="font-display text-2xl text-rose-300">
+      return (<div className={styles.page}>
+        <div className={styles.title}>
           Page crashed — please report this
         </div>
-        <div className="text-sm text-board-felt/70">
+        <div className={styles.subtitle}>
           The page hit a render error. Take a screenshot of what's below and
           send it to the developer so they can fix it.
         </div>
-        <div
-          className="bg-black/40 border border-rose-400/30 rounded p-3 text-xs font-mono text-rose-200 whitespace-pre-wrap break-all">
-          <div className="font-bold mb-1">{error.name}: {error.message}</div>
-          {error.stack && <div className="opacity-80">{error.stack}</div>}
+        <div className={styles.details}>
+          <div className={styles.errorName}>{error.name}: {error.message}</div>
+          {error.stack && <div className={styles.stack}>{error.stack}</div>}
           {info?.componentStack && (<>
-            <div className="font-bold mt-3 mb-1">Component stack:</div>
-            <div className="opacity-80">{info.componentStack}</div>
+            <div className={styles.stackHeader}>Component stack:</div>
+            <div className={styles.stack}>{info.componentStack}</div>
           </>)}
         </div>
-        <div className="flex gap-3">
+        <div className={styles.actions}>
           <Link
-            className="px-4 py-2 rounded bg-amber-700 text-amber-50 text-sm hover:brightness-110"
+            className={styles.homeLink}
             to="/play">
             Home
           </Link>
           <button
-            className="px-4 py-2 rounded bg-board-felt/10 border border-board-felt/20 text-board-felt/80 text-sm hover:bg-board-felt/15"
+            className={styles.reloadButton}
             type="button"
             onClick={() => {
               window.location.reload()

@@ -8,6 +8,8 @@ import {authSliceActions} from "../features/auth/authSlice"
 import {supabase} from "../lib/supabase"
 import {useAppDispatch, useAppSelector} from "../store/hooks"
 
+import styles from "./AuthCallback.module.css"
+
 /**
  * The post-sign-in landing path. Defaults to `/play` (the lobby)
  * — not `/` (the public marketing landing). A signed-in player
@@ -109,21 +111,20 @@ export function AuthCallback() {
   if (!error) {
     return (<div
       aria-label="Completing sign-in"
-      className="min-h-dvh bg-[#071120]"/>)
+      className={styles.loadingScreen}/>)
   }
 
-  return (<div className="grid min-h-dvh place-items-center bg-[#071120] px-4 text-white">
-    <div
-      className="w-full max-w-md rounded-2xl border border-white/12 bg-[#101a2a]/88 p-6 text-center shadow-2xl">
-      <div className="font-display text-xs font-black uppercase tracking-[0.42em] text-[#f6d770]">
+  return (<div className={styles.errorScreen}>
+    <div className={styles.errorCard}>
+      <div className={styles.brand}>
         Gammon Rivals
       </div>
-      <h1 className="mt-4 font-display text-2xl font-black text-white">
+      <h1 className={styles.title}>
         Sign-in needs attention
       </h1>
-      <p className="mt-3 text-sm text-rose-100">{error}</p>
+      <p className={styles.message}>{error}</p>
       <Link
-        className="mt-5 inline-block rounded-lg bg-[#f6d770] px-4 py-2 font-black text-[#101a2a]"
+        className={styles.backLink}
         to="/play">
         Back to lobby
       </Link>

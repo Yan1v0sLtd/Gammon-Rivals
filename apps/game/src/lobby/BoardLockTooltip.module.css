@@ -1,0 +1,26 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.tooltip {
+  composes: fontDisplay from "../styles/shared.module.css";
+  pointer-events: auto;
+  border-radius: 0.75rem;
+  border: 2px solid #b45309;
+  background-image: linear-gradient(to bottom, #fef3c7, #fcd34d);
+  padding: 1rem 1.5rem;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #451a03;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
