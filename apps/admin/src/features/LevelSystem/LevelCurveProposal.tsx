@@ -1,12 +1,9 @@
 import {useMemo, useState} from "react"
 
-import {formatUsdMicros} from "../../../../packages/shared/src/currency"
-import type {Database} from "../../../../packages/shared/src/database"
-import {adminSupabase as supabase} from "../lib/adminSupabase"
+import {formatUsdMicros} from "../../../../../packages/shared/src/currency"
+import {useConfirm} from "../../components/useConfirm"
 
-import {useConfirm} from "./useConfirm"
-
-type LevelConfigInsert = Database["public"]["Tables"]["level_configs"]["Insert"]
+import type {LevelConfigInsert} from "./LevelSystemData"
 
 // Default params for the proposed curve. These are the numbers we
 // landed on after challenging the v2 spreadsheet curve: a 4-segment
@@ -174,25 +171,36 @@ function NumField({
   </label>)
 }
 
+type ApplyCurveArgs = {
+  rows: readonly LevelConfigInsert[],
+  maxLevel: number,
+}
+
 type Props = {
   readonly canManage: boolean,
   readonly currentLevels: readonly {level: number, xp_required: number}[],
   readonly currentUserId: string | null,
-  readonly onApplied: () => void | Promise<void>,
   readonly coinValueMicros: number,
   readonly gemValueMicros: number,
+  /** Feature-owned curve apply: batch upsert + delete-above-cap + recompute. Resolves to the promoted-player count. */
+  readonly onApplyCurve: (args: ApplyCurveArgs) => Promise<number>,
+  /** Feature-owned manual re-level pass. Resolves to the promoted-player count. */
+  readonly onRecompute: () => Promise<number>,
 }
 
 // Renders the proposed-curve designer + preview table + apply button.
 // The current level_configs rows are passed in so we can show a
-// side-by-side cum-XP delta column without re-fetching.
+// side-by-side cum-XP delta column without re-fetching. All DB writes
+// are delegated to the feature-owned onApplyCurve / onRecompute
+// callbacks — this component never touches Supabase directly.
 export function LevelCurveProposal({
   canManage,
   currentLevels,
   currentUserId,
-  onApplied,
   coinValueMicros,
   gemValueMicros,
+  onApplyCurve,
+  onRecompute,
 }: Props) {
   const [params, setParams] = useState<CurveParams>({
     ...DEFAULT_PARAMS,
@@ -291,34 +299,8 @@ export function LevelCurveProposal({
         is_enabled: true,
         updated_by: currentUserId,
       }))
-      // Upsert in batches of 50 to stay well under any URL/payload limit.
-      for (let i = 0; i < payload.length; i += 50) {
-        const slice = payload.slice(i, i + 50)
-        const {error: upErr} = await supabase
-          .from("level_configs")
-          .upsert(slice, {onConflict: "level"})
-        if (upErr) throw upErr
-      }
-      // Drop any rows above the new max_level so the curve has a hard
-      // cap. Without this, an old L150 row from a previous experiment
-      // would still gate players.
-      const {error: delErr} = await supabase
-        .from("level_configs")
-        .delete()
-        .gt("level", params.max_level)
-      if (delErr) throw delErr
-      // Re-align every existing player's level to the new thresholds.
-      // The auto-promote trigger only fires when a player EARNS xp, so
-      // without this pass players stay frozen at their old level (and
-      // show a broken XP bar) until their next match. Promote-only, no
-      // rewards — see recompute_player_levels().
-      const {
-        data: promotedCount,
-        error: recomputeErr,
-      } = await supabase.rpc("recompute_player_levels")
-      if (recomputeErr) throw recomputeErr
+      const promotedCount = await onApplyCurve({rows: payload, maxLevel: params.max_level})
       setMessage(`Applied. ${proposed.length} levels written · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems · ${promotedCount ?? 0} players re-leveled.`)
-      await onApplied()
     }
     catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -339,13 +321,8 @@ export function LevelCurveProposal({
     setError(null)
     setMessage(null)
     try {
-      const {
-        data: promotedCount,
-        error: rpcErr,
-      } = await supabase.rpc("recompute_player_levels")
-      if (rpcErr) throw rpcErr
+      const promotedCount = await onRecompute()
       setMessage(`Re-leveled ${promotedCount ?? 0} players against the current curve.`)
-      await onApplied()
     }
     catch (err) {
       setError(err instanceof Error ? err.message : String(err))

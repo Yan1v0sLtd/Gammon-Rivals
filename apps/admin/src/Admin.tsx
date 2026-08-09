@@ -24,6 +24,7 @@ import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
 import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
 import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
 import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
+import {useGetLevelConfigsQuery} from "./features/LevelSystem/LevelSystemApi"
 import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
 import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
 import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
@@ -36,10 +37,8 @@ import {emptyToNull} from "./lib/emptyToNull"
 import {formatNumber} from "./lib/formatNumber"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
 import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
-import {isMissingColumnError} from "./lib/isMissingColumnError"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
 import {isPolicyError} from "./lib/isPolicyError"
-import {levelToDraft, type LevelDraft} from "./lib/levelToDraft"
 import {normalizeEmail} from "./lib/normalizeEmail"
 import {numberOrNull} from "./lib/numberOrNull"
 import {parseJson} from "./lib/parseJson"
@@ -55,8 +54,6 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
 type AdminEmailRoleRow = Database["public"]["Tables"]["admin_email_allowlist"]["Row"]
 type AdminRole = AdminRoleRow["role"]
-type LevelConfig = Database["public"]["Tables"]["level_configs"]["Row"]
-type LevelStatusTier = Database["public"]["Tables"]["level_status_tiers"]["Row"]
 /**
  * Editable per-row state for the Status Tiers panel. We keep `id`
  * nullable so a brand-new row (not yet inserted) can sit alongside
@@ -64,15 +61,6 @@ type LevelStatusTier = Database["public"]["Tables"]["level_status_tiers"]["Row"]
  * stored as strings so the inputs can be empty mid-edit without
  * blanking the form state.
  */
-type LevelStatusTierDraft = {
-  id: string | null, level_from: string, level_to: string, label: string, sort_order: string, is_enabled: boolean,
-}
-/**
- * Number of rows shown at once in the Levels table. The curve can
- * easily hit 100+ levels, so we paginate to keep the BO scrollable.
- * 'all' is the escape hatch for spreadsheet-style scanning.
- */
-type LevelsPageSize = 25 | 50 | 100 | "all"
 type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
 type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
@@ -263,14 +251,6 @@ export function Admin() {
     amount: "",
     reason: "",
   })
-  const [levels, setLevels] = useState<LevelConfig[]>([])
-  const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([])
-  const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([])
-  const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50)
-  const [levelsPageIndex, setLevelsPageIndex] = useState(0)
-  const [savingTiers, setSavingTiers] = useState(false)
-  const [tierError, setTierError] = useState<string | null>(null)
-  const [tierMessage, setTierMessage] = useState<string | null>(null)
   const [tables, setTables] = useState<TableConfig[]>([])
   const [boards, setBoards] = useState<BoardThemeConfig[]>([])
   const [podiums, setPodiums] = useState<PodiumImage[]>([])
@@ -336,7 +316,6 @@ export function Admin() {
     role: "owner" as AdminRole,
     note: "Initial owner email",
   })
-  const [levelDraft, setLevelDraft] = useState<LevelDraft>(() => levelToDraft())
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft())
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
   const [boardEditorOpen, setBoardEditorOpen] = useState(false)
@@ -363,6 +342,13 @@ export function Admin() {
   const {
     data: currencies = [],
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
+  // Level configs are owned by the Level System feature's RTK Query
+  // cache. We read the same shared cache entry here (RTK Query dedupes
+  // by cache key, so this is not a second server call) purely to derive
+  // the level count for the cross-feature "Game config" dashboard stat.
+  const {
+    data: levelConfigs = [],
+  } = useGetLevelConfigsQuery()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -394,7 +380,7 @@ export function Admin() {
     setBoards(nextBoards)
     setStats((current) => ({
       ...current,
-      configItems: levels.length + tables.length + nextBoards.length,
+      configItems: tables.length + nextBoards.length + levelConfigs.length,
     }))
     if (successMessage) setBoardMessage(successMessage)
   }
@@ -735,7 +721,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -754,13 +740,9 @@ export function Admin() {
         .from("profiles")
         .select("*")
         .order("created_at", {ascending: false})
-        .limit(120), supabase.from("level_configs").select("*").order("level", {ascending: true}), supabase
-        .from("level_status_tiers")
-        .select("*")
-        .order("sort_order", {ascending: true})
-        .order("level_from", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
+        .limit(120), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -782,20 +764,6 @@ export function Admin() {
         const visibleIds = new Set(adminUsers.map((row) => row.id))
         return new Set([...current].filter((id) => visibleIds.has(id)))
       })
-      setLevels(levelResult.data ?? [])
-      const tierRows = levelStatusTierResult.data ?? []
-      setLevelStatusTiers(tierRows)
-      // Initialize the editable drafts from the freshly loaded rows.
-      // String-ify numerics so the inputs can be cleared without
-      // losing form state.
-      setTierDrafts(tierRows.map((t) => ({
-        id: t.id,
-        level_from: String(t.level_from),
-        level_to: String(t.level_to),
-        label: t.label,
-        sort_order: String(t.sort_order),
-        is_enabled: t.is_enabled,
-      })))
       setTables(tableResult.data ?? [])
       setBoards(boardResult.data ?? [])
       setShopItems(shopResult.data ?? [])
@@ -836,7 +804,7 @@ export function Admin() {
         users: profileRows.length ?? userCount.count ?? 0,
         matches: matchCount.count ?? 0,
         activeMatches: activeMatchCount.count ?? 0,
-        configItems: (levelResult.data ?? []).length + (tableResult.data ?? []).length + (boardResult.data ?? []).length,
+        configItems: (tableResult.data ?? []).length + (boardResult.data ?? []).length + levelConfigs.length,
         shopItems: shopResult.data?.length ?? 0,
         suspendedUsers: suspendedCount.count ?? 0,
       })
@@ -883,7 +851,7 @@ export function Admin() {
     finally {
       setRefreshing(false)
     }
-  }, [accessState, loadSelectedUser, selectedUserId, setError])
+  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError])
 
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
@@ -1234,180 +1202,6 @@ export function Admin() {
     }
     finally {
       setSavingKey(null)
-    }
-  }
-
-  async function saveLevel() {
-    if (!canManage) return
-    setSavingKey("level")
-    setDataError(null)
-    try {
-      const level = requiredNumber(levelDraft.level, "Level")
-      if (!Number.isInteger(level) || level < 1) {
-        // The DB enforces `level > 0` on an int PK. A blank Level field
-        // resolves to Number('') === 0, which used to hit the database and
-        // surface the raw "level_configs_level_check" violation. Validate
-        // here so the operator gets a clear message instead.
-        throw new Error("Level must be a whole number of 1 or more.")
-      }
-      const payload: Database["public"]["Tables"]["level_configs"]["Insert"] = {
-        level,
-        xp_required: requiredNumber(levelDraft.xp_required, "XP required"),
-        status_label: levelDraft.status_label.trim() || "Rookie",
-        reward_coins: requiredNumber(levelDraft.reward_coins, "Reward coins"),
-        reward_gems: requiredNumber(levelDraft.reward_gems, "Reward gems"),
-        reward_items: parseJson(levelDraft.reward_items, "Reward items", "array"),
-        unlock_rules: parseJson(levelDraft.unlock_rules, "Unlock rules", "object"),
-        is_enabled: levelDraft.is_enabled,
-        updated_by: user?.id ?? null,
-      }
-      const {error} = await supabase.from("level_configs").upsert(payload)
-      if (isMissingColumnError(error, "status_label")) {
-        const fallbackPayload = {...payload}
-        delete fallbackPayload.status_label
-        const fallback = await supabase.from("level_configs").upsert(fallbackPayload)
-        if (fallback.error) throw fallback.error
-      }
-      else if (error) {
-        throw error
-      }
-      setLevelDraft(levelToDraft())
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  // The tier panel is a small inline list. `tierDrafts` is the editable
-  // mirror of `levelStatusTiers` (the last loaded snapshot). On Save we
-  // diff: any draft.id that no longer exists in drafts gets deleted,
-  // any draft with id=null gets inserted, the rest get updated. Then we
-  // refetch to get fresh ids + audit timestamps.
-
-  function updateTierDraft(index: number, patch: Partial<LevelStatusTierDraft>) {
-    setTierDrafts((rows) => rows.map((row, i) => (i === index ? {...row, ...patch} : row)))
-  }
-
-  function addBlankTier() {
-    // Default the new row's level_from to one past the previous row's
-    // level_to so a designer adding tiers in order doesn't have to
-    // re-type the boundary. Empty list -> start at 1.
-    const lastTo = tierDrafts.length ? Math.max(0, Number.parseInt(tierDrafts[tierDrafts.length - 1].level_to, 10) || 0) : 0
-    const nextFrom = lastTo > 0 ? lastTo + 1 : 1
-    setTierDrafts((rows) => [...rows, {
-      id: null,
-      level_from: String(nextFrom),
-      level_to: "",
-      label: "",
-      sort_order: String(rows.length + 1),
-      is_enabled: true,
-    }])
-  }
-
-  function removeTierDraft(index: number) {
-    setTierDrafts((rows) => rows.filter((_, i) => i !== index))
-  }
-
-  function resetTierDrafts() {
-    setTierDrafts(levelStatusTiers.map((t) => ({
-      id: t.id,
-      level_from: String(t.level_from),
-      level_to: String(t.level_to),
-      label: t.label,
-      sort_order: String(t.sort_order),
-      is_enabled: t.is_enabled,
-    })))
-    setTierError(null)
-    setTierMessage(null)
-  }
-
-  async function saveTiers() {
-    if (!canManage || savingTiers) return
-    setSavingTiers(true)
-    setTierError(null)
-    setTierMessage(null)
-    try {
-      // Validate before any DB call so we don't end up with a
-      // partially-saved set on bad input.
-      const validated = tierDrafts.map((draft, i) => {
-        const from = Number.parseInt(draft.level_from, 10)
-        const to = Number.parseInt(draft.level_to, 10)
-        const sort = Number.parseInt(draft.sort_order, 10)
-        if (!Number.isFinite(from) || from <= 0) {
-          throw new Error(`Tier #${i + 1}: "From" must be a positive integer.`)
-        }
-        if (!Number.isFinite(to) || to < from) {
-          throw new Error(`Tier #${i + 1}: "To" must be ≥ "From" (got ${draft.level_to}).`)
-        }
-        const label = draft.label.trim()
-        if (!label) throw new Error(`Tier #${i + 1}: label is required.`)
-        return {
-          id: draft.id,
-          level_from: from,
-          level_to: to,
-          label,
-          sort_order: Number.isFinite(sort) ? sort : i + 1,
-          is_enabled: draft.is_enabled,
-        }
-      })
-
-      const draftIds = new Set(validated.map((v) => v.id).filter((id): id is string => !!id))
-      const toDelete = levelStatusTiers
-        .filter((existing) => !draftIds.has(existing.id))
-        .map((t) => t.id)
-      const toInsert = validated.filter((v) => v.id === null)
-      const toUpdate = validated.filter((v) => v.id !== null)
-
-      if (toDelete.length > 0) {
-        const {error} = await supabase
-          .from("level_status_tiers")
-          .delete()
-          .in("id", toDelete)
-        if (error) throw error
-      }
-      if (toInsert.length > 0) {
-        const {error} = await supabase.from("level_status_tiers").insert(toInsert.map((row) => ({
-          level_from: row.level_from,
-          level_to: row.level_to,
-          label: row.label,
-          sort_order: row.sort_order,
-          is_enabled: row.is_enabled,
-          updated_by: user?.id ?? null,
-        })))
-        if (error) throw error
-      }
-      if (toUpdate.length > 0) {
-        // No bulk update RPC for arbitrary per-row changes, so issue
-        // a per-row .update(). The tier table is small (~10 rows
-        // max), so this is fine.
-        for (const row of toUpdate) {
-          if (!row.id) continue
-          const {error} = await supabase
-            .from("level_status_tiers")
-            .update({
-              level_from: row.level_from,
-              level_to: row.level_to,
-              label: row.label,
-              sort_order: row.sort_order,
-              is_enabled: row.is_enabled,
-              updated_by: user?.id ?? null,
-            })
-            .eq("id", row.id)
-          if (error) throw error
-        }
-      }
-      setTierMessage(`Saved. ${toInsert.length} added · ${toUpdate.length} updated · ${toDelete.length} removed.`)
-      await loadAdminData()
-    }
-    catch (err) {
-      setTierError(err instanceof Error ? err.message : String(err))
-    }
-    finally {
-      setSavingTiers(false)
     }
   }
 
@@ -1947,42 +1741,7 @@ export function Admin() {
             path="economy-grants"/>
 
           <Route
-            element={<LevelSystemAdmin
-              canManage={canManage}
-              currentUserId={user?.id ?? null}
-              levelDraft={levelDraft}
-              levels={levels}
-              levelsPageIndex={levelsPageIndex}
-              levelsPageSize={levelsPageSize}
-              rateMap={rateMap}
-              savingKey={savingKey}
-              savingTiers={savingTiers}
-              tierDrafts={tierDrafts}
-              tierError={tierError}
-              tierMessage={tierMessage}
-              onAddBlankTier={addBlankTier}
-              onApplied={loadAdminData}
-              onLevelDraftChange={(patch) => {
-                setLevelDraft((d) => ({...d, ...patch}))
-              }}
-              onLevelsPageIndexChange={setLevelsPageIndex}
-              onLevelsPageSizeChange={setLevelsPageSize}
-              onNewLevel={() => {
-                // Pre-fill the next free level so "New" on a packed
-                // 1..N table proposes N+1 instead of a blank field
-                // (blank saved as level 0 and tripped the `level > 0`
-                // check constraint). Operator can still overwrite it.
-                const nextLevel = levels.reduce((max, row) => Math.max(max, row.level), 0) + 1
-                setLevelDraft({
-                  ...levelToDraft(),
-                  level: String(nextLevel),
-                })
-              }}
-              onRemoveTierDraft={removeTierDraft}
-              onResetTierDrafts={resetTierDrafts}
-              onSaveLevel={saveLevel}
-              onSaveTiers={saveTiers}
-              onUpdateTierDraft={updateTierDraft}/>}
+            element={<LevelSystemAdmin canManage={canManage}/>}
             path="level-system"/>
 
           <Route
