@@ -12,6 +12,16 @@ export type LevelStatusTierUpdate = Database["public"]["Tables"]["level_status_t
 const CURVE_UPSERT_BATCH = 50
 
 /**
+ * A curve cap is safe only as a finite positive integer. A 0, negative,
+ * fractional or non-finite cap would let the delete-above-cap step remove
+ * rows the upsert never wrote (worst case: every `level_configs` row above
+ * cap 0). Reject loudly rather than silently clamping.
+ */
+function isSafeLevelCap(maxLevel: number): boolean {
+  return Number.isInteger(maxLevel) && maxLevel >= 1
+}
+
+/**
  * The full `level_configs` table, ordered by `level` — the gating fetch
  * that drives the Levels table + editor, so its errors must surface. An
  * empty result (or an unconfigured Supabase) is a legitimately empty
@@ -118,6 +128,9 @@ export async function updateLevelStatusTier(id: string, patch: LevelStatusTierUp
  * experiment can't keep gating players.
  */
 export async function deleteLevelConfigsAboveCap(maxLevel: number): Promise<void> {
+  if (!isSafeLevelCap(maxLevel)) {
+    throw new Error(`deleteLevelConfigsAboveCap requires a positive integer cap, got ${maxLevel}.`)
+  }
   const {error} = await adminSupabase
     .from("level_configs")
     .delete()
@@ -151,6 +164,12 @@ export async function applyLevelCurve(args: {
   rows: readonly LevelConfigInsert[],
   maxLevel: number,
 }): Promise<number> {
+  if (!isSafeLevelCap(args.maxLevel)) {
+    throw new Error(`applyLevelCurve requires a positive integer maxLevel, got ${args.maxLevel}.`)
+  }
+  if (args.rows.length === 0) {
+    throw new Error("applyLevelCurve requires at least one row to upsert; refusing to delete above the cap on an empty payload.")
+  }
   for (let i = 0; i < args.rows.length; i += CURVE_UPSERT_BATCH) {
     const slice = args.rows.slice(i, i + CURVE_UPSERT_BATCH)
     const {error} = await adminSupabase

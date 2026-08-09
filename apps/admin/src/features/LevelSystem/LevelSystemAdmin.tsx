@@ -200,16 +200,20 @@ export function LevelSystemAdmin({
   // The tier panel is a small inline list. `tierDrafts` is the editable
   // mirror of `levelStatusTiers` (the last loaded snapshot). On Save we
   // diff: any draft.id that no longer exists in drafts gets deleted,
-  // any draft with id=null gets inserted, the rest get updated. Then the
-  // tag invalidation refetches fresh ids + audit timestamps.
+  // any draft with id=null gets inserted, the rest get updated. Writes
+  // run update → insert → delete so the destructive delete is last
+  // (see saveTiers). Tag invalidation refetches fresh ids + timestamps.
   async function saveTiers() {
     if (!canManage || savingTiers) return
     setSavingTiers(true)
     setTierError(null)
     setTierMessage(null)
     try {
-      // Validate before any DB call so we don't end up with a
-      // partially-saved set on bad input.
+      // Validation is the only guarantee that bad input never reaches
+      // the DB — the write sequence below is NOT transactional. A
+      // failure mid-way can still leave a partially-applied save. We
+      // only minimize the damage by running the destructive delete LAST,
+      // after the replacement update/insert writes have succeeded.
       const validated = tierDrafts.map((draft, i) => {
         const from = Number.parseInt(draft.level_from, 10)
         const to = Number.parseInt(draft.level_to, 10)
@@ -239,23 +243,10 @@ export function LevelSystemAdmin({
       const toInsert = validated.filter((v) => v.id === null)
       const toUpdate = validated.filter((v) => v.id !== null)
 
-      if (toDelete.length > 0) {
-        await deleteLevelStatusTiers(toDelete).unwrap()
-      }
-      if (toInsert.length > 0) {
-        const rows: LevelStatusTierInsert[] = toInsert.map((row) => ({
-          level_from: row.level_from,
-          level_to: row.level_to,
-          label: row.label,
-          sort_order: row.sort_order,
-          is_enabled: row.is_enabled,
-          updated_by: currentUserId,
-        }))
-        await insertLevelStatusTiers(rows).unwrap()
-      }
+      // Update existing rows first. No bulk update RPC for arbitrary
+      // per-row changes, so issue a per-row update. The tier table is
+      // small (~10 rows max).
       if (toUpdate.length > 0) {
-        // No bulk update RPC for arbitrary per-row changes, so issue
-        // a per-row update. The tier table is small (~10 rows max).
         for (const row of toUpdate) {
           if (!row.id) continue
           const patch: LevelStatusTierUpdate = {
@@ -268,6 +259,25 @@ export function LevelSystemAdmin({
           }
           await updateLevelStatusTier({id: row.id, patch}).unwrap()
         }
+      }
+      // Insert new rows second, so the replacement rows exist before
+      // any removals happen.
+      if (toInsert.length > 0) {
+        const rows: LevelStatusTierInsert[] = toInsert.map((row) => ({
+          level_from: row.level_from,
+          level_to: row.level_to,
+          label: row.label,
+          sort_order: row.sort_order,
+          is_enabled: row.is_enabled,
+          updated_by: currentUserId,
+        }))
+        await insertLevelStatusTiers(rows).unwrap()
+      }
+      // Delete removed rows last: if an update or insert above failed,
+      // previously-valid tiers are still present instead of already
+      // deleted.
+      if (toDelete.length > 0) {
+        await deleteLevelStatusTiers(toDelete).unwrap()
       }
       setTierMessage(`Saved. ${toInsert.length} added · ${toUpdate.length} updated · ${toDelete.length} removed.`)
     }

@@ -54,6 +54,12 @@ export type MissionRewardRow = {
 
 export type MissionRewardInsert = Omit<MissionRewardRow, "id" | "created_at">
 
+/** Reward rows for a mission template being created/edited, authored
+ *  without a `mission_id` — the caller cannot know the template id until
+ *  it has been inserted. `saveMissionTemplate` injects the resolved id
+ *  immediately before writing. */
+export type MissionRewardDraft = Omit<MissionRewardRow, "id" | "created_at" | "mission_id">
+
 export type MissionTypeConfigRow = {
   mission_type: string,
   metric_code: string,
@@ -340,14 +346,17 @@ export async function fetchMissionRewards(): Promise<readonly MissionRewardRow[]
  * Save a mission template and its reward bundle as an ordered, multi-step,
  * non-atomic sequence: update-or-insert the template (returning its id),
  * then delete the existing rewards, then insert the replacement rewards.
- * Each step is a separate write, so a failure partway through can leave the
- * parent saved without its new rewards. The Supabase error message is
- * preserved verbatim so the caller can surface it to the operator.
+ * Rewards arrive as drafts without a `mission_id` (unknown until the
+ * template id resolves), so it is injected here immediately before the
+ * insert. Each step is a separate write, so a failure partway through can
+ * leave the parent saved without its new rewards. The Supabase error
+ * message is preserved verbatim so the caller can surface it to the
+ * operator.
  */
 export async function saveMissionTemplate(args: {
   id: string | null,
   payload: MissionTemplateInsert,
-  rewards: readonly MissionRewardInsert[],
+  rewards: readonly MissionRewardDraft[],
 }): Promise<string> {
   if (!isAdminSupabaseConfigured) throw new Error(MISSING_CONFIG_MESSAGE)
   let templateId: string
@@ -369,7 +378,9 @@ export async function saveMissionTemplate(args: {
   if (delErr) throw new Error(delErr.message)
 
   if (args.rewards.length > 0) {
-    const {error: insErr} = await sb.from("mission_rewards").insert([...args.rewards])
+    const {error: insErr} = await sb.from("mission_rewards").insert(
+      args.rewards.map((r) => ({...r, mission_id: templateId})),
+    )
     if (insErr) throw new Error(insErr.message)
   }
 

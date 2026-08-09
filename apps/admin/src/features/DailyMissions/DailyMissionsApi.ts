@@ -27,7 +27,7 @@ import {
   type ChestMilestoneUpdate,
   type ChestRewardInsert,
   type ChestRewardRow,
-  type MissionRewardInsert,
+  type MissionRewardDraft,
   type MissionRewardRow,
   type MissionTemplateInsert,
   type MissionTemplateRow,
@@ -148,7 +148,7 @@ export const dailyMissionsApi = adminBaseApi.injectEndpoints({
     saveMissionTemplate: build.mutation<string, {
       id: string | null,
       payload: MissionTemplateInsert,
-      rewards: readonly MissionRewardInsert[],
+      rewards: readonly MissionRewardDraft[],
     }>({
       queryFn: async (args) => {
         try {

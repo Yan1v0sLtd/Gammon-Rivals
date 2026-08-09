@@ -348,7 +348,7 @@ export function Admin() {
   // the level count for the cross-feature "Game config" dashboard stat.
   const {
     data: levelConfigs = [],
-  } = useGetLevelConfigsQuery()
+  } = useGetLevelConfigsQuery(undefined, {skip: accessState !== "allowed"})
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's

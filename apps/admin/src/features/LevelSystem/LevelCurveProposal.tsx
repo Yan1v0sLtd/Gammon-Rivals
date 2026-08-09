@@ -108,6 +108,17 @@ function roundToStep(n: number, step: number): number {
   return n > 0 ? Math.round(n / step) * step : 0
 }
 
+/**
+ * A curve cap is safe only as a finite positive integer. generateCurve
+ * emits exactly one row per level 1..max_level, so a 0/negative cap
+ * yields an empty proposal (whose apply would then delete every
+ * level_configs row above cap 0) and a fractional cap yields a row set
+ * that never reaches the advertised cap. Reject before confirm/apply.
+ */
+function isPositiveInteger(n: number): boolean {
+  return Number.isInteger(n) && n >= 1
+}
+
 // Pure generator — given params, returns the full set of proposed rows.
 // Monotonic coin reward, range-based gem cadence, and a flat plateau
 // past end_late.
@@ -277,6 +288,16 @@ export function LevelCurveProposal({
 
   const apply = async () => {
     if (!canManage || applying) return
+    if (!isPositiveInteger(params.max_level)) {
+      setMessage(null)
+      setError(`Max level must be a positive whole number. Got ${params.max_level} — nothing was applied.`)
+      return
+    }
+    if (proposed.length === 0) {
+      setMessage(null)
+      setError("The proposed curve has no rows. Raise the max level — nothing was applied.")
+      return
+    }
     const confirmed = await confirm({
       title: "Apply this curve?",
       message: `This will REPLACE level_configs rows L1..L${params.max_level}.\n\n` + `Existing rows L${params.max_level + 1}+ will be deleted (cap).\n\n` + `Total: ${proposed.length} rows · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems in rewards.\n\n` + "Players already at higher levels will keep their level (this only changes the XP gates).",
