@@ -7,7 +7,8 @@
   "containerEnv": {
     "MISE_TRUSTED_CONFIG_PATHS": "${localWorkspaceFolder}",
     "MISE_ENV": "dev",
-    "PNPM_STORE_DIR": "${localEnv:PNPM_STORE_DIR}"
+    "PNPM_STORE_DIR": "${localEnv:PNPM_STORE_DIR}",
+    "NEURALWATT_API_KEY": "${localEnv:NEURALWATT_API_KEY}"
   },
   "initializeCommand": "mkdir -p ${localEnv:HOME}/.cache/containers/local-share-opencode/gammon/${localWorkspaceFolderBasename}",
   "mounts": [
