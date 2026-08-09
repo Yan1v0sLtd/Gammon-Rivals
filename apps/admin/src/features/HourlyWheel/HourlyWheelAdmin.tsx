@@ -1,19 +1,22 @@
 import {useCallback, useEffect, useMemo, useState} from "react"
 
-// Use the BO's independent admin session so wheel_configs /
-// wheel_slots upserts run as the signed-in admin (the RLS policies
-// gate writes on private.is_admin(auth.uid())). The regular
-// `supabase` client is the game tab's session, which may be a
-// different user or none at all.
 import {
-  buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor,
+  buildCurrencyRateMap, formatUsdMicros, usdMicrosFor,
 } from "../../../../../packages/shared/src/currency.ts"
-import type {Database} from "../../../../../packages/shared/src/database.ts"
 import {ImageField} from "../../components/ImageField.tsx"
-import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
+import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
-type WheelConfigRow = Database["public"]["Tables"]["wheel_configs"]["Row"]
-type WheelSlotRow = Database["public"]["Tables"]["wheel_slots"]["Row"]
+import {
+  useGetWheelConfigQuery,
+  useGetWheelSlotsQuery,
+  useUpsertWheelConfigMutation,
+  useUpsertWheelSlotMutation,
+} from "./HourlyWheelApi"
+import {
+  WHEEL_CONFIG_ID,
+  type WheelConfigRow,
+  type WheelSlotRow,
+} from "./HourlyWheelData"
 
 /** The reward types spin_wheel knows how to credit. Adding a new
  *  one is a one-line CASE branch in the RPC + a new option here.
@@ -28,7 +31,6 @@ type RewardType = (typeof REWARD_TYPES)[number]
 const ACCENT_COLORS = ["gold", "purple", "red", "green", "blue", "orange"] as const
 
 const SLOT_KEYS = ["slot-0", "slot-1", "slot-2", "slot-3", "slot-4", "slot-5", "slot-6", "slot-7", "slot-8", "slot-9"] as const
-const CONFIG_ID = "main"
 
 type SlotDraft = {
   primary_reward_type: RewardType,
@@ -255,15 +257,28 @@ function SecondaryButton({
 /* -------------------------------------------------------------------------- */
 
 export function HourlyWheelAdmin({canManage}: Props) {
-  const [config, setConfig] = useState<WheelConfigRow | null>(null)
-  const [slots, setSlots] = useState<WheelSlotRow[]>([])
-  const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([])
+  const {
+    data: config = null,
+    isLoading: configLoading,
+    error: configError,
+  } = useGetWheelConfigQuery()
+  const {
+    data: slots = [],
+    isLoading: slotsLoading,
+    error: slotsError,
+  } = useGetWheelSlotsQuery()
+  const {
+    data: currencies = [],
+    isLoading: currenciesLoading,
+    error: currenciesError,
+  } = useGetCurrenciesQuery()
+  const [upsertWheelConfig, {isLoading: savingConfig}] = useUpsertWheelConfigMutation()
+  const [upsertWheelSlot, {isLoading: savingSlot}] = useUpsertWheelSlotMutation()
+
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
   const [configDraft, setConfigDraft] = useState<ConfigDraft>(() => configToDraft(null))
   const [slotDraft, setSlotDraft] = useState<SlotDraft>(() => slotToDraft(undefined))
   const [error, setError] = useState<string | null>(null)
-  const [savingKey, setSavingKey] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
 
   const setErrFromUnknown = useCallback((err: unknown) => {
     if (err instanceof Error) setError(err.message); else if (err && typeof err === "object" && "message" in err) {
@@ -272,34 +287,23 @@ export function HourlyWheelAdmin({canManage}: Props) {
     else setError(String(err))
   }, [])
 
-  const loadAll = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [cfg, sl, cur] = await Promise.all([supabase.from("wheel_configs").select("*").eq("id", CONFIG_ID).maybeSingle(), supabase
-        .from("wheel_slots")
-        .select("*")
-        .eq("config_id", CONFIG_ID)
-        .order("slot_index", {ascending: true}), supabase.from("currency_configs").select("*")])
-      if (cfg.error) throw cfg.error
-      if (sl.error) throw sl.error
-      if (cur.error) throw cur.error
-      setConfig(cfg.data ?? null)
-      setConfigDraft(configToDraft(cfg.data ?? null))
-      setSlots(sl.data ?? [])
-      setCurrencies(cur.data ?? [])
-    }
-    catch (err) {
-      setErrFromUnknown(err)
-    }
-    finally {
-      setLoading(false)
-    }
-  }, [setErrFromUnknown])
-
+  // Surface any fetch failure through the component's error presentation.
   useEffect(() => {
-    void loadAll()
-  }, [loadAll])
+    if (configError) setErrFromUnknown(configError)
+  }, [configError, setErrFromUnknown])
+  useEffect(() => {
+    if (slotsError) setErrFromUnknown(slotsError)
+  }, [slotsError, setErrFromUnknown])
+  useEffect(() => {
+    if (currenciesError) setErrFromUnknown(currenciesError)
+  }, [currenciesError, setErrFromUnknown])
+
+  // Re-sync the config draft whenever the server config changes (initial
+  // load or after a save refetch). Drafts stay local; only server data
+  // lives in RTK Query.
+  useEffect(() => {
+    setConfigDraft(configToDraft(config))
+  }, [config])
 
   // Re-sync the slot draft whenever the user picks a different slot,
   // or when the underlying row changes (e.g. after a save).
@@ -341,35 +345,26 @@ export function HourlyWheelAdmin({canManage}: Props) {
 
   const saveConfig = async () => {
     if (!canManage) return
-    setSavingKey("config")
     setError(null)
     try {
       const cooldown = requireNonNegInt(configDraft.cooldown_seconds, "Cooldown seconds")
       if (cooldown < 300 || cooldown > 604800) {
         throw new Error("Cooldown must be between 300 (5 min) and 604800 (7 d) seconds.")
       }
-      const {error: err} = await supabase
-        .from("wheel_configs")
-        .upsert({
-          id: CONFIG_ID,
-          display_name: config?.display_name ?? "Hourly Bonus",
-          cooldown_seconds: cooldown,
-          is_enabled: configDraft.is_enabled,
-        }, {onConflict: "id"})
-      if (err) throw err
-      await loadAll()
+      await upsertWheelConfig({
+        id: WHEEL_CONFIG_ID,
+        display_name: config?.display_name ?? "Hourly Bonus",
+        cooldown_seconds: cooldown,
+        is_enabled: configDraft.is_enabled,
+      }).unwrap()
     }
     catch (err) {
       setErrFromUnknown(err)
-    }
-    finally {
-      setSavingKey(null)
     }
   }
 
   const saveSlot = async () => {
     if (!canManage) return
-    setSavingKey("slot")
     setError(null)
     try {
       const primaryAmount = requireNonNegInt(slotDraft.primary_reward_amount, "Primary reward amount")
@@ -377,8 +372,8 @@ export function HourlyWheelAdmin({canManage}: Props) {
       const hasSecondary = slotDraft.secondary_reward_type !== ""
       const secondaryAmount = hasSecondary ? requireNonNegInt(slotDraft.secondary_reward_amount, "Secondary reward amount") : null
 
-      const payload: Database["public"]["Tables"]["wheel_slots"]["Insert"] = {
-        config_id: CONFIG_ID,
+      await upsertWheelSlot({
+        config_id: WHEEL_CONFIG_ID,
         slot_index: selectedIndex,
         primary_reward_type: slotDraft.primary_reward_type,
         primary_reward_amount: primaryAmount,
@@ -390,19 +385,10 @@ export function HourlyWheelAdmin({canManage}: Props) {
         label: slotDraft.label || null,
         accent_color: slotDraft.accent_color,
         is_enabled: slotDraft.is_enabled,
-      }
-
-      const {error: err} = await supabase
-        .from("wheel_slots")
-        .upsert(payload, {onConflict: "config_id,slot_index"})
-      if (err) throw err
-      await loadAll()
+      }).unwrap()
     }
     catch (err) {
       setErrFromUnknown(err)
-    }
-    finally {
-      setSavingKey(null)
     }
   }
 
@@ -441,6 +427,8 @@ export function HourlyWheelAdmin({canManage}: Props) {
   }
 
   const hasSecondary = slotDraft.secondary_reward_type !== ""
+
+  const loading = configLoading || slotsLoading || currenciesLoading
 
   if (loading) {
     return (<div className="rounded-xl border border-white/10 bg-white/[0.045] p-6 text-sm text-white/55">
@@ -492,7 +480,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
           </div>
         </div>
         <PrimaryButton
-          disabled={!canManage || savingKey === "config"}
+          disabled={!canManage || savingConfig}
           onClick={() => void saveConfig()}>
           Save config
         </PrimaryButton>
@@ -761,7 +749,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
         {/* Save / reset */}
         <div className="mt-4 flex gap-2">
           <PrimaryButton
-            disabled={!canManage || savingKey === "slot"}
+            disabled={!canManage || savingSlot}
             onClick={() => void saveSlot()}>
             Save slot #{selectedIndex}
           </PrimaryButton>

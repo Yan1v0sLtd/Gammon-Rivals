@@ -16,6 +16,6 @@ export function toAdminApiError(err: unknown): AdminApiError {
 export const adminBaseApi = createApi({
   reducerPath: "adminApi",
   baseQuery: fakeBaseQuery<AdminApiError>(),
-  tagTypes: ["Currencies", "LobbyFeatures", "EconomyGrants", "DailyBonus"],
+  tagTypes: ["Currencies", "LobbyFeatures", "EconomyGrants", "DailyBonus", "HourlyWheel"],
   endpoints: () => ({}),
 })
