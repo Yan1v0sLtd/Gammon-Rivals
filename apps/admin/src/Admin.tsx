@@ -16,7 +16,7 @@ import {useConfirm} from "./components/useConfirm"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
-import {useGetCurrenciesQuery, useUpsertCurrencyMutation} from "./features/Currencies/CurrenciesApi"
+import {useGetCurrenciesQuery} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
 import {useGetDailyBonusQuery, useUpsertDailyBonusMutation} from "./features/DailyBonus/DailyBonusApi"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
@@ -34,7 +34,6 @@ import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
-import {currencyToDraft, type CurrencyDraft} from "./lib/currencyToDraft"
 import {dailyBonusToDraft, type DailyBonusDraft} from "./lib/dailyBonusToDraft"
 import {emptyToNull} from "./lib/emptyToNull"
 import {formatNumber} from "./lib/formatNumber"
@@ -349,7 +348,6 @@ export function Admin() {
   const [boardEditorOpen, setBoardEditorOpen] = useState(false)
   const [boardEditorMode, setBoardEditorMode] = useState<"add" | "edit">("add")
   const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft())
-  const [currencyDraft, setCurrencyDraft] = useState<CurrencyDraft>(() => currencyToDraft())
   const [dataError, setDataError] = useState<string | null>(null)
   const [boardMessage, setBoardMessage] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -366,12 +364,11 @@ export function Admin() {
   const selectedUser = users.find((row) => row.id === selectedUserId) ?? null
   // Currencies are owned by RTK Query. Eagerly fetched once access is
   // allowed (mirroring the old initial loadAdminData fetch); the query
-  // result feeds the rate map and the CurrenciesAdmin list.
+  // result feeds the shared rate map used by the reward-config panels.
+  // The Currencies section itself runs its own query (see CurrenciesAdmin).
   const {
     data: currencies = [],
-    error: currenciesError,
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
-  const [upsertCurrency] = useUpsertCurrencyMutation()
   // Economy Grants are owned by RTK Query. Eagerly fetched once access is
   // allowed (mirroring the old initial loadAdminData fetch); the query
   // result feeds the EconomyGrantsAdmin list.
@@ -407,12 +404,6 @@ export function Admin() {
     }
     setDataError(String(err))
   }, [])
-
-  // Surface a currencies query failure through the page-level dataError.
-  // Only sets when there's an error so it never clears unrelated errors.
-  useEffect(() => {
-    if (currenciesError) setError(currenciesError)
-  }, [currenciesError, setError])
 
   // Surface an economy-grants query failure through the page-level dataError.
   // Only sets when there's an error so it never clears unrelated errors.
@@ -1512,42 +1503,6 @@ export function Admin() {
     }
   }
 
-  async function saveCurrency() {
-    if (!canManage) return
-    setSavingKey("currency")
-    setDataError(null)
-    try {
-      const code = currencyDraft.code.trim()
-      if (!code) throw new Error("Currency code is required.")
-      if (!/^[a-z][a-z0-9_]*$/.test(code)) {
-        throw new Error("Code must be lowercase letters, digits, or underscores, starting with a letter.")
-      }
-      const displayName = currencyDraft.display_name.trim()
-      if (!displayName) throw new Error("Display name is required.")
-      const usd = Number(currencyDraft.usd_value)
-      if (!Number.isFinite(usd) || usd < 0) {
-        throw new Error("USD value must be a non-negative number (e.g. 0.01).")
-      }
-      // Convert "$X.YZ" → micros. Round so 0.0001 doesn't drift to 99.
-      const micros = Math.round(usd * 1_000_000)
-      const sortOrder = requiredNumber(currencyDraft.sort_order, "Sort order")
-      await upsertCurrency({
-        p_code: code,
-        p_display_name: displayName,
-        p_usd_value_micros: micros,
-        p_is_enabled: currencyDraft.is_enabled,
-        p_sort_order: sortOrder,
-      }).unwrap()
-      setCurrencyDraft(currencyToDraft())
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
   async function saveTable() {
     if (!canManage) return
     setSavingKey("table")
@@ -2068,28 +2023,10 @@ export function Admin() {
           <Route
             element={<CurrenciesAdmin
               canManage={canManage}
-              currencies={currencies}
-              currencyDraft={currencyDraft}
-              savingKey={savingKey}
-              onFieldChange={(field, value) => {
-                setCurrencyDraft((d) => ({
-                  ...d,
-                  [field]: value,
-                }))
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onNew={() => {
-                setCurrencyDraft(currencyToDraft())
-              }}
-              onSave={() => void saveCurrency()}
-              onSelectCurrency={(index) => {
-                setCurrencyDraft(currencyToDraft(currencies[index]))
-              }}
-              onToggleEnabled={(is_enabled) => {
-                setCurrencyDraft((d) => ({
-                  ...d,
-                  is_enabled,
-                }))
-              }}/>}
+              onError={setError}/>}
             path="currencies"/>
 
           <Route
