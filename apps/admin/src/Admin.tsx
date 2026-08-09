@@ -7,7 +7,7 @@ import {NavLink, Navigate, Route, Routes, useLocation, useNavigate} from "react-
 // running as a guest or a different account. Aliased to `supabase`
 // + `isSupabaseConfigured` so the rest of the file (30+ call sites)
 // keeps working unchanged.
-import {buildCurrencyRateMap, type CurrencyConfigRow} from "../../../packages/shared/src/currency"
+import {buildCurrencyRateMap} from "../../../packages/shared/src/currency"
 import type {Database} from "../../../packages/shared/src/database"
 
 import {PrimaryButton} from "./components/PrimaryButton"
@@ -16,6 +16,7 @@ import {useConfirm} from "./components/useConfirm"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
+import {useGetCurrenciesQuery, useUpsertCurrencyMutation} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
@@ -315,7 +316,6 @@ export function Admin() {
     title: "Store",
     bg_image_url: "",
   })
-  const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
   // RTP dashboard state — fetched lazily when the section is opened so
   // we don't pay the aggregation cost on every BO load.
@@ -372,6 +372,14 @@ export function Admin() {
 
   const canManage = role === "owner" || role === "admin"
   const selectedUser = users.find((row) => row.id === selectedUserId) ?? null
+  // Currencies are owned by RTK Query. Eagerly fetched once access is
+  // allowed (mirroring the old initial loadAdminData fetch); the query
+  // result feeds the rate map and the CurrenciesAdmin list.
+  const {
+    data: currencies = [],
+    error: currenciesError,
+  } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
+  const [upsertCurrency] = useUpsertCurrencyMutation()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -391,6 +399,12 @@ export function Admin() {
     }
     setDataError(String(err))
   }, [])
+
+  // Surface a currencies query failure through the page-level dataError.
+  // Only sets when there's an error so it never clears unrelated errors.
+  useEffect(() => {
+    if (currenciesError) setError(currenciesError)
+  }, [currenciesError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -769,7 +783,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, economyGrantResult, dailyBonusResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult, currencyResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, economyGrantResult, dailyBonusResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -796,9 +810,9 @@ export function Admin() {
         .from("economy_grants")
         .select("*")
         .order("sort_order", {ascending: true})
-        .order("trigger_key", {ascending: true}), supabase.from("daily_bonus_configs").select("*").order("day", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false}), supabase.from("currency_configs").select("*").order("sort_order", {ascending: true})])
+        .order("trigger_key", {ascending: true}), supabase.from("daily_bonus_configs").select("*").order("day", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? economyGrantResult.error ?? dailyBonusResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error ?? currencyResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? economyGrantResult.error ?? dailyBonusResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -872,7 +886,6 @@ export function Admin() {
       setAudit(auditResult.data ?? [])
       setAdminRoles(roleResult.data ?? [])
       setAdminEmailRoles(emailRoleResult.data ?? [])
-      setCurrencies(currencyResult.data ?? [])
       setStats({
         users: profileRows.length ?? userCount.count ?? 0,
         matches: matchCount.count ?? 0,
@@ -1562,16 +1575,14 @@ export function Admin() {
       // Convert "$X.YZ" → micros. Round so 0.0001 doesn't drift to 99.
       const micros = Math.round(usd * 1_000_000)
       const sortOrder = requiredNumber(currencyDraft.sort_order, "Sort order")
-      const {error} = await supabase.rpc("admin_upsert_currency_config", {
+      await upsertCurrency({
         p_code: code,
         p_display_name: displayName,
         p_usd_value_micros: micros,
         p_is_enabled: currencyDraft.is_enabled,
         p_sort_order: sortOrder,
-      })
-      if (error) throw error
+      }).unwrap()
       setCurrencyDraft(currencyToDraft())
-      await loadAdminData()
     }
     catch (err) {
       setError(err)
