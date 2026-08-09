@@ -9,7 +9,7 @@ import {BoardPreview} from "../../../packages/board-preview/src/BoardPreview"
 import {
   buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor,
 } from "../../../packages/shared/src/currency"
-import type {Database, Json} from "../../../packages/shared/src/database"
+import type {Database} from "../../../packages/shared/src/database"
 import {resolveStatusLabel} from "../../../packages/shared/src/progression"
 
 import {BearOffTraysField} from "./components/BearOffTraysField"
@@ -29,9 +29,47 @@ import {TextArea} from "./components/TextArea"
 import {Toggle} from "./components/Toggle"
 import {useConfirm} from "./components/useConfirm"
 import {WheelAdmin} from "./components/WheelAdmin"
+import {accountType} from "./lib/accountType"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
+import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
+import {currencyToDraft, type CurrencyDraft} from "./lib/currencyToDraft"
+import {dailyBonusToDraft, type DailyBonusDraft} from "./lib/dailyBonusToDraft"
+import {emptyToNull} from "./lib/emptyToNull"
+import {formatDate} from "./lib/formatDate"
+import {formatNumber} from "./lib/formatNumber"
+import {grantToDraft, type EconomyGrantDraft} from "./lib/grantToDraft"
+import {isDeletedProfile} from "./lib/isDeletedProfile"
+import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
+import {isMissingColumnError} from "./lib/isMissingColumnError"
+import {isMissingMigrationError} from "./lib/isMissingMigrationError"
+import {isPolicyError} from "./lib/isPolicyError"
+import {isValidBoardId} from "./lib/isValidBoardId"
+import {levelToDraft, type LevelDraft} from "./lib/levelToDraft"
+import {moneyFromCents} from "./lib/moneyFromCents"
+import {normalizeEmail} from "./lib/normalizeEmail"
+import {numberOrNull} from "./lib/numberOrNull"
+import {parseJson} from "./lib/parseJson"
+import {readBoardGrant} from "./lib/readBoardGrant"
+import {readGrant} from "./lib/readGrant"
+import {readHeader} from "./lib/readHeader"
+import {readHeadline} from "./lib/readHeadline"
+import {readPres} from "./lib/readPres"
+import {readRewards} from "./lib/readRewards"
+import {readXpBoost} from "./lib/readXpBoost"
+import {requiredNumber} from "./lib/requiredNumber"
+import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
+import {tableToDraft, type TableDraft} from "./lib/tableToDraft"
 import {useAdminAuth} from "./lib/useAdminAuth"
 import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
+import {withGameplayBackgroundMetadata} from "./lib/withGameplayBackgroundMetadata"
+import {withRequestTimeout} from "./lib/withRequestTimeout"
+import {writeBoardGrant} from "./lib/writeBoardGrant"
+import {writeGrantNumber} from "./lib/writeGrantNumber"
+import {writeHeader} from "./lib/writeHeader"
+import {writeHeadline} from "./lib/writeHeadline"
+import {writePresField} from "./lib/writePresField"
+import {writeRewards} from "./lib/writeRewards"
+import {writeXpBoost} from "./lib/writeXpBoost"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
@@ -56,23 +94,6 @@ type LevelStatusTierDraft = {
  */
 type LevelsPageSize = 25 | 50 | 100 | "all"
 type EconomyGrant = Database["public"]["Tables"]["economy_grants"]["Row"]
-/**
- * Editable form state for one economy-grant rule. Numeric fields are
- * strings so inputs can be cleared mid-edit. `isNew` distinguishes a
- * brand-new rule (whose trigger_key is still editable) from an
- * existing one (whose key is the immutable PK).
- */
-type EconomyGrantDraft = {
-  trigger_key: string,
-  display_name: string,
-  description: string,
-  coins: string,
-  gems: string,
-  one_time: boolean,
-  is_enabled: boolean,
-  sort_order: string,
-  isNew: boolean,
-}
 type DailyBonusConfig = Database["public"]["Tables"]["daily_bonus_configs"]["Row"]
 type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
@@ -87,15 +108,6 @@ type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
 type ShopKind = ShopItem["kind"]
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
-
-// Mirrors the DB check constraint on board_theme_configs.id so the
-// admin sees a clear inline error instead of a Postgres round-trip
-// failure when adding a board.
-const BOARD_ID_REGEX = /^[a-z0-9][a-z0-9_-]*$/
-
-function isValidBoardId(id: string): boolean {
-  return BOARD_ID_REGEX.test(id)
-}
 
 type Section =
   | "Dashboard"
@@ -132,96 +144,6 @@ type UserDetail = {
   boards: UserBoardInventory[],
   purchases: Purchase[],
   matches: Database["public"]["Tables"]["matches"]["Row"][],
-}
-
-type LevelDraft = {
-  level: string,
-  xp_required: string,
-  status_label: string,
-  reward_coins: string,
-  reward_gems: string,
-  reward_items: string,
-  unlock_rules: string,
-  is_enabled: boolean,
-}
-
-type DailyBonusDraft = {
-  day: string, reward_coins: string, reward_gems: string, reward_xp: string, reward_items: string,
-}
-
-type TableDraft = {
-  id: string,
-  kind: "standard" | "difficulty",
-  display_name: string,
-  description: string,
-  entry_fee_coins: string,
-  prize_coins: string,
-  prize_coins_loss: string,
-  required_level: string,
-  match_target: string,
-  allow_ai: boolean,
-  allow_online: boolean,
-  is_enabled: boolean,
-  sort_order: string,
-  xp_multiplier_pct: string,
-  base_xp_win: string,
-  turn_seconds: string,
-  accent_color: string,
-  ai_level: "easy" | "medium" | "hard",
-  target_rtp_pct: string,
-  metadata: string,
-}
-
-type BoardDraft = {
-  id: string,
-  display_name: string,
-  preview_image: string,
-  gameplay_image: string,
-  lobby_background_image: string,
-  gameplay_background_image: string,
-  white_checker_image: string,
-  black_checker_image: string,
-  dice_image: string,
-  tray_image: string,
-  holder_image: string,
-  unlock_level: string,
-  price_coins: string,
-  price_gems: string,
-  is_enabled: boolean,
-  is_featured: boolean,
-  sort_order: string,
-  metadata: string,
-}
-
-type ShopDraft = {
-  id: string,
-  kind: ShopKind,
-  display_name: string,
-  description: string,
-  image_url: string,
-  price_cents: string,
-  price_coins: string,
-  price_gems: string,
-  apple_product_id: string,
-  google_product_id: string,
-  contents: string,
-  visibility_rules: string,
-  starts_at: string,
-  ends_at: string,
-  max_purchases_per_user: string,
-  is_enabled: boolean,
-  exclude_from_sale: boolean,
-  sort_order: string,
-}
-
-type CurrencyDraft = {
-  code: string,
-  display_name: string, // USD value of one unit, as a free-text decimal string. Converted to
-  // micros (USD × 1_000_000) on save so the operator can type e.g.
-  // "0.01" without thinking about the storage representation.
-  usd_value: string,
-  is_enabled: boolean,
-  sort_order: string,
 }
 
 const sections: readonly Section[] = ["Dashboard", "Users", "Currencies", "Economy Grants", "Level System", "Daily Bonus", "Hourly Wheel", "Daily Missions", "Difficulties", "RTP Analytics", "Board Themes", "Lobby Features", "Shop", "Admin Access"]
@@ -348,404 +270,6 @@ const initialStats: AdminStats = {
   configItems: 0,
   shopItems: 0,
   suspendedUsers: 0,
-}
-
-function isMissingMigrationError(error: {code?: string, message?: string} | null): boolean {
-  if (!error) return false
-  return (error.code === "42P01" || error.code === "PGRST202" || error.code === "PGRST205" || error.message?.includes("Could not find the function") === true || error.message?.includes("Could not find the table") === true || error.message?.includes("relation") === true || error.message?.includes("column") === true)
-}
-
-function isPolicyError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false
-  const maybeError = error as {code?: string, message?: string}
-  return maybeError.code === "42501" || maybeError.message?.toLowerCase().includes("row-level security") === true
-}
-
-function withRequestTimeout<T>(request: PromiseLike<T>, label: string, timeoutMs = 12000): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(`${label} is taking too long. Please refresh and try again.`))
-    }, timeoutMs)
-  })
-
-  return Promise.race([Promise.resolve(request), timeout]).finally(() => {
-    if (timeoutId) clearTimeout(timeoutId)
-  })
-}
-
-function formatNumber(value: number | null | undefined): string {
-  return new Intl.NumberFormat("en-US").format(value ?? 0)
-}
-
-function accountType(row: ProfileRow): "Google" | "Guest" | "Test/Unknown" {
-  if (row.is_guest) return "Guest"
-  if (row.avatar_url) return "Google"
-  return "Test/Unknown"
-}
-
-function isMissingColumnError(error: unknown, columnName: string): boolean {
-  if (!error || typeof error !== "object") return false
-  const maybeError = error as {code?: string, message?: string}
-  const message = maybeError.message?.toLowerCase() ?? ""
-  const normalizedColumnName = columnName.toLowerCase()
-  return (message.includes(normalizedColumnName) && (maybeError.code === "42703" || maybeError.code === "PGRST204" || message.includes("schema cache") || message.includes("could not find")))
-}
-
-function isMissingAnyColumnError(error: unknown, columnNames: readonly string[]): boolean {
-  return columnNames.some((columnName) => isMissingColumnError(error, columnName))
-}
-
-function isDeletedProfile(row: ProfileRow): boolean {
-  return (Boolean(row.deleted_at) || row.suspension_reason === "Deleted in Back Office" || row.admin_note?.includes("[Deleted in Back Office]") === true)
-}
-
-function formatDate(value: string | null | undefined): string {
-  if (!value) return "Never"
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value))
-}
-
-function moneyFromCents(value: number | null): string {
-  if (value === null) return "Free"
-  return `$${(value / 100).toFixed(2)}`
-}
-
-function jsonToString(value: Json | null | undefined, fallback = "{}"): string {
-  if (value === null || value === undefined) return fallback
-  return JSON.stringify(value, null, 2)
-}
-
-function parseJson(value: string, label: string, expected: "object" | "array"): Json {
-  try {
-    const parsed = JSON.parse(value || (expected === "array" ? "[]" : "{}"))
-    if (expected === "array" && !Array.isArray(parsed)) {
-      throw new Error(`${label} must be a JSON array.`)
-    }
-    if (expected === "object" && (parsed === null || Array.isArray(parsed) || typeof parsed !== "object")) {
-      throw new Error(`${label} must be a JSON object.`)
-    }
-    return parsed as Json
-  }
-  catch (err) {
-    if (err instanceof Error && err.message.includes("must be")) throw err
-    throw new Error(`${label} is not valid JSON.`, {cause: err})
-  }
-}
-
-function metadataText(metadata: Json | null | undefined, key: string): string {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return ""
-  const value = metadata[key]
-  return typeof value === "string" ? value : ""
-}
-
-function withGameplayBackgroundMetadata(metadata: Json, value: string): Json {
-  const source = metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {}
-  const next: Record<string, Json> = {}
-  Object.entries(source).forEach(([key, metadataValue]) => {
-    if (metadataValue !== undefined) next[key] = metadataValue
-  })
-  const trimmed = value.trim()
-  if (trimmed) {
-    next.gameplayBackgroundImage = trimmed
-  }
-  else {
-    delete next.gameplayBackgroundImage
-  }
-  return next
-}
-
-function numberOrNull(value: string): number | null {
-  if (value.trim() === "") return null
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) throw new Error("Number field is invalid.")
-  return parsed
-}
-
-function requiredNumber(value: string, label: string): number {
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) throw new Error(`${label} is invalid.`)
-  return parsed
-}
-
-function emptyToNull(value: string): string | null {
-  const trimmed = value.trim()
-  return trimmed ? trimmed : null
-}
-
-function normalizeEmail(value: string): string {
-  return value.trim().toLowerCase()
-}
-
-function levelToDraft(row?: LevelConfig): LevelDraft {
-  return {
-    level: row?.level.toString() ?? "",
-    xp_required: row?.xp_required.toString() ?? "0",
-    status_label: row?.status_label ?? "Rookie",
-    reward_coins: row?.reward_coins.toString() ?? "0",
-    reward_gems: row?.reward_gems.toString() ?? "0",
-    reward_items: jsonToString(row?.reward_items, "[]"),
-    unlock_rules: jsonToString(row?.unlock_rules, "{}"),
-    is_enabled: row?.is_enabled ?? true,
-  }
-}
-
-function grantToDraft(row?: EconomyGrant): EconomyGrantDraft {
-  return {
-    trigger_key: row?.trigger_key ?? "",
-    display_name: row?.display_name ?? "",
-    description: row?.description ?? "",
-    coins: row?.coins.toString() ?? "0",
-    gems: row?.gems.toString() ?? "0",
-    one_time: row?.one_time ?? true,
-    is_enabled: row?.is_enabled ?? true,
-    sort_order: row?.sort_order.toString() ?? "0",
-    isNew: row === undefined,
-  }
-}
-
-function dailyBonusToDraft(row?: DailyBonusConfig): DailyBonusDraft {
-  return {
-    day: row?.day.toString() ?? "1",
-    reward_coins: row?.reward_coins.toString() ?? "0",
-    reward_gems: row?.reward_gems.toString() ?? "0",
-    reward_xp: row?.reward_xp.toString() ?? "0",
-    reward_items: jsonToString(row?.reward_items, "[]"),
-  }
-}
-
-function tableToDraft(row?: TableConfig, defaultKind: "standard" | "difficulty" = "standard"): TableDraft {
-  return {
-    id: row?.id ?? "",
-    kind: row?.kind ?? defaultKind,
-    display_name: row?.display_name ?? "",
-    description: row?.description ?? "",
-    entry_fee_coins: row?.entry_fee_coins.toString() ?? "0",
-    prize_coins: row?.prize_coins.toString() ?? "0",
-    prize_coins_loss: row?.prize_coins_loss.toString() ?? "0",
-    required_level: row?.required_level.toString() ?? "1",
-    match_target: row?.match_target.toString() ?? "7",
-    allow_ai: row?.allow_ai ?? (defaultKind === "difficulty"),
-    allow_online: row?.allow_online ?? true,
-    is_enabled: row?.is_enabled ?? true,
-    sort_order: row?.sort_order.toString() ?? "0",
-    xp_multiplier_pct: row?.xp_multiplier_pct.toString() ?? "100",
-    base_xp_win: row?.base_xp_win.toString() ?? "0",
-    turn_seconds: row?.turn_seconds.toString() ?? "45",
-    accent_color: row?.accent_color ?? "gold",
-    ai_level: row?.ai_level ?? "medium",
-    target_rtp_pct: row?.target_rtp_pct.toString() ?? "90",
-    metadata: jsonToString(row?.metadata, "{}"),
-  }
-}
-
-function boardToDraft(row?: BoardThemeConfig): BoardDraft {
-  return {
-    id: row?.id ?? "",
-    display_name: row?.display_name ?? "",
-    preview_image: row?.preview_image ?? "",
-    gameplay_image: row?.gameplay_image ?? "",
-    lobby_background_image: row?.lobby_background_image ?? "",
-    gameplay_background_image: metadataText(row?.metadata, "gameplayBackgroundImage"),
-    white_checker_image: row?.white_checker_image ?? "",
-    black_checker_image: row?.black_checker_image ?? "",
-    dice_image: row?.dice_image ?? "",
-    tray_image: row?.tray_image ?? "",
-    holder_image: row?.holder_image ?? "",
-    unlock_level: row?.unlock_level.toString() ?? "1",
-    price_coins: row?.price_coins.toString() ?? "0",
-    price_gems: row?.price_gems?.toString() ?? "0",
-    is_enabled: row?.is_enabled ?? true,
-    is_featured: row?.is_featured ?? false,
-    sort_order: row?.sort_order.toString() ?? "0",
-    metadata: jsonToString(row?.metadata, "{}"),
-  }
-}
-
-function currencyToDraft(row?: CurrencyConfigRow): CurrencyDraft {
-  return {
-    code: row?.code ?? "",
-    display_name: row?.display_name ?? "", // Show the value in plain USD (e.g. "0.01"). Six decimals covers
-    // sub-cent rates (1 coin = $0.0001) without scientific notation.
-    usd_value: row ? (row.usd_value_micros / 1_000_000).toFixed(6) : "",
-    is_enabled: row?.is_enabled ?? true,
-    sort_order: row?.sort_order.toString() ?? "0",
-  }
-}
-
-function shopToDraft(row?: ShopItem): ShopDraft {
-  return {
-    id: row?.id ?? "",
-    kind: row?.kind ?? "coin_pack",
-    display_name: row?.display_name ?? "",
-    description: row?.description ?? "",
-    image_url: row?.image_url ?? "",
-    price_cents: row?.price_cents?.toString() ?? "",
-    price_coins: row?.price_coins?.toString() ?? "",
-    price_gems: row?.price_gems?.toString() ?? "",
-    apple_product_id: row?.apple_product_id ?? "",
-    google_product_id: row?.google_product_id ?? "",
-    contents: jsonToString(row?.contents, "{}"),
-    visibility_rules: jsonToString(row?.visibility_rules, "{}"),
-    starts_at: row?.starts_at?.slice(0, 16) ?? "",
-    ends_at: row?.ends_at?.slice(0, 16) ?? "",
-    max_purchases_per_user: row?.max_purchases_per_user?.toString() ?? "",
-    is_enabled: row?.is_enabled ?? false,
-    exclude_from_sale: row?.exclude_from_sale ?? false,
-    sort_order: row?.sort_order.toString() ?? "0",
-  }
-}
-
-// Structured editing of a shop item's `contents` JSON. The raw string stays the
-// source of truth (so unknown keys — e.g. grant types not yet wired up — are
-// preserved), and these helpers read/write specific grant + presentation paths.
-type ShopReward = {kind: string, label: string}
-type ShopJsonObject = Record<string, Json>
-
-function asShopJsonObject(value: unknown): ShopJsonObject {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as ShopJsonObject : {}
-}
-
-function parseShopContents(text: string): ShopJsonObject {
-  try {
-    return asShopJsonObject(JSON.parse(text))
-  }
-  catch {
-    return {}
-  }
-}
-
-function writeShopContents(obj: ShopJsonObject): string {
-  return JSON.stringify(obj, null, 2)
-}
-
-function readGrant(text: string, key: string): string {
-  const v = asShopJsonObject(parseShopContents(text).grants)[key]
-  return typeof v === "number" ? String(v) : ""
-}
-
-function writeGrantNumber(text: string, key: string, value: string): string {
-  const c = parseShopContents(text)
-  const grants = {...asShopJsonObject(c.grants)}
-  const n = Number(value)
-  if (value.trim() === "" || !Number.isFinite(n) || n === 0) delete grants[key]; else grants[key] = Math.trunc(n)
-  return writeShopContents({
-    ...c,
-    grants,
-  })
-}
-
-function readXpBoost(text: string, field: "days" | "multiplier"): string {
-  const grants = asShopJsonObject(parseShopContents(text).grants)
-  const v = asShopJsonObject(grants.xpBoost)[field]
-  return typeof v === "number" ? String(v) : ""
-}
-
-function writeXpBoost(text: string, field: "days" | "multiplier", value: string): string {
-  const c = parseShopContents(text)
-  const grants = {...asShopJsonObject(c.grants)}
-  const next = {...asShopJsonObject(grants.xpBoost)}
-  const n = Number(value)
-  if (value.trim() === "" || !Number.isFinite(n)) delete next[field]; else next[field] = Math.trunc(n)
-  if (next.days === undefined && next.multiplier === undefined) delete grants.xpBoost; else grants.xpBoost = next
-  return writeShopContents({
-    ...c,
-    grants,
-  })
-}
-
-function readBoardGrant(text: string): string {
-  const v = asShopJsonObject(parseShopContents(text).grants).boardThemeId
-  return typeof v === "string" ? v : ""
-}
-
-function writeBoardGrant(text: string, value: string): string {
-  const c = parseShopContents(text)
-  const grants = {...asShopJsonObject(c.grants)}
-  if (value.trim() === "") delete grants.boardThemeId; else grants.boardThemeId = value.trim()
-  return writeShopContents({
-    ...c,
-    grants,
-  })
-}
-
-function readPres(text: string): ShopJsonObject {
-  return asShopJsonObject(parseShopContents(text).presentation)
-}
-
-function writePresField(text: string, key: string, value: string): string {
-  const c = parseShopContents(text)
-  const p = {...asShopJsonObject(c.presentation)}
-  if (value.trim() === "" || value === "none") delete p[key]; else p[key] = value
-  return writeShopContents({
-    ...c,
-    presentation: p,
-  })
-}
-
-function readHeadline(text: string, field: "kind" | "label" | "subLabel"): string {
-  const v = asShopJsonObject(readPres(text).headline)[field]
-  return typeof v === "string" ? v : ""
-}
-
-function writeHeadline(text: string, field: "kind" | "label" | "subLabel", value: string): string {
-  const c = parseShopContents(text)
-  const p = {...asShopJsonObject(c.presentation)}
-  const h = {...asShopJsonObject(p.headline)}
-  if (value.trim() === "") delete h[field]; else h[field] = value
-  if (Object.keys(h).length === 0) delete p.headline; else p.headline = h
-  return writeShopContents({
-    ...c,
-    presentation: p,
-  })
-}
-
-function readHeader(text: string, field: "text" | "bg" | "fg"): string {
-  const v = asShopJsonObject(readPres(text).header)[field]
-  return typeof v === "string" ? v : ""
-}
-
-function writeHeader(text: string, field: "text" | "bg" | "fg", value: string): string {
-  const c = parseShopContents(text)
-  const p = {...asShopJsonObject(c.presentation)}
-  const h = {...asShopJsonObject(p.header)}
-  if (value.trim() === "") delete h[field]; else h[field] = value
-  if (Object.keys(h).length === 0) delete p.header; else p.header = h
-  return writeShopContents({
-    ...c,
-    presentation: p,
-  })
-}
-
-function readRewards(text: string): ShopReward[] {
-  const rewards = readPres(text).rewards
-  return Array.isArray(rewards) ? rewards.map((value) => {
-    const reward = asShopJsonObject(value)
-    return {
-      kind: typeof reward.kind === "string" ? reward.kind : "coins",
-      label: typeof reward.label === "string" ? reward.label : "",
-    }
-  }) : []
-}
-
-function writeRewards(text: string, rewards: ShopReward[]): string {
-  const c = parseShopContents(text)
-  const p = {...asShopJsonObject(c.presentation)}
-  if (rewards.length === 0) delete p.rewards; else p.rewards = rewards.map(({
-    kind,
-    label,
-  }) => ({
-    kind,
-    label,
-  }))
-  return writeShopContents({
-    ...c,
-    presentation: p,
-  })
 }
 
 export function Admin() {
