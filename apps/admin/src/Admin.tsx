@@ -271,12 +271,6 @@ export function Admin() {
   const [levels, setLevels] = useState<LevelConfig[]>([])
   const [economyGrants, setEconomyGrants] = useState<EconomyGrant[]>([])
   const [grantDraft, setGrantDraft] = useState<EconomyGrantDraft>(() => grantToDraft())
-  // Bottom-nav feature lock levels (lobby_feature_configs). `level` is kept as
-  // a string for the text input; saved as an integer. `tooltip` is the
-  // optional override copy ("" → default "Reach level N to unlock").
-  const [lobbyFeatures, setLobbyFeatures] = useState<{
-    feature_key: string, label: string, level: string, enabled: boolean, tooltip: string,
-  }[]>([])
   const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([])
   const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([])
   const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50)
@@ -622,31 +616,6 @@ export function Admin() {
     void loadPodiums().catch(setError)
     void loadLoadingScreens().catch(setError)
   }, [activeSection, loadPodiums, loadLoadingScreens, setError])
-
-  // Load bottom-nav feature lock levels when the operator opens Lobby Features.
-  useEffect(() => {
-    if (activeSection !== "Lobby Features") return
-    void supabase
-      .from("lobby_feature_configs")
-      .select("feature_key, label, unlock_level, is_enabled, sort_order, tooltip_text")
-      .order("sort_order", {ascending: true})
-      .then(({
-        data,
-        error,
-      }) => {
-        if (error) {
-          setError(error)
-          return
-        }
-        setLobbyFeatures((data ?? []).map((r) => ({
-          feature_key: r.feature_key,
-          label: r.label,
-          level: String(r.unlock_level),
-          enabled: r.is_enabled,
-          tooltip: r.tooltip_text ?? "",
-        })))
-      })
-  }, [activeSection, setError])
 
   // Once we've verified the signed-in admin's access once, we don't
   // want to blank the page back to a "Checking access" placeholder on
@@ -1499,34 +1468,6 @@ export function Admin() {
     }
   }
 
-  async function saveLobbyFeature(featureKey: string) {
-    if (!canManage) return
-    setSavingKey(`feature:${featureKey}`)
-    setDataError(null)
-    try {
-      const row = lobbyFeatures.find((f) => f.feature_key === featureKey)
-      if (!row) return
-      const level = requiredNumber(row.level, "Unlock level")
-      if (level < 1) throw new Error("Unlock level must be at least 1.")
-      const tooltip = row.tooltip.trim()
-      const {error} = await supabase
-        .from("lobby_feature_configs")
-        .update({
-          unlock_level: level,
-          is_enabled: row.enabled,
-          tooltip_text: tooltip === "" ? null : tooltip,
-        })
-        .eq("feature_key", featureKey)
-      if (error) throw error
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
   async function saveDailyBonus() {
     if (!canManage) return
     setSavingKey("daily-bonus")
@@ -2323,29 +2264,10 @@ export function Admin() {
           <Route
             element={<LobbyFeaturesAdmin
               canManage={canManage}
-              lobbyFeatures={lobbyFeatures}
-              savingKey={savingKey}
-              onChangeEnabled={(featureKey, enabled) => {
-                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-                  ...r,
-                  enabled,
-                } : r))
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onChangeLevel={(featureKey, level) => {
-                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-                  ...r,
-                  level,
-                } : r))
-              }}
-              onChangeTooltip={(featureKey, tooltip) => {
-                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-                  ...r,
-                  tooltip,
-                } : r))
-              }}
-              onSave={(featureKey) => {
-                void saveLobbyFeature(featureKey)
-              }}/>}
+              onError={setError}/>}
             path="lobby-features"/>
 
           <Route
