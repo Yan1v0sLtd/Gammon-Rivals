@@ -18,6 +18,7 @@ import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
 import {useGetCurrenciesQuery, useUpsertCurrencyMutation} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
+import {useGetDailyBonusQuery, useUpsertDailyBonusMutation} from "./features/DailyBonus/DailyBonusApi"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
 import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
@@ -77,7 +78,6 @@ type LevelStatusTierDraft = {
  * 'all' is the escape hatch for spreadsheet-style scanning.
  */
 type LevelsPageSize = 25 | 50 | 100 | "all"
-type DailyBonusConfig = Database["public"]["Tables"]["daily_bonus_configs"]["Row"]
 type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
 type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
@@ -277,7 +277,6 @@ export function Admin() {
   const [savingTiers, setSavingTiers] = useState(false)
   const [tierError, setTierError] = useState<string | null>(null)
   const [tierMessage, setTierMessage] = useState<string | null>(null)
-  const [dailyBonusConfigs, setDailyBonusConfigs] = useState<DailyBonusConfig[]>([])
   const [tables, setTables] = useState<TableConfig[]>([])
   const [boards, setBoards] = useState<BoardThemeConfig[]>([])
   const [podiums, setPodiums] = useState<PodiumImage[]>([])
@@ -381,6 +380,14 @@ export function Admin() {
     error: economyGrantsError,
   } = useGetEconomyGrantsQuery(undefined, {skip: accessState !== "allowed"})
   const [upsertEconomyGrant] = useUpsertEconomyGrantMutation()
+  // Daily Bonus is owned by RTK Query. Eagerly fetched once access is
+  // allowed (mirroring the old initial loadAdminData fetch); the query
+  // result feeds the DailyBonusAdmin list.
+  const {
+    data: dailyBonusConfigs = [],
+    error: dailyBonusError,
+  } = useGetDailyBonusQuery(undefined, {skip: accessState !== "allowed"})
+  const [upsertDailyBonus] = useUpsertDailyBonusMutation()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -412,6 +419,12 @@ export function Admin() {
   useEffect(() => {
     if (economyGrantsError) setError(economyGrantsError)
   }, [economyGrantsError, setError])
+
+  // Surface a daily-bonus query failure through the page-level dataError.
+  // Only sets when there's an error so it never clears unrelated errors.
+  useEffect(() => {
+    if (dailyBonusError) setError(dailyBonusError)
+  }, [dailyBonusError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -765,7 +778,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, dailyBonusResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -788,9 +801,9 @@ export function Admin() {
         .from("level_status_tiers")
         .select("*")
         .order("sort_order", {ascending: true})
-        .order("level_from", {ascending: true}), supabase.from("daily_bonus_configs").select("*").order("day", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
+        .order("level_from", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? dailyBonusResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -826,7 +839,6 @@ export function Admin() {
         sort_order: String(t.sort_order),
         is_enabled: t.is_enabled,
       })))
-      setDailyBonusConfigs(dailyBonusResult.data ?? [])
       setTables(tableResult.data ?? [])
       setBoards(boardResult.data ?? [])
       setShopItems(shopResult.data ?? [])
@@ -1489,11 +1501,8 @@ export function Admin() {
         reward_items: parseJson(dailyBonusDraft.reward_items, "Reward items", "array"),
         updated_by: user?.id ?? null,
       }
-      const {error} = await supabase
-        .from("daily_bonus_configs")
-        .upsert(payload, {onConflict: "day"})
-      if (error) throw error
-      await loadAdminData()
+      await upsertDailyBonus(payload).unwrap()
+      setDailyBonusDraft(dailyBonusToDraft())
     }
     catch (err) {
       setError(err)
