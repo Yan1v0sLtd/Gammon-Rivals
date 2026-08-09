@@ -22,6 +22,7 @@ import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
 import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
 import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
+import {useGetEconomyGrantsQuery, useUpsertEconomyGrantMutation} from "./features/EconomyGrants/EconomyGrantsApi"
 import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
 import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
 import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
@@ -76,7 +77,6 @@ type LevelStatusTierDraft = {
  * 'all' is the escape hatch for spreadsheet-style scanning.
  */
 type LevelsPageSize = 25 | 50 | 100 | "all"
-type EconomyGrant = Database["public"]["Tables"]["economy_grants"]["Row"]
 type DailyBonusConfig = Database["public"]["Tables"]["daily_bonus_configs"]["Row"]
 type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
@@ -269,7 +269,6 @@ export function Admin() {
     reason: "",
   })
   const [levels, setLevels] = useState<LevelConfig[]>([])
-  const [economyGrants, setEconomyGrants] = useState<EconomyGrant[]>([])
   const [grantDraft, setGrantDraft] = useState<EconomyGrantDraft>(() => grantToDraft())
   const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([])
   const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([])
@@ -374,6 +373,14 @@ export function Admin() {
     error: currenciesError,
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
   const [upsertCurrency] = useUpsertCurrencyMutation()
+  // Economy Grants are owned by RTK Query. Eagerly fetched once access is
+  // allowed (mirroring the old initial loadAdminData fetch); the query
+  // result feeds the EconomyGrantsAdmin list.
+  const {
+    data: economyGrants = [],
+    error: economyGrantsError,
+  } = useGetEconomyGrantsQuery(undefined, {skip: accessState !== "allowed"})
+  const [upsertEconomyGrant] = useUpsertEconomyGrantMutation()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -399,6 +406,12 @@ export function Admin() {
   useEffect(() => {
     if (currenciesError) setError(currenciesError)
   }, [currenciesError, setError])
+
+  // Surface an economy-grants query failure through the page-level dataError.
+  // Only sets when there's an error so it never clears unrelated errors.
+  useEffect(() => {
+    if (economyGrantsError) setError(economyGrantsError)
+  }, [economyGrantsError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -752,7 +765,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, economyGrantResult, dailyBonusResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, levelResult, levelStatusTierResult, dailyBonusResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -775,13 +788,9 @@ export function Admin() {
         .from("level_status_tiers")
         .select("*")
         .order("sort_order", {ascending: true})
-        .order("level_from", {ascending: true}), supabase
-        .from("economy_grants")
-        .select("*")
-        .order("sort_order", {ascending: true})
-        .order("trigger_key", {ascending: true}), supabase.from("daily_bonus_configs").select("*").order("day", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
+        .order("level_from", {ascending: true}), supabase.from("daily_bonus_configs").select("*").order("day", {ascending: true}), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? economyGrantResult.error ?? dailyBonusResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? levelResult.error ?? levelStatusTierResult.error ?? dailyBonusResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -804,7 +813,6 @@ export function Admin() {
         return new Set([...current].filter((id) => visibleIds.has(id)))
       })
       setLevels(levelResult.data ?? [])
-      setEconomyGrants(economyGrantResult.data ?? [])
       const tierRows = levelStatusTierResult.data ?? []
       setLevelStatusTiers(tierRows)
       // Initialize the editable drafts from the freshly loaded rows.
@@ -1446,7 +1454,7 @@ export function Admin() {
       if (!grantDraft.display_name.trim()) {
         throw new Error("Display name is required.")
       }
-      const {error} = await supabase.rpc("admin_upsert_economy_grant", {
+      await upsertEconomyGrant({
         p_trigger_key: triggerKey,
         p_display_name: grantDraft.display_name.trim(),
         p_description: grantDraft.description.trim(),
@@ -1455,10 +1463,8 @@ export function Admin() {
         p_one_time: grantDraft.one_time,
         p_is_enabled: grantDraft.is_enabled,
         p_sort_order: requiredNumber(grantDraft.sort_order, "Sort order"),
-      })
-      if (error) throw error
+      }).unwrap()
       setGrantDraft(grantToDraft())
-      await loadAdminData()
     }
     catch (err) {
       setError(err)
