@@ -13,7 +13,7 @@
     "check:boundaries": "node scripts/check-app-boundaries.mjs",
     "dev:website": "pnpm --filter website dev",
     "build:website": "pnpm --filter website build",
-    "lint": "eslint .",
+    "lint": "eslint . --cache --fix",
     "build:shared-engine": "node scripts/build-shared-engine.mjs",
     "build:shared-ai": "node scripts/build-shared-ai.mjs",
     "android:sync": "pnpm run build && pnpm exec cap sync android",
