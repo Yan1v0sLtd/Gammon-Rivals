@@ -5,15 +5,10 @@
  * is deliberately independent so the apps never fight over class names or
  * load unrelated CSS.
  *
- * This file keeps only what cannot be scoped to a component/layout:
- *   - the :root design tokens (every page's scoped <style> reads them),
- *   - the base reset,
- *   - the shared .doc-page shell (used by both LegalLayout and how-to-play),
- *   - the .doc-panel typography, which styles content passed through
- *     LegalLayout's <slot /> — Astro scoped styles never reach slot content,
- *     so these rules must stay global.
- * Component chrome (header/footer/feature grid/board strip) lives in the
- * owning component's scoped <style>.
+ * This file keeps only the design tokens and base reset that every page's
+ * scoped <style> depends on. Component chrome (header/footer/feature grid/
+ * board strip) lives in the owning component's scoped <style>, and the doc
+ * page styles live in doc.css, imported by the pages that render them.
  */
 
 :root {
@@ -40,94 +35,3 @@ html, body {
 }
 
 img { max-width: 100%; }
-
-/* Document page layout (Terms / Privacy / How to Play) */
-.doc-page {
-  padding: clamp(1.75rem, 4vw, 3.5rem) clamp(1rem, 3vw, 2.5rem) clamp(3rem, 6vw, 5rem);
-  display: flex;
-  justify-content: center;
-}
-
-/* .doc-panel shell itself is scoped in LegalLayout.astro; these descendant
-   rules style the slot content the legal pages pass in, so they stay global. */
-.doc-panel h1 {
-  margin: 0 0 0.4rem;
-  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
-  color: var(--site-gold);
-  letter-spacing: 0.01em;
-}
-
-.doc-meta {
-  margin: 0 0 1.6rem;
-  font-size: 0.85rem;
-  color: var(--site-cream-faint);
-}
-
-.doc-note {
-  margin: 0 0 2rem;
-  padding: 0.85rem 1.1rem;
-  border: 1px solid rgba(246, 215, 112, 0.22);
-  border-left: 3px solid var(--site-gold);
-  border-radius: 0.5rem;
-  background: rgba(246, 215, 112, 0.06);
-  font-size: 0.86rem;
-  font-style: italic;
-  color: var(--site-cream-dim);
-}
-
-.doc-panel h2 {
-  margin: 2.2rem 0 0.9rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(246, 215, 112, 0.18);
-  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-  color: var(--site-gold);
-}
-.doc-panel h2:first-of-type { margin-top: 0; }
-
-.doc-panel h3 {
-  margin: 1.5rem 0 0.6rem;
-  font-size: 1rem;
-  color: var(--site-cream);
-}
-
-.doc-panel p {
-  margin: 0 0 1rem;
-  line-height: 1.7;
-  color: var(--site-cream-dim);
-  font-size: 0.94rem;
-}
-
-.doc-panel ul {
-  margin: 0 0 1rem;
-  padding-left: 1.3rem;
-  color: var(--site-cream-dim);
-  font-size: 0.94rem;
-  line-height: 1.7;
-}
-.doc-panel li { margin-bottom: 0.35rem; }
-
-.doc-panel strong { color: var(--site-cream); font-weight: 750; }
-
-.doc-panel a { color: var(--site-gold); text-decoration: underline; text-decoration-color: rgba(246, 215, 112, 0.4); }
-.doc-panel a:hover { text-decoration-color: var(--site-gold); }
-
-.doc-panel table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0 0 1.4rem;
-  font-size: 0.86rem;
-}
-.doc-panel th, .doc-panel td {
-  text-align: left;
-  padding: 0.55rem 0.7rem;
-  border: 1px solid rgba(246, 215, 112, 0.14);
-  color: var(--site-cream-dim);
-  vertical-align: top;
-}
-.doc-panel th { color: var(--site-gold); font-weight: 700; }
-
-.doc-panel hr {
-  border: none;
-  border-top: 1px solid rgba(246, 215, 112, 0.16);
-  margin: 2rem 0;
-}
