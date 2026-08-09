@@ -4,14 +4,6 @@ import ContactUs from '../components/ContactUs.astro'
 import '../styles/doc.css'
 ---
 
-<!--
-  Phase D5: Privacy Policy ported verbatim from public/privacy.html onto the
-  shared LegalLayout (doc-page/doc-panel shell). The legacy page carried no
-  inline style attributes, so no scoped <style> is needed here — .doc-meta,
-  .doc-note and the doc-panel rules already live in global.css. The contact
-  block (Section 15) is byte-identical to Terms' Section 30, so both render
-  the shared ContactUs component.
--->
 <LegalLayout
   title="Privacy Policy — Gammon Rivals"
   description="Privacy Policy for Gammon Rivals — what we collect, how we use it, and how to delete your account."
@@ -185,9 +177,7 @@ import '../styles/doc.css'
     We will respond within the time required by applicable law and may need to verify
     your identity.
   </p>
-  <!-- Phase E: the in-app deletion flow was removed, so this section
-       intentionally diverges from the legacy policy wording. Deletion is now
-       email-only; do not restore the retired in-app instructions. -->
+  <!-- Deletion is email-only; do not restore the retired in-app flow. -->
   <p>
     <strong>Deleting your account.</strong> You can permanently delete your account and
     associated data at any time by emailing <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> from

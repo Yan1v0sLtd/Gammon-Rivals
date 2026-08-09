@@ -4,12 +4,8 @@ import { Image } from 'astro:assets'
 import logo from '../../../../packages/brand-assets/imported/logo.webp'
 ---
 
-<!--
-  Phase D3: landing page ported from public/landing.html onto the shared
-  SiteLayout shell. The legacy covert wordmark link to the old game route is
-  dropped — that route no longer exists on the web — so SiteHeader/SiteFooter
-  own all chrome and the hero stays just the logo + Coming Soon CTA.
--->
+<!-- The old game route no longer exists on the web, so SiteHeader/SiteFooter
+     own all chrome and the hero stays just the logo + Coming Soon CTA. -->
 <SiteLayout
   title="Gammon Rivals — Play Backgammon Online"
   description="Roll dice, race your checkers, win the match. Play backgammon online against real opponents or AI. Free to play."
@@ -18,8 +14,7 @@ import logo from '../../../../packages/brand-assets/imported/logo.webp'
   ogImage="/lobby/backgrounds/classic-green.webp"
 >
   <!-- Stronger hero background than the shared .site-bg; covers it fully.
-       /lobby/backgrounds/classic-green.webp is shared game imagery and keeps
-       its stable URL — never copied into imported/. -->
+       Shared game imagery — keep its stable URL, never copy into imported/. -->
   <div class="bg" aria-hidden="true"></div>
 
   <section class="landing">
@@ -32,10 +27,9 @@ import logo from '../../../../packages/brand-assets/imported/logo.webp'
         height={logo.height}
       />
     </h1>
-    <!-- Pre-launch "Coming Soon" CTA. Same pill silhouette as the legacy
-         .play-btn but visually passive: gold outline on dark fill, no
-         hover/active states, default cursor. When the game is ready, swap
-         back to a play button linking to the game route. -->
+    <!-- Pre-launch "Coming Soon" CTA — visually passive (no hover/active
+         states, default cursor). Swap back to a play button when the game
+         is ready. -->
     <span class="cta-soon">Coming Soon</span>
   </section>
 </SiteLayout>
@@ -57,8 +51,8 @@ import logo from '../../../../packages/brand-assets/imported/logo.webp'
     background: radial-gradient(circle at 50% 35%, rgba(28, 127, 185, 0.28), rgba(5, 12, 24, 0.92) 62%, rgba(2, 8, 16, 0.98));
   }
 
-  /* Hero area between the shared header and footer — the legacy .stage's
-     middle 1fr row. Header and footer rows belong to SiteLayout. */
+  /* Hero area between the shared header and footer; those rows belong to
+     SiteLayout. */
   .landing {
     position: relative;
     min-height: calc(100dvh - 8rem);

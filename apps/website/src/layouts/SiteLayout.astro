@@ -8,9 +8,8 @@ interface Props {
   title: string
   /** Meta description, also feeds the Open Graph/Twitter description. */
   description: string
-  /** Open Graph/Twitter description; defaults to the meta description. The
-      legacy marketing pages shipped a distinct share blurb from the meta
-      description, so allow pages to express that split. */
+  /** Open Graph/Twitter description; defaults to the meta description. Pages
+      may want a distinct share blurb. */
   ogDescription?: string
   /** Canonical URL override; defaults to the current page's URL. */
   canonical?: string
@@ -35,8 +34,7 @@ const {
   lang = 'en',
 } = Astro.props
 
-// Astro.site comes from the `site` option in astro.config.mjs (set in Phase
-// D7); the pre-D7 hardcoded fallback was dead code and has been removed.
+// Astro.site comes from the `site` option in astro.config.mjs.
 const site = Astro.site
 const canonicalUrl = canonical ? new URL(canonical, site).href : new URL(Astro.url.pathname, site).href
 const ogImageUrl = new URL(ogImage, site).href

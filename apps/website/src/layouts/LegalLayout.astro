@@ -15,9 +15,7 @@ interface Props {
 const props = Astro.props
 ---
 
-<!-- Shared document wrapper for the legal pages (Privacy, Terms,
-     delete-account). Content lands in the site-main slot via SiteLayout,
-     framed by the centered doc-page/doc-panel shell. -->
+<!-- Centered document shell shared by all legal pages. -->
 <SiteLayout {...props}>
   <div class="doc-page">
     <article class="doc-panel">

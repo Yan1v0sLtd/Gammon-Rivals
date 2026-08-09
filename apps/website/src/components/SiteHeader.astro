@@ -1,11 +1,9 @@
 ---
-// Shared site header: wordmark + primary nav. The current page is marked
-// with aria-current so .site-nav highlights it.
+// Mark the current page with aria-current so .site-nav highlights it.
 const { pathname } = Astro.url
 
-// Astro's default build.format="directory" emits pages at trailing-slash
-// URLs (/how-to-play/), so compare the normalized path to keep the exact
-// match working (root "/" is left intact).
+// build.format="directory" emits trailing-slash URLs (/how-to-play/), so
+// normalize the path to keep the exact match working (root "/" is intact).
 const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
 
 const links = [
