@@ -1,0 +1,51 @@
+import type {Database} from "../../../../packages/shared/src/database.ts";
+
+export const builtInBoardSeeds: readonly Database["public"]["Tables"]["board_theme_configs"]["Insert"][] = [{
+  id: "classic-green",
+  display_name: "Classic Green",
+  preview_image: "/lobby/board-previews/classic-green.webp",
+  gameplay_image: "/themes/classic-green/board.webp",
+  lobby_background_image: "/lobby/backgrounds/classic-green.webp",
+  unlock_level: 1,
+  price_coins: 0,
+  is_enabled: true,
+  is_featured: true,
+  sort_order: 10,
+  metadata: {
+    accent: "#6dda72",
+    subtitle: "Traditional felt",
+    gameplayBackgroundImage: "/lobby/backgrounds/classic-green.webp",
+  },
+}, {
+  id: "ocean-blue",
+  display_name: "Ocean Blue",
+  preview_image: "/lobby/board-previews/ocean-blue.webp",
+  gameplay_image: "/themes/ocean-blue/board.webp",
+  lobby_background_image: "/lobby/backgrounds/ocean-blue.webp",
+  unlock_level: 5,
+  price_coins: 1500,
+  is_enabled: true,
+  is_featured: false,
+  sort_order: 20,
+  metadata: {
+    accent: "#39d7ff",
+    subtitle: "Bright coastal wood",
+    gameplayBackgroundImage: "/lobby/backgrounds/ocean-blue.webp",
+  },
+}, {
+  id: "royal-purple",
+  display_name: "Royal Purple",
+  preview_image: "/lobby/board-previews/royal-purple.webp",
+  gameplay_image: "/themes/royal-purple/board.webp",
+  lobby_background_image: "/lobby/backgrounds/royal-purple.webp",
+  unlock_level: 10,
+  price_coins: 5000,
+  is_enabled: true,
+  is_featured: false,
+  sort_order: 30,
+  metadata: {
+    accent: "#c174ff",
+    subtitle: "Gold tournament trim",
+    gameplayBackgroundImage: "/lobby/backgrounds/royal-purple.webp",
+  },
+}]
