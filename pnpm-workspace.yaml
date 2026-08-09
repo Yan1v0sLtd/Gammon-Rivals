@@ -13,8 +13,8 @@ shellEmulator: true
 storeDir: ${PNPM_STORE_DIR:-.pnpm-store}
 
 supportedArchitectures:
-  cpu: [ arm64, x64 ]
-  os: [ darwin, linux ]
+  cpu: [arm64, x64]
+  os: [darwin, linux]
 
 updateNotifier: false
 
