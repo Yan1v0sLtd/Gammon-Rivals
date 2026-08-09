@@ -25,3 +25,68 @@ const links = [
     }
   </nav>
 </header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem clamp(1rem, 3vw, 2.5rem);
+    background: var(--site-header-bg);
+    border-bottom: 1px solid rgba(246, 215, 112, 0.14);
+  }
+
+  .site-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 900;
+    font-size: clamp(0.72rem, 1.3vw, 0.92rem);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--site-gold);
+    text-decoration: none;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    white-space: nowrap;
+  }
+  .site-brand img { height: 1.6rem; width: auto; display: block; }
+
+  .site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: clamp(1rem, 2.4vw, 1.9rem);
+  }
+
+  .site-nav a {
+    position: relative;
+    color: var(--site-cream-dim);
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    padding: 0.2rem 0;
+    transition: color 120ms ease;
+  }
+  .site-nav a:hover { color: var(--site-gold); }
+  .site-nav a[aria-current='page'] { color: var(--site-gold); }
+  .site-nav a[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -0.3rem;
+    height: 2px;
+    background: var(--site-gold);
+    border-radius: 2px;
+  }
+
+  @media (max-width: 640px) {
+    .site-header { flex-wrap: wrap; }
+    .site-nav { gap: 1rem; }
+  }
+</style>

@@ -75,3 +75,29 @@ const ogImageUrl = new URL(ogImage, site).href
     </div>
   </body>
 </html>
+
+<style>
+  .site-bg {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image: url('/lobby/backgrounds/classic-green.webp');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.32) saturate(1.05);
+  }
+  .site-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 20%, rgba(28, 127, 185, 0.16), rgba(5, 12, 24, 0.94) 60%, rgba(2, 8, 16, 0.99));
+  }
+
+  .site-shell {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .site-main { flex: 1 1 auto; }
+</style>

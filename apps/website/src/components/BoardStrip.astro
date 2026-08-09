@@ -17,3 +17,30 @@ const boards = [
     {boards.map(({ src, alt }) => <img src={src} alt={alt} loading="lazy" />)}
   </div>
 </div>
+
+<style>
+  .board-strip-wrap {
+    max-width: 64rem;
+    margin: 0 auto 3rem;
+    text-align: center;
+  }
+  .board-strip-wrap h2 {
+    color: var(--site-gold);
+    font-size: 1.15rem;
+    margin: 0 0 1.1rem;
+  }
+  .board-strip {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.9rem;
+  }
+  .board-strip img {
+    width: 8.5rem;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(246, 215, 112, 0.22);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  }
+</style>

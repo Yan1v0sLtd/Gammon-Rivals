@@ -49,3 +49,23 @@ const features = [
     ))
   }
 </div>
+
+<style>
+  .feature-grid {
+    max-width: 64rem;
+    margin: 0 auto 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.1rem;
+  }
+
+  .feature-card {
+    background: var(--site-panel-bg);
+    border: 1px solid var(--site-panel-border);
+    border-radius: 0.9rem;
+    padding: 1.4rem 1.3rem;
+  }
+  .feature-card img { width: 2.5rem; height: 2.5rem; object-fit: contain; margin-bottom: 0.8rem; }
+  .feature-card h3 { margin: 0 0 0.4rem; color: var(--site-gold); font-size: 1.02rem; }
+  .feature-card p { margin: 0; font-size: 0.88rem; line-height: 1.6; color: var(--site-cream-dim); }
+</style>
