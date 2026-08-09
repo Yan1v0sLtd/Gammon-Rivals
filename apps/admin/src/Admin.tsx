@@ -6,9 +6,7 @@ import {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react
 // + `isSupabaseConfigured` so the rest of the file (30+ call sites)
 // keeps working unchanged.
 import {BoardPreview} from "../../../packages/board-preview/src/BoardPreview"
-import {
-  buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor,
-} from "../../../packages/shared/src/currency"
+import {buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor} from "../../../packages/shared/src/currency"
 import type {Database} from "../../../packages/shared/src/database"
 import {resolveStatusLabel} from "../../../packages/shared/src/progression"
 
@@ -21,14 +19,14 @@ import {FeltCornersField} from "./components/FeltCornersField"
 import {Field} from "./components/Field"
 import {ImageField} from "./components/ImageField"
 import {LevelCurveProposal} from "./components/LevelCurveProposal"
-import {MissionsAdmin} from "./components/MissionsAdmin"
 import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
 import {StatusPill} from "./components/StatusPill"
 import {TextArea} from "./components/TextArea"
 import {Toggle} from "./components/Toggle"
 import {useConfirm} from "./components/useConfirm"
-import {WheelAdmin} from "./components/WheelAdmin"
+import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
+import {WheelAdmin} from "./features/HourlyWheel/WheelAdmin.tsx"
 import {accountType} from "./lib/accountType"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"

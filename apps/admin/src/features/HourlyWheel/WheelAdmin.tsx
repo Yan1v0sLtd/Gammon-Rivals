@@ -7,11 +7,11 @@ import {useCallback, useEffect, useMemo, useState} from "react"
 // different user or none at all.
 import {
   buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor,
-} from "../../../../packages/shared/src/currency"
-import type {Database} from "../../../../packages/shared/src/database"
-import {adminSupabase as supabase} from "../lib/adminSupabase"
+} from "../../../../../packages/shared/src/currency.ts"
+import type {Database} from "../../../../../packages/shared/src/database.ts"
+import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
 
-import {ImageField} from "./ImageField"
+import {ImageField} from "../../components/ImageField.tsx"
 
 type WheelConfigRow = Database["public"]["Tables"]["wheel_configs"]["Row"]
 type WheelSlotRow = Database["public"]["Tables"]["wheel_slots"]["Row"]
