@@ -14,10 +14,19 @@ import {resolveStatusLabel} from "../../../packages/shared/src/progression"
 
 import {BearOffTraysField} from "./components/BearOffTraysField"
 import {BoardTuningField} from "./components/BoardTuningField"
+import {ConfigTable} from "./components/ConfigTable"
+import {DangerButton} from "./components/DangerButton"
+import {EmptyState} from "./components/EmptyState"
 import {FeltCornersField} from "./components/FeltCornersField"
+import {Field} from "./components/Field"
 import {ImageField} from "./components/ImageField"
 import {LevelCurveProposal} from "./components/LevelCurveProposal"
 import {MissionsAdmin} from "./components/MissionsAdmin"
+import {PrimaryButton} from "./components/PrimaryButton"
+import {SecondaryButton} from "./components/SecondaryButton"
+import {StatusPill} from "./components/StatusPill"
+import {TextArea} from "./components/TextArea"
+import {Toggle} from "./components/Toggle"
 import {useConfirm} from "./components/useConfirm"
 import {WheelAdmin} from "./components/WheelAdmin"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
@@ -470,141 +479,6 @@ function emptyToNull(value: string): string | null {
 
 function normalizeEmail(value: string): string {
   return value.trim().toLowerCase()
-}
-
-function StatusPill({enabled}: {enabled: boolean}) {
-  return (<span
-    className={`inline-flex min-w-[4.75rem] items-center justify-center rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-wide ${enabled ? "bg-emerald-400/15 text-emerald-200 ring-1 ring-emerald-300/30" : "bg-rose-400/15 text-rose-200 ring-1 ring-rose-300/30"}`}>
-    {enabled ? "Enabled" : "Disabled"}
-  </span>)
-}
-
-function EmptyState({text}: {text: string}) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-8 text-center text-sm text-white/45">
-      {text}
-    </div>)
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  type = "text",
-  disabled = false,
-  placeholder,
-}: {
-  label: string, value: string, onChange(value: string): void, type?: string, disabled?: boolean, placeholder?: string,
-}) {
-  // Date/time inputs get the native calendar/clock picker: dark color-scheme so
-  // the indicator + popup are legible on the dark UI, and a click anywhere in
-  // the field opens it (showPicker) so the operator never has to type a date.
-  const isPicker = type === "date" || type === "datetime-local" || type === "time" || type === "month" || type === "week"
-  return (<label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    {label}
-    <input
-      className={`mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50${isPicker ? " cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer" : ""}`}
-      disabled={disabled}
-      placeholder={placeholder}
-      type={type}
-      value={value}
-      onChange={(event) => {
-        onChange(event.target.value)
-      }}
-      onClick={isPicker ? (event) => {
-        try {
-          (event.currentTarget).showPicker?.()
-        }
-        catch {
-          /* showPicker unsupported / not user-activated — typing still works */
-        }
-      } : undefined}/>
-  </label>)
-}
-
-function TextArea({
-  label,
-  value,
-  onChange,
-  rows = 4,
-}: {
-  label: string, value: string, onChange(value: string): void, rows?: number,
-}) {
-  return (<label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    {label}
-    <textarea
-      className="mt-1 w-full resize-y rounded-lg border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60"
-      rows={rows}
-      value={value}
-      onChange={(event) => {
-        onChange(event.target.value)
-      }}/>
-  </label>)
-}
-
-function Toggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string, checked: boolean, onChange(value: boolean): void,
-}) {
-  return (<label
-    className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/15 px-3 py-2 text-sm font-bold text-white/70">
-    {label}
-    <input
-      checked={checked}
-      className="h-4 w-4 accent-amber-300"
-      type="checkbox"
-      onChange={(event) => {
-        onChange(event.target.checked)
-      }}/>
-  </label>)
-}
-
-function PrimaryButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode, onClick(): void, disabled?: boolean,
-}) {
-  return (<button
-    className="rounded-lg bg-amber-300 px-4 py-2 text-sm font-black text-[#1b1202] shadow-lg shadow-amber-900/20 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
-    disabled={disabled}
-    onClick={onClick}>
-    {children}
-  </button>)
-}
-
-function SecondaryButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode, onClick(): void, disabled?: boolean,
-}) {
-  return (<button
-    className="rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white/75 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-    disabled={disabled}
-    onClick={onClick}>
-    {children}
-  </button>)
-}
-
-function DangerButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode, onClick(): void, disabled?: boolean,
-}) {
-  return (<button
-    className="rounded-lg border border-rose-300/30 bg-rose-500/16 px-4 py-2 text-sm font-black text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-    disabled={disabled}
-    onClick={onClick}>
-    {children}
-  </button>)
 }
 
 function levelToDraft(row?: LevelConfig): LevelDraft {
@@ -5474,35 +5348,5 @@ export function Admin() {
         </div>)}
       </div>
     </div>
-  </div>)
-}
-
-function ConfigTable({
-  title,
-  rows,
-  onRowClick,
-}: {
-  title: string, rows: string[][], onRowClick?(index: number): void,
-}) {
-  return (<div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.045]">
-    <div className="border-b border-white/10 px-4 py-3">
-      <h2 className="text-lg font-black">{title}</h2>
-    </div>
-    {rows.length === 0 ? (<EmptyState text={`No ${title.toLowerCase()} found.`}/>) : (<div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-white/10 text-sm">
-        <tbody className="divide-y divide-white/10">
-          {rows.map((row, index) => (<tr
-            key={`${title}-${row.join("|")}`}
-            className={`${onRowClick ? "cursor-pointer hover:bg-white/[0.055]" : ""} text-white/70 transition`}
-            onClick={() => onRowClick?.(index)}>
-            {row.map((cell, cellIndex) => (<td
-              key={`${title}-${row.join("|")}-${cell}`}
-              className={`px-4 py-3 ${cellIndex === 0 ? "font-bold text-white" : "text-white/55"}`}>
-              <div className="max-w-[18rem] truncate">{cell}</div>
-            </td>))}
-          </tr>))}
-        </tbody>
-      </table>
-    </div>)}
   </div>)
 }
