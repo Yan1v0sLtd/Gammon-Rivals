@@ -18,12 +18,10 @@ import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
 import {useGetCurrenciesQuery} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
-import {useGetDailyBonusQuery, useUpsertDailyBonusMutation} from "./features/DailyBonus/DailyBonusApi"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
 import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
 import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
-import {useGetEconomyGrantsQuery, useUpsertEconomyGrantMutation} from "./features/EconomyGrants/EconomyGrantsApi"
 import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
 import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
 import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
@@ -34,10 +32,8 @@ import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
-import {dailyBonusToDraft, type DailyBonusDraft} from "./lib/dailyBonusToDraft"
 import {emptyToNull} from "./lib/emptyToNull"
 import {formatNumber} from "./lib/formatNumber"
-import {grantToDraft, type EconomyGrantDraft} from "./lib/grantToDraft"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
 import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
 import {isMissingColumnError} from "./lib/isMissingColumnError"
@@ -268,7 +264,6 @@ export function Admin() {
     reason: "",
   })
   const [levels, setLevels] = useState<LevelConfig[]>([])
-  const [grantDraft, setGrantDraft] = useState<EconomyGrantDraft>(() => grantToDraft())
   const [levelStatusTiers, setLevelStatusTiers] = useState<LevelStatusTier[]>([])
   const [tierDrafts, setTierDrafts] = useState<LevelStatusTierDraft[]>([])
   const [levelsPageSize, setLevelsPageSize] = useState<LevelsPageSize>(50)
@@ -342,7 +337,6 @@ export function Admin() {
     note: "Initial owner email",
   })
   const [levelDraft, setLevelDraft] = useState<LevelDraft>(() => levelToDraft())
-  const [dailyBonusDraft, setDailyBonusDraft] = useState<DailyBonusDraft>(() => dailyBonusToDraft())
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft())
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
   const [boardEditorOpen, setBoardEditorOpen] = useState(false)
@@ -369,22 +363,6 @@ export function Admin() {
   const {
     data: currencies = [],
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
-  // Economy Grants are owned by RTK Query. Eagerly fetched once access is
-  // allowed (mirroring the old initial loadAdminData fetch); the query
-  // result feeds the EconomyGrantsAdmin list.
-  const {
-    data: economyGrants = [],
-    error: economyGrantsError,
-  } = useGetEconomyGrantsQuery(undefined, {skip: accessState !== "allowed"})
-  const [upsertEconomyGrant] = useUpsertEconomyGrantMutation()
-  // Daily Bonus is owned by RTK Query. Eagerly fetched once access is
-  // allowed (mirroring the old initial loadAdminData fetch); the query
-  // result feeds the DailyBonusAdmin list.
-  const {
-    data: dailyBonusConfigs = [],
-    error: dailyBonusError,
-  } = useGetDailyBonusQuery(undefined, {skip: accessState !== "allowed"})
-  const [upsertDailyBonus] = useUpsertDailyBonusMutation()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -404,18 +382,6 @@ export function Admin() {
     }
     setDataError(String(err))
   }, [])
-
-  // Surface an economy-grants query failure through the page-level dataError.
-  // Only sets when there's an error so it never clears unrelated errors.
-  useEffect(() => {
-    if (economyGrantsError) setError(economyGrantsError)
-  }, [economyGrantsError, setError])
-
-  // Surface a daily-bonus query failure through the page-level dataError.
-  // Only sets when there's an error so it never clears unrelated errors.
-  useEffect(() => {
-    if (dailyBonusError) setError(dailyBonusError)
-  }, [dailyBonusError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -1445,64 +1411,6 @@ export function Admin() {
     }
   }
 
-  async function saveGrant() {
-    if (!canManage) return
-    setSavingKey("grant")
-    setDataError(null)
-    try {
-      const triggerKey = grantDraft.trigger_key.trim().toLowerCase()
-      if (!/^[a-z][a-z0-9_]*$/.test(triggerKey)) {
-        throw new Error("Trigger key must be lowercase letters/numbers/underscores, starting with a letter (e.g. refer_friend).")
-      }
-      if (!grantDraft.display_name.trim()) {
-        throw new Error("Display name is required.")
-      }
-      await upsertEconomyGrant({
-        p_trigger_key: triggerKey,
-        p_display_name: grantDraft.display_name.trim(),
-        p_description: grantDraft.description.trim(),
-        p_coins: requiredNumber(grantDraft.coins, "Coins"),
-        p_gems: requiredNumber(grantDraft.gems, "Gems"),
-        p_one_time: grantDraft.one_time,
-        p_is_enabled: grantDraft.is_enabled,
-        p_sort_order: requiredNumber(grantDraft.sort_order, "Sort order"),
-      }).unwrap()
-      setGrantDraft(grantToDraft())
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function saveDailyBonus() {
-    if (!canManage) return
-    setSavingKey("daily-bonus")
-    setDataError(null)
-    try {
-      const day = requiredNumber(dailyBonusDraft.day, "Day")
-      if (day < 1 || day > 7) throw new Error("Day must be between 1 and 7.")
-      const payload: Database["public"]["Tables"]["daily_bonus_configs"]["Insert"] = {
-        day,
-        reward_coins: requiredNumber(dailyBonusDraft.reward_coins, "Reward coins"),
-        reward_gems: requiredNumber(dailyBonusDraft.reward_gems, "Reward gems"),
-        reward_xp: requiredNumber(dailyBonusDraft.reward_xp, "Reward XP"),
-        reward_items: parseJson(dailyBonusDraft.reward_items, "Reward items", "array"),
-        updated_by: user?.id ?? null,
-      }
-      await upsertDailyBonus(payload).unwrap()
-      setDailyBonusDraft(dailyBonusToDraft())
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
   async function saveTable() {
     if (!canManage) return
     setSavingKey("table")
@@ -2032,34 +1940,10 @@ export function Admin() {
           <Route
             element={<EconomyGrantsAdmin
               canManage={canManage}
-              economyGrants={economyGrants}
-              grantDraft={grantDraft}
-              savingKey={savingKey}
-              onFieldChange={(field, value) => {
-                setGrantDraft((d) => ({
-                  ...d,
-                  [field]: value,
-                }))
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onNew={() => {
-                setGrantDraft(grantToDraft())
-              }}
-              onSave={() => void saveGrant()}
-              onSelectGrant={(index) => {
-                setGrantDraft(grantToDraft(economyGrants[index]))
-              }}
-              onToggleEnabled={(is_enabled) => {
-                setGrantDraft((d) => ({
-                  ...d,
-                  is_enabled,
-                }))
-              }}
-              onToggleOneTime={(one_time) => {
-                setGrantDraft((d) => ({
-                  ...d,
-                  one_time,
-                }))
-              }}/>}
+              onError={setError}/>}
             path="economy-grants"/>
 
           <Route
@@ -2104,23 +1988,12 @@ export function Admin() {
           <Route
             element={<DailyBonusAdmin
               canManage={canManage}
-              dailyBonusConfigs={dailyBonusConfigs}
-              dailyBonusDraft={dailyBonusDraft}
               rateMap={rateMap}
-              savingKey={savingKey}
-              onFieldChange={(field, value) => {
-                setDailyBonusDraft((d) => ({
-                  ...d,
-                  [field]: value,
-                }))
+              updatedBy={user?.id ?? null}
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onReset={() => {
-                setDailyBonusDraft(dailyBonusToDraft())
-              }}
-              onSave={() => void saveDailyBonus()}
-              onSelectDay={(index) => {
-                setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))
-              }}/>}
+              onError={setError}/>}
             path="daily-bonus"/>
 
           <Route
