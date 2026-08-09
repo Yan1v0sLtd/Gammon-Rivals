@@ -1,6 +1,6 @@
 import {lazy, Suspense} from "react"
 
-import {BrowserRouter, Navigate, Route, Routes} from "react-router-dom"
+import {BrowserRouter, Route, Routes} from "react-router-dom"
 
 const Admin = lazy(() => import("./Admin").then((m) => ({default: m.Admin})))
 const AdminAuthCallback = lazy(() => import("./AdminAuthCallback").then((m) => ({default: m.AdminAuthCallback})))
@@ -23,15 +23,10 @@ export function App() {
       <Routes>
         <Route
           element={<Admin/>}
-          path="/"/>
+          path="/*"/>
         <Route
           element={<AdminAuthCallback/>}
           path="/auth/callback"/>
-        <Route
-          element={<Navigate
-            replace
-            to="/"/>}
-          path="*"/>
       </Routes>
     </Suspense>
   </BrowserRouter>)

@@ -4,7 +4,7 @@ Goal: replace the in-memory `activeSection` switch in `apps/admin/src/Admin.tsx`
 with real URLs, so sections are deep-linkable, survive reload, and work with
 browser back/forward.
 
-Status: planned, not implemented.
+Status: Phase 1 routing is implemented; Phase 2/Redux follow-up is pending.
 
 ## Current state
 

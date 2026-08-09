@@ -1,5 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 
+import {NavLink, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom"
+
 // The BO uses its own independent Supabase session (adminSupabase) so
 // the operator can be signed in as admin here while the game tab is
 // running as a guest or a different account. Aliased to `supabase`
@@ -26,6 +28,7 @@ import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
 import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
 import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {accountType} from "./lib/accountType"
+import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
 import {currencyToDraft, type CurrencyDraft} from "./lib/currencyToDraft"
@@ -87,22 +90,6 @@ type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
-type Section =
-  | "Dashboard"
-  | "Users"
-  | "Currencies"
-  | "Economy Grants"
-  | "Level System"
-  | "Daily Bonus"
-  | "Hourly Wheel"
-  | "Daily Missions"
-  | "Difficulties"
-  | "RTP Analytics"
-  | "Board Themes"
-  | "Lobby Features"
-  | "Shop"
-  | "Admin Access"
-
 type AdminStats = {
   users: number,
   matches: number,
@@ -123,8 +110,6 @@ type UserDetail = {
   purchases: Purchase[],
   matches: Database["public"]["Tables"]["matches"]["Row"][],
 }
-
-const sections: readonly Section[] = ["Dashboard", "Users", "Currencies", "Economy Grants", "Level System", "Daily Bonus", "Hourly Wheel", "Daily Missions", "Difficulties", "RTP Analytics", "Board Themes", "Lobby Features", "Shop", "Admin Access"]
 
 /**
  * Time-range presets for the RTP dashboard. `since` is the actual
@@ -259,7 +244,11 @@ export function Admin() {
   const signInWithGoogle = adminAuth.signInWithGoogle
   const [accessState, setAccessState] = useState<AccessState>(() => isSupabaseConfigured ? "checking" : "missing-config")
   const [role, setRole] = useState<AdminRole | null>(null)
-  const [activeSection, setActiveSection] = useState<Section>("Dashboard")
+  const location = useLocation()
+  const navigate = useNavigate()
+  const activeSection: Section = useMemo(
+    () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
+    [location.pathname])
   const [stats, setStats] = useState<AdminStats>(initialStats)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -2027,14 +2016,12 @@ export function Admin() {
 
     <div className="grid gap-5 px-4 py-5 lg:px-6 lg:grid-cols-[14rem_1fr]">
       <aside className="rounded-xl border border-white/10 bg-white/[0.045] p-2 lg:sticky lg:top-5 lg:h-fit">
-        {sections.map((section) => (<button
-          key={section}
-          className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm font-bold transition ${activeSection === section ? "bg-amber-300 text-[#1b1202] shadow-lg shadow-amber-900/20" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
-          onClick={() => {
-            setActiveSection(section)
-          }}>
-          {section}
-        </button>))}
+        {adminSections.map((section) => (<NavLink
+          key={section.path}
+          className={({isActive}) => `mb-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold transition ${isActive ? "bg-amber-300 text-[#1b1202] shadow-lg shadow-amber-900/20" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
+          to={`/${section.path}`}>
+          {section.label}
+        </NavLink>))}
       </aside>
 
       <div className="min-w-0">
@@ -2059,304 +2046,345 @@ export function Admin() {
             {dataError}
           </div>)}
 
-        {activeSection === "Dashboard" && <DashboardAdmin
-          audit={audit}
-          cards={dashboardCards}/>}
+        <Routes>
+          <Route
+            index
+            element={<Navigate
+              replace
+              to="/dashboard"/>}/>
+          <Route
+            element={<DashboardAdmin
+              audit={audit}
+              cards={dashboardCards}/>}
+            path="dashboard"/>
 
-        {activeSection === "Users" && <UsersAdmin
-          allFilteredUsersChecked={allFilteredUsersChecked}
-          canManage={canManage}
-          checkedUserCount={checkedUserCount}
-          checkedUserIds={checkedUserIds}
-          currentUserId={user?.id ?? null}
-          filteredUsers={filteredUsers}
-          onlineUsers={onlineUsers}
-          profileDraft={profileDraft}
-          savingKey={savingKey}
-          selectableFilteredUserIds={selectableFilteredUserIds}
-          selectedUser={selectedUser}
-          selectedUserDetail={selectedUserDetail}
-          selectedUserId={selectedUserId}
-          userSearch={userSearch}
-          walletDraft={walletDraft}
-          onAdjustWallet={() => void adjustWallet()}
-          onHardDelete={(profileIds) => void hardDeleteUsers(profileIds)}
-          onProfileFieldChange={(field, value) => {
-            setProfileDraft((d) => ({
-              ...d,
-              [field]: value,
-            }))
-          }}
-          onSaveProfile={() => void saveProfile()}
-          onSelectUser={selectUser}
-          onSoftDelete={(profileIds) => void softDeleteUsers(profileIds)}
-          onToggleAllFiltered={toggleAllFilteredUsers}
-          onToggleChecked={toggleCheckedUser}
-          onToggleSuspension={(target) => void toggleSuspension(target)}
-          onUserSearchChange={setUserSearch}
-          onWalletFieldChange={(field, value) => {
-            setWalletDraft((d) => ({
-              ...d,
-              [field]: value,
-            }))
-          }}/>}
+          <Route
+            element={<UsersAdmin
+              allFilteredUsersChecked={allFilteredUsersChecked}
+              canManage={canManage}
+              checkedUserCount={checkedUserCount}
+              checkedUserIds={checkedUserIds}
+              currentUserId={user?.id ?? null}
+              filteredUsers={filteredUsers}
+              onlineUsers={onlineUsers}
+              profileDraft={profileDraft}
+              savingKey={savingKey}
+              selectableFilteredUserIds={selectableFilteredUserIds}
+              selectedUser={selectedUser}
+              selectedUserDetail={selectedUserDetail}
+              selectedUserId={selectedUserId}
+              userSearch={userSearch}
+              walletDraft={walletDraft}
+              onAdjustWallet={() => void adjustWallet()}
+              onHardDelete={(profileIds) => void hardDeleteUsers(profileIds)}
+              onProfileFieldChange={(field, value) => {
+                setProfileDraft((d) => ({
+                  ...d,
+                  [field]: value,
+                }))
+              }}
+              onSaveProfile={() => void saveProfile()}
+              onSelectUser={selectUser}
+              onSoftDelete={(profileIds) => void softDeleteUsers(profileIds)}
+              onToggleAllFiltered={toggleAllFilteredUsers}
+              onToggleChecked={toggleCheckedUser}
+              onToggleSuspension={(target) => void toggleSuspension(target)}
+              onUserSearchChange={setUserSearch}
+              onWalletFieldChange={(field, value) => {
+                setWalletDraft((d) => ({
+                  ...d,
+                  [field]: value,
+                }))
+              }}/>}
+            path="users"/>
 
-        {activeSection === "Currencies" && (<CurrenciesAdmin
-          canManage={canManage}
-          currencies={currencies}
-          currencyDraft={currencyDraft}
-          savingKey={savingKey}
-          onFieldChange={(field, value) => {
-            setCurrencyDraft((d) => ({
-              ...d,
-              [field]: value,
-            }))
-          }}
-          onNew={() => {
-            setCurrencyDraft(currencyToDraft())
-          }}
-          onSave={() => void saveCurrency()}
-          onSelectCurrency={(index) => {
-            setCurrencyDraft(currencyToDraft(currencies[index]))
-          }}
-          onToggleEnabled={(is_enabled) => {
-            setCurrencyDraft((d) => ({
-              ...d,
-              is_enabled,
-            }))
-          }}/>)}
+          <Route
+            element={<CurrenciesAdmin
+              canManage={canManage}
+              currencies={currencies}
+              currencyDraft={currencyDraft}
+              savingKey={savingKey}
+              onFieldChange={(field, value) => {
+                setCurrencyDraft((d) => ({
+                  ...d,
+                  [field]: value,
+                }))
+              }}
+              onNew={() => {
+                setCurrencyDraft(currencyToDraft())
+              }}
+              onSave={() => void saveCurrency()}
+              onSelectCurrency={(index) => {
+                setCurrencyDraft(currencyToDraft(currencies[index]))
+              }}
+              onToggleEnabled={(is_enabled) => {
+                setCurrencyDraft((d) => ({
+                  ...d,
+                  is_enabled,
+                }))
+              }}/>}
+            path="currencies"/>
 
-        {activeSection === "Economy Grants" && (<EconomyGrantsAdmin
-          canManage={canManage}
-          economyGrants={economyGrants}
-          grantDraft={grantDraft}
-          savingKey={savingKey}
-          onFieldChange={(field, value) => {
-            setGrantDraft((d) => ({
-              ...d,
-              [field]: value,
-            }))
-          }}
-          onNew={() => {
-            setGrantDraft(grantToDraft())
-          }}
-          onSave={() => void saveGrant()}
-          onSelectGrant={(index) => {
-            setGrantDraft(grantToDraft(economyGrants[index]))
-          }}
-          onToggleEnabled={(is_enabled) => {
-            setGrantDraft((d) => ({
-              ...d,
-              is_enabled,
-            }))
-          }}
-          onToggleOneTime={(one_time) => {
-            setGrantDraft((d) => ({
-              ...d,
-              one_time,
-            }))
-          }}/>)}
+          <Route
+            element={<EconomyGrantsAdmin
+              canManage={canManage}
+              economyGrants={economyGrants}
+              grantDraft={grantDraft}
+              savingKey={savingKey}
+              onFieldChange={(field, value) => {
+                setGrantDraft((d) => ({
+                  ...d,
+                  [field]: value,
+                }))
+              }}
+              onNew={() => {
+                setGrantDraft(grantToDraft())
+              }}
+              onSave={() => void saveGrant()}
+              onSelectGrant={(index) => {
+                setGrantDraft(grantToDraft(economyGrants[index]))
+              }}
+              onToggleEnabled={(is_enabled) => {
+                setGrantDraft((d) => ({
+                  ...d,
+                  is_enabled,
+                }))
+              }}
+              onToggleOneTime={(one_time) => {
+                setGrantDraft((d) => ({
+                  ...d,
+                  one_time,
+                }))
+              }}/>}
+            path="economy-grants"/>
 
-        {activeSection === "Level System" && (<LevelSystemAdmin
-          canManage={canManage}
-          currentUserId={user?.id ?? null}
-          levelDraft={levelDraft}
-          levels={levels}
-          levelsPageIndex={levelsPageIndex}
-          levelsPageSize={levelsPageSize}
-          rateMap={rateMap}
-          savingKey={savingKey}
-          savingTiers={savingTiers}
-          tierDrafts={tierDrafts}
-          tierError={tierError}
-          tierMessage={tierMessage}
-          onAddBlankTier={addBlankTier}
-          onApplied={loadAdminData}
-          onLevelDraftChange={(patch) => {
-            setLevelDraft((d) => ({...d, ...patch}))
-          }}
-          onLevelsPageIndexChange={setLevelsPageIndex}
-          onLevelsPageSizeChange={setLevelsPageSize}
-          onNewLevel={() => {
-            // Pre-fill the next free level so "New" on a packed
-            // 1..N table proposes N+1 instead of a blank field
-            // (blank saved as level 0 and tripped the `level > 0`
-            // check constraint). Operator can still overwrite it.
-            const nextLevel = levels.reduce((max, row) => Math.max(max, row.level), 0) + 1
-            setLevelDraft({
-              ...levelToDraft(),
-              level: String(nextLevel),
-            })
-          }}
-          onRemoveTierDraft={removeTierDraft}
-          onResetTierDrafts={resetTierDrafts}
-          onSaveLevel={saveLevel}
-          onSaveTiers={saveTiers}
-          onUpdateTierDraft={updateTierDraft}/>)}
+          <Route
+            element={<LevelSystemAdmin
+              canManage={canManage}
+              currentUserId={user?.id ?? null}
+              levelDraft={levelDraft}
+              levels={levels}
+              levelsPageIndex={levelsPageIndex}
+              levelsPageSize={levelsPageSize}
+              rateMap={rateMap}
+              savingKey={savingKey}
+              savingTiers={savingTiers}
+              tierDrafts={tierDrafts}
+              tierError={tierError}
+              tierMessage={tierMessage}
+              onAddBlankTier={addBlankTier}
+              onApplied={loadAdminData}
+              onLevelDraftChange={(patch) => {
+                setLevelDraft((d) => ({...d, ...patch}))
+              }}
+              onLevelsPageIndexChange={setLevelsPageIndex}
+              onLevelsPageSizeChange={setLevelsPageSize}
+              onNewLevel={() => {
+                // Pre-fill the next free level so "New" on a packed
+                // 1..N table proposes N+1 instead of a blank field
+                // (blank saved as level 0 and tripped the `level > 0`
+                // check constraint). Operator can still overwrite it.
+                const nextLevel = levels.reduce((max, row) => Math.max(max, row.level), 0) + 1
+                setLevelDraft({
+                  ...levelToDraft(),
+                  level: String(nextLevel),
+                })
+              }}
+              onRemoveTierDraft={removeTierDraft}
+              onResetTierDrafts={resetTierDrafts}
+              onSaveLevel={saveLevel}
+              onSaveTiers={saveTiers}
+              onUpdateTierDraft={updateTierDraft}/>}
+            path="level-system"/>
 
-        {activeSection === "Daily Bonus" && (<DailyBonusAdmin
-          canManage={canManage}
-          dailyBonusConfigs={dailyBonusConfigs}
-          dailyBonusDraft={dailyBonusDraft}
-          rateMap={rateMap}
-          savingKey={savingKey}
-          onFieldChange={(field, value) => {
-            setDailyBonusDraft((d) => ({
-              ...d,
-              [field]: value,
-            }))
-          }}
-          onReset={() => {
-            setDailyBonusDraft(dailyBonusToDraft())
-          }}
-          onSave={() => void saveDailyBonus()}
-          onSelectDay={(index) => {
-            setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))
-          }}/>)}
+          <Route
+            element={<DailyBonusAdmin
+              canManage={canManage}
+              dailyBonusConfigs={dailyBonusConfigs}
+              dailyBonusDraft={dailyBonusDraft}
+              rateMap={rateMap}
+              savingKey={savingKey}
+              onFieldChange={(field, value) => {
+                setDailyBonusDraft((d) => ({
+                  ...d,
+                  [field]: value,
+                }))
+              }}
+              onReset={() => {
+                setDailyBonusDraft(dailyBonusToDraft())
+              }}
+              onSave={() => void saveDailyBonus()}
+              onSelectDay={(index) => {
+                setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))
+              }}/>}
+            path="daily-bonus"/>
 
-        {activeSection === "Hourly Wheel" && (<HourlyWheelAdmin canManage={canManage}/>)}
+          <Route
+            element={<HourlyWheelAdmin canManage={canManage}/>}
+            path="hourly-wheel"/>
 
-        {activeSection === "Daily Missions" && (<MissionsAdmin canManage={canManage}/>)}
+          <Route
+            element={<MissionsAdmin canManage={canManage}/>}
+            path="daily-missions"/>
 
-        {/* "Tables / Rooms" (kind='standard') section removed — the lobby only
-              surfaces difficulty tiers now (DifficultyModal queries kind='difficulty'),
-              so the standard-rooms editor was dead UI. The shared tableDraft / saveTable
-              / tableToDraft state stays in place for the Difficulties section below; the
-              underlying table_configs data is untouched. */}
+          {/* "Tables / Rooms" (kind='standard') section removed — the lobby only
+                surfaces difficulty tiers now (DifficultyModal queries kind='difficulty'),
+                so the standard-rooms editor was dead UI. The shared tableDraft / saveTable
+                / tableToDraft state stays in place for the Difficulties section below; the
+                underlying table_configs data is untouched. */}
 
-        {activeSection === "Difficulties" && (<DifficultiesAdmin
-          canManage={canManage}
-          difficultyAccentColors={difficultyAccentColors}
-          rateMap={rateMap}
-          savingKey={savingKey}
-          tableDraft={tableDraft}
-          tables={tables}
-          onNewDifficulty={() => {
-            setTableDraft(tableToDraft(undefined, "difficulty"))
-          }}
-          onSaveTable={() => void saveTable()}
-          onSelectDifficulty={(index) => {
-            const diffRows = tables.filter((row) => row.kind === "difficulty")
-            setTableDraft(tableToDraft(diffRows[index], "difficulty"))
-          }}
-          onTableDraftChange={(patch) => {
-            setTableDraft((d) => ({
-              ...d,
-              ...patch,
-            }))
-          }}/>)}
+          <Route
+            element={<DifficultiesAdmin
+              canManage={canManage}
+              difficultyAccentColors={difficultyAccentColors}
+              rateMap={rateMap}
+              savingKey={savingKey}
+              tableDraft={tableDraft}
+              tables={tables}
+              onNewDifficulty={() => {
+                setTableDraft(tableToDraft(undefined, "difficulty"))
+              }}
+              onSaveTable={() => void saveTable()}
+              onSelectDifficulty={(index) => {
+                const diffRows = tables.filter((row) => row.kind === "difficulty")
+                setTableDraft(tableToDraft(diffRows[index], "difficulty"))
+              }}
+              onTableDraftChange={(patch) => {
+                setTableDraft((d) => ({
+                  ...d,
+                  ...patch,
+                }))
+              }}/>}
+            path="difficulties"/>
 
-        {activeSection === "RTP Analytics" && (<RTPAnalyticsAdmin
-          ranges={RTP_RANGES}
-          rtpError={rtpError}
-          rtpExpandedTier={rtpExpandedTier}
-          rtpLoading={rtpLoading}
-          rtpPlayerError={rtpPlayerError}
-          rtpPlayerLoading={rtpPlayerLoading}
-          rtpPlayerRows={rtpPlayerRows}
-          rtpRange={rtpRange}
-          rtpRows={rtpRows}
-          onOpenUser={(profileId) => {
-            setActiveSection("Users")
-            setSelectedUserId(profileId)
-          }}
-          onRefresh={() => void loadRtpSummary()}
-          onSetRtpRange={setRtpRange}
-          onToggleTier={(tierId) => {
-            setRtpExpandedTier((current) => current === tierId ? null : tierId)
-          }}/>)}
+          <Route
+            element={<RTPAnalyticsAdmin
+              ranges={RTP_RANGES}
+              rtpError={rtpError}
+              rtpExpandedTier={rtpExpandedTier}
+              rtpLoading={rtpLoading}
+              rtpPlayerError={rtpPlayerError}
+              rtpPlayerLoading={rtpPlayerLoading}
+              rtpPlayerRows={rtpPlayerRows}
+              rtpRange={rtpRange}
+              rtpRows={rtpRows}
+              onOpenUser={(profileId) => {
+                setSelectedUserId(profileId)
+                void navigate("/users")
+              }}
+              onRefresh={() => void loadRtpSummary()}
+              onSetRtpRange={setRtpRange}
+              onToggleTier={(tierId) => {
+                setRtpExpandedTier((current) => current === tierId ? null : tierId)
+              }}/>}
+            path="rtp-analytics"/>
 
-        {activeSection === "Board Themes" && (<BoardThemesAdmin
-          boardDraft={boardDraft}
-          boardEditorMode={boardEditorMode}
-          boardEditorOpen={boardEditorOpen}
-          boardMessage={boardMessage}
-          boards={boards}
-          canManage={canManage}
-          loadingScreenDraft={loadingScreenDraft}
-          loadingScreens={loadingScreens}
-          podiumDraft={podiumDraft}
-          podiums={podiums}
-          savingKey={savingKey}
-          onActivateLoadingScreen={(screen) => void activateLoadingScreen(screen)}
-          onActivatePodium={(podium) => void activatePodium(podium)}
-          onAddLoadingScreen={() => void addLoadingScreen()}
-          onAddPodium={() => void addPodium()}
-          onDeleteBoard={(board) => void deleteBoard(board)}
-          onDeleteLoadingScreen={(screen) => void deleteLoadingScreen(screen)}
-          onDeletePodium={(podium) => void deletePodium(podium)}
-          onOpenAddBoard={openAddBoard}
-          onOpenEditBoard={openEditBoard}
-          onSaveBoard={() => void saveBoard()}
-          onSeedBuiltInBoards={() => void seedBuiltInBoards()}
-          onSetBoardDraft={setBoardDraft}
-          onSetBoardEditorOpen={setBoardEditorOpen}
-          onSetLoadingScreenDraft={setLoadingScreenDraft}
-          onSetPodiumDraft={setPodiumDraft}/>)}
+          <Route
+            element={<BoardThemesAdmin
+              boardDraft={boardDraft}
+              boardEditorMode={boardEditorMode}
+              boardEditorOpen={boardEditorOpen}
+              boardMessage={boardMessage}
+              boards={boards}
+              canManage={canManage}
+              loadingScreenDraft={loadingScreenDraft}
+              loadingScreens={loadingScreens}
+              podiumDraft={podiumDraft}
+              podiums={podiums}
+              savingKey={savingKey}
+              onActivateLoadingScreen={(screen) => void activateLoadingScreen(screen)}
+              onActivatePodium={(podium) => void activatePodium(podium)}
+              onAddLoadingScreen={() => void addLoadingScreen()}
+              onAddPodium={() => void addPodium()}
+              onDeleteBoard={(board) => void deleteBoard(board)}
+              onDeleteLoadingScreen={(screen) => void deleteLoadingScreen(screen)}
+              onDeletePodium={(podium) => void deletePodium(podium)}
+              onOpenAddBoard={openAddBoard}
+              onOpenEditBoard={openEditBoard}
+              onSaveBoard={() => void saveBoard()}
+              onSeedBuiltInBoards={() => void seedBuiltInBoards()}
+              onSetBoardDraft={setBoardDraft}
+              onSetBoardEditorOpen={setBoardEditorOpen}
+              onSetLoadingScreenDraft={setLoadingScreenDraft}
+              onSetPodiumDraft={setPodiumDraft}/>}
+            path="board-themes"/>
 
-        {activeSection === "Lobby Features" && (<LobbyFeaturesAdmin
-          canManage={canManage}
-          lobbyFeatures={lobbyFeatures}
-          savingKey={savingKey}
-          onChangeEnabled={(featureKey, enabled) => {
-            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-              ...r,
-              enabled,
-            } : r))
-          }}
-          onChangeLevel={(featureKey, level) => {
-            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-              ...r,
-              level,
-            } : r))
-          }}
-          onChangeTooltip={(featureKey, tooltip) => {
-            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
-              ...r,
-              tooltip,
-            } : r))
-          }}
-          onSave={(featureKey) => {
-            void saveLobbyFeature(featureKey)
-          }}/>)}
+          <Route
+            element={<LobbyFeaturesAdmin
+              canManage={canManage}
+              lobbyFeatures={lobbyFeatures}
+              savingKey={savingKey}
+              onChangeEnabled={(featureKey, enabled) => {
+                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+                  ...r,
+                  enabled,
+                } : r))
+              }}
+              onChangeLevel={(featureKey, level) => {
+                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+                  ...r,
+                  level,
+                } : r))
+              }}
+              onChangeTooltip={(featureKey, tooltip) => {
+                setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+                  ...r,
+                  tooltip,
+                } : r))
+              }}
+              onSave={(featureKey) => {
+                void saveLobbyFeature(featureKey)
+              }}/>}
+            path="lobby-features"/>
 
-        {activeSection === "Shop" && (<ShopAdmin
-          canManage={canManage}
-          saleDraft={saleDraft}
-          savingKey={savingKey}
-          shopDraft={shopDraft}
-          shopItems={shopItems}
-          storeConfigDraft={storeConfigDraft}
-          onDeleteShop={() => void deleteShop()}
-          onSaveShop={() => void saveShop()}
-          onSaveStoreConfig={() => void saveStoreConfig()}
-          onSaveStoreSale={() => void saveStoreSale()}
-          onSetSaleDraft={setSaleDraft}
-          onSetShopDraft={setShopDraft}
-          onSetStoreConfigDraft={setStoreConfigDraft}/>)}
+          <Route
+            element={<ShopAdmin
+              canManage={canManage}
+              saleDraft={saleDraft}
+              savingKey={savingKey}
+              shopDraft={shopDraft}
+              shopItems={shopItems}
+              storeConfigDraft={storeConfigDraft}
+              onDeleteShop={() => void deleteShop()}
+              onSaveShop={() => void saveShop()}
+              onSaveStoreConfig={() => void saveStoreConfig()}
+              onSaveStoreSale={() => void saveStoreSale()}
+              onSetSaleDraft={setSaleDraft}
+              onSetShopDraft={setShopDraft}
+              onSetStoreConfigDraft={setStoreConfigDraft}/>}
+            path="shop"/>
 
-        {activeSection === "Admin Access" && <AdminAccessAdmin
-          adminEmailRoles={adminEmailRoles}
-          adminRoles={adminRoles}
-          audit={audit}
-          canManage={canManage}
-          currentUserEmail={currentUserEmail}
-          emailRoleDraft={emailRoleDraft}
-          roleDraft={roleDraft}
-          roleOptions={roleOptions}
-          savingKey={savingKey}
-          selectedEmailRole={selectedEmailRole}
-          onDeleteAdminEmailRole={(row) => {
-            void deleteAdminEmailRole(row)
-          }}
-          onEmailRoleDraftChange={setEmailRoleDraft}
-          onRoleDraftChange={setRoleDraft}
-          onSaveAdminEmailRole={() => {
-            void saveAdminEmailRole()
-          }}
-          onSaveAdminRole={() => {
-            void saveAdminRole()
-          }}/>}
+          <Route
+            element={<AdminAccessAdmin
+              adminEmailRoles={adminEmailRoles}
+              adminRoles={adminRoles}
+              audit={audit}
+              canManage={canManage}
+              currentUserEmail={currentUserEmail}
+              emailRoleDraft={emailRoleDraft}
+              roleDraft={roleDraft}
+              roleOptions={roleOptions}
+              savingKey={savingKey}
+              selectedEmailRole={selectedEmailRole}
+              onDeleteAdminEmailRole={(row) => {
+                void deleteAdminEmailRole(row)
+              }}
+              onEmailRoleDraftChange={setEmailRoleDraft}
+              onRoleDraftChange={setRoleDraft}
+              onSaveAdminEmailRole={() => {
+                void saveAdminEmailRole()
+              }}
+              onSaveAdminRole={() => {
+                void saveAdminRole()
+              }}/>}
+            path="admin-access"/>
+
+          <Route
+            element={<Navigate
+              replace
+              to="/dashboard"/>}
+            path="*"/>
+        </Routes>
       </div>
     </div>
   </div>)
