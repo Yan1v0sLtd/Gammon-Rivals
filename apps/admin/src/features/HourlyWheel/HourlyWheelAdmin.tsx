@@ -9,9 +9,8 @@ import {
   buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor,
 } from "../../../../../packages/shared/src/currency.ts"
 import type {Database} from "../../../../../packages/shared/src/database.ts"
-import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
-
 import {ImageField} from "../../components/ImageField.tsx"
+import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
 
 type WheelConfigRow = Database["public"]["Tables"]["wheel_configs"]["Row"]
 type WheelSlotRow = Database["public"]["Tables"]["wheel_slots"]["Row"]
@@ -255,7 +254,7 @@ function SecondaryButton({
 
 /* -------------------------------------------------------------------------- */
 
-export function WheelAdmin({canManage}: Props) {
+export function HourlyWheelAdmin({canManage}: Props) {
   const [config, setConfig] = useState<WheelConfigRow | null>(null)
   const [slots, setSlots] = useState<WheelSlotRow[]>([])
   const [currencies, setCurrencies] = useState<CurrencyConfigRow[]>([])

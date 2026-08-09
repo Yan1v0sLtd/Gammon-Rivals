@@ -7,10 +7,9 @@ import {useCallback, useEffect, useMemo, useState} from "react"
 // adminSupabase client is the one logged in as the operator's BO
 // session and is what every other admin/* file uses.
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
-import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
-
 import {ImageField} from "../../components/ImageField.tsx"
 import {useConfirm} from "../../components/useConfirm.tsx"
+import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
 
 // The Daily Missions tables aren't in the generated Database type
 // (a full Supabase types regen would lose our hand-patched phantom

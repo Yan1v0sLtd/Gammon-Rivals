@@ -1,39 +1,36 @@
-import {Fragment, useCallback, useEffect, useMemo, useRef, useState} from "react"
+import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 
 // The BO uses its own independent Supabase session (adminSupabase) so
 // the operator can be signed in as admin here while the game tab is
 // running as a guest or a different account. Aliased to `supabase`
 // + `isSupabaseConfigured` so the rest of the file (30+ call sites)
 // keeps working unchanged.
-import {BoardPreview} from "../../../packages/board-preview/src/BoardPreview"
-import {buildCurrencyRateMap, type CurrencyConfigRow, formatUsdMicros, usdMicrosFor} from "../../../packages/shared/src/currency"
+import {buildCurrencyRateMap, type CurrencyConfigRow} from "../../../packages/shared/src/currency"
 import type {Database} from "../../../packages/shared/src/database"
-import {resolveStatusLabel} from "../../../packages/shared/src/progression"
 
-import {BearOffTraysField} from "./components/BearOffTraysField"
-import {BoardTuningField} from "./components/BoardTuningField"
-import {ConfigTable} from "./components/ConfigTable"
-import {DangerButton} from "./components/DangerButton"
-import {EmptyState} from "./components/EmptyState"
-import {FeltCornersField} from "./components/FeltCornersField"
-import {Field} from "./components/Field"
-import {ImageField} from "./components/ImageField"
-import {LevelCurveProposal} from "./components/LevelCurveProposal"
 import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
-import {StatusPill} from "./components/StatusPill"
-import {TextArea} from "./components/TextArea"
-import {Toggle} from "./components/Toggle"
 import {useConfirm} from "./components/useConfirm"
+import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
+import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
+import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
+import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
-import {WheelAdmin} from "./features/HourlyWheel/WheelAdmin.tsx"
+import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
+import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
+import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
+import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
+import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
+import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
+import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
+import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
+import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {accountType} from "./lib/accountType"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
 import {currencyToDraft, type CurrencyDraft} from "./lib/currencyToDraft"
 import {dailyBonusToDraft, type DailyBonusDraft} from "./lib/dailyBonusToDraft"
 import {emptyToNull} from "./lib/emptyToNull"
-import {formatDate} from "./lib/formatDate"
 import {formatNumber} from "./lib/formatNumber"
 import {grantToDraft, type EconomyGrantDraft} from "./lib/grantToDraft"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
@@ -41,19 +38,10 @@ import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
 import {isMissingColumnError} from "./lib/isMissingColumnError"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
 import {isPolicyError} from "./lib/isPolicyError"
-import {isValidBoardId} from "./lib/isValidBoardId"
 import {levelToDraft, type LevelDraft} from "./lib/levelToDraft"
-import {moneyFromCents} from "./lib/moneyFromCents"
 import {normalizeEmail} from "./lib/normalizeEmail"
 import {numberOrNull} from "./lib/numberOrNull"
 import {parseJson} from "./lib/parseJson"
-import {readBoardGrant} from "./lib/readBoardGrant"
-import {readGrant} from "./lib/readGrant"
-import {readHeader} from "./lib/readHeader"
-import {readHeadline} from "./lib/readHeadline"
-import {readPres} from "./lib/readPres"
-import {readRewards} from "./lib/readRewards"
-import {readXpBoost} from "./lib/readXpBoost"
 import {requiredNumber} from "./lib/requiredNumber"
 import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
 import {tableToDraft, type TableDraft} from "./lib/tableToDraft"
@@ -61,13 +49,6 @@ import {useAdminAuth} from "./lib/useAdminAuth"
 import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
 import {withGameplayBackgroundMetadata} from "./lib/withGameplayBackgroundMetadata"
 import {withRequestTimeout} from "./lib/withRequestTimeout"
-import {writeBoardGrant} from "./lib/writeBoardGrant"
-import {writeGrantNumber} from "./lib/writeGrantNumber"
-import {writeHeader} from "./lib/writeHeader"
-import {writeHeadline} from "./lib/writeHeadline"
-import {writePresField} from "./lib/writePresField"
-import {writeRewards} from "./lib/writeRewards"
-import {writeXpBoost} from "./lib/writeXpBoost"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
@@ -103,7 +84,6 @@ type WalletTransaction = Database["public"]["Tables"]["wallet_transactions"]["Ro
 type UserBoardInventory = Database["public"]["Tables"]["user_board_inventory"]["Row"]
 type Purchase = Database["public"]["Tables"]["purchases"]["Row"]
 type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
-type ShopKind = ShopItem["kind"]
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
@@ -206,8 +186,6 @@ type RtpPerPlayerRow = {
  *  scoped to these so an operator can't accidentally set an unknown
  *  slug and ship a card with no colour. */
 const difficultyAccentColors: readonly string[] = ["green", "blue", "purple", "red", "gold"]
-
-const shopKinds: readonly ShopKind[] = ["coin_pack", "gem_pack", "board_theme", "cosmetic", "bundle", "special_offer"]
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
@@ -2081,1017 +2059,162 @@ export function Admin() {
             {dataError}
           </div>)}
 
-        {activeSection === "Dashboard" && (<div className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {dashboardCards.map((card) => (<div
-              key={card.label}
-              className="rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.09] to-white/[0.035] p-4 shadow-xl shadow-black/20">
-              <div className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">
-                {card.label}
-              </div>
-              <div className="mt-3 text-3xl font-black text-amber-100">{card.value}</div>
-              <div className="mt-1 text-xs text-white/45">{card.caption}</div>
-            </div>))}
-          </div>
-          <div className="grid gap-5 xl:grid-cols-[1fr_24rem]">
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <h2 className="text-lg font-black">Operations readiness</h2>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
-                <div className="rounded-lg bg-black/15 p-3 text-sm text-white/60">
-                  Wallets and ledger are ready for admin grants, match rewards, purchases, refunds,
-                  and daily bonuses.
-                </div>
-                <div className="rounded-lg bg-black/15 p-3 text-sm text-white/60">
-                  Shop config is ready before the game shop exists, so the gameplay UI can plug into
-                  live products later.
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <h2 className="text-lg font-black">Recent changes</h2>
-              <div className="mt-3 space-y-2">
-                {audit.length === 0 ? (<div className="text-sm text-white/45">No admin changes
-                  yet.</div>) : (audit.slice(0, 6).map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="rounded-lg border border-white/10 bg-black/15 px-3 py-2 text-xs">
-                    <div className="font-bold capitalize text-white/80">{entry.action}</div>
-                    <div className="text-white/45">
-                      {entry.entity_table} · {entry.entity_id}
-                    </div>
-                    <div className="text-white/35">{formatDate(entry.created_at)}</div>
-                  </div>)))}
-              </div>
-            </div>
-          </div>
-        </div>)}
+        {activeSection === "Dashboard" && <DashboardAdmin
+          audit={audit}
+          cards={dashboardCards}/>}
 
-        {activeSection === "Users" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            {/* Live online users widget. The dot pulses to make
-                  * "live" obvious; counts come straight from the
-                  * Realtime presence channel so the moment a player
-                  * closes their tab the WebSocket drops and the
-                  * count ticks down within a few seconds. */}
-            <div
-              className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span className="relative grid h-2.5 w-2.5 place-items-center">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/70"/>
-                  <span className="relative h-2 w-2 rounded-full bg-emerald-400"/>
-                </span>
-                <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/90">
-                  Live online
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-2xl font-black tabular-nums text-emerald-100">
-                  {onlineUsers.total}
-                </span>
-                <span className="text-xs font-bold text-emerald-200/60">total</span>
-              </div>
-              <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
-                <span className="font-display text-lg font-black tabular-nums text-emerald-100">
-                  {onlineUsers.registered}
-                </span>
-                <span className="text-xs font-bold text-emerald-200/60">registered</span>
-              </div>
-              <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
-                <span className="font-display text-lg font-black tabular-nums text-emerald-100">
-                  {onlineUsers.guests}
-                </span>
-                <span className="text-xs font-bold text-emerald-200/60">guests</span>
-              </div>
-            </div>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-black">Users</h2>
-              <input
-                className="w-full max-w-sm rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/60"
-                placeholder="Search name, id, level, rating"
-                value={userSearch}
-                onChange={(event) => {
-                  setUserSearch(event.target.value)
-                }}/>
-            </div>
-            <div
-              className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/16 px-3 py-2 text-xs text-white/55">
-              <span>
-                {checkedUserCount > 0 ? `${checkedUserCount} selected` : `${filteredUsers.length} live users shown`}
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <DangerButton
-                  disabled={!canManage || checkedUserCount === 0 || savingKey === "user-delete"}
-                  onClick={() => void softDeleteUsers([...checkedUserIds])}>
-                  Delete selected
-                </DangerButton>
-                {/* Hard delete — purges auth.users + cascades. Used to
-                        clear shell/test users that pile up during dev.
-                        Type-DELETE confirm is inside hardDeleteUsers. */}
-                <DangerButton
-                  disabled={!canManage || checkedUserCount === 0 || savingKey === "user-delete"}
-                  onClick={() => void hardDeleteUsers([...checkedUserIds])}>
-                  Hard delete (irreversible)
-                </DangerButton>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-white/10 text-sm">
-                <thead className="bg-black/20 text-left text-xs uppercase tracking-wider text-white/35">
-                  <tr>
-                    <th className="px-4 py-3">
-                      <input
-                        aria-label="Select all visible users"
-                        checked={allFilteredUsersChecked}
-                        className="h-4 w-4 accent-amber-300"
-                        disabled={selectableFilteredUserIds.length === 0}
-                        type="checkbox"
-                        onChange={(event) => {
-                          toggleAllFilteredUsers(event.target.checked)
-                        }}/>
-                    </th>
-                    <th className="px-4 py-3">Player</th>
-                    <th className="px-4 py-3">Account</th>
-                    <th className="px-4 py-3">Level</th>
-                    <th className="px-4 py-3">Wallet</th>
-                    <th className="px-4 py-3">Rating</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10">
-                  {filteredUsers.map((row) => (<tr
-                    key={row.id}
-                    className={`cursor-pointer text-white/75 transition hover:bg-white/[0.055] ${row.id === selectedUserId ? "bg-amber-300/10" : ""}`}
-                    onClick={() => {
-                      selectUser(row)
-                    }}>
-                    <td className="px-4 py-3">
-                      <input
-                        aria-label={`Select ${row.display_name}`}
-                        checked={checkedUserIds.has(row.id)}
-                        className="h-4 w-4 accent-amber-300"
-                        disabled={row.id === user?.id}
-                        type="checkbox"
-                        onChange={(event) => {
-                          toggleCheckedUser(row.id, event.target.checked)
-                        }}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                        }}/>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-bold text-white">{row.display_name}</div>
-                      <div className="max-w-[16rem] truncate font-mono text-xs text-white/35">{row.id}</div>
-                    </td>
-                    <td className="px-4 py-3">{accountType(row)}</td>
-                    <td className="px-4 py-3">L{row.level} · {formatNumber(row.xp)} XP</td>
-                    <td className="px-4 py-3">
-                      {formatNumber(row.wallet?.coins)} coins · {formatNumber(row.wallet?.gems)} gems
-                    </td>
-                    <td className="px-4 py-3">{formatNumber(row.rating)}</td>
-                    <td className="px-4 py-3">
-                      {row.is_suspended ? <StatusPill enabled={false}/> : <StatusPill enabled/>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          className="rounded-md border border-rose-300/25 px-2 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={!canManage || row.id === user?.id || savingKey === "user-delete"}
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            void softDeleteUsers([row.id])
-                          }}>
-                          Delete
-                        </button>
-                        <button
-                          className="rounded-md border border-rose-500/50 bg-rose-700/15 px-2 py-1 text-xs font-bold text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-45"
-                          disabled={!canManage || row.id === user?.id || savingKey === "user-delete"}
-                          title="Hard delete (irreversible)"
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            void hardDeleteUsers([row.id])
-                          }}>
-                          Hard
-                        </button>
-                      </div>
-                    </td>
-                  </tr>))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {!selectedUser ? (<EmptyState
-              text="Select a user to inspect their profile, wallet, inventory, and match history."/>) : (<>
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-black">{selectedUser.display_name}</h2>
-                    <div className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-200/70">
-                      {accountType(selectedUser)}
-                    </div>
-                    <div className="mt-1 break-all font-mono text-xs text-white/35">{selectedUser.id}</div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <StatusPill enabled={!selectedUser.is_suspended}/>
-                    <DangerButton
-                      disabled={!canManage || selectedUser.id === user?.id || savingKey === "user-delete"}
-                      onClick={() => void softDeleteUsers([selectedUser.id])}>
-                      Delete user
-                    </DangerButton>
-                    <DangerButton
-                      disabled={!canManage || selectedUser.id === user?.id || savingKey === "user-delete"}
-                      onClick={() => void hardDeleteUsers([selectedUser.id])}>
-                      Hard delete (irreversible)
-                    </DangerButton>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/55">
-                  <div className="rounded-lg bg-black/18 p-2">
-                    <div className="text-white/35">Coins</div>
-                    <div className="font-bold text-white">{formatNumber(selectedUserDetail?.wallet?.coins)}</div>
-                  </div>
-                  <div className="rounded-lg bg-black/18 p-2">
-                    <div className="text-white/35">Gems</div>
-                    <div className="font-bold text-white">{formatNumber(selectedUserDetail?.wallet?.gems)}</div>
-                  </div>
-                  <div className="rounded-lg bg-black/18 p-2">
-                    <div className="text-white/35">Created</div>
-                    <div className="font-bold text-white">{formatDate(selectedUser.created_at)}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Profile controls</h3>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <Field
-                    label="Level"
-                    value={profileDraft.level}
-                    onChange={(level) => {
-                      setProfileDraft((d) => ({
-                        ...d,
-                        level,
-                      }))
-                    }}/>
-                  <Field
-                    label="XP"
-                    value={profileDraft.xp}
-                    onChange={(xp) => {
-                      setProfileDraft((d) => ({
-                        ...d,
-                        xp,
-                      }))
-                    }}/>
-                  <Field
-                    label="Rating"
-                    value={profileDraft.rating}
-                    onChange={(rating) => {
-                      setProfileDraft((d) => ({
-                        ...d,
-                        rating,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3">
-                  <TextArea
-                    label="Admin note"
-                    rows={3}
-                    value={profileDraft.admin_note}
-                    onChange={(admin_note) => {
-                      setProfileDraft((d) => ({
-                        ...d,
-                        admin_note,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3">
-                  <TextArea
-                    label="Suspension reason"
-                    rows={2}
-                    value={profileDraft.suspension_reason}
-                    onChange={(suspension_reason) => {
-                      setProfileDraft((d) => ({
-                        ...d,
-                        suspension_reason,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <PrimaryButton
-                    disabled={!canManage || savingKey === "profile"}
-                    onClick={() => void saveProfile()}>
-                    Save profile
-                  </PrimaryButton>
-                  <SecondaryButton
-                    disabled={!canManage}
-                    onClick={() => void toggleSuspension(selectedUser)}>
-                    {selectedUser.is_suspended ? "Unsuspend" : "Suspend"}
-                  </SecondaryButton>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Grant / remove currency</h3>
-                <div className="mt-3 grid grid-cols-[7rem_1fr] gap-2">
-                  <select
-                    className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none"
-                    value={walletDraft.currency}
-                    onChange={(event) => {
-                      setWalletDraft((d) => ({
-                        ...d,
-                        currency: event.target.value,
-                      }))
-                    }}>
-                    <option value="coins">Coins</option>
-                    <option value="gems">Gems</option>
-                  </select>
-                  <Field
-                    label="Amount (+ or -)"
-                    value={walletDraft.amount}
-                    onChange={(amount) => {
-                      setWalletDraft((d) => ({
-                        ...d,
-                        amount,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3">
-                  <Field
-                    label="Reason"
-                    value={walletDraft.reason}
-                    onChange={(reason) => {
-                      setWalletDraft((d) => ({
-                        ...d,
-                        reason,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3">
-                  <PrimaryButton
-                    disabled={!canManage || savingKey === "wallet"}
-                    onClick={() => void adjustWallet()}>
-                    Apply wallet change
-                  </PrimaryButton>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Inventory</h3>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedUserDetail?.boards.length ? (selectedUserDetail.boards.map((item) => (
-                    <span
-                      key={item.board_theme_id}
-                      className="rounded-full bg-black/25 px-3 py-1 text-xs text-white/65">
-                      {item.board_theme_id} · {item.source}
-                    </span>))) : (<div className="text-sm text-white/45">No owned boards.</div>)}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Wallet ledger</h3>
-                <div className="mt-2 space-y-2">
-                  {selectedUserDetail?.transactions.length ? (selectedUserDetail.transactions.map((tx) => (
-                    <div
-                      key={tx.id}
-                      className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                      <div className="font-bold text-white">
-                        {tx.amount > 0 ? "+" : ""}{formatNumber(tx.amount)} {tx.currency}
-                      </div>
-                      <div>{tx.reason}</div>
-                      <div
-                        className="text-white/35">After: {formatNumber(tx.balance_after)} · {formatDate(tx.created_at)}</div>
-                    </div>))) : (<div className="text-sm text-white/45">No wallet transactions yet.</div>)}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Purchases</h3>
-                <div className="mt-2 space-y-2">
-                  {selectedUserDetail?.purchases.length ? (selectedUserDetail.purchases.map((purchase) => (
-                    <div
-                      key={purchase.id}
-                      className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                      <div className="font-bold text-white">{purchase.product_id}</div>
-                      <div>{purchase.product_type} · {purchase.provider} · {purchase.status}</div>
-                      <div
-                        className="text-white/35">{moneyFromCents(purchase.price_cents)} · {formatDate(purchase.created_at)}</div>
-                    </div>))) : (<div className="text-sm text-white/45">No purchases yet.</div>)}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h3 className="font-black">Match history</h3>
-                <div className="mt-2 space-y-2">
-                  {selectedUserDetail?.matches.length ? (selectedUserDetail.matches.map((match) => (
-                    <div
-                      key={match.id}
-                      className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                      <div className="font-bold text-white">{match.mode} · to {match.target}</div>
-                      <div>Score {match.white_score}-{match.black_score} · winner {match.winner ?? "open"}</div>
-                      <div className="text-white/35">{formatDate(match.started_at)}</div>
-                    </div>))) : (<div className="text-sm text-white/45">No matches yet.</div>)}
-                </div>
-              </div>
-            </>)}
-          </div>
-        </div>)}
-
-        {activeSection === "Currencies" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-          <ConfigTable
-            rows={currencies.map((row) => [row.code, row.display_name, `$${(row.usd_value_micros / 1_000_000).toFixed(6)} / unit`, `100 = ${formatUsdMicros(row.usd_value_micros * 100)}`, row.is_enabled ? "Enabled" : "Disabled"])}
-            title="Currencies"
-            onRowClick={(index) => {
-              setCurrencyDraft(currencyToDraft(currencies[index]))
-            }}/>
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <h2 className="text-lg font-black">Edit currency</h2>
-            <p className="mt-1 text-xs text-white/55">
-              USD value per single unit. The Hourly Wheel, Daily
-              Bonus, and Level Rewards sections use
-              these rates to show a $ value column. Add a new code
-              (e.g. <code className="font-mono">chips</code>) when
-              introducing a new currency. Disable instead of
-              deleting — existing reward configs reference codes by
-              name and would render as $0 if the code disappears.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Field
-                label="Code"
-                value={currencyDraft.code}
-                onChange={(code) => {
-                  setCurrencyDraft((d) => ({
-                    ...d,
-                    code,
-                  }))
-                }}/>
-              <Field
-                label="Display name"
-                value={currencyDraft.display_name}
-                onChange={(display_name) => {
-                  setCurrencyDraft((d) => ({
-                    ...d,
-                    display_name,
-                  }))
-                }}/>
-              <Field
-                label="USD value per unit"
-                value={currencyDraft.usd_value}
-                onChange={(usd_value) => {
-                  setCurrencyDraft((d) => ({
-                    ...d,
-                    usd_value,
-                  }))
-                }}/>
-              <Field
-                label="Sort order"
-                value={currencyDraft.sort_order}
-                onChange={(sort_order) => {
-                  setCurrencyDraft((d) => ({
-                    ...d,
-                    sort_order,
-                  }))
-                }}/>
-            </div>
-            <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
-              Examples — 1 gem = $0.01 → type{" "}
-              <code className="font-mono">0.01</code>. 1 coin =
-              $0.0001 → type{" "}
-              <code className="font-mono">0.0001</code>.
-            </p>
-            <div className="mt-3 space-y-3">
-              <Toggle
-                checked={currencyDraft.is_enabled}
-                label="Enabled"
-                onChange={(is_enabled) => {
-                  setCurrencyDraft((d) => ({
-                    ...d,
-                    is_enabled,
-                  }))
-                }}/>
-              <div className="flex gap-2">
-                <PrimaryButton
-                  disabled={!canManage || savingKey === "currency"}
-                  onClick={() => void saveCurrency()}>
-                  Save currency
-                </PrimaryButton>
-                <SecondaryButton onClick={() => {
-                  setCurrencyDraft(currencyToDraft())
-                }}>
-                  New
-                </SecondaryButton>
-              </div>
-            </div>
-          </div>
-        </div>)}
-
-        {activeSection === "Economy Grants" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-          <ConfigTable
-            rows={economyGrants.map((row) => [row.trigger_key, row.display_name, `${formatNumber(row.coins)} coins · ${row.gems} gems`, row.one_time ? "One-time" : "Repeatable", row.is_enabled ? "Enabled" : "Disabled"])}
-            title="Economy grants"
-            onRowClick={(index) => {
-              setGrantDraft(grantToDraft(economyGrants[index]))
-            }}/>
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <h2 className="text-lg font-black">Edit grant</h2>
-            <p className="mt-1 text-xs text-white/55">
-              Coin / gem grants fired by a trigger.{" "}
-              <code className="font-mono">signup</code> is the
-              starting balance every new player receives. Add a new
-              key (e.g. <code className="font-mono">refer_friend</code>,{" "}
-              <code className="font-mono">link_google</code>) to define
-              a future tap — the value is configurable here today;
-              firing it is a one-line server call when that feature
-              ships. Disable rather than delete. One-time grants are
-              credited at most once per player.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Field
-                disabled={!grantDraft.isNew}
-                label="Trigger key"
-                value={grantDraft.trigger_key}
-                onChange={(trigger_key) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    trigger_key,
-                  }))
-                }}/>
-              <Field
-                label="Display name"
-                value={grantDraft.display_name}
-                onChange={(display_name) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    display_name,
-                  }))
-                }}/>
-              <Field
-                label="Coins"
-                value={grantDraft.coins}
-                onChange={(coins) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    coins,
-                  }))
-                }}/>
-              <Field
-                label="Gems"
-                value={grantDraft.gems}
-                onChange={(gems) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    gems,
-                  }))
-                }}/>
-              <Field
-                label="Sort order"
-                value={grantDraft.sort_order}
-                onChange={(sort_order) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    sort_order,
-                  }))
-                }}/>
-            </div>
-            <div className="mt-3 space-y-3">
-              <Field
-                label="Description"
-                value={grantDraft.description}
-                onChange={(description) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    description,
-                  }))
-                }}/>
-              <Toggle
-                checked={grantDraft.one_time}
-                label="One-time (max once per player)"
-                onChange={(one_time) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    one_time,
-                  }))
-                }}/>
-              <Toggle
-                checked={grantDraft.is_enabled}
-                label="Enabled"
-                onChange={(is_enabled) => {
-                  setGrantDraft((d) => ({
-                    ...d,
-                    is_enabled,
-                  }))
-                }}/>
-              {!grantDraft.isNew ? (<p className="text-[10px] normal-case tracking-normal text-white/40">
-                Trigger key is the primary key and can't be changed on
-                an existing grant. Click "New" to create one with a
-                different key.
-              </p>) : null}
-              <div className="flex gap-2">
-                <PrimaryButton
-                  disabled={!canManage || savingKey === "grant"}
-                  onClick={() => void saveGrant()}>
-                  Save grant
-                </PrimaryButton>
-                <SecondaryButton onClick={() => {
-                  setGrantDraft(grantToDraft())
-                }}>New</SecondaryButton>
-              </div>
-            </div>
-          </div>
-        </div>)}
-
-        {activeSection === "Level System" && (() => {
-          // Pagination math. `levels` is already sorted ascending by
-          // level in loadAdminData. The page index is clamped to the
-          // valid range so changing pageSize doesn't strand the user
-          // on a phantom page.
-          const totalLevels = levels.length
-          const effectivePageSize = levelsPageSize === "all" ? Math.max(totalLevels, 1) : levelsPageSize
-          const totalPages = Math.max(1, Math.ceil(totalLevels / effectivePageSize))
-          const clampedPageIndex = Math.min(Math.max(0, levelsPageIndex), totalPages - 1)
-          const pageStart = clampedPageIndex * effectivePageSize
-          const pageEnd = Math.min(pageStart + effectivePageSize, totalLevels)
-          const pagedLevels = levels.slice(pageStart, pageEnd)
-          const pageSizeOptions: LevelsPageSize[] = [25, 50, 100, "all"]
-
-          // Each level's status is DERIVED from the tier ranges (the same
-          // way the lobby derives it) — NOT from a per-row column. The old
-          // list read `level_configs.status_label`, which doesn't exist, so
-          // every level showed the "Rookie" fallback regardless of the
-          // configured tiers. Built from the live tier drafts so the column
-          // reflects edits in the panel above before they're even saved.
-          const parsedTierRanges = tierDrafts
-            .map((d, i) => ({
-              level_from: Number.parseInt(d.level_from, 10),
-              level_to: Number.parseInt(d.level_to, 10),
-              label: d.label.trim(),
-              sort_order: Number.parseInt(d.sort_order, 10) || i,
-              is_enabled: d.is_enabled,
+        {activeSection === "Users" && <UsersAdmin
+          allFilteredUsersChecked={allFilteredUsersChecked}
+          canManage={canManage}
+          checkedUserCount={checkedUserCount}
+          checkedUserIds={checkedUserIds}
+          currentUserId={user?.id ?? null}
+          filteredUsers={filteredUsers}
+          onlineUsers={onlineUsers}
+          profileDraft={profileDraft}
+          savingKey={savingKey}
+          selectableFilteredUserIds={selectableFilteredUserIds}
+          selectedUser={selectedUser}
+          selectedUserDetail={selectedUserDetail}
+          selectedUserId={selectedUserId}
+          userSearch={userSearch}
+          walletDraft={walletDraft}
+          onAdjustWallet={() => void adjustWallet()}
+          onHardDelete={(profileIds) => void hardDeleteUsers(profileIds)}
+          onProfileFieldChange={(field, value) => {
+            setProfileDraft((d) => ({
+              ...d,
+              [field]: value,
             }))
-            .filter((t) => Number.isFinite(t.level_from) && Number.isFinite(t.level_to) && t.label.length > 0)
+          }}
+          onSaveProfile={() => void saveProfile()}
+          onSelectUser={selectUser}
+          onSoftDelete={(profileIds) => void softDeleteUsers(profileIds)}
+          onToggleAllFiltered={toggleAllFilteredUsers}
+          onToggleChecked={toggleCheckedUser}
+          onToggleSuspension={(target) => void toggleSuspension(target)}
+          onUserSearchChange={setUserSearch}
+          onWalletFieldChange={(field, value) => {
+            setWalletDraft((d) => ({
+              ...d,
+              [field]: value,
+            }))
+          }}/>}
 
-          return (<>
-            {/* Status Tiers — declarative level → rank label. The
-                    lobby derives status from these rows in real time,
-                    so changes here propagate without re-applying the
-                    curve or touching individual level rows. */}
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-black">Status tiers</h2>
-                <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
-                  declarative level → rank label
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-white/55">
-                Map level ranges to a rank label (Rookie, Veteran, etc.).
-                The lobby derives a player's displayed status from these
-                tiers — so changing a range updates every level without
-                re-applying the curve. Ranges may overlap; the lowest
-                sort_order wins.
-              </p>
-              <div className="mt-4 space-y-2">
-                {tierDrafts.length === 0 ? (<div
-                  className="rounded-lg border border-white/10 bg-black/20 px-4 py-6 text-center text-xs text-white/45">
-                  No tiers configured. Click "+ Add tier" to define your first range.
-                </div>) : (<>
-                  <div
-                    className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
-                    <span>From</span>
-                    <span>To</span>
-                    <span>Label</span>
-                    <span>Sort</span>
-                    <span>Enabled</span>
-                    <span></span>
-                  </div>
-                  {tierDrafts.map((draft, i) => (<div
-                    key={`tier-${draft.id ?? `${draft.level_from}-${draft.level_to}-${draft.label}-${draft.sort_order}`}`}
-                    className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] items-center gap-2">
-                    <input
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
-                      min="1"
-                      type="number"
-                      value={draft.level_from}
-                      onChange={(e) => {
-                        updateTierDraft(i, {level_from: e.target.value})
-                      }}/>
-                    <input
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
-                      min="1"
-                      type="number"
-                      value={draft.level_to}
-                      onChange={(e) => {
-                        updateTierDraft(i, {level_to: e.target.value})
-                      }}/>
-                    <input
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-amber-200/60"
-                      placeholder="Rookie"
-                      type="text"
-                      value={draft.label}
-                      onChange={(e) => {
-                        updateTierDraft(i, {label: e.target.value})
-                      }}/>
-                    <input
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
-                      type="number"
-                      value={draft.sort_order}
-                      onChange={(e) => {
-                        updateTierDraft(i, {sort_order: e.target.value})
-                      }}/>
-                    <label
-                      className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/20">
-                      <input
-                        checked={draft.is_enabled}
-                        className="h-4 w-4 accent-amber-300"
-                        type="checkbox"
-                        onChange={(e) => {
-                          updateTierDraft(i, {is_enabled: e.target.checked})
-                        }}/>
-                    </label>
-                    <button
-                      className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 text-base font-black text-rose-200/80 transition hover:bg-rose-300/20"
-                      title="Remove tier"
-                      type="button"
-                      onClick={() => {
-                        removeTierDraft(i)
-                      }}>
-                      ×
-                    </button>
-                  </div>))}
-                </>)}
-              </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <SecondaryButton onClick={addBlankTier}>+ Add tier</SecondaryButton>
-                <PrimaryButton
-                  disabled={!canManage || savingTiers}
-                  onClick={() => void saveTiers()}>
-                  {savingTiers ? "Saving…" : "Save tiers"}
-                </PrimaryButton>
-                <SecondaryButton onClick={resetTierDrafts}>Discard changes</SecondaryButton>
-                {tierError ? (<span
-                  className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">
-                  {tierError}
-                </span>) : null}
-                {tierMessage ? (<span
-                  className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-100">
-                  {tierMessage}
-                </span>) : null}
-              </div>
-            </div>
+        {activeSection === "Currencies" && (<CurrenciesAdmin
+          canManage={canManage}
+          currencies={currencies}
+          currencyDraft={currencyDraft}
+          savingKey={savingKey}
+          onFieldChange={(field, value) => {
+            setCurrencyDraft((d) => ({
+              ...d,
+              [field]: value,
+            }))
+          }}
+          onNew={() => {
+            setCurrencyDraft(currencyToDraft())
+          }}
+          onSave={() => void saveCurrency()}
+          onSelectCurrency={(index) => {
+            setCurrencyDraft(currencyToDraft(currencies[index]))
+          }}
+          onToggleEnabled={(is_enabled) => {
+            setCurrencyDraft((d) => ({
+              ...d,
+              is_enabled,
+            }))
+          }}/>)}
 
-            {/* Levels grid: paginated table on the left, sticky
-                    editor on the right. `items-start` lets the sticky
-                    child stop at the top of the column instead of
-                    stretching to match the table's height. */}
-            <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-              <div>
-                {/* Pagination controls */}
-                <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-                  <span className="text-white/40 uppercase tracking-[0.14em] font-bold">
-                    Rows per page:
-                  </span>
-                  {pageSizeOptions.map((option) => (<button
-                    key={`page-size-${option}`}
-                    className={`rounded-md px-2.5 py-1 font-bold transition ${levelsPageSize === option ? "bg-amber-300/20 text-amber-100 border border-amber-200/40" : "bg-white/[0.04] text-white/55 border border-white/10 hover:border-white/25"}`}
-                    type="button"
-                    onClick={() => {
-                      setLevelsPageSize(option)
-                      setLevelsPageIndex(0)
-                    }}>
-                    {option === "all" ? "All" : option}
-                  </button>))}
-                  <span className="ml-auto flex items-center gap-2 text-white/55">
-                    <button
-                      className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
-                      disabled={clampedPageIndex === 0}
-                      type="button"
-                      onClick={() => {
-                        setLevelsPageIndex(Math.max(0, clampedPageIndex - 1))
-                      }}>
-                      ‹ Prev
-                    </button>
-                    <span className="font-mono text-white/70">
-                      {totalLevels === 0 ? "no rows" : `${pageStart + 1}–${pageEnd} of ${totalLevels}`}
-                    </span>
-                    <button
-                      className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
-                      disabled={clampedPageIndex >= totalPages - 1}
-                      type="button"
-                      onClick={() => {
-                        setLevelsPageIndex(Math.min(totalPages - 1, clampedPageIndex + 1))
-                      }}>
-                      Next ›
-                    </button>
-                  </span>
-                </div>
-                <ConfigTable
-                  rows={pagedLevels.map((row) => {
-                    const rowMicros = usdMicrosFor(rateMap, "coins", row.reward_coins) + usdMicrosFor(rateMap, "gems", row.reward_gems)
-                    return [`Level ${row.level}`, resolveStatusLabel(row.level, parsedTierRanges, null), `${formatNumber(row.xp_required)} XP`, `${formatNumber(row.reward_coins)} coins · ${row.reward_gems} gems`, formatUsdMicros(rowMicros), row.is_enabled ? "Enabled" : "Disabled"]
-                  })}
-                  title="Levels"
-                  onRowClick={(index) => {
-                    setLevelDraft(levelToDraft(pagedLevels[index]))
-                  }}/>
-              </div>
-              <div className="sticky top-4 rounded-xl border border-white/10 bg-white/[0.045] p-4">
-                <h2 className="text-lg font-black">Edit level</h2>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Field
-                    label="Level"
-                    value={levelDraft.level}
-                    onChange={(level) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        level,
-                      }))
-                    }}/>
-                  <Field
-                    label="XP required"
-                    value={levelDraft.xp_required}
-                    onChange={(xp_required) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        xp_required,
-                      }))
-                    }}/>
-                  <Field
-                    label="Status label (legacy)"
-                    value={levelDraft.status_label}
-                    onChange={(status_label) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        status_label,
-                      }))
-                    }}/>
-                  <Field
-                    label="Reward coins"
-                    value={levelDraft.reward_coins}
-                    onChange={(reward_coins) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        reward_coins,
-                      }))
-                    }}/>
-                  <Field
-                    label="Reward gems"
-                    value={levelDraft.reward_gems}
-                    onChange={(reward_gems) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        reward_gems,
-                      }))
-                    }}/>
-                </div>
-                <p className="mt-2 text-[10px] text-white/35">
-                  "Status label" on a level row is legacy — the Status
-                  tiers panel above takes precedence in the lobby.
-                </p>
-                <div className="mt-3 space-y-3">
-                  <TextArea
-                    label="Reward items JSON array"
-                    value={levelDraft.reward_items}
-                    onChange={(reward_items) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        reward_items,
-                      }))
-                    }}/>
-                  <TextArea
-                    label="Unlock rules JSON object"
-                    value={levelDraft.unlock_rules}
-                    onChange={(unlock_rules) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        unlock_rules,
-                      }))
-                    }}/>
-                  <Toggle
-                    checked={levelDraft.is_enabled}
-                    label="Enabled"
-                    onChange={(is_enabled) => {
-                      setLevelDraft((d) => ({
-                        ...d,
-                        is_enabled,
-                      }))
-                    }}/>
-                  <div className="flex gap-2">
-                    <PrimaryButton
-                      disabled={!canManage || savingKey === "level"}
-                      onClick={() => void saveLevel()}>Save
-                      level</PrimaryButton>
-                    <SecondaryButton
-                      onClick={() => {
-                        // Pre-fill the next free level so "New" on a packed
-                        // 1..N table proposes N+1 instead of a blank field
-                        // (blank saved as level 0 and tripped the `level > 0`
-                        // check constraint). Operator can still overwrite it.
-                        const nextLevel = levels.reduce((max, row) => Math.max(max, row.level), 0) + 1
-                        setLevelDraft({
-                          ...levelToDraft(),
-                          level: String(nextLevel),
-                        })
-                      }}>
-                      New
-                    </SecondaryButton>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <LevelCurveProposal
-              canManage={canManage}
-              coinValueMicros={rateMap.get("coins") ?? 100}
-              currentLevels={levels}
-              currentUserId={user?.id ?? null}
-              gemValueMicros={rateMap.get("gems") ?? 10000}
-              onApplied={loadAdminData}/>
-          </>)
-        })()}
+        {activeSection === "Economy Grants" && (<EconomyGrantsAdmin
+          canManage={canManage}
+          economyGrants={economyGrants}
+          grantDraft={grantDraft}
+          savingKey={savingKey}
+          onFieldChange={(field, value) => {
+            setGrantDraft((d) => ({
+              ...d,
+              [field]: value,
+            }))
+          }}
+          onNew={() => {
+            setGrantDraft(grantToDraft())
+          }}
+          onSave={() => void saveGrant()}
+          onSelectGrant={(index) => {
+            setGrantDraft(grantToDraft(economyGrants[index]))
+          }}
+          onToggleEnabled={(is_enabled) => {
+            setGrantDraft((d) => ({
+              ...d,
+              is_enabled,
+            }))
+          }}
+          onToggleOneTime={(one_time) => {
+            setGrantDraft((d) => ({
+              ...d,
+              one_time,
+            }))
+          }}/>)}
 
-        {activeSection === "Daily Bonus" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-          <ConfigTable
-            rows={dailyBonusConfigs.map((row) => {
-              const rowMicros = usdMicrosFor(rateMap, "coins", row.reward_coins) + usdMicrosFor(rateMap, "gems", row.reward_gems)
-              return [`Day ${row.day}`, `${formatNumber(row.reward_coins)} coins`, `${formatNumber(row.reward_gems)} gems`, `${formatNumber(row.reward_xp)} XP`, formatUsdMicros(rowMicros)]
-            })}
-            title="Daily bonus (7 days)"
-            onRowClick={(index) => {
-              setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))
-            }}/>
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <h2 className="text-lg font-black">Edit daily bonus</h2>
-            <p className="mt-1 text-xs text-white/55">
-              Day 1–7 of the rotating weekly cycle. Streak resets to day 1
-              if a player misses a day (ET calendar). After day 7 the cycle
-              loops back to day 1.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Field
-                label="Day (1–7)"
-                value={dailyBonusDraft.day}
-                onChange={(day) => {
-                  setDailyBonusDraft((d) => ({
-                    ...d,
-                    day,
-                  }))
-                }}/>
-              <Field
-                label="Reward coins"
-                value={dailyBonusDraft.reward_coins}
-                onChange={(reward_coins) => {
-                  setDailyBonusDraft((d) => ({
-                    ...d,
-                    reward_coins,
-                  }))
-                }}/>
-              <Field
-                label="Reward gems"
-                value={dailyBonusDraft.reward_gems}
-                onChange={(reward_gems) => {
-                  setDailyBonusDraft((d) => ({
-                    ...d,
-                    reward_gems,
-                  }))
-                }}/>
-              <Field
-                label="Reward XP"
-                value={dailyBonusDraft.reward_xp}
-                onChange={(reward_xp) => {
-                  setDailyBonusDraft((d) => ({
-                    ...d,
-                    reward_xp,
-                  }))
-                }}/>
-            </div>
-            <div className="mt-3 space-y-3">
-              <TextArea
-                label="Reward items JSON array"
-                value={dailyBonusDraft.reward_items}
-                onChange={(reward_items) => {
-                  setDailyBonusDraft((d) => ({
-                    ...d,
-                    reward_items,
-                  }))
-                }}/>
-              <div className="flex gap-2">
-                <PrimaryButton
-                  disabled={!canManage || savingKey === "daily-bonus"}
-                  onClick={() => void saveDailyBonus()}>
-                  Save day
-                </PrimaryButton>
-                <SecondaryButton onClick={() => {
-                  setDailyBonusDraft(dailyBonusToDraft())
-                }}>
-                  Reset form
-                </SecondaryButton>
-              </div>
-            </div>
-          </div>
-        </div>)}
+        {activeSection === "Level System" && (<LevelSystemAdmin
+          canManage={canManage}
+          currentUserId={user?.id ?? null}
+          levelDraft={levelDraft}
+          levels={levels}
+          levelsPageIndex={levelsPageIndex}
+          levelsPageSize={levelsPageSize}
+          rateMap={rateMap}
+          savingKey={savingKey}
+          savingTiers={savingTiers}
+          tierDrafts={tierDrafts}
+          tierError={tierError}
+          tierMessage={tierMessage}
+          onAddBlankTier={addBlankTier}
+          onApplied={loadAdminData}
+          onLevelDraftChange={(patch) => {
+            setLevelDraft((d) => ({...d, ...patch}))
+          }}
+          onLevelsPageIndexChange={setLevelsPageIndex}
+          onLevelsPageSizeChange={setLevelsPageSize}
+          onNewLevel={() => {
+            // Pre-fill the next free level so "New" on a packed
+            // 1..N table proposes N+1 instead of a blank field
+            // (blank saved as level 0 and tripped the `level > 0`
+            // check constraint). Operator can still overwrite it.
+            const nextLevel = levels.reduce((max, row) => Math.max(max, row.level), 0) + 1
+            setLevelDraft({
+              ...levelToDraft(),
+              level: String(nextLevel),
+            })
+          }}
+          onRemoveTierDraft={removeTierDraft}
+          onResetTierDrafts={resetTierDrafts}
+          onSaveLevel={saveLevel}
+          onSaveTiers={saveTiers}
+          onUpdateTierDraft={updateTierDraft}/>)}
 
-        {activeSection === "Hourly Wheel" && (<WheelAdmin canManage={canManage}/>)}
+        {activeSection === "Daily Bonus" && (<DailyBonusAdmin
+          canManage={canManage}
+          dailyBonusConfigs={dailyBonusConfigs}
+          dailyBonusDraft={dailyBonusDraft}
+          rateMap={rateMap}
+          savingKey={savingKey}
+          onFieldChange={(field, value) => {
+            setDailyBonusDraft((d) => ({
+              ...d,
+              [field]: value,
+            }))
+          }}
+          onReset={() => {
+            setDailyBonusDraft(dailyBonusToDraft())
+          }}
+          onSave={() => void saveDailyBonus()}
+          onSelectDay={(index) => {
+            setDailyBonusDraft(dailyBonusToDraft(dailyBonusConfigs[index]))
+          }}/>)}
+
+        {activeSection === "Hourly Wheel" && (<HourlyWheelAdmin canManage={canManage}/>)}
 
         {activeSection === "Daily Missions" && (<MissionsAdmin canManage={canManage}/>)}
 
@@ -3101,1773 +2224,139 @@ export function Admin() {
               / tableToDraft state stays in place for the Difficulties section below; the
               underlying table_configs data is untouched. */}
 
-        {activeSection === "Difficulties" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
-          {/* Difficulty-tier table. These rows surface in the
-                * lobby's "Select Room Difficulty" modal (filtered by
-                * kind='difficulty' + is_enabled). XP boost % drives
-                * both the card display and the actual XP grant at
-                * match end via finish_match(). */}
-          <ConfigTable
-            rows={tables.filter((row) => row.kind === "difficulty").map((row) => {
-              const feeMicros = usdMicrosFor(rateMap, "coins", row.entry_fee_coins)
-              const winMicros = usdMicrosFor(rateMap, "coins", row.prize_coins)
-              const lossMicros = usdMicrosFor(rateMap, "coins", row.prize_coins_loss)
-              return [row.display_name, `${row.xp_multiplier_pct}% XP`, `Fee ${formatNumber(row.entry_fee_coins)}`, `W ${formatNumber(row.prize_coins)} / L ${formatNumber(row.prize_coins_loss)}`, `AI ${row.ai_level}`, `RTP ${row.target_rtp_pct}%`, `Fee ${formatUsdMicros(feeMicros)} · W ${formatUsdMicros(winMicros)} · L ${formatUsdMicros(lossMicros)}`, row.is_enabled ? "Enabled" : "Disabled"]
-            })}
-            title="Difficulty tiers"
-            onRowClick={(index) => {
-              const diffRows = tables.filter((row) => row.kind === "difficulty")
-              setTableDraft(tableToDraft(diffRows[index], "difficulty"))
-            }}/>
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <h2 className="text-lg font-black">Edit difficulty</h2>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Field
-                label="Tier id"
-                value={tableDraft.id}
-                onChange={(id) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    id,
-                  }))
-                }}/>
-              <Field
-                label="Display name"
-                value={tableDraft.display_name}
-                onChange={(display_name) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    display_name,
-                  }))
-                }}/>
-              <Field
-                label="Entry fee (coins)"
-                value={tableDraft.entry_fee_coins}
-                onChange={(entry_fee_coins) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    entry_fee_coins,
-                  }))
-                }}/>
-              <Field
-                label="Prize coins (on win)"
-                value={tableDraft.prize_coins}
-                onChange={(prize_coins) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    prize_coins,
-                  }))
-                }}/>
-              <Field
-                label="Lose prize (consolation)"
-                value={tableDraft.prize_coins_loss}
-                onChange={(prize_coins_loss) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    prize_coins_loss,
-                  }))
-                }}/>
-              <Field
-                label="Target RTP (%)"
-                value={tableDraft.target_rtp_pct}
-                onChange={(target_rtp_pct) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    target_rtp_pct,
-                  }))
-                }}/>
-              <Field
-                label="XP boost (%)"
-                value={tableDraft.xp_multiplier_pct}
-                onChange={(xp_multiplier_pct) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    xp_multiplier_pct,
-                  }))
-                }}/>
-              <Field
-                label="Base XP per match"
-                value={tableDraft.base_xp_win}
-                onChange={(base_xp_win) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    base_xp_win,
-                  }))
-                }}/>
-              <Field
-                label="Turn seconds"
-                value={tableDraft.turn_seconds}
-                onChange={(turn_seconds) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    turn_seconds,
-                  }))
-                }}/>
-              <Field
-                label="Required level"
-                value={tableDraft.required_level}
-                onChange={(required_level) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    required_level,
-                  }))
-                }}/>
-              <Field
-                label="Match target"
-                value={tableDraft.match_target}
-                onChange={(match_target) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    match_target,
-                  }))
-                }}/>
-              <Field
-                label="Sort order"
-                value={tableDraft.sort_order}
-                onChange={(sort_order) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    sort_order,
-                  }))
-                }}/>
-            </div>
-            <div className="mt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                  AI strength
-                  <select
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
-                    value={tableDraft.ai_level}
-                    onChange={(event) => {
-                      setTableDraft((d) => ({
-                        ...d,
-                        ai_level: event.target.value as "easy" | "medium" | "hard",
-                      }))
-                    }}>
-                    <option value="easy">easy</option>
-                    <option value="medium">medium</option>
-                    <option value="hard">hard</option>
-                  </select>
-                </label>
-                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                  Accent color
-                  <select
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
-                    value={tableDraft.accent_color}
-                    onChange={(event) => {
-                      setTableDraft((d) => ({
-                        ...d,
-                        accent_color: event.target.value,
-                      }))
-                    }}>
-                    {difficultyAccentColors.map((slug) => (<option
-                      key={slug}
-                      value={slug}>{slug}</option>))}
-                  </select>
-                </label>
-              </div>
-              <Field
-                label="Description"
-                value={tableDraft.description}
-                onChange={(description) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    description,
-                  }))
-                }}/>
-              <TextArea
-                label="Metadata JSON object"
-                value={tableDraft.metadata}
-                onChange={(metadata) => {
-                  setTableDraft((d) => ({
-                    ...d,
-                    metadata,
-                  }))
-                }}/>
-              <div className="grid grid-cols-3 gap-2">
-                <Toggle
-                  checked={tableDraft.allow_ai}
-                  label="AI"
-                  onChange={(allow_ai) => {
-                    setTableDraft((d) => ({
-                      ...d,
-                      allow_ai,
-                    }))
-                  }}/>
-                <Toggle
-                  checked={tableDraft.allow_online}
-                  label="Online"
-                  onChange={(allow_online) => {
-                    setTableDraft((d) => ({
-                      ...d,
-                      allow_online,
-                    }))
-                  }}/>
-                <Toggle
-                  checked={tableDraft.is_enabled}
-                  label="Enabled"
-                  onChange={(is_enabled) => {
-                    setTableDraft((d) => ({
-                      ...d,
-                      is_enabled,
-                    }))
-                  }}/>
-              </div>
-              <div className="flex gap-2">
-                <PrimaryButton
-                  disabled={!canManage || savingKey === "table"}
-                  onClick={() => void saveTable()}>Save
-                  tier</PrimaryButton>
-                <SecondaryButton
-                  onClick={() => {
-                    setTableDraft(tableToDraft(undefined, "difficulty"))
-                  }}>New</SecondaryButton>
-              </div>
-            </div>
-          </div>
-        </div>)}
+        {activeSection === "Difficulties" && (<DifficultiesAdmin
+          canManage={canManage}
+          difficultyAccentColors={difficultyAccentColors}
+          rateMap={rateMap}
+          savingKey={savingKey}
+          tableDraft={tableDraft}
+          tables={tables}
+          onNewDifficulty={() => {
+            setTableDraft(tableToDraft(undefined, "difficulty"))
+          }}
+          onSaveTable={() => void saveTable()}
+          onSelectDifficulty={(index) => {
+            const diffRows = tables.filter((row) => row.kind === "difficulty")
+            setTableDraft(tableToDraft(diffRows[index], "difficulty"))
+          }}
+          onTableDraftChange={(patch) => {
+            setTableDraft((d) => ({
+              ...d,
+              ...patch,
+            }))
+          }}/>)}
 
-        {activeSection === "RTP Analytics" && (<div className="space-y-4">
-          {/* Header: range selector + refresh. The summary is
-                * fetched lazily when the section opens (see
-                * loadRtpSummary effect above); changing the range
-                * re-fires the RPC. Numbers are computed server-side
-                * by get_rtp_summary against matches +
-                * wallet_transactions, so this view stays cheap on the
-                * client even when match count grows. */}
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <div>
-              <h2 className="text-lg font-black">RTP Analytics</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Per-tier wagered, paid out, house take, and actual vs target RTP. Drives the
-                economy tuning loop — re-balance W / L / fee in the Difficulties tab when delta
-                drifts away from zero.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {RTP_RANGES.map((range) => (<button
-                key={range.id}
-                className={"rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition " + (rtpRange === range.id ? "border-amber-300/60 bg-amber-300/15 text-amber-200" : "border-white/15 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]")}
-                type="button"
-                onClick={() => {
-                  setRtpRange(range.id)
-                }}>
-                {range.label}
-              </button>))}
-              <SecondaryButton
-                disabled={rtpLoading}
-                onClick={() => void loadRtpSummary()}>
-                {rtpLoading ? "Loading…" : "Refresh"}
-              </SecondaryButton>
-            </div>
-          </div>
+        {activeSection === "RTP Analytics" && (<RTPAnalyticsAdmin
+          ranges={RTP_RANGES}
+          rtpError={rtpError}
+          rtpExpandedTier={rtpExpandedTier}
+          rtpLoading={rtpLoading}
+          rtpPlayerError={rtpPlayerError}
+          rtpPlayerLoading={rtpPlayerLoading}
+          rtpPlayerRows={rtpPlayerRows}
+          rtpRange={rtpRange}
+          rtpRows={rtpRows}
+          onOpenUser={(profileId) => {
+            setActiveSection("Users")
+            setSelectedUserId(profileId)
+          }}
+          onRefresh={() => void loadRtpSummary()}
+          onSetRtpRange={setRtpRange}
+          onToggleTier={(tierId) => {
+            setRtpExpandedTier((current) => current === tierId ? null : tierId)
+          }}/>)}
 
-          {rtpError ? (
-            <div className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-sm text-rose-100">
-              {rtpError}
-            </div>) : null}
+        {activeSection === "Board Themes" && (<BoardThemesAdmin
+          boardDraft={boardDraft}
+          boardEditorMode={boardEditorMode}
+          boardEditorOpen={boardEditorOpen}
+          boardMessage={boardMessage}
+          boards={boards}
+          canManage={canManage}
+          loadingScreenDraft={loadingScreenDraft}
+          loadingScreens={loadingScreens}
+          podiumDraft={podiumDraft}
+          podiums={podiums}
+          savingKey={savingKey}
+          onActivateLoadingScreen={(screen) => void activateLoadingScreen(screen)}
+          onActivatePodium={(podium) => void activatePodium(podium)}
+          onAddLoadingScreen={() => void addLoadingScreen()}
+          onAddPodium={() => void addPodium()}
+          onDeleteBoard={(board) => void deleteBoard(board)}
+          onDeleteLoadingScreen={(screen) => void deleteLoadingScreen(screen)}
+          onDeletePodium={(podium) => void deletePodium(podium)}
+          onOpenAddBoard={openAddBoard}
+          onOpenEditBoard={openEditBoard}
+          onSaveBoard={() => void saveBoard()}
+          onSeedBuiltInBoards={() => void seedBuiltInBoards()}
+          onSetBoardDraft={setBoardDraft}
+          onSetBoardEditorOpen={setBoardEditorOpen}
+          onSetLoadingScreenDraft={setLoadingScreenDraft}
+          onSetPodiumDraft={setPodiumDraft}/>)}
 
-          <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.045]">
-            <table className="min-w-full text-sm">
-              <thead
-                className="border-b border-white/10 bg-white/[0.04] text-left text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/45">
-                <tr>
-                  <th className="px-3 py-2">Tier</th>
-                  <th className="px-3 py-2 text-right">Matches</th>
-                  <th className="px-3 py-2 text-right">Win rate</th>
-                  <th className="px-3 py-2 text-right">Wagered</th>
-                  <th className="px-3 py-2 text-right">Paid out</th>
-                  <th className="px-3 py-2 text-right">House net</th>
-                  <th className="px-3 py-2 text-right">Target RTP</th>
-                  <th className="px-3 py-2 text-right">Actual RTP</th>
-                  <th className="px-3 py-2 text-right">Delta</th>
-                  <th className="px-3 py-2 text-right">Risk-free</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rtpRows.length === 0 && !rtpLoading ? (<tr>
-                  <td
-                    className="px-3 py-6 text-center text-white/40"
-                    colSpan={10}>
-                    No difficulty matches in this window yet.
-                  </td>
-                </tr>) : (rtpRows.map((row) => {
-                  const delta = row.out_rtp_delta_pct
-                  const deltaColor = delta === null ? "text-white/30" : delta > 3 ? "text-rose-300" : delta < -3 ? "text-emerald-300" : "text-amber-200"
-                  const isExpanded = rtpExpandedTier === row.out_table_config_id
-                  const hasTraffic = row.out_matches_played > 0 || row.out_coins_wagered > 0
-                  return (<Fragment key={row.out_table_config_id}>
-                    <tr
-                      className={`border-b border-white/5 last:border-b-0 ${hasTraffic ? "cursor-pointer hover:bg-white/[0.03]" : ""} ${isExpanded ? "bg-white/[0.04]" : ""}`}
-                      onClick={() => {
-                        if (!hasTraffic) return
-                        setRtpExpandedTier(isExpanded ? null : row.out_table_config_id)
-                      }}>
-                      <td className="px-3 py-2 font-bold text-white/85">
-                        <span className="mr-1 inline-block w-3 text-white/40">
-                          {hasTraffic ? (isExpanded ? "▾" : "▸") : ""}
-                        </span>
-                        {row.out_display_name}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                        {formatNumber(row.out_matches_played)}
-                        {row.out_matches_played > 0 ? (<span
-                          className="ml-1 text-white/40">({formatNumber(row.out_matches_won)}W)</span>) : null}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                        {row.out_actual_win_rate_pct !== null ? `${row.out_actual_win_rate_pct}%` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                        {formatNumber(row.out_coins_wagered)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                        {formatNumber(row.out_coins_paid_out)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/70">
-                        {formatNumber(row.out_coins_house_net)}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/55">
-                        {row.out_target_rtp_pct}%
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums font-bold text-white/85">
-                        {row.out_actual_rtp_pct !== null ? `${row.out_actual_rtp_pct}%` : "—"}
-                      </td>
-                      <td className={`px-3 py-2 text-right tabular-nums font-bold ${deltaColor}`}>
-                        {delta !== null ? `${delta > 0 ? "+" : ""}${delta}` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-white/55">
-                        {formatNumber(row.out_risk_free_count)}
-                      </td>
-                    </tr>
-                    {isExpanded ? (<tr className="border-b border-white/5 bg-black/30">
-                      <td
-                        className="px-3 py-3"
-                        colSpan={10}>
-                        {rtpPlayerError ? (<div
-                          className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-xs text-rose-100">
-                          {rtpPlayerError}
-                        </div>) : rtpPlayerLoading && rtpPlayerRows.length === 0 ? (
-                          <div className="px-3 py-4 text-center text-xs text-white/40">Loading
-                            players…</div>) : rtpPlayerRows.length === 0 ? (
-                          <div className="px-3 py-4 text-center text-xs text-white/40">
-                            No player data in this window.
-                          </div>) : (<table className="min-w-full text-xs">
-                          <thead
-                            className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                            <tr>
-                              <th className="px-2 py-1.5 text-left">Player</th>
-                              <th className="px-2 py-1.5 text-right">Matches</th>
-                              <th className="px-2 py-1.5 text-right">Win rate</th>
-                              <th className="px-2 py-1.5 text-right">Wagered</th>
-                              <th className="px-2 py-1.5 text-right">Paid out</th>
-                              <th className="px-2 py-1.5 text-right">House net</th>
-                              <th className="px-2 py-1.5 text-right">RTP</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {rtpPlayerRows.map((pr) => {
-                              // Per-player RTP colouring is opposite of the
-                              // tier-level delta: here, high RTP means this
-                              // specific player is winning more than the tier
-                              // target — possibly a streaking expert or a bot.
-                              // Low RTP just means they're unlucky / new.
-                              const rtp = pr.out_actual_rtp_pct
-                              const playerRtpColor = rtp === null ? "text-white/40" : rtp > 110 ? "text-rose-300" : rtp > 95 ? "text-amber-200" : "text-white/70"
-                              return (<tr
-                                key={pr.out_profile_id}
-                                className="border-t border-white/5">
-                                <td className="px-2 py-1.5">
-                                  <button
-                                    className="text-white/85 hover:text-amber-200"
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setActiveSection("Users")
-                                      setSelectedUserId(pr.out_profile_id)
-                                    }}>
-                                    {pr.out_display_name}
-                                  </button>
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
-                                  {formatNumber(pr.out_matches_played)}
-                                  {pr.out_matches_played > 0 ? (<span
-                                    className="ml-1 text-white/40">({pr.out_matches_won}W)</span>) : null}
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
-                                  {pr.out_win_rate_pct !== null ? `${pr.out_win_rate_pct}%` : "—"}
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
-                                  {formatNumber(pr.out_coins_wagered)}
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
-                                  {formatNumber(pr.out_coins_paid_out)}
-                                </td>
-                                <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
-                                  {formatNumber(pr.out_coins_house_net)}
-                                </td>
-                                <td
-                                  className={`px-2 py-1.5 text-right tabular-nums font-bold ${playerRtpColor}`}>
-                                  {rtp !== null ? `${rtp}%` : "—"}
-                                </td>
-                              </tr>)
-                            })}
-                          </tbody>
-                        </table>)}
-                      </td>
-                    </tr>) : null}
-                  </Fragment>)
-                }))}
-              </tbody>
-            </table>
-          </div>
+        {activeSection === "Lobby Features" && (<LobbyFeaturesAdmin
+          canManage={canManage}
+          lobbyFeatures={lobbyFeatures}
+          savingKey={savingKey}
+          onChangeEnabled={(featureKey, enabled) => {
+            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+              ...r,
+              enabled,
+            } : r))
+          }}
+          onChangeLevel={(featureKey, level) => {
+            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+              ...r,
+              level,
+            } : r))
+          }}
+          onChangeTooltip={(featureKey, tooltip) => {
+            setLobbyFeatures((rows) => rows.map((r) => r.feature_key === featureKey ? {
+              ...r,
+              tooltip,
+            } : r))
+          }}
+          onSave={(featureKey) => {
+            void saveLobbyFeature(featureKey)
+          }}/>)}
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/50">
-            <strong className="text-white/70">How to read this:</strong> Delta = Actual RTP − Target RTP. Negative
-            means
-            players are losing more than you targeted (house overshooting). Positive means players are winning more
-            (house
-            bleeding). Wait for ~50 matches per tier before re-tuning — anything below that is dice variance, not
-            signal.
-            Risk-free is the count of payouts upgraded to full entry-fee refund under the first-10-matches
-            onboarding rule.
-          </div>
-        </div>)}
+        {activeSection === "Shop" && (<ShopAdmin
+          canManage={canManage}
+          saleDraft={saleDraft}
+          savingKey={savingKey}
+          shopDraft={shopDraft}
+          shopItems={shopItems}
+          storeConfigDraft={storeConfigDraft}
+          onDeleteShop={() => void deleteShop()}
+          onSaveShop={() => void saveShop()}
+          onSaveStoreConfig={() => void saveStoreConfig()}
+          onSaveStoreSale={() => void saveStoreSale()}
+          onSetSaleDraft={setSaleDraft}
+          onSetShopDraft={setShopDraft}
+          onSetStoreConfigDraft={setStoreConfigDraft}/>)}
 
-        {activeSection === "Board Themes" && (<div className="space-y-4">
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <div>
-              <h2 className="text-lg font-black">Board Themes</h2>
-              <p className="mt-1 text-sm text-white/50">
-                Visual list of live and draft boards used by the lobby and gameplay.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <SecondaryButton
-                disabled={!canManage || savingKey === "board-seed"}
-                onClick={() => void seedBuiltInBoards()}>
-                {savingKey === "board-seed" ? "Populating..." : "Populate Current Boards"}
-              </SecondaryButton>
-              <PrimaryButton
-                disabled={!canManage}
-                onClick={openAddBoard}>
-                Add Board
-              </PrimaryButton>
-            </div>
-          </div>
-
-          {boardMessage && (<div
-            className="rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-100">
-            {boardMessage}
-          </div>)}
-
-          {/* Podium — the stand the board sits on in the lobby
-                  carousel. A small library; exactly one is active. */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <div>
-              <h3 className="text-base font-black">Podium</h3>
-              <p className="mt-1 text-sm text-white/50">
-                The stand the board sits on in the lobby carousel. Upload options and pick
-                the one that&apos;s live. Wide transparent PNG/WebP works best.
-              </p>
-            </div>
-
-            {podiums.length > 0 && (<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {podiums.map((p) => (<div
-                key={p.id}
-                className={`overflow-hidden rounded-lg border p-3 transition ${p.is_active ? "border-amber-300/60 bg-amber-300/[0.06]" : "border-white/10 bg-black/20"}`}>
-                <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded bg-black/40">
-                  <img
-                    alt={p.name}
-                    className="h-full w-full object-contain"
-                    loading="lazy"
-                    src={p.image_url}/>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-bold">{p.name}</span>
-                  {p.is_active && (<span
-                    className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
-                    Active
-                  </span>)}
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={!canManage || p.is_active || savingKey === `podium-active-${p.id}`}
-                    type="button"
-                    onClick={() => void activatePodium(p)}>
-                    {p.is_active ? "Active" : savingKey === `podium-active-${p.id}` ? "Activating..." : "Set active"}
-                  </button>
-                  <button
-                    className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={!canManage || p.is_active || savingKey === `podium-delete-${p.id}`}
-                    type="button"
-                    onClick={() => void deletePodium(p)}>
-                    Delete
-                  </button>
-                </div>
-              </div>))}
-            </div>)}
-
-            <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                Add a podium
-              </div>
-              <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                    Name
-                    <input
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
-                      disabled={!canManage}
-                      placeholder="e.g. Royal Holder"
-                      type="text"
-                      value={podiumDraft.name}
-                      onChange={(event) => {
-                        setPodiumDraft((draft) => ({
-                          ...draft,
-                          name: event.target.value,
-                        }))
-                      }}/>
-                  </label>
-                  <ImageField
-                    disabled={!canManage}
-                    folder="podiums"
-                    label="Podium image"
-                    value={podiumDraft.image_url}
-                    onChange={(url) => {
-                      setPodiumDraft((draft) => ({
-                        ...draft,
-                        image_url: url,
-                      }))
-                    }}/>
-                </div>
-                <PrimaryButton
-                  disabled={!canManage || !podiumDraft.image_url.trim() || savingKey === "podium-add"}
-                  onClick={() => void addPodium()}>
-                  {savingKey === "podium-add" ? "Adding..." : "Add podium"}
-                </PrimaryButton>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading screen — the full-art cover shown while routes /
-                  assets load. Same library model as the podium: many rows,
-                  exactly one active (the client caches the active URL). */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <div>
-              <h3 className="text-base font-black">Loading screen</h3>
-              <p className="mt-1 text-sm text-white/50">
-                The full-screen art players see while the game loads. Upload themed
-                variants (holidays, promos) and pick the live one. Landscape ~2:1 WebP
-                works best — the gold progress bar is drawn on top near the bottom.
-              </p>
-            </div>
-
-            {loadingScreens.length > 0 && (<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {loadingScreens.map((s) => (<div
-                key={s.id}
-                className={`overflow-hidden rounded-lg border p-3 transition ${s.is_active ? "border-amber-300/60 bg-amber-300/[0.06]" : "border-white/10 bg-black/20"}`}>
-                <div className="grid aspect-video place-items-center overflow-hidden rounded bg-black/40">
-                  <img
-                    alt={s.name}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    src={s.image_url}/>
-                </div>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-bold">{s.name}</span>
-                  {s.is_active && (<span
-                    className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
-                    Active
-                  </span>)}
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <button
-                    className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={!canManage || s.is_active || savingKey === `loading-screen-active-${s.id}`}
-                    type="button"
-                    onClick={() => void activateLoadingScreen(s)}>
-                    {s.is_active ? "Active" : savingKey === `loading-screen-active-${s.id}` ? "Activating..." : "Set active"}
-                  </button>
-                  <button
-                    className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                    disabled={!canManage || s.is_active || savingKey === `loading-screen-delete-${s.id}`}
-                    type="button"
-                    onClick={() => void deleteLoadingScreen(s)}>
-                    Delete
-                  </button>
-                </div>
-              </div>))}
-            </div>)}
-
-            <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                Add a loading screen
-              </div>
-              <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                    Name
-                    <input
-                      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
-                      disabled={!canManage}
-                      placeholder="e.g. Winter 2026"
-                      type="text"
-                      value={loadingScreenDraft.name}
-                      onChange={(event) => {
-                        setLoadingScreenDraft((draft) => ({
-                          ...draft,
-                          name: event.target.value,
-                        }))
-                      }}/>
-                  </label>
-                  <ImageField
-                    disabled={!canManage}
-                    folder="loading-screens"
-                    label="Loading screen image"
-                    value={loadingScreenDraft.image_url}
-                    onChange={(url) => {
-                      setLoadingScreenDraft((draft) => ({
-                        ...draft,
-                        image_url: url,
-                      }))
-                    }}/>
-                </div>
-                <PrimaryButton
-                  disabled={!canManage || !loadingScreenDraft.image_url.trim() || savingKey === "loading-screen-add"}
-                  onClick={() => void addLoadingScreen()}>
-                  {savingKey === "loading-screen-add" ? "Adding..." : "Add loading screen"}
-                </PrimaryButton>
-              </div>
-            </div>
-          </div>
-
-          {boards.length === 0 ? (
-            <EmptyState text="No board themes yet. Use Populate Current Boards or Add Board to create one."/>) : (
-            <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {boards.map((row) => (<div
-                key={row.id}
-                className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-amber-200/45"
-                onClick={() => {
-                  openEditBoard(row)
-                }}>
-                <div className="relative aspect-[16/10] overflow-hidden bg-black/25">
-                  {row.lobby_background_image ? (<img
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-40 blur-sm transition group-hover:scale-105"
-                    loading="lazy"
-                    src={row.lobby_background_image}/>) : null}
-                  <img
-                    alt={`${row.display_name} lobby preview`}
-                    className="relative z-10 h-full w-full object-contain p-4 drop-shadow-[0_18px_16px_rgba(0,0,0,0.45)]"
-                    loading="lazy"
-                    src={row.preview_image}/>
-                  <div className="absolute left-3 top-3 z-20">
-                    <StatusPill enabled={row.is_enabled}/>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-lg font-black">{row.display_name}</h3>
-                      <p className="mt-1 truncate font-mono text-xs text-white/40">{row.id}</p>
-                    </div>
-                    <div
-                      className="flex shrink-0 gap-2"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                      }}>
-                      <button
-                        className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 transition hover:bg-white/15"
-                        type="button"
-                        onClick={() => {
-                          openEditBoard(row)
-                        }}>
-                        Edit
-                      </button>
-                      <button
-                        className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                        disabled={!canManage || savingKey === `board-delete-${row.id}`}
-                        type="button"
-                        onClick={() => void deleteBoard(row)}>
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid grid-cols-4 gap-2 text-xs text-white/55">
-                    <div className="rounded-lg bg-black/18 p-2">
-                      <div className="text-white/35">Level</div>
-                      <div className="font-bold text-white">{row.unlock_level}</div>
-                    </div>
-                    <div className="rounded-lg bg-black/18 p-2">
-                      <div className="text-white/35">Coins</div>
-                      <div className="font-bold text-white">{formatNumber(row.price_coins)}</div>
-                    </div>
-                    <div className="rounded-lg bg-black/18 p-2">
-                      <div className="text-white/35">Gems</div>
-                      <div className="font-bold text-white">{formatNumber(row.price_gems ?? 0)}</div>
-                    </div>
-                    <div className="rounded-lg bg-black/18 p-2">
-                      <div className="text-white/35">Sort</div>
-                      <div className="font-bold text-white">{row.sort_order}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>))}
-            </div>)}
-
-          {boardEditorOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-              <div
-                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/12 bg-[#0b1930] p-5 shadow-2xl shadow-black/50">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/65">
-                      {boardEditorMode === "add" ? "Add Board" : "Edit Board"}
-                    </div>
-                    <h2 className="mt-1 text-2xl font-black">
-                      {boardEditorMode === "add" ? "New board theme" : boardDraft.display_name || "Board theme"}
-                    </h2>
-                  </div>
-                  <button
-                    className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white/70 transition hover:bg-white/15"
-                    type="button"
-                    onClick={() => {
-                      setBoardEditorOpen(false)
-                    }}>
-                    Close
-                  </button>
-                </div>
-
-                <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div>
-                    <Field
-                      disabled={boardEditorMode === "edit"}
-                      label="Board id"
-                      value={boardDraft.id}
-                      onChange={(id) => {
-                        setBoardDraft((d) => ({
-                          ...d,
-                          id,
-                        }))
-                      }}/>
-                    {boardEditorMode === "add" && boardDraft.id !== "" && !isValidBoardId(boardDraft.id) && (
-                      <div className="mt-1 text-[10px] font-bold normal-case tracking-normal text-rose-300">
-                        Must be lowercase letters/digits, separated by - or _.
-                        Start with a letter or digit. Examples: caribbean-full, zen-garden, classic_purple.
-                      </div>)}
-                  </div>
-                  <Field
-                    label="Display name"
-                    value={boardDraft.display_name}
-                    onChange={(display_name) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        display_name,
-                      }))
-                    }}/>
-                  <Field
-                    label="Unlock level"
-                    value={boardDraft.unlock_level}
-                    onChange={(unlock_level) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        unlock_level,
-                      }))
-                    }}/>
-                  <Field
-                    label="Price coins"
-                    value={boardDraft.price_coins}
-                    onChange={(price_coins) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        price_coins,
-                      }))
-                    }}/>
-                  <Field
-                    label="Gems cost"
-                    value={boardDraft.price_gems}
-                    onChange={(price_gems) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        price_gems,
-                      }))
-                    }}/>
-                  <Field
-                    label="Sort order"
-                    value={boardDraft.sort_order}
-                    onChange={(sort_order) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        sort_order,
-                      }))
-                    }}/>
-                </div>
-                <div className="mt-3 space-y-3">
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="preview"
-                    label="Lobby image"
-                    value={boardDraft.preview_image}
-                    onChange={(preview_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        preview_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="gameplay"
-                    label="Gameplay image"
-                    value={boardDraft.gameplay_image}
-                    onChange={(gameplay_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        gameplay_image,
-                      }))
-                    }}/>
-                  <FeltCornersField
-                    gameplayImage={boardDraft.gameplay_image}
-                    metadata={boardDraft.metadata}
-                    onMetadataChange={(metadata) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        metadata,
-                      }))
-                    }}/>
-                  <BearOffTraysField
-                    gameplayImage={boardDraft.gameplay_image}
-                    metadata={boardDraft.metadata}
-                    onMetadataChange={(metadata) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        metadata,
-                      }))
-                    }}/>
-                  <BoardTuningField
-                    metadata={boardDraft.metadata}
-                    onMetadataChange={(metadata) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        metadata,
-                      }))
-                    }}/>
-                  <BoardPreview
-                    blackChecker={boardDraft.black_checker_image}
-                    gameplayImage={boardDraft.gameplay_image}
-                    metadata={boardDraft.metadata}
-                    whiteChecker={boardDraft.white_checker_image}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="lobby-bg"
-                    label="Lobby background image"
-                    value={boardDraft.lobby_background_image}
-                    onChange={(lobby_background_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        lobby_background_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="gameplay-bg"
-                    label="Gameplay background image"
-                    value={boardDraft.gameplay_background_image}
-                    onChange={(gameplay_background_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        gameplay_background_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="checker-white"
-                    label="White checker image"
-                    value={boardDraft.white_checker_image}
-                    onChange={(white_checker_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        white_checker_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="checker-black"
-                    label="Black checker image"
-                    value={boardDraft.black_checker_image}
-                    onChange={(black_checker_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        black_checker_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="dice"
-                    label="Dice sprite (3 cols × 2 rows: face 1 top-left → face 6 bottom-right)"
-                    value={boardDraft.dice_image}
-                    onChange={(dice_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        dice_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="tray"
-                    label="Tray image"
-                    value={boardDraft.tray_image}
-                    onChange={(tray_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        tray_image,
-                      }))
-                    }}/>
-                  <ImageField
-                    folder={boardDraft.id}
-                    kind="holder"
-                    label="Holder image"
-                    value={boardDraft.holder_image}
-                    onChange={(holder_image) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        holder_image,
-                      }))
-                    }}/>
-                  <TextArea
-                    label="Metadata JSON object"
-                    value={boardDraft.metadata}
-                    onChange={(metadata) => {
-                      setBoardDraft((d) => ({
-                        ...d,
-                        metadata,
-                      }))
-                    }}/>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Toggle
-                      checked={boardDraft.is_enabled}
-                      label="Enabled"
-                      onChange={(is_enabled) => {
-                        setBoardDraft((d) => ({
-                          ...d,
-                          is_enabled,
-                        }))
-                      }}/>
-                    <Toggle
-                      checked={boardDraft.is_featured}
-                      label="Featured"
-                      onChange={(is_featured) => {
-                        setBoardDraft((d) => ({
-                          ...d,
-                          is_featured,
-                        }))
-                      }}/>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <SecondaryButton onClick={() => {
-                      setBoardEditorOpen(false)
-                    }}>Cancel</SecondaryButton>
-                    <PrimaryButton
-                      disabled={!canManage || savingKey === "board" || (boardEditorMode === "add" && !isValidBoardId(boardDraft.id))}
-                      onClick={() => void saveBoard()}>
-                      {boardEditorMode === "add" ? "Add board" : "Save changes"}
-                    </PrimaryButton>
-                  </div>
-                </div>
-              </div>
-            </div>)}
-        </div>)}
-
-        {activeSection === "Lobby Features" && (
-          <div className="max-w-2xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
-            <h2 className="text-lg font-black">Bottom-nav feature locks</h2>
-            <p className="mt-1 text-xs text-white/55">
-              Gate each bottom-nav feature behind a player level, like boards.
-              A player below the level sees a padlock; tapping it pops a
-              tooltip. Level 1 = always open (set a high level to keep a
-              feature locked for everyone). Leave the tooltip text blank for
-              the default "Reach level X to unlock", or set custom copy like
-              "Coming soon". The center Hourly Bonus wheel is never gated.
-              Disabling a feature hides its action (reserved for future use).
-            </p>
-            <div className="mt-4 space-y-3">
-              {lobbyFeatures.length === 0 ? (
-                <p className="text-xs text-white/40">Loading…</p>) : (lobbyFeatures.map((f) => (<div
-                key={f.feature_key}
-                className="flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                <div className="min-w-[8rem] flex-1">
-                  <div className="text-sm font-black">{f.label}</div>
-                  <div className="font-mono text-[10px] text-white/40">{f.feature_key}</div>
-                </div>
-                <div className="w-28">
-                  <Field
-                    label="Unlock level"
-                    value={f.level}
-                    onChange={(level) => {
-                      setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
-                        ...r,
-                        level,
-                      } : r))
-                    }}/>
-                </div>
-                <Toggle
-                  checked={f.enabled}
-                  label="Enabled"
-                  onChange={(enabled) => {
-                    setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
-                      ...r,
-                      enabled,
-                    } : r))
-                  }}/>
-                <div className="basis-full">
-                  <Field
-                    label="Tooltip text (optional)"
-                    placeholder={`Reach level ${f.level || "N"} to unlock`}
-                    value={f.tooltip}
-                    onChange={(tooltip) => {
-                      setLobbyFeatures((rows) => rows.map((r) => r.feature_key === f.feature_key ? {
-                        ...r,
-                        tooltip,
-                      } : r))
-                    }}/>
-                </div>
-                <PrimaryButton
-                  disabled={!canManage || savingKey === `feature:${f.feature_key}`}
-                  onClick={() => void saveLobbyFeature(f.feature_key)}>
-                  Save
-                </PrimaryButton>
-              </div>)))}
-            </div>
-          </div>)}
-
-        {activeSection === "Shop" && (<div className="space-y-4">
-          {/* Storefront appearance — the shop popup's header title + an
-                  optional blurred themed background. Independent of the sale, so
-                  an operator can re-theme the shop (e.g. "Shop Sale!" + a themed
-                  background for a promo) with or without a running sale. */}
-          <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
-            <h2 className="text-lg font-black text-[#ffd16f]">Storefront appearance</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
-              Sets the shop popup’s title and an optional blurred background image. Use them to theme a promo — e.g.
-              title “Shop Sale!” with an “American” background for a 4th-of-July sale. Leave the background empty
-              for the default look.
-            </p>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <Field
-                label="Shop title"
-                value={storeConfigDraft.title}
-                onChange={(title) => {
-                  setStoreConfigDraft((d) => ({
-                    ...d,
-                    title,
-                  }))
-                }}/>
-              <ImageField
-                disabled={!canManage}
-                folder="store"
-                kind="background"
-                label="Background image (optional)"
-                value={storeConfigDraft.bg_image_url}
-                onChange={(bg_image_url) => {
-                  setStoreConfigDraft((d) => ({
-                    ...d,
-                    bg_image_url,
-                  }))
-                }}/>
-            </div>
-            <div className="mt-3 flex items-center gap-4">
-              <PrimaryButton
-                disabled={!canManage || savingKey === "store-config"}
-                onClick={() => void saveStoreConfig()}>Save appearance</PrimaryButton>
-            </div>
-          </div>
-          {/* Store Sale — one global bonus added to every pack's coin/gem
-                  grants. Players see a "+X% EXTRA" badge + the boosted amount;
-                  the boost is applied server-side at purchase. */}
-          <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
-            <h2 className="text-lg font-black text-[#ffd16f]">Store Sale</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
-              Adds extra coins &amp; gems to every pack. Players see a “+{saleDraft.bonus_percent || "0"}% EXTRA”
-              badge and the boosted amount; the boost is enforced server-side at purchase. Leave the dates blank for
-              a manual on/off sale.
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Field
-                label="Label"
-                value={saleDraft.label}
-                onChange={(label) => {
-                  setSaleDraft((d) => ({
-                    ...d,
-                    label,
-                  }))
-                }}/>
-              <Field
-                label="Bonus %"
-                value={saleDraft.bonus_percent}
-                onChange={(bonus_percent) => {
-                  setSaleDraft((d) => ({
-                    ...d,
-                    bonus_percent,
-                  }))
-                }}/>
-              <Field
-                label="Starts at (optional)"
-                type="datetime-local"
-                value={saleDraft.starts_at}
-                onChange={(starts_at) => {
-                  setSaleDraft((d) => ({
-                    ...d,
-                    starts_at,
-                  }))
-                }}/>
-              <Field
-                label="Ends at (optional)"
-                type="datetime-local"
-                value={saleDraft.ends_at}
-                onChange={(ends_at) => {
-                  setSaleDraft((d) => ({
-                    ...d,
-                    ends_at,
-                  }))
-                }}/>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-4">
-              <Toggle
-                checked={saleDraft.is_active}
-                label="Sale active"
-                onChange={(is_active) => {
-                  setSaleDraft((d) => ({
-                    ...d,
-                    is_active,
-                  }))
-                }}/>
-              <PrimaryButton
-                disabled={!canManage || savingKey === "store-sale"}
-                onClick={() => void saveStoreSale()}>Save sale</PrimaryButton>
-            </div>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
-            <ConfigTable
-              rows={shopItems.map((row) => [row.display_name, row.kind, moneyFromCents(row.price_cents), row.is_enabled ? "Enabled" : "Disabled"])}
-              title="Shop items"
-              onRowClick={(index) => {
-                setShopDraft(shopToDraft(shopItems[index]))
-              }}/>
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <h2 className="text-lg font-black">Edit shop item</h2>
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <Field
-                  label="Product id"
-                  value={shopDraft.id}
-                  onChange={(id) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      id,
-                    }))
-                  }}/>
-                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                  Kind
-                  <select
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                    value={shopDraft.kind}
-                    onChange={(event) => {
-                      setShopDraft((d) => ({
-                        ...d,
-                        kind: event.target.value as ShopKind,
-                      }))
-                    }}>
-                    {shopKinds.map((kind) => (<option
-                      key={kind}
-                      value={kind}>{kind}</option>))}
-                  </select>
-                </label>
-                <Field
-                  label="Name"
-                  value={shopDraft.display_name}
-                  onChange={(display_name) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      display_name,
-                    }))
-                  }}/>
-                <Field
-                  label="Sort order"
-                  value={shopDraft.sort_order}
-                  onChange={(sort_order) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      sort_order,
-                    }))
-                  }}/>
-                <Field
-                  label="Price cents"
-                  value={shopDraft.price_cents}
-                  onChange={(price_cents) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      price_cents,
-                    }))
-                  }}/>
-                <Field
-                  label="Price coins"
-                  value={shopDraft.price_coins}
-                  onChange={(price_coins) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      price_coins,
-                    }))
-                  }}/>
-                <Field
-                  label="Price gems"
-                  value={shopDraft.price_gems}
-                  onChange={(price_gems) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      price_gems,
-                    }))
-                  }}/>
-                <Field
-                  label="Max purchases"
-                  value={shopDraft.max_purchases_per_user}
-                  onChange={(max_purchases_per_user) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      max_purchases_per_user,
-                    }))
-                  }}/>
-              </div>
-              <div className="mt-3 space-y-3">
-                <Field
-                  label="Description"
-                  value={shopDraft.description}
-                  onChange={(description) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      description,
-                    }))
-                  }}/>
-                <ImageField
-                  disabled={!canManage}
-                  folder="shop"
-                  kind={shopDraft.kind}
-                  label="Pack image"
-                  value={shopDraft.image_url}
-                  onChange={(image_url) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      image_url,
-                    }))
-                  }}/>
-                <Field
-                  label="Apple product id"
-                  value={shopDraft.apple_product_id}
-                  onChange={(apple_product_id) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      apple_product_id,
-                    }))
-                  }}/>
-                <Field
-                  label="Google product id"
-                  value={shopDraft.google_product_id}
-                  onChange={(google_product_id) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      google_product_id,
-                    }))
-                  }}/>
-                {/* Structured grants & presentation (Phase B). These edit
-                      specific paths in the contents JSON below — which stays the
-                      source of truth — so any other keys are preserved. */}
-                <div className="space-y-3 rounded-lg border border-[#ffc93d]/25 bg-[#ffc93d]/[0.05] p-3">
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Grants — what the
-                    buyer receives
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field
-                      label="Coins"
-                      value={readGrant(shopDraft.contents, "coins")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeGrantNumber(d.contents, "coins", v),
-                        }))
-                      }}/>
-                    <Field
-                      label="Gems"
-                      value={readGrant(shopDraft.contents, "gems")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeGrantNumber(d.contents, "gems", v),
-                        }))
-                      }}/>
-                    <Field
-                      label="XP boost — days"
-                      value={readXpBoost(shopDraft.contents, "days")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeXpBoost(d.contents, "days", v),
-                        }))
-                      }}/>
-                    <Field
-                      label="XP boost — multiplier (2-10)"
-                      value={readXpBoost(shopDraft.contents, "multiplier")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeXpBoost(d.contents, "multiplier", v),
-                        }))
-                      }}/>
-                    <Field
-                      label="Board theme id (unlock)"
-                      value={readBoardGrant(shopDraft.contents)}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeBoardGrant(d.contents, v),
-                        }))
-                      }}/>
-                  </div>
-
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Presentation</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                      Placement
-                      <select
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                        value={readPres(shopDraft.contents).placement === "featured" ? "featured" : "grid"}
-                        onChange={(e) => {
-                          setShopDraft((d) => ({
-                            ...d,
-                            contents: writePresField(d.contents, "placement", e.target.value === "featured" ? "featured" : ""),
-                          }))
-                        }}>
-                        <option value="grid">Packs grid</option>
-                        <option value="featured">Featured</option>
-                      </select>
-                    </label>
-                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                      Ribbon
-                      <select
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                        value={(readPres(shopDraft.contents).ribbon as string) || "none"}
-                        onChange={(e) => {
-                          setShopDraft((d) => ({
-                            ...d,
-                            contents: writePresField(d.contents, "ribbon", e.target.value),
-                          }))
-                        }}>
-                        <option value="none">None</option>
-                        <option value="popular">Popular</option>
-                        <option value="best-value">Best Value</option>
-                      </select>
-                    </label>
-                  </div>
-
-                  {/* Card header (title bar) — applies to every card (bundle +
-                        packs). Empty text hides the bar entirely; the colours
-                        override the default gold plate + cream text. */}
-                  <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Card header (title
-                    bar)
-                  </div>
-                  <div className="space-y-2 rounded-md border border-white/10 bg-black/10 p-2">
-                    <Field
-                      label="Header text (leave empty for no header bar)"
-                      value={readHeader(shopDraft.contents, "text")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeHeader(d.contents, "text", v),
-                        }))
-                      }}/>
-                    <div className="flex flex-wrap items-end gap-3">
-                      <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                        Background
-                        <input
-                          className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20"
-                          type="color"
-                          value={readHeader(shopDraft.contents, "bg") || "#d9a531"}
-                          onChange={(e) => {
-                            setShopDraft((d) => ({
-                              ...d,
-                              contents: writeHeader(d.contents, "bg", e.target.value),
-                            }))
-                          }}/>
-                      </label>
-                      <SecondaryButton
-                        onClick={() => {
-                          setShopDraft((d) => ({
-                            ...d,
-                            contents: writeHeader(d.contents, "bg", ""),
-                          }))
-                        }}>Default
-                        gold</SecondaryButton>
-                      <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
-                        Text color
-                        <input
-                          className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20"
-                          type="color"
-                          value={readHeader(shopDraft.contents, "fg") || "#fff7dc"}
-                          onChange={(e) => {
-                            setShopDraft((d) => ({
-                              ...d,
-                              contents: writeHeader(d.contents, "fg", e.target.value),
-                            }))
-                          }}/>
-                      </label>
-                      <SecondaryButton onClick={() => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeHeader(d.contents, "fg", ""),
-                        }))
-                      }}>Default</SecondaryButton>
-                    </div>
-                  </div>
-
-                  {shopDraft.kind === "bundle" ? (<div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                      Headline currency (hero icon)
-                      <select
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                        value={readPres(shopDraft.contents).headlineKind === "gems" ? "gems" : "coins"}
-                        onChange={(e) => {
-                          setShopDraft((d) => ({
-                            ...d,
-                            contents: writePresField(d.contents, "headlineKind", e.target.value),
-                          }))
-                        }}>
-                        <option value="coins">Coins</option>
-                        <option value="gems">Gems</option>
-                      </select>
-                    </label>
-                    <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">Reward chips
-                    </div>
-                    {readRewards(shopDraft.contents).map((rw, i) => (<div
-                      key={`reward-${rw.kind}-${rw.label}`}
-                      className="flex items-end gap-2">
-                      <label
-                        className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/30">
-                        Icon
-                        <select
-                          className="mt-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm normal-case tracking-normal text-white outline-none"
-                          value={rw.kind}
-                          onChange={(e) => {
-                            setShopDraft((d) => {
-                              const rows = readRewards(d.contents)
-                              rows[i] = {
-                                ...rows[i],
-                                kind: e.target.value,
-                              }
-                              return {
-                                ...d,
-                                contents: writeRewards(d.contents, rows),
-                              }
-                            })
-                          }}>
-                          <option value="coins">coins</option>
-                          <option value="gems">gems</option>
-                          <option value="xp">xp</option>
-                          <option value="chest">chest</option>
-                        </select>
-                      </label>
-                      <div className="flex-1"><Field
-                        label="Label"
-                        value={rw.label}
-                        onChange={(v) => {
-                          setShopDraft((d) => {
-                            const rows = readRewards(d.contents)
-                            rows[i] = {
-                              ...rows[i],
-                              label: v,
-                            }
-                            return {
-                              ...d,
-                              contents: writeRewards(d.contents, rows),
-                            }
-                          })
-                        }}/></div>
-                      <SecondaryButton onClick={() => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeRewards(d.contents, readRewards(d.contents).filter((_, j) => j !== i)),
-                        }))
-                      }}>Remove</SecondaryButton>
-                    </div>))}
-                    <SecondaryButton onClick={() => {
-                      setShopDraft((d) => ({
-                        ...d,
-                        contents: writeRewards(d.contents, [...readRewards(d.contents), {
-                          kind: "coins",
-                          label: "",
-                        }]),
-                      }))
-                    }}>+ Add reward</SecondaryButton>
-                  </div>) : (<div className="grid grid-cols-2 gap-3">
-                    <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                      Headline icon
-                      <select
-                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                        value={readHeadline(shopDraft.contents, "kind") || "coins"}
-                        onChange={(e) => {
-                          setShopDraft((d) => ({
-                            ...d,
-                            contents: writeHeadline(d.contents, "kind", e.target.value),
-                          }))
-                        }}>
-                        <option value="coins">coins</option>
-                        <option value="gems">gems</option>
-                        <option value="xp-boost">xp-boost</option>
-                        <option value="lucky-dice">lucky-dice</option>
-                      </select>
-                    </label>
-                    <Field
-                      label="Headline label (e.g. 10,000)"
-                      value={readHeadline(shopDraft.contents, "label")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeHeadline(d.contents, "label", v),
-                        }))
-                      }}/>
-                    <Field
-                      label="Headline sub-label (e.g. x3 · 7 Days)"
-                      value={readHeadline(shopDraft.contents, "subLabel")}
-                      onChange={(v) => {
-                        setShopDraft((d) => ({
-                          ...d,
-                          contents: writeHeadline(d.contents, "subLabel", v),
-                        }))
-                      }}/>
-                  </div>)}
-                </div>
-                <TextArea
-                  label="Advanced — raw contents JSON"
-                  value={shopDraft.contents}
-                  onChange={(contents) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      contents,
-                    }))
-                  }}/>
-                <TextArea
-                  label="Visibility rules JSON object"
-                  value={shopDraft.visibility_rules}
-                  onChange={(visibility_rules) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      visibility_rules,
-                    }))
-                  }}/>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field
-                    label="Starts at"
-                    type="datetime-local"
-                    value={shopDraft.starts_at}
-                    onChange={(starts_at) => {
-                      setShopDraft((d) => ({
-                        ...d,
-                        starts_at,
-                      }))
-                    }}/>
-                  <Field
-                    label="Ends at"
-                    type="datetime-local"
-                    value={shopDraft.ends_at}
-                    onChange={(ends_at) => {
-                      setShopDraft((d) => ({
-                        ...d,
-                        ends_at,
-                      }))
-                    }}/>
-                </div>
-                <Toggle
-                  checked={shopDraft.is_enabled}
-                  label="Enabled"
-                  onChange={(is_enabled) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      is_enabled,
-                    }))
-                  }}/>
-                <Toggle
-                  checked={shopDraft.exclude_from_sale}
-                  label="Exclude from Store Sale (no bonus on this item)"
-                  onChange={(exclude_from_sale) => {
-                    setShopDraft((d) => ({
-                      ...d,
-                      exclude_from_sale,
-                    }))
-                  }}/>
-                <div className="flex flex-wrap gap-2">
-                  <PrimaryButton
-                    disabled={!canManage || savingKey === "shop"}
-                    onClick={() => void saveShop()}>Save
-                    shop item</PrimaryButton>
-                  <SecondaryButton onClick={() => {
-                    setShopDraft(shopToDraft())
-                  }}>New</SecondaryButton>
-                  {/* Duplicate clones the loaded item into a NEW draft (suffixed id + "Copy of"
-                        name, every other field carried over) so you only edit what differs. Saving
-                        upserts the new id as a fresh row. Same load-an-existing-item guard as Delete. */}
-                  <SecondaryButton
-                    disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id)}
-                    onClick={() => {
-                      setShopDraft((d) => ({
-                        ...d,
-                        id: d.id ? `${d.id}-copy` : "",
-                        display_name: d.display_name ? `Copy of ${d.display_name}` : d.display_name,
-                      }))
-                    }}>Duplicate</SecondaryButton>
-                  {/* Delete is enabled only when an existing item is loaded into the draft.
-                        RLS (shop_items_delete_admin) gates it server-side; FKs are delete-safe. */}
-                  <DangerButton
-                    disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id) || savingKey === "shop-delete"}
-                    onClick={() => void deleteShop()}>Delete</DangerButton>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>)}
-
-        {activeSection === "Admin Access" && (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-          <div className="space-y-4">
-            <ConfigTable
-              rows={adminEmailRoles.map((row) => [row.email, row.role, row.note ?? "", formatDate(row.created_at)])}
-              title="Admin emails"
-              onRowClick={(index) => {
-                setEmailRoleDraft({
-                  email: adminEmailRoles[index].email,
-                  role: adminEmailRoles[index].role,
-                  note: adminEmailRoles[index].note ?? "",
-                })
-              }}/>
-            <ConfigTable
-              rows={adminRoles.map((row) => [row.profile_id, row.role, row.note ?? "", formatDate(row.created_at)])}
-              title="Admin roles"
-              onRowClick={(index) => {
-                setRoleDraft({
-                  profile_id: adminRoles[index].profile_id,
-                  role: adminRoles[index].role,
-                  note: adminRoles[index].note ?? "",
-                })
-              }}/>
-            <ConfigTable
-              rows={audit.map((entry) => [formatDate(entry.created_at), entry.action, `${entry.entity_table} · ${entry.entity_id}`, entry.actor_profile_id ?? "system"])}
-              title="Audit log"/>
-          </div>
-          <div className="space-y-4">
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <h2 className="text-lg font-black">Grant admin email</h2>
-              <div className="mt-3 space-y-3">
-                <Field
-                  label="Email"
-                  value={emailRoleDraft.email}
-                  onChange={(email) => {
-                    setEmailRoleDraft((d) => ({
-                      ...d,
-                      email,
-                    }))
-                  }}/>
-                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                  Role
-                  <select
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                    value={emailRoleDraft.role}
-                    onChange={(event) => {
-                      setEmailRoleDraft((d) => ({
-                        ...d,
-                        role: event.target.value as AdminRole,
-                      }))
-                    }}>
-                    {roleOptions.map((option) => (<option
-                      key={option}
-                      value={option}>{option}</option>))}
-                  </select>
-                </label>
-                <Field
-                  label="Note"
-                  value={emailRoleDraft.note}
-                  onChange={(note) => {
-                    setEmailRoleDraft((d) => ({
-                      ...d,
-                      note,
-                    }))
-                  }}/>
-                <div className="flex flex-wrap gap-2">
-                  <PrimaryButton
-                    disabled={!canManage || savingKey === "email-role"}
-                    onClick={() => void saveAdminEmailRole()}>
-                    Save email
-                  </PrimaryButton>
-                  <SecondaryButton onClick={() => {
-                    setEmailRoleDraft({
-                      email: "",
-                      role: "viewer",
-                      note: "",
-                    })
-                  }}>
-                    New
-                  </SecondaryButton>
-                  <DangerButton
-                    disabled={!canManage || !selectedEmailRole || selectedEmailRole.email === currentUserEmail || savingKey === `email-role-delete-${selectedEmailRole?.email ?? ""}`}
-                    onClick={() => {
-                      if (selectedEmailRole) void deleteAdminEmailRole(selectedEmailRole)
-                    }}>
-                    Remove
-                  </DangerButton>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-              <h2 className="text-lg font-black">Grant profile role</h2>
-              <div className="mt-3 space-y-3">
-                <Field
-                  label="Profile id"
-                  value={roleDraft.profile_id}
-                  onChange={(profile_id) => {
-                    setRoleDraft((d) => ({
-                      ...d,
-                      profile_id,
-                    }))
-                  }}/>
-                <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-                  Role
-                  <select
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-                    value={roleDraft.role}
-                    onChange={(event) => {
-                      setRoleDraft((d) => ({
-                        ...d,
-                        role: event.target.value as AdminRole,
-                      }))
-                    }}>
-                    {roleOptions.map((option) => (<option
-                      key={option}
-                      value={option}>{option}</option>))}
-                  </select>
-                </label>
-                <Field
-                  label="Note"
-                  value={roleDraft.note}
-                  onChange={(note) => {
-                    setRoleDraft((d) => ({
-                      ...d,
-                      note,
-                    }))
-                  }}/>
-                <PrimaryButton
-                  disabled={!canManage || savingKey === "role"}
-                  onClick={() => void saveAdminRole()}>
-                  Save role
-                </PrimaryButton>
-              </div>
-            </div>
-          </div>
-        </div>)}
+        {activeSection === "Admin Access" && <AdminAccessAdmin
+          adminEmailRoles={adminEmailRoles}
+          adminRoles={adminRoles}
+          audit={audit}
+          canManage={canManage}
+          currentUserEmail={currentUserEmail}
+          emailRoleDraft={emailRoleDraft}
+          roleDraft={roleDraft}
+          roleOptions={roleOptions}
+          savingKey={savingKey}
+          selectedEmailRole={selectedEmailRole}
+          onDeleteAdminEmailRole={(row) => {
+            void deleteAdminEmailRole(row)
+          }}
+          onEmailRoleDraftChange={setEmailRoleDraft}
+          onRoleDraftChange={setRoleDraft}
+          onSaveAdminEmailRole={() => {
+            void saveAdminEmailRole()
+          }}
+          onSaveAdminRole={() => {
+            void saveAdminRole()
+          }}/>}
       </div>
     </div>
   </div>)
