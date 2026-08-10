@@ -30,12 +30,9 @@ import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
 import type {RtpRangeId} from "./features/RTPAnalytics/RTPAnalyticsData"
 import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
 import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
-import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {emptyToNull} from "./lib/emptyToNull"
-import {isDeletedProfile} from "./lib/isDeletedProfile"
-import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
 import {normalizeEmail} from "./lib/normalizeEmail"
 import {numberOrNull} from "./lib/numberOrNull"
@@ -43,38 +40,13 @@ import {parseJson} from "./lib/parseJson"
 import {requiredNumber} from "./lib/requiredNumber"
 import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
 import {useAdminAuth} from "./lib/useAdminAuth"
-import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
 import {withRequestTimeout} from "./lib/withRequestTimeout"
 import {adminBaseApi} from "./store/baseApi"
 import {useAdminDispatch} from "./store/hooks"
 
-type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
-/**
- * Editable per-row state for the Status Tiers panel. We keep `id`
- * nullable so a brand-new row (not yet inserted) can sit alongside
- * existing ones in the same draft array. All numeric fields are
- * stored as strings so the inputs can be empty mid-edit without
- * blanking the form state.
- */
-type UserWallet = Database["public"]["Tables"]["user_wallets"]["Row"]
-type WalletTransaction = Database["public"]["Tables"]["wallet_transactions"]["Row"]
-type UserBoardInventory = Database["public"]["Tables"]["user_board_inventory"]["Row"]
-type Purchase = Database["public"]["Tables"]["purchases"]["Row"]
 type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
-
-type AdminUser = {
-  wallet?: UserWallet,
-} & ProfileRow
-
-type UserDetail = {
-  wallet: UserWallet | null,
-  transactions: WalletTransaction[],
-  boards: UserBoardInventory[],
-  purchases: Purchase[],
-  matches: Database["public"]["Tables"]["matches"]["Row"][],
-}
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
@@ -101,6 +73,7 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "BoardThemesPodiums",
   "BoardThemesLoadingScreens",
   "Dashboard",
+  "Users",
   "AdminAccess",
 ]
 
@@ -121,23 +94,9 @@ export function Admin() {
   const activeSection: Section = useMemo(
     () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
     [location.pathname])
-  const [users, setUsers] = useState<AdminUser[]>([])
+  // Selected user id lives here (not in the Users feature) because the
+  // RTP Analytics deep link writes it before navigating to /users.
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(() => new Set())
-  const [selectedUserDetail, setSelectedUserDetail] = useState<UserDetail | null>(null)
-  const [userSearch, setUserSearch] = useState("")
-  const [profileDraft, setProfileDraft] = useState({
-    level: "1",
-    xp: "0",
-    rating: "1500",
-    admin_note: "",
-    suspension_reason: "",
-  })
-  const [walletDraft, setWalletDraft] = useState({
-    currency: "coins",
-    amount: "",
-    reason: "",
-  })
   const [shopItems, setShopItems] = useState<ShopItem[]>([])
   // Store Sale draft — one global, schedulable promo that boosts coin/gem
   // grants. Numeric/date fields are strings so inputs can be cleared mid-edit.
@@ -162,12 +121,6 @@ export function Admin() {
   const [rtpRange, setRtpRange] = useState<RtpRangeId>("all")
   const [rtpExpandedTier, setRtpExpandedTier] = useState<string | null>(null)
 
-  // Live online users — subscribes to the shared `online-users`
-  // Realtime presence channel that the game app's auth listener
-  // joins (features/auth/authListeners.ts). Only active while
-  // the operator is on the Users section so the WebSocket isn't kept
-  // open BO-wide.
-  const onlineUsers = useOnlineUsersWatcher(activeSection === "Users")
   const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft())
   const [dataError, setDataError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -176,12 +129,10 @@ export function Admin() {
   // freeze the main thread and trip the INP monitor). Render {confirmUI} once.
   const {
     confirm,
-    prompt,
     confirmUI,
   } = useConfirm()
 
   const canManage = role === "owner" || role === "admin"
-  const selectedUser = users.find((row) => row.id === selectedUserId) ?? null
   // Currencies are owned by RTK Query. Eagerly fetched once access is
   // allowed (mirroring the old initial loadAdminData fetch); the query
   // result feeds the shared rate map used by the reward-config panels.
@@ -308,79 +259,17 @@ export function Admin() {
     }
   }, [isLoading, user])
 
-  const loadSelectedUser = useCallback(async (profileId: string) => {
-    try {
-      const [wallet, transactions, boardsOwned, purchases, matches] = await Promise.all([supabase.from("user_wallets").select("*").eq("profile_id", profileId).maybeSingle(), supabase
-        .from("wallet_transactions")
-        .select("*")
-        .eq("profile_id", profileId)
-        .order("created_at", {ascending: false})
-        .limit(12), supabase
-        .from("user_board_inventory")
-        .select("*")
-        .eq("profile_id", profileId)
-        .order("created_at", {ascending: false}), supabase
-        .from("purchases")
-        .select("*")
-        .eq("profile_id", profileId)
-        .order("created_at", {ascending: false})
-        .limit(12), supabase
-        .from("matches")
-        .select("*")
-        .or(`owner_id.eq.${profileId},opponent_id.eq.${profileId}`)
-        .order("started_at", {ascending: false})
-        .limit(12)])
-
-      const firstError = wallet.error ?? transactions.error ?? boardsOwned.error ?? purchases.error ?? matches.error
-      if (firstError) throw firstError
-
-      setSelectedUserDetail({
-        wallet: wallet.data,
-        transactions: transactions.data ?? [],
-        boards: boardsOwned.data ?? [],
-        purchases: purchases.data ?? [],
-        matches: matches.data ?? [],
-      })
-    }
-    catch (err) {
-      setError(err)
-    }
-  }, [setError])
-
   const loadAdminData = useCallback(async () => {
     if (accessState !== "allowed") return
     setRefreshing(true)
     setDataError(null)
 
     try {
-      const [profilesResult, shopResult] = await Promise.all([supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", {ascending: false})
-        .limit(120), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
+      // Only the Shop section still loads through the legacy loader —
+      // Users data is owned by the Users feature's RTK Query cache.
+      const shopResult = await supabase.from("shop_items").select("*").order("sort_order", {ascending: true})
+      if (shopResult.error) throw shopResult.error
 
-      const firstError = profilesResult.error ?? shopResult.error
-      if (firstError) throw firstError
-
-      const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
-      const profileIds = profileRows.map((row) => row.id)
-      const wallets = profileIds.length ? await supabase.from("user_wallets").select("*").in("profile_id", profileIds) : {
-        data: [],
-        error: null,
-      }
-      if (wallets.error) throw wallets.error
-
-      const walletMap = new Map((wallets.data ?? []).map((wallet) => [wallet.profile_id, wallet]))
-      const adminUsers = profileRows.map((row) => ({
-        ...row,
-        wallet: walletMap.get(row.id),
-      }))
-
-      setUsers(adminUsers)
-      setCheckedUserIds((current) => {
-        const visibleIds = new Set(adminUsers.map((row) => row.id))
-        return new Set([...current].filter((id) => visibleIds.has(id)))
-      })
       setShopItems(shopResult.data ?? [])
       // Store Sale (single global row). Loaded here so a save refreshes it too.
       const saleResult = await supabase
@@ -412,39 +301,6 @@ export function Admin() {
           bg_image_url: storeConfigResult.data.bg_image_url ?? "",
         })
       }
-
-      const nextSelected = selectedUserId ?? adminUsers[0]?.id ?? null
-      if (nextSelected && adminUsers.some((row) => row.id === nextSelected)) {
-        setSelectedUserId(nextSelected)
-        const selected = adminUsers.find((row) => row.id === nextSelected)
-        if (selected) {
-          setProfileDraft({
-            level: selected.level.toString(),
-            xp: selected.xp.toString(),
-            rating: selected.rating.toString(),
-            admin_note: selected.admin_note ?? "",
-            suspension_reason: selected.suspension_reason ?? "",
-          })
-        }
-        await loadSelectedUser(nextSelected)
-      }
-      else {
-        const fallbackSelected = adminUsers[0] ?? null
-        setSelectedUserId(fallbackSelected?.id ?? null)
-        if (fallbackSelected) {
-          setProfileDraft({
-            level: fallbackSelected.level.toString(),
-            xp: fallbackSelected.xp.toString(),
-            rating: fallbackSelected.rating.toString(),
-            admin_note: fallbackSelected.admin_note ?? "",
-            suspension_reason: fallbackSelected.suspension_reason ?? "",
-          })
-          await loadSelectedUser(fallbackSelected.id)
-        }
-        else {
-          setSelectedUserDetail(null)
-        }
-      }
     }
     catch (err) {
       if (isMissingMigrationError(err as {code?: string, message?: string})) {
@@ -455,256 +311,11 @@ export function Admin() {
     finally {
       setRefreshing(false)
     }
-  }, [accessState, loadSelectedUser, selectedUserId, setError])
+  }, [accessState, setError])
 
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
   }, [loadAdminData])
-
-  function selectUser(nextUser: AdminUser) {
-    setSelectedUserId(nextUser.id)
-    setProfileDraft({
-      level: nextUser.level.toString(),
-      xp: nextUser.xp.toString(),
-      rating: nextUser.rating.toString(),
-      admin_note: nextUser.admin_note ?? "",
-      suspension_reason: nextUser.suspension_reason ?? "",
-    })
-    void loadSelectedUser(nextUser.id)
-  }
-
-  function toggleCheckedUser(profileId: string, checked: boolean) {
-    setCheckedUserIds((current) => {
-      const next = new Set(current)
-      if (checked) next.add(profileId); else next.delete(profileId)
-      return next
-    })
-  }
-
-  function toggleAllFilteredUsers(checked: boolean) {
-    setCheckedUserIds((current) => {
-      const next = new Set(current)
-      for (const profileId of selectableFilteredUserIds) {
-        if (checked) next.add(profileId); else next.delete(profileId)
-      }
-      return next
-    })
-  }
-
-  /** Hard-delete (irreversible) — calls the admin_hard_delete_user RPC
-   *  which removes the auth.users row + cascades through everything.
-   *  Intended for shell/test users that pile up during dev. Guarded
-   *  by a type-to-confirm prompt because there's no undo. */
-  async function hardDeleteUsers(profileIds: string[]) {
-    if (!canManage) return
-    const uniqueIds = [...new Set(profileIds)].filter((profileId) => profileId !== user?.id)
-    if (uniqueIds.length === 0) {
-      setDataError("Select at least one user that is not your current admin profile.")
-      return
-    }
-
-    const confirmed = await confirm({
-      title: `Hard delete ${uniqueIds.length === 1 ? "this user" : `${uniqueIds.length} users`}?`,
-      message: "This is IRREVERSIBLE — the auth.users row is removed and all related " + "wallet / inventory / match data is cascade-deleted from the database.\n\n" + "Type DELETE to confirm.",
-      requireWord: "DELETE",
-      confirmLabel: "Hard delete",
-      tone: "danger",
-    })
-    if (!confirmed) return
-
-    setSavingKey("user-delete")
-    setDataError(null)
-    try {
-      // Loop sequentially so an error on one row surfaces with the
-      // matching id; .rpc() doesn't have a batch form for this.
-      for (const id of uniqueIds) {
-        const {error} = await supabase.rpc("admin_hard_delete_user", {target_id: id})
-        if (error) throw new Error(`${id.slice(0, 8)}…: ${error.message}`)
-      }
-      setCheckedUserIds(new Set())
-      if (selectedUserId && uniqueIds.includes(selectedUserId)) {
-        setSelectedUserId(null)
-        setSelectedUserDetail(null)
-      }
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function softDeleteUsers(profileIds: string[]) {
-    if (!canManage) return
-    const uniqueIds = [...new Set(profileIds)].filter((profileId) => profileId !== user?.id)
-    if (uniqueIds.length === 0) {
-      setDataError("Select at least one user that is not your current admin profile.")
-      return
-    }
-
-    const note = await prompt({
-      title: `Delete ${uniqueIds.length === 1 ? "this user" : `${uniqueIds.length} users`}?`,
-      message: "They will be removed from the live user list, but their data remains " + "recoverable in the database. Add an optional note for the audit trail:",
-      defaultValue: "Back Office soft delete",
-      confirmLabel: "Delete",
-      tone: "danger",
-    })
-    if (note === null) return
-
-    setSavingKey("user-delete")
-    setDataError(null)
-    try {
-      const deletePayload: Database["public"]["Tables"]["profiles"]["Update"] = {
-        deleted_at: new Date().toISOString(),
-        deleted_by: user?.id ?? null,
-        delete_note: emptyToNull(note) ?? "Back Office soft delete",
-        is_suspended: true,
-        suspended_at: new Date().toISOString(),
-        suspension_reason: "Deleted in Back Office",
-        admin_note: `[Deleted in Back Office] ${emptyToNull(note) ?? "Soft delete"}`,
-      }
-      const {
-        data: deletedRows,
-        error,
-      } = await supabase
-        .from("profiles")
-        .update(deletePayload)
-        .in("id", uniqueIds)
-        .is("deleted_at", null)
-        .select("id")
-      if (isMissingAnyColumnError(error, ["deleted_at", "deleted_by", "delete_note"])) {
-        const fallbackPayload = {...deletePayload}
-        delete fallbackPayload.deleted_at
-        delete fallbackPayload.deleted_by
-        delete fallbackPayload.delete_note
-        const fallback = await supabase
-          .from("profiles")
-          .update(fallbackPayload)
-          .in("id", uniqueIds)
-          .select("id")
-        if (fallback.error) throw fallback.error
-        if ((fallback.data ?? []).length === 0) {
-          throw new Error("No users were deleted. Check that your admin email has owner/admin permissions.")
-        }
-      }
-      else if (error) {
-        throw error
-      }
-      else if ((deletedRows ?? []).length === 0) {
-        throw new Error("No users were deleted. Check that your admin email has owner/admin permissions.")
-      }
-
-      setCheckedUserIds(new Set())
-      if (selectedUserId && uniqueIds.includes(selectedUserId)) {
-        setSelectedUserId(null)
-        setSelectedUserDetail(null)
-      }
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  const filteredUsers = useMemo(() => {
-    const query = userSearch.trim().toLowerCase()
-    if (!query) return users
-    return users.filter((row) => [row.display_name, row.id, row.rating.toString(), row.level.toString(), accountType(row)]
-      .join(" ")
-      .toLowerCase()
-      .includes(query))
-  }, [userSearch, users])
-
-  const selectableFilteredUserIds = filteredUsers
-    .filter((row) => row.id !== user?.id)
-    .map((row) => row.id)
-  const checkedUserCount = checkedUserIds.size
-  const allFilteredUsersChecked = selectableFilteredUserIds.length > 0 && selectableFilteredUserIds.every((id) => checkedUserIds.has(id))
-
-  async function saveProfile() {
-    if (!canManage || !selectedUser) return
-    setSavingKey("profile")
-    setDataError(null)
-    try {
-      const {error} = await supabase
-        .from("profiles")
-        .update({
-          level: requiredNumber(profileDraft.level, "Level"),
-          xp: requiredNumber(profileDraft.xp, "XP"),
-          rating: requiredNumber(profileDraft.rating, "Rating"),
-          admin_note: emptyToNull(profileDraft.admin_note),
-          suspension_reason: selectedUser.is_suspended ? emptyToNull(profileDraft.suspension_reason) : null,
-          suspended_at: selectedUser.is_suspended ? (selectedUser.suspended_at ?? new Date().toISOString()) : null,
-        })
-        .eq("id", selectedUser.id)
-      if (error) throw error
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function toggleSuspension(target: AdminUser) {
-    if (!canManage) return
-    setSavingKey(`suspend-${target.id}`)
-    setDataError(null)
-    try {
-      const next = !target.is_suspended
-      const {error} = await supabase
-        .from("profiles")
-        .update({
-          is_suspended: next,
-          suspended_at: next ? new Date().toISOString() : null,
-          suspension_reason: next ? emptyToNull(profileDraft.suspension_reason) ?? "Admin suspension" : null,
-        })
-        .eq("id", target.id)
-      if (error) throw error
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function adjustWallet() {
-    if (!canManage || !selectedUser) return
-    setSavingKey("wallet")
-    setDataError(null)
-    try {
-      const amount = requiredNumber(walletDraft.amount, "Amount")
-      const {error} = await supabase.rpc("admin_adjust_wallet", {
-        target_profile_id: selectedUser.id,
-        currency_code: walletDraft.currency,
-        delta_amount: amount,
-        adjustment_reason: walletDraft.reason,
-      })
-      if (error) throw error
-      setWalletDraft({
-        currency: "coins",
-        amount: "",
-        reason: "",
-      })
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
 
   async function saveShop() {
     if (!canManage) return
@@ -941,42 +552,14 @@ export function Admin() {
 
           <Route
             element={<UsersAdmin
-              allFilteredUsersChecked={allFilteredUsersChecked}
               canManage={canManage}
-              checkedUserCount={checkedUserCount}
-              checkedUserIds={checkedUserIds}
               currentUserId={user?.id ?? null}
-              filteredUsers={filteredUsers}
-              onlineUsers={onlineUsers}
-              profileDraft={profileDraft}
-              savingKey={savingKey}
-              selectableFilteredUserIds={selectableFilteredUserIds}
-              selectedUser={selectedUser}
-              selectedUserDetail={selectedUserDetail}
               selectedUserId={selectedUserId}
-              userSearch={userSearch}
-              walletDraft={walletDraft}
-              onAdjustWallet={() => void adjustWallet()}
-              onHardDelete={(profileIds) => void hardDeleteUsers(profileIds)}
-              onProfileFieldChange={(field, value) => {
-                setProfileDraft((d) => ({
-                  ...d,
-                  [field]: value,
-                }))
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onSaveProfile={() => void saveProfile()}
-              onSelectUser={selectUser}
-              onSoftDelete={(profileIds) => void softDeleteUsers(profileIds)}
-              onToggleAllFiltered={toggleAllFilteredUsers}
-              onToggleChecked={toggleCheckedUser}
-              onToggleSuspension={(target) => void toggleSuspension(target)}
-              onUserSearchChange={setUserSearch}
-              onWalletFieldChange={(field, value) => {
-                setWalletDraft((d) => ({
-                  ...d,
-                  [field]: value,
-                }))
-              }}/>}
+              onError={setError}
+              onSelectedUserIdChange={setSelectedUserId}/>}
             path="users"/>
 
           <Route

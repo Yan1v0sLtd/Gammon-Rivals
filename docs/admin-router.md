@@ -8,10 +8,10 @@ Status: Phase 1 routing is implemented. Phase 2 (optional lazy loading and user
 deep links) is still pending. The Redux follow-up is implemented: the independent
 admin store and `adminBaseApi` live in `apps/admin/src/store/`, and Currencies,
 Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System,
-Difficulties, Board Themes, Dashboard, RTP Analytics, Admin Access, and all
-seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll,
+Difficulties, Board Themes, Dashboard, Users, RTP Analytics, Admin Access, and
+all seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll,
 Streak Chest, Refresh Tool, Simulator) are migrated end to end via RTK Query.
-Still pending: Users and Shop — intentionally last.
+Still pending: Shop — intentionally last.
 
 ## Pre-migration baseline — `activeSection` state
 
@@ -176,10 +176,10 @@ Status: implemented. `apps/admin/src/store/` has its own `store.ts`
 Feature endpoints inject into `adminBaseApi` from `features/<X>/<x>Api.ts`.
 Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
 `<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
-Wheel, Level System, Difficulties, Board Themes, Dashboard, RTP Analytics,
-Admin Access, and all seven Daily Missions UI domains — Templates, Mission
+Wheel, Level System, Difficulties, Board Themes, Dashboard, Users, RTP
+Analytics, Admin Access, and all seven Daily Missions UI domains — Templates, Mission
 Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator. Still
-pending: Users and Shop — staying last, per the order below.
+pending: Shop — staying last, per the order below.
 
 Structural note: the `admin_audit_log` read is owned by the Admin Access feature
 endpoint (`getAuditLog` in `AdminAccessApi.ts`). It is shared with the Dashboard
@@ -221,6 +221,25 @@ section opens" behavior. The parent-level subscriptions `Admin.tsx` had added
 for Dashboard's sake (audit, levelConfigs, tables, boards) are removed; only
 `currencies` remains (shared rate map).
 
+Users is the last large feature. `UsersAdmin` owns the directory list query
+(`getUsers` — the latest 120 profiles with wallets attached, deleted rows
+filtered), the per-selection inspector query (`getUserDetail` — wallet,
+ledger, inventory, purchases, matches), the online presence widget
+(`useOnlineUsersWatcher(true)` — it mounts only while the route is active, the
+same gating as the old `activeSection === "Users"` flag), the drafts
+(profile/wallet), the checked-selection helpers, and both delete flows with
+their own `useConfirm` (soft delete with the legacy missing-columns fallback,
+hard delete via the `admin_hard_delete_user` RPC loop). All five mutations
+share a single `Users` tag so a write refetches the list row and the open
+inspector together, mirroring the old `await loadAdminData()` refresh. The one
+piece of Users UI state left in `Admin.tsx` is `selectedUserId`: the RTP
+Analytics deep link writes it before navigating to `/users`, so it must
+survive section navigation. The feature reports row clicks and delete-clears
+back through `onSelectedUserIdChange` and falls back to the newest user when
+the deep-linked id is no longer in the latest-120 list (the old
+`loadAdminData` restore behavior). `loadAdminData` now only serves Shop
+(`shop_items` + store sale + storefront config).
+
 Measured cost:
 
 - Infra is about 120 lines, copied from `apps/game/src/store/` (`store.ts` 34,
@@ -234,8 +253,8 @@ Measured cost:
 - About 27 queries and 39 mutations. At the pre-migration baseline the Supabase
   calls existed inline (35 call sites in `Admin.tsx`); they moved to
   `features/<X>/<x>Data.ts` and got wrapped in `<x>Api.ts`.
-- `Admin.tsx` is down from 2363 lines to about 1109, with Users and Shop still
-  pending; the roughly-250-line target applies once they are migrated.
+- `Admin.tsx` is down from 2363 lines to about 692, with only Shop still
+  pending; the roughly-250-line target applies once it is migrated.
 - Feature components grow 20-60 lines each as they call their own hooks.
 - Total churn is about 2500 lines across about 30 files.
 
@@ -268,7 +287,8 @@ performance:
 1. Phase 1 routing.
 2. Migrate `Currencies` end to end (104 lines, 1 table, 1 mutation). Ship it and
    confirm the pattern.
-3. Migrate the rest, one feature per change. Do `Users` and `Shop` last — they
-   hold the deep link and the most drafts.
+3. Migrate the rest, one feature per change. Do `Users` and `Shop` last —
+   they hold the deep link and the most drafts. Users is done; Shop is the
+   final one.
 
 Do not migrate all features in one change.
