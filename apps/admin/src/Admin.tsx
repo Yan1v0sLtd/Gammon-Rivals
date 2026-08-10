@@ -29,6 +29,7 @@ import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
 import {useGetLevelConfigsQuery} from "./features/LevelSystem/LevelSystemApi"
 import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
 import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
+import type {RtpRangeId} from "./features/RTPAnalytics/RTPAnalyticsData"
 import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
 import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {accountType} from "./lib/accountType"
@@ -94,62 +95,6 @@ type UserDetail = {
   boards: UserBoardInventory[],
   purchases: Purchase[],
   matches: Database["public"]["Tables"]["matches"]["Row"][],
-}
-
-/**
- * Time-range presets for the RTP dashboard. `since` is the actual
- * timestamp (relative to "now" at click time) that we send to the
- * get_rtp_summary RPC. null = all time.
- */
-const RTP_RANGES: readonly {id: string, label: string, hours: number | null}[] = [{
-  id: "24h",
-  label: "Last 24h",
-  hours: 24,
-}, {
-  id: "7d",
-  label: "Last 7d",
-  hours: 24 * 7,
-}, {
-  id: "30d",
-  label: "Last 30d",
-  hours: 24 * 30,
-}, {
-  id: "all",
-  label: "All time",
-  hours: null,
-}]
-
-/**
- * Shape returned by public.get_rtp_summary. Column names are prefixed
- * with `out_` server-side to dodge an OUT-parameter / table-column
- * naming collision in plpgsql — that prefix is what the client sees,
- * so it's preserved here. See migration 20260604_rtp_summary_rpc.sql.
- */
-type RtpRow = {
-  out_table_config_id: string,
-  out_display_name: string,
-  out_target_rtp_pct: number,
-  out_matches_played: number,
-  out_matches_won: number,
-  out_actual_win_rate_pct: number | null,
-  out_coins_wagered: number,
-  out_coins_paid_out: number,
-  out_coins_house_net: number,
-  out_actual_rtp_pct: number | null,
-  out_rtp_delta_pct: number | null,
-  out_risk_free_count: number,
-}
-
-type RtpPerPlayerRow = {
-  out_profile_id: string,
-  out_display_name: string,
-  out_matches_played: number,
-  out_matches_won: number,
-  out_win_rate_pct: number | null,
-  out_coins_wagered: number,
-  out_coins_paid_out: number,
-  out_coins_house_net: number,
-  out_actual_rtp_pct: number | null,
 }
 
 /** Accent slugs the DifficultyModal recognises. The BO dropdown is
@@ -256,20 +201,10 @@ export function Admin() {
     title: "Store",
     bg_image_url: "",
   })
-  // RTP dashboard state — fetched lazily when the section is opened so
-  // we don't pay the aggregation cost on every BO load.
-  const [rtpRange, setRtpRange] = useState<string>("all")
-  const [rtpRows, setRtpRows] = useState<RtpRow[]>([])
-  const [rtpLoading, setRtpLoading] = useState(false)
-  const [rtpError, setRtpError] = useState<string | null>(null)
-  // The currently-expanded tier (per-player drill-down). Null = no
-  // tier expanded. Players list is cached per (tier, range) — switching
-  // back to an expanded tier shows last-known data instantly while a
-  // fresh fetch runs in the background.
+  // Keep route UI state here so range and expansion survive section navigation.
+  // RTP server data is owned by the feature's RTK Query cache.
+  const [rtpRange, setRtpRange] = useState<RtpRangeId>("all")
   const [rtpExpandedTier, setRtpExpandedTier] = useState<string | null>(null)
-  const [rtpPlayerRows, setRtpPlayerRows] = useState<RtpPerPlayerRow[]>([])
-  const [rtpPlayerLoading, setRtpPlayerLoading] = useState(false)
-  const [rtpPlayerError, setRtpPlayerError] = useState<string | null>(null)
 
   // Live online users — subscribes to the shared `online-users`
   // Realtime presence channel that the game app's auth listener
@@ -835,73 +770,6 @@ export function Admin() {
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
   }, [loadAdminData])
-
-  // RTP summary fetch — keyed off the picked range. Lives in its own
-  // hook so the rest of the BO doesn't pay for the aggregation when
-  // we're elsewhere.
-  const loadRtpSummary = useCallback(async () => {
-    // No accessState gate — the BO main view only renders when the
-    // admin auth check has resolved, and the section is only reachable
-    // from the sidebar inside that view. Anonymous + non-admin callers
-    // get rejected by the RPC itself (raises not_admin).
-    setRtpLoading(true)
-    setRtpError(null)
-    try {
-      const range = RTP_RANGES.find((r) => r.id === rtpRange)
-      const since = range && range.hours !== null ? new Date(Date.now() - range.hours * 60 * 60 * 1000).toISOString() : null
-      const {
-        data,
-        error,
-      } = await supabase.rpc("get_rtp_summary", {p_since: since})
-      if (error) throw error
-      setRtpRows((data ?? []) as unknown as RtpRow[])
-    }
-    catch (err) {
-      setRtpError(err instanceof Error ? err.message : String(err))
-    }
-    finally {
-      setRtpLoading(false)
-    }
-  }, [rtpRange])
-
-  useEffect(() => {
-    if (activeSection !== "RTP Analytics") return
-    void loadRtpSummary()
-  }, [activeSection, loadRtpSummary])
-
-  // Per-player drill-down. Triggered when the user clicks a tier row;
-  // re-fetches when the range changes (so the expanded panel stays in
-  // sync with the tier table above it).
-  const loadRtpPerPlayer = useCallback(async (tierId: string) => {
-    setRtpPlayerLoading(true)
-    setRtpPlayerError(null)
-    try {
-      const range = RTP_RANGES.find((r) => r.id === rtpRange)
-      const since = range && range.hours !== null ? new Date(Date.now() - range.hours * 60 * 60 * 1000).toISOString() : null
-      const {
-        data,
-        error,
-      } = await supabase.rpc("get_rtp_per_player", {
-        p_table_config_id: tierId,
-        p_since: since,
-        p_limit: 50,
-      })
-      if (error) throw error
-      setRtpPlayerRows((data ?? []) as unknown as RtpPerPlayerRow[])
-    }
-    catch (err) {
-      setRtpPlayerError(err instanceof Error ? err.message : String(err))
-    }
-    finally {
-      setRtpPlayerLoading(false)
-    }
-  }, [rtpRange])
-
-  useEffect(() => {
-    if (!rtpExpandedTier) return
-    if (activeSection !== "RTP Analytics") return
-    void loadRtpPerPlayer(rtpExpandedTier)
-  }, [activeSection, rtpExpandedTier, loadRtpPerPlayer])
 
   function selectUser(nextUser: AdminUser) {
     setSelectedUserId(nextUser.id)
@@ -1686,20 +1554,12 @@ export function Admin() {
 
           <Route
             element={<RTPAnalyticsAdmin
-              ranges={RTP_RANGES}
-              rtpError={rtpError}
               rtpExpandedTier={rtpExpandedTier}
-              rtpLoading={rtpLoading}
-              rtpPlayerError={rtpPlayerError}
-              rtpPlayerLoading={rtpPlayerLoading}
-              rtpPlayerRows={rtpPlayerRows}
               rtpRange={rtpRange}
-              rtpRows={rtpRows}
               onOpenUser={(profileId) => {
                 setSelectedUserId(profileId)
                 void navigate("/users")
               }}
-              onRefresh={() => void loadRtpSummary()}
               onSetRtpRange={setRtpRange}
               onToggleTier={(tierId) => {
                 setRtpExpandedTier((current) => current === tierId ? null : tierId)

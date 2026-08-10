@@ -3,53 +3,13 @@ import {Fragment} from "react"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {formatNumber} from "../../lib/formatNumber"
 
-/**
- * Shape returned by public.get_rtp_summary. Column names are prefixed
- * with `out_` server-side to dodge an OUT-parameter / table-column
- * naming collision in plpgsql — that prefix is what the client sees,
- * so it's preserved here. See migration 20260604_rtp_summary_rpc.sql.
- */
-type RtpRow = {
-  out_table_config_id: string,
-  out_display_name: string,
-  out_target_rtp_pct: number,
-  out_matches_played: number,
-  out_matches_won: number,
-  out_actual_win_rate_pct: number | null,
-  out_coins_wagered: number,
-  out_coins_paid_out: number,
-  out_coins_house_net: number,
-  out_actual_rtp_pct: number | null,
-  out_rtp_delta_pct: number | null,
-  out_risk_free_count: number,
-}
-
-type RtpPerPlayerRow = {
-  out_profile_id: string,
-  out_display_name: string,
-  out_matches_played: number,
-  out_matches_won: number,
-  out_win_rate_pct: number | null,
-  out_coins_wagered: number,
-  out_coins_paid_out: number,
-  out_coins_house_net: number,
-  out_actual_rtp_pct: number | null,
-}
-
-type RtpRange = {id: string, label: string, hours: number | null}
+import {useGetRtpPerPlayerQuery, useGetRtpSummaryQuery} from "./RTPAnalyticsApi"
+import {RTP_RANGES, type RtpRangeId} from "./RTPAnalyticsData"
 
 type Props = {
-  readonly ranges: readonly RtpRange[],
-  readonly rtpRange: string,
-  readonly rtpRows: readonly RtpRow[],
-  readonly rtpLoading: boolean,
-  readonly rtpError: string | null,
+  readonly rtpRange: RtpRangeId,
   readonly rtpExpandedTier: string | null,
-  readonly rtpPlayerRows: readonly RtpPerPlayerRow[],
-  readonly rtpPlayerLoading: boolean,
-  readonly rtpPlayerError: string | null,
-  readonly onSetRtpRange: (id: string) => void,
-  readonly onRefresh: () => void,
+  readonly onSetRtpRange: (id: RtpRangeId) => void,
   readonly onToggleTier: (tierId: string) => void,
   readonly onOpenUser: (profileId: string) => void,
 }
@@ -57,30 +17,37 @@ type Props = {
 /**
  * RTP Analytics BO admin — per-tier wagered / paid out / house take and
  * actual vs target RTP, with a per-player drill-down on each tier row.
- * Purely presentational: it renders data the parent (Admin) already owns
- * and forwards every interaction back through explicit callbacks. No data
- * fetching here.
  */
 export function RTPAnalyticsAdmin({
-  ranges,
   rtpRange,
-  rtpRows,
-  rtpLoading,
-  rtpError,
   rtpExpandedTier,
-  rtpPlayerRows,
-  rtpPlayerLoading,
-  rtpPlayerError,
   onSetRtpRange,
-  onRefresh,
   onToggleTier,
   onOpenUser,
 }: Props) {
+  const {
+    data: rtpRows = [],
+    error: rtpQueryError,
+    isFetching: rtpLoading,
+    refetch: refreshRtpSummary,
+  } = useGetRtpSummaryQuery(rtpRange, {refetchOnMountOrArgChange: true})
+  const {
+    data: rtpPlayerRows = [],
+    error: rtpPlayerQueryError,
+    isFetching: rtpPlayerLoading,
+  } = useGetRtpPerPlayerQuery({
+    tableConfigId: rtpExpandedTier ?? "",
+    range: rtpRange,
+  }, {
+    skip: rtpExpandedTier === null,
+    refetchOnMountOrArgChange: true,
+  })
+  const rtpError = rtpLoading ? null : rtpQueryError?.message ?? null
+  const rtpPlayerError = rtpPlayerLoading ? null : rtpPlayerQueryError?.message ?? null
   return (<div className="space-y-4">
     {/* Header: range selector + refresh. The summary is
-          * fetched lazily when the section opens (see
-          * loadRtpSummary effect above); changing the range
-          * re-fires the RPC. Numbers are computed server-side
+          * fetched lazily when the section opens; changing the
+          * range re-fires the RPC. Numbers are computed server-side
           * by get_rtp_summary against matches +
           * wallet_transactions, so this view stays cheap on the
           * client even when match count grows. */}
@@ -95,7 +62,7 @@ export function RTPAnalyticsAdmin({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        {ranges.map((range) => (<button
+        {RTP_RANGES.map((range) => (<button
           key={range.id}
           className={"rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition " + (rtpRange === range.id ? "border-amber-300/60 bg-amber-300/15 text-amber-200" : "border-white/15 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]")}
           type="button"
@@ -106,7 +73,7 @@ export function RTPAnalyticsAdmin({
         </button>))}
         <SecondaryButton
           disabled={rtpLoading}
-          onClick={onRefresh}>
+          onClick={refreshRtpSummary}>
           {rtpLoading ? "Loading…" : "Refresh"}
         </SecondaryButton>
       </div>
