@@ -223,8 +223,8 @@ Grouped by migration phase. Count = `className` occurrences.
 
 | File | Count | Notes |
 |---|---|---|
-| `packages/board-preview/src/BoardPreview.tsx` | ~7 | Field label + preview frame |
-| `packages/board-renderer/src/BoardCanvas.tsx` | 1 | `h-full w-full overflow-visible` |
+| `packages/board-preview/src/BoardPreview.tsx` | ~7 | ✅ done |
+| `packages/board-renderer/src/BoardCanvas.tsx` | 1 | ✅ done |
 
 ## Classification notes
 

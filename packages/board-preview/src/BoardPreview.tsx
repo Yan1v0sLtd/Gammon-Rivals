@@ -7,6 +7,8 @@ import type {Theme, ThemeLayout} from "../../board-renderer/src/theme/types"
 import {initialBoard} from "../../engine/src/board"
 import type {Json} from "../../shared/src/database"
 
+import styles from "./BoardPreview.module.css"
+
 type Props = {
   gameplayImage: string,
   whiteChecker: string,
@@ -114,15 +116,11 @@ export function BoardPreview({
   const [showBearOff, setShowBearOff] = useState(false)
 
   return (
-    <div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-      <div className="mb-1.5 flex items-center justify-between">
+    <div className={styles.preview}>
+      <div className={styles.header}>
         <span>Live preview</span>
         <button
-          className={`rounded px-2 py-1 text-[10px] font-bold normal-case tracking-normal transition ${
-            showBearOff
-              ? "bg-amber-300/90 text-black"
-              : "bg-slate-800 text-white/70 hover:bg-slate-700"
-          }`}
+          className={`${styles.toggle} ${showBearOff ? styles.toggleActive : styles.toggleIdle}`}
           type="button"
           onClick={() => {
             setShowBearOff((v) => !v)
@@ -131,17 +129,17 @@ export function BoardPreview({
         </button>
       </div>
       <div
-        className="relative w-full overflow-visible rounded-lg border border-white/10 bg-black/40"
+        className={styles.frame}
         style={{aspectRatio: GAMEPLAY_BOARD_ASPECT}}>
         {draftTheme ? (
-          <div className="absolute inset-0">
+          <div className={styles.fill}>
             <BoardCanvas
               layoutOverride={layoutOverride}
               state={showBearOff ? bearOffState : initialState}
               theme={draftTheme} />
           </div>
         ) : (
-          <div className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
+          <div className={styles.placeholder}>
             Upload the Gameplay image above to see the live preview.
           </div>
         )}

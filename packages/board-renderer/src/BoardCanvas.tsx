@@ -4,6 +4,7 @@ import {Application} from "pixi.js"
 
 import type {BoardState, Position} from "../../engine/src/types"
 
+import styles from "./BoardCanvas.module.css"
 import {BoardRenderer} from "./pixi/BoardRenderer"
 import type {RenderSelection} from "./pixi/types"
 import {loadTheme, type LoadedTheme} from "./theme/loader"
@@ -190,7 +191,7 @@ export function BoardCanvas({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-visible"
+      className={styles.canvas}
       style={boardBackground}/>
   )
 }
