@@ -8,9 +8,9 @@ Status: Phase 1 routing is implemented. Phase 2 (optional lazy loading and user
 deep links) is still pending. The Redux follow-up is implemented: the independent
 admin store and `adminBaseApi` live in `apps/admin/src/store/`, and Currencies,
 Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System,
-Difficulties, RTP Analytics, Admin Access, and all seven Daily Missions UI
-domains (Templates, Mission Types, Chests, Reroll, Streak Chest, Refresh Tool,
-Simulator) are migrated end to end via RTK Query. Still pending: Board Themes,
+Difficulties, Board Themes, RTP Analytics, Admin Access, and all seven Daily
+Missions UI domains (Templates, Mission Types, Chests, Reroll, Streak Chest,
+Refresh Tool, Simulator) are migrated end to end via RTK Query. Still pending:
 Dashboard, Users, and Shop — with Users and Shop intentionally last.
 
 ## Pre-migration baseline — `activeSection` state
@@ -176,9 +176,9 @@ Status: implemented. `apps/admin/src/store/` has its own `store.ts`
 Feature endpoints inject into `adminBaseApi` from `features/<X>/<x>Api.ts`.
 Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
 `<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
-Wheel, Level System, Difficulties, RTP Analytics, Admin Access, and all seven
-Daily Missions UI domains — Templates, Mission Types, Chests, Reroll, Streak
-Chest, Refresh Tool, and Simulator. Still pending: Board Themes, Dashboard,
+Wheel, Level System, Difficulties, Board Themes, RTP Analytics, Admin Access,
+and all seven Daily Missions UI domains — Templates, Mission Types, Chests,
+Reroll, Streak Chest, Refresh Tool, and Simulator. Still pending: Dashboard,
 Users, and Shop — with Users and Shop staying last, per the order below.
 
 Structural note: the `admin_audit_log` read is owned by the Admin Access feature
@@ -198,6 +198,16 @@ Difficulties keeps no state in `Admin.tsx`. The tier table read is owned by
 `DifficultiesApi.ts`; a parent-level subscription on the same cache key (the
 `levelConfigs` precedent) feeds the Dashboard's "Game config" count, so the
 count stays live after saves without a second server call.
+
+Board Themes keeps no state in `Admin.tsx` either. The route owns three data
+domains — `board_theme_configs`, `podium_images`, `loading_screen_images` —
+each with its own tag (`BoardThemes`, `BoardThemesPodiums`,
+`BoardThemesLoadingScreens`) so a write refetches only the domain it changed,
+mirroring the old per-domain `loadX(successMessage)` refreshes. The board
+grid read is also subscribed at the parent level (the `tables` precedent) to
+keep the Dashboard's "Game config" count live. All drafts (board/podium/
+loading-screen), the editor modal state, and the success banner are local
+feature state; per-action busy flags replace the old shared `savingKey`.
 
 Measured cost:
 

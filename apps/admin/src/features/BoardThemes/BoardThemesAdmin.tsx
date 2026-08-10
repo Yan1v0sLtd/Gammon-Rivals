@@ -1,5 +1,6 @@
+import {useEffect, useState} from "react"
+
 import {BoardPreview} from "../../../../../packages/board-preview/src/BoardPreview"
-import type {Database} from "../../../../../packages/shared/src/database"
 import {BearOffTraysField} from "../../components/BearOffTraysField"
 import {BoardTuningField} from "../../components/BoardTuningField"
 import {EmptyState} from "../../components/EmptyState"
@@ -11,78 +12,371 @@ import {SecondaryButton} from "../../components/SecondaryButton"
 import {StatusPill} from "../../components/StatusPill"
 import {TextArea} from "../../components/TextArea"
 import {Toggle} from "../../components/Toggle"
-import type {BoardDraft} from "../../lib/boardToDraft"
+import {useConfirm} from "../../components/useConfirm"
+import {boardToDraft, type BoardDraft} from "../../lib/boardToDraft"
+import {builtInBoardSeeds} from "../../lib/builtInBoardSeeds.ts"
+import {emptyToNull} from "../../lib/emptyToNull"
 import {formatNumber} from "../../lib/formatNumber"
+import {isPolicyError} from "../../lib/isPolicyError"
 import {isValidBoardId} from "../../lib/isValidBoardId"
+import {parseJson} from "../../lib/parseJson"
+import {requiredNumber} from "../../lib/requiredNumber"
+import {withGameplayBackgroundMetadata} from "../../lib/withGameplayBackgroundMetadata"
 
-type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
-type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
-type LoadingScreenImage = Database["public"]["Tables"]["loading_screen_images"]["Row"]
+import {
+  useAddLoadingScreenMutation,
+  useActivateLoadingScreenMutation,
+  useAddPodiumMutation,
+  useActivatePodiumMutation,
+  useDeleteBoardMutation,
+  useDeleteLoadingScreenMutation,
+  useDeletePodiumMutation,
+  useGetBoardsQuery,
+  useGetLoadingScreensQuery,
+  useGetPodiumsQuery,
+  useSeedBoardsMutation,
+  useUpsertBoardMutation,
+} from "./BoardThemesApi"
+import type {
+  BoardThemeConfigInsert,
+  BoardThemeConfigRow,
+  LoadingScreenImageInsert,
+  LoadingScreenImageRow,
+  PodiumImageInsert,
+  PodiumImageRow,
+} from "./BoardThemesData"
 
 type Props = {
-  readonly boards: readonly BoardThemeConfig[],
-  readonly podiums: readonly PodiumImage[],
-  readonly loadingScreens: readonly LoadingScreenImage[],
-  readonly boardDraft: BoardDraft,
-  readonly podiumDraft: {name: string, image_url: string},
-  readonly loadingScreenDraft: {name: string, image_url: string},
-  readonly boardMessage: string | null,
-  readonly boardEditorOpen: boolean,
-  readonly boardEditorMode: "add" | "edit",
   readonly canManage: boolean,
-  readonly savingKey: string | null,
-  readonly onSeedBuiltInBoards: () => void,
-  readonly onOpenAddBoard: () => void,
-  readonly onOpenEditBoard: (board: BoardThemeConfig) => void,
-  readonly onDeleteBoard: (board: BoardThemeConfig) => void,
-  readonly onSaveBoard: () => void,
-  readonly onActivatePodium: (podium: PodiumImage) => void,
-  readonly onDeletePodium: (podium: PodiumImage) => void,
-  readonly onAddPodium: () => void,
-  readonly onActivateLoadingScreen: (screen: LoadingScreenImage) => void,
-  readonly onDeleteLoadingScreen: (screen: LoadingScreenImage) => void,
-  readonly onAddLoadingScreen: () => void,
-  readonly onSetBoardDraft: (updater: (draft: BoardDraft) => BoardDraft) => void,
-  readonly onSetPodiumDraft: (updater: (draft: {name: string, image_url: string}) => {name: string, image_url: string}) => void,
-  readonly onSetLoadingScreenDraft: (updater: (draft: {name: string, image_url: string}) => {name: string, image_url: string}) => void,
-  readonly onSetBoardEditorOpen: (open: boolean) => void,
+  readonly updatedBy: string | null,
+  readonly onError: (error: unknown) => void,
+  readonly onBeforeSave: () => void,
 }
 
 /**
  * Board Themes BO admin — the visual list of live/draft boards plus the
- * podium + loading-screen libraries and the board editor modal.
- * Purely presentational: it renders from data the parent (Admin) already
- * owns and reports edits/actions back through explicit callbacks. No data
- * fetching here.
+ * podium + loading-screen libraries and the board editor modal. Owns its
+ * own data: the three library reads come from RTK Query, the drafts and
+ * editor state live here, and every save/delete/activate goes through a
+ * mutation. Failures are reported up through `onError` for page-level
+ * display. No direct Supabase calls here.
  */
 export function BoardThemesAdmin({
-  boards,
-  podiums,
-  loadingScreens,
-  boardDraft,
-  podiumDraft,
-  loadingScreenDraft,
-  boardMessage,
-  boardEditorOpen,
-  boardEditorMode,
   canManage,
-  savingKey,
-  onSeedBuiltInBoards,
-  onOpenAddBoard,
-  onOpenEditBoard,
-  onDeleteBoard,
-  onSaveBoard,
-  onActivatePodium,
-  onDeletePodium,
-  onAddPodium,
-  onActivateLoadingScreen,
-  onDeleteLoadingScreen,
-  onAddLoadingScreen,
-  onSetBoardDraft,
-  onSetPodiumDraft,
-  onSetLoadingScreenDraft,
-  onSetBoardEditorOpen,
+  updatedBy,
+  onError,
+  onBeforeSave,
 }: Props) {
+  const {
+    data: boards = [],
+    error: boardsError,
+  } = useGetBoardsQuery()
+  const {
+    data: podiums = [],
+    error: podiumsError,
+  } = useGetPodiumsQuery()
+  const {
+    data: loadingScreens = [],
+    error: loadingScreensError,
+  } = useGetLoadingScreensQuery()
+  const [upsertBoard, {isLoading: savingBoard}] = useUpsertBoardMutation()
+  const [deleteBoard] = useDeleteBoardMutation()
+  const [seedBoards, {isLoading: seedingBoards}] = useSeedBoardsMutation()
+  const [addPodium] = useAddPodiumMutation()
+  const [activatePodium] = useActivatePodiumMutation()
+  const [deletePodium] = useDeletePodiumMutation()
+  const [addLoadingScreen] = useAddLoadingScreenMutation()
+  const [activateLoadingScreen] = useActivateLoadingScreenMutation()
+  const [deleteLoadingScreen] = useDeleteLoadingScreenMutation()
+
+  const {confirm, confirmUI} = useConfirm()
+
+  const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
+  const [podiumDraft, setPodiumDraft] = useState<{name: string, image_url: string}>({
+    name: "",
+    image_url: "",
+  })
+  const [loadingScreenDraft, setLoadingScreenDraft] = useState<{name: string, image_url: string}>({
+    name: "",
+    image_url: "",
+  })
+  const [boardEditorOpen, setBoardEditorOpen] = useState(false)
+  const [boardEditorMode, setBoardEditorMode] = useState<"add" | "edit">("add")
+  const [boardMessage, setBoardMessage] = useState<string | null>(null)
+  // Per-action busy key mirroring the old Admin `savingKey` so each
+  // button disables individually while its own request is in flight.
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+
+  // Surface fetch failures through the page-level error reporter.
+  useEffect(() => {
+    if (boardsError) onError(boardsError)
+  }, [boardsError, onError])
+  useEffect(() => {
+    if (podiumsError) onError(podiumsError)
+  }, [podiumsError, onError])
+  useEffect(() => {
+    if (loadingScreensError) onError(loadingScreensError)
+  }, [loadingScreensError, onError])
+
+  function openAddBoard() {
+    setBoardMessage(null)
+    setBoardDraft(boardToDraft())
+    setBoardEditorMode("add")
+    setBoardEditorOpen(true)
+  }
+
+  function openEditBoard(board: BoardThemeConfigRow) {
+    setBoardMessage(null)
+    setBoardDraft(boardToDraft(board))
+    setBoardEditorMode("edit")
+    setBoardEditorOpen(true)
+  }
+
+  async function saveBoard() {
+    if (!canManage) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey("board")
+    try {
+      const metadata = withGameplayBackgroundMetadata(parseJson(boardDraft.metadata, "Metadata", "object"), boardDraft.gameplay_background_image)
+      const payload: BoardThemeConfigInsert = {
+        id: boardDraft.id.trim(),
+        display_name: boardDraft.display_name.trim(),
+        preview_image: boardDraft.preview_image.trim(),
+        gameplay_image: boardDraft.gameplay_image.trim(),
+        lobby_background_image: emptyToNull(boardDraft.lobby_background_image),
+        white_checker_image: emptyToNull(boardDraft.white_checker_image),
+        black_checker_image: emptyToNull(boardDraft.black_checker_image),
+        dice_image: emptyToNull(boardDraft.dice_image),
+        tray_image: emptyToNull(boardDraft.tray_image),
+        holder_image: emptyToNull(boardDraft.holder_image),
+        unlock_level: requiredNumber(boardDraft.unlock_level, "Unlock level"),
+        price_coins: requiredNumber(boardDraft.price_coins, "Price coins"),
+        price_gems: requiredNumber(boardDraft.price_gems, "Gems cost"),
+        is_enabled: boardDraft.is_enabled,
+        is_featured: boardDraft.is_featured,
+        sort_order: requiredNumber(boardDraft.sort_order, "Sort order"),
+        metadata,
+        updated_by: updatedBy,
+      }
+      await upsertBoard(payload).unwrap()
+      setBoardDraft(boardToDraft())
+      setBoardEditorOpen(false)
+      setBoardMessage("Board theme saved.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function deleteBoardHandler(board: BoardThemeConfigRow) {
+    if (!canManage) return
+    const confirmed = await confirm({
+      title: `Delete ${board.display_name}?`,
+      message: "This removes it from the live board list.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    })
+    if (!confirmed) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey(`board-delete-${board.id}`)
+    try {
+      await deleteBoard(board.id).unwrap()
+      if (boardDraft.id === board.id) {
+        setBoardDraft(boardToDraft())
+        setBoardEditorOpen(false)
+      }
+      setBoardMessage("Board theme deleted.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function seedBuiltInBoards() {
+    if (!canManage) return
+    onBeforeSave()
+    setBoardMessage("Adding the current game boards...")
+    setPendingKey("board-seed")
+    try {
+      const payload = builtInBoardSeeds.map((board) => ({
+        ...board,
+        updated_by: updatedBy,
+      }))
+      await seedBoards(payload).unwrap()
+      setBoardMessage(`Current boards populated: ${builtInBoardSeeds.length} boards are ready.`)
+    }
+    catch (err) {
+      setBoardMessage(null)
+      if (isPolicyError(err)) {
+        onError("Supabase blocked the board write. Please run the latest board_theme_admin_write_policy migration in the Supabase SQL editor, then try again.")
+      }
+      else {
+        onError(err)
+      }
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function addPodiumHandler() {
+    if (!canManage) return
+    const image_url = podiumDraft.image_url.trim()
+    if (!image_url) {
+      onError("Upload or paste a podium image first.")
+      return
+    }
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey("podium-add")
+    try {
+      const payload: PodiumImageInsert = {
+        name: podiumDraft.name.trim() || "Podium",
+        image_url,
+        updated_by: updatedBy,
+      }
+      await addPodium(payload).unwrap()
+      setPodiumDraft({
+        name: "",
+        image_url: "",
+      })
+      setBoardMessage("Podium added.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function activatePodiumHandler(podium: PodiumImageRow) {
+    if (!canManage || podium.is_active) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey(`podium-active-${podium.id}`)
+    try {
+      await activatePodium(podium.id).unwrap()
+      setBoardMessage("Podium activated.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function deletePodiumHandler(podium: PodiumImageRow) {
+    if (!canManage) return
+    if (podium.is_active) {
+      onError("Set another podium active before deleting the active one.")
+      return
+    }
+    const confirmed = await confirm({
+      title: `Delete podium "${podium.name}"?`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    })
+    if (!confirmed) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey(`podium-delete-${podium.id}`)
+    try {
+      await deletePodium(podium.id).unwrap()
+      setBoardMessage("Podium deleted.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function addLoadingScreenHandler() {
+    if (!canManage) return
+    const image_url = loadingScreenDraft.image_url.trim()
+    if (!image_url) {
+      onError("Upload or paste a loading-screen image first.")
+      return
+    }
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey("loading-screen-add")
+    try {
+      const payload: LoadingScreenImageInsert = {
+        name: loadingScreenDraft.name.trim() || "Loading screen",
+        image_url,
+        updated_by: updatedBy,
+      }
+      await addLoadingScreen(payload).unwrap()
+      setLoadingScreenDraft({
+        name: "",
+        image_url: "",
+      })
+      setBoardMessage("Loading screen added.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function activateLoadingScreenHandler(screen: LoadingScreenImageRow) {
+    if (!canManage || screen.is_active) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey(`loading-screen-active-${screen.id}`)
+    try {
+      await activateLoadingScreen(screen.id).unwrap()
+      setBoardMessage("Loading screen activated.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function deleteLoadingScreenHandler(screen: LoadingScreenImageRow) {
+    if (!canManage) return
+    if (screen.is_active) {
+      onError("Set another loading screen active before deleting the active one.")
+      return
+    }
+    const confirmed = await confirm({
+      title: `Delete loading screen "${screen.name}"?`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    })
+    if (!confirmed) return
+    onBeforeSave()
+    setBoardMessage(null)
+    setPendingKey(`loading-screen-delete-${screen.id}`)
+    try {
+      await deleteLoadingScreen(screen.id).unwrap()
+      setBoardMessage("Loading screen deleted.")
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
   return (<div className="space-y-4">
     <div
       className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
@@ -94,13 +388,13 @@ export function BoardThemesAdmin({
       </div>
       <div className="flex flex-wrap gap-2">
         <SecondaryButton
-          disabled={!canManage || savingKey === "board-seed"}
-          onClick={onSeedBuiltInBoards}>
-          {savingKey === "board-seed" ? "Populating..." : "Populate Current Boards"}
+          disabled={!canManage || seedingBoards}
+          onClick={() => void seedBuiltInBoards()}>
+          {seedingBoards ? "Populating..." : "Populate Current Boards"}
         </SecondaryButton>
         <PrimaryButton
           disabled={!canManage}
-          onClick={onOpenAddBoard}>
+          onClick={openAddBoard}>
           Add Board
         </PrimaryButton>
       </div>
@@ -143,19 +437,19 @@ export function BoardThemesAdmin({
           <div className="mt-2 flex gap-2">
             <button
               className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!canManage || p.is_active || savingKey === `podium-active-${p.id}`}
+              disabled={!canManage || p.is_active || pendingKey === `podium-active-${p.id}`}
               type="button"
               onClick={() => {
-                onActivatePodium(p)
+                void activatePodiumHandler(p)
               }}>
-              {p.is_active ? "Active" : savingKey === `podium-active-${p.id}` ? "Activating..." : "Set active"}
+              {p.is_active ? "Active" : pendingKey === `podium-active-${p.id}` ? "Activating..." : "Set active"}
             </button>
             <button
               className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!canManage || p.is_active || savingKey === `podium-delete-${p.id}`}
+              disabled={!canManage || p.is_active || pendingKey === `podium-delete-${p.id}`}
               type="button"
               onClick={() => {
-                onDeletePodium(p)
+                void deletePodiumHandler(p)
               }}>
               Delete
             </button>
@@ -178,7 +472,7 @@ export function BoardThemesAdmin({
                 type="text"
                 value={podiumDraft.name}
                 onChange={(event) => {
-                  onSetPodiumDraft((draft) => ({
+                  setPodiumDraft((draft) => ({
                     ...draft,
                     name: event.target.value,
                   }))
@@ -190,16 +484,16 @@ export function BoardThemesAdmin({
               label="Podium image"
               value={podiumDraft.image_url}
               onChange={(url) => {
-                onSetPodiumDraft((draft) => ({
+                setPodiumDraft((draft) => ({
                   ...draft,
                   image_url: url,
                 }))
               }}/>
           </div>
           <PrimaryButton
-            disabled={!canManage || !podiumDraft.image_url.trim() || savingKey === "podium-add"}
-            onClick={onAddPodium}>
-            {savingKey === "podium-add" ? "Adding..." : "Add podium"}
+            disabled={!canManage || !podiumDraft.image_url.trim() || pendingKey === "podium-add"}
+            onClick={() => void addPodiumHandler()}>
+            {pendingKey === "podium-add" ? "Adding..." : "Add podium"}
           </PrimaryButton>
         </div>
       </div>
@@ -239,19 +533,19 @@ export function BoardThemesAdmin({
           <div className="mt-2 flex gap-2">
             <button
               className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!canManage || s.is_active || savingKey === `loading-screen-active-${s.id}`}
+              disabled={!canManage || s.is_active || pendingKey === `loading-screen-active-${s.id}`}
               type="button"
               onClick={() => {
-                onActivateLoadingScreen(s)
+                void activateLoadingScreenHandler(s)
               }}>
-              {s.is_active ? "Active" : savingKey === `loading-screen-active-${s.id}` ? "Activating..." : "Set active"}
+              {s.is_active ? "Active" : pendingKey === `loading-screen-active-${s.id}` ? "Activating..." : "Set active"}
             </button>
             <button
               className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!canManage || s.is_active || savingKey === `loading-screen-delete-${s.id}`}
+              disabled={!canManage || s.is_active || pendingKey === `loading-screen-delete-${s.id}`}
               type="button"
               onClick={() => {
-                onDeleteLoadingScreen(s)
+                void deleteLoadingScreenHandler(s)
               }}>
               Delete
             </button>
@@ -274,7 +568,7 @@ export function BoardThemesAdmin({
                 type="text"
                 value={loadingScreenDraft.name}
                 onChange={(event) => {
-                  onSetLoadingScreenDraft((draft) => ({
+                  setLoadingScreenDraft((draft) => ({
                     ...draft,
                     name: event.target.value,
                   }))
@@ -286,16 +580,16 @@ export function BoardThemesAdmin({
               label="Loading screen image"
               value={loadingScreenDraft.image_url}
               onChange={(url) => {
-                onSetLoadingScreenDraft((draft) => ({
+                setLoadingScreenDraft((draft) => ({
                   ...draft,
                   image_url: url,
                 }))
               }}/>
           </div>
           <PrimaryButton
-            disabled={!canManage || !loadingScreenDraft.image_url.trim() || savingKey === "loading-screen-add"}
-            onClick={onAddLoadingScreen}>
-            {savingKey === "loading-screen-add" ? "Adding..." : "Add loading screen"}
+            disabled={!canManage || !loadingScreenDraft.image_url.trim() || pendingKey === "loading-screen-add"}
+            onClick={() => void addLoadingScreenHandler()}>
+            {pendingKey === "loading-screen-add" ? "Adding..." : "Add loading screen"}
           </PrimaryButton>
         </div>
       </div>
@@ -308,7 +602,7 @@ export function BoardThemesAdmin({
           key={row.id}
           className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-amber-200/45"
           onClick={() => {
-            onOpenEditBoard(row)
+            openEditBoard(row)
           }}>
           <div className="relative aspect-[16/10] overflow-hidden bg-black/25">
             {row.lobby_background_image ? (<img
@@ -340,16 +634,16 @@ export function BoardThemesAdmin({
                   className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 transition hover:bg-white/15"
                   type="button"
                   onClick={() => {
-                    onOpenEditBoard(row)
+                    openEditBoard(row)
                   }}>
                   Edit
                 </button>
                 <button
                   className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
-                  disabled={!canManage || savingKey === `board-delete-${row.id}`}
+                  disabled={!canManage || pendingKey === `board-delete-${row.id}`}
                   type="button"
                   onClick={() => {
-                    onDeleteBoard(row)
+                    void deleteBoardHandler(row)
                   }}>
                   Delete
                 </button>
@@ -394,7 +688,7 @@ export function BoardThemesAdmin({
               className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white/70 transition hover:bg-white/15"
               type="button"
               onClick={() => {
-                onSetBoardEditorOpen(false)
+                setBoardEditorOpen(false)
               }}>
               Close
             </button>
@@ -407,7 +701,7 @@ export function BoardThemesAdmin({
                 label="Board id"
                 value={boardDraft.id}
                 onChange={(id) => {
-                  onSetBoardDraft((d) => ({
+                  setBoardDraft((d) => ({
                     ...d,
                     id,
                   }))
@@ -422,7 +716,7 @@ export function BoardThemesAdmin({
               label="Display name"
               value={boardDraft.display_name}
               onChange={(display_name) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   display_name,
                 }))
@@ -431,7 +725,7 @@ export function BoardThemesAdmin({
               label="Unlock level"
               value={boardDraft.unlock_level}
               onChange={(unlock_level) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   unlock_level,
                 }))
@@ -440,7 +734,7 @@ export function BoardThemesAdmin({
               label="Price coins"
               value={boardDraft.price_coins}
               onChange={(price_coins) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   price_coins,
                 }))
@@ -449,7 +743,7 @@ export function BoardThemesAdmin({
               label="Gems cost"
               value={boardDraft.price_gems}
               onChange={(price_gems) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   price_gems,
                 }))
@@ -458,7 +752,7 @@ export function BoardThemesAdmin({
               label="Sort order"
               value={boardDraft.sort_order}
               onChange={(sort_order) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   sort_order,
                 }))
@@ -471,7 +765,7 @@ export function BoardThemesAdmin({
               label="Lobby image"
               value={boardDraft.preview_image}
               onChange={(preview_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   preview_image,
                 }))
@@ -482,7 +776,7 @@ export function BoardThemesAdmin({
               label="Gameplay image"
               value={boardDraft.gameplay_image}
               onChange={(gameplay_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   gameplay_image,
                 }))
@@ -491,7 +785,7 @@ export function BoardThemesAdmin({
               gameplayImage={boardDraft.gameplay_image}
               metadata={boardDraft.metadata}
               onMetadataChange={(metadata) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   metadata,
                 }))
@@ -500,7 +794,7 @@ export function BoardThemesAdmin({
               gameplayImage={boardDraft.gameplay_image}
               metadata={boardDraft.metadata}
               onMetadataChange={(metadata) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   metadata,
                 }))
@@ -508,7 +802,7 @@ export function BoardThemesAdmin({
             <BoardTuningField
               metadata={boardDraft.metadata}
               onMetadataChange={(metadata) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   metadata,
                 }))
@@ -524,7 +818,7 @@ export function BoardThemesAdmin({
               label="Lobby background image"
               value={boardDraft.lobby_background_image}
               onChange={(lobby_background_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   lobby_background_image,
                 }))
@@ -535,7 +829,7 @@ export function BoardThemesAdmin({
               label="Gameplay background image"
               value={boardDraft.gameplay_background_image}
               onChange={(gameplay_background_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   gameplay_background_image,
                 }))
@@ -546,7 +840,7 @@ export function BoardThemesAdmin({
               label="White checker image"
               value={boardDraft.white_checker_image}
               onChange={(white_checker_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   white_checker_image,
                 }))
@@ -557,7 +851,7 @@ export function BoardThemesAdmin({
               label="Black checker image"
               value={boardDraft.black_checker_image}
               onChange={(black_checker_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   black_checker_image,
                 }))
@@ -568,7 +862,7 @@ export function BoardThemesAdmin({
               label="Dice sprite (3 cols × 2 rows: face 1 top-left → face 6 bottom-right)"
               value={boardDraft.dice_image}
               onChange={(dice_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   dice_image,
                 }))
@@ -579,7 +873,7 @@ export function BoardThemesAdmin({
               label="Tray image"
               value={boardDraft.tray_image}
               onChange={(tray_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   tray_image,
                 }))
@@ -590,7 +884,7 @@ export function BoardThemesAdmin({
               label="Holder image"
               value={boardDraft.holder_image}
               onChange={(holder_image) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   holder_image,
                 }))
@@ -599,7 +893,7 @@ export function BoardThemesAdmin({
               label="Metadata JSON object"
               value={boardDraft.metadata}
               onChange={(metadata) => {
-                onSetBoardDraft((d) => ({
+                setBoardDraft((d) => ({
                   ...d,
                   metadata,
                 }))
@@ -609,7 +903,7 @@ export function BoardThemesAdmin({
                 checked={boardDraft.is_enabled}
                 label="Enabled"
                 onChange={(is_enabled) => {
-                  onSetBoardDraft((d) => ({
+                  setBoardDraft((d) => ({
                     ...d,
                     is_enabled,
                   }))
@@ -618,7 +912,7 @@ export function BoardThemesAdmin({
                 checked={boardDraft.is_featured}
                 label="Featured"
                 onChange={(is_featured) => {
-                  onSetBoardDraft((d) => ({
+                  setBoardDraft((d) => ({
                     ...d,
                     is_featured,
                   }))
@@ -626,16 +920,17 @@ export function BoardThemesAdmin({
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <SecondaryButton onClick={() => {
-                onSetBoardEditorOpen(false)
+                setBoardEditorOpen(false)
               }}>Cancel</SecondaryButton>
               <PrimaryButton
-                disabled={!canManage || savingKey === "board" || (boardEditorMode === "add" && !isValidBoardId(boardDraft.id))}
-                onClick={onSaveBoard}>
+                disabled={!canManage || savingBoard || (boardEditorMode === "add" && !isValidBoardId(boardDraft.id))}
+                onClick={() => void saveBoard()}>
                 {boardEditorMode === "add" ? "Add board" : "Save changes"}
               </PrimaryButton>
             </div>
           </div>
         </div>
       </div>)}
+    {confirmUI}
   </div>)
 }

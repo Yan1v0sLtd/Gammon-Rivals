@@ -17,6 +17,7 @@ import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
 import {useGetAuditLogQuery} from "./features/AdminAccess/AdminAccessApi"
 import type {AdminRole} from "./features/AdminAccess/AdminAccessData"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
+import {useGetBoardsQuery} from "./features/BoardThemes/BoardThemesApi"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
 import {useGetCurrenciesQuery} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
@@ -36,14 +37,11 @@ import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
-import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
-import {builtInBoardSeeds} from "./lib/builtInBoardSeeds.ts"
 import {emptyToNull} from "./lib/emptyToNull"
 import {formatNumber} from "./lib/formatNumber"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
 import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
-import {isPolicyError} from "./lib/isPolicyError"
 import {normalizeEmail} from "./lib/normalizeEmail"
 import {numberOrNull} from "./lib/numberOrNull"
 import {parseJson} from "./lib/parseJson"
@@ -51,7 +49,6 @@ import {requiredNumber} from "./lib/requiredNumber"
 import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
 import {useAdminAuth} from "./lib/useAdminAuth"
 import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
-import {withGameplayBackgroundMetadata} from "./lib/withGameplayBackgroundMetadata"
 import {withRequestTimeout} from "./lib/withRequestTimeout"
 import {adminBaseApi} from "./store/baseApi"
 import {useAdminDispatch} from "./store/hooks"
@@ -64,9 +61,6 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
  * stored as strings so the inputs can be empty mid-edit without
  * blanking the form state.
  */
-type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
-type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
-type LoadingScreenImage = Database["public"]["Tables"]["loading_screen_images"]["Row"]
 type UserWallet = Database["public"]["Tables"]["user_wallets"]["Row"]
 type WalletTransaction = Database["public"]["Tables"]["wallet_transactions"]["Row"]
 type UserBoardInventory = Database["public"]["Tables"]["user_board_inventory"]["Row"]
@@ -126,6 +120,9 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "LevelSystem",
   "DailyMissions",
   "Difficulties",
+  "BoardThemes",
+  "BoardThemesPodiums",
+  "BoardThemesLoadingScreens",
   "AdminAccess",
 ]
 
@@ -164,17 +161,6 @@ export function Admin() {
     amount: "",
     reason: "",
   })
-  const [boards, setBoards] = useState<BoardThemeConfig[]>([])
-  const [podiums, setPodiums] = useState<PodiumImage[]>([])
-  const [podiumDraft, setPodiumDraft] = useState<{name: string, image_url: string}>({
-    name: "",
-    image_url: "",
-  })
-  const [loadingScreens, setLoadingScreens] = useState<LoadingScreenImage[]>([])
-  const [loadingScreenDraft, setLoadingScreenDraft] = useState<{name: string, image_url: string}>({
-    name: "",
-    image_url: "",
-  })
   const [shopItems, setShopItems] = useState<ShopItem[]>([])
   // Store Sale draft — one global, schedulable promo that boosts coin/gem
   // grants. Numeric/date fields are strings so inputs can be cleared mid-edit.
@@ -205,12 +191,8 @@ export function Admin() {
   // the operator is on the Users section so the WebSocket isn't kept
   // open BO-wide.
   const onlineUsers = useOnlineUsersWatcher(activeSection === "Users")
-  const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
-  const [boardEditorOpen, setBoardEditorOpen] = useState(false)
-  const [boardEditorMode, setBoardEditorMode] = useState<"add" | "edit">("add")
   const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft())
   const [dataError, setDataError] = useState<string | null>(null)
-  const [boardMessage, setBoardMessage] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [savingKey, setSavingKey] = useState<string | null>(null)
   // Non-blocking confirm/prompt dialogs (replaces window.confirm/prompt, which
@@ -255,6 +237,14 @@ export function Admin() {
     data: tables = [],
     error: tablesError,
   } = useGetTablesQuery(undefined, {skip: accessState !== "allowed"})
+  // Board configs are owned by the Board Themes feature's RTK Query
+  // cache. We read the same shared cache entry here (RTK Query dedupes
+  // by cache key, so this is not a second server call) purely to derive
+  // the theme count for the cross-feature "Game config" dashboard stat.
+  const {
+    data: boards = [],
+    error: boardsError,
+  } = useGetBoardsQuery(undefined, {skip: accessState !== "allowed"})
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -274,7 +264,7 @@ export function Admin() {
     setDataError(String(err))
   }, [])
 
-  // These four parent-level subscriptions replaced reads that used to be
+  // These five parent-level subscriptions replaced reads that used to be
   // covered by loadAdminData's Promise.all → firstError. Surface their
   // failures through the page-level banner: otherwise a failed query falls
   // back to its `= []` default and renders as genuinely-empty data in the
@@ -282,228 +272,10 @@ export function Admin() {
   // panels report the same cache entry (same message → same single banner),
   // so nothing is doubled or flickered.
   useEffect(() => {
-    const firstError = currenciesError ?? levelConfigsError ?? auditError ?? tablesError
+    const firstError = currenciesError ?? levelConfigsError ?? auditError ?? tablesError ?? boardsError
     if (firstError) setError(firstError)
-  }, [currenciesError, levelConfigsError, auditError, tablesError, setError])
+  }, [currenciesError, levelConfigsError, auditError, tablesError, boardsError, setError])
 
-  async function loadBoardConfigs(successMessage?: string) {
-    const {
-      data,
-      error,
-    } = await withRequestTimeout(supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), "Loading board themes")
-    if (error) throw error
-
-    const nextBoards = data ?? []
-    setBoards(nextBoards)
-    setStats((current) => ({
-      ...current,
-      configItems: tables.length + nextBoards.length + levelConfigs.length,
-    }))
-    if (successMessage) setBoardMessage(successMessage)
-  }
-
-  // Podium library (the stand the board sits on in the lobby carousel).
-  // Loaded on demand when the Board Themes section opens (see effect
-  // below) rather than in the big initial load, to keep that batch lean.
-  const loadPodiums = useCallback(async (successMessage?: string) => {
-    const {
-      data,
-      error,
-    } = await withRequestTimeout(supabase
-      .from("podium_images")
-      .select("*")
-      .order("sort_order", {ascending: false})
-      .order("created_at", {ascending: false}), "Loading podiums")
-    if (error) throw error
-    setPodiums(data ?? [])
-    if (successMessage) setBoardMessage(successMessage)
-  }, [])
-
-  async function addPodium() {
-    if (!canManage) return
-    const image_url = podiumDraft.image_url.trim()
-    if (!image_url) {
-      setDataError("Upload or paste a podium image first.")
-      return
-    }
-    setSavingKey("podium-add")
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase
-        .from("podium_images")
-        .insert({
-          name: podiumDraft.name.trim() || "Podium",
-          image_url,
-          updated_by: user?.id ?? null,
-        })
-        .select("id"), "Adding podium")
-      if (error) throw error
-      setPodiumDraft({
-        name: "",
-        image_url: "",
-      })
-      await loadPodiums("Podium added.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function activatePodium(podium: PodiumImage) {
-    if (!canManage || podium.is_active) return
-    setSavingKey(`podium-active-${podium.id}`)
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase.rpc("set_active_podium", {p_id: podium.id}), "Activating podium")
-      if (error) throw error
-      await loadPodiums("Podium activated.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function deletePodium(podium: PodiumImage) {
-    if (!canManage) return
-    if (podium.is_active) {
-      setDataError("Set another podium active before deleting the active one.")
-      return
-    }
-    const confirmed = await confirm({
-      title: `Delete podium "${podium.name}"?`,
-      confirmLabel: "Delete",
-      tone: "danger",
-    })
-    if (!confirmed) return
-    setSavingKey(`podium-delete-${podium.id}`)
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase.from("podium_images").delete().eq("id", podium.id).select("id"), "Deleting podium")
-      if (error) throw error
-      await loadPodiums("Podium deleted.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  // Loading-screen library (the full-art cover shown while the app loads).
-  // Same model as the podium: many rows, exactly one active.
-  const loadLoadingScreens = useCallback(async (successMessage?: string) => {
-    const {
-      data,
-      error,
-    } = await withRequestTimeout(supabase
-      .from("loading_screen_images")
-      .select("*")
-      .order("sort_order", {ascending: false})
-      .order("created_at", {ascending: false}), "Loading loading screens")
-    if (error) throw error
-    setLoadingScreens(data ?? [])
-    if (successMessage) setBoardMessage(successMessage)
-  }, [])
-
-  async function addLoadingScreen() {
-    if (!canManage) return
-    const image_url = loadingScreenDraft.image_url.trim()
-    if (!image_url) {
-      setDataError("Upload or paste a loading-screen image first.")
-      return
-    }
-    setSavingKey("loading-screen-add")
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase
-        .from("loading_screen_images")
-        .insert({
-          name: loadingScreenDraft.name.trim() || "Loading screen",
-          image_url,
-          updated_by: user?.id ?? null,
-        })
-        .select("id"), "Adding loading screen")
-      if (error) throw error
-      setLoadingScreenDraft({
-        name: "",
-        image_url: "",
-      })
-      await loadLoadingScreens("Loading screen added.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function activateLoadingScreen(screen: LoadingScreenImage) {
-    if (!canManage || screen.is_active) return
-    setSavingKey(`loading-screen-active-${screen.id}`)
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase.rpc("set_active_loading_screen", {p_id: screen.id}), "Activating loading screen")
-      if (error) throw error
-      await loadLoadingScreens("Loading screen activated.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function deleteLoadingScreen(screen: LoadingScreenImage) {
-    if (!canManage) return
-    if (screen.is_active) {
-      setDataError("Set another loading screen active before deleting the active one.")
-      return
-    }
-    const confirmed = await confirm({
-      title: `Delete loading screen "${screen.name}"?`,
-      confirmLabel: "Delete",
-      tone: "danger",
-    })
-    if (!confirmed) return
-    setSavingKey(`loading-screen-delete-${screen.id}`)
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase.from("loading_screen_images").delete().eq("id", screen.id).select("id"), "Deleting loading screen")
-      if (error) throw error
-      await loadLoadingScreens("Loading screen deleted.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  // Load the podium + loading-screen libraries when the operator opens
-  // Board Themes (both panels live in that section).
-  useEffect(() => {
-    if (activeSection !== "Board Themes") return
-    void loadPodiums().catch(setError)
-    void loadLoadingScreens().catch(setError)
-  }, [activeSection, loadPodiums, loadLoadingScreens, setError])
-
-  // Once we've verified the signed-in admin's access once, we don't
   // want to blank the page back to a "Checking access" placeholder on
   // every transient re-run of this effect — token refreshes, tab
   // visibility resumes, etc. The ref records the userId we last
@@ -638,7 +410,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, boardResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -657,9 +429,9 @@ export function Admin() {
         .from("profiles")
         .select("*")
         .order("created_at", {ascending: false})
-        .limit(120), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
+        .limit(120), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? boardResult.error ?? shopResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? shopResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -681,7 +453,6 @@ export function Admin() {
         const visibleIds = new Set(adminUsers.map((row) => row.id))
         return new Set([...current].filter((id) => visibleIds.has(id)))
       })
-      setBoards(boardResult.data ?? [])
       setShopItems(shopResult.data ?? [])
       // Store Sale (single global row). Loaded here so a save refreshes it too.
       const saleResult = await supabase
@@ -717,7 +488,7 @@ export function Admin() {
         users: profileRows.length ?? userCount.count ?? 0,
         matches: matchCount.count ?? 0,
         activeMatches: activeMatchCount.count ?? 0,
-        configItems: tables.length + (boardResult.data ?? []).length + levelConfigs.length,
+        configItems: tables.length + boards.length + levelConfigs.length,
         shopItems: shopResult.data?.length ?? 0,
         suspendedUsers: suspendedCount.count ?? 0,
       })
@@ -764,7 +535,7 @@ export function Admin() {
     finally {
       setRefreshing(false)
     }
-  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError, tables.length])
+  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError, tables.length, boards.length])
 
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
@@ -957,20 +728,6 @@ export function Admin() {
     caption: "Products and offers",
   }], [stats])
 
-  function openAddBoard() {
-    setBoardMessage(null)
-    setBoardDraft(boardToDraft())
-    setBoardEditorMode("add")
-    setBoardEditorOpen(true)
-  }
-
-  function openEditBoard(board: BoardThemeConfig) {
-    setBoardMessage(null)
-    setBoardDraft(boardToDraft(board))
-    setBoardEditorMode("edit")
-    setBoardEditorOpen(true)
-  }
-
   async function saveProfile() {
     if (!canManage || !selectedUser) return
     setSavingKey("profile")
@@ -1045,107 +802,6 @@ export function Admin() {
     }
     catch (err) {
       setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function saveBoard() {
-    if (!canManage) return
-    setSavingKey("board")
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const metadata = withGameplayBackgroundMetadata(parseJson(boardDraft.metadata, "Metadata", "object"), boardDraft.gameplay_background_image)
-      const payload: Database["public"]["Tables"]["board_theme_configs"]["Insert"] = {
-        id: boardDraft.id.trim(),
-        display_name: boardDraft.display_name.trim(),
-        preview_image: boardDraft.preview_image.trim(),
-        gameplay_image: boardDraft.gameplay_image.trim(),
-        lobby_background_image: emptyToNull(boardDraft.lobby_background_image),
-        white_checker_image: emptyToNull(boardDraft.white_checker_image),
-        black_checker_image: emptyToNull(boardDraft.black_checker_image),
-        dice_image: emptyToNull(boardDraft.dice_image),
-        tray_image: emptyToNull(boardDraft.tray_image),
-        holder_image: emptyToNull(boardDraft.holder_image),
-        unlock_level: requiredNumber(boardDraft.unlock_level, "Unlock level"),
-        price_coins: requiredNumber(boardDraft.price_coins, "Price coins"),
-        price_gems: requiredNumber(boardDraft.price_gems, "Gems cost"),
-        is_enabled: boardDraft.is_enabled,
-        is_featured: boardDraft.is_featured,
-        sort_order: requiredNumber(boardDraft.sort_order, "Sort order"),
-        metadata,
-        updated_by: user?.id ?? null,
-      }
-      const {error} = await withRequestTimeout(supabase.from("board_theme_configs").upsert(payload, {onConflict: "id"}).select("id"), "Saving board theme")
-      if (error) throw error
-      setBoardDraft(boardToDraft())
-      setBoardEditorOpen(false)
-      await loadBoardConfigs("Board theme saved.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function deleteBoard(board: BoardThemeConfig) {
-    if (!canManage) return
-    const confirmed = await confirm({
-      title: `Delete ${board.display_name}?`,
-      message: "This removes it from the live board list.",
-      confirmLabel: "Delete",
-      tone: "danger",
-    })
-    if (!confirmed) return
-    setSavingKey(`board-delete-${board.id}`)
-    setDataError(null)
-    setBoardMessage(null)
-    try {
-      const {error} = await withRequestTimeout(supabase.from("board_theme_configs").delete().eq("id", board.id).select("id"), "Deleting board theme")
-      if (error) throw error
-      if (boardDraft.id === board.id) {
-        setBoardDraft(boardToDraft())
-        setBoardEditorOpen(false)
-      }
-      await loadBoardConfigs("Board theme deleted.")
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function seedBuiltInBoards() {
-    if (!canManage) return
-    setSavingKey("board-seed")
-    setDataError(null)
-    setBoardMessage("Adding the current game boards...")
-    try {
-      const payload = builtInBoardSeeds.map((board) => ({
-        ...board,
-        updated_by: user?.id ?? null,
-      }))
-      const {
-        data,
-        error,
-      } = await withRequestTimeout(supabase.from("board_theme_configs").upsert(payload, {onConflict: "id"}).select("id"), "Populating current boards")
-      if (error) throw error
-      await loadBoardConfigs(`Current boards populated: ${data?.length ?? builtInBoardSeeds.length} boards are ready.`)
-    }
-    catch (err) {
-      setBoardMessage(null)
-      if (isPolicyError(err)) {
-        setDataError("Supabase blocked the board write. Please run the latest board_theme_admin_write_policy migration in the Supabase SQL editor, then try again.")
-      }
-      else {
-        setError(err)
-      }
     }
     finally {
       setSavingKey(null)
@@ -1499,32 +1155,12 @@ export function Admin() {
 
           <Route
             element={<BoardThemesAdmin
-              boardDraft={boardDraft}
-              boardEditorMode={boardEditorMode}
-              boardEditorOpen={boardEditorOpen}
-              boardMessage={boardMessage}
-              boards={boards}
               canManage={canManage}
-              loadingScreenDraft={loadingScreenDraft}
-              loadingScreens={loadingScreens}
-              podiumDraft={podiumDraft}
-              podiums={podiums}
-              savingKey={savingKey}
-              onActivateLoadingScreen={(screen) => void activateLoadingScreen(screen)}
-              onActivatePodium={(podium) => void activatePodium(podium)}
-              onAddLoadingScreen={() => void addLoadingScreen()}
-              onAddPodium={() => void addPodium()}
-              onDeleteBoard={(board) => void deleteBoard(board)}
-              onDeleteLoadingScreen={(screen) => void deleteLoadingScreen(screen)}
-              onDeletePodium={(podium) => void deletePodium(podium)}
-              onOpenAddBoard={openAddBoard}
-              onOpenEditBoard={openEditBoard}
-              onSaveBoard={() => void saveBoard()}
-              onSeedBuiltInBoards={() => void seedBuiltInBoards()}
-              onSetBoardDraft={setBoardDraft}
-              onSetBoardEditorOpen={setBoardEditorOpen}
-              onSetLoadingScreenDraft={setLoadingScreenDraft}
-              onSetPodiumDraft={setPodiumDraft}/>}
+              updatedBy={user?.id ?? null}
+              onBeforeSave={() => {
+                setDataError(null)
+              }}
+              onError={setError}/>}
             path="board-themes"/>
 
           <Route
