@@ -2,6 +2,8 @@ import {lazy, Suspense} from "react"
 
 import {BrowserRouter, Route, Routes} from "react-router-dom"
 
+import {AdminAuthGate} from "./features/AdminAccess/AdminAuthGate"
+
 const Admin = lazy(() => import("./Admin").then((m) => ({default: m.Admin})))
 const AdminAuthCallback = lazy(() => import("./AdminAuthCallback").then((m) => ({default: m.AdminAuthCallback})))
 
@@ -22,7 +24,7 @@ export function App() {
     <Suspense fallback={<LoadingFallback/>}>
       <Routes>
         <Route
-          element={<Admin/>}
+          element={<AdminAuthGate><Admin/></AdminAuthGate>}
           path="/*"/>
         <Route
           element={<AdminAuthCallback/>}

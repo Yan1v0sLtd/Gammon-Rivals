@@ -2,8 +2,11 @@ import {type ReactNode, useCallback, useEffect, useMemo, useState} from "react"
 
 import type {Session} from "@supabase/supabase-js"
 
+import {adminBaseApi} from "../store/baseApi"
+import {useAdminDispatch} from "../store/hooks"
+
 import {AdminAuthContext} from "./adminAuthContext"
-import type {AdminAuthContextValue, AdminRole, ProfileRow} from "./adminAuthTypes"
+import type {AdminAuthContextValue, ProfileRow} from "./adminAuthTypes"
 import {adminSupabase, isAdminSupabaseConfigured} from "./adminSupabase"
 
 const missingConfigMessage = "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office."
@@ -11,36 +14,33 @@ const missingConfigMessage = "Supabase is not configured. Set VITE_SUPABASE_URL 
 export function AdminAuthProvider({children}: {children: ReactNode}) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
-  const [role, setRole] = useState<AdminRole | null>(null)
   const [isLoading, setIsLoading] = useState(isAdminSupabaseConfigured)
+  const dispatch = useAdminDispatch()
 
-  const fetchProfileAndRole = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     if (!isAdminSupabaseConfigured) return
-    const [profileRes, roleRes] = await Promise.all([adminSupabase.from("profiles").select("*").eq("id", userId).maybeSingle(), adminSupabase.from("admin_roles").select("role").eq("profile_id", userId).maybeSingle()])
+    const profileRes = await adminSupabase.from("profiles").select("*").eq("id", userId).maybeSingle()
     if (profileRes.error) {
       console.warn("admin profile fetch error", profileRes.error)
     }
     setProfile(profileRes.data ?? null)
-    setRole((roleRes.data?.role) ?? null)
   }, [])
 
   useEffect(() => {
     if (!isAdminSupabaseConfigured) return
     let cancelled = false
-    // Remember the last userId we fetched profile/role for so token
+    // Remember the last userId we fetched the profile for so token
     // refreshes (which fire onAuthStateChange with a fresh session
     // object but the same user) don't trigger a noisy refetch.
     // Without this guard, every TOKEN_REFRESHED event re-ran
-    // fetchProfileAndRole, causing extra renders downstream that
-    // could chain into Admin.tsx flipping back to its access-check
-    // placeholder.
+    // fetchProfile, causing extra renders downstream.
     let lastFetchedUserId: string | null = null;
     (async () => {
       const {data} = await adminSupabase.auth.getSession()
       if (cancelled) return
       setSession(data.session)
       if (data.session?.user) {
-        await fetchProfileAndRole(data.session.user.id)
+        await fetchProfile(data.session.user.id)
         lastFetchedUserId = data.session.user.id
       }
       if (cancelled) return
@@ -50,14 +50,23 @@ export function AdminAuthProvider({children}: {children: ReactNode}) {
     const {data: sub} = adminSupabase.auth.onAuthStateChange((_event, s) => {
       setSession(s)
       const nextUserId = s?.user?.id ?? null
+      // The identity changed (sign-out, or a sign-in as anybody): every cached
+      // admin result belongs to the previous operator, the access check
+      // included, so a re-auth as the same account must re-run the check
+      // instead of serving its own stale "allowed". Guarding on a known
+      // previous user keeps the boot events (INITIAL_SESSION / SIGNED_IN) from
+      // resetting a cache that is still filling; a TOKEN_REFRESHED event keeps
+      // the same id and so changes nothing.
+      if (lastFetchedUserId && lastFetchedUserId !== nextUserId) {
+        dispatch(adminBaseApi.util.resetApiState())
+      }
       if (nextUserId && nextUserId !== lastFetchedUserId) {
         lastFetchedUserId = nextUserId
-        void fetchProfileAndRole(nextUserId)
+        void fetchProfile(nextUserId)
       }
       else if (!nextUserId) {
         lastFetchedUserId = null
         setProfile(null)
-        setRole(null)
       }
     })
 
@@ -65,7 +74,7 @@ export function AdminAuthProvider({children}: {children: ReactNode}) {
       cancelled = true
       sub.subscription.unsubscribe()
     }
-  }, [fetchProfileAndRole])
+  }, [fetchProfile, dispatch])
 
   const signInWithGoogle = useCallback(async () => {
     if (!isAdminSupabaseConfigured) throw new Error(missingConfigMessage)
@@ -93,21 +102,18 @@ export function AdminAuthProvider({children}: {children: ReactNode}) {
 
   const refresh = useCallback(async () => {
     if (!session?.user) return
-    await fetchProfileAndRole(session.user.id)
-  }, [session, fetchProfileAndRole])
+    await fetchProfile(session.user.id)
+  }, [session, fetchProfile])
 
   const value = useMemo<AdminAuthContextValue>(() => ({
     session,
     user: session?.user ?? null,
     profile,
-    role,
     isLoading,
-    canManage: role === "owner" || role === "admin",
-    isReady: !isLoading,
     signInWithGoogle,
     signOut,
     refresh,
-  }), [session, profile, role, isLoading, signInWithGoogle, signOut, refresh])
+  }), [session, profile, isLoading, signInWithGoogle, signOut, refresh])
 
   // The explicit provider form preserves the existing context API.
   // eslint-disable-next-line @eslint-react/no-context-provider

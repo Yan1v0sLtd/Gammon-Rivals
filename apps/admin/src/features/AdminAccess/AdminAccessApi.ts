@@ -4,12 +4,14 @@ import {
   fetchAdminRoles,
   fetchAdminEmailRoles,
   fetchAuditLog,
+  fetchMyAdminAccess,
   upsertAdminRole,
   upsertAdminEmailRole,
   deleteAdminEmailRole,
   type AdminRoleRow,
   type AdminEmailRoleRow,
   type AuditEntryRow,
+  type AdminAccessCheck,
   type UpsertAdminRoleArgs,
   type UpsertAdminEmailRoleArgs,
 } from "./AdminAccessData"
@@ -22,6 +24,27 @@ import {
  */
 export const adminAccessApi = adminBaseApi.injectEndpoints({
   endpoints: (build) => ({
+    /**
+     * Gates the whole Back Office (see AdminAuthGate). The argument is the
+     * operator's user id: the check itself reads the session server-side, so
+     * the id only shapes the cache key — one entry per operator means a token
+     * refresh re-renders from cache (no "Checking access" flash) while signing
+     * in as somebody else fetches fresh.
+     *
+     * Deliberately untagged: the global Refresh button and the Admin Access
+     * writes invalidate `AdminAccess`, and re-running the gate on those would
+     * risk unmounting the shell mid-edit.
+     */
+    getMyAdminAccess: build.query<AdminAccessCheck, string>({
+      queryFn: async () => {
+        try {
+          return {data: await fetchMyAdminAccess()}
+        }
+        catch (err) {
+          return {error: toAdminApiError(err)}
+        }
+      },
+    }),
     getAdminRoles: build.query<readonly AdminRoleRow[], void>({
       queryFn: async () => {
         try {
@@ -95,6 +118,7 @@ export const adminAccessApi = adminBaseApi.injectEndpoints({
 })
 
 export const {
+  useGetMyAdminAccessQuery,
   useGetAdminRolesQuery,
   useGetAdminEmailRolesQuery,
   useGetAuditLogQuery,

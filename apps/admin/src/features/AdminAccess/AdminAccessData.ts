@@ -1,5 +1,7 @@
 import type {Database} from "../../../../../packages/shared/src/database"
 import {adminSupabase, isAdminSupabaseConfigured} from "../../lib/adminSupabase"
+import {isMissingMigrationError} from "../../lib/isMissingMigrationError"
+import {withRequestTimeout} from "../../lib/withRequestTimeout"
 
 /**
  * Admin Access reads + writes. Audit rows for `admin_roles` and
@@ -24,6 +26,44 @@ export type UpsertAdminEmailRoleArgs = {
   role: AdminRole,
   note: string | null,
   created_by: string | null,
+}
+
+export type AdminAccessCheck =
+  | {readonly status: "allowed", readonly role: AdminRole}
+  | {readonly status: "denied"}
+  | {readonly status: "migration-missing"}
+
+/**
+ * The Back Office access check for the signed-in operator. `get_my_admin_role`
+ * is the single source of truth for the role because it also honours the email
+ * allowlist, which a plain `admin_roles` read misses.
+ *
+ * The `profiles` + `shop_items` probe stays part of the same check: a role
+ * without the management tables means the operator would land on a shell whose
+ * every section fails, so that case reports as "migration-missing" instead.
+ *
+ * Missing-migration and no-role outcomes are returned, not thrown — they are
+ * expected states with their own screens. Everything else throws so the caller
+ * can show the message.
+ */
+export async function fetchMyAdminAccess(): Promise<AdminAccessCheck> {
+  const {
+    data: adminRole,
+    error,
+  } = await withRequestTimeout(adminSupabase.rpc("get_my_admin_role", {}), "Checking admin access")
+  if (isMissingMigrationError(error)) return {status: "migration-missing"}
+  if (error) throw error
+  if (!adminRole) return {status: "denied"}
+
+  const [profileReadiness, shopReadiness] = await Promise.all([adminSupabase.from("profiles").select("level,xp,is_suspended").limit(1), adminSupabase.from("shop_items").select("id").limit(1)])
+  const readinessError = profileReadiness.error ?? shopReadiness.error
+  if (isMissingMigrationError(readinessError)) return {status: "migration-missing"}
+  if (readinessError) throw readinessError
+
+  return {
+    status: "allowed",
+    role: adminRole,
+  }
 }
 
 /**

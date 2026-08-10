@@ -1,17 +1,13 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 
+import {skipToken} from "@reduxjs/toolkit/query/react"
 import {NavLink, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom"
 
-// The BO uses its own independent Supabase session (adminSupabase) so
-// the operator can be signed in as admin here while the game tab is
-// running as a guest or a different account. Aliased to `supabase`
-// + `isSupabaseConfigured` so the remaining call sites (the access gate
-// and the readiness probe) read the same as the old loader did.
 import {buildCurrencyRateMap} from "../../../packages/shared/src/currency"
 
-import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
+import {useGetMyAdminAccessQuery} from "./features/AdminAccess/AdminAccessApi"
 import type {AdminRole} from "./features/AdminAccess/AdminAccessData"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
@@ -29,15 +25,10 @@ import type {RtpRangeId} from "./features/RTPAnalytics/RTPAnalyticsData"
 import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
 import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {adminSections, type Section} from "./lib/adminSections"
-import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
-import {isMissingMigrationError} from "./lib/isMissingMigrationError"
 import {normalizeEmail} from "./lib/normalizeEmail"
 import {useAdminAuth} from "./lib/useAdminAuth"
-import {withRequestTimeout} from "./lib/withRequestTimeout"
 import {adminBaseApi} from "./store/baseApi"
 import {useAdminDispatch, useAdminSelector} from "./store/hooks"
-
-type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
@@ -72,16 +63,10 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
 ]
 
 export function Admin() {
-  const adminAuth = useAdminAuth()
-  // Map the admin-auth context into the variables the rest of this
-  // page expects. `linkGoogleIdentity` is no longer needed (the BO
-  // doesn't link Google to a guest — it just signs in fresh).
-  const user = adminAuth.user
-  const profile = adminAuth.profile
-  const isLoading = adminAuth.isLoading
-  const signInWithGoogle = adminAuth.signInWithGoogle
-  const [accessState, setAccessState] = useState<AccessState>(() => isSupabaseConfigured ? "checking" : "missing-config")
-  const [role, setRole] = useState<AdminRole | null>(null)
+  const {
+    user,
+    profile,
+  } = useAdminAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useAdminDispatch()
@@ -97,7 +82,6 @@ export function Admin() {
   const [rtpExpandedTier, setRtpExpandedTier] = useState<string | null>(null)
 
   const [dataError, setDataError] = useState<string | null>(null)
-  const [savingKey, setSavingKey] = useState<string | null>(null)
   // The Refresh button shows "Refreshing…" from the click until the
   // refetches it triggered have drained. A requested flag (not isFetching alone) so navigating between
   // sections — which also fires queries — doesn't flicker the label.
@@ -116,15 +100,18 @@ export function Admin() {
     }
   }, [isFetching])
 
+  // AdminAuthGate mounts this shell only for a confirmed admin, so the access
+  // entry is already in the cache — this read is the role lookup, not a check.
+  const {data: access} = useGetMyAdminAccessQuery(user ? user.id : skipToken)
+  const role: AdminRole | null = access?.status === "allowed" ? access.role : null
   const canManage = role === "owner" || role === "admin"
-  // Currencies are owned by RTK Query. Eagerly fetched once access is
-  // allowed; the query
-  // result feeds the shared rate map used by the reward-config panels.
-  // The Currencies section itself runs its own query (see CurrenciesAdmin).
+  // Currencies are owned by RTK Query. The query result feeds the shared rate
+  // map used by the reward-config panels. The Currencies section itself runs
+  // its own query (see CurrenciesAdmin).
   const {
     data: currencies = [],
     error: currenciesError,
-  } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
+  } = useGetCurrenciesQuery()
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -153,150 +140,6 @@ export function Admin() {
   useEffect(() => {
     if (currenciesError) setError(currenciesError)
   }, [currenciesError, setError])
-
-  // want to blank the page back to a "Checking access" placeholder on
-  // every transient re-run of this effect — token refreshes, tab
-  // visibility resumes, etc. The ref records the userId we last
-  // verified for. If the effect re-fires with the same userId, we
-  // silently skip the work and keep the existing 'allowed' UI on
-  // screen. Only a different user (sign-out, switch account) or the
-  // first verification ever shows the placeholder.
-  const verifiedAccessForUserRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) {
-      queueMicrotask(() => {
-        setAccessState("missing-config")
-        setRole(null)
-      })
-      return
-    }
-    if (isLoading) return
-    if (!user) {
-      verifiedAccessForUserRef.current = null
-      queueMicrotask(() => {
-        setAccessState("denied")
-        setRole(null)
-      })
-      return
-    }
-
-    // Already verified for this same user — skip the noisy re-check.
-    // The effect can re-fire on rare hook-dep churn even with the
-    // user?.id dep guard (e.g. when React StrictMode double-invokes
-    // in dev, or when adminAuth's value useMemo recomputes around a
-    // token refresh). Keep the BO content visible.
-    if (verifiedAccessForUserRef.current === user.id) return
-
-    let cancelled = false;
-    (async () => {
-      await Promise.resolve()
-      if (cancelled) return
-      setAccessState("checking")
-      setDataError(null)
-
-      const {
-        data: adminRole,
-        error,
-      } = await withRequestTimeout(supabase.rpc("get_my_admin_role", {}), "Checking admin access")
-
-      if (cancelled) return
-      if (isMissingMigrationError(error)) {
-        setAccessState("migration-missing")
-        setRole(null)
-        return
-      }
-      if (error) {
-        setDataError(error.message)
-        setAccessState("denied")
-        setRole(null)
-        return
-      }
-      if (!adminRole) {
-        setAccessState("denied")
-        setRole(null)
-        return
-      }
-
-      const [profileReadiness, shopReadiness] = await Promise.all([supabase.from("profiles").select("level,xp,is_suspended").limit(1), supabase.from("shop_items").select("id").limit(1)])
-      const readinessError = profileReadiness.error ?? shopReadiness.error
-      if (cancelled) return
-      if (isMissingMigrationError(readinessError)) {
-        setAccessState("migration-missing")
-        setRole(null)
-        return
-      }
-      if (readinessError) {
-        setDataError(readinessError.message)
-        setAccessState("denied")
-        setRole(null)
-        return
-      }
-
-      verifiedAccessForUserRef.current = user.id
-      setRole(adminRole)
-      setAccessState("allowed")
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [isLoading, user])
-
-  async function signInToAdmin() {
-    setSavingKey("admin-login")
-    setDataError(null)
-    try {
-      // adminAuth.signInWithGoogle owns the canonical /auth/callback
-      // redirect — no need to compute it here. The BO session lives
-      // in its own storageKey, so the game's session (if any) is
-      // untouched by this flow.
-      await signInWithGoogle()
-    }
-    catch (err) {
-      setError(err)
-      setSavingKey(null)
-    }
-  }
-
-  if (accessState !== "allowed") {
-    const needsGoogleSignIn = accessState === "denied" && (user === null ? true : user.is_anonymous ? true : currentUserEmail.length === 0)
-    const title = accessState === "missing-config" ? "Supabase is not configured" : accessState === "migration-missing" ? "Back Office database is not ready" : needsGoogleSignIn ? "Back Office sign-in required" : accessState === "denied" ? "Admin access required" : "Checking admin access"
-    const message = accessState === "migration-missing" ? "Apply the latest Back Office migration to add email-based admin access and the required management tables." : needsGoogleSignIn ? "Sign in with Google using an allowlisted admin email to unlock the Back Office." : accessState === "denied" ? "This Google account is not on the Back Office admin email list." : accessState === "missing-config" ? "Add the Supabase URL and publishable key to your local environment to use Back Office." : "One moment while the access check finishes."
-
-    return (<div className="min-h-screen bg-[#061225] text-white">
-      <div
-        className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
-          <div className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200/70">
-            Gammon Rivals
-          </div>
-          <h1 className="mt-3 text-3xl font-black tracking-tight">{title}</h1>
-          <p className="mt-3 text-sm leading-6 text-white/60">
-            {message}
-          </p>
-          {accessState === "denied" && isSupabaseConfigured && (<div className="mt-5">
-            <PrimaryButton
-              disabled={savingKey === "admin-login"}
-              onClick={() => void signInToAdmin()}>
-              {savingKey === "admin-login" ? "Opening Google…" : user?.is_anonymous ? "Link Google account" : "Continue with Google"}
-            </PrimaryButton>
-          </div>)}
-          {user && accessState !== "checking" && (
-            <div className="mt-4 space-y-2 rounded-lg bg-black/25 px-3 py-2 text-left text-xs text-white/55">
-              <div>
-                <div className="text-white/35">Current email</div>
-                <div className="mt-1 break-all font-mono text-amber-100">{user.email ?? "No verified email"}</div>
-              </div>
-              <div>
-                <div className="text-white/35">Current profile id</div>
-                <div className="mt-1 break-all font-mono text-amber-100">{user.id}</div>
-              </div>
-            </div>)}
-        </div>
-      </div>
-    </div>)
-  }
 
   return (<div className="min-h-screen bg-[#061225] text-white">
     <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
