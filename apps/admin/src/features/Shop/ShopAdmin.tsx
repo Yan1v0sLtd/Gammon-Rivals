@@ -1,3 +1,5 @@
+import {useEffect, useState} from "react"
+
 import type {Database} from "../../../../../packages/shared/src/database"
 import {ConfigTable} from "../../components/ConfigTable"
 import {DangerButton} from "../../components/DangerButton"
@@ -7,7 +9,11 @@ import {PrimaryButton} from "../../components/PrimaryButton"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {TextArea} from "../../components/TextArea"
 import {Toggle} from "../../components/Toggle"
+import {useConfirm} from "../../components/useConfirm"
+import {emptyToNull} from "../../lib/emptyToNull"
 import {moneyFromCents} from "../../lib/moneyFromCents"
+import {numberOrNull} from "../../lib/numberOrNull"
+import {parseJson} from "../../lib/parseJson"
 import {readBoardGrant} from "../../lib/readBoardGrant"
 import {readGrant} from "../../lib/readGrant"
 import {readHeader} from "../../lib/readHeader"
@@ -15,6 +21,7 @@ import {readHeadline} from "../../lib/readHeadline"
 import {readPres} from "../../lib/readPres"
 import {readRewards} from "../../lib/readRewards"
 import {readXpBoost} from "../../lib/readXpBoost"
+import {requiredNumber} from "../../lib/requiredNumber"
 import {shopToDraft, type ShopDraft} from "../../lib/shopToDraft"
 import {writeBoardGrant} from "../../lib/writeBoardGrant"
 import {writeGrantNumber} from "../../lib/writeGrantNumber"
@@ -24,55 +31,211 @@ import {writePresField} from "../../lib/writePresField"
 import {writeRewards} from "../../lib/writeRewards"
 import {writeXpBoost} from "../../lib/writeXpBoost"
 
-type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
-type ShopKind = ShopItem["kind"]
+import {
+  useDeleteShopItemMutation,
+  useGetShopItemsQuery,
+  useGetStoreConfigQuery,
+  useGetStoreSaleQuery,
+  useUpdateShopItemMutation,
+  useUpsertStoreConfigMutation,
+  useUpsertStoreSaleMutation,
+} from "./ShopApi"
+import {
+  saleRowToDraft,
+  storeConfigRowToDraft,
+  type SaleDraft,
+  type ShopItem,
+  type StoreConfigDraft,
+} from "./ShopData"
 
-type StoreConfigDraft = {title: string, bg_image_url: string}
-type SaleDraft = {
-  id: string | null, label: string, bonus_percent: string, is_active: boolean, starts_at: string, ends_at: string,
-}
+type ShopKind = ShopItem["kind"]
 
 const shopKinds: readonly ShopKind[] = ["coin_pack", "gem_pack", "board_theme", "cosmetic", "bundle", "special_offer"]
 
 type Props = {
-  readonly shopItems: readonly ShopItem[],
-  readonly shopDraft: ShopDraft,
-  readonly saleDraft: SaleDraft,
-  readonly storeConfigDraft: StoreConfigDraft,
   readonly canManage: boolean,
-  readonly savingKey: string | null,
-  readonly onSetShopDraft: (updater: (draft: ShopDraft) => ShopDraft) => void,
-  readonly onSetSaleDraft: (updater: (draft: SaleDraft) => SaleDraft) => void,
-  readonly onSetStoreConfigDraft: (updater: (draft: StoreConfigDraft) => StoreConfigDraft) => void,
-  readonly onSaveStoreConfig: () => void,
-  readonly onSaveStoreSale: () => void,
-  readonly onSaveShop: () => void,
-  readonly onDeleteShop: () => void,
+  readonly currentUserId: string | null,
+  readonly onError: (err: unknown) => void,
+  readonly onBeforeSave: () => void,
 }
 
 /**
  * Shop BO admin — the storefront appearance, the global Store Sale promo,
  * and the shop-items editor (packs, bundles, cosmetics, board themes).
- * Purely presentational: it renders from data the parent (Admin) already
- * owns and reports edits/actions back through explicit callbacks. No data
- * fetching here.
+ * Owns the three reads (items/sale/config) and all four writes; the
+ * drafts and the pending keys are local feature state. The sale/config
+ * reads fail silently by design — the legacy loader only threw on
+ * shop_items, so only that error reaches onError.
  */
 export function ShopAdmin({
-  shopItems,
-  shopDraft,
-  saleDraft,
-  storeConfigDraft,
   canManage,
-  savingKey,
-  onSetShopDraft,
-  onSetSaleDraft,
-  onSetStoreConfigDraft,
-  onSaveStoreConfig,
-  onSaveStoreSale,
-  onSaveShop,
-  onDeleteShop,
+  currentUserId,
+  onError,
+  onBeforeSave,
 }: Props) {
+  const {
+    data: shopItems = [],
+    error: shopItemsError,
+  } = useGetShopItemsQuery()
+  const {
+    data: sale,
+  } = useGetStoreSaleQuery()
+  const {
+    data: storeConfig,
+  } = useGetStoreConfigQuery()
+  const [updateShopItem] = useUpdateShopItemMutation()
+  const [deleteShopItem] = useDeleteShopItemMutation()
+  const [upsertStoreSale] = useUpsertStoreSaleMutation()
+  const [upsertStoreConfig] = useUpsertStoreConfigMutation()
+
+  // Drafts are local; they seed from the rows once the queries resolve
+  // (the old loadAdminData re-seeded them on every load, and the queries
+  // refetch through their own tags after a save). Mid-edit drafts do not
+  // survive navigating away and back — accepted trade-off, same as the
+  // other migrated features.
+  const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft())
+  const [saleDraft, setSaleDraft] = useState<SaleDraft>({
+    id: null,
+    label: "Store Sale",
+    bonus_percent: "0",
+    is_active: false,
+    starts_at: "",
+    ends_at: "",
+  })
+  const [storeConfigDraft, setStoreConfigDraft] = useState<StoreConfigDraft>({
+    title: "Store",
+    bg_image_url: "",
+  })
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
+  // Non-blocking confirm dialog for the item delete. Separate hook
+  // instance from any other section's.
+  const {
+    confirm,
+    confirmUI,
+  } = useConfirm()
+
+  // The shop-items read is the section's live data; its failure surfaces
+  // through the page-level banner (old: loadAdminData threw). A failed
+  // query would otherwise fall back to its `= []` default and render as
+  // genuinely-empty data.
+  useEffect(() => {
+    if (shopItemsError) onError(shopItemsError)
+  }, [shopItemsError, onError])
+
+  // Seed the sale/config drafts from their rows whenever the queries
+  // resolve (including after a save refetch, like the old re-seed).
+  useEffect(() => {
+    if (sale) setSaleDraft(saleRowToDraft(sale))
+  }, [sale])
+  useEffect(() => {
+    if (storeConfig) setStoreConfigDraft(storeConfigRowToDraft(storeConfig))
+  }, [storeConfig])
+
+  async function saveShop() {
+    if (!canManage) return
+    setPendingKey("shop")
+    onBeforeSave()
+    try {
+      const payload: Database["public"]["Tables"]["shop_items"]["Insert"] = {
+        id: shopDraft.id.trim(),
+        kind: shopDraft.kind,
+        display_name: shopDraft.display_name.trim(),
+        description: shopDraft.description.trim(),
+        image_url: emptyToNull(shopDraft.image_url),
+        price_cents: numberOrNull(shopDraft.price_cents),
+        price_coins: numberOrNull(shopDraft.price_coins),
+        price_gems: numberOrNull(shopDraft.price_gems),
+        apple_product_id: emptyToNull(shopDraft.apple_product_id),
+        google_product_id: emptyToNull(shopDraft.google_product_id),
+        contents: parseJson(shopDraft.contents, "Contents", "object"),
+        visibility_rules: parseJson(shopDraft.visibility_rules, "Visibility rules", "object"),
+        starts_at: shopDraft.starts_at ? new Date(shopDraft.starts_at).toISOString() : null,
+        ends_at: shopDraft.ends_at ? new Date(shopDraft.ends_at).toISOString() : null,
+        max_purchases_per_user: numberOrNull(shopDraft.max_purchases_per_user),
+        is_enabled: shopDraft.is_enabled,
+        exclude_from_sale: shopDraft.exclude_from_sale,
+        sort_order: requiredNumber(shopDraft.sort_order, "Sort order"),
+        updated_by: currentUserId,
+      }
+      await updateShopItem(payload).unwrap()
+      setShopDraft(shopToDraft())
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function saveStoreSale() {
+    if (!canManage) return
+    setPendingKey("store-sale")
+    onBeforeSave()
+    try {
+      const payload = {
+        label: saleDraft.label.trim() || "Store Sale",
+        bonus_percent: requiredNumber(saleDraft.bonus_percent, "Bonus %"),
+        is_active: saleDraft.is_active,
+        starts_at: saleDraft.starts_at ? new Date(saleDraft.starts_at).toISOString() : null,
+        ends_at: saleDraft.ends_at ? new Date(saleDraft.ends_at).toISOString() : null,
+      }
+      await upsertStoreSale({payload, saleId: saleDraft.id}).unwrap()
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function saveStoreConfig() {
+    if (!canManage) return
+    setPendingKey("store-config")
+    onBeforeSave()
+    try {
+      const payload = {
+        id: true,
+        title: storeConfigDraft.title.trim() || "Store",
+        bg_image_url: storeConfigDraft.bg_image_url.trim() || null,
+      }
+      await upsertStoreConfig(payload).unwrap()
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
+  async function deleteShop() {
+    if (!canManage) return
+    const id = shopDraft.id.trim()
+    if (!id) return
+    if (!(await confirm({
+      title: `Delete shop item "${shopDraft.display_name.trim() || id}"?`,
+      message: "It's removed from the store immediately. Past purchases are kept.",
+      confirmLabel: "Delete",
+      tone: "danger",
+    }))) return
+    setPendingKey("shop-delete")
+    onBeforeSave()
+    try {
+      await deleteShopItem(id).unwrap()
+      setShopDraft(shopToDraft())
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setPendingKey(null)
+    }
+  }
+
   return (<div className="space-y-4">
+    {confirmUI}
     {/* Storefront appearance — the shop popup's header title + an
             optional blurred themed background. Independent of the sale, so
             an operator can re-theme the shop (e.g. "Shop Sale!" + a themed
@@ -89,7 +252,7 @@ export function ShopAdmin({
           label="Shop title"
           value={storeConfigDraft.title}
           onChange={(title) => {
-            onSetStoreConfigDraft((d) => ({
+            setStoreConfigDraft((d) => ({
               ...d,
               title,
             }))
@@ -101,7 +264,7 @@ export function ShopAdmin({
           label="Background image (optional)"
           value={storeConfigDraft.bg_image_url}
           onChange={(bg_image_url) => {
-            onSetStoreConfigDraft((d) => ({
+            setStoreConfigDraft((d) => ({
               ...d,
               bg_image_url,
             }))
@@ -109,8 +272,8 @@ export function ShopAdmin({
       </div>
       <div className="mt-3 flex items-center gap-4">
         <PrimaryButton
-          disabled={!canManage || savingKey === "store-config"}
-          onClick={onSaveStoreConfig}>Save appearance</PrimaryButton>
+          disabled={!canManage || pendingKey === "store-config"}
+          onClick={saveStoreConfig}>Save appearance</PrimaryButton>
       </div>
     </div>
     {/* Store Sale — one global bonus added to every pack's coin/gem
@@ -128,7 +291,7 @@ export function ShopAdmin({
           label="Label"
           value={saleDraft.label}
           onChange={(label) => {
-            onSetSaleDraft((d) => ({
+            setSaleDraft((d) => ({
               ...d,
               label,
             }))
@@ -137,7 +300,7 @@ export function ShopAdmin({
           label="Bonus %"
           value={saleDraft.bonus_percent}
           onChange={(bonus_percent) => {
-            onSetSaleDraft((d) => ({
+            setSaleDraft((d) => ({
               ...d,
               bonus_percent,
             }))
@@ -147,7 +310,7 @@ export function ShopAdmin({
           type="datetime-local"
           value={saleDraft.starts_at}
           onChange={(starts_at) => {
-            onSetSaleDraft((d) => ({
+            setSaleDraft((d) => ({
               ...d,
               starts_at,
             }))
@@ -157,7 +320,7 @@ export function ShopAdmin({
           type="datetime-local"
           value={saleDraft.ends_at}
           onChange={(ends_at) => {
-            onSetSaleDraft((d) => ({
+            setSaleDraft((d) => ({
               ...d,
               ends_at,
             }))
@@ -168,14 +331,14 @@ export function ShopAdmin({
           checked={saleDraft.is_active}
           label="Sale active"
           onChange={(is_active) => {
-            onSetSaleDraft((d) => ({
+            setSaleDraft((d) => ({
               ...d,
               is_active,
             }))
           }}/>
         <PrimaryButton
-          disabled={!canManage || savingKey === "store-sale"}
-          onClick={onSaveStoreSale}>Save sale</PrimaryButton>
+          disabled={!canManage || pendingKey === "store-sale"}
+          onClick={saveStoreSale}>Save sale</PrimaryButton>
       </div>
     </div>
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
@@ -183,7 +346,7 @@ export function ShopAdmin({
         rows={shopItems.map((row) => [row.display_name, row.kind, moneyFromCents(row.price_cents), row.is_enabled ? "Enabled" : "Disabled"])}
         title="Shop items"
         onRowClick={(index) => {
-          onSetShopDraft(() => shopToDraft(shopItems[index]))
+          setShopDraft(() => shopToDraft(shopItems[index]))
         }}/>
       <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
         <h2 className="text-lg font-black">Edit shop item</h2>
@@ -192,7 +355,7 @@ export function ShopAdmin({
             label="Product id"
             value={shopDraft.id}
             onChange={(id) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 id,
               }))
@@ -203,7 +366,7 @@ export function ShopAdmin({
               className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
               value={shopDraft.kind}
               onChange={(event) => {
-                onSetShopDraft((d) => ({
+                setShopDraft((d) => ({
                   ...d,
                   kind: event.target.value as ShopKind,
                 }))
@@ -217,7 +380,7 @@ export function ShopAdmin({
             label="Name"
             value={shopDraft.display_name}
             onChange={(display_name) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 display_name,
               }))
@@ -226,7 +389,7 @@ export function ShopAdmin({
             label="Sort order"
             value={shopDraft.sort_order}
             onChange={(sort_order) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 sort_order,
               }))
@@ -235,7 +398,7 @@ export function ShopAdmin({
             label="Price cents"
             value={shopDraft.price_cents}
             onChange={(price_cents) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 price_cents,
               }))
@@ -244,7 +407,7 @@ export function ShopAdmin({
             label="Price coins"
             value={shopDraft.price_coins}
             onChange={(price_coins) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 price_coins,
               }))
@@ -253,7 +416,7 @@ export function ShopAdmin({
             label="Price gems"
             value={shopDraft.price_gems}
             onChange={(price_gems) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 price_gems,
               }))
@@ -262,7 +425,7 @@ export function ShopAdmin({
             label="Max purchases"
             value={shopDraft.max_purchases_per_user}
             onChange={(max_purchases_per_user) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 max_purchases_per_user,
               }))
@@ -273,7 +436,7 @@ export function ShopAdmin({
             label="Description"
             value={shopDraft.description}
             onChange={(description) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 description,
               }))
@@ -285,7 +448,7 @@ export function ShopAdmin({
             label="Pack image"
             value={shopDraft.image_url}
             onChange={(image_url) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 image_url,
               }))
@@ -294,7 +457,7 @@ export function ShopAdmin({
             label="Apple product id"
             value={shopDraft.apple_product_id}
             onChange={(apple_product_id) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 apple_product_id,
               }))
@@ -303,7 +466,7 @@ export function ShopAdmin({
             label="Google product id"
             value={shopDraft.google_product_id}
             onChange={(google_product_id) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 google_product_id,
               }))
@@ -320,7 +483,7 @@ export function ShopAdmin({
                 label="Coins"
                 value={readGrant(shopDraft.contents, "coins")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeGrantNumber(d.contents, "coins", v),
                   }))
@@ -329,7 +492,7 @@ export function ShopAdmin({
                 label="Gems"
                 value={readGrant(shopDraft.contents, "gems")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeGrantNumber(d.contents, "gems", v),
                   }))
@@ -338,7 +501,7 @@ export function ShopAdmin({
                 label="XP boost — days"
                 value={readXpBoost(shopDraft.contents, "days")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeXpBoost(d.contents, "days", v),
                   }))
@@ -347,7 +510,7 @@ export function ShopAdmin({
                 label="XP boost — multiplier (2-10)"
                 value={readXpBoost(shopDraft.contents, "multiplier")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeXpBoost(d.contents, "multiplier", v),
                   }))
@@ -356,7 +519,7 @@ export function ShopAdmin({
                 label="Board theme id (unlock)"
                 value={readBoardGrant(shopDraft.contents)}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeBoardGrant(d.contents, v),
                   }))
@@ -371,7 +534,7 @@ export function ShopAdmin({
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
                   value={readPres(shopDraft.contents).placement === "featured" ? "featured" : "grid"}
                   onChange={(e) => {
-                    onSetShopDraft((d) => ({
+                    setShopDraft((d) => ({
                       ...d,
                       contents: writePresField(d.contents, "placement", e.target.value === "featured" ? "featured" : ""),
                     }))
@@ -386,7 +549,7 @@ export function ShopAdmin({
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
                   value={(readPres(shopDraft.contents).ribbon as string) || "none"}
                   onChange={(e) => {
-                    onSetShopDraft((d) => ({
+                    setShopDraft((d) => ({
                       ...d,
                       contents: writePresField(d.contents, "ribbon", e.target.value),
                     }))
@@ -409,7 +572,7 @@ export function ShopAdmin({
                 label="Header text (leave empty for no header bar)"
                 value={readHeader(shopDraft.contents, "text")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeHeader(d.contents, "text", v),
                   }))
@@ -422,7 +585,7 @@ export function ShopAdmin({
                     type="color"
                     value={readHeader(shopDraft.contents, "bg") || "#d9a531"}
                     onChange={(e) => {
-                      onSetShopDraft((d) => ({
+                      setShopDraft((d) => ({
                         ...d,
                         contents: writeHeader(d.contents, "bg", e.target.value),
                       }))
@@ -430,7 +593,7 @@ export function ShopAdmin({
                 </label>
                 <SecondaryButton
                   onClick={() => {
-                    onSetShopDraft((d) => ({
+                    setShopDraft((d) => ({
                       ...d,
                       contents: writeHeader(d.contents, "bg", ""),
                     }))
@@ -443,14 +606,14 @@ export function ShopAdmin({
                     type="color"
                     value={readHeader(shopDraft.contents, "fg") || "#fff7dc"}
                     onChange={(e) => {
-                      onSetShopDraft((d) => ({
+                      setShopDraft((d) => ({
                         ...d,
                         contents: writeHeader(d.contents, "fg", e.target.value),
                       }))
                     }}/>
                 </label>
                 <SecondaryButton onClick={() => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeHeader(d.contents, "fg", ""),
                   }))
@@ -465,7 +628,7 @@ export function ShopAdmin({
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
                   value={readPres(shopDraft.contents).headlineKind === "gems" ? "gems" : "coins"}
                   onChange={(e) => {
-                    onSetShopDraft((d) => ({
+                    setShopDraft((d) => ({
                       ...d,
                       contents: writePresField(d.contents, "headlineKind", e.target.value),
                     }))
@@ -486,7 +649,7 @@ export function ShopAdmin({
                     className="mt-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm normal-case tracking-normal text-white outline-none"
                     value={rw.kind}
                     onChange={(e) => {
-                      onSetShopDraft((d) => {
+                      setShopDraft((d) => {
                         const rows = readRewards(d.contents)
                         rows[i] = {
                           ...rows[i],
@@ -508,7 +671,7 @@ export function ShopAdmin({
                   label="Label"
                   value={rw.label}
                   onChange={(v) => {
-                    onSetShopDraft((d) => {
+                    setShopDraft((d) => {
                       const rows = readRewards(d.contents)
                       rows[i] = {
                         ...rows[i],
@@ -521,14 +684,14 @@ export function ShopAdmin({
                     })
                   }}/></div>
                 <SecondaryButton onClick={() => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeRewards(d.contents, readRewards(d.contents).filter((_, j) => j !== i)),
                   }))
                 }}>Remove</SecondaryButton>
               </div>))}
               <SecondaryButton onClick={() => {
-                onSetShopDraft((d) => ({
+                setShopDraft((d) => ({
                   ...d,
                   contents: writeRewards(d.contents, [...readRewards(d.contents), {
                     kind: "coins",
@@ -543,7 +706,7 @@ export function ShopAdmin({
                   className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
                   value={readHeadline(shopDraft.contents, "kind") || "coins"}
                   onChange={(e) => {
-                    onSetShopDraft((d) => ({
+                    setShopDraft((d) => ({
                       ...d,
                       contents: writeHeadline(d.contents, "kind", e.target.value),
                     }))
@@ -558,7 +721,7 @@ export function ShopAdmin({
                 label="Headline label (e.g. 10,000)"
                 value={readHeadline(shopDraft.contents, "label")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeHeadline(d.contents, "label", v),
                   }))
@@ -567,7 +730,7 @@ export function ShopAdmin({
                 label="Headline sub-label (e.g. x3 · 7 Days)"
                 value={readHeadline(shopDraft.contents, "subLabel")}
                 onChange={(v) => {
-                  onSetShopDraft((d) => ({
+                  setShopDraft((d) => ({
                     ...d,
                     contents: writeHeadline(d.contents, "subLabel", v),
                   }))
@@ -578,7 +741,7 @@ export function ShopAdmin({
             label="Advanced — raw contents JSON"
             value={shopDraft.contents}
             onChange={(contents) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 contents,
               }))
@@ -587,7 +750,7 @@ export function ShopAdmin({
             label="Visibility rules JSON object"
             value={shopDraft.visibility_rules}
             onChange={(visibility_rules) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 visibility_rules,
               }))
@@ -598,7 +761,7 @@ export function ShopAdmin({
               type="datetime-local"
               value={shopDraft.starts_at}
               onChange={(starts_at) => {
-                onSetShopDraft((d) => ({
+                setShopDraft((d) => ({
                   ...d,
                   starts_at,
                 }))
@@ -608,7 +771,7 @@ export function ShopAdmin({
               type="datetime-local"
               value={shopDraft.ends_at}
               onChange={(ends_at) => {
-                onSetShopDraft((d) => ({
+                setShopDraft((d) => ({
                   ...d,
                   ends_at,
                 }))
@@ -618,7 +781,7 @@ export function ShopAdmin({
             checked={shopDraft.is_enabled}
             label="Enabled"
             onChange={(is_enabled) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 is_enabled,
               }))
@@ -627,18 +790,18 @@ export function ShopAdmin({
             checked={shopDraft.exclude_from_sale}
             label="Exclude from Store Sale (no bonus on this item)"
             onChange={(exclude_from_sale) => {
-              onSetShopDraft((d) => ({
+              setShopDraft((d) => ({
                 ...d,
                 exclude_from_sale,
               }))
             }}/>
           <div className="flex flex-wrap gap-2">
             <PrimaryButton
-              disabled={!canManage || savingKey === "shop"}
-              onClick={onSaveShop}>Save
+              disabled={!canManage || pendingKey === "shop"}
+              onClick={saveShop}>Save
               shop item</PrimaryButton>
             <SecondaryButton onClick={() => {
-              onSetShopDraft(() => shopToDraft())
+              setShopDraft(() => shopToDraft())
             }}>New</SecondaryButton>
             {/* Duplicate clones the loaded item into a NEW draft (suffixed id + "Copy of"
                   name, every other field carried over) so you only edit what differs. Saving
@@ -646,7 +809,7 @@ export function ShopAdmin({
             <SecondaryButton
               disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id)}
               onClick={() => {
-                onSetShopDraft((d) => ({
+                setShopDraft((d) => ({
                   ...d,
                   id: d.id ? `${d.id}-copy` : "",
                   display_name: d.display_name ? `Copy of ${d.display_name}` : d.display_name,
@@ -655,8 +818,8 @@ export function ShopAdmin({
             {/* Delete is enabled only when an existing item is loaded into the draft.
                   RLS (shop_items_delete_admin) gates it server-side; FKs are delete-safe. */}
             <DangerButton
-              disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id) || savingKey === "shop-delete"}
-              onClick={onDeleteShop}>Delete</DangerButton>
+              disabled={!canManage || !shopItems.some((item) => item.id === shopDraft.id) || pendingKey === "shop-delete"}
+              onClick={deleteShop}>Delete</DangerButton>
           </div>
         </div>
       </div>

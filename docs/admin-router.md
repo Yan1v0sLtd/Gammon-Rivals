@@ -11,7 +11,7 @@ Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System,
 Difficulties, Board Themes, Dashboard, Users, RTP Analytics, Admin Access, and
 all seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll,
 Streak Chest, Refresh Tool, Simulator) are migrated end to end via RTK Query.
-Still pending: Shop — intentionally last.
+Nothing is pending — Shop was the last feature.
 
 ## Pre-migration baseline — `activeSection` state
 
@@ -178,8 +178,8 @@ Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
 `<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
 Wheel, Level System, Difficulties, Board Themes, Dashboard, Users, RTP
 Analytics, Admin Access, and all seven Daily Missions UI domains — Templates, Mission
-Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator. Still
-pending: Shop — staying last, per the order below.
+Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator. Nothing is
+pending — Shop was the last feature.
 
 Structural note: the `admin_audit_log` read is owned by the Admin Access feature
 endpoint (`getAuditLog` in `AdminAccessApi.ts`). It is shared with the Dashboard
@@ -237,8 +237,28 @@ Analytics deep link writes it before navigating to `/users`, so it must
 survive section navigation. The feature reports row clicks and delete-clears
 back through `onSelectedUserIdChange` and falls back to the newest user when
 the deep-linked id is no longer in the latest-120 list (the old
-`loadAdminData` restore behavior). `loadAdminData` now only serves Shop
-(`shop_items` + store sale + storefront config).
+`loadAdminData` restore behavior). `loadAdminData` is gone entirely — after
+Shop, the shell no longer reads section data from Supabase directly.
+
+Shop keeps no state in `Admin.tsx` either. The route owns three data domains
+— `shop_items`, `store_sales` (the global Store Sale), `store_config`
+(storefront appearance) — each with its own tag (`Shop`, `StoreSales`,
+`StoreConfig`) so a write refetches only the domain it changed, mirroring the
+old per-domain legs of `loadAdminData`. The feature seeds its sale/config
+drafts from the query rows (the old loader re-seeded them on every load), and
+the four writes reset/reload exactly like the old handlers: saving or deleting
+an item resets the item draft, saving the sale re-seeds its draft from the
+refetched row (so a brand-new sale gets its new id). `savingKey` became the
+feature's `pendingKey` with the same strings (`"shop"`, `"store-sale"`,
+`"store-config"`, `"shop-delete"`), and the item delete keeps its confirm
+dialog via the feature's own `useConfirm`. The store_sales/store_config reads
+fail silently on purpose — the legacy loader only threw on `shop_items`, so
+only that read surfaces through `onError`. The global Refresh button is now
+pure invalidation: it dispatches `invalidateTags(migratedFeatureTags)` and
+drains through the shared cache — the button shows "Refreshing…" from the
+click until no query in the cache has a request in flight (the old
+`loadAdminData` in-flight flag had no equivalent once the last legacy read
+disappeared).
 
 Measured cost:
 
@@ -250,11 +270,13 @@ Measured cost:
   migrations do not require it and none introduced it — there is no
   `listenerMiddleware.ts` under `apps/admin/src/store/`. Admin has no timers or
   Realtime except `useOnlineUsersWatcher`, which stays a hook.
-- About 27 queries and 39 mutations. At the pre-migration baseline the Supabase
+- About 32 queries and 48 mutations. At the pre-migration baseline the Supabase
   calls existed inline (35 call sites in `Admin.tsx`); they moved to
   `features/<X>/<x>Data.ts` and got wrapped in `<x>Api.ts`.
-- `Admin.tsx` is down from 2363 lines to about 692, with only Shop still
-  pending; the roughly-250-line target applies once it is migrated.
+- `Admin.tsx` is down from 2363 lines to about 500. It no longer reads
+  section data directly: what remains is the shell (access gate, header/nav,
+  global Refresh, routes), the shared currencies rate-map query, and the RTP
+  route state.
 - Feature components grow 20-60 lines each as they call their own hooks.
 - Total churn is about 2500 lines across about 30 files.
 
@@ -288,7 +310,7 @@ performance:
 2. Migrate `Currencies` end to end (104 lines, 1 table, 1 mutation). Ship it and
    confirm the pattern.
 3. Migrate the rest, one feature per change. Do `Users` and `Shop` last —
-   they hold the deep link and the most drafts. Users is done; Shop is the
-   final one.
+   they hold the deep link and the most drafts. Both are now done; the
+   migration is complete.
 
 Do not migrate all features in one change.

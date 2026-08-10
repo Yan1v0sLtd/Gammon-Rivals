@@ -5,14 +5,12 @@ import {NavLink, Navigate, Route, Routes, useLocation, useNavigate} from "react-
 // The BO uses its own independent Supabase session (adminSupabase) so
 // the operator can be signed in as admin here while the game tab is
 // running as a guest or a different account. Aliased to `supabase`
-// + `isSupabaseConfigured` so the rest of the file (30+ call sites)
-// keeps working unchanged.
+// + `isSupabaseConfigured` so the remaining call sites (the access gate
+// and the readiness probe) read the same as the old loader did.
 import {buildCurrencyRateMap} from "../../../packages/shared/src/currency"
-import type {Database} from "../../../packages/shared/src/database"
 
 import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
-import {useConfirm} from "./components/useConfirm"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
 import type {AdminRole} from "./features/AdminAccess/AdminAccessData"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
@@ -32,31 +30,24 @@ import {ShopAdmin} from "./features/Shop/ShopAdmin.tsx"
 import {UsersAdmin} from "./features/Users/UsersAdmin.tsx"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
-import {emptyToNull} from "./lib/emptyToNull"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
 import {normalizeEmail} from "./lib/normalizeEmail"
-import {numberOrNull} from "./lib/numberOrNull"
-import {parseJson} from "./lib/parseJson"
-import {requiredNumber} from "./lib/requiredNumber"
-import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
 import {useAdminAuth} from "./lib/useAdminAuth"
 import {withRequestTimeout} from "./lib/withRequestTimeout"
 import {adminBaseApi} from "./store/baseApi"
-import {useAdminDispatch} from "./store/hooks"
-
-type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
+import {useAdminDispatch, useAdminSelector} from "./store/hooks"
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
 /**
- * RTK Query tags for the admin features migrated off legacy loadAdminData().
- * The global Refresh button invalidates them through the shared adminApi
- * cache so the feature panels get fresh data — loadAdminData() is a direct
- * Supabase fetch and can't see (or refresh) RTK Query state. Tags whose
- * query has no active subscription aren't refetched at refresh time — RTK
- * Query marks the cache entry stale, so the next component that mounts and
+ * RTK Query tags for every admin feature. The global Refresh button
+ * invalidates them through the shared adminApi cache so the feature
+ * panels get fresh data; the shell itself has no direct section-data
+ * reads anymore. Tags whose query has no active subscription aren't
+ * refetched at refresh time — RTK Query drops the inactive cached result,
+ * so the next component that mounts and
  * subscribes (navigating back to that section) refetches instead of
  * serving the pre-refresh data.
  */
@@ -74,6 +65,9 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "BoardThemesLoadingScreens",
   "Dashboard",
   "Users",
+  "Shop",
+  "StoreSales",
+  "StoreConfig",
   "AdminAccess",
 ]
 
@@ -97,44 +91,34 @@ export function Admin() {
   // Selected user id lives here (not in the Users feature) because the
   // RTP Analytics deep link writes it before navigating to /users.
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [shopItems, setShopItems] = useState<ShopItem[]>([])
-  // Store Sale draft — one global, schedulable promo that boosts coin/gem
-  // grants. Numeric/date fields are strings so inputs can be cleared mid-edit.
-  const [saleDraft, setSaleDraft] = useState<{
-    id: string | null, label: string, bonus_percent: string, is_active: boolean, starts_at: string, ends_at: string,
-  }>({
-    id: null,
-    label: "Store Sale",
-    bonus_percent: "0",
-    is_active: false,
-    starts_at: "",
-    ends_at: "",
-  })
-  // Storefront presentation (singleton store_config): the shop popup's header
-  // title + an optional blurred themed background. Independent of the sale.
-  const [storeConfigDraft, setStoreConfigDraft] = useState<{title: string, bg_image_url: string}>({
-    title: "Store",
-    bg_image_url: "",
-  })
   // Keep route UI state here so range and expansion survive section navigation.
   // RTP server data is owned by the feature's RTK Query cache.
   const [rtpRange, setRtpRange] = useState<RtpRangeId>("all")
   const [rtpExpandedTier, setRtpExpandedTier] = useState<string | null>(null)
 
-  const [shopDraft, setShopDraft] = useState<ShopDraft>(() => shopToDraft())
   const [dataError, setDataError] = useState<string | null>(null)
-  const [refreshing, setRefreshing] = useState(false)
   const [savingKey, setSavingKey] = useState<string | null>(null)
-  // Non-blocking confirm/prompt dialogs (replaces window.confirm/prompt, which
-  // freeze the main thread and trip the INP monitor). Render {confirmUI} once.
-  const {
-    confirm,
-    confirmUI,
-  } = useConfirm()
+  // The Refresh button shows "Refreshing…" from the click until the
+  // refetches it triggered have drained. A requested flag (not isFetching alone) so navigating between
+  // sections — which also fires queries — doesn't flicker the label.
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshRequestedRef = useRef(false)
+  // True while any query in the shared adminApi cache has a request in
+  // flight (a refetch shows as status "pending" too, so the Refresh
+  // button stays disabled until the refetches it triggered drain).
+  const isFetching = useAdminSelector((state) => (
+    Object.values(state.adminApi.queries).some((query) => query?.status === "pending")
+  ))
+  useEffect(() => {
+    if (refreshRequestedRef.current && !isFetching) {
+      refreshRequestedRef.current = false
+      setRefreshing(false)
+    }
+  }, [isFetching])
 
   const canManage = role === "owner" || role === "admin"
   // Currencies are owned by RTK Query. Eagerly fetched once access is
-  // allowed (mirroring the old initial loadAdminData fetch); the query
+  // allowed; the query
   // result feeds the shared rate map used by the reward-config panels.
   // The Currencies section itself runs its own query (see CurrenciesAdmin).
   const {
@@ -259,175 +243,6 @@ export function Admin() {
     }
   }, [isLoading, user])
 
-  const loadAdminData = useCallback(async () => {
-    if (accessState !== "allowed") return
-    setRefreshing(true)
-    setDataError(null)
-
-    try {
-      // Only the Shop section still loads through the legacy loader —
-      // Users data is owned by the Users feature's RTK Query cache.
-      const shopResult = await supabase.from("shop_items").select("*").order("sort_order", {ascending: true})
-      if (shopResult.error) throw shopResult.error
-
-      setShopItems(shopResult.data ?? [])
-      // Store Sale (single global row). Loaded here so a save refreshes it too.
-      const saleResult = await supabase
-        .from("store_sales")
-        .select("*")
-        .order("updated_at", {ascending: false})
-        .limit(1)
-        .maybeSingle()
-      if (!saleResult.error && saleResult.data) {
-        const s = saleResult.data
-        setSaleDraft({
-          id: s.id,
-          label: s.label,
-          bonus_percent: String(s.bonus_percent),
-          is_active: s.is_active,
-          starts_at: s.starts_at?.slice(0, 16) ?? "",
-          ends_at: s.ends_at?.slice(0, 16) ?? "",
-        })
-      }
-      // Storefront presentation (singleton, seeded on migrate — always one row).
-      const storeConfigResult = await supabase
-        .from("store_config")
-        .select("title, bg_image_url")
-        .eq("id", true)
-        .maybeSingle()
-      if (!storeConfigResult.error && storeConfigResult.data) {
-        setStoreConfigDraft({
-          title: storeConfigResult.data.title ?? "Store",
-          bg_image_url: storeConfigResult.data.bg_image_url ?? "",
-        })
-      }
-    }
-    catch (err) {
-      if (isMissingMigrationError(err as {code?: string, message?: string})) {
-        setAccessState("migration-missing")
-      }
-      setError(err)
-    }
-    finally {
-      setRefreshing(false)
-    }
-  }, [accessState, setError])
-
-  useEffect(() => {
-    queueMicrotask(() => void loadAdminData())
-  }, [loadAdminData])
-
-  async function saveShop() {
-    if (!canManage) return
-    setSavingKey("shop")
-    setDataError(null)
-    try {
-      const payload: Database["public"]["Tables"]["shop_items"]["Insert"] = {
-        id: shopDraft.id.trim(),
-        kind: shopDraft.kind,
-        display_name: shopDraft.display_name.trim(),
-        description: shopDraft.description.trim(),
-        image_url: emptyToNull(shopDraft.image_url),
-        price_cents: numberOrNull(shopDraft.price_cents),
-        price_coins: numberOrNull(shopDraft.price_coins),
-        price_gems: numberOrNull(shopDraft.price_gems),
-        apple_product_id: emptyToNull(shopDraft.apple_product_id),
-        google_product_id: emptyToNull(shopDraft.google_product_id),
-        contents: parseJson(shopDraft.contents, "Contents", "object"),
-        visibility_rules: parseJson(shopDraft.visibility_rules, "Visibility rules", "object"),
-        starts_at: shopDraft.starts_at ? new Date(shopDraft.starts_at).toISOString() : null,
-        ends_at: shopDraft.ends_at ? new Date(shopDraft.ends_at).toISOString() : null,
-        max_purchases_per_user: numberOrNull(shopDraft.max_purchases_per_user),
-        is_enabled: shopDraft.is_enabled,
-        exclude_from_sale: shopDraft.exclude_from_sale,
-        sort_order: requiredNumber(shopDraft.sort_order, "Sort order"),
-        updated_by: user?.id ?? null,
-      }
-      const {error} = await supabase.from("shop_items").upsert(payload)
-      if (error) throw error
-      setShopDraft(shopToDraft())
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function saveStoreSale() {
-    if (!canManage) return
-    setSavingKey("store-sale")
-    setDataError(null)
-    try {
-      const payload = {
-        label: saleDraft.label.trim() || "Store Sale",
-        bonus_percent: requiredNumber(saleDraft.bonus_percent, "Bonus %"),
-        is_active: saleDraft.is_active,
-        starts_at: saleDraft.starts_at ? new Date(saleDraft.starts_at).toISOString() : null,
-        ends_at: saleDraft.ends_at ? new Date(saleDraft.ends_at).toISOString() : null,
-      }
-      const {error} = saleDraft.id ? await supabase.from("store_sales").update(payload).eq("id", saleDraft.id) : await supabase.from("store_sales").insert(payload)
-      if (error) throw error
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function saveStoreConfig() {
-    if (!canManage) return
-    setSavingKey("store-config")
-    setDataError(null)
-    try {
-      const payload = {
-        id: true,
-        title: storeConfigDraft.title.trim() || "Store",
-        bg_image_url: storeConfigDraft.bg_image_url.trim() || null,
-      }
-      const {error} = await supabase.from("store_config").upsert(payload, {onConflict: "id"})
-      if (error) throw error
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function deleteShop() {
-    if (!canManage) return
-    const id = shopDraft.id.trim()
-    if (!id) return
-    if (!(await confirm({
-      title: `Delete shop item "${shopDraft.display_name.trim() || id}"?`,
-      message: "It's removed from the store immediately. Past purchases are kept.",
-      confirmLabel: "Delete",
-      tone: "danger",
-    }))) return
-    setSavingKey("shop-delete")
-    setDataError(null)
-    try {
-      const {error} = await supabase.from("shop_items").delete().eq("id", id)
-      if (error) throw error
-      setShopDraft(shopToDraft())
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
   async function signInToAdmin() {
     setSavingKey("admin-login")
     setDataError(null)
@@ -484,7 +299,6 @@ export function Admin() {
   }
 
   return (<div className="min-h-screen bg-[#061225] text-white">
-    {confirmUI}
     <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -523,13 +337,13 @@ export function Admin() {
           <SecondaryButton
             disabled={refreshing}
             onClick={() => {
-              // Migrated feature data is owned by RTK Query, so the legacy
-              // loadAdminData() refresh can't reach it. Invalidate the feature
-              // tags through the shared adminApi cache (refetches mounted
-              // queries, marks dormant ones stale), then keep the legacy
-              // refresh for the still-legacy panels.
+              // All feature data is RTK Query-owned: refresh = invalidate the
+              // feature tags through the shared adminApi cache (refetches
+              // mounted queries, drops inactive cached results — they refetch
+              // when their section next mounts).
               dispatch(adminBaseApi.util.invalidateTags(migratedFeatureTags))
-              void loadAdminData()
+              refreshRequestedRef.current = true
+              setRefreshing(true)
             }}>
             {refreshing ? "Refreshing…" : "Refresh"}
           </SecondaryButton>
@@ -654,18 +468,11 @@ export function Admin() {
           <Route
             element={<ShopAdmin
               canManage={canManage}
-              saleDraft={saleDraft}
-              savingKey={savingKey}
-              shopDraft={shopDraft}
-              shopItems={shopItems}
-              storeConfigDraft={storeConfigDraft}
-              onDeleteShop={() => void deleteShop()}
-              onSaveShop={() => void saveShop()}
-              onSaveStoreConfig={() => void saveStoreConfig()}
-              onSaveStoreSale={() => void saveStoreSale()}
-              onSetSaleDraft={setSaleDraft}
-              onSetShopDraft={setShopDraft}
-              onSetStoreConfigDraft={setStoreConfigDraft}/>}
+              currentUserId={user?.id ?? null}
+              onBeforeSave={() => {
+                setDataError(null)
+              }}
+              onError={setError}/>}
             path="shop"/>
 
           <Route
