@@ -1,0 +1,18 @@
+.fieldLabel {
+  composes: fieldLabel from "../styles/shared.module.css";
+}
+
+.fieldInput {
+  composes: fieldInput from "../styles/shared.module.css";
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.picker {
+  cursor: pointer;
+  color-scheme: dark;
+}
+
+.picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}

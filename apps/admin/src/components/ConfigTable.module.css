@@ -1,0 +1,62 @@
+.tableCard {
+  overflow: hidden;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.045);
+}
+
+.header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
+}
+
+.title {
+  composes: cardTitle from "../styles/shared.module.css";
+}
+
+.scrollX {
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.row {
+  composes: transition from "../styles/shared.module.css";
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.row + .row {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background-color: rgba(255, 255, 255, 0.055);
+}
+
+.cell {
+  padding: 0.75rem 1rem;
+}
+
+.cellFirst {
+  font-weight: 700;
+  color: #fff;
+}
+
+.cellRest {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.cellText {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

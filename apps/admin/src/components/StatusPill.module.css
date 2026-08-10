@@ -1,0 +1,24 @@
+.statusPill {
+  display: inline-flex;
+  min-width: 4.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.enabled {
+  background-color: rgba(52, 211, 153, 0.15);
+  color: #a7f3d0;
+  box-shadow: 0 0 0 1px rgba(110, 231, 183, 0.3);
+}
+
+.disabled {
+  background-color: rgba(251, 113, 133, 0.15);
+  color: #fecdd3;
+  box-shadow: 0 0 0 1px rgba(253, 164, 175, 0.3);
+}

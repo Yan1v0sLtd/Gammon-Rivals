@@ -1,0 +1,11 @@
+.fieldLabel {
+  composes: fieldLabel from "../styles/shared.module.css";
+}
+
+.fieldInput {
+  composes: fieldInput from "../styles/shared.module.css";
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  resize: vertical;
+}

@@ -8,11 +8,21 @@ import {type ChangeEvent, type DragEvent, useRef, useState} from "react"
 // "permission denied for function current_admin_role".
 import {adminSupabase as supabase} from "../lib/adminSupabase"
 
+import styles from "./ImageField.module.css"
+
 const BUCKET = "board-assets"
 const MAX_SIZE_BYTES = 10 * 1024 * 1024 // 10 MiB — matches the bucket policy
 const ALLOWED_MIME = new Set(["image/webp", "image/png", "image/jpeg", "image/avif", "image/gif", "image/svg+xml"])
 
-type UploadState = | {kind: "idle"} | {kind: "uploading", name: string} | {kind: "error", message: string}
+type UploadState = | {
+  kind: "idle",
+} | {
+  kind: "uploading",
+  name: string,
+} | {
+  kind: "error",
+  message: string,
+}
 
 type Props = {
   label: string,
@@ -168,11 +178,11 @@ export function ImageField({
   const isUploading = state.kind === "uploading"
   const hasValue = value.trim().length > 0
 
-  return (<div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    <div className="flex items-center justify-between gap-2">
+  return (<div className={styles.fieldLabel}>
+    <div className={styles.fieldHeader}>
       <span>{label}</span>
       {hasValue && (<button
-        className="rounded border border-white/15 px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal text-white/60 transition hover:border-rose-300/40 hover:text-rose-200 disabled:opacity-50"
+        className={styles.clearButton}
         disabled={disabled || isUploading}
         type="button"
         onClick={clear}>
@@ -181,39 +191,39 @@ export function ImageField({
     </div>
 
     <div
-      className={`mt-1 flex items-center gap-3 rounded-lg border border-dashed px-3 py-2 transition ${dragOver ? "border-amber-200/70 bg-amber-200/5" : "border-white/15 bg-black/20 hover:border-white/30"} ${disabled || isUploading ? "cursor-default opacity-70" : "cursor-pointer"}`}
+      className={`${styles.dropZone} ${dragOver ? styles.dragOver : styles.dropZoneIdle} ${disabled || isUploading ? styles.disabled : styles.clickable}`}
       onClick={() => !disabled && !isUploading && inputRef.current?.click()}
       onDragLeave={onDragLeave}
       onDragOver={onDragOver}
       onDrop={onDrop}>
-      <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-md bg-black/40">
+      <div className={styles.preview}>
         {hasValue ? (<img
           alt=""
-          className="h-full w-full object-contain"
+          className={styles.previewImg}
           draggable={false}
-          src={value}/>) : (<span className="text-[9px] font-bold uppercase tracking-wider text-white/30">
+          src={value}/>) : (<span className={styles.noImage}>
             No image
         </span>)}
       </div>
-      <div className="flex-1 normal-case tracking-normal">
-        {isUploading ? (<div className="text-xs text-amber-100">
+      <div className={styles.body}>
+        {isUploading ? (<div className={styles.uploading}>
           Uploading {state.name}…
-        </div>) : state.kind === "error" ? (<div className="text-xs text-rose-200">{state.message}</div>) : hasValue ? (
-          <div className="break-all text-[11px] text-white/55">{value}</div>) : (<div className="text-xs text-white/45">
+        </div>) : state.kind === "error" ? (<div className={styles.error}>{state.message}</div>) : hasValue ? (
+          <div className={styles.value}>{value}</div>) : (<div className={styles.hint}>
             Drop an image here, or click to browse
         </div>)}
       </div>
       <input
         ref={inputRef}
         accept="image/webp,image/png,image/jpeg,image/avif,image/gif,image/svg+xml"
-        className="hidden"
+        className={styles.fileInput}
         disabled={disabled || isUploading}
         type="file"
         onChange={onFilePicked}/>
     </div>
 
     <button
-      className="mt-1 text-[10px] font-bold normal-case tracking-normal text-white/35 transition hover:text-white/70"
+      className={styles.urlToggle}
       type="button"
       onClick={() => {
         setShowUrl((v) => !v)
@@ -221,7 +231,7 @@ export function ImageField({
       {showUrl ? "Hide URL" : "Or paste a URL"}
     </button>
     {showUrl && (<input
-      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-xs normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+      className={styles.urlInput}
       disabled={disabled || isUploading}
       placeholder="https://…"
       type="text"

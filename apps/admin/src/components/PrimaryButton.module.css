@@ -1,0 +1,20 @@
+.primaryButton {
+  composes: transition from "../styles/shared.module.css";
+  border-radius: 0.5rem;
+  background-color: #fcd34d;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 900;
+  color: #1b1202;
+  box-shadow: 0 10px 15px -3px rgba(120, 53, 15, 0.2), 0 4px 6px -4px rgba(120, 53, 15, 0.2);
+}
+
+.primaryButton:hover {
+  background-color: #fde68a;
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

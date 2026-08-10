@@ -1,0 +1,94 @@
+.fieldLabel {
+  composes: fieldLabel from "../styles/shared.module.css";
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.375rem;
+}
+
+.sectionHeaderSpaced {
+  margin-top: 0.75rem;
+}
+
+.sectionHint {
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.fieldGrid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .fieldGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.tuner {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+}
+
+.tunerHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.tunerLabel {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.tunerRange {
+  font-size: 9px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.nudgeGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+
+.nudgeButton {
+  border-radius: 0.25rem;
+  background-color: #1e293b;
+  padding: 0.25rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.nudgeButton:hover {
+  background-color: #334155;
+}
+
+.monoInput {
+  composes: monoInput from "../styles/shared.module.css";
+  margin-top: 0.25rem;
+  width: 100%;
+}
+
+.tunerHint {
+  margin-top: 0.25rem;
+  font-size: 9px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.35);
+}

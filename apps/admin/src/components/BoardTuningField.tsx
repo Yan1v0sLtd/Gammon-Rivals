@@ -1,3 +1,5 @@
+import styles from "./BoardTuningField.module.css"
+
 type Props = {
   metadata: string,
 
@@ -163,16 +165,16 @@ export function BoardTuningField({
     }
     return (<div
       key={field.key}
-      className="rounded-lg border border-white/10 bg-black/20 p-2">
-      <div className="flex items-baseline justify-between">
-        <span className="text-[11px] tracking-[0.12em]">{field.label}</span>
-        <span className="text-[9px] normal-case tracking-normal text-white/40">
+      className={styles.tuner}>
+      <div className={styles.tunerHeader}>
+        <span className={styles.tunerLabel}>{field.label}</span>
+        <span className={styles.tunerRange}>
           {field.min}–{field.max}
         </span>
       </div>
-      <div className="mt-1.5 grid grid-cols-4 gap-1">
+      <div className={styles.nudgeGrid}>
         <button
-          className="rounded bg-slate-800 px-1 py-1 text-[10px] font-bold normal-case tracking-normal text-white/70 hover:bg-slate-700"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(-field.bigStep)
@@ -180,7 +182,7 @@ export function BoardTuningField({
           -big
         </button>
         <button
-          className="rounded bg-slate-800 px-1 py-1 text-[10px] font-bold normal-case tracking-normal text-white/70 hover:bg-slate-700"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(-field.smallStep)
@@ -188,7 +190,7 @@ export function BoardTuningField({
           -
         </button>
         <button
-          className="rounded bg-slate-800 px-1 py-1 text-[10px] font-bold normal-case tracking-normal text-white/70 hover:bg-slate-700"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(field.smallStep)
@@ -196,7 +198,7 @@ export function BoardTuningField({
           +
         </button>
         <button
-          className="rounded bg-slate-800 px-1 py-1 text-[10px] font-bold normal-case tracking-normal text-white/70 hover:bg-slate-700"
+          className={styles.nudgeButton}
           type="button"
           onClick={() => {
             nudge(field.bigStep)
@@ -205,7 +207,7 @@ export function BoardTuningField({
         </button>
       </div>
       <input
-        className="mt-1 w-full rounded border border-white/15 bg-black/30 px-1.5 py-1 text-right font-mono text-[11px] normal-case tracking-normal text-white/85 outline-none focus:border-amber-200/60"
+        className={styles.monoInput}
         max={field.max}
         min={field.min}
         step={field.smallStep}
@@ -215,25 +217,25 @@ export function BoardTuningField({
           const next = Number(event.target.value)
           if (Number.isFinite(next)) setValue(next)
         }}/>
-      <div className="mt-1 text-[9px] normal-case tracking-normal text-white/35">{field.hint}</div>
+      <div className={styles.tunerHint}>{field.hint}</div>
     </div>)
   }
 
-  return (<div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    <div className="mb-1.5 flex items-center justify-between">
+  return (<div className={styles.fieldLabel}>
+    <div className={styles.sectionHeader}>
       <span>Board tuning</span>
-      <span className="text-[10px] normal-case tracking-normal text-white/35">
+      <span className={styles.sectionHint}>
         Adjust stack depth, spacing and checker size per board
       </span>
     </div>
-    <div className="grid gap-2 sm:grid-cols-3">{BOARD_FIELDS.map(renderField)}</div>
+    <div className={styles.fieldGrid}>{BOARD_FIELDS.map(renderField)}</div>
 
-    <div className="mb-1.5 mt-3 flex items-center justify-between">
+    <div className={`${styles.sectionHeader} ${styles.sectionHeaderSpaced}`}>
       <span>Bear-off stacks</span>
-      <span className="text-[10px] normal-case tracking-normal text-white/35">
+      <span className={styles.sectionHint}>
         Stack spacing &amp; lean — set tray position with the drag editor above
       </span>
     </div>
-    <div className="grid gap-2 sm:grid-cols-3">{TRAY_FIELDS.map(renderField)}</div>
+    <div className={styles.fieldGrid}>{TRAY_FIELDS.map(renderField)}</div>
   </div>)
 }

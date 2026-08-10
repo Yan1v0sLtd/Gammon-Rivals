@@ -1,5 +1,7 @@
 import {type PointerEvent as ReactPointerEvent, useMemo, useRef, useState} from "react"
 
+import styles from "./FeltCornersField.module.css"
+
 type Props = {
   gameplayImage: string,
   metadata: string,
@@ -198,7 +200,10 @@ function clamp01(value: number): number {
 
 // Inline RGB so Tailwind's JIT can't strip the dynamically-built
 // class names (it would only ship CSS for classes it sees statically).
-const CORNER_COLORS: Record<Corner, {color: string, label: string}> = {
+const CORNER_COLORS: Record<Corner, {
+  color: string,
+  label: string,
+}> = {
   tl: {
     color: "#6ee7b7",
     label: "Top-left",
@@ -311,10 +316,10 @@ export function FeltCornersField({
   const quadPoints = (c: Corners) => `${c.tl[0] * 100},${c.tl[1] * 100} ${c.tr[0] * 100},${c.tr[1] * 100} ${c.br[0] * 100},${c.br[1] * 100} ${c.bl[0] * 100},${c.bl[1] * 100}`
 
   const numberInput = (label: string, value: number, onChange: (next: number) => void) => (
-    <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+    <label className={styles.numberInput}>
       {label}
       <input
-        className="w-16 rounded border border-white/15 bg-black/30 px-1.5 py-1 text-right font-mono text-[11px] normal-case tracking-normal text-white/85 outline-none focus:border-amber-200/60"
+        className={styles.monoInput}
         max={100}
         min={0}
         step={0.1}
@@ -330,11 +335,11 @@ export function FeltCornersField({
     const palette = CORNER_COLORS[key]
     return (<div
       key={key}
-      className="flex flex-wrap items-center gap-2">
+      className={styles.cornerRow}>
       <span
-        className="inline-block h-2 w-2 rounded-full"
+        className={styles.colorDot}
         style={{backgroundColor: palette.color}}/>
-      <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
+      <span className={styles.cornerLabel}>{palette.label}</span>
       {numberInput("X%", value[0], (x) => {
         onChange([x, value[1]])
       })}
@@ -344,7 +349,13 @@ export function FeltCornersField({
     </div>)
   }
 
-  const handles: {id: string, target: DragTarget, pos: Pair, shape: "dot" | "square", label: string}[] = []
+  const handles: {
+    id: string,
+    target: DragTarget,
+    pos: Pair,
+    shape: "dot" | "square",
+    label: string,
+  }[] = []
   if (hasHalves && halves) {
     for (const id of ["left", "right"] as const) {
       for (const key of Object.keys(CORNER_COLORS) as Corner[]) {
@@ -378,15 +389,15 @@ export function FeltCornersField({
     }
   }
 
-  return (<div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    <div className="mb-1.5 flex items-center justify-between gap-2">
+  return (<div className={styles.fieldLabel}>
+    <div className={styles.sectionHeader}>
       <span>Felt corners</span>
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] normal-case tracking-normal text-white/35">
+      <div className={styles.sectionActions}>
+        <span className={styles.sectionHint}>
           {hasHalves ? "Drag each half’s dots — the bar is the measured gap between the halves" : "Drag the four dots to the inner corners of the painted felt"}
         </span>
         <button
-          className={`rounded px-2 py-1 text-[10px] font-bold normal-case tracking-normal transition ${hasHalves ? "bg-slate-800 text-white/70 hover:bg-slate-700" : "bg-amber-300/90 text-black hover:bg-amber-200"}`}
+          className={`${styles.splitButton} ${hasHalves ? styles.splitActive : styles.splitIdle}`}
           title={hasHalves ? "Back to a single quad (bar width becomes assumed again)" : "Give each half its own four corners — measures the bar from the art instead of assuming its width"}
           type="button"
           onClick={hasHalves ? handleRemoveSplit : handleSplit}>
@@ -399,7 +410,7 @@ export function FeltCornersField({
           match — one projection across editor, live preview and game. */}
     <div
       ref={wrapRef}
-      className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
+      className={styles.preview}
       style={{
         aspectRatio: "4 / 3",
         touchAction: "none",
@@ -409,14 +420,14 @@ export function FeltCornersField({
       onPointerUp={handlePointerUp}>
       {gameplayImage ? (<img
         alt=""
-        className="absolute inset-0 h-full w-full"
+        className={styles.previewImg}
         draggable={false}
         src={gameplayImage}/>) : (<div
-        className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
+        className={styles.previewPlaceholder}>
           Upload the Gameplay image above to position the felt corners.
       </div>)}
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className={styles.overlay}
         preserveAspectRatio="none"
         viewBox="0 0 100 100">
         {hasHalves && halves ? (<>
@@ -455,18 +466,18 @@ export function FeltCornersField({
           setHover(null)
         }}/>))}
     </div>
-    {hasHalves && halves ? (<div className="mt-2 grid grid-cols-1 gap-3 md:grid-cols-2">
+    {hasHalves && halves ? (<div className={styles.cornerGridHalves}>
       {(["left", "right"] as const).map((id) => (<div
         key={id}
-        className="space-y-1.5">
-        <div className="text-[10px] tracking-[0.14em] text-white/50">
+        className={styles.halfBlock}>
+        <div className={styles.halfTitle}>
           {id === "left" ? "Left half (round dots)" : "Right half (square dots)"}
         </div>
         {(Object.keys(CORNER_COLORS) as Corner[]).map((key) => cornerRow(key, halves[id][key], (next) => {
           updateHalfCorner(id, key, next)
         }))}
       </div>))}
-    </div>) : (<div className="mt-2 grid grid-cols-2 gap-3">
+    </div>) : (<div className={styles.cornerGrid}>
       {(Object.keys(CORNER_COLORS) as Corner[]).map((key) => cornerRow(key, corners[key], (next) => {
         updateSingleCorner(key, next)
       }))}
@@ -501,7 +512,7 @@ function Handle({
   onPointerLeave,
 }: HandleProps) {
   return (<div
-    className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${shape === "dot" ? "rounded-full" : "rounded-sm"} ${active ? "scale-150" : "scale-100"}`}
+    className={`${styles.handle} ${shape === "dot" ? styles.dot : styles.square} ${active ? styles.active : styles.inactive}`}
     style={{
       left: `${xPct}%`,
       top: `${yPct}%`,

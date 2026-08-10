@@ -1,5 +1,7 @@
 import {type PointerEvent as ReactPointerEvent, useMemo, useRef, useState} from "react"
 
+import styles from "./BearOffTraysField.module.css"
+
 type Props = {
   gameplayImage: string,
   metadata: string,
@@ -157,7 +159,10 @@ function writeTrays(metadata: string, trays: Trays): string {
   return JSON.stringify(root, null, 2)
 }
 
-const TRAY_COLORS: Record<Owner, {color: string, label: string}> = {
+const TRAY_COLORS: Record<Owner, {
+  color: string,
+  label: string,
+}> = {
   white: {
     color: "#67e8f9",
     label: "White tray",
@@ -219,10 +224,10 @@ export function BearOffTraysField({
   }
 
   const numberInput = (label: string, value: number, onChange: (next: number) => void) => (
-    <label className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+    <label className={styles.numberInput}>
       {label}
       <input
-        className="w-16 rounded border border-white/15 bg-black/30 px-1.5 py-1 text-right font-mono text-[11px] normal-case tracking-normal text-white/85 outline-none focus:border-amber-200/60"
+        className={styles.monoInput}
         max={100}
         min={0}
         step={0.1}
@@ -245,11 +250,11 @@ export function BearOffTraysField({
     }
     return (<div
       key={owner}
-      className="flex flex-wrap items-center gap-2">
+      className={styles.trayRow}>
       <span
-        className="inline-block h-2 w-2 rounded-full"
+        className={styles.colorDot}
         style={{backgroundColor: palette.color}}/>
-      <span className="text-[10px] normal-case tracking-normal text-white/55">{palette.label}</span>
+      <span className={styles.trayLabel}>{palette.label}</span>
       {numberInput("X%", line.x, (x) => {
         setLine({x})
       })}
@@ -262,10 +267,10 @@ export function BearOffTraysField({
     </div>)
   }
 
-  return (<div className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-    <div className="mb-1.5 flex items-center justify-between">
+  return (<div className={styles.fieldLabel}>
+    <div className={styles.sectionHeader}>
       <span>Bear-off trays</span>
-      <span className="text-[10px] normal-case tracking-normal text-white/35">
+      <span className={styles.sectionHint}>
         Drag each tray’s top &amp; bottom dots onto its slot — white &amp; black are independent
       </span>
     </div>
@@ -276,7 +281,7 @@ export function BearOffTraysField({
           upload isn't exactly 4:3. */}
     <div
       ref={wrapRef}
-      className="relative w-full overflow-hidden rounded-lg border border-white/10 bg-black/40"
+      className={styles.preview}
       style={{
         aspectRatio: "4 / 3",
         touchAction: "none",
@@ -286,14 +291,14 @@ export function BearOffTraysField({
       onPointerUp={handlePointerUp}>
       {gameplayImage ? (<img
         alt=""
-        className="absolute inset-0 h-full w-full"
+        className={styles.previewImg}
         draggable={false}
         src={gameplayImage}/>) : (<div
-        className="absolute inset-0 grid place-items-center text-[10px] font-bold normal-case tracking-normal text-white/40">
+        className={styles.previewPlaceholder}>
           Upload the Gameplay image above to position the bear-off trays.
       </div>)}
       <svg
-        className="pointer-events-none absolute inset-0 h-full w-full"
+        className={styles.overlay}
         preserveAspectRatio="none"
         viewBox="0 0 100 100">
         {(["white", "black"] as const).map((owner) => {
@@ -330,7 +335,7 @@ export function BearOffTraysField({
           }}/>)
       }))}
     </div>
-    <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+    <div className={styles.trayGrid}>
       {trayRow("black")}
       {trayRow("white")}
     </div>
@@ -362,7 +367,7 @@ function Handle({
   onPointerLeave,
 }: HandleProps) {
   return (<div
-    className={`absolute -ml-2 -mt-2 h-4 w-4 cursor-grab rounded-full border-2 shadow-[0_2px_8px_rgba(0,0,0,0.6)] transition active:cursor-grabbing ${active ? "scale-150" : "scale-100"}`}
+    className={`${styles.handle} ${active ? styles.active : styles.inactive}`}
     style={{
       left: `${xPct}%`,
       top: `${yPct}%`,

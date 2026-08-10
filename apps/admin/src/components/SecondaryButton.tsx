@@ -1,14 +1,18 @@
 import type {ReactNode} from "react"
 
+import styles from "./SecondaryButton.module.css"
+
 export function SecondaryButton({
   children,
   onClick,
   disabled,
 }: {
-  children: ReactNode, onClick(): void, disabled?: boolean,
+  children: ReactNode,
+  onClick(): void,
+  disabled?: boolean,
 }) {
   return (<button
-    className="rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white/75 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+    className={styles.secondaryButton}
     disabled={disabled}
     onClick={onClick}>
     {children}

@@ -11,6 +11,11 @@ export default defineConfig({
   publicDir: path.join(projectRoot, "packages/brand-assets/public"),
   base: "/admin/",
   plugins: [react()],
+  css: {
+    modules: {
+      localsConvention: "camelCaseOnly",
+    },
+  },
   define: buildDefines(),
   server: {
     port: 5175,
