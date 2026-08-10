@@ -1,43 +1,71 @@
-import {useCallback, useEffect, useMemo, useState} from "react"
+import {useEffect, useMemo, useRef, useState} from "react"
 
-// IMPORTANT: use the BO's independent Supabase session, NOT the
-// main player-facing client. The main client carries the operator's
-// PLAYER auth (which isn't in admin_roles), and our admin-gated
-// RPCs check auth.uid() inline → would return 'forbidden'. The
-// adminSupabase client is the one logged in as the operator's BO
-// session and is what every other admin/* file uses.
+import {skipToken} from "@reduxjs/toolkit/query"
+
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 import {ImageField} from "../../components/ImageField.tsx"
 import {useConfirm} from "../../components/useConfirm.tsx"
-import {adminSupabase as supabase} from "../../lib/adminSupabase.ts"
 
-// The Daily Missions tables aren't in the generated Database type
-// (a full Supabase types regen would lose our hand-patched phantom
-// columns — see Phase 1 commit notes). Until we do a careful merge,
-// we use a loosely-typed `sb` alias for table writes in this file.
-// All the RPCs go through the typed surface (added in src/types/
-// database.ts during Phase 6).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const sb = supabase as any
+import {
+  useAssignSimDailyMissionsMutation,
+  useCleanupSimAllMutation,
+  useCreateSimTestProfileMutation,
+  useDeleteMissionTemplateMutation,
+  useGetChestMilestonesQuery,
+  useGetChestRewardsQuery,
+  useGetMissionRewardsQuery,
+  useGetMissionTemplatesQuery,
+  useGetMissionTypeConfigsQuery,
+  useGetRerollPricingConfigQuery,
+  useGetSimTestProfilesQuery,
+  useGetSimTestUserStateQuery,
+  useGetStreakChestRewardsQuery,
+  useRefreshPlayerMissionsMutation,
+  useResetSimTodayMissionsMutation,
+  useSaveChestMilestoneMutation,
+  useSaveMissionTemplateMutation,
+  useSaveStreakChestRewardsMutation,
+  useSetSimMetricMutation,
+  useSpawnSimArchetypesMutation,
+  useUpdateMissionTypeConfigMutation,
+  useUpdateRerollPricingConfigMutation,
+} from "./DailyMissionsApi"
+import type {
+  ChestMilestoneRow,
+  ChestMilestoneUpdate,
+  ChestRewardInsert,
+  ChestRewardRow,
+  MissionRewardDraft,
+  MissionRewardRow,
+  MissionTemplateInsert,
+  MissionTemplateRow,
+  MissionTypeConfigRow,
+  MissionTypeConfigUpdate,
+  RerollPricingConfigRow,
+  StreakChestRewardInsert,
+  StreakChestRewardRow,
+} from "./DailyMissionsData"
 
 /**
  * Daily Missions BO admin — Phase 7 per docs/specs/daily-missions.md.
  *
  * One self-contained component (mirroring WheelAdmin's pattern) with
- * internal sub-tabs:
+ * internal sub-tabs, all backed by RTK Query hooks:
  *   • Templates     — mission_templates CRUD + per-template reward bundle
+ *   • Mission Types — mission_type_configs editor
  *   • Chests        — chest_milestones + chest_rewards bundles
  *   • Reroll        — reroll_pricing_config singleton (ladder + cap)
  *   • Streak Chest  — streak_chest_rewards bundle
- *   • Preview       — dry-run: pick a profile, see what they'd be
- *                     assigned today (stub in this pass — will be a
- *                     fast-follow once the first 3 tabs are real-world
- *                     tested by the operator).
+ *   • Simulator     — sim test profiles, metric overrides, daily-mission
+ *                     assignment runs, and cleanup
+ * plus a Refresh Tool above the tab bar for on-demand refresh of a real
+ * player's daily missions.
  *
  * Each editor lists rows in a table + opens a side draft pane on row
- * click. Saves write directly to the table (authoring writes are
- * gated by RLS to private.can_manage_config, which is the owner/admin
- * role; non-admins see read-only views from the same client).
+ * click. Supabase access is owned by the feature data layer
+ * (DailyMissionsApi.ts / DailyMissionsData.ts); authoring writes remain
+ * gated at the database level by RLS to private.can_manage_config (the
+ * owner/admin role); non-admins see read-only views from the same client.
  */
 
 type Props = {
@@ -100,6 +128,8 @@ export function MissionsAdmin({canManage}: Props) {
 /* ────────────────────────────────────────────────────────────────── */
 
 function RefreshMissionsTool({canManage}: {readonly canManage: boolean}) {
+  const [refreshPlayerMissions] = useRefreshPlayerMissionsMutation()
+
   const [email, setEmail] = useState("")
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
@@ -114,12 +144,7 @@ function RefreshMissionsTool({canManage}: {readonly canManage: boolean}) {
     setMsg(null)
     setErr(null)
     try {
-      const {
-        data,
-        error,
-      } = await sb.rpc("admin_refresh_player_missions", {p_email: e})
-      if (error) throw error
-      const d = (data ?? {}) as {deleted?: number, assigned?: number}
+      const d = await refreshPlayerMissions(e).unwrap()
       setMsg(`Refreshed — cleared ${d.deleted ?? 0}, assigned ${d.assigned ?? 0} daily mission(s). Reload the player's lobby.`)
     }
     catch (ex) {
@@ -340,6 +365,31 @@ type RewardRow = {
 }
 
 function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
+  const {
+    data: templatesQuery = [],
+    error: templatesError,
+    isLoading: templatesLoading,
+  } = useGetMissionTemplatesQuery()
+  const {
+    data: typesQuery = [],
+    error: typesError,
+    isLoading: typesLoading,
+  } = useGetMissionTypeConfigsQuery()
+  const {
+    data: rewardsQuery = [],
+    error: rewardsError,
+    isLoading: rewardsLoading,
+  } = useGetMissionRewardsQuery()
+
+  const [saveTemplate] = useSaveMissionTemplateMutation()
+  const [deleteTemplate] = useDeleteMissionTemplateMutation()
+
+  // Local mirrors of the server snapshots. The RTK Query cache is the
+  // source of truth; these lists exist only because the render path was
+  // built against local arrays. Each mirror is rebuilt when the query data
+  // reference changes (initial load, or after a DailyMissions tag
+  // invalidation refetches). The active draft lives in separate state, so
+  // in-progress edits are never overwritten by these syncs.
   const [templates, setTemplates] = useState<MissionTemplate[]>([])
   const [types, setTypes] = useState<MissionTypeConfig[]>([])
   const [rewardsByTemplate, setRewardsByTemplate] = useState<Record<string, RewardRow[]>>({})
@@ -355,56 +405,50 @@ function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
   const [filterRarity, setFilterRarity] = useState<string>("all")
   const [filterPeriod, setFilterPeriod] = useState<string>("all")
 
-  const load = useCallback(async () => {
-    setError(null)
-    const {
-      data: cfgs,
-      error: cErr,
-    } = await sb.from("mission_type_config")
-      .select("*")
-      .order("label")
-    if (cErr) {
-      setError(extractErrorMessage(cErr))
-      return
-    }
-    setTypes((cfgs ?? []) as MissionTypeConfig[])
-
-    const {
-      data: tpls,
-      error: tErr,
-    } = await sb.from("mission_templates")
-      .select("*")
-      .order("period")
-      .order("rarity")
-      .order("mission_type")
-    if (tErr) {
-      setError(extractErrorMessage(tErr))
-      return
-    }
-    setTemplates((tpls ?? []) as MissionTemplate[])
-
-    const {
-      data: rws,
-      error: rErr,
-    } = await sb.from("mission_rewards")
-      .select("*")
-      .order("display_order")
-    if (rErr) {
-      setError(extractErrorMessage(rErr))
-      return
-    }
-
+  const lastSyncedTemplatesRef = useRef<readonly MissionTemplateRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedTemplatesRef.current === templatesQuery) return
+    lastSyncedTemplatesRef.current = templatesQuery
+    setTemplates([...templatesQuery])
+  }, [templatesQuery])
+  const lastSyncedTypesRef = useRef<readonly MissionTypeConfigRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedTypesRef.current === typesQuery) return
+    lastSyncedTypesRef.current = typesQuery
+    setTypes([...typesQuery])
+  }, [typesQuery])
+  const lastSyncedRewardsRef = useRef<readonly MissionRewardRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedRewardsRef.current === rewardsQuery) return
+    lastSyncedRewardsRef.current = rewardsQuery
     const grouped: Record<string, RewardRow[]> = {}
-    for (const r of (rws ?? []) as RewardRow[]) {
+    for (const r of rewardsQuery) {
       const key = r.mission_id ?? "";
       (grouped[key] ??= []).push(r)
     }
     setRewardsByTemplate(grouped)
-  }, [])
+  }, [rewardsQuery])
 
+  // Query failures surface through the same inline error the saves use.
   useEffect(() => {
-    void load()
-  }, [load])
+    if (templatesError) setError(templatesError.message ?? "Failed to load mission templates.")
+  }, [templatesError])
+  useEffect(() => {
+    if (typesError) setError(typesError.message ?? "Failed to load mission type configs.")
+  }, [typesError])
+  useEffect(() => {
+    if (rewardsError) setError(rewardsError.message ?? "Failed to load mission rewards.")
+  }, [rewardsError])
+
+  // When no draft is open the draft-pane error has no home, so load failures
+  // render directly from the query state here. While a draft is open these
+  // messages stay in the pane's inline error (set by the effects above), so
+  // the same failure is never shown twice.
+  const loadErrors = !draft ? [
+    templatesError ? (templatesError.message ?? "Failed to load mission templates.") : null,
+    typesError ? (typesError.message ?? "Failed to load mission type configs.") : null,
+    rewardsError ? (rewardsError.message ?? "Failed to load mission rewards.") : null,
+  ].filter((m): m is string => m !== null) : []
 
   const filtered = useMemo(() => {
     return templates.filter((t) => (filterRarity === "all" || t.rarity === filterRarity) && (filterPeriod === "all" || t.period === filterPeriod))
@@ -474,7 +518,7 @@ function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
     setSaving(true)
     setError(null)
     try {
-      const payload: Partial<MissionTemplate> = {...draft}
+      const payload: MissionTemplateInsert = {...draft}
       // Clean up resolution-mode-specific fields so the check constraint passes.
       // fixed → goal_value only; stretch → stretch_factor only; personalized →
       // neither (goal + reward are generated per player at assignment).
@@ -492,50 +536,21 @@ function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
       if (payload.reward_mode !== "cashback") payload.cashback_pct = null
       delete (payload as {id?: string}).id
 
-      let templateId: string
-      if (draft.id) {
-        const {error: e} = await sb.from("mission_templates")
-          .update(payload)
-          .eq("id", draft.id)
-        if (e) throw e
-        templateId = draft.id
-      }
-      else {
-        const {
-          data,
-          error: e,
-        } = await sb.from("mission_templates")
-          .insert(payload)
-          .select("id")
-          .single()
-        if (e) throw e
-        templateId = (data as {id: string}).id
-      }
+      // Rewards travel without a mission_id — the data layer injects the
+      // resolved template id after the update-or-insert (unknown until then),
+      // then deletes the old bundle and inserts the replacement rows.
+      const rewards: readonly MissionRewardDraft[] = draftRewards.map((r, i) => ({
+        reward_kind: r.reward_kind,
+        currency_code: r.reward_kind === "currency" ? r.currency_code : null,
+        item_table: r.reward_kind === "item" ? r.item_table : null,
+        item_id: r.reward_kind === "item" ? r.item_id : null,
+        amount: r.amount,
+        display_order: r.display_order ?? i,
+      }))
 
-      // Replace rewards: simplest correct approach is to delete
-      // existing + re-insert. Operator-scale; rewards-per-mission
-      // is small.
-      const {error: delErr} = await sb.from("mission_rewards")
-        .delete()
-        .eq("mission_id", templateId)
-      if (delErr) throw delErr
-
-      if (draftRewards.length > 0) {
-        const rows = draftRewards.map((r, i) => ({
-          mission_id: templateId,
-          reward_kind: r.reward_kind,
-          currency_code: r.reward_kind === "currency" ? r.currency_code : null,
-          item_table: r.reward_kind === "item" ? r.item_table : null,
-          item_id: r.reward_kind === "item" ? r.item_id : null,
-          amount: r.amount,
-          display_order: r.display_order ?? i,
-        }))
-        const {error: insErr} = await sb.from("mission_rewards")
-          .insert(rows)
-        if (insErr) throw insErr
-      }
-
-      await load()
+      // The DailyMissions tag invalidation refetches the lists; no manual
+      // reload needed.
+      await saveTemplate({id: draft.id || null, payload, rewards}).unwrap()
       setDraft(null)
       setDraftRewards([])
     }
@@ -551,19 +566,39 @@ function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
     if (!draft?.id) return
     setConfirmingDelete(false)
     setSaving(true)
-    const {error: e} = await sb.from("mission_templates")
-      .delete()
-      .eq("id", draft.id)
-    setSaving(false)
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
+    try {
+      await deleteTemplate(draft.id).unwrap()
+      setDraft(null)
     }
-    await load()
-    setDraft(null)
+    catch (e) {
+      setError(extractErrorMessage(e))
+    }
+    finally {
+      setSaving(false)
+    }
+  }
+
+  // Initial load gate: while the three queries fetch their first payload,
+  // don't render the empty table (it would read as "no templates").
+  // Errors surface through the inline error below, so loading and error
+  // are mutually exclusive here.
+  if (templatesLoading || typesLoading || rewardsLoading) {
+    return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+        Loading mission templates…
+      </div>
+    </div>)
   }
 
   return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+    {loadErrors.length > 0 && (<div className="space-y-1 xl:col-span-2">
+      {loadErrors.map((m) => (<div
+        key={m}
+        className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+        {m}
+      </div>))}
+    </div>)}
+
     {/* List */}
     <div className="rounded-xl border border-white/10 bg-white/[0.045]">
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 p-3">
@@ -1060,28 +1095,35 @@ function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
 /* ────────────────────────────────────────────────────────────────── */
 
 function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
+  const {
+    data: rowsQuery = [],
+    error: rowsError,
+    isLoading: rowsLoading,
+  } = useGetMissionTypeConfigsQuery()
+
+  const [updateMissionTypeConfig] = useUpdateMissionTypeConfigMutation()
+
+  // Local mirror of the server snapshot, rebuilt only when the query data
+  // reference changes (initial load, or after a DailyMissions tag
+  // invalidation refetches). An in-progress edit draft is separate state
+  // and is never overwritten by this sync.
   const [rows, setRows] = useState<MissionTypeConfig[]>([])
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState<MissionTypeConfig | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    setError(null)
-    const {
-      data,
-      error: e,
-    } = await sb.from("mission_type_config").select("*").order("label")
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setRows((data ?? []) as MissionTypeConfig[])
-  }, [])
-
+  const lastSyncedRowsRef = useRef<readonly MissionTypeConfigRow[] | null>(null)
   useEffect(() => {
-    void load()
-  }, [load])
+    if (lastSyncedRowsRef.current === rowsQuery) return
+    lastSyncedRowsRef.current = rowsQuery
+    setRows([...rowsQuery])
+  }, [rowsQuery])
+
+  // Query failures surface through the same inline error the saves use.
+  useEffect(() => {
+    if (rowsError) setError(rowsError.message ?? "Failed to load mission type configs.")
+  }, [rowsError])
 
   const startEdit = (r: MissionTypeConfig) => {
     setEditing(r.mission_type)
@@ -1096,27 +1138,26 @@ function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
     try {
       // mission_type is the PK; metric_code + is_wired are code-derived truth,
       // not operator-editable here — so they're intentionally not in the update.
-      const {error: e} = await sb.from("mission_type_config")
-        .update({
-          label: draft.label,
-          description: draft.description,
-          supports_personalized: draft.supports_personalized,
-          base_stretch: draft.base_stretch,
-          up_step: draft.up_step,
-          ease_after: draft.ease_after,
-          ease_factor: draft.ease_factor,
-          floor_mult: draft.floor_mult,
-          cap_mult: draft.cap_mult,
-          reward_pct: draft.reward_pct,
-          floor_reward: draft.floor_reward,
-          round_to: draft.round_to,
-          baseline_window_days: draft.baseline_window_days,
-          goal_round_to: draft.goal_round_to,
-          rollout_pct: draft.rollout_pct,
-        })
-        .eq("mission_type", draft.mission_type)
-      if (e) throw e
-      await load()
+      const patch: MissionTypeConfigUpdate = {
+        label: draft.label,
+        description: draft.description,
+        supports_personalized: draft.supports_personalized,
+        base_stretch: draft.base_stretch,
+        up_step: draft.up_step,
+        ease_after: draft.ease_after,
+        ease_factor: draft.ease_factor,
+        floor_mult: draft.floor_mult,
+        cap_mult: draft.cap_mult,
+        reward_pct: draft.reward_pct,
+        floor_reward: draft.floor_reward,
+        round_to: draft.round_to,
+        baseline_window_days: draft.baseline_window_days,
+        goal_round_to: draft.goal_round_to,
+        rollout_pct: draft.rollout_pct,
+      }
+      // The DailyMissions tag invalidation refetches the rows; no manual
+      // reload needed.
+      await updateMissionTypeConfig({missionType: draft.mission_type, patch}).unwrap()
       setEditing(null)
       setDraft(null)
     }
@@ -1126,6 +1167,16 @@ function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
     finally {
       setSaving(false)
     }
+  }
+
+  // Initial load gate: don't render the "No mission types configured"
+  // empty state while the first payload is still fetching.
+  if (rowsLoading) {
+    return (<div className="space-y-3">
+      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+        Loading mission types…
+      </div>
+    </div>)
   }
 
   return (<div className="space-y-3">
@@ -1285,16 +1336,25 @@ function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
 
 /* ────────────────────────────────────────────────────────────────── */
 
-type ChestMilestoneRow = {
-  id: string,
-  milestone_index: number,
-  threshold_mp: number,
-  display_name: string,
-  rarity: string,
-  enabled: boolean,
-}
-
 function ChestsEditor({canManage}: {readonly canManage: boolean}) {
+  const {
+    data: chestsQuery = [],
+    error: chestsError,
+    isLoading: chestsLoading,
+  } = useGetChestMilestonesQuery()
+  const {
+    data: chestRewardsQuery = [],
+    error: chestRewardsError,
+    isLoading: chestRewardsLoading,
+  } = useGetChestRewardsQuery()
+
+  const [saveChestMilestone] = useSaveChestMilestoneMutation()
+
+  // Local mirrors of the server snapshots, same pattern as TemplatesEditor:
+  // the RTK Query cache is the source of truth and each mirror is rebuilt
+  // when the query data reference changes (initial load, or after a
+  // DailyMissions tag invalidation refetches). The active draft lives in
+  // separate state, so in-progress edits are never overwritten.
   const [chests, setChests] = useState<ChestMilestoneRow[]>([])
   const [rewardsByMilestone, setRewardsByMilestone] = useState<Record<string, RewardRow[]>>({})
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -1303,29 +1363,39 @@ function ChestsEditor({canManage}: {readonly canManage: boolean}) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    const {
-      data,
-      error: e,
-    } = await sb.from("chest_milestones").select("*").order("milestone_index")
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setChests((data ?? []) as ChestMilestoneRow[])
-
-    const {data: rws} = await sb.from("chest_rewards").select("*").order("display_order")
+  const lastSyncedChestsRef = useRef<readonly ChestMilestoneRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedChestsRef.current === chestsQuery) return
+    lastSyncedChestsRef.current = chestsQuery
+    setChests([...chestsQuery])
+  }, [chestsQuery])
+  const lastSyncedChestRewardsRef = useRef<readonly ChestRewardRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedChestRewardsRef.current === chestRewardsQuery) return
+    lastSyncedChestRewardsRef.current = chestRewardsQuery
     const grouped: Record<string, RewardRow[]> = {}
-    for (const r of (rws ?? []) as RewardRow[]) {
+    for (const r of chestRewardsQuery) {
       const key = r.milestone_id ?? "";
       (grouped[key] ??= []).push(r)
     }
     setRewardsByMilestone(grouped)
-  }, [])
+  }, [chestRewardsQuery])
 
+  // Query failures surface through the same inline error the saves use.
   useEffect(() => {
-    void load()
-  }, [load])
+    if (chestsError) setError(chestsError.message ?? "Failed to load chest milestones.")
+  }, [chestsError])
+  useEffect(() => {
+    if (chestRewardsError) setError(chestRewardsError.message ?? "Failed to load chest rewards.")
+  }, [chestRewardsError])
+
+  // With no row expanded the per-row error has no home, so load failures
+  // render at the top instead. While a row is open these messages stay in
+  // that row's inline error, so the same failure is never shown twice.
+  const loadErrors = editingId === null ? [
+    chestsError ? (chestsError.message ?? "Failed to load chest milestones.") : null,
+    chestRewardsError ? (chestRewardsError.message ?? "Failed to load chest rewards.") : null,
+  ].filter((m): m is string => m !== null) : []
 
   const startEdit = (c: ChestMilestoneRow) => {
     setEditingId(c.id)
@@ -1339,27 +1409,30 @@ function ChestsEditor({canManage}: {readonly canManage: boolean}) {
     setSaving(true)
     setError(null)
     try {
-      const {
-        id,
-        ...rest
-      } = draftChest
-      const {error: e} = await sb.from("chest_milestones").update(rest).eq("id", id)
-      if (e) throw e
-      await sb.from("chest_rewards").delete().eq("milestone_id", id)
-      if (draftRewards.length > 0) {
-        const rows = draftRewards.map((r, i) => ({
-          milestone_id: id,
-          reward_kind: r.reward_kind,
-          currency_code: r.reward_kind === "currency" ? r.currency_code : null,
-          item_table: r.reward_kind === "item" ? r.item_table : null,
-          item_id: r.reward_kind === "item" ? r.item_id : null,
-          amount: r.amount,
-          display_order: r.display_order ?? i,
-        }))
-        const {error: insErr} = await sb.from("chest_rewards").insert(rows)
-        if (insErr) throw insErr
+      const id = draftChest.id
+      // Same column set the inline update wrote: everything on the row
+      // except the identity and the server-managed timestamps.
+      const patch: ChestMilestoneUpdate = {
+        milestone_index: draftChest.milestone_index,
+        threshold_mp: draftChest.threshold_mp,
+        display_name: draftChest.display_name,
+        rarity: draftChest.rarity,
+        enabled: draftChest.enabled,
       }
-      await load()
+      const rewards: ChestRewardInsert[] = draftRewards.map((r, i) => ({
+        milestone_id: id,
+        reward_kind: r.reward_kind,
+        currency_code: r.reward_kind === "currency" ? r.currency_code : null,
+        item_table: r.reward_kind === "item" ? r.item_table : null,
+        item_id: r.reward_kind === "item" ? r.item_id : null,
+        amount: r.amount,
+        display_order: r.display_order ?? i,
+      }))
+      await saveChestMilestone({
+        id,
+        patch,
+        rewards,
+      }).unwrap()
       setEditingId(null)
       setDraftChest(null)
     }
@@ -1371,7 +1444,19 @@ function ChestsEditor({canManage}: {readonly canManage: boolean}) {
     }
   }
 
+  if (chestsLoading || chestRewardsLoading) {
+    return (<div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      Loading chest milestones…
+    </div>)
+  }
+
   return (<div className="space-y-3">
+    {loadErrors.map((m) => (<div
+      key={m}
+      className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+      {m}
+    </div>))}
+
     {chests.map((c) => (<div
       key={c.id}
       className={`rounded-xl border bg-white/[0.045] p-3 ${editingId === c.id ? "border-amber-500/60" : "border-white/10"}`}>
@@ -1494,39 +1579,56 @@ function ChestsEditor({canManage}: {readonly canManage: boolean}) {
 /* ────────────────────────────────────────────────────────────────── */
 
 function RerollEditor({canManage}: {readonly canManage: boolean}) {
+  const {
+    data: pricingQuery = null,
+    error: pricingError,
+    isLoading: pricingLoading,
+  } = useGetRerollPricingConfigQuery()
+
+  const [updateRerollPricingConfig] = useUpdateRerollPricingConfigMutation()
+
   const [ladder, setLadder] = useState<number[]>([])
   const [dailyCap, setDailyCap] = useState(4)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    const {
-      data,
-      error: e,
-    } = await sb.from("reroll_pricing_config").select("*").eq("id", "default").single()
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setLadder(((data as {gem_cost_ladder?: number[]}).gem_cost_ladder ?? []).slice())
-    setDailyCap((data as {daily_cap: number}).daily_cap)
-  }, [])
+  // The singleton row is edited in place, so the local ladder/cap drafts are
+  // seeded from the query snapshot and re-seeded whenever the cached row
+  // reference changes (initial load, or a DailyMissions invalidation refetch).
+  const lastSyncedPricingRef = useRef<RerollPricingConfigRow | null | undefined>(undefined)
+  useEffect(() => {
+    if (lastSyncedPricingRef.current === pricingQuery) return
+    lastSyncedPricingRef.current = pricingQuery
+    if (!pricingQuery) return
+    setLadder((pricingQuery.gem_cost_ladder ?? []).slice())
+    setDailyCap(pricingQuery.daily_cap)
+  }, [pricingQuery])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    if (pricingError) setError(pricingError.message ?? "Failed to load reroll pricing.")
+  }, [pricingError])
 
   const save = async () => {
     setSaving(true)
     setError(null)
-    const {error: e} = await sb.from("reroll_pricing_config")
-      .update({
+    try {
+      await updateRerollPricingConfig({
         gem_cost_ladder: ladder,
         daily_cap: dailyCap,
-      })
-      .eq("id", "default")
-    setSaving(false)
-    if (e) setError(extractErrorMessage(e)); else await load()
+      }).unwrap()
+    }
+    catch (e) {
+      setError(extractErrorMessage(e))
+    }
+    finally {
+      setSaving(false)
+    }
+  }
+
+  if (pricingLoading) {
+    return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      Loading reroll pricing…
+    </div>)
   }
 
   return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
@@ -1601,45 +1703,47 @@ function RerollEditor({canManage}: {readonly canManage: boolean}) {
 /* ────────────────────────────────────────────────────────────────── */
 
 function StreakEditor({canManage}: {readonly canManage: boolean}) {
+  const {
+    data: streakQuery = [],
+    error: streakError,
+    isLoading: streakLoading,
+  } = useGetStreakChestRewardsQuery()
+
+  const [saveStreakChestRewards] = useSaveStreakChestRewardsMutation()
+
+  // The bundle is edited in place, so the local rows are re-seeded from the
+  // query snapshot whenever the cached reference changes (initial load, or a
+  // DailyMissions invalidation refetch after a save).
   const [rewards, setRewards] = useState<RewardRow[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    const {
-      data,
-      error: e,
-    } = await sb.from("streak_chest_rewards").select("*").order("display_order")
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setRewards((data ?? []) as RewardRow[])
-  }, [])
+  const lastSyncedStreakRef = useRef<readonly StreakChestRewardRow[] | null>(null)
+  useEffect(() => {
+    if (lastSyncedStreakRef.current === streakQuery) return
+    lastSyncedStreakRef.current = streakQuery
+    setRewards([...streakQuery])
+  }, [streakQuery])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    if (streakError) setError(streakError.message ?? "Failed to load streak chest rewards.")
+  }, [streakError])
 
   const save = async () => {
     setSaving(true)
     setError(null)
     try {
-      const {error: delErr} = await sb.from("streak_chest_rewards").delete().neq("id", "00000000-0000-0000-0000-000000000000")
-      if (delErr) throw delErr
-      if (rewards.length > 0) {
-        const rows = rewards.map((r, i) => ({
-          reward_kind: r.reward_kind,
-          currency_code: r.reward_kind === "currency" ? r.currency_code : null,
-          item_table: r.reward_kind === "item" ? r.item_table : null,
-          item_id: r.reward_kind === "item" ? r.item_id : null,
-          amount: r.amount,
-          display_order: r.display_order ?? i,
-        }))
-        const {error: insErr} = await sb.from("streak_chest_rewards").insert(rows)
-        if (insErr) throw insErr
-      }
-      await load()
+      // The data layer keeps the sentinel-guarded delete-then-reinsert
+      // replacement; it is ordered, not transactional.
+      const rows: StreakChestRewardInsert[] = rewards.map((r, i) => ({
+        reward_kind: r.reward_kind,
+        currency_code: r.reward_kind === "currency" ? r.currency_code : null,
+        item_table: r.reward_kind === "item" ? r.item_table : null,
+        item_id: r.reward_kind === "item" ? r.item_id : null,
+        amount: r.amount,
+        display_order: r.display_order ?? i,
+      }))
+      await saveStreakChestRewards(rows).unwrap()
     }
     catch (e) {
       setError(extractErrorMessage(e))
@@ -1647,6 +1751,12 @@ function StreakEditor({canManage}: {readonly canManage: boolean}) {
     finally {
       setSaving(false)
     }
+  }
+
+  if (streakLoading) {
+    return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      Loading streak chest rewards…
+    </div>)
   }
 
   return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
@@ -1679,40 +1789,33 @@ function StreakEditor({canManage}: {readonly canManage: boolean}) {
 
 /* ────────────────────────────────────────────────────────────────── */
 
-type TestProfileSummary = {
-  id: string,
-  display_name: string,
-  level: number,
-  pvp_rating: number,
-  created_at: string,
-}
-
-type TestUserState = {
-  profile: {id: string, display_name: string, level: number, xp: number, pvp_rating: number},
-  metrics: readonly {metric_code: string, baseline_7d: number, tier: string | null}[],
-  missions: readonly {
-    id: string,
-    title: string,
-    rarity: string,
-    period: string,
-    mission_type: string,
-    metric_code: string,
-    resolution_mode: string,
-    resolved_goal: number,
-    mission_points: number,
-    rewards: readonly {currency_code: string | null, amount: number}[],
-  }[],
-}
-
 /** Metrics the operator can author baselines for. The Phase 4
  *  triggers feed these for real users; for synthetic users we
  *  set them directly. */
 const KNOWN_METRICS = ["matches_per_day", "coins_wagered_per_day", "coins_won_net_per_day", "xp_per_day", "gems_spent_per_day", "wheel_spins_per_day", "ranked_wins_per_week", "win_streak", "levels_per_week"]
 
 function SimulatorTab({canManage}: {readonly canManage: boolean}) {
-  const [profiles, setProfiles] = useState<TestProfileSummary[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [state, setState] = useState<TestUserState | null>(null)
+
+  const {
+    data: profiles = [],
+    error: profilesError,
+  } = useGetSimTestProfilesQuery()
+  // The detail pane is keyed by the selected profile, so the state query is
+  // skipped entirely until one is picked (skipToken keeps the argument typed
+  // as a string instead of forcing a placeholder cache key).
+  const {
+    data: state,
+    error: stateError,
+  } = useGetSimTestUserStateQuery(selectedId ?? skipToken)
+
+  const [createSimTestProfile] = useCreateSimTestProfileMutation()
+  const [setSimMetric] = useSetSimMetricMutation()
+  const [resetSimTodayMissions] = useResetSimTodayMissionsMutation()
+  const [assignSimDailyMissions] = useAssignSimDailyMissionsMutation()
+  const [spawnSimArchetypes] = useSpawnSimArchetypesMutation()
+  const [cleanupSimAll] = useCleanupSimAllMutation()
+
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const {
@@ -1730,54 +1833,28 @@ function SimulatorTab({canManage}: {readonly canManage: boolean}) {
   const [regulars, setRegulars] = useState(5)
   const [whales, setWhales] = useState(3)
 
-  const loadProfiles = useCallback(async () => {
-    const {
-      data,
-      error: e,
-    } = await supabase.rpc("simulate_list_test_profiles")
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setProfiles(((data ?? []) as unknown) as TestProfileSummary[])
-  }, [])
-
-  const loadState = useCallback(async (id: string) => {
-    const {
-      data,
-      error: e,
-    } = await supabase.rpc("simulate_get_test_user_state", {p_profile_id: id})
-    if (e) {
-      setError(extractErrorMessage(e))
-      return
-    }
-    setState(data as unknown as TestUserState)
-  }, [])
-
+  // Query failures surface through the same inline error the actions use.
   useEffect(() => {
-    void loadProfiles()
-  }, [loadProfiles])
+    if (profilesError) setError(profilesError.message ?? "Failed to load test profiles.")
+  }, [profilesError])
   useEffect(() => {
-    if (selectedId) void loadState(selectedId); else setState(null)
-  }, [selectedId, loadState])
+    if (stateError) setError(stateError.message ?? "Failed to load test user state.")
+  }, [stateError])
 
+  // Every simulator mutation invalidates the DailyMissions tag, so the
+  // profile list and the selected profile's state refetch on their own.
   const createProfile = async () => {
     if (!newName.trim()) return
     setBusy(true)
     setError(null)
     try {
-      const {
-        data,
-        error: e,
-      } = await supabase.rpc("simulate_create_test_profile", {
-        p_display_name: newName.trim(),
-        p_level: newLevel,
-        p_pvp_rating: newRating,
-      })
-      if (e) throw e
+      const id = await createSimTestProfile({
+        displayName: newName.trim(),
+        level: newLevel,
+        pvpRating: newRating,
+      }).unwrap()
       setNewName("")
-      await loadProfiles()
-      setSelectedId(data)
+      setSelectedId(id)
     }
     catch (e) {
       setError(extractErrorMessage(e))
@@ -1792,13 +1869,11 @@ function SimulatorTab({canManage}: {readonly canManage: boolean}) {
     setBusy(true)
     setError(null)
     try {
-      const {error: e} = await supabase.rpc("simulate_set_metric", {
-        p_profile_id: selectedId,
-        p_metric_code: metric,
-        p_baseline: baseline,
-      })
-      if (e) throw e
-      await loadState(selectedId)
+      await setSimMetric({
+        profileId: selectedId,
+        metricCode: metric,
+        baseline,
+      }).unwrap()
     }
     catch (e) {
       setError(extractErrorMessage(e))
@@ -1813,11 +1888,9 @@ function SimulatorTab({canManage}: {readonly canManage: boolean}) {
     setBusy(true)
     setError(null)
     try {
-      const {error: rErr} = await supabase.rpc("simulate_reset_today_missions", {p_profile_id: selectedId})
-      if (rErr) throw rErr
-      const {error: aErr} = await supabase.rpc("assign_daily_missions_for_profile", {p_profile_id: selectedId})
-      if (aErr) throw aErr
-      await loadState(selectedId)
+      // Reset first, then assign — same order the inline RPC pair used.
+      await resetSimTodayMissions(selectedId).unwrap()
+      await assignSimDailyMissions(selectedId).unwrap()
     }
     catch (e) {
       setError(extractErrorMessage(e))
@@ -1831,13 +1904,11 @@ function SimulatorTab({canManage}: {readonly canManage: boolean}) {
     setBusy(true)
     setError(null)
     try {
-      const {error: e} = await supabase.rpc("simulate_spawn_archetypes", {
-        p_casuals: casuals,
-        p_regulars: regulars,
-        p_whales: whales,
-      })
-      if (e) throw e
-      await loadProfiles()
+      await spawnSimArchetypes({
+        casuals,
+        regulars,
+        whales,
+      }).unwrap()
     }
     catch (e) {
       setError(extractErrorMessage(e))
@@ -1857,10 +1928,8 @@ function SimulatorTab({canManage}: {readonly canManage: boolean}) {
     setBusy(true)
     setError(null)
     try {
-      const {error: e} = await supabase.rpc("simulate_cleanup_all")
-      if (e) throw e
+      await cleanupSimAll().unwrap()
       setSelectedId(null)
-      await loadProfiles()
     }
     catch (e) {
       setError(extractErrorMessage(e))

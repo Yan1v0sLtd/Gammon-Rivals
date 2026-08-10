@@ -28,10 +28,13 @@ the most common bug source.
    find yourself storing turn/move/dice in Pixi code, stop.
 4. **Stake/match-value framing, not bet/winnings.** Virtual chips only. No real-money chip purchases, no cash-out path.
    This keeps us out of "simulated gambling" regulatory territory.
-5. **Application state lives in Redux Toolkit; server data lives in RTK Query.** The store (`apps/game/src/store/`) is
-   the only place app state lives, and `baseApi.ts` is the one shared RTK Query API — features inject endpoints into it.
-   No other state/server-cache library (TanStack Query, Zustand, …), no form library, no `@pixi/react`. Ask before
-   adding new libraries.
+5. **Application state lives in Redux Toolkit; server data lives in RTK Query.** `apps/game` and `apps/admin` are
+   independent Redux applications, each with its own store and one RTK Query API; there is no shared store across apps.
+   The game store (`apps/game/src/store/`) is the only place game app state lives, and its `baseApi.ts` is the one shared
+   game RTK Query API — game features inject endpoints into it. `apps/admin` has its own Redux Toolkit store and a single
+   admin RTK Query API under `apps/admin/src/store/`; admin features inject endpoints into that API. No other
+   state/server-cache library (TanStack Query, Zustand, …), no form library, no `@pixi/react`. Ask before adding new
+   libraries.
 6. **Doubling cube needs a confirm step.** Single-tap cube offers caused user complaints in the reference app (Lord of
    the Board). Long-press or two-tap.
 7. **No client barrel files or re-exports.** Import each source module directly.
@@ -53,6 +56,13 @@ apps/
 │   ├── App.tsx
 │   └── main.tsx
 ├── admin/src/                     → Independent Back Office application — web-served under `/admin`
+│   ├── store/                     → Own Redux Toolkit store + single `adminBaseApi` RTK Query API
+│   ├── features/                  → Per-feature admin UI, injected endpoints, Supabase data access
+│   ├── components/
+│   ├── lib/
+│   ├── Admin.tsx
+│   ├── App.tsx
+│   └── main.tsx
 └── website/src/                   → Astro marketing/legal site — web-served at the domain root
     ├── layouts/                   → SiteLayout + LegalLayout shells
     ├── components/                → Header/footer, feature grid, board strip
@@ -132,6 +142,11 @@ If anything in the rules code seems backwards, run the engine tests first — th
 
 ## Redux state management rules
 
+- **`apps/game` and `apps/admin` are separate, independent Redux apps.** The rules below describe `apps/game`, which owns
+  `apps/game/src/store/` (`store.ts`, `baseApi.ts`, `hooks.ts`). `apps/admin` is an independent application with its own
+  Redux Toolkit store and single admin RTK Query API under `apps/admin/src/store/` — `store.ts` (`createAdminStore`),
+  `baseApi.ts` (`adminBaseApi` on `fakeBaseQuery`), `hooks.ts` (`useAdminDispatch`/`useAdminSelector`). Admin features
+  inject endpoints into `adminBaseApi` from `features/<X>/<x>Api.ts`. The two apps never share a store.
 - **Redux Toolkit is the application-state framework; RTK Query is the only server cache.** `store/store.ts` configures
   the store strictly: default immutable + serializable checks stay enabled, no ignored paths, no broad exceptions.
   `store/baseApi.ts` is the single shared `createApi` with `fakeBaseQuery<ApiError>()`; features inject endpoints into

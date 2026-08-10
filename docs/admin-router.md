@@ -4,9 +4,22 @@ Goal: replace the in-memory `activeSection` switch in `apps/admin/src/Admin.tsx`
 with real URLs, so sections are deep-linkable, survive reload, and work with
 browser back/forward.
 
-Status: Phase 1 routing is implemented; Phase 2/Redux follow-up is pending.
+Status: Phase 1 routing is implemented. Phase 2 (optional lazy loading and user
+deep links) is still pending. The Redux follow-up is implemented: the independent
+admin store and `adminBaseApi` live in `apps/admin/src/store/`, and Currencies,
+Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System, and all
+seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll, Streak
+Chest, Refresh Tool, Simulator) are migrated end to end via RTK Query through
+`DailyMissionsApi.ts`/`DailyMissionsData.ts`. Users and Shop are still pending.
 
-## Current state
+## Pre-migration baseline — `activeSection` state
+
+> Legacy snapshot, kept for history. The implemented shell no longer routes
+> sections through `activeSection` state: `Admin.tsx` derives the section from
+> the URL via `useLocation()` and the explicit section registry in
+> `lib/adminSections.ts`, and the nav sidebar renders `<NavLink>`s from that
+> same registry (see "Phase 1 — URL routing" below). The bullets below record
+> the pre-migration layout.
 
 - `apps/admin/src/App.tsx` already mounts `BrowserRouter basename="/admin"` with
   two routes: `/` → `Admin`, `/auth/callback` → `AdminAuthCallback`, plus a
@@ -156,16 +169,30 @@ const activeSection = useMemo(
 Routing is a prerequisite for this, not a competitor. Once each section is a
 route, a feature can own its data without touching its siblings.
 
+Status: implemented. `apps/admin/src/store/` has its own `store.ts`
+(`createAdminStore`, reducer path `adminApi`), `baseApi.ts` (`adminBaseApi` on
+`fakeBaseQuery`), and typed `hooks.ts`; `main.tsx` mounts the admin `<Provider>`.
+Feature endpoints inject into `adminBaseApi` from `features/<X>/<x>Api.ts`.
+Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
+`<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
+Wheel, Level System, and all seven Daily Missions UI domains — Templates, Mission
+Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator — which run on
+RTK Query through `DailyMissionsApi.ts`/`DailyMissionsData.ts`. Users and Shop are
+not migrated — they stay last, per the order below.
+
 Measured cost:
 
 - Infra is about 120 lines, copied from `apps/game/src/store/` (`store.ts` 34,
-  `baseApi.ts` 21, `listenerMiddleware.ts` 29, `hooks.ts` 6). Admin needs its own
-  `adminBaseApi` bound to `adminSupabase`. The two stores share no code.
-- Listener middleware is not needed at the start. Admin has no timers or Realtime
-  except `useOnlineUsersWatcher`, which stays a hook.
-- About 22 queries and 19 mutations. The Supabase calls already exist inline
-  (35 call sites in `Admin.tsx`); they move to `features/<X>/<x>Data.ts` and get
-  wrapped in `<x>Api.ts`.
+  `baseApi.ts` 21, `hooks.ts` 6; the game store's `listenerMiddleware.ts` is not
+  part of the admin copy). Admin needs its own `adminBaseApi` bound to
+  `adminSupabase`. The two stores share no code.
+- Listener middleware remains optional/future work: the completed RTK Query
+  migrations do not require it and none introduced it — there is no
+  `listenerMiddleware.ts` under `apps/admin/src/store/`. Admin has no timers or
+  Realtime except `useOnlineUsersWatcher`, which stays a hook.
+- About 22 queries and 19 mutations. At the pre-migration baseline the Supabase
+  calls existed inline (35 call sites in `Admin.tsx`); they moved to
+  `features/<X>/<x>Data.ts` and got wrapped in `<x>Api.ts`.
 - `Admin.tsx` drops from 2363 lines to about 250.
 - Feature components grow 20-60 lines each as they call their own hooks.
 - Total churn is about 2500 lines across about 30 files.
@@ -180,8 +207,8 @@ Risks:
 1. No test net. `vitest.config.ts` is scoped to `packages/**` and AGENTS.md
    forbids testing client code. A wrong invalidation tag shows stale data with no
    error. This is the main risk and it is per-endpoint.
-2. AGENTS.md rule 5 names `apps/game/src/store/` as the store. It must be updated
-   to describe two independent stores.
+2. AGENTS.md rule 5 named `apps/game/src/store/` as the store. Resolved: AGENTS.md
+   now describes the game store and the independent admin store separately.
 3. `savingKey` is one global busy string read at about 19 disable sites. RTK Query
    replaces it with per-mutation `isLoading`. Every site must be rewired.
 
@@ -192,8 +219,9 @@ the 16-table refetch at roughly 40% of the cost, with no new library. What it
 loses is cache between navigations and request dedupe, which matter little for an
 internal tool.
 
-Recommended order if Redux is chosen. The argument is consistency with the game
-app, not performance:
+Recommended order, followed during the migration (steps 1-2 done; step 3 applied
+one feature per change). The argument is consistency with the game app, not
+performance:
 
 1. Phase 1 routing.
 2. Migrate `Currencies` end to end (104 lines, 1 table, 1 mutation). Ship it and

@@ -33,6 +33,7 @@ import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {boardToDraft, type BoardDraft} from "./lib/boardToDraft"
+import {builtInBoardSeeds} from "./lib/builtInBoardSeeds.ts"
 import {emptyToNull} from "./lib/emptyToNull"
 import {formatNumber} from "./lib/formatNumber"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
@@ -49,7 +50,8 @@ import {useAdminAuth} from "./lib/useAdminAuth"
 import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
 import {withGameplayBackgroundMetadata} from "./lib/withGameplayBackgroundMetadata"
 import {withRequestTimeout} from "./lib/withRequestTimeout"
-import {builtInBoardSeeds} from "./lib/builtInBoardSeeds.ts";
+import {adminBaseApi} from "./store/baseApi"
+import {useAdminDispatch} from "./store/hooks"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
 type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
@@ -159,7 +161,6 @@ const difficultyAccentColors: readonly string[] = ["green", "blue", "purple", "r
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
-
 const initialStats: AdminStats = {
   users: 0,
   matches: 0,
@@ -168,6 +169,27 @@ const initialStats: AdminStats = {
   shopItems: 0,
   suspendedUsers: 0,
 }
+
+/**
+ * RTK Query tags for the admin features migrated off legacy loadAdminData().
+ * The global Refresh button invalidates them through the shared adminApi
+ * cache so the feature panels get fresh data — loadAdminData() is a direct
+ * Supabase fetch and can't see (or refresh) RTK Query state. DailyMissions
+ * is migrated and its `DailyMissions` tag participates in this invalidation
+ * alongside the rest. Tags whose query has no active subscription aren't
+ * refetched at refresh time — RTK Query marks the cache entry stale, so the
+ * next component that mounts and subscribes (navigating back to that section)
+ * refetches instead of serving the pre-refresh data.
+ */
+const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0] = [
+  "Currencies",
+  "LobbyFeatures",
+  "EconomyGrants",
+  "DailyBonus",
+  "HourlyWheel",
+  "LevelSystem",
+  "DailyMissions",
+]
 
 export function Admin() {
   const adminAuth = useAdminAuth()
@@ -182,6 +204,7 @@ export function Admin() {
   const [role, setRole] = useState<AdminRole | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const dispatch = useAdminDispatch()
   const activeSection: Section = useMemo(
     () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
     [location.pathname])
@@ -1612,7 +1635,15 @@ export function Admin() {
           </div>
           <SecondaryButton
             disabled={refreshing}
-            onClick={() => void loadAdminData()}>
+            onClick={() => {
+              // Migrated feature data is owned by RTK Query, so the legacy
+              // loadAdminData() refresh can't reach it. Invalidate the feature
+              // tags through the shared adminApi cache (refetches mounted
+              // queries, marks dormant ones stale), then keep the legacy
+              // refresh for the still-legacy panels.
+              dispatch(adminBaseApi.util.invalidateTags(migratedFeatureTags))
+              void loadAdminData()
+            }}>
             {refreshing ? "Refreshing…" : "Refresh"}
           </SecondaryButton>
         </div>
