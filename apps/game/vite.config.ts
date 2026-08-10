@@ -21,7 +21,7 @@ export default defineConfig({
     host: "127.0.0.1",
   },
   optimizeDeps: {
-    include: ["cannon-es", "three"],
+    include: ["pixi.js"],
   },
   build: {
     outDir: path.join(projectRoot, "dist/play"),

@@ -9,6 +9,8 @@ const VENDOR_PACKAGES = [
   "react-dom",
   "react-router",
   "react-router-dom",
+  "react-redux",
+  "@reduxjs/toolkit",
   "scheduler",
   "@supabase/supabase-js",
   "@supabase/auth-js",
