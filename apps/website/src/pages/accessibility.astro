@@ -1,0 +1,76 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Honest statement, not a conformance claim: no formal audit has been done.
+     Update the known-limitations list whenever the app changes, and never
+     promise a level we have not tested. -->
+<LegalLayout
+  title={`Accessibility — ${site.name}`}
+  description={`How accessible ${site.name} is today, the limitations we know about, and how to report a barrier.`}
+  canonical={`${site.url}/accessibility`}
+>
+  <h1>Accessibility</h1>
+  <p class="doc-meta">
+    We want the game to be playable by as many people as possible. This page
+    says where we are, not where we would like to be.
+  </p>
+
+  <h2>Where we stand</h2>
+  <p>
+    We have not completed a formal accessibility audit of the app, so we do not
+    claim conformance to a standard. We aim at WCAG 2.2 level AA as the target
+    and treat reported barriers as bugs, not as feature requests.
+  </p>
+
+  <h2>This website</h2>
+  <ul>
+    <li>Built as plain HTML: headings in order, real links and lists, and a
+      single main landmark per page.</li>
+    <li>Usable with a keyboard alone, and with the browser zoomed or text
+      enlarged.</li>
+    <li>Text is sized in relative units and reflows down to a narrow phone
+      screen.</li>
+    <li>No autoplaying media, no flashing content, no pop-ups over the
+      content.</li>
+  </ul>
+
+  <h2>The app: what we know does not work well</h2>
+  <ul>
+    <li><strong>The board is drawn on a canvas.</strong> A screen reader cannot
+      read the checkers, points, or dice. This is the largest barrier in the
+      product and the hardest to fix.</li>
+    <li><strong>Some screens use a fixed layout that scales to fit.</strong>
+      Increasing the system font size does not enlarge text on those screens.</li>
+    <li><strong>Timed turns.</strong> Online matches give a limited time per
+      move, which cannot currently be extended.</li>
+    <li><strong>Colour carries meaning on the board</strong> — checker colours,
+      highlights for legal moves. Board themes vary in contrast and we have not
+      tested them all against a contrast standard.</li>
+  </ul>
+
+  <h2>What does help today</h2>
+  <ul>
+    <li>Buttons and controls are real buttons with labels, so system settings
+      such as bold text and reduced motion apply where the platform provides
+      them.</li>
+    <li>Legal moves are highlighted, so play never depends on remembering the
+      rules or reading small print.</li>
+    <li>Every legal move stays on screen until you play it, so nothing depends
+      on reacting to an animation.</li>
+  </ul>
+
+  <h2>Tell us what blocks you</h2>
+  <p>
+    Write to <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>
+    with the device you use, the assistive technology if any, and what you could
+    not do. Reports from people who actually need the feature are worth more
+    than any checklist, and they go straight onto our list.
+  </p>
+  <p>
+    If you need this page or any of our legal documents in another format, ask
+    and we will send one.
+  </p>
+</LegalLayout>

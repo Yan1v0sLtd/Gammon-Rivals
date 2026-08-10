@@ -1,0 +1,111 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro'
+import { site } from '../../config/site'
+import '../../styles/doc.css'
+---
+
+<LegalLayout
+  title="Doubling Cube Strategy — When to Double, Take, and Drop"
+  description="How to use the backgammon doubling cube: the 25% take point, market losers, when a position is too good to double, and how the Crawford rule changes everything."
+  canonical={`${site.url}/guides/doubling-cube-strategy`}
+>
+  <h1>Doubling Cube Strategy</h1>
+  <p class="doc-meta">
+    How the cube works is on <a href="/rules">the rules page</a>. This is when
+    to use it.
+  </p>
+
+  <p>
+    Most players lose more points to bad cube decisions than to bad checker
+    plays. The cube is also the fastest part of the game to improve, because a
+    handful of numbers cover most positions.
+  </p>
+
+  <h2>The one number to remember: 25%</h2>
+  <p>
+    You should take a double if you will win the game more than about 25% of the
+    time. That looks generous until you do the arithmetic:
+  </p>
+  <ul>
+    <li>Drop, and you lose exactly 1 point, every time.</li>
+    <li>Take, and you play for 2. Winning a quarter of the time gives
+      0.25 &times; (+2) + 0.75 &times; (&minus;2) = &minus;1 point, the same as
+      dropping.</li>
+    <li>Above 25%, taking is the cheaper option. Below it, drop and move on.</li>
+  </ul>
+  <p>
+    Two things move that number. Gammon risk pushes your take point higher,
+    because some losses will cost 4 points instead of 2. Owning the cube after
+    you take pushes it lower — often to around 20% — because you can double
+    back and your opponent then has to decide.
+  </p>
+
+  <h2>When to double</h2>
+  <p>Double when both of these are true:</p>
+  <ul>
+    <li>You are clearly better — roughly 60% or more to win.</li>
+    <li>Your opponent still has a take. If they must drop, you collect 1 point
+      and the game ends.</li>
+  </ul>
+  <p>
+    The trap is waiting. Backgammon positions swing violently, and a good roll
+    can take you from &ldquo;a little better&rdquo; straight past the point
+    where anyone would take.
+  </p>
+
+  <h2>Market losers</h2>
+  <p>
+    A market loser is a roll that would make your position <em>too</em> strong
+    to get a take next turn. Count them: if a fair share of your rolls would
+    leave your opponent with an easy drop, double now while they still have a
+    reason to take. Losing your market is the most common and most expensive
+    cube error there is.
+  </p>
+
+  <h2>Too good to double</h2>
+  <p>
+    Sometimes you are so far ahead that doubling is wrong. If you are likely to
+    win a gammon — your opponent has checkers trapped behind a prime and has
+    borne nothing off — doubling just lets them drop for 1 point. Play on,
+    close them out, and collect 2 or 3.
+  </p>
+  <p>
+    The rule of thumb: play on for the gammon when you are winning and your
+    opponent's position is dead; double when you are winning and their position
+    is merely worse.
+  </p>
+
+  <h2>Beavers, redoubles, and cube ownership</h2>
+  <p>
+    When you take, you own the cube: only you may offer the next double. That
+    ownership is worth real equity, and it is why taking is often right even in
+    positions that feel uncomfortable. Doubling from a position where the
+    opponent is about to own a live cube is worth less than it looks.
+  </p>
+
+  <h2>Match play changes the maths</h2>
+  <p>
+    In a match to a target score, points you cannot use are worth nothing. Two
+    consequences follow:
+  </p>
+  <ul>
+    <li><strong>Leading near the target:</strong> double aggressively when a win
+      ends the match; the extra points beyond the target cost you nothing.</li>
+    <li><strong>The Crawford game:</strong> the game after someone reaches one
+      point short is played without a cube. In the game after that, the trailer
+      should usually double at their first chance — there is nothing to save.</li>
+  </ul>
+
+  <h2>Where you will meet the cube</h2>
+  <p>
+    Tables in {site.name} are single games, so the cube does not appear there.
+    It belongs to match play, which the game engine supports and which
+    multi-game formats use. The thinking above is worth learning anyway: take
+    points and market losers are how strong players judge a position, cube or no
+    cube.
+  </p>
+  <p>
+    Next: <a href="/guides/pip-counting">pip counting</a>, the fastest way to
+    tell whether you are the favourite at all.
+  </p>
+</LegalLayout>

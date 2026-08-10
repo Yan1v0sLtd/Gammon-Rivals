@@ -67,8 +67,11 @@ apps/
     ├── config/site.ts             → Company, contact, legal and marketing strings — never hardcode them in a page
     ├── layouts/                   → SiteLayout + LegalLayout shells
     ├── components/                → Header/footer, feature grid, board strip
-    ├── pages/                     → index, download, how-to-play, rules, faq, about, support, fair-play,
-    │                                  community-rules, responsible-play, press, licenses, legal, delete-account, 404
+    ├── pages/                     → index, download, how-to-play, rules, guides/*, glossary, faq, about,
+    │                                  support, fair-play, ranks-and-stakes, rewards, community-rules,
+    │                                  responsible-play, press, licenses, security, accessibility, legal,
+    │                                  delete-account, 404
+    ├── public/                    → Website-only static files (robots.txt, sw.js, .well-known/) copied post-build
     └── styles/
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests
@@ -117,6 +120,39 @@ The `docs/` folder is the documentation home. It is organized into:
 
 Start at `docs/README.md` for the index and topic ownership. This file stays the
 rule authority; the references describe structure and flows and link back here.
+
+### `docs/tasks/` and `docs/bugs/`
+
+These two folders are a work queue, not an archive. Everything in them is open;
+nothing in them is done. Keep them that way.
+
+**What goes where.** `tasks/` holds work that was decided but not built. `bugs/`
+holds defects confirmed in the code, with the `file:line` that proves them. A
+defect already described inside a reference stays there until someone extracts
+it for tracking — then it becomes a bug file and the reference keeps its
+analysis.
+
+**File shape.** Ordered numeric prefix, kebab-case name
+(`05-doubling-cube-confirm-step.md`, `01-mission-reroll-keeps-old-goal.md`).
+Inside: the problem, the evidence with `file:line` citations, the proposed
+change, and acceptance criteria a reviewer can check. No speculation and no
+solution without a problem statement.
+
+**Maintenance is part of the change, for agents and developers alike.**
+
+- Finished the work? Delete the file in the same commit and, if the behaviour is
+  now durable knowledge, fold it into the matching `reference/`. A file marked
+  "done" and left in place is the failure mode these folders exist to avoid.
+- Dropped the work? Delete the file and say why in the commit message.
+- Found a real defect while doing something else? Add a bug file rather than a
+  code comment.
+- Add or remove a file: update the list in `docs/README.md` and in the folder's
+  own `README.md` in the same commit.
+- Before starting any task, re-read it against the current code. These files age
+  badly. If the citations no longer match, fix the file first, then decide
+  whether the work is still needed.
+- Never claim a shipped feature on the basis of a task file. A task is a
+  promise, not a fact.
 
 ---
 

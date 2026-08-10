@@ -1,0 +1,96 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Explains the ladder in structural terms only. Entry fees, prizes, XP
+     values and unlock levels are operator-tuned in table_configs /
+     level_configs, so exact numbers stay in the app and out of this page. -->
+<LegalLayout
+  title={`Ranks and Stakes — How the Ladder Works in ${site.name}`}
+  description={`How tiers, entry stakes, prizes, XP, levels, and PvP rating work in ${site.name}.`}
+  canonical={`${site.url}/ranks-and-stakes`}
+>
+  <h1>Ranks and Stakes</h1>
+  <p class="doc-meta">
+    What you pay to sit down, what you win, and how the game measures you. All
+    figures are in Coins, which are virtual: {site.disclaimer}
+  </p>
+
+  <h2>Five tiers</h2>
+  <p>
+    Tables run from <strong>Beginner</strong> through <strong>Advanced</strong>,
+    <strong>Pro</strong> and <strong>Expert</strong> to
+    <strong>Grand Master</strong>. Each tier sets four things:
+  </p>
+  <ul>
+    <li>the entry stake in Coins;</li>
+    <li>the prize for winning and the consolation for losing;</li>
+    <li>the XP you earn, which rises with the tier; and</li>
+    <li>the time you get to make a move.</li>
+  </ul>
+  <p>
+    Higher tiers are also gated by your level, so the expensive tables open as
+    you gain experience rather than the moment you can afford one loss. The exact
+    numbers are shown on the tier cards in the app and are tuned over time — we
+    do not publish a table here that would go stale.
+  </p>
+
+  <h2>What happens to the stake</h2>
+  <p>
+    Both players pay the entry stake up front. Against another player, the two
+    stakes form the pot: the winner takes the pot minus a small house cut and
+    minus the loser's consolation. Against an AI opponent, the prize is a fixed
+    amount for the tier, so a match against a bot pays the same whether or not
+    another human was available.
+  </p>
+  <p>
+    Your first few difficulty matches against an AI opponent are risk-free: if
+    you lose, the entry stake comes back. It is there so a new player can try a
+    tier without being emptied by variance.
+  </p>
+  <p>
+    Abandoning a match forfeits the coins but still counts as a loss for your
+    rating. Sitting out a bad game is not a free exit.
+  </p>
+
+  <h2>XP, levels, and status</h2>
+  <p>
+    Every finished match pays XP, scaled by the tier. XP fills your level;
+    crossing a level pays out Coins or Gems automatically and can unlock the
+    next tier or lobby feature. Your status label — the title next to your name
+    — is derived from your level, so it moves with the same progress bar rather
+    than being a separate currency.
+  </p>
+
+  <h2>PvP rating</h2>
+  <p>
+    Matches against real players also move an Elo rating, shown on your
+    profile. Everyone starts
+    at 1500. You gain rating for beating a stronger opponent and lose more for
+    losing to a weaker one, exactly as in chess. Matchmaking prefers opponents
+    inside a rating band around you, so the ladder finds your level rather than
+    throwing you at the strongest player online.
+  </p>
+  <p>
+    Rating is not the same as level. Level measures how much you have played;
+    rating measures how well.
+  </p>
+
+  <h2>Why the house takes a cut</h2>
+  <p>
+    In player-versus-player matches a small percentage of the pot is removed
+    before the prize is paid. That cut is what keeps the Coin economy from
+    inflating: Coins enter the game constantly through bonuses, missions, and
+    the wheel, and something has to take them back out. It is a balancing
+    mechanism inside a virtual currency, not a fee you pay in money.
+  </p>
+
+  <h2>Running out of Coins</h2>
+  <p>
+    You are never stuck. The hourly wheel, the daily bonus, and daily missions
+    all pay Coins for free — see <a href="/rewards">Rewards</a>. Buying Coins is
+    optional and never buys better dice; see <a href="/fair-play">Fair Play</a>.
+  </p>
+</LegalLayout>

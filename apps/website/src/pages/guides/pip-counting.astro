@@ -1,0 +1,82 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro'
+import { site } from '../../config/site'
+import '../../styles/doc.css'
+---
+
+<LegalLayout
+  title="Pip Counting in Backgammon — Count the Race in Seconds"
+  description="How to count pips in backgammon, how to keep the count updated without recounting, and how to use the lead to decide whether to race or to hold."
+  canonical={`${site.url}/guides/pip-counting`}
+>
+  <h1>Pip Counting</h1>
+  <p class="doc-meta">
+    The pip count is the only number that tells you, without opinion, who is
+    ahead in the race.
+  </p>
+
+  <h2>What a pip count is</h2>
+  <p>
+    Add up how far every one of your checkers still has to travel. A checker on
+    your 6-point needs 6 pips to come off; five of them need 30. A checker on
+    the bar counts as 25. Do that for all 15 and you have your count.
+  </p>
+  <p>
+    Both players start on <strong>167</strong>. That is the number to sanity
+    check against: if you count the opening position and do not get 167, you
+    counted wrong.
+  </p>
+
+  <h2>Counting without going mad</h2>
+  <p>Nobody adds fifteen numbers one at a time. Use groups:</p>
+  <ul>
+    <li>Count a stack once and multiply: three checkers on the 8-point is 24.</li>
+    <li>Pair checkers that add to ten — an 8 and a 2, a 6 and a 4 — and count
+      tens.</li>
+    <li>Count both sides in the same order every time, so you can compare
+      quickly.</li>
+  </ul>
+
+  <h2>Keep the count instead of recounting</h2>
+  <p>
+    This is the real trick. After you have counted once, update as you go: every
+    roll you play reduces your count by the pips you moved. A 6-3 played in full
+    takes 9 off your count. Doubles take four times the die. When you hit a
+    checker, add the pips it loses back to your opponent's count — a checker hit
+    on their 10-point adds 15 for them (25 minus 10).
+  </p>
+  <p>
+    Do that and you always know the race without ever counting a second time.
+    {site.name} shows the count too, but a player who tracks it themselves sees
+    the swing coming a roll earlier.
+  </p>
+
+  <h2>Using the lead</h2>
+  <p>Once you know the difference, the plan follows:</p>
+  <ul>
+    <li><strong>Ahead in the race:</strong> race. Run your back checkers, avoid
+      contact, take the safe play.</li>
+    <li><strong>Behind in the race:</strong> do not race. Hold an anchor, play
+      for a hit, build a prime. Trading checkers evenly loses for you.</li>
+    <li><strong>Roughly level:</strong> position decides. Better points, better
+      distribution, fewer stripped stacks.</li>
+  </ul>
+  <p>
+    Rough guide in a pure race, with no contact left: a lead of about 8% of your
+    own count is enough to double, and a deficit of more than about 12% is a
+    drop. Below that, take.
+  </p>
+
+  <h2>Where the count lies to you</h2>
+  <p>
+    The count measures distance, not structure. Eight checkers piled on your
+    6-point and nothing elsewhere counts well and plays badly. Two checkers
+    trapped behind a five-prime count fine and are close to lost. Read the count
+    first, then look at the board and ask whether those pips can actually move.
+  </p>
+  <p>
+    Next: use the count to make cube decisions in
+    <a href="/guides/doubling-cube-strategy">cube strategy</a>, or check a term
+    in the <a href="/glossary">glossary</a>.
+  </p>
+</LegalLayout>

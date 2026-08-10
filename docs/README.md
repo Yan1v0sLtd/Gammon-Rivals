@@ -53,6 +53,11 @@ Tasks:
    (inventory: `tasks/04-admin-css-modules-inventory.md`).
 5. `tasks/05-doubling-cube-confirm-step.md` — confirm step before offering a double.
 
+Bugs:
+
+1. `bugs/01-mission-reroll-keeps-old-goal.md` — mission reroll keeps the
+   previous mission's goal.
+
 ## Archive policy
 
 Historical documents stay in `archive/` and are never cited as current facts.

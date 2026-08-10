@@ -1,0 +1,113 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro'
+import { site } from '../../config/site'
+import '../../styles/doc.css'
+
+// Point numbers are from the moving player's own side, 24 (far) down to 1
+// (home), matching /rules. Plays follow long-settled rollout consensus; where
+// two plays are genuinely close, both are given rather than one invented
+// "correct" answer.
+const openings = [
+  { roll: '3-1', play: '8/5, 6/5', why: 'Makes the 5-point, the best point on the board. No other play is close.' },
+  { roll: '4-2', play: '8/4, 6/4', why: 'Makes the 4-point. Same idea, one point further back.' },
+  { roll: '6-1', play: '13/7, 8/7', why: 'Makes the bar point and starts a wall in front of your opponent.' },
+  { roll: '5-3', play: '8/3, 6/3', why: 'Makes the 3-point. Solid, if less valuable than the 4 or 5.' },
+  { roll: '6-5', play: '24/18, 18/13', why: 'Lover\u2019s leap: one back checker runs all the way to safety.' },
+  { roll: '6-4', play: '24/18, 13/9', why: 'Escapes a back checker and builds. Making the 2-point instead is playable but passive.' },
+  { roll: '6-3', play: '24/18, 13/10', why: 'Same plan as 6-4: run one checker out, put the small die to work.' },
+  { roll: '6-2', play: '24/18, 13/11 or 13/5', why: 'Split and build, or run one checker halfway. Both are respectable.' },
+  { roll: '5-4', play: '24/20, 13/8', why: 'The 20-point anchor is worth more than any builder this early.' },
+  { roll: '5-2', play: '13/8, 13/11', why: 'Two builders down. Splitting with 24/22 instead is a matter of style.' },
+  { roll: '5-1', play: '13/8, 24/23', why: 'Split the back checkers so they are not trapped behind a wall later.' },
+  { roll: '4-3', play: '13/9, 13/10', why: 'Two builders aimed at the 5-point and 4-point.' },
+  { roll: '4-1', play: '13/9, 24/23', why: 'Builder plus a split. Slotting with 6/5 is sharper and riskier.' },
+  { roll: '3-2', play: '13/11, 13/10', why: 'Builders again. 24/21 with the 3 is the safer alternative.' },
+  { roll: '2-1', play: '13/11, 24/23', why: 'Split and build. Slotting the 5-point with 6/5 wins more games and loses more gammons.' },
+]
+
+const doubles = [
+  { roll: '6-6', play: '24/18(2), 13/7(2)', why: 'The best opening double: two escaped checkers and the bar point.' },
+  { roll: '5-5', play: '13/3(2)', why: 'Makes the 3-point with both checkers off the midpoint.' },
+  { roll: '4-4', play: '24/20(2), 13/9(2)', why: 'Anchor on the 20-point plus two builders.' },
+  { roll: '3-3', play: '8/5(2), 6/3(2)', why: 'The 5-point and the 3-point in one turn.' },
+  { roll: '2-2', play: '13/11(2), 6/4(2)', why: 'The 4-point plus two builders.' },
+  { roll: '1-1', play: '8/7(2), 6/5(2)', why: 'Bar point and 5-point together — a dream first roll.' },
+]
+---
+
+<LegalLayout
+  title="Backgammon Opening Moves — Best Play for Every Roll"
+  description="The strongest opening play for each backgammon roll, with the reasoning behind it: 3-1 makes the 5-point, 6-1 the bar point, 6-5 runs, and so on."
+  canonical={`${site.url}/guides/opening-moves`}
+>
+  <h1>Opening Moves</h1>
+  <p class="doc-meta">
+    Point numbers count from your own side: 24 is your farthest checker, 1 is
+    the point nearest your tray. New to the notation? See
+    <a href="/rules">the rules</a>.
+  </p>
+
+  <p>
+    Backgammon has only 15 non-double opening rolls, and decades of computer
+    rollouts have settled almost all of them. Learn these and you start every
+    game at least even against most opponents.
+  </p>
+
+  <h2>The 15 opening rolls</h2>
+  <table>
+    <thead>
+      <tr><th>Roll</th><th>Play</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      {openings.map(({ roll, play, why }) => (
+        <tr>
+          <td><strong>{roll}</strong></td>
+          <td>{play}</td>
+          <td>{why}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2>Three ideas behind the table</h2>
+  <ul>
+    <li><strong>Points beat builders.</strong> If a roll makes the 5, 4, 3 or
+      bar point, make it. Nothing else you can do with two dice is worth as
+      much.</li>
+    <li><strong>Anchors beat everything at the back.</strong> A back checker
+      alone is a liability; the 20-point anchor turns it into an asset.</li>
+    <li><strong>Split or slot, but know which.</strong> Splitting the back
+      checkers is safe and flexible. Slotting a point invites a hit to win more
+      games, and loses more gammons when it goes wrong.</li>
+  </ul>
+
+  <h2>Opening doubles</h2>
+  <p>
+    In classic backgammon the opening roll uses one die from each player, so it
+    can never be a double. {site.name} instead picks the first player at random
+    and gives them a normal roll, so doubles do happen on move one:
+  </p>
+  <table>
+    <thead>
+      <tr><th>Roll</th><th>Play</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      {doubles.map(({ roll, play, why }) => (
+        <tr>
+          <td><strong>{roll}</strong></td>
+          <td>{play}</td>
+          <td>{why}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <h2>What comes next</h2>
+  <p>
+    The second roll is where real backgammon starts, and no table covers it —
+    your opponent has already answered. Learn to count the race
+    (<a href="/guides/pip-counting">pip counting</a>) and to use the cube
+    (<a href="/guides/doubling-cube-strategy">cube strategy</a>), and you will
+    beat opponents who only memorised openings.
+  </p>
+</LegalLayout>

@@ -1,0 +1,9 @@
+# Gammon Rivals — security contact (RFC 9116)
+# Human-readable policy: https://gammonrivals.com/security
+# Renew Expires before it lapses; RFC 9116 asks for less than one year out.
+
+Canonical: https://gammonrivals.com/.well-known/security.txt
+Expires: 2027-08-01T00:00:00.000Z
+Preferred-Languages: en, he
+Contact: mailto:support@gammonrivals.com
+Policy: https://gammonrivals.com/security

@@ -1,0 +1,86 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+
+const terms = [
+  { term: 'Anchor', meaning: 'Two or more of your checkers on a point in your opponent\u2019s home board. Somewhere safe to land, and the main defence when you are behind.' },
+  { term: 'Backgame', meaning: 'A deliberate strategy of holding two anchors deep in the opponent\u2019s home board and playing for a late hit. Hard to play, worse than it looks.' },
+  { term: 'Backgammon', meaning: 'The biggest win: the loser has borne off nothing and still has a checker on the bar or in your home board. Worth triple.' },
+  { term: 'Bar', meaning: 'The ridge down the middle of the board where hit checkers wait. They must re-enter in the opponent\u2019s home board before anything else moves.' },
+  { term: 'Bar point', meaning: 'Your 7-point, next to the bar. A key blocking point in the early game.' },
+  { term: 'Bear in', meaning: 'Bringing your last checkers into your home board, ready to bear off.' },
+  { term: 'Bear off', meaning: 'Taking checkers off the board. Only possible once all 15 are home; first to remove all 15 wins.' },
+  { term: 'Beaver', meaning: 'An optional rule where the player being doubled may immediately redouble and keep the cube. Not used in standard match play.' },
+  { term: 'Blitz', meaning: 'Attacking a lone opponent checker hard and early, aiming to close them out while they sit on the bar.' },
+  { term: 'Blot', meaning: 'A single checker alone on a point. It can be hit.' },
+  { term: 'Box', meaning: 'In chouette play, the single player who takes on the whole team. Not used in one-on-one matches.' },
+  { term: 'Closed board', meaning: 'All six points in your home board are made. An opponent on the bar cannot enter at all until you open a point.' },
+  { term: 'Crawford rule', meaning: 'When a player first reaches one point short of the match target, the next game is played without the cube.' },
+  { term: 'Cube', meaning: 'The doubling cube. Doubles the value of the current game when offered and taken.' },
+  { term: 'Direct shot', meaning: 'A blot within six pips of an enemy checker, so a single die can hit it.' },
+  { term: 'Double', meaning: 'An offer to double the value of the game, made before rolling. Also, a roll of the same number on both dice.' },
+  { term: 'Drop', meaning: 'Refusing a double. You concede the game at its current value.' },
+  { term: 'Gammon', meaning: 'A win where the loser has borne off no checkers. Worth double.' },
+  { term: 'Hit', meaning: 'Landing on a blot and sending it to the bar.' },
+  { term: 'Home board', meaning: 'Your last six points, where checkers gather before bearing off. Your opponent\u2019s home board is where their hit checkers re-enter.' },
+  { term: 'Indirect shot', meaning: 'A blot more than six pips away, hittable only with two dice combined.' },
+  { term: 'Market loser', meaning: 'A roll that would make your position too strong for the opponent to take a double. Counting them tells you to double now.' },
+  { term: 'Midpoint', meaning: 'Your 13-point. The five checkers that start there are the supply line for the rest of the game.' },
+  { term: 'Pip', meaning: 'One point of movement. The pip count is the total distance your checkers still have to travel.' },
+  { term: 'Prime', meaning: 'Consecutive made points. A six-prime cannot be jumped by any die and traps everything behind it.' },
+  { term: 'Race', meaning: 'A position with no contact left, where both sides simply run home. The pip count decides it.' },
+  { term: 'Slot', meaning: 'Placing a single checker on a valuable point, hoping to cover it next turn. Aggressive; invites a hit.' },
+  { term: 'Split', meaning: 'Moving your two back checkers onto different points to create anchor chances.' },
+  { term: 'Take', meaning: 'Accepting a double. The game is now worth twice as much, and you own the cube.' },
+  { term: 'Too good to double', meaning: 'A position so strong that doubling would let the opponent drop for one point, when playing on wins a gammon.' },
+]
+---
+
+<LegalLayout
+  title="Backgammon Glossary — Terms Explained"
+  description="A plain-language glossary of backgammon terms: blot, anchor, prime, bar point, gammon, backgame, market loser, and more."
+  canonical={`${site.url}/glossary`}
+>
+  <h1>Glossary</h1>
+  <p class="doc-meta">
+    The words backgammon players use, in plain language. The rules themselves
+    are on <a href="/rules">the rules page</a>; strategy is in the
+    <a href="/guides">guides</a>.
+  </p>
+
+  <dl>
+    {
+      terms.map(({ term, meaning }) => (
+        <>
+          <dt>{term}</dt>
+          <dd>{meaning}</dd>
+        </>
+      ))
+    }
+  </dl>
+
+  <p>
+    A term you heard in a match and cannot find here? Send it to
+    <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> and we will
+    add it.
+  </p>
+</LegalLayout>
+
+<style is:global>
+  /* dl only appears on this page, so its styles live here rather than in the
+     shared doc stylesheet. */
+  .doc-panel dl { margin: 0 0 1.5rem; }
+  .doc-panel dt {
+    margin-top: 1.1rem;
+    color: var(--site-cream);
+    font-weight: 750;
+    font-size: 0.95rem;
+  }
+  .doc-panel dd {
+    margin: 0.25rem 0 0;
+    color: var(--site-cream-dim);
+    font-size: 0.94rem;
+    line-height: 1.7;
+  }
+</style>

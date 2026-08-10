@@ -1,0 +1,61 @@
+---
+import LegalLayout from '../../layouts/LegalLayout.astro'
+import { site } from '../../config/site'
+import '../../styles/doc.css'
+
+const guides = [
+  {
+    href: '/guides/opening-moves',
+    title: 'Opening moves',
+    blurb: 'The best play for every opening roll, and the idea behind each one.',
+  },
+  {
+    href: '/guides/doubling-cube-strategy',
+    title: 'Doubling cube strategy',
+    blurb: 'When to double, when to take, when to drop, and why 25% is the number that matters.',
+  },
+  {
+    href: '/guides/pip-counting',
+    title: 'Pip counting',
+    blurb: 'Count the race in a few seconds and know whether to run or to hold.',
+  },
+  {
+    href: '/glossary',
+    title: 'Glossary',
+    blurb: 'Blot, anchor, prime, backgame — the words other players use, explained.',
+  },
+]
+---
+
+<LegalLayout
+  title={`Backgammon Guides — ${site.name}`}
+  description="Backgammon strategy guides: opening moves, doubling cube decisions, pip counting, and a glossary of terms."
+  canonical={`${site.url}/guides`}
+>
+  <h1>Guides</h1>
+  <p class="doc-meta">
+    Strategy, not rules. If you are still learning how the pieces move, read
+    <a href="/rules">Backgammon Rules</a> first.
+  </p>
+
+  <ul>
+    {
+      guides.map(({ href, title, blurb }) => (
+        <li>
+          <strong><a href={href}>{title}</a></strong> — {blurb}
+        </li>
+      ))
+    }
+  </ul>
+
+  <h2>Where to start</h2>
+  <p>
+    If you win about half your games and want more: learn the opening moves
+    first. They cost nothing to memorise and they decide a surprising share of
+    games before either player has thought.
+  </p>
+  <p>
+    If you already play a solid game: the cube is where matches are won and
+    lost. Most players double too late and drop far too often.
+  </p>
+</LegalLayout>

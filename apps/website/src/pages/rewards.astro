@@ -1,0 +1,72 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Every free earning path in one place. Structure only: reward amounts,
+     cooldowns and mission mixes are operator-tuned, so no numbers that live in
+     config tables are published here. -->
+<LegalLayout
+  title={`Rewards — Every Free Way to Earn Coins in ${site.name}`}
+  description={`Daily bonus, hourly wheel, daily and weekly missions, streaks, and level rewards: how to keep earning Coins in ${site.name} without paying.`}
+  canonical={`${site.url}/rewards`}
+>
+  <h1>Rewards</h1>
+  <p class="doc-meta">
+    Five ways to earn Coins, Gems, and XP without spending anything. Between
+    them, a player who opens the app once a day never runs dry.
+  </p>
+
+  <h2>Daily bonus</h2>
+  <p>
+    One claim per day, on a seven-day cycle. Miss a day and the cycle resets to
+    day one, so the bonus rewards showing up rather than playing hard.
+  </p>
+
+  <h2>Hourly wheel</h2>
+  <p>
+    A free spin roughly once an hour. Slots pay Coins, Gems, or XP. There is
+    nothing to buy and no way to spin more often by paying — the cooldown is the
+    same for everyone, and the wheel is spun on our servers, so the result is
+    not something your phone can influence.
+  </p>
+
+  <h2>Daily missions</h2>
+  <p>
+    Four missions a day: two easy, one harder, one hard. They ask for things you
+    would do anyway — win matches, play a tier, spin the wheel — and pay Coins,
+    Gems, or XP when you claim them.
+  </p>
+
+  <h2>Weekly mission and streaks</h2>
+  <p>
+    A larger mission arrives each Monday and runs the week. Separately, claiming
+    missions seven days in a row unlocks a streak chest. Both reward the habit
+    rather than the hour: a few minutes a day beats one long session.
+  </p>
+
+  <h2>Level rewards</h2>
+  <p>
+    XP from every finished match fills your level. Crossing a level pays Coins
+    or Gems automatically — you do not have to claim it — and can unlock a
+    higher tier or a lobby feature. <a href="/ranks-and-stakes">Ranks and
+    Stakes</a> explains how XP and levels relate to the tables.
+  </p>
+
+  <h2>What rewards are not</h2>
+  <p>
+    {site.disclaimer} Free Coins exist so that losing a match is never the end
+    of your session, and so that nobody has to pay to keep playing. Buying Coins
+    saves time; it does not buy better dice, an easier opponent, or a higher
+    rank. <a href="/fair-play">Fair Play</a> explains why.
+  </p>
+
+  <h2>Missing a reward you expected?</h2>
+  <p>
+    Rewards are granted on our servers and written to your account, so a
+    disconnect at the wrong moment does not lose them. If a balance still looks
+    wrong, write to <a href="/support">Support</a> with roughly when it happened
+    and we will check the ledger.
+  </p>
+</LegalLayout>

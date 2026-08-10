@@ -1,0 +1,80 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Referenced by /.well-known/security.txt (apps/website/public). Keep the
+     contact address and the scope in step with that file. -->
+<LegalLayout
+  title={`Security — Reporting a Vulnerability in ${site.name}`}
+  description={`How to report a security vulnerability in ${site.name}: where to send it, what is in scope, and what we promise in return.`}
+  canonical={`${site.url}/security`}
+>
+  <h1>Security</h1>
+  <p class="doc-meta">
+    Found a hole? Tell us at
+    <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> with
+    &ldquo;Security&rdquo; in the subject. Machine-readable version:
+    <a href="/.well-known/security.txt">/.well-known/security.txt</a>.
+  </p>
+
+  <h2>What we promise</h2>
+  <ul>
+    <li>We will confirm your report and tell you what we found.</li>
+    <li>We will not pursue legal action against you for research done in good
+      faith under the rules below.</li>
+    <li>We will credit you when we fix it, if you want the credit.</li>
+    <li>We do not run a paid bounty programme. If that changes, this page
+      changes with it.</li>
+  </ul>
+
+  <h2>What we ask</h2>
+  <ul>
+    <li>Report privately first and give us reasonable time to fix it before you
+      publish.</li>
+    <li>Use your own account. Do not touch other players' data, balances, or
+      matches.</li>
+    <li>No denial of service, no spam, no load testing against production.</li>
+    <li>Do not use social engineering against our team or our players.</li>
+    <li>Stop as soon as you have proved the issue. You do not need to extract
+      data to demonstrate access.</li>
+  </ul>
+
+  <h2>In scope</h2>
+  <ul>
+    <li>The {site.name} mobile app.</li>
+    <li>Our backend: authentication, match and economy endpoints, and the
+      database rules behind them.</li>
+    <li>This website, at <a href={site.url}>{site.url.replace('https://', '')}</a>.</li>
+  </ul>
+
+  <h2>Out of scope</h2>
+  <ul>
+    <li>Third-party services we use but do not run, including the app stores and
+      our hosting and authentication providers. Report those to them.</li>
+    <li>Findings from automated scanners with no demonstrated impact.</li>
+    <li>Missing hardening headers or best-practice warnings with no exploit
+      path.</li>
+    <li>Reports that only show that a client can be modified. Match rules, dice,
+      and payouts are decided on the server, so a modified client is expected to
+      change nothing — but if you can prove otherwise, that is a real finding
+      and we want it.</li>
+  </ul>
+
+  <h2>What to include</h2>
+  <ul>
+    <li>What you did, step by step, so we can reproduce it.</li>
+    <li>What an attacker gains from it.</li>
+    <li>The account, device, and rough time you tested, so we can match it to
+      our logs.</li>
+    <li>Any screenshots or request captures that make it obvious.</li>
+  </ul>
+
+  <h2>Player account problems</h2>
+  <p>
+    This page is for vulnerabilities. If your own account has been taken over or
+    you see charges you do not recognise, go to <a href="/support">Support</a>
+    instead — that gets a faster answer.
+  </p>
+</LegalLayout>

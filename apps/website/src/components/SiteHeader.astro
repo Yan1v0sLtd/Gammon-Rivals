@@ -8,10 +8,14 @@ const { pathname } = Astro.url
 // normalize the path to keep the exact match working (root "/" is intact).
 const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
 
+// A guide page keeps the Guides tab marked, so the nav never looks unrelated
+// to the page you are reading.
+const isCurrent = (href: string) => current === href || (href === '/guides' && current.startsWith('/guides/'))
+
 const links = [
   { href: '/how-to-play', label: 'How to Play' },
   { href: '/rules', label: 'Rules' },
-  { href: '/faq', label: 'FAQ' },
+  { href: '/guides', label: 'Guides' },
   { href: '/about', label: 'About' },
   { href: '/support', label: 'Support' },
 ]
@@ -22,7 +26,7 @@ const links = [
   <nav class="site-nav" aria-label="Site">
     {
       links.map(({ href, label }) => (
-        <a href={href} aria-current={current === href ? 'page' : undefined}>{label}</a>
+        <a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>{label}</a>
       ))
     }
     <a class="nav-cta" href="/download" aria-current={current === '/download' ? 'page' : undefined}>Get the game</a>
