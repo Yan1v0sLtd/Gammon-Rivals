@@ -80,7 +80,7 @@ packages/
 ├── board-renderer/src/            → Shared Pixi renderer and geometry
 ├── board-preview/src/             → Back Office board preview
 ├── brand-assets/                  → Shared stable/native/website asset sources (public/, native/, imported/)
-└── shared/src/                    → Shared database types and pure utilities
+└── shared/src/                    → Shared database types, pure utilities, and `base.css` (element base layer for apps without Tailwind)
 ```
 
 The game is **Capacitor-only on the web**: its `dist/play` bundle is synced into

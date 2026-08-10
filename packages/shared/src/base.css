@@ -1,0 +1,187 @@
+/* Element base layer shared by every client app.
+ *
+ * The CSS Modules in `apps/` are written against a normalised element base —
+ * no module resets anchor underlines, button chrome, table border collapse or
+ * box sizing. Tailwind's preflight used to supply that layer; apps that drop
+ * Tailwind import this file instead. Changing a rule here re-breaks every
+ * feature stylesheet, so treat it as a contract, not as a style choice.
+ *
+ * App-owned values (background, text colour, font stack) stay in the app's own
+ * `index.css`. This file declares behaviour only. */
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+  /* Width 0 keeps the border invisible until a module opts in; the style and
+   * colour defaults let a module set `border-width` alone. */
+  border: 0 solid #e5e7eb;
+}
+
+html {
+  line-height: 1.5;
+  tab-size: 4;
+  /* iOS Safari inflates text on landscape/zoomed pages unless this is pinned:
+   * inflated text outgrows %-sized containers and paints past its frame. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  line-height: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+blockquote,
+dd,
+dl,
+figure,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+p,
+pre {
+  margin: 0;
+}
+
+fieldset,
+legend {
+  margin: 0;
+  padding: 0;
+}
+
+menu,
+ol,
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+hr {
+  height: 0;
+  color: inherit;
+  border-top-width: 1px;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1em;
+}
+
+small {
+  font-size: 80%;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  border-color: inherit;
+  text-indent: 0;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 100%;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+button,
+[type="button"],
+[type="reset"],
+[type="submit"] {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+:disabled {
+  cursor: default;
+}
+
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/* Firefox dims placeholders by default; pin the opacity so the colour a
+ * module sets is the colour that renders. */
+::placeholder {
+  opacity: 1;
+}
+
+textarea {
+  resize: vertical;
+}
+
+audio,
+canvas,
+embed,
+iframe,
+img,
+object,
+svg,
+video {
+  display: block;
+  vertical-align: middle;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+summary {
+  display: list-item;
+}
+
+[hidden] {
+  display: none;
+}
