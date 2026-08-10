@@ -1,23 +1,14 @@
 import {useCallback, useEffect, useMemo, useState} from "react"
 
-import {
-  buildCurrencyRateMap, formatUsdMicros, usdMicrosFor,
-} from "../../../../../packages/shared/src/currency.ts"
+import {buildCurrencyRateMap, formatUsdMicros, usdMicrosFor} from "../../../../../packages/shared/src/currency.ts"
 import {ImageField} from "../../components/ImageField.tsx"
 import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
 import styles from "./HourlyWheelAdmin.module.css"
 import {
-  useGetWheelConfigQuery,
-  useGetWheelSlotsQuery,
-  useUpsertWheelConfigMutation,
-  useUpsertWheelSlotMutation,
+  useGetWheelConfigQuery, useGetWheelSlotsQuery, useUpsertWheelConfigMutation, useUpsertWheelSlotMutation,
 } from "./HourlyWheelApi"
-import {
-  WHEEL_CONFIG_ID,
-  type WheelConfigRow,
-  type WheelSlotRow,
-} from "./HourlyWheelData"
+import {WHEEL_CONFIG_ID, type WheelConfigRow, type WheelSlotRow} from "./HourlyWheelData"
 
 /** The reward types spin_wheel knows how to credit. Adding a new
  *  one is a one-line CASE branch in the RPC + a new option here.
@@ -225,7 +216,9 @@ function PrimaryButton({
   onClick,
   disabled,
 }: {
-  readonly children: React.ReactNode, readonly onClick: () => void, readonly disabled?: boolean,
+  readonly children: React.ReactNode,
+  readonly onClick: () => void,
+  readonly disabled?: boolean,
 }) {
   return (<button
     className={styles.primaryButton}
@@ -241,7 +234,9 @@ function SecondaryButton({
   onClick,
   disabled,
 }: {
-  readonly children: React.ReactNode, readonly onClick: () => void, readonly disabled?: boolean,
+  readonly children: React.ReactNode,
+  readonly onClick: () => void,
+  readonly disabled?: boolean,
 }) {
   return (<button
     className={styles.secondaryButton}
@@ -487,10 +482,9 @@ export function HourlyWheelAdmin({canManage}: Props) {
       </div>
     </div>
 
-    {error ? (
-      <div className={styles.errorBox}>
-        {error}
-      </div>) : null}
+    {error ? (<div className={styles.errorBox}>
+      {error}
+    </div>) : null}
 
     {/* ============================================================
             Slots: list (left) + editor (right)
@@ -675,12 +669,11 @@ export function HourlyWheelAdmin({canManage}: Props) {
                   primary_reward_icon_url,
                 }))
               }}/>
-            {slotDraft.primary_reward_type === "xp" ? (
-              <div className={styles.xpNote}>
-                Note: XP slots always render the inline hex glyph on
-                the wheel regardless of icon_url — no XP asset needs
-                to be uploaded.
-              </div>) : null}
+            {slotDraft.primary_reward_type === "xp" ? (<div className={styles.xpNote}>
+              Note: XP slots always render the inline hex glyph on
+              the wheel regardless of icon_url — no XP asset needs
+              to be uploaded.
+            </div>) : null}
           </div>
         </div>
 

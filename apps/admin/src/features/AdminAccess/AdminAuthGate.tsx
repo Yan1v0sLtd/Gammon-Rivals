@@ -17,7 +17,9 @@ type AccessState = "checking" | "missing-config" | "migration-missing" | "denied
  * around the lazy shell in App.tsx, so the shell's hooks and queries never run
  * during the access check.
  */
-export function AdminAuthGate({children}: {children: ReactNode}) {
+export function AdminAuthGate({children}: {
+  children: ReactNode,
+}) {
   const {
     user,
     isLoading,
@@ -33,15 +35,7 @@ export function AdminAuthGate({children}: {children: ReactNode}) {
   const currentUserEmail = normalizeEmail(user?.email ?? "")
   // `access` survives a refetch, so a token refresh keeps the shell mounted
   // instead of flashing the "Checking access" placeholder.
-  const accessState: AccessState = !isAdminSupabaseConfigured
-    ? "missing-config"
-    : accessError
-      ? "denied"
-      : access
-        ? access.status
-        : isLoading || user
-          ? "checking"
-          : "denied"
+  const accessState: AccessState = !isAdminSupabaseConfigured ? "missing-config" : accessError ? "denied" : access ? access.status : isLoading || user ? "checking" : "denied"
 
   if (accessState === "allowed") return <>{children}</>
 

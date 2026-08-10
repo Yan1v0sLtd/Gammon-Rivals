@@ -177,8 +177,18 @@ export type SimTestProfileSummary = {
 }
 
 export type SimTestUserState = {
-  profile: {id: string, display_name: string, level: number, xp: number, pvp_rating: number},
-  metrics: readonly {metric_code: string, baseline_7d: number, tier: string | null}[],
+  profile: {
+    id: string,
+    display_name: string,
+    level: number,
+    xp: number,
+    pvp_rating: number,
+  },
+  metrics: readonly {
+    metric_code: string,
+    baseline_7d: number,
+    tier: string | null,
+  }[],
   missions: readonly {
     id: string,
     title: string,
@@ -189,7 +199,10 @@ export type SimTestUserState = {
     resolution_mode: string,
     resolved_goal: number,
     mission_points: number,
-    rewards: readonly {currency_code: string | null, amount: number}[],
+    rewards: readonly {
+      currency_code: string | null,
+      amount: number,
+    }[],
   }[],
 }
 
@@ -275,7 +288,9 @@ type DailyMissionsDatabase = {
     Views: Record<never, never>,
     Functions: Database["public"]["Functions"] & {
       admin_refresh_player_missions: {
-        Args: {p_email: string},
+        Args: {
+          p_email: string,
+        },
         Returns: RefreshPlayerMissionsResult,
       },
     },
@@ -288,6 +303,7 @@ const sb = adminSupabase as unknown as SupabaseClient<DailyMissionsDatabase>
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Mission templates + reward bundles                                 */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -378,9 +394,10 @@ export async function saveMissionTemplate(args: {
   if (delErr) throw new Error(delErr.message)
 
   if (args.rewards.length > 0) {
-    const {error: insErr} = await sb.from("mission_rewards").insert(
-      args.rewards.map((r) => ({...r, mission_id: templateId})),
-    )
+    const {error: insErr} = await sb.from("mission_rewards").insert(args.rewards.map((r) => ({
+      ...r,
+      mission_id: templateId,
+    })))
     if (insErr) throw new Error(insErr.message)
   }
 
@@ -400,6 +417,7 @@ export async function deleteMissionTemplate(id: string): Promise<void> {
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Mission type registry                                              */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -417,6 +435,7 @@ export async function updateMissionTypeConfig(missionType: string, patch: Missio
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Chest milestones + reward bundles                                  */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -479,6 +498,7 @@ export async function saveChestMilestone(args: {
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Reroll pricing singleton                                           */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -510,6 +530,7 @@ export async function updateRerollPricingConfig(patch: RerollPricingConfigUpdate
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Streak chest rewards                                               */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -549,6 +570,7 @@ export async function saveStreakChestRewards(rows: readonly StreakChestRewardIns
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Player mission refresh (BO testing helper)                         */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -569,6 +591,7 @@ export async function refreshPlayerMissions(email: string): Promise<RefreshPlaye
 
 /* ────────────────────────────────────────────────────────────────── */
 /* Simulator RPCs                                                     */
+
 /* ────────────────────────────────────────────────────────────────── */
 
 /**
@@ -601,7 +624,13 @@ export async function getSimTestUserState(profileId: string): Promise<SimTestUse
 }
 
 const EMPTY_SIM_STATE: SimTestUserState = {
-  profile: {id: "", display_name: "", level: 0, xp: 0, pvp_rating: 0},
+  profile: {
+    id: "",
+    display_name: "",
+    level: 0,
+    xp: 0,
+    pvp_rating: 0,
+  },
   metrics: [],
   missions: [],
 }
@@ -703,7 +732,11 @@ export async function spawnSimArchetypes(args: {
     p_whales: args.whales,
   })
   if (error) throw new Error(error.message)
-  return (data ?? {casuals: 0, regulars: 0, whales: 0}) as unknown as SimSpawnResult
+  return (data ?? {
+    casuals: 0,
+    regulars: 0,
+    whales: 0,
+  }) as unknown as SimSpawnResult
 }
 
 /**

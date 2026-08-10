@@ -1,6 +1,7 @@
 .numLabel {
   composes: fieldLabel from "../../styles/shared.module.css";
 }
+
 .numInput {
   composes: fieldInput from "../../styles/shared.module.css";
   font-size: 0.875rem;
@@ -11,22 +12,26 @@
   composes: card from "../../styles/shared.module.css";
   margin-top: 1.5rem;
 }
+
 .header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 }
+
 .title {
   font-size: 1.125rem;
   line-height: 1.75rem;
   font-weight: 900;
 }
+
 .previewNote {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .desc {
   margin-top: 0.25rem;
   font-size: 0.75rem;
@@ -39,11 +44,13 @@
   display: grid;
   gap: 0.75rem;
 }
+
 @media (min-width: 640px) {
   .paramsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
 @media (min-width: 1024px) {
   .paramsGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -57,11 +64,13 @@
   background-color: rgba(0, 0, 0, 0.15);
   padding: 0.75rem;
 }
+
 .gemHeader {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
 }
+
 .gemTitle {
   font-size: 0.75rem;
   line-height: 1rem;
@@ -70,27 +79,32 @@
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.45);
 }
+
 .gemHint {
   font-size: 10px;
   color: rgba(255, 255, 255, 0.35);
 }
+
 .gemDesc {
   margin-top: 0.25rem;
   font-size: 10px;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .gemRules {
   margin-top: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
+
 .gemGrid {
   display: grid;
   grid-template-columns: 1.5rem minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 2rem;
   align-items: center;
   gap: 0.5rem;
 }
+
 .gemHeaderRow {
   padding: 0 0.25rem;
   font-size: 10px;
@@ -99,6 +113,7 @@
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .gemEmpty {
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -108,12 +123,14 @@
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .gemIndex {
   text-align: center;
   font-size: 10px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.3);
 }
+
 .gemInput {
   width: 100%;
   border-radius: 0.5rem;
@@ -125,9 +142,11 @@
   color: #fff;
   outline: none;
 }
+
 .gemInput:focus {
   border-color: rgba(253, 230, 138, 0.6);
 }
+
 .gemRemove {
   composes: transition from "../../styles/shared.module.css";
   display: flex;
@@ -143,9 +162,11 @@
   font-weight: 900;
   color: rgba(254, 205, 211, 0.8);
 }
+
 .gemRemove:hover {
   background-color: rgba(253, 164, 175, 0.2);
 }
+
 .gemAdd {
   composes: transition from "../../styles/shared.module.css";
   border-radius: 0.5rem;
@@ -157,6 +178,7 @@
   font-weight: 700;
   color: rgba(255, 255, 255, 0.7);
 }
+
 .gemAdd:hover {
   border-color: rgba(255, 255, 255, 0.3);
 }
@@ -170,6 +192,7 @@
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
+
 .summaryChip {
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -177,6 +200,7 @@
   padding: 0.25rem 0.75rem;
   color: rgba(255, 255, 255, 0.7);
 }
+
 .summaryChipEmerald {
   border-radius: 0.5rem;
   border: 1px solid rgba(110, 231, 183, 0.4);
@@ -184,6 +208,7 @@
   padding: 0.25rem 0.75rem;
   color: #a7f3d0;
 }
+
 .summaryChipAmber {
   border-radius: 0.5rem;
   border: 1px solid rgba(252, 211, 77, 0.4);
@@ -198,6 +223,7 @@
   align-items: center;
   gap: 0.75rem;
 }
+
 .applyButton {
   composes: transition from "../../styles/shared.module.css";
   border-radius: 0.5rem;
@@ -211,13 +237,16 @@
   letter-spacing: 0.14em;
   color: #fef3c7;
 }
+
 .applyButton:hover {
   background-color: rgba(253, 230, 138, 0.25);
 }
+
 .applyButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
 .resetButton {
   composes: transition from "../../styles/shared.module.css";
   border-radius: 0.5rem;
@@ -231,9 +260,11 @@
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.7);
 }
+
 .resetButton:hover {
   border-color: rgba(255, 255, 255, 0.3);
 }
+
 .recomputeButton {
   composes: transition from "../../styles/shared.module.css";
   border-radius: 0.5rem;
@@ -247,13 +278,16 @@
   letter-spacing: 0.14em;
   color: #e0f2fe;
 }
+
 .recomputeButton:hover {
   background-color: rgba(125, 211, 252, 0.2);
 }
+
 .recomputeButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
 .errorChip {
   border-radius: 0.5rem;
   border: 1px solid rgba(253, 164, 175, 0.4);
@@ -264,6 +298,7 @@
   font-weight: 700;
   color: #ffe4e6;
 }
+
 .messageChip {
   border-radius: 0.5rem;
   border: 1px solid rgba(110, 231, 183, 0.4);
@@ -282,12 +317,14 @@
   border-radius: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .table {
   min-width: 100%;
   text-align: left;
   font-size: 0.75rem;
   line-height: 1rem;
 }
+
 .thead {
   position: sticky;
   top: 0;
@@ -297,62 +334,76 @@
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.45);
 }
+
 .th {
   padding: 0.5rem 0.75rem;
 }
+
 .thRight {
   padding: 0.5rem 0.75rem;
   text-align: right;
 }
+
 .row {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.7);
 }
+
 .td {
   padding: 0.375rem 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+
 .tdRight {
   padding: 0.375rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
+
 .tdRightDim {
   padding: 0.375rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(255, 255, 255, 0.45);
 }
+
 .deltaNone {
   color: rgba(255, 255, 255, 0.25);
 }
+
 .deltaZero {
   color: rgba(255, 255, 255, 0.35);
 }
+
 .deltaDown {
   color: rgba(110, 231, 183, 0.85);
 }
+
 .deltaUp {
   color: rgba(253, 164, 175, 0.85);
 }
+
 .tdReward {
   padding: 0.375rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(167, 243, 208, 0.8);
 }
+
 .tdSunk {
   padding: 0.375rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(255, 255, 255, 0.55);
 }
+
 .tdRebate {
   padding: 0.375rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(254, 243, 199, 0.75);
 }
+
 .footnote {
   margin-top: 0.5rem;
   font-size: 10px;

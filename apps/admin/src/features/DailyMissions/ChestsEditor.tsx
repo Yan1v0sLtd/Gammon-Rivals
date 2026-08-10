@@ -2,21 +2,14 @@ import {useEffect, useRef, useState} from "react"
 
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
-import {
-  useGetChestMilestonesQuery,
-  useGetChestRewardsQuery,
-  useSaveChestMilestoneMutation,
-} from "./DailyMissionsApi"
-import type {
-  ChestMilestoneRow,
-  ChestMilestoneUpdate,
-  ChestRewardInsert,
-  ChestRewardRow,
-} from "./DailyMissionsData"
-import {Field, RewardBundleEditor} from "./MissionsAdminShared"
+import {useGetChestMilestonesQuery, useGetChestRewardsQuery, useSaveChestMilestoneMutation} from "./DailyMissionsApi"
+import type {ChestMilestoneRow, ChestMilestoneUpdate, ChestRewardInsert, ChestRewardRow} from "./DailyMissionsData"
 import type {RewardRow} from "./MissionsAdminShared"
+import {Field, RewardBundleEditor} from "./MissionsAdminShared"
 
-export function ChestsEditor({canManage}: {readonly canManage: boolean}) {
+export function ChestsEditor({canManage}: {
+  readonly canManage: boolean,
+}) {
   const {
     data: chestsQuery = [],
     error: chestsError,
@@ -72,10 +65,7 @@ export function ChestsEditor({canManage}: {readonly canManage: boolean}) {
   // With no row expanded the per-row error has no home, so load failures
   // render at the top instead. While a row is open these messages stay in
   // that row's inline error, so the same failure is never shown twice.
-  const loadErrors = editingId === null ? [
-    chestsError ? (chestsError.message ?? "Failed to load chest milestones.") : null,
-    chestRewardsError ? (chestRewardsError.message ?? "Failed to load chest rewards.") : null,
-  ].filter((m): m is string => m !== null) : []
+  const loadErrors = editingId === null ? [chestsError ? (chestsError.message ?? "Failed to load chest milestones.") : null, chestRewardsError ? (chestRewardsError.message ?? "Failed to load chest rewards.") : null].filter((m): m is string => m !== null) : []
 
   const startEdit = (c: ChestMilestoneRow) => {
     setEditingId(c.id)
@@ -155,12 +145,11 @@ export function ChestsEditor({canManage}: {readonly canManage: boolean}) {
               · {c.enabled ? "enabled" : "disabled"}
             </div>
             <div className="mt-1 flex flex-wrap gap-1.5">
-              {(rewardsByMilestone[c.id] ?? []).map((r) => (
-                <span
-                  key={`${r.amount}-${r.reward_kind}-${r.currency_code ?? r.item_id ?? ""}`}
-                  className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/80">
-                  +{r.amount} {r.reward_kind === "currency" ? r.currency_code : r.item_id}
-                </span>))}
+              {(rewardsByMilestone[c.id] ?? []).map((r) => (<span
+                key={`${r.amount}-${r.reward_kind}-${r.currency_code ?? r.item_id ?? ""}`}
+                className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/80">
+                +{r.amount} {r.reward_kind === "currency" ? r.currency_code : r.item_id}
+              </span>))}
             </div>
           </div>
         </div>
@@ -168,8 +157,12 @@ export function ChestsEditor({canManage}: {readonly canManage: boolean}) {
           className="rounded bg-amber-500/20 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/30"
           type="button"
           onClick={() => {
-            if (editingId === c.id) setEditingId(null)
-            else startEdit(c)
+            if (editingId === c.id) {
+              setEditingId(null)
+            }
+            else {
+              startEdit(c)
+            }
           }}>
           {editingId === c.id ? "Close" : "Edit"}
         </button>)}

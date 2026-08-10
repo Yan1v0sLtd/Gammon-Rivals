@@ -13,7 +13,7 @@ import {StatusPill} from "../../components/StatusPill"
 import {TextArea} from "../../components/TextArea"
 import {Toggle} from "../../components/Toggle"
 import {useConfirm} from "../../components/useConfirm"
-import {boardToDraft, type BoardDraft} from "../../lib/boardToDraft"
+import {type BoardDraft, boardToDraft} from "../../lib/boardToDraft"
 import {builtInBoardSeeds} from "../../lib/builtInBoardSeeds.ts"
 import {emptyToNull} from "../../lib/emptyToNull"
 import {formatNumber} from "../../lib/formatNumber"
@@ -25,10 +25,10 @@ import {withGameplayBackgroundMetadata} from "../../lib/withGameplayBackgroundMe
 
 import styles from "./BoardThemesAdmin.module.css"
 import {
-  useAddLoadingScreenMutation,
   useActivateLoadingScreenMutation,
-  useAddPodiumMutation,
   useActivatePodiumMutation,
+  useAddLoadingScreenMutation,
+  useAddPodiumMutation,
   useDeleteBoardMutation,
   useDeleteLoadingScreenMutation,
   useDeletePodiumMutation,
@@ -90,14 +90,23 @@ export function BoardThemesAdmin({
   const [activateLoadingScreen] = useActivateLoadingScreenMutation()
   const [deleteLoadingScreen] = useDeleteLoadingScreenMutation()
 
-  const {confirm, confirmUI} = useConfirm()
+  const {
+    confirm,
+    confirmUI,
+  } = useConfirm()
 
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
-  const [podiumDraft, setPodiumDraft] = useState<{name: string, image_url: string}>({
+  const [podiumDraft, setPodiumDraft] = useState<{
+    name: string,
+    image_url: string,
+  }>({
     name: "",
     image_url: "",
   })
-  const [loadingScreenDraft, setLoadingScreenDraft] = useState<{name: string, image_url: string}>({
+  const [loadingScreenDraft, setLoadingScreenDraft] = useState<{
+    name: string,
+    image_url: string,
+  }>({
     name: "",
     image_url: "",
   })
@@ -668,265 +677,264 @@ export function BoardThemesAdmin({
         </div>))}
       </div>)}
 
-    {boardEditorOpen && (
-      <div className={styles.modalOverlay}>
-        <div className={styles.modalDialog}>
-          <div className={styles.modalHeader}>
-            <div>
-              <div className={styles.modalEyebrow}>
-                {boardEditorMode === "add" ? "Add Board" : "Edit Board"}
-              </div>
-              <h2 className={styles.modalTitle}>
-                {boardEditorMode === "add" ? "New board theme" : boardDraft.display_name || "Board theme"}
-              </h2>
+    {boardEditorOpen && (<div className={styles.modalOverlay}>
+      <div className={styles.modalDialog}>
+        <div className={styles.modalHeader}>
+          <div>
+            <div className={styles.modalEyebrow}>
+              {boardEditorMode === "add" ? "Add Board" : "Edit Board"}
             </div>
-            <button
-              className={styles.closeButton}
-              type="button"
-              onClick={() => {
-                setBoardEditorOpen(false)
-              }}>
-              Close
-            </button>
+            <h2 className={styles.modalTitle}>
+              {boardEditorMode === "add" ? "New board theme" : boardDraft.display_name || "Board theme"}
+            </h2>
           </div>
+          <button
+            className={styles.closeButton}
+            type="button"
+            onClick={() => {
+              setBoardEditorOpen(false)
+            }}>
+            Close
+          </button>
+        </div>
 
-          <div className={styles.modalFields}>
-            <div>
-              <Field
-                disabled={boardEditorMode === "edit"}
-                label="Board id"
-                value={boardDraft.id}
-                onChange={(id) => {
-                  setBoardDraft((d) => ({
-                    ...d,
-                    id,
-                  }))
-                }}/>
-              {boardEditorMode === "add" && boardDraft.id !== "" && !isValidBoardId(boardDraft.id) && (
-                <div className={styles.idError}>
-                  Must be lowercase letters/digits, separated by - or _.
-                  Start with a letter or digit. Examples: caribbean-full, zen-garden, classic_purple.
-                </div>)}
-            </div>
+        <div className={styles.modalFields}>
+          <div>
             <Field
-              label="Display name"
-              value={boardDraft.display_name}
-              onChange={(display_name) => {
+              disabled={boardEditorMode === "edit"}
+              label="Board id"
+              value={boardDraft.id}
+              onChange={(id) => {
                 setBoardDraft((d) => ({
                   ...d,
-                  display_name,
+                  id,
                 }))
               }}/>
-            <Field
-              label="Unlock level"
-              value={boardDraft.unlock_level}
-              onChange={(unlock_level) => {
+            {boardEditorMode === "add" && boardDraft.id !== "" && !isValidBoardId(boardDraft.id) && (
+              <div className={styles.idError}>
+                Must be lowercase letters/digits, separated by - or _.
+                Start with a letter or digit. Examples: caribbean-full, zen-garden, classic_purple.
+              </div>)}
+          </div>
+          <Field
+            label="Display name"
+            value={boardDraft.display_name}
+            onChange={(display_name) => {
+              setBoardDraft((d) => ({
+                ...d,
+                display_name,
+              }))
+            }}/>
+          <Field
+            label="Unlock level"
+            value={boardDraft.unlock_level}
+            onChange={(unlock_level) => {
+              setBoardDraft((d) => ({
+                ...d,
+                unlock_level,
+              }))
+            }}/>
+          <Field
+            label="Price coins"
+            value={boardDraft.price_coins}
+            onChange={(price_coins) => {
+              setBoardDraft((d) => ({
+                ...d,
+                price_coins,
+              }))
+            }}/>
+          <Field
+            label="Gems cost"
+            value={boardDraft.price_gems}
+            onChange={(price_gems) => {
+              setBoardDraft((d) => ({
+                ...d,
+                price_gems,
+              }))
+            }}/>
+          <Field
+            label="Sort order"
+            value={boardDraft.sort_order}
+            onChange={(sort_order) => {
+              setBoardDraft((d) => ({
+                ...d,
+                sort_order,
+              }))
+            }}/>
+        </div>
+        <div className={styles.modalImages}>
+          <ImageField
+            folder={boardDraft.id}
+            kind="preview"
+            label="Lobby image"
+            value={boardDraft.preview_image}
+            onChange={(preview_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                preview_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="gameplay"
+            label="Gameplay image"
+            value={boardDraft.gameplay_image}
+            onChange={(gameplay_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                gameplay_image,
+              }))
+            }}/>
+          <FeltCornersField
+            gameplayImage={boardDraft.gameplay_image}
+            metadata={boardDraft.metadata}
+            onMetadataChange={(metadata) => {
+              setBoardDraft((d) => ({
+                ...d,
+                metadata,
+              }))
+            }}/>
+          <BearOffTraysField
+            gameplayImage={boardDraft.gameplay_image}
+            metadata={boardDraft.metadata}
+            onMetadataChange={(metadata) => {
+              setBoardDraft((d) => ({
+                ...d,
+                metadata,
+              }))
+            }}/>
+          <BoardTuningField
+            metadata={boardDraft.metadata}
+            onMetadataChange={(metadata) => {
+              setBoardDraft((d) => ({
+                ...d,
+                metadata,
+              }))
+            }}/>
+          <BoardPreview
+            blackChecker={boardDraft.black_checker_image}
+            gameplayImage={boardDraft.gameplay_image}
+            metadata={boardDraft.metadata}
+            whiteChecker={boardDraft.white_checker_image}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="lobby-bg"
+            label="Lobby background image"
+            value={boardDraft.lobby_background_image}
+            onChange={(lobby_background_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                lobby_background_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="gameplay-bg"
+            label="Gameplay background image"
+            value={boardDraft.gameplay_background_image}
+            onChange={(gameplay_background_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                gameplay_background_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="checker-white"
+            label="White checker image"
+            value={boardDraft.white_checker_image}
+            onChange={(white_checker_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                white_checker_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="checker-black"
+            label="Black checker image"
+            value={boardDraft.black_checker_image}
+            onChange={(black_checker_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                black_checker_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="dice"
+            label="Dice sprite (3 cols × 2 rows: face 1 top-left → face 6 bottom-right)"
+            value={boardDraft.dice_image}
+            onChange={(dice_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                dice_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="tray"
+            label="Tray image"
+            value={boardDraft.tray_image}
+            onChange={(tray_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                tray_image,
+              }))
+            }}/>
+          <ImageField
+            folder={boardDraft.id}
+            kind="holder"
+            label="Holder image"
+            value={boardDraft.holder_image}
+            onChange={(holder_image) => {
+              setBoardDraft((d) => ({
+                ...d,
+                holder_image,
+              }))
+            }}/>
+          <TextArea
+            label="Metadata JSON object"
+            value={boardDraft.metadata}
+            onChange={(metadata) => {
+              setBoardDraft((d) => ({
+                ...d,
+                metadata,
+              }))
+            }}/>
+          <div className={styles.toggleGrid}>
+            <Toggle
+              checked={boardDraft.is_enabled}
+              label="Enabled"
+              onChange={(is_enabled) => {
                 setBoardDraft((d) => ({
                   ...d,
-                  unlock_level,
+                  is_enabled,
                 }))
               }}/>
-            <Field
-              label="Price coins"
-              value={boardDraft.price_coins}
-              onChange={(price_coins) => {
+            <Toggle
+              checked={boardDraft.is_featured}
+              label="Featured"
+              onChange={(is_featured) => {
                 setBoardDraft((d) => ({
                   ...d,
-                  price_coins,
-                }))
-              }}/>
-            <Field
-              label="Gems cost"
-              value={boardDraft.price_gems}
-              onChange={(price_gems) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  price_gems,
-                }))
-              }}/>
-            <Field
-              label="Sort order"
-              value={boardDraft.sort_order}
-              onChange={(sort_order) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  sort_order,
+                  is_featured,
                 }))
               }}/>
           </div>
-          <div className={styles.modalImages}>
-            <ImageField
-              folder={boardDraft.id}
-              kind="preview"
-              label="Lobby image"
-              value={boardDraft.preview_image}
-              onChange={(preview_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  preview_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="gameplay"
-              label="Gameplay image"
-              value={boardDraft.gameplay_image}
-              onChange={(gameplay_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  gameplay_image,
-                }))
-              }}/>
-            <FeltCornersField
-              gameplayImage={boardDraft.gameplay_image}
-              metadata={boardDraft.metadata}
-              onMetadataChange={(metadata) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  metadata,
-                }))
-              }}/>
-            <BearOffTraysField
-              gameplayImage={boardDraft.gameplay_image}
-              metadata={boardDraft.metadata}
-              onMetadataChange={(metadata) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  metadata,
-                }))
-              }}/>
-            <BoardTuningField
-              metadata={boardDraft.metadata}
-              onMetadataChange={(metadata) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  metadata,
-                }))
-              }}/>
-            <BoardPreview
-              blackChecker={boardDraft.black_checker_image}
-              gameplayImage={boardDraft.gameplay_image}
-              metadata={boardDraft.metadata}
-              whiteChecker={boardDraft.white_checker_image}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="lobby-bg"
-              label="Lobby background image"
-              value={boardDraft.lobby_background_image}
-              onChange={(lobby_background_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  lobby_background_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="gameplay-bg"
-              label="Gameplay background image"
-              value={boardDraft.gameplay_background_image}
-              onChange={(gameplay_background_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  gameplay_background_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="checker-white"
-              label="White checker image"
-              value={boardDraft.white_checker_image}
-              onChange={(white_checker_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  white_checker_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="checker-black"
-              label="Black checker image"
-              value={boardDraft.black_checker_image}
-              onChange={(black_checker_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  black_checker_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="dice"
-              label="Dice sprite (3 cols × 2 rows: face 1 top-left → face 6 bottom-right)"
-              value={boardDraft.dice_image}
-              onChange={(dice_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  dice_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="tray"
-              label="Tray image"
-              value={boardDraft.tray_image}
-              onChange={(tray_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  tray_image,
-                }))
-              }}/>
-            <ImageField
-              folder={boardDraft.id}
-              kind="holder"
-              label="Holder image"
-              value={boardDraft.holder_image}
-              onChange={(holder_image) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  holder_image,
-                }))
-              }}/>
-            <TextArea
-              label="Metadata JSON object"
-              value={boardDraft.metadata}
-              onChange={(metadata) => {
-                setBoardDraft((d) => ({
-                  ...d,
-                  metadata,
-                }))
-              }}/>
-            <div className={styles.toggleGrid}>
-              <Toggle
-                checked={boardDraft.is_enabled}
-                label="Enabled"
-                onChange={(is_enabled) => {
-                  setBoardDraft((d) => ({
-                    ...d,
-                    is_enabled,
-                  }))
-                }}/>
-              <Toggle
-                checked={boardDraft.is_featured}
-                label="Featured"
-                onChange={(is_featured) => {
-                  setBoardDraft((d) => ({
-                    ...d,
-                    is_featured,
-                  }))
-                }}/>
-            </div>
-            <div className={styles.modalFooter}>
-              <SecondaryButton onClick={() => {
-                setBoardEditorOpen(false)
-              }}>Cancel</SecondaryButton>
-              <PrimaryButton
-                disabled={!canManage || savingBoard || (boardEditorMode === "add" && !isValidBoardId(boardDraft.id))}
-                onClick={() => void saveBoard()}>
-                {boardEditorMode === "add" ? "Add board" : "Save changes"}
-              </PrimaryButton>
-            </div>
+          <div className={styles.modalFooter}>
+            <SecondaryButton onClick={() => {
+              setBoardEditorOpen(false)
+            }}>Cancel</SecondaryButton>
+            <PrimaryButton
+              disabled={!canManage || savingBoard || (boardEditorMode === "add" && !isValidBoardId(boardDraft.id))}
+              onClick={() => void saveBoard()}>
+              {boardEditorMode === "add" ? "Add board" : "Save changes"}
+            </PrimaryButton>
           </div>
         </div>
-      </div>)}
+      </div>
+    </div>)}
     {confirmUI}
   </div>)
 }

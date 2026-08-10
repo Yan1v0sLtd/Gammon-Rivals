@@ -81,12 +81,15 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
 .fieldInput::placeholder {
   color: rgba(255, 255, 255, 0.2);
 }
+
 .fieldInput:focus {
   border-color: rgba(252, 211, 77, 0.6);
 }
+
 .fieldInput:disabled {
   opacity: 0.5;
 }
@@ -106,6 +109,7 @@
   color: rgba(255, 255, 255, 0.85);
   outline: none;
 }
+
 .monoInput:focus {
   border-color: rgba(252, 211, 77, 0.6);
 }
@@ -124,6 +128,7 @@
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
 .handle:active {
   cursor: grabbing;
 }
@@ -137,12 +142,14 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(0, 0, 0, 0.4);
 }
+
 .previewImg {
   position: absolute;
   inset: 0;
   height: 100%;
   width: 100%;
 }
+
 .previewPlaceholder {
   position: absolute;
   inset: 0;
@@ -154,6 +161,7 @@
   letter-spacing: normal;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -169,6 +177,7 @@
   width: 0.5rem;
   border-radius: 9999px;
 }
+
 .numberInput {
   display: flex;
   align-items: center;
@@ -179,6 +188,7 @@
   letter-spacing: 0.14em;
   color: rgba(255, 255, 255, 0.4);
 }
+
 .coordLabel {
   font-size: 10px;
   text-transform: none;

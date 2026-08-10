@@ -28,10 +28,14 @@ export type UpsertAdminEmailRoleArgs = {
   created_by: string | null,
 }
 
-export type AdminAccessCheck =
-  | {readonly status: "allowed", readonly role: AdminRole}
-  | {readonly status: "denied"}
-  | {readonly status: "migration-missing"}
+export type AdminAccessCheck = | {
+  readonly status: "allowed",
+  readonly role: AdminRole,
+} | {
+  readonly status: "denied",
+} | {
+  readonly status: "migration-missing",
+}
 
 /**
  * The Back Office access check for the signed-in operator. `get_my_admin_role`

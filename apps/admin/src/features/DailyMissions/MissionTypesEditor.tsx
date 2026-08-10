@@ -2,16 +2,16 @@ import {useEffect, useRef, useState} from "react"
 
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
-import {
-  useGetMissionTypeConfigsQuery,
-  useUpdateMissionTypeConfigMutation,
-} from "./DailyMissionsApi"
+import {useGetMissionTypeConfigsQuery, useUpdateMissionTypeConfigMutation} from "./DailyMissionsApi"
 import type {MissionTypeConfigRow, MissionTypeConfigUpdate} from "./DailyMissionsData"
-import {Field} from "./MissionsAdminShared"
 import type {MissionTypeConfig} from "./MissionsAdminShared"
+import {Field} from "./MissionsAdminShared"
 
 const COEFFICIENT_FIELDS: readonly {
-  readonly key: keyof MissionTypeConfig, readonly label: string, readonly step: number, readonly hint: string,
+  readonly key: keyof MissionTypeConfig,
+  readonly label: string,
+  readonly step: number,
+  readonly hint: string,
 }[] = [{
   key: "base_stretch",
   label: "Base stretch",
@@ -69,7 +69,9 @@ const COEFFICIENT_FIELDS: readonly {
   hint: "Goal rounds to this multiple (1 for counts, e.g. 250 for coins).",
 }]
 
-export function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
+export function MissionTypesEditor({canManage}: {
+  readonly canManage: boolean,
+}) {
   const {
     data: rowsQuery = [],
     error: rowsError,
@@ -132,7 +134,10 @@ export function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
       }
       // The DailyMissions tag invalidation refetches the rows; no manual
       // reload needed.
-      await updateMissionTypeConfig({missionType: draft.mission_type, patch}).unwrap()
+      await updateMissionTypeConfig({
+        missionType: draft.mission_type,
+        patch,
+      }).unwrap()
       setEditing(null)
       setDraft(null)
     }
@@ -188,8 +193,12 @@ export function MissionTypesEditor({canManage}: {readonly canManage: boolean}) {
           className="shrink-0 rounded bg-amber-500/20 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/30"
           type="button"
           onClick={() => {
-            if (editing === r.mission_type) setEditing(null)
-            else startEdit(r)
+            if (editing === r.mission_type) {
+              setEditing(null)
+            }
+            else {
+              startEdit(r)
+            }
           }}>
           {editing === r.mission_type ? "Close" : "Edit"}
         </button>)}

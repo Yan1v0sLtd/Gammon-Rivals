@@ -10,7 +10,9 @@ export type AdminApiError = {
 export function toAdminApiError(err: unknown): AdminApiError {
   if (err instanceof Error) return {message: err.message}
   if (typeof err === "object" && err !== null && "message" in err && typeof err.message === "string") {
-    const code = (err as {code?: unknown}).code
+    const code = (err as {
+      code?: unknown,
+    }).code
     return {
       message: err.message,
       code: typeof code === "string" ? code : undefined,

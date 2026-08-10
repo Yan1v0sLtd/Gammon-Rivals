@@ -1,12 +1,7 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
-  fetchRtpPerPlayer,
-  fetchRtpSummary,
-  type RtpPerPlayerArgs,
-  type RtpPerPlayerRow,
-  type RtpRangeId,
-  type RtpRow,
+  fetchRtpPerPlayer, fetchRtpSummary, type RtpPerPlayerArgs, type RtpPerPlayerRow, type RtpRangeId, type RtpRow,
 } from "./RTPAnalyticsData"
 
 export const rtpAnalyticsApi = adminBaseApi.injectEndpoints({

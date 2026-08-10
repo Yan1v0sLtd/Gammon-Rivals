@@ -10,7 +10,7 @@ import {Toggle} from "../../components/Toggle"
 import {formatNumber} from "../../lib/formatNumber"
 import {parseJson} from "../../lib/parseJson"
 import {requiredNumber} from "../../lib/requiredNumber"
-import {tableToDraft, type TableDraft} from "../../lib/tableToDraft"
+import {type TableDraft, tableToDraft} from "../../lib/tableToDraft"
 import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
 import {useGetTablesQuery, useUpsertTableMutation} from "./DifficultiesApi"
@@ -70,8 +70,7 @@ export function DifficultiesAdmin({
 
   function updateDraft(patch: Partial<TableDraft>) {
     setTableDraft((d) => ({
-      ...d,
-      ...patch,
+      ...d, ...patch,
     }))
   }
 

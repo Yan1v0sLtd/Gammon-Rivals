@@ -11,7 +11,9 @@ import {adminSupabase, isAdminSupabaseConfigured} from "./adminSupabase"
 
 const missingConfigMessage = "Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to use the back office."
 
-export function AdminAuthProvider({children}: {children: ReactNode}) {
+export function AdminAuthProvider({children}: {
+  children: ReactNode,
+}) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<ProfileRow | null>(null)
   const [isLoading, setIsLoading] = useState(isAdminSupabaseConfigured)

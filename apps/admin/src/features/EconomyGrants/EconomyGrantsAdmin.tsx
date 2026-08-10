@@ -6,13 +6,10 @@ import {PrimaryButton} from "../../components/PrimaryButton"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {Toggle} from "../../components/Toggle"
 import {formatNumber} from "../../lib/formatNumber"
-import {grantToDraft, type EconomyGrantDraft} from "../../lib/grantToDraft"
+import {type EconomyGrantDraft, grantToDraft} from "../../lib/grantToDraft"
 import {requiredNumber} from "../../lib/requiredNumber"
 
-import {
-  useGetEconomyGrantsQuery,
-  useUpsertEconomyGrantMutation,
-} from "./EconomyGrantsApi"
+import {useGetEconomyGrantsQuery, useUpsertEconomyGrantMutation} from "./EconomyGrantsApi"
 
 type Props = {
   readonly canManage: boolean,

@@ -39,7 +39,10 @@ type SubTab = "templates" | "types" | "chests" | "reroll" | "streak" | "simulato
 export function MissionsAdmin({canManage}: Props) {
   const [tab, setTab] = useState<SubTab>("templates")
 
-  const tabs: readonly {readonly id: SubTab, readonly label: string}[] = [{
+  const tabs: readonly {
+    readonly id: SubTab,
+    readonly label: string,
+  }[] = [{
     id: "templates",
     label: "Templates",
   }, {

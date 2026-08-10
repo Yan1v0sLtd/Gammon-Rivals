@@ -2,6 +2,7 @@
   display: grid;
   gap: 1rem;
 }
+
 @media (min-width: 1280px) {
   .layout {
     grid-template-columns: minmax(0, 1fr) 28rem;
@@ -20,11 +21,13 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+
 @media (min-width: 1280px) {
   .loadErrors {
     grid-column: span 2;
   }
 }
+
 .loadError {
   border-radius: 0.25rem;
   background-color: rgba(76, 5, 25, 0.6);
@@ -37,6 +40,7 @@
 .listPanel {
   composes: cardFlush from "../../styles/shared.module.css";
 }
+
 .listHeader {
   display: flex;
   flex-wrap: wrap;
@@ -45,6 +49,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0.75rem;
 }
+
 .filterSelect {
   border-radius: 0.375rem;
   background-color: rgba(0, 0, 0, 0.4);
@@ -54,12 +59,14 @@
   color: #fff;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
+
 .listCount {
   margin-left: auto;
   font-size: 0.75rem;
   line-height: 1rem;
   color: rgba(255, 255, 255, 0.5);
 }
+
 .newButton {
   border-radius: 0.375rem;
   background-color: #059669;
@@ -69,18 +76,22 @@
   font-weight: 700;
   color: #fff;
 }
+
 .newButton:hover {
   background-color: #10b981;
 }
+
 .listScroll {
   max-height: 70vh;
   overflow-y: auto;
 }
+
 .listTable {
   width: 100%;
   font-size: 0.875rem;
   line-height: 1.25rem;
 }
+
 .listThead {
   position: sticky;
   top: 0;
@@ -90,41 +101,51 @@
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.5);
 }
+
 .listTh {
   padding: 0.5rem 0.75rem;
   text-align: left;
 }
+
 .listThRight {
   padding: 0.5rem 0.75rem;
   text-align: right;
 }
+
 .listThCenter {
   padding: 0.5rem 0.75rem;
   text-align: center;
 }
+
 .listRow {
   composes: transition from "../../styles/shared.module.css";
   cursor: pointer;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 .listRow:hover {
   background-color: rgba(255, 255, 255, 0.04);
 }
+
 .listRowSelected {
   background-color: rgba(245, 158, 11, 0.1);
 }
+
 .listTd {
   padding: 0.5rem 0.75rem;
 }
+
 .listTdTitle {
   padding: 0.5rem 0.75rem;
   color: #fff;
 }
+
 .listTdCap {
   padding: 0.5rem 0.75rem;
   text-transform: capitalize;
   color: rgba(255, 255, 255, 0.8);
 }
+
 .listTdMono {
   padding: 0.5rem 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -132,6 +153,7 @@
   line-height: 1rem;
   color: rgba(255, 255, 255, 0.6);
 }
+
 .deadBadge {
   margin-left: 0.25rem;
   border-radius: 0.25rem;
@@ -142,18 +164,21 @@
   text-transform: uppercase;
   color: #fecdd3;
 }
+
 .listTdGoal {
   padding: 0.5rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(255, 255, 255, 0.8);
 }
+
 .listTdMp {
   padding: 0.5rem 0.75rem;
   text-align: right;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: #fde68a;
 }
+
 .listTdCenter {
   padding: 0.5rem 0.75rem;
   text-align: center;
@@ -165,29 +190,35 @@
   background-color: rgba(245, 158, 11, 0.04);
   padding: 1rem;
 }
+
 .draftHeader {
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .draftTitle {
   font-weight: 700;
   color: #fef3c7;
 }
+
 .draftCancel {
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: rgba(255, 255, 255, 0.6);
 }
+
 .draftCancel:hover {
   color: #fff;
 }
+
 .draftGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
+
 .draftInput {
   width: 100%;
   border-radius: 0.25rem;
@@ -198,6 +229,7 @@
   color: #fff;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
+
 .hint {
   margin-top: 0.125rem;
   display: block;
@@ -205,10 +237,12 @@
   line-height: 1.625;
   color: rgba(255, 255, 255, 0.35);
 }
+
 .monoInline {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   color: rgba(255, 255, 255, 0.55);
 }
+
 .badgeWrap {
   margin-top: 0.25rem;
   display: flex;
@@ -217,6 +251,7 @@
   gap: 0.25rem;
   font-size: 10px;
 }
+
 .badgeWired {
   border-radius: 0.25rem;
   background-color: rgba(5, 150, 105, 0.3);
@@ -226,6 +261,7 @@
   letter-spacing: 0.05em;
   color: #a7f3d0;
 }
+
 .badgeNotWired {
   border-radius: 0.25rem;
   background-color: rgba(225, 29, 72, 0.3);
@@ -235,6 +271,7 @@
   letter-spacing: 0.05em;
   color: #fecdd3;
 }
+
 .badgePersonalized {
   border-radius: 0.25rem;
   background-color: rgba(2, 132, 199, 0.3);
@@ -244,6 +281,7 @@
   letter-spacing: 0.05em;
   color: #bae6fd;
 }
+
 .metricDisplay {
   width: 100%;
   border-radius: 0.25rem;
@@ -255,6 +293,7 @@
   color: rgba(255, 255, 255, 0.5);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
+
 .personalizedInfo {
   border-radius: 0.25rem;
   background-color: rgba(8, 47, 73, 0.4);
@@ -264,13 +303,16 @@
   color: rgba(224, 242, 254, 0.8);
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2);
 }
+
 .skyBold {
   font-weight: 700;
   color: #bae6fd;
 }
+
 .colSpan2 {
   grid-column: span 2;
 }
+
 .enabledLabel {
   display: flex;
   align-items: center;
@@ -283,6 +325,7 @@
 .mt4 {
   margin-top: 1rem;
 }
+
 .rewardHeader {
   margin-bottom: 0.5rem;
   display: flex;
@@ -290,6 +333,7 @@
   align-items: center;
   gap: 0.75rem;
 }
+
 .rewardLabel {
   font-size: 0.75rem;
   line-height: 1rem;
@@ -297,6 +341,7 @@
   letter-spacing: 0.05em;
   color: rgba(254, 243, 199, 0.7);
 }
+
 .rewardSelect {
   border-radius: 0.25rem;
   background-color: rgba(0, 0, 0, 0.4);
@@ -306,22 +351,26 @@
   color: #fff;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
+
 .cashbackBox {
   border-radius: 0.25rem;
   background-color: rgba(69, 26, 3, 0.3);
   padding: 0.75rem;
   box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2);
 }
+
 .cashbackRow {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .cashbackLabel {
   font-size: 0.75rem;
   line-height: 1rem;
   color: rgba(254, 243, 199, 0.8);
 }
+
 .cashbackInput {
   width: 6rem;
   border-radius: 0.25rem;
@@ -332,33 +381,39 @@
   color: #fff;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
+
 .cashbackUnit {
   font-size: 0.875rem;
   line-height: 1.25rem;
   color: rgba(255, 255, 255, 0.7);
 }
+
 .cashbackHint {
   margin-top: 0.5rem;
   font-size: 0.75rem;
   line-height: 1rem;
   color: rgba(255, 255, 255, 0.45);
 }
+
 .cashbackWarn {
   margin-top: 0.5rem;
   font-size: 0.75rem;
   line-height: 1rem;
   color: rgba(254, 205, 211, 0.9);
 }
+
 .cashbackPreview {
   margin-top: 0.5rem;
   font-size: 0.75rem;
   line-height: 1.625;
   color: rgba(254, 243, 199, 0.85);
 }
+
 .previewBold {
   font-weight: 700;
   color: #fde68a;
 }
+
 .previewSub {
   margin-top: 0.25rem;
   color: rgba(255, 255, 255, 0.4);
@@ -379,6 +434,7 @@
   display: flex;
   gap: 0.5rem;
 }
+
 .saveButton {
   flex: 1;
   border-radius: 0.25rem;
@@ -387,12 +443,15 @@
   font-weight: 700;
   color: #fff;
 }
+
 .saveButton:hover {
   background-color: #10b981;
 }
+
 .saveButton:disabled {
   opacity: 0.5;
 }
+
 .duplicateButton {
   border-radius: 0.25rem;
   background-color: #0369a1;
@@ -400,12 +459,15 @@
   font-weight: 700;
   color: #fff;
 }
+
 .duplicateButton:hover {
   background-color: #0284c7;
 }
+
 .duplicateButton:disabled {
   opacity: 0.5;
 }
+
 .deleteButton {
   border-radius: 0.25rem;
   background-color: #be123c;
@@ -413,12 +475,15 @@
   font-weight: 700;
   color: #fff;
 }
+
 .deleteButton:hover {
   background-color: #e11d48;
 }
+
 .deleteButton:disabled {
   opacity: 0.5;
 }
+
 .confirmBox {
   display: flex;
   align-items: center;
@@ -428,6 +493,7 @@
   padding: 0.25rem 0.5rem;
   box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.4);
 }
+
 .confirmText {
   padding: 0 0.25rem;
   font-size: 0.75rem;
@@ -435,6 +501,7 @@
   font-weight: 600;
   color: #ffe4e6;
 }
+
 .confirmYes {
   border-radius: 0.25rem;
   background-color: #be123c;
@@ -444,12 +511,15 @@
   font-weight: 700;
   color: #fff;
 }
+
 .confirmYes:hover {
   background-color: #e11d48;
 }
+
 .confirmYes:disabled {
   opacity: 0.5;
 }
+
 .confirmCancel {
   border-radius: 0.25rem;
   background-color: rgba(255, 255, 255, 0.1);
@@ -459,9 +529,11 @@
   font-weight: 600;
   color: #fff;
 }
+
 .confirmCancel:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
 .confirmCancel:disabled {
   opacity: 0.5;
 }

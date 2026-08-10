@@ -1,6 +1,6 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
-import {fetchDashboardStats, type DashboardStats} from "./DashboardData"
+import {type DashboardStats, fetchDashboardStats} from "./DashboardData"
 
 export const dashboardApi = adminBaseApi.injectEndpoints({
   endpoints: (build) => ({

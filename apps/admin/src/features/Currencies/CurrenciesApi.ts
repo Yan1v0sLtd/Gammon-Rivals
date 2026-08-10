@@ -1,10 +1,7 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
-  fetchCurrencies,
-  upsertCurrencyConfig,
-  type CurrencyConfigRow,
-  type UpsertCurrencyConfigArgs,
+  type CurrencyConfigRow, fetchCurrencies, upsertCurrencyConfig, type UpsertCurrencyConfigArgs,
 } from "./CurrenciesData"
 
 export const currenciesApi = adminBaseApi.injectEndpoints({

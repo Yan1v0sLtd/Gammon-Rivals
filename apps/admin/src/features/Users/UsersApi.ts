@@ -2,16 +2,16 @@ import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
   adjustWallet,
+  type AdjustWalletPayload,
+  type AdminUser,
   fetchUserDetail,
   fetchUsers,
   hardDeleteUsers,
+  type SoftDeletePayload,
   softDeleteUsers,
   toggleSuspension,
-  updateProfile,
-  type AdminUser,
-  type AdjustWalletPayload,
-  type SoftDeletePayload,
   type ToggleSuspensionPayload,
+  updateProfile,
   type UpdateProfilePayload,
   type UserDetail,
 } from "./UsersData"

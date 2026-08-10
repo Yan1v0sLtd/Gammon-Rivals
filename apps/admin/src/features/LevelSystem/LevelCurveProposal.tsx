@@ -190,7 +190,10 @@ type ApplyCurveArgs = {
 
 type Props = {
   readonly canManage: boolean,
-  readonly currentLevels: readonly {level: number, xp_required: number}[],
+  readonly currentLevels: readonly {
+    level: number,
+    xp_required: number,
+  }[],
   readonly currentUserId: string | null,
   readonly coinValueMicros: number,
   readonly gemValueMicros: number,
@@ -321,7 +324,10 @@ export function LevelCurveProposal({
         is_enabled: true,
         updated_by: currentUserId,
       }))
-      const promotedCount = await onApplyCurve({rows: payload, maxLevel: params.max_level})
+      const promotedCount = await onApplyCurve({
+        rows: payload,
+        maxLevel: params.max_level,
+      })
       setMessage(`Applied. ${proposed.length} levels written · ${totals.coins.toLocaleString()} coins + ${totals.gems} gems · ${promotedCount ?? 0} players re-leveled.`)
     }
     catch (err) {
@@ -685,8 +691,7 @@ export function LevelCurveProposal({
               </td>
               <td className={styles.tdRight}>{r.active_days_to_reach.toFixed(1)}</td>
               <td className={styles.tdRight}>{r.coins.toLocaleString()}</td>
-              <td className={styles.tdRight}>{r.gems > 0 ? r.gems
-                : <span className={styles.deltaNone}>—</span>}</td>
+              <td className={styles.tdRight}>{r.gems > 0 ? r.gems : <span className={styles.deltaNone}>—</span>}</td>
               <td className={styles.tdReward}>{formatUsdMicros(r.reward_usd_micros)}</td>
               <td className={styles.tdSunk}>{formatUsdMicros(r.sunk_usd_micros)}</td>
               <td className={styles.tdRebate}>{r.rebate_pct.toFixed(2)}%</td>

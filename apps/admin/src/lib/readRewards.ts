@@ -1,7 +1,10 @@
 import {asShopJsonObject} from "./asShopJsonObject"
 import {readPres} from "./readPres"
 
-export type ShopReward = {kind: string, label: string}
+export type ShopReward = {
+  kind: string,
+  label: string,
+}
 
 export function readRewards(text: string): ShopReward[] {
   const rewards = readPres(text).rewards

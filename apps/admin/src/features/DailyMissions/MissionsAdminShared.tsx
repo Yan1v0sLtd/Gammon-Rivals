@@ -42,7 +42,9 @@ export function RewardBundleEditor({
   onChange,
   disabled,
 }: {
-  readonly rows: readonly RewardRow[], readonly onChange: (rows: RewardRow[]) => void, readonly disabled?: boolean,
+  readonly rows: readonly RewardRow[],
+  readonly onChange: (rows: RewardRow[]) => void,
+  readonly disabled?: boolean,
 }) {
   const update = (i: number, patch: Partial<RewardRow>) => {
     const next = rows.map((r, idx) => idx === i ? {...r, ...patch} : r)
@@ -140,7 +142,9 @@ export function Field({
   children,
   wide = false,
 }: {
-  readonly label: string, readonly children: React.ReactNode, readonly wide?: boolean,
+  readonly label: string,
+  readonly children: React.ReactNode,
+  readonly wide?: boolean,
 }) {
   return (<label className={`block ${wide ? "col-span-2" : ""}`}>
     <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/50">{label}</span>

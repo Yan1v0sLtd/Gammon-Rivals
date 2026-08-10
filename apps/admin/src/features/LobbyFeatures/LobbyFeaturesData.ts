@@ -4,10 +4,7 @@ import {adminSupabase, isAdminSupabaseConfigured} from "../../lib/adminSupabase"
 export type LobbyFeatureConfigRow = Database["public"]["Tables"]["lobby_feature_configs"]["Row"]
 
 /** The editable subset of a lobby feature config row, as selected by the fetch. */
-export type LobbyFeatureConfig = Pick<
-  LobbyFeatureConfigRow,
-  "feature_key" | "label" | "unlock_level" | "is_enabled" | "sort_order" | "tooltip_text"
->
+export type LobbyFeatureConfig = Pick<LobbyFeatureConfigRow, "feature_key" | "label" | "unlock_level" | "is_enabled" | "sort_order" | "tooltip_text">
 
 /**
  * The full lobby feature config table, ordered by `sort_order` — the gating
@@ -34,10 +31,7 @@ export async function fetchLobbyFeatures(): Promise<readonly LobbyFeatureConfig[
  * view-model without a refetch. The Supabase error message is preserved
  * verbatim so the caller can surface it to the operator.
  */
-export async function updateLobbyFeature(
-  featureKey: string,
-  patch: Pick<LobbyFeatureConfigRow, "unlock_level" | "is_enabled" | "tooltip_text">,
-): Promise<LobbyFeatureConfig> {
+export async function updateLobbyFeature(featureKey: string, patch: Pick<LobbyFeatureConfigRow, "unlock_level" | "is_enabled" | "tooltip_text">): Promise<LobbyFeatureConfig> {
   const {
     data,
     error,

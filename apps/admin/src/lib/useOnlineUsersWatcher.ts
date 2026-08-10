@@ -43,7 +43,10 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
     if (!isSupabaseConfigured) return
 
     // Shared helper: compute counts from any presence-state snapshot.
-    const computeFromState = (state: Record<string, {profile_id?: string, is_guest?: boolean}[]>) => {
+    const computeFromState = (state: Record<string, {
+      profile_id?: string,
+      is_guest?: boolean,
+    }[]>) => {
       const seen = new Map<string, boolean>() // profile_id -> is_guest
       for (const presences of Object.values(state)) {
         for (const p of presences) {
@@ -92,7 +95,10 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
       // Polling mode. 1500ms is fine — operators don't need
       // sub-second precision on this counter.
       const tick = () => {
-        const state = existing.presenceState() as Record<string, {profile_id?: string, is_guest?: boolean}[]>
+        const state = existing.presenceState() as Record<string, {
+          profile_id?: string,
+          is_guest?: boolean,
+        }[]>
         computeFromState(state)
       }
       tick()
@@ -117,7 +123,10 @@ export function useOnlineUsersWatcher(enabled: boolean): OnlineUserCounts {
     })
 
     const recompute = () => {
-      const state = channel.presenceState() as Record<string, {profile_id?: string, is_guest?: boolean}[]>
+      const state = channel.presenceState() as Record<string, {
+        profile_id?: string,
+        is_guest?: boolean,
+      }[]>
       computeFromState(state)
     }
 

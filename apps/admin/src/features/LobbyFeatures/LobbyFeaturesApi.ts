@@ -1,10 +1,7 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
-  fetchLobbyFeatures,
-  updateLobbyFeature,
-  type LobbyFeatureConfig,
-  type LobbyFeatureConfigRow,
+  fetchLobbyFeatures, type LobbyFeatureConfig, type LobbyFeatureConfigRow, updateLobbyFeature,
 } from "./LobbyFeaturesData"
 
 export const lobbyFeaturesApi = adminBaseApi.injectEndpoints({
@@ -20,11 +17,14 @@ export const lobbyFeaturesApi = adminBaseApi.injectEndpoints({
       },
       providesTags: ["LobbyFeatures"],
     }),
-    updateLobbyFeature: build.mutation<
-      LobbyFeatureConfig,
-      {featureKey: string, patch: Pick<LobbyFeatureConfigRow, "unlock_level" | "is_enabled" | "tooltip_text">}
-    >({
-      queryFn: async ({featureKey, patch}) => {
+    updateLobbyFeature: build.mutation<LobbyFeatureConfig, {
+      featureKey: string,
+      patch: Pick<LobbyFeatureConfigRow, "unlock_level" | "is_enabled" | "tooltip_text">,
+    }>({
+      queryFn: async ({
+        featureKey,
+        patch,
+      }) => {
         try {
           return {data: await updateLobbyFeature(featureKey, patch)}
         }

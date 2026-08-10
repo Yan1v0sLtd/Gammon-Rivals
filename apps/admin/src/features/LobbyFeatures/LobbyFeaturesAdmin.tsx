@@ -5,13 +5,14 @@ import {PrimaryButton} from "../../components/PrimaryButton"
 import {Toggle} from "../../components/Toggle"
 import {requiredNumber} from "../../lib/requiredNumber"
 
-import {
-  useGetLobbyFeaturesQuery,
-  useUpdateLobbyFeatureMutation,
-} from "./LobbyFeaturesApi"
+import {useGetLobbyFeaturesQuery, useUpdateLobbyFeatureMutation} from "./LobbyFeaturesApi"
 
 export type LobbyFeatureRow = {
-  feature_key: string, label: string, level: string, enabled: boolean, tooltip: string,
+  feature_key: string,
+  label: string,
+  level: string,
+  enabled: boolean,
+  tooltip: string,
 }
 
 type Props = {
@@ -32,7 +33,10 @@ export function LobbyFeaturesAdmin({
   onError,
   onBeforeSave,
 }: Props) {
-  const {data, error: queryError} = useGetLobbyFeaturesQuery()
+  const {
+    data,
+    error: queryError,
+  } = useGetLobbyFeaturesQuery()
   const [updateLobbyFeature] = useUpdateLobbyFeatureMutation()
   const [rows, setRows] = useState<LobbyFeatureRow[]>([])
   const [savingKey, setSavingKey] = useState<string | null>(null)
@@ -100,8 +104,7 @@ export function LobbyFeaturesAdmin({
       Disabling a feature hides its action (reserved for future use).
     </p>
     <div className="mt-4 space-y-3">
-      {rows.length === 0 ? (
-        <p className="text-xs text-white/40">Loading…</p>) : (rows.map((f) => (<div
+      {rows.length === 0 ? (<p className="text-xs text-white/40">Loading…</p>) : (rows.map((f) => (<div
         key={f.feature_key}
         className="flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
         <div className="min-w-[8rem] flex-1">

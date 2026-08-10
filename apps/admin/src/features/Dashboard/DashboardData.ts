@@ -28,36 +28,29 @@ const emptyStats: DashboardStats = {
  */
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   if (!isAdminSupabaseConfigured) return emptyStats
-  const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, shopCount] = await Promise.all([
-    adminSupabase.from("profiles").select("id", {
+  const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, shopCount] = await Promise.all([adminSupabase.from("profiles").select("id", {
+    count: "exact",
+    head: true,
+  }), adminSupabase
+    .from("profiles")
+    .select("id", {
       count: "exact",
       head: true,
-    }),
-    adminSupabase
-      .from("profiles")
-      .select("id", {
-        count: "exact",
-        head: true,
-      })
-      .eq("is_suspended", true),
-    adminSupabase.from("matches").select("id", {
-      count: "exact",
-      head: true,
-    }),
-    adminSupabase.from("matches").select("id", {
-      count: "exact",
-      head: true,
-    }).is("finished_at", null),
-    adminSupabase
-      .from("profiles")
-      .select("*")
-      .order("created_at", {ascending: false})
-      .limit(120),
-    adminSupabase.from("shop_items").select("id", {
-      count: "exact",
-      head: true,
-    }),
-  ])
+    })
+    .eq("is_suspended", true), adminSupabase.from("matches").select("id", {
+    count: "exact",
+    head: true,
+  }), adminSupabase.from("matches").select("id", {
+    count: "exact",
+    head: true,
+  }).is("finished_at", null), adminSupabase
+    .from("profiles")
+    .select("*")
+    .order("created_at", {ascending: false})
+    .limit(120), adminSupabase.from("shop_items").select("id", {
+    count: "exact",
+    head: true,
+  })])
   const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? shopCount.error
   if (firstError) throw firstError
 

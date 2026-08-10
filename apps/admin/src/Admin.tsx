@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from "react"
 
 import {skipToken} from "@reduxjs/toolkit/query/react"
-import {NavLink, Navigate, Route, Routes, useLocation, useNavigate} from "react-router-dom"
+import {Navigate, NavLink, Route, Routes, useLocation, useNavigate} from "react-router-dom"
 
 import {buildCurrencyRateMap} from "../../../packages/shared/src/currency"
 
@@ -42,25 +42,7 @@ const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"
  * subscribes (navigating back to that section) refetches instead of
  * serving the pre-refresh data.
  */
-const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0] = [
-  "Currencies",
-  "LobbyFeatures",
-  "EconomyGrants",
-  "DailyBonus",
-  "HourlyWheel",
-  "LevelSystem",
-  "DailyMissions",
-  "Difficulties",
-  "BoardThemes",
-  "BoardThemesPodiums",
-  "BoardThemesLoadingScreens",
-  "Dashboard",
-  "Users",
-  "Shop",
-  "StoreSales",
-  "StoreConfig",
-  "AdminAccess",
-]
+const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0] = ["Currencies", "LobbyFeatures", "EconomyGrants", "DailyBonus", "HourlyWheel", "LevelSystem", "DailyMissions", "Difficulties", "BoardThemes", "BoardThemesPodiums", "BoardThemesLoadingScreens", "Dashboard", "Users", "Shop", "StoreSales", "StoreConfig", "AdminAccess"]
 
 export function Admin() {
   const {
@@ -70,9 +52,7 @@ export function Admin() {
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useAdminDispatch()
-  const activeSection: Section = useMemo(
-    () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
-    [location.pathname])
+  const activeSection: Section = useMemo(() => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard", [location.pathname])
   // Selected user id lives here (not in the Users feature) because the
   // RTP Analytics deep link writes it before navigating to /users.
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -90,9 +70,7 @@ export function Admin() {
   // True while any query in the shared adminApi cache has a request in
   // flight (a refetch shows as status "pending" too, so the Refresh
   // button stays disabled until the refetches it triggered drain).
-  const isFetching = useAdminSelector((state) => (
-    Object.values(state.adminApi.queries).some((query) => query?.status === "pending")
-  ))
+  const isFetching = useAdminSelector((state) => (Object.values(state.adminApi.queries).some((query) => query?.status === "pending")))
   useEffect(() => {
     if (refreshRequestedRef.current && !isFetching) {
       refreshRequestedRef.current = false

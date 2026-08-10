@@ -2,14 +2,13 @@ import {useEffect, useRef, useState} from "react"
 
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
-import {
-  useGetRerollPricingConfigQuery,
-  useUpdateRerollPricingConfigMutation,
-} from "./DailyMissionsApi"
+import {useGetRerollPricingConfigQuery, useUpdateRerollPricingConfigMutation} from "./DailyMissionsApi"
 import type {RerollPricingConfigRow} from "./DailyMissionsData"
 import {Field} from "./MissionsAdminShared"
 
-export function RerollEditor({canManage}: {readonly canManage: boolean}) {
+export function RerollEditor({canManage}: {
+  readonly canManage: boolean,
+}) {
   const {
     data: pricingQuery = null,
     error: pricingError,

@@ -5,7 +5,9 @@ import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 import {useRefreshPlayerMissionsMutation} from "./DailyMissionsApi"
 
 /** Testing helper: refresh a real player's daily missions on demand. */
-export function RefreshMissionsTool({canManage}: {readonly canManage: boolean}) {
+export function RefreshMissionsTool({canManage}: {
+  readonly canManage: boolean,
+}) {
   const [refreshPlayerMissions] = useRefreshPlayerMissionsMutation()
 
   const [email, setEmail] = useState("")

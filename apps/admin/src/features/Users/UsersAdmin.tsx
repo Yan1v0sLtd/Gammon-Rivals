@@ -74,8 +74,12 @@ export function UsersAdmin({
   // otherwise falls back to its default and renders as empty data,
   // indistinguishable from a genuinely empty directory.
   useEffect(() => {
-    if (usersError) onError(usersError)
-    else if (detailError) onError(detailError)
+    if (usersError) {
+      onError(usersError)
+    }
+    else if (detailError) {
+      onError(detailError)
+    }
   }, [usersError, detailError, onError])
   const onlineUsers = useOnlineUsersWatcher(true)
   // Non-blocking confirm/prompt dialogs for the two delete flows.
@@ -524,19 +528,28 @@ export function UsersAdmin({
               label="Level"
               value={profileDraft.level}
               onChange={(level) => {
-                setProfileDraft((d) => ({...d, level}))
+                setProfileDraft((d) => ({
+                  ...d,
+                  level,
+                }))
               }}/>
             <Field
               label="XP"
               value={profileDraft.xp}
               onChange={(xp) => {
-                setProfileDraft((d) => ({...d, xp}))
+                setProfileDraft((d) => ({
+                  ...d,
+                  xp,
+                }))
               }}/>
             <Field
               label="Rating"
               value={profileDraft.rating}
               onChange={(rating) => {
-                setProfileDraft((d) => ({...d, rating}))
+                setProfileDraft((d) => ({
+                  ...d,
+                  rating,
+                }))
               }}/>
           </div>
           <div className={styles.mt3}>
@@ -545,7 +558,10 @@ export function UsersAdmin({
               rows={3}
               value={profileDraft.admin_note}
               onChange={(admin_note) => {
-                setProfileDraft((d) => ({...d, admin_note}))
+                setProfileDraft((d) => ({
+                  ...d,
+                  admin_note,
+                }))
               }}/>
           </div>
           <div className={styles.mt3}>
@@ -554,7 +570,10 @@ export function UsersAdmin({
               rows={2}
               value={profileDraft.suspension_reason}
               onChange={(suspension_reason) => {
-                setProfileDraft((d) => ({...d, suspension_reason}))
+                setProfileDraft((d) => ({
+                  ...d,
+                  suspension_reason,
+                }))
               }}/>
           </div>
           <div className={styles.actions}>
@@ -582,7 +601,10 @@ export function UsersAdmin({
               className={styles.select}
               value={walletDraft.currency}
               onChange={(event) => {
-                setWalletDraft((d) => ({...d, currency: event.target.value}))
+                setWalletDraft((d) => ({
+                  ...d,
+                  currency: event.target.value,
+                }))
               }}>
               <option value="coins">Coins</option>
               <option value="gems">Gems</option>
@@ -591,7 +613,10 @@ export function UsersAdmin({
               label="Amount (+ or -)"
               value={walletDraft.amount}
               onChange={(amount) => {
-                setWalletDraft((d) => ({...d, amount}))
+                setWalletDraft((d) => ({
+                  ...d,
+                  amount,
+                }))
               }}/>
           </div>
           <div className={styles.mt3}>
@@ -599,7 +624,10 @@ export function UsersAdmin({
               label="Reason"
               value={walletDraft.reason}
               onChange={(reason) => {
-                setWalletDraft((d) => ({...d, reason}))
+                setWalletDraft((d) => ({
+                  ...d,
+                  reason,
+                }))
               }}/>
           </div>
           <div className={styles.mt3}>
@@ -616,58 +644,54 @@ export function UsersAdmin({
         <div className={styles.panel}>
           <h3 className={styles.subTitle}>Inventory</h3>
           <div className={styles.chipWrap}>
-            {selectedUserDetail?.boards.length ? (selectedUserDetail.boards.map((item) => (
-              <span
-                key={item.board_theme_id}
-                className={styles.chip}>
-                {item.board_theme_id} · {item.source}
-              </span>))) : (<div className={styles.emptyText}>No owned boards.</div>)}
+            {selectedUserDetail?.boards.length ? (selectedUserDetail.boards.map((item) => (<span
+              key={item.board_theme_id}
+              className={styles.chip}>
+              {item.board_theme_id} · {item.source}
+            </span>))) : (<div className={styles.emptyText}>No owned boards.</div>)}
           </div>
         </div>
 
         <div className={styles.panel}>
           <h3 className={styles.subTitle}>Wallet ledger</h3>
           <div className={styles.list}>
-            {selectedUserDetail?.transactions.length ? (selectedUserDetail.transactions.map((tx) => (
+            {selectedUserDetail?.transactions.length ? (selectedUserDetail.transactions.map((tx) => (<div
+              key={tx.id}
+              className={styles.listItem}>
+              <div className={styles.itemTitle}>
+                {tx.amount > 0 ? "+" : ""}{formatNumber(tx.amount)} {tx.currency}
+              </div>
+              <div>{tx.reason}</div>
               <div
-                key={tx.id}
-                className={styles.listItem}>
-                <div className={styles.itemTitle}>
-                  {tx.amount > 0 ? "+" : ""}{formatNumber(tx.amount)} {tx.currency}
-                </div>
-                <div>{tx.reason}</div>
-                <div
-                  className={styles.itemSub}>After: {formatNumber(tx.balance_after)} · {formatDate(tx.created_at)}</div>
-              </div>))) : (<div className={styles.emptyText}>No wallet transactions yet.</div>)}
+                className={styles.itemSub}>After: {formatNumber(tx.balance_after)} · {formatDate(tx.created_at)}</div>
+            </div>))) : (<div className={styles.emptyText}>No wallet transactions yet.</div>)}
           </div>
         </div>
 
         <div className={styles.panel}>
           <h3 className={styles.subTitle}>Purchases</h3>
           <div className={styles.list}>
-            {selectedUserDetail?.purchases.length ? (selectedUserDetail.purchases.map((purchase) => (
+            {selectedUserDetail?.purchases.length ? (selectedUserDetail.purchases.map((purchase) => (<div
+              key={purchase.id}
+              className={styles.listItem}>
+              <div className={styles.itemTitle}>{purchase.product_id}</div>
+              <div>{purchase.product_type} · {purchase.provider} · {purchase.status}</div>
               <div
-                key={purchase.id}
-                className={styles.listItem}>
-                <div className={styles.itemTitle}>{purchase.product_id}</div>
-                <div>{purchase.product_type} · {purchase.provider} · {purchase.status}</div>
-                <div
-                  className={styles.itemSub}>{moneyFromCents(purchase.price_cents)} · {formatDate(purchase.created_at)}</div>
-              </div>))) : (<div className={styles.emptyText}>No purchases yet.</div>)}
+                className={styles.itemSub}>{moneyFromCents(purchase.price_cents)} · {formatDate(purchase.created_at)}</div>
+            </div>))) : (<div className={styles.emptyText}>No purchases yet.</div>)}
           </div>
         </div>
 
         <div className={styles.panel}>
           <h3 className={styles.subTitle}>Match history</h3>
           <div className={styles.list}>
-            {selectedUserDetail?.matches.length ? (selectedUserDetail.matches.map((match) => (
-              <div
-                key={match.id}
-                className={styles.listItem}>
-                <div className={styles.itemTitle}>{match.mode} · to {match.target}</div>
-                <div>Score {match.white_score}-{match.black_score} · winner {match.winner ?? "open"}</div>
-                <div className={styles.itemSub}>{formatDate(match.started_at)}</div>
-              </div>))) : (<div className={styles.emptyText}>No matches yet.</div>)}
+            {selectedUserDetail?.matches.length ? (selectedUserDetail.matches.map((match) => (<div
+              key={match.id}
+              className={styles.listItem}>
+              <div className={styles.itemTitle}>{match.mode} · to {match.target}</div>
+              <div>Score {match.white_score}-{match.black_score} · winner {match.winner ?? "open"}</div>
+              <div className={styles.itemSub}>{formatDate(match.started_at)}</div>
+            </div>))) : (<div className={styles.emptyText}>No matches yet.</div>)}
           </div>
         </div>
       </>)}

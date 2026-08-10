@@ -23,11 +23,17 @@ export type UserDetail = {
 }
 
 export type ProfileDraft = {
-  level: string, xp: string, rating: string, admin_note: string, suspension_reason: string,
+  level: string,
+  xp: string,
+  rating: string,
+  admin_note: string,
+  suspension_reason: string,
 }
 
 export type WalletDraft = {
-  currency: string, amount: string, reason: string,
+  currency: string,
+  amount: string,
+  reason: string,
 }
 
 export type UpdateProfilePayload = {
@@ -132,12 +138,19 @@ export async function fetchUserDetail(profileId: string): Promise<UserDetail> {
   }
 }
 
-export async function updateProfile({userId, payload}: UpdateProfilePayload): Promise<void> {
+export async function updateProfile({
+  userId,
+  payload,
+}: UpdateProfilePayload): Promise<void> {
   const {error} = await supabase.from("profiles").update(payload).eq("id", userId)
   if (error) throw error
 }
 
-export async function toggleSuspension({targetProfileId, isSuspended, suspensionReason}: ToggleSuspensionPayload): Promise<void> {
+export async function toggleSuspension({
+  targetProfileId,
+  isSuspended,
+  suspensionReason,
+}: ToggleSuspensionPayload): Promise<void> {
   const {error} = await supabase
     .from("profiles")
     .update({
@@ -149,7 +162,12 @@ export async function toggleSuspension({targetProfileId, isSuspended, suspension
   if (error) throw error
 }
 
-export async function adjustWallet({targetProfileId, currencyCode, deltaAmount, adjustmentReason}: AdjustWalletPayload): Promise<void> {
+export async function adjustWallet({
+  targetProfileId,
+  currencyCode,
+  deltaAmount,
+  adjustmentReason,
+}: AdjustWalletPayload): Promise<void> {
   const {error} = await supabase.rpc("admin_adjust_wallet", {
     target_profile_id: targetProfileId,
     currency_code: currencyCode,
@@ -165,7 +183,11 @@ export async function adjustWallet({targetProfileId, currencyCode, deltaAmount, 
  * delete columns fall back to the pre-column payload; that path was
  * added when the columns were introduced, so keep it for parity.
  */
-export async function softDeleteUsers({profileIds, note, deletedBy}: SoftDeletePayload): Promise<void> {
+export async function softDeleteUsers({
+  profileIds,
+  note,
+  deletedBy,
+}: SoftDeletePayload): Promise<void> {
   const deletePayload: Database["public"]["Tables"]["profiles"]["Update"] = {
     deleted_at: new Date().toISOString(),
     deleted_by: deletedBy,

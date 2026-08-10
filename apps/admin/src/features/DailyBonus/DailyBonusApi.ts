@@ -1,10 +1,7 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
-  fetchDailyBonusConfigs,
-  upsertDailyBonusConfig,
-  type DailyBonusConfigRow,
-  type UpsertDailyBonusConfigArgs,
+  type DailyBonusConfigRow, fetchDailyBonusConfigs, upsertDailyBonusConfig, type UpsertDailyBonusConfigArgs,
 } from "./DailyBonusData"
 
 export const dailyBonusApi = adminBaseApi.injectEndpoints({

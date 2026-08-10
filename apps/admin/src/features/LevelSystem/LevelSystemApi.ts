@@ -7,14 +7,14 @@ import {
   fetchLevelConfigs,
   fetchLevelStatusTiers,
   insertLevelStatusTiers,
-  recomputePlayerLevels,
-  updateLevelStatusTier,
-  upsertLevelConfig,
   type LevelConfigInsert,
   type LevelConfigRow,
   type LevelStatusTierInsert,
   type LevelStatusTierRow,
   type LevelStatusTierUpdate,
+  recomputePlayerLevels,
+  updateLevelStatusTier,
+  upsertLevelConfig,
 } from "./LevelSystemData"
 
 export const levelSystemApi = adminBaseApi.injectEndpoints({
@@ -77,8 +77,14 @@ export const levelSystemApi = adminBaseApi.injectEndpoints({
       },
       invalidatesTags: ["LevelSystem"],
     }),
-    updateLevelStatusTier: build.mutation<void, {id: string, patch: LevelStatusTierUpdate}>({
-      queryFn: async ({id, patch}) => {
+    updateLevelStatusTier: build.mutation<void, {
+      id: string,
+      patch: LevelStatusTierUpdate,
+    }>({
+      queryFn: async ({
+        id,
+        patch,
+      }) => {
         try {
           await updateLevelStatusTier(id, patch)
           return {data: undefined}
@@ -112,7 +118,10 @@ export const levelSystemApi = adminBaseApi.injectEndpoints({
       },
       invalidatesTags: ["LevelSystem"],
     }),
-    applyLevelCurve: build.mutation<number, {rows: readonly LevelConfigInsert[], maxLevel: number}>({
+    applyLevelCurve: build.mutation<number, {
+      rows: readonly LevelConfigInsert[],
+      maxLevel: number,
+    }>({
       queryFn: async (args) => {
         try {
           return {data: await applyLevelCurve(args)}

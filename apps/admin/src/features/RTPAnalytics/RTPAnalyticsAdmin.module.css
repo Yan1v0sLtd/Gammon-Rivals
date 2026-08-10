@@ -1,0 +1,300 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.header {
+  composes: card from "../../styles/shared.module.css";
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.title {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.rangeButtons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rangeButton {
+  composes: transition from "../../styles/shared.module.css";
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.rangeButtonActive {
+  border-color: rgba(252, 211, 77, 0.6);
+  background-color: rgba(252, 211, 77, 0.15);
+  color: #fde68a;
+}
+
+.rangeButtonInactive {
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rangeButtonInactive:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.errorBox {
+  border-radius: 0.375rem;
+  border: 1px solid rgba(251, 113, 133, 0.3);
+  background-color: rgba(76, 5, 25, 0.4);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #ffe4e6;
+}
+
+.tableWrap {
+  composes: cardFlush from "../../styles/shared.module.css";
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 100%;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.thead {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.04);
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.th {
+  padding: 0.5rem 0.75rem;
+}
+
+.thRight {
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+}
+
+.emptyCell {
+  padding: 1.5rem 0.75rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.rowExpanded {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.cellBold {
+  padding: 0.5rem 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cellRight {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cellRightDim {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.cellRightBold {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cellDelta {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.5rem 0.75rem;
+  text-align: right;
+  font-weight: 700;
+}
+
+.deltaNull {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.deltaHigh {
+  color: #fda4af;
+}
+
+.deltaLow {
+  color: #6ee7b7;
+}
+
+.deltaMid {
+  color: #fde68a;
+}
+
+.tierCaret {
+  margin-right: 0.25rem;
+  display: inline-block;
+  width: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.winCount {
+  margin-left: 0.25rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.expandedRow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.expandedCell {
+  padding: 0.75rem;
+}
+
+.playerError {
+  border-radius: 0.375rem;
+  border: 1px solid rgba(251, 113, 133, 0.3);
+  background-color: rgba(76, 5, 25, 0.4);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #ffe4e6;
+}
+
+.playerMessage {
+  padding: 1rem 0.75rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.playerTable {
+  min-width: 100%;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.playerThead {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.playerTh {
+  padding: 0.375rem 0.5rem;
+}
+
+.playerThRight {
+  padding: 0.375rem 0.5rem;
+  text-align: right;
+}
+
+.playerRow {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.playerCell {
+  padding: 0.375rem 0.5rem;
+}
+
+.playerNameButton {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.playerNameButton:hover {
+  color: #fde68a;
+}
+
+.playerCellRight {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.375rem 0.5rem;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.playerCellRtp {
+  composes: tabularNums from "../../styles/shared.module.css";
+  padding: 0.375rem 0.5rem;
+  text-align: right;
+  font-weight: 700;
+}
+
+.playerRtpNull {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.playerRtpHigh {
+  color: #fda4af;
+}
+
+.playerRtpMid {
+  color: #fde68a;
+}
+
+.playerRtpLow {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.footnote {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footnoteStrong {
+  color: rgba(255, 255, 255, 0.7);
+}

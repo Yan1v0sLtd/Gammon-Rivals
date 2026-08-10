@@ -5,7 +5,11 @@ import {jsonToString} from "./jsonToString"
 type DailyBonusConfig = Database["public"]["Tables"]["daily_bonus_configs"]["Row"]
 
 export type DailyBonusDraft = {
-  day: string, reward_coins: string, reward_gems: string, reward_xp: string, reward_items: string,
+  day: string,
+  reward_coins: string,
+  reward_gems: string,
+  reward_xp: string,
+  reward_items: string,
 }
 
 export function dailyBonusToDraft(row?: DailyBonusConfig): DailyBonusDraft {

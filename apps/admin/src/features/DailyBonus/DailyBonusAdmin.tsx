@@ -1,20 +1,17 @@
 import {useEffect, useState} from "react"
 
-import {formatUsdMicros, type CurrencyRateMap, usdMicrosFor} from "../../../../../packages/shared/src/currency"
+import {type CurrencyRateMap, formatUsdMicros, usdMicrosFor} from "../../../../../packages/shared/src/currency"
 import {ConfigTable} from "../../components/ConfigTable"
 import {Field} from "../../components/Field"
 import {PrimaryButton} from "../../components/PrimaryButton"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {TextArea} from "../../components/TextArea"
-import {dailyBonusToDraft, type DailyBonusDraft} from "../../lib/dailyBonusToDraft"
+import {type DailyBonusDraft, dailyBonusToDraft} from "../../lib/dailyBonusToDraft"
 import {formatNumber} from "../../lib/formatNumber"
 import {parseJson} from "../../lib/parseJson"
 import {requiredNumber} from "../../lib/requiredNumber"
 
-import {
-  useGetDailyBonusQuery,
-  useUpsertDailyBonusMutation,
-} from "./DailyBonusApi"
+import {useGetDailyBonusQuery, useUpsertDailyBonusMutation} from "./DailyBonusApi"
 
 type Props = {
   readonly rateMap: CurrencyRateMap,

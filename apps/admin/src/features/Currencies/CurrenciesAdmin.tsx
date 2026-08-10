@@ -6,13 +6,10 @@ import {Field} from "../../components/Field"
 import {PrimaryButton} from "../../components/PrimaryButton"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {Toggle} from "../../components/Toggle"
-import {currencyToDraft, type CurrencyDraft} from "../../lib/currencyToDraft"
+import {type CurrencyDraft, currencyToDraft} from "../../lib/currencyToDraft"
 import {requiredNumber} from "../../lib/requiredNumber"
 
-import {
-  useGetCurrenciesQuery,
-  useUpsertCurrencyMutation,
-} from "./CurrenciesApi"
+import {useGetCurrenciesQuery, useUpsertCurrencyMutation} from "./CurrenciesApi"
 
 type Props = {
   readonly canManage: boolean,

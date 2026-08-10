@@ -2,15 +2,14 @@ import {useEffect, useRef, useState} from "react"
 
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
-import {
-  useGetStreakChestRewardsQuery,
-  useSaveStreakChestRewardsMutation,
-} from "./DailyMissionsApi"
+import {useGetStreakChestRewardsQuery, useSaveStreakChestRewardsMutation} from "./DailyMissionsApi"
 import type {StreakChestRewardInsert, StreakChestRewardRow} from "./DailyMissionsData"
-import {RewardBundleEditor} from "./MissionsAdminShared"
 import type {RewardRow} from "./MissionsAdminShared"
+import {RewardBundleEditor} from "./MissionsAdminShared"
 
-export function StreakEditor({canManage}: {readonly canManage: boolean}) {
+export function StreakEditor({canManage}: {
+  readonly canManage: boolean,
+}) {
   const {
     data: streakQuery = [],
     error: streakError,

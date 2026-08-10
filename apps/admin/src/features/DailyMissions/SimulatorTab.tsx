@@ -21,7 +21,9 @@ import {
  *  set them directly. */
 const KNOWN_METRICS = ["matches_per_day", "coins_wagered_per_day", "coins_won_net_per_day", "xp_per_day", "gems_spent_per_day", "wheel_spins_per_day", "ranked_wins_per_week", "win_streak", "levels_per_week"]
 
-export function SimulatorTab({canManage}: {readonly canManage: boolean}) {
+export function SimulatorTab({canManage}: {
+  readonly canManage: boolean,
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const {

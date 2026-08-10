@@ -11,14 +11,10 @@ import {
   useSaveMissionTemplateMutation,
 } from "./DailyMissionsApi"
 import type {
-  MissionRewardDraft,
-  MissionRewardRow,
-  MissionTemplateInsert,
-  MissionTemplateRow,
-  MissionTypeConfigRow,
+  MissionRewardDraft, MissionRewardRow, MissionTemplateInsert, MissionTemplateRow, MissionTypeConfigRow,
 } from "./DailyMissionsData"
-import {Field, JsonField, RewardBundleEditor} from "./MissionsAdminShared"
 import type {MissionTypeConfig, RewardRow} from "./MissionsAdminShared"
+import {Field, JsonField, RewardBundleEditor} from "./MissionsAdminShared"
 import styles from "./TemplatesEditor.module.css"
 
 type MissionTemplate = {
@@ -46,7 +42,11 @@ type MissionTemplate = {
 // Per-tier entry fee + target RTP, mirrored from table_configs for the BO
 // cashback PREVIEW only (the server recomputes authoritatively at assignment via
 // mp_cashback_reward). Keep loosely in sync with table_configs.
-const TIER_INFO: Record<string, {fee: number, rtp: number, name: string}> = {
+const TIER_INFO: Record<string, {
+  fee: number,
+  rtp: number,
+  name: string,
+}> = {
   beginner: {
     fee: 1000,
     rtp: 90,
@@ -104,7 +104,9 @@ function previewCashback(d: MissionTemplate) {
   }
 }
 
-export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
+export function TemplatesEditor({canManage}: {
+  readonly canManage: boolean,
+}) {
   const {
     data: templatesQuery = [],
     error: templatesError,
@@ -184,11 +186,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
   // render directly from the query state here. While a draft is open these
   // messages stay in the pane's inline error (set by the effects above), so
   // the same failure is never shown twice.
-  const loadErrors = !draft ? [
-    templatesError ? (templatesError.message ?? "Failed to load mission templates.") : null,
-    typesError ? (typesError.message ?? "Failed to load mission type configs.") : null,
-    rewardsError ? (rewardsError.message ?? "Failed to load mission rewards.") : null,
-  ].filter((m): m is string => m !== null) : []
+  const loadErrors = !draft ? [templatesError ? (templatesError.message ?? "Failed to load mission templates.") : null, typesError ? (typesError.message ?? "Failed to load mission type configs.") : null, rewardsError ? (rewardsError.message ?? "Failed to load mission rewards.") : null].filter((m): m is string => m !== null) : []
 
   const filtered = useMemo(() => {
     return templates.filter((t) => (filterRarity === "all" || t.rarity === filterRarity) && (filterPeriod === "all" || t.period === filterPeriod))
@@ -274,7 +272,9 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
       }
       // Cashback % only applies in cashback mode; null it otherwise.
       if (payload.reward_mode !== "cashback") payload.cashback_pct = null
-      delete (payload as {id?: string}).id
+      delete (payload as {
+        id?: string,
+      }).id
 
       // Rewards travel without a mission_id — the data layer injects the
       // resolved template id after the update-or-insert (unknown until then),
@@ -290,7 +290,11 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
 
       // The DailyMissions tag invalidation refetches the lists; no manual
       // reload needed.
-      await saveTemplate({id: draft.id || null, payload, rewards}).unwrap()
+      await saveTemplate({
+        id: draft.id || null,
+        payload,
+        rewards,
+      }).unwrap()
       setDraft(null)
       setDraftRewards([])
     }
@@ -486,9 +490,8 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           </select>
           {draftType && (<div className={styles.badgeWrap}>
             {draftType.is_wired ? <span
-              className={styles.badgeWired}>● wired</span>
-              : <span
-                className={styles.badgeNotWired}>✗ not wired</span>}
+              className={styles.badgeWired}>● wired</span> : <span
+              className={styles.badgeNotWired}>✗ not wired</span>}
             {draftType.supports_personalized && (<span
               className={styles.badgePersonalized}>personalized-capable</span>)}
           </div>)}
@@ -729,43 +732,42 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
             <option value="cashback">Cashback — % of house edge</option>
           </select>
         </div>
-        {draft.reward_mode === "cashback" ? (
-          <div className={styles.cashbackBox}>
-            <div className={styles.cashbackRow}>
-              <label className={styles.cashbackLabel}>Cashback</label>
-              <input
-                className={styles.cashbackInput}
-                disabled={!canManage}
-                min="0"
-                step="0.5"
-                type="number"
-                value={draft.cashback_pct != null ? +(draft.cashback_pct * 100).toFixed(2) : ""}
-                onChange={(e) => {
-                  setDraft({
-                    ...draft,
-                    cashback_pct: e.target.value === "" ? null : Number(e.target.value) / 100,
-                  })
-                }}/>
-              <span className={styles.cashbackUnit}>% of house edge</span>
-            </div>
-            {(() => {
-              const p = previewCashback(draft)
-              if (!p) return (<div className={styles.cashbackHint}>Enter a cashback % to preview the
-                reward.</div>)
-              if (p.needsTier) return (<div className={styles.cashbackWarn}>Pin a difficulty tier above to
-                size the cashback — the entry fee sets the wager.</div>)
-              return (<div className={styles.cashbackPreview}>
-                ≈ <span className={styles.previewBold}>{p.reward.toLocaleString()} coins</span> at
-                goal {p.goal}
-                {" "}· {(draft.cashback_pct! * 100).toFixed(1)}% of edge on {p.investment.toLocaleString()} coins
-                wagered
-                {p.tier ? ` in ${p.tier}` : ""}
-                <div className={styles.previewSub}>Sized per player at assignment from the live tier fee/RTP;
-                  this is an estimate.
-                </div>
-              </div>)
-            })()}
-          </div>) : (<RewardBundleEditor
+        {draft.reward_mode === "cashback" ? (<div className={styles.cashbackBox}>
+          <div className={styles.cashbackRow}>
+            <label className={styles.cashbackLabel}>Cashback</label>
+            <input
+              className={styles.cashbackInput}
+              disabled={!canManage}
+              min="0"
+              step="0.5"
+              type="number"
+              value={draft.cashback_pct != null ? +(draft.cashback_pct * 100).toFixed(2) : ""}
+              onChange={(e) => {
+                setDraft({
+                  ...draft,
+                  cashback_pct: e.target.value === "" ? null : Number(e.target.value) / 100,
+                })
+              }}/>
+            <span className={styles.cashbackUnit}>% of house edge</span>
+          </div>
+          {(() => {
+            const p = previewCashback(draft)
+            if (!p) return (<div className={styles.cashbackHint}>Enter a cashback % to preview the
+              reward.</div>)
+            if (p.needsTier) return (<div className={styles.cashbackWarn}>Pin a difficulty tier above to
+              size the cashback — the entry fee sets the wager.</div>)
+            return (<div className={styles.cashbackPreview}>
+              ≈ <span className={styles.previewBold}>{p.reward.toLocaleString()} coins</span> at
+              goal {p.goal}
+              {" "}· {(draft.cashback_pct! * 100).toFixed(1)}% of edge on {p.investment.toLocaleString()} coins
+              wagered
+              {p.tier ? ` in ${p.tier}` : ""}
+              <div className={styles.previewSub}>Sized per player at assignment from the live tier fee/RTP;
+                this is an estimate.
+              </div>
+            </div>)
+          })()}
+        </div>) : (<RewardBundleEditor
           disabled={!canManage}
           rows={draftRewards}
           onChange={setDraftRewards}/>)}
@@ -803,26 +805,25 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           }}>
           Delete
         </button>)}
-        {draft.id && confirmingDelete && (
-          <div className={styles.confirmBox}>
-            <span className={styles.confirmText}>Delete permanently?</span>
-            <button
-              className={styles.confirmYes}
-              disabled={saving}
-              type="button"
-              onClick={remove}>
-              {saving ? "Deleting…" : "Yes, delete"}
-            </button>
-            <button
-              className={styles.confirmCancel}
-              disabled={saving}
-              type="button"
-              onClick={() => {
-                setConfirmingDelete(false)
-              }}>
-              Cancel
-            </button>
-          </div>)}
+        {draft.id && confirmingDelete && (<div className={styles.confirmBox}>
+          <span className={styles.confirmText}>Delete permanently?</span>
+          <button
+            className={styles.confirmYes}
+            disabled={saving}
+            type="button"
+            onClick={remove}>
+            {saving ? "Deleting…" : "Yes, delete"}
+          </button>
+          <button
+            className={styles.confirmCancel}
+            disabled={saving}
+            type="button"
+            onClick={() => {
+              setConfirmingDelete(false)
+            }}>
+            Cancel
+          </button>
+        </div>)}
       </div>)}
     </div>)}
   </div>)

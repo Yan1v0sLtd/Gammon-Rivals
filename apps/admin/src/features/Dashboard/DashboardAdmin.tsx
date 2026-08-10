@@ -106,16 +106,15 @@ export function DashboardAdmin({onError}: Props) {
         <h2 className="text-lg font-black">Recent changes</h2>
         <div className="mt-3 space-y-2">
           {audit.length === 0 ? (<div className="text-sm text-white/45">No admin changes
-            yet.</div>) : (audit.slice(0, 6).map((entry) => (
-            <div
-              key={entry.id}
-              className="rounded-lg border border-white/10 bg-black/15 px-3 py-2 text-xs">
-              <div className="font-bold capitalize text-white/80">{entry.action}</div>
-              <div className="text-white/45">
-                {entry.entity_table} · {entry.entity_id}
-              </div>
-              <div className="text-white/35">{formatDate(entry.created_at)}</div>
-            </div>)))}
+            yet.</div>) : (audit.slice(0, 6).map((entry) => (<div
+            key={entry.id}
+            className="rounded-lg border border-white/10 bg-black/15 px-3 py-2 text-xs">
+            <div className="font-bold capitalize text-white/80">{entry.action}</div>
+            <div className="text-white/45">
+              {entry.entity_table} · {entry.entity_id}
+            </div>
+            <div className="text-white/35">{formatDate(entry.created_at)}</div>
+          </div>)))}
         </div>
       </div>
     </div>

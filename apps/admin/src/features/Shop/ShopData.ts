@@ -4,13 +4,24 @@ import {adminSupabase as supabase, isAdminSupabaseConfigured} from "../../lib/ad
 export type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
 export type SaleRow = Database["public"]["Tables"]["store_sales"]["Row"]
 /** The storefront singleton, as selected below (title + background only). */
-export type StoreConfigRow = {title: string, bg_image_url: string | null}
-
-export type SaleDraft = {
-  id: string | null, label: string, bonus_percent: string, is_active: boolean, starts_at: string, ends_at: string,
+export type StoreConfigRow = {
+  title: string,
+  bg_image_url: string | null,
 }
 
-export type StoreConfigDraft = {title: string, bg_image_url: string}
+export type SaleDraft = {
+  id: string | null,
+  label: string,
+  bonus_percent: string,
+  is_active: boolean,
+  starts_at: string,
+  ends_at: string,
+}
+
+export type StoreConfigDraft = {
+  title: string,
+  bg_image_url: string,
+}
 
 export type UpsertShopItemPayload = Database["public"]["Tables"]["shop_items"]["Insert"]
 export type UpsertStoreSalePayload = Omit<SaleRow, "id" | "created_at" | "updated_at">
@@ -49,7 +60,10 @@ export function storeConfigRowToDraft(row: StoreConfigRow): StoreConfigDraft {
  */
 export async function fetchShopItems(): Promise<ShopItem[]> {
   if (!isAdminSupabaseConfigured) return []
-  const {data, error} = await supabase.from("shop_items").select("*").order("sort_order", {ascending: true})
+  const {
+    data,
+    error,
+  } = await supabase.from("shop_items").select("*").order("sort_order", {ascending: true})
   if (error) throw error
   return data ?? []
 }
@@ -57,7 +71,10 @@ export async function fetchShopItems(): Promise<ShopItem[]> {
 /** The single global Store Sale row (latest by update). */
 export async function fetchStoreSale(): Promise<SaleRow | null> {
   if (!isAdminSupabaseConfigured) return null
-  const {data, error} = await supabase
+  const {
+    data,
+    error,
+  } = await supabase
     .from("store_sales")
     .select("*")
     .order("updated_at", {ascending: false})
@@ -70,7 +87,10 @@ export async function fetchStoreSale(): Promise<SaleRow | null> {
 /** The storefront singleton row (seeded on migrate — always one row). */
 export async function fetchStoreConfig(): Promise<StoreConfigRow | null> {
   if (!isAdminSupabaseConfigured) return null
-  const {data, error} = await supabase
+  const {
+    data,
+    error,
+  } = await supabase
     .from("store_config")
     .select("title, bg_image_url")
     .eq("id", true)
@@ -87,11 +107,12 @@ export async function upsertShopItem(payload: UpsertShopItemPayload): Promise<vo
 
 /** Update the existing sale row by id, or insert a fresh one when the
  *  draft has no id yet (a new sale). */
-export async function upsertStoreSale({payload, saleId}: UpsertStoreSaleArgs): Promise<void> {
+export async function upsertStoreSale({
+  payload,
+  saleId,
+}: UpsertStoreSaleArgs): Promise<void> {
   if (!isAdminSupabaseConfigured) return
-  const {error} = saleId
-    ? await supabase.from("store_sales").update(payload).eq("id", saleId)
-    : await supabase.from("store_sales").insert(payload)
+  const {error} = saleId ? await supabase.from("store_sales").update(payload).eq("id", saleId) : await supabase.from("store_sales").insert(payload)
   if (error) throw error
 }
 

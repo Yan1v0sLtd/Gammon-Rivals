@@ -11,24 +11,25 @@ import {formatDate} from "../../lib/formatDate"
 import {normalizeEmail} from "../../lib/normalizeEmail"
 
 import {
-  useGetAdminRolesQuery,
-  useGetAdminEmailRolesQuery,
-  useGetAuditLogQuery,
-  useUpsertAdminRoleMutation,
-  useUpsertAdminEmailRoleMutation,
   useDeleteAdminEmailRoleMutation,
+  useGetAdminEmailRolesQuery,
+  useGetAdminRolesQuery,
+  useGetAuditLogQuery,
+  useUpsertAdminEmailRoleMutation,
+  useUpsertAdminRoleMutation,
 } from "./AdminAccessApi"
-import type {
-  AdminEmailRoleRow,
-  AdminRole,
-} from "./AdminAccessData"
+import type {AdminEmailRoleRow, AdminRole} from "./AdminAccessData"
 
 type RoleDraft = {
-  profile_id: string, role: AdminRole, note: string,
+  profile_id: string,
+  role: AdminRole,
+  note: string,
 }
 
 type EmailRoleDraft = {
-  email: string, role: AdminRole, note: string,
+  email: string,
+  role: AdminRole,
+  note: string,
 }
 
 type Props = {
@@ -90,7 +91,10 @@ export function AdminAccessAdmin({
   })
   const [savingKey, setSavingKey] = useState<string | null>(null)
 
-  const {confirm, confirmUI} = useConfirm()
+  const {
+    confirm,
+    confirmUI,
+  } = useConfirm()
 
   // Surface fetch failures through the page-level error reporter so a
   // failed query is never silently rendered as an empty table.

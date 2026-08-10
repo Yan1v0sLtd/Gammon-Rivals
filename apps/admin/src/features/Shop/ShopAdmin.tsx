@@ -22,7 +22,7 @@ import {readPres} from "../../lib/readPres"
 import {readRewards} from "../../lib/readRewards"
 import {readXpBoost} from "../../lib/readXpBoost"
 import {requiredNumber} from "../../lib/requiredNumber"
-import {shopToDraft, type ShopDraft} from "../../lib/shopToDraft"
+import {type ShopDraft, shopToDraft} from "../../lib/shopToDraft"
 import {writeBoardGrant} from "../../lib/writeBoardGrant"
 import {writeGrantNumber} from "../../lib/writeGrantNumber"
 import {writeHeader} from "../../lib/writeHeader"
@@ -40,13 +40,7 @@ import {
   useUpsertStoreConfigMutation,
   useUpsertStoreSaleMutation,
 } from "./ShopApi"
-import {
-  saleRowToDraft,
-  storeConfigRowToDraft,
-  type SaleDraft,
-  type ShopItem,
-  type StoreConfigDraft,
-} from "./ShopData"
+import {type SaleDraft, saleRowToDraft, type ShopItem, type StoreConfigDraft, storeConfigRowToDraft} from "./ShopData"
 
 type ShopKind = ShopItem["kind"]
 
@@ -180,7 +174,10 @@ export function ShopAdmin({
         starts_at: saleDraft.starts_at ? new Date(saleDraft.starts_at).toISOString() : null,
         ends_at: saleDraft.ends_at ? new Date(saleDraft.ends_at).toISOString() : null,
       }
-      await upsertStoreSale({payload, saleId: saleDraft.id}).unwrap()
+      await upsertStoreSale({
+        payload,
+        saleId: saleDraft.id,
+      }).unwrap()
     }
     catch (err) {
       onError(err)

@@ -191,7 +191,7 @@ Grouped by migration phase. Count = `className` occurrences.
 | `features/BoardThemes/BoardThemesAdmin.tsx` | 80 | ✅ done |
 | `features/LevelSystem/LevelCurveProposal.tsx` | 67 | ✅ done |
 | `features/HourlyWheel/HourlyWheelAdmin.tsx` | 64 | ✅ done |
-| `features/RTPAnalytics/RTPAnalyticsAdmin.tsx` | 56 |
+| `features/RTPAnalytics/RTPAnalyticsAdmin.tsx` | 56 | ✅ done |
 | `features/Shop/ShopAdmin.tsx` | 47 |
 | `features/DailyMissions/SimulatorTab.tsx` | 47 |
 | `features/DailyMissions/MissionTypesEditor.tsx` | 37 |

@@ -3,6 +3,7 @@ import {Fragment} from "react"
 import {SecondaryButton} from "../../components/SecondaryButton"
 import {formatNumber} from "../../lib/formatNumber"
 
+import styles from "./RTPAnalyticsAdmin.module.css"
 import {useGetRtpPerPlayerQuery, useGetRtpSummaryQuery} from "./RTPAnalyticsApi"
 import {RTP_RANGES, type RtpRangeId} from "./RTPAnalyticsData"
 
@@ -44,27 +45,26 @@ export function RTPAnalyticsAdmin({
   })
   const rtpError = rtpLoading ? null : rtpQueryError?.message ?? null
   const rtpPlayerError = rtpPlayerLoading ? null : rtpPlayerQueryError?.message ?? null
-  return (<div className="space-y-4">
+  return (<div className={styles.container}>
     {/* Header: range selector + refresh. The summary is
           * fetched lazily when the section opens; changing the
           * range re-fires the RPC. Numbers are computed server-side
           * by get_rtp_summary against matches +
           * wallet_transactions, so this view stays cheap on the
           * client even when match count grows. */}
-    <div
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+    <div className={styles.header}>
       <div>
-        <h2 className="text-lg font-black">RTP Analytics</h2>
-        <p className="mt-1 text-sm text-white/50">
+        <h2 className={styles.title}>RTP Analytics</h2>
+        <p className={styles.subtitle}>
           Per-tier wagered, paid out, house take, and actual vs target RTP. Drives the
           economy tuning loop — re-balance W / L / fee in the Difficulties tab when delta
           drifts away from zero.
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={styles.rangeButtons}>
         {RTP_RANGES.map((range) => (<button
           key={range.id}
-          className={"rounded-md border px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] transition " + (rtpRange === range.id ? "border-amber-300/60 bg-amber-300/15 text-amber-200" : "border-white/15 bg-white/[0.04] text-white/60 hover:bg-white/[0.08]")}
+          className={styles.rangeButton + " " + (rtpRange === range.id ? styles.rangeButtonActive : styles.rangeButtonInactive)}
           type="button"
           onClick={() => {
             onSetRtpRange(range.id)
@@ -79,106 +79,102 @@ export function RTPAnalyticsAdmin({
       </div>
     </div>
 
-    {rtpError ? (
-      <div className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-sm text-rose-100">
-        {rtpError}
-      </div>) : null}
+    {rtpError ? (<div className={styles.errorBox}>
+      {rtpError}
+    </div>) : null}
 
-    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.045]">
-      <table className="min-w-full text-sm">
-        <thead
-          className="border-b border-white/10 bg-white/[0.04] text-left text-[0.65rem] font-bold uppercase tracking-[0.14em] text-white/45">
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead className={styles.thead}>
           <tr>
-            <th className="px-3 py-2">Tier</th>
-            <th className="px-3 py-2 text-right">Matches</th>
-            <th className="px-3 py-2 text-right">Win rate</th>
-            <th className="px-3 py-2 text-right">Wagered</th>
-            <th className="px-3 py-2 text-right">Paid out</th>
-            <th className="px-3 py-2 text-right">House net</th>
-            <th className="px-3 py-2 text-right">Target RTP</th>
-            <th className="px-3 py-2 text-right">Actual RTP</th>
-            <th className="px-3 py-2 text-right">Delta</th>
-            <th className="px-3 py-2 text-right">Risk-free</th>
+            <th className={styles.th}>Tier</th>
+            <th className={styles.thRight}>Matches</th>
+            <th className={styles.thRight}>Win rate</th>
+            <th className={styles.thRight}>Wagered</th>
+            <th className={styles.thRight}>Paid out</th>
+            <th className={styles.thRight}>House net</th>
+            <th className={styles.thRight}>Target RTP</th>
+            <th className={styles.thRight}>Actual RTP</th>
+            <th className={styles.thRight}>Delta</th>
+            <th className={styles.thRight}>Risk-free</th>
           </tr>
         </thead>
         <tbody>
           {rtpRows.length === 0 && !rtpLoading ? (<tr>
             <td
-              className="px-3 py-6 text-center text-white/40"
+              className={styles.emptyCell}
               colSpan={10}>
               No difficulty matches in this window yet.
             </td>
           </tr>) : (rtpRows.map((row) => {
             const delta = row.out_rtp_delta_pct
-            const deltaColor = delta === null ? "text-white/30" : delta > 3 ? "text-rose-300" : delta < -3 ? "text-emerald-300" : "text-amber-200"
+            const deltaColor = delta === null ? styles.deltaNull : delta > 3 ? styles.deltaHigh : delta < -3 ? styles.deltaLow : styles.deltaMid
             const isExpanded = rtpExpandedTier === row.out_table_config_id
             const hasTraffic = row.out_matches_played > 0 || row.out_coins_wagered > 0
             return (<Fragment key={row.out_table_config_id}>
               <tr
-                className={`border-b border-white/5 last:border-b-0 ${hasTraffic ? "cursor-pointer hover:bg-white/[0.03]" : ""} ${isExpanded ? "bg-white/[0.04]" : ""}`}
+                className={styles.row + (hasTraffic ? " " + styles.rowClickable : "") + (isExpanded ? " " + styles.rowExpanded : "")}
                 onClick={() => {
                   if (!hasTraffic) return
                   onToggleTier(row.out_table_config_id)
                 }}>
-                <td className="px-3 py-2 font-bold text-white/85">
-                  <span className="mr-1 inline-block w-3 text-white/40">
+                <td className={styles.cellBold}>
+                  <span className={styles.tierCaret}>
                     {hasTraffic ? (isExpanded ? "▾" : "▸") : ""}
                   </span>
                   {row.out_display_name}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                <td className={styles.cellRight}>
                   {formatNumber(row.out_matches_played)}
                   {row.out_matches_played > 0 ? (<span
-                    className="ml-1 text-white/40">({formatNumber(row.out_matches_won)}W)</span>) : null}
+                    className={styles.winCount}>({formatNumber(row.out_matches_won)}W)</span>) : null}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                <td className={styles.cellRight}>
                   {row.out_actual_win_rate_pct !== null ? `${row.out_actual_win_rate_pct}%` : "—"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                <td className={styles.cellRight}>
                   {formatNumber(row.out_coins_wagered)}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                <td className={styles.cellRight}>
                   {formatNumber(row.out_coins_paid_out)}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/70">
+                <td className={styles.cellRight}>
                   {formatNumber(row.out_coins_house_net)}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                <td className={styles.cellRightDim}>
                   {row.out_target_rtp_pct}%
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums font-bold text-white/85">
+                <td className={styles.cellRightBold}>
                   {row.out_actual_rtp_pct !== null ? `${row.out_actual_rtp_pct}%` : "—"}
                 </td>
-                <td className={`px-3 py-2 text-right tabular-nums font-bold ${deltaColor}`}>
+                <td className={styles.cellDelta + " " + deltaColor}>
                   {delta !== null ? `${delta > 0 ? "+" : ""}${delta}` : "—"}
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums text-white/55">
+                <td className={styles.cellRightDim}>
                   {formatNumber(row.out_risk_free_count)}
                 </td>
               </tr>
-              {isExpanded ? (<tr className="border-b border-white/5 bg-black/30">
+              {isExpanded ? (<tr className={styles.expandedRow}>
                 <td
-                  className="px-3 py-3"
+                  className={styles.expandedCell}
                   colSpan={10}>
                   {rtpPlayerError ? (<div
-                    className="rounded-md border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-xs text-rose-100">
+                    className={styles.playerError}>
                     {rtpPlayerError}
                   </div>) : rtpPlayerLoading && rtpPlayerRows.length === 0 ? (
-                    <div className="px-3 py-4 text-center text-xs text-white/40">Loading
-                      players…</div>) : rtpPlayerRows.length === 0 ? (
-                    <div className="px-3 py-4 text-center text-xs text-white/40">
-                      No player data in this window.
-                    </div>) : (<table className="min-w-full text-xs">
-                    <thead
-                      className="text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                    <div className={styles.playerMessage}>Loading
+                      players…</div>) : rtpPlayerRows.length === 0 ? (<div className={styles.playerMessage}>
+                        No player data in this window.
+                  </div>) : (<table className={styles.playerTable}>
+                    <thead className={styles.playerThead}>
                       <tr>
-                        <th className="px-2 py-1.5 text-left">Player</th>
-                        <th className="px-2 py-1.5 text-right">Matches</th>
-                        <th className="px-2 py-1.5 text-right">Win rate</th>
-                        <th className="px-2 py-1.5 text-right">Wagered</th>
-                        <th className="px-2 py-1.5 text-right">Paid out</th>
-                        <th className="px-2 py-1.5 text-right">House net</th>
-                        <th className="px-2 py-1.5 text-right">RTP</th>
+                        <th className={styles.playerTh}>Player</th>
+                        <th className={styles.playerThRight}>Matches</th>
+                        <th className={styles.playerThRight}>Win rate</th>
+                        <th className={styles.playerThRight}>Wagered</th>
+                        <th className={styles.playerThRight}>Paid out</th>
+                        <th className={styles.playerThRight}>House net</th>
+                        <th className={styles.playerThRight}>RTP</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -189,13 +185,13 @@ export function RTPAnalyticsAdmin({
                         // target — possibly a streaking expert or a bot.
                         // Low RTP just means they're unlucky / new.
                         const rtp = pr.out_actual_rtp_pct
-                        const playerRtpColor = rtp === null ? "text-white/40" : rtp > 110 ? "text-rose-300" : rtp > 95 ? "text-amber-200" : "text-white/70"
+                        const playerRtpColor = rtp === null ? styles.playerRtpNull : rtp > 110 ? styles.playerRtpHigh : rtp > 95 ? styles.playerRtpMid : styles.playerRtpLow
                         return (<tr
                           key={pr.out_profile_id}
-                          className="border-t border-white/5">
-                          <td className="px-2 py-1.5">
+                          className={styles.playerRow}>
+                          <td className={styles.playerCell}>
                             <button
-                              className="text-white/85 hover:text-amber-200"
+                              className={styles.playerNameButton}
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
@@ -204,25 +200,25 @@ export function RTPAnalyticsAdmin({
                               {pr.out_display_name}
                             </button>
                           </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                          <td className={styles.playerCellRight}>
                             {formatNumber(pr.out_matches_played)}
                             {pr.out_matches_played > 0 ? (<span
-                              className="ml-1 text-white/40">({pr.out_matches_won}W)</span>) : null}
+                              className={styles.winCount}>({pr.out_matches_won}W)</span>) : null}
                           </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                          <td className={styles.playerCellRight}>
                             {pr.out_win_rate_pct !== null ? `${pr.out_win_rate_pct}%` : "—"}
                           </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                          <td className={styles.playerCellRight}>
                             {formatNumber(pr.out_coins_wagered)}
                           </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                          <td className={styles.playerCellRight}>
                             {formatNumber(pr.out_coins_paid_out)}
                           </td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-white/70">
+                          <td className={styles.playerCellRight}>
                             {formatNumber(pr.out_coins_house_net)}
                           </td>
                           <td
-                            className={`px-2 py-1.5 text-right tabular-nums font-bold ${playerRtpColor}`}>
+                            className={styles.playerCellRtp + " " + playerRtpColor}>
                             {rtp !== null ? `${rtp}%` : "—"}
                           </td>
                         </tr>)
@@ -237,8 +233,8 @@ export function RTPAnalyticsAdmin({
       </table>
     </div>
 
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs text-white/50">
-      <strong className="text-white/70">How to read this:</strong> Delta = Actual RTP − Target RTP. Negative
+    <div className={styles.footnote}>
+      <strong className={styles.footnoteStrong}>How to read this:</strong> Delta = Actual RTP − Target RTP. Negative
       means
       players are losing more than you targeted (house overshooting). Positive means players are winning more
       (house

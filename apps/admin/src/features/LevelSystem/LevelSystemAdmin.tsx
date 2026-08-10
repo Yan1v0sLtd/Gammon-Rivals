@@ -9,7 +9,7 @@ import {SecondaryButton} from "../../components/SecondaryButton"
 import {TextArea} from "../../components/TextArea"
 import {Toggle} from "../../components/Toggle"
 import {formatNumber} from "../../lib/formatNumber"
-import {levelToDraft, type LevelDraft} from "../../lib/levelToDraft"
+import {type LevelDraft, levelToDraft} from "../../lib/levelToDraft"
 import {parseJson} from "../../lib/parseJson"
 import {requiredNumber} from "../../lib/requiredNumber"
 import {useAdminAuth} from "../../lib/useAdminAuth"
@@ -27,10 +27,7 @@ import {
   useUpsertLevelMutation,
 } from "./LevelSystemApi"
 import type {
-  LevelConfigInsert,
-  LevelStatusTierInsert,
-  LevelStatusTierRow,
-  LevelStatusTierUpdate,
+  LevelConfigInsert, LevelStatusTierInsert, LevelStatusTierRow, LevelStatusTierUpdate,
 } from "./LevelSystemData"
 
 /**
@@ -41,7 +38,12 @@ import type {
  * blanking the form state.
  */
 type LevelStatusTierDraft = {
-  id: string | null, level_from: string, level_to: string, label: string, sort_order: string, is_enabled: boolean,
+  id: string | null,
+  level_from: string,
+  level_to: string,
+  label: string,
+  sort_order: string,
+  is_enabled: boolean,
 }
 /**
  * Number of rows shown at once in the Levels table. The curve can
@@ -257,7 +259,10 @@ export function LevelSystemAdmin({
             is_enabled: row.is_enabled,
             updated_by: currentUserId,
           }
-          await updateLevelStatusTier({id: row.id, patch}).unwrap()
+          await updateLevelStatusTier({
+            id: row.id,
+            patch,
+          }).unwrap()
         }
       }
       // Insert new rows second, so the replacement rows exist before
@@ -334,7 +339,10 @@ export function LevelSystemAdmin({
 
   // Feature-owned curve callbacks — LevelCurveProposal delegates its DB
   // writes here. Tag invalidation refreshes the server snapshots.
-  const applyCurve = useCallback(async (args: {rows: readonly LevelConfigInsert[], maxLevel: number}) => {
+  const applyCurve = useCallback(async (args: {
+    rows: readonly LevelConfigInsert[],
+    maxLevel: number,
+  }) => {
     return applyLevelCurve(args).unwrap()
   }, [applyLevelCurve])
   const recompute = useCallback(async () => {
@@ -526,31 +534,46 @@ export function LevelSystemAdmin({
               label="Level"
               value={levelDraft.level}
               onChange={(level) => {
-                setLevelDraft((d) => ({...d, level}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  level,
+                }))
               }}/>
             <Field
               label="XP required"
               value={levelDraft.xp_required}
               onChange={(xp_required) => {
-                setLevelDraft((d) => ({...d, xp_required}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  xp_required,
+                }))
               }}/>
             <Field
               label="Status label (legacy)"
               value={levelDraft.status_label}
               onChange={(status_label) => {
-                setLevelDraft((d) => ({...d, status_label}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  status_label,
+                }))
               }}/>
             <Field
               label="Reward coins"
               value={levelDraft.reward_coins}
               onChange={(reward_coins) => {
-                setLevelDraft((d) => ({...d, reward_coins}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  reward_coins,
+                }))
               }}/>
             <Field
               label="Reward gems"
               value={levelDraft.reward_gems}
               onChange={(reward_gems) => {
-                setLevelDraft((d) => ({...d, reward_gems}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  reward_gems,
+                }))
               }}/>
           </div>
           <p className="mt-2 text-[10px] text-white/35">
@@ -562,19 +585,28 @@ export function LevelSystemAdmin({
               label="Reward items JSON array"
               value={levelDraft.reward_items}
               onChange={(reward_items) => {
-                setLevelDraft((d) => ({...d, reward_items}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  reward_items,
+                }))
               }}/>
             <TextArea
               label="Unlock rules JSON object"
               value={levelDraft.unlock_rules}
               onChange={(unlock_rules) => {
-                setLevelDraft((d) => ({...d, unlock_rules}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  unlock_rules,
+                }))
               }}/>
             <Toggle
               checked={levelDraft.is_enabled}
               label="Enabled"
               onChange={(is_enabled) => {
-                setLevelDraft((d) => ({...d, is_enabled}))
+                setLevelDraft((d) => ({
+                  ...d,
+                  is_enabled,
+                }))
               }}/>
             <div className="flex gap-2">
               <PrimaryButton

@@ -1,11 +1,6 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
-import {
-  fetchTables,
-  upsertTable,
-  type TableConfigInsert,
-  type TableConfigRow,
-} from "./DifficultiesData"
+import {fetchTables, type TableConfigInsert, type TableConfigRow, upsertTable} from "./DifficultiesData"
 
 export const difficultiesApi = adminBaseApi.injectEndpoints({
   endpoints: (build) => ({

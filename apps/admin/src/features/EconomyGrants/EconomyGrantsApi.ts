@@ -1,10 +1,7 @@
 import {adminBaseApi, toAdminApiError} from "../../store/baseApi"
 
 import {
-  fetchEconomyGrants,
-  upsertEconomyGrant,
-  type EconomyGrantRow,
-  type UpsertEconomyGrantArgs,
+  type EconomyGrantRow, fetchEconomyGrants, upsertEconomyGrant, type UpsertEconomyGrantArgs,
 } from "./EconomyGrantsData"
 
 export const economyGrantsApi = adminBaseApi.injectEndpoints({
