@@ -6,6 +6,7 @@ import {
 import {ImageField} from "../../components/ImageField.tsx"
 import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
+import styles from "./HourlyWheelAdmin.module.css"
 import {
   useGetWheelConfigQuery,
   useGetWheelSlotsQuery,
@@ -150,10 +151,10 @@ function Field({
   readonly disabled?: boolean,
   readonly placeholder?: string,
 }) {
-  return (<label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+  return (<label className={styles.fieldLabel}>
     {label}
     <input
-      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+      className={styles.fieldInput}
       disabled={disabled}
       placeholder={placeholder}
       type="text"
@@ -177,10 +178,10 @@ function Select<T extends string>({
   readonly onChange: (value: T) => void,
   readonly disabled?: boolean,
 }) {
-  return (<label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+  return (<label className={styles.fieldLabel}>
     {label}
     <select
-      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60 disabled:opacity-50"
+      className={styles.fieldInput}
       disabled={disabled}
       value={value}
       onChange={(event) => {
@@ -206,10 +207,10 @@ function Toggle({
   readonly onChange: (checked: boolean) => void,
   readonly disabled?: boolean,
 }) {
-  return (<label className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+  return (<label className={styles.toggleRow}>
     <input
       checked={checked}
-      className="h-4 w-4"
+      className={styles.toggleCheckbox}
       disabled={disabled}
       type="checkbox"
       onChange={(event) => {
@@ -227,7 +228,7 @@ function PrimaryButton({
   readonly children: React.ReactNode, readonly onClick: () => void, readonly disabled?: boolean,
 }) {
   return (<button
-    className="rounded-lg border border-amber-200/40 bg-amber-200/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-200/25 disabled:cursor-not-allowed disabled:opacity-50"
+    className={styles.primaryButton}
     disabled={disabled}
     type="button"
     onClick={onClick}>
@@ -243,7 +244,7 @@ function SecondaryButton({
   readonly children: React.ReactNode, readonly onClick: () => void, readonly disabled?: boolean,
 }) {
   return (<button
-    className="rounded-lg border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+    className={styles.secondaryButton}
     disabled={disabled}
     type="button"
     onClick={onClick}>
@@ -431,18 +432,18 @@ export function HourlyWheelAdmin({canManage}: Props) {
   const loading = configLoading || slotsLoading || currenciesLoading
 
   if (loading) {
-    return (<div className="rounded-xl border border-white/10 bg-white/[0.045] p-6 text-sm text-white/55">
+    return (<div className={styles.loadingCard}>
       Loading wheel configuration…
     </div>)
   }
 
-  return (<div className="space-y-4">
+  return (<div className={styles.layout}>
     {/* ============================================================
             Header: config + live total
          ============================================================ */}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="min-w-[8rem]">
+    <div className={styles.panel}>
+      <div className={styles.configRow}>
+        <div className={styles.cooldownBlock}>
           <Field
             disabled={!canManage}
             label="Cooldown (sec)"
@@ -453,7 +454,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
                 cooldown_seconds,
               }))
             }}/>
-          <div className="mt-1 text-[10px] normal-case tracking-normal text-white/35">
+          <div className={styles.cooldownHint}>
             Range: 300 (5 min) – 604800 (7 d).
           </div>
         </div>
@@ -469,13 +470,12 @@ export function HourlyWheelAdmin({canManage}: Props) {
               }))
             }}/>
         </div>
-        <div className="flex-1"/>
-        <div className="flex flex-col items-end gap-1">
-          <div
-            className={`rounded-lg border px-4 py-2 font-display text-2xl font-black ${totalIsValid ? "border-emerald-300/50 bg-emerald-300/15 text-emerald-200" : "border-rose-400/50 bg-rose-400/15 text-rose-200"}`}>
+        <div className={styles.spacer}/>
+        <div className={styles.totalBlock}>
+          <div className={`${styles.total} ${totalIsValid ? styles.totalValid : styles.totalInvalid}`}>
             Total: {formatPercent(totalBasisPoints)}
           </div>
-          <div className="text-[10px] normal-case tracking-normal text-white/45">
+          <div className={styles.totalHint}>
             {totalIsValid ? "Wheel will spin normally." : "Must equal 100.00% — wheel will fail with wheel_misconfigured."}
           </div>
         </div>
@@ -488,32 +488,32 @@ export function HourlyWheelAdmin({canManage}: Props) {
     </div>
 
     {error ? (
-      <div className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-2 text-xs font-bold text-rose-100">
+      <div className={styles.errorBox}>
         {error}
       </div>) : null}
 
     {/* ============================================================
             Slots: list (left) + editor (right)
          ============================================================ */}
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
+    <div className={styles.mainGrid}>
       {/* Slot list */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <h2 className="text-lg font-black">Slots</h2>
-        <p className="mt-1 text-xs text-white/55">
+      <div className={styles.panel}>
+        <h2 className={styles.sectionTitle}>Slots</h2>
+        <p className={styles.sectionDesc}>
           10 slots, fixed order. Click a row to edit. Disabled slots
           are skipped by spin_wheel and don't count toward the
           100.00% total.
         </p>
-        <div className="mt-3 overflow-hidden rounded-lg border border-white/10">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-white/[0.04] text-[10px] uppercase tracking-[0.14em] text-white/45">
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead className={styles.thead}>
               <tr>
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">Reward</th>
-                <th className="px-3 py-2">Label</th>
-                <th className="px-3 py-2">Accent</th>
-                <th className="px-3 py-2 text-right">Chance</th>
-                <th className="px-3 py-2 text-right">$ Value</th>
+                <th className={styles.th}>#</th>
+                <th className={styles.th}>Reward</th>
+                <th className={styles.th}>Label</th>
+                <th className={styles.th}>Accent</th>
+                <th className={styles.thRight}>Chance</th>
+                <th className={styles.thRight}>$ Value</th>
               </tr>
             </thead>
             <tbody>
@@ -523,55 +523,55 @@ export function HourlyWheelAdmin({canManage}: Props) {
                 const rowMicros = slotValueMicros(row)
                 return (<tr
                   key={slotKey}
-                  className={`cursor-pointer border-t border-white/5 transition ${isSelected ? "bg-amber-200/15 text-amber-100" : "hover:bg-white/[0.04]"} ${row?.is_enabled === false ? "opacity-50" : ""}`}
+                  className={`${styles.row} ${isSelected ? styles.rowSelected : ""} ${row?.is_enabled === false ? styles.rowDisabled : ""}`}
                   onClick={() => {
                     setSelectedIndex(i)
                   }}>
-                  <td className="px-3 py-2 font-mono text-xs">{i}</td>
-                  <td className="px-3 py-2">
+                  <td className={styles.tdMono}>{i}</td>
+                  <td className={styles.td}>
                     {row ? (<>
                       {row.primary_reward_amount}{" "}
                       {row.primary_reward_type}
-                      {row.secondary_reward_type ? (<span className="text-white/55">
+                      {row.secondary_reward_type ? (<span className={styles.secondaryText}>
                         {" "}
                         + {row.secondary_reward_amount}{" "}
                         {row.secondary_reward_type}
                       </span>) : null}
-                    </>) : (<span className="text-white/30">empty</span>)}
+                    </>) : (<span className={styles.emptyText}>empty</span>)}
                   </td>
-                  <td className="px-3 py-2 text-xs text-white/70">
-                    {row?.label ?? <span className="text-white/30">—</span>}
+                  <td className={styles.tdLabel}>
+                    {row?.label ?? <span className={styles.emptyText}>—</span>}
                   </td>
-                  <td className="px-3 py-2 text-xs">
+                  <td className={styles.tdAccent}>
                     {row?.accent_color ?? "—"}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-xs">
+                  <td className={styles.tdChance}>
                     {row ? formatPercent(row.chance_basis_points) : "0.00%"}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-xs text-emerald-200/85">
+                  <td className={styles.tdValue}>
                     {row ? formatUsdMicros(rowMicros) : "—"}
                   </td>
                 </tr>)
               })}
             </tbody>
-            <tfoot className="bg-white/[0.04] text-[10px] uppercase tracking-[0.14em] text-white/55">
-              <tr className="border-t border-white/10">
+            <tfoot className={styles.tfoot}>
+              <tr className={styles.tfootRow}>
                 <td
-                  className="px-3 py-2 font-black"
+                  className={styles.tfootLabel}
                   colSpan={4}>
                   EV per spin
                 </td>
-                <td className="px-3 py-2 text-right font-mono normal-case text-white/65">
+                <td className={styles.tfootChance}>
                   {formatPercent(totalBasisPoints)}
                 </td>
-                <td className="px-3 py-2 text-right font-mono normal-case text-emerald-100">
+                <td className={styles.tfootValue}>
                   {formatUsdMicros(evPerSpinMicros, {precision: 4})}
                 </td>
               </tr>
             </tfoot>
           </table>
         </div>
-        <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+        <p className={styles.footnote}>
           $ Value is the raw worth of each slot's reward (primary +
           secondary) at the rates configured in the Currencies section.
           XP and any unpriced currency contribute $0. EV per spin is the
@@ -581,9 +581,9 @@ export function HourlyWheelAdmin({canManage}: Props) {
       </div>
 
       {/* Slot editor */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <h2 className="text-lg font-black">Edit slot #{selectedIndex}</h2>
-        <p className="mt-1 text-xs text-white/55">
+      <div className={styles.panel}>
+        <h2 className={styles.sectionTitle}>Edit slot #{selectedIndex}</h2>
+        <p className={styles.sectionDesc}>
           Per-slot save. Label is shown in the spin RPC's response
           (used in the wallet_transactions ledger note) but does NOT
           appear on the wedge itself — the wedge always shows icon +
@@ -591,7 +591,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
         </p>
 
         {/* Top row: label / accent / chance / enabled */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className={styles.topGrid}>
           <Field
             disabled={!canManage}
             label="Label (optional)"
@@ -625,7 +625,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
                 chance_percent,
               }))
             }}/>
-          <div className="self-end pb-2">
+          <div className={styles.toggleWrap}>
             <Toggle
               checked={slotDraft.is_enabled}
               disabled={!canManage}
@@ -640,11 +640,11 @@ export function HourlyWheelAdmin({canManage}: Props) {
         </div>
 
         {/* Primary reward */}
-        <div className="mt-4 rounded-lg border border-white/10 bg-black/15 p-3">
-          <div className="text-xs font-black uppercase tracking-[0.14em] text-white/65">
+        <div className={styles.rewardBox}>
+          <div className={styles.boxTitle}>
             Primary reward
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className={styles.boxGrid}>
             <Select
               disabled={!canManage}
               label="Type"
@@ -662,7 +662,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
                 }))
               }}/>
           </div>
-          <div className="mt-3">
+          <div className={styles.mt3}>
             <ImageField
               disabled={!canManage}
               folder="wheel"
@@ -676,7 +676,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
                 }))
               }}/>
             {slotDraft.primary_reward_type === "xp" ? (
-              <div className="mt-1 text-[10px] normal-case tracking-normal text-white/45">
+              <div className={styles.xpNote}>
                 Note: XP slots always render the inline hex glyph on
                 the wheel regardless of icon_url — no XP asset needs
                 to be uploaded.
@@ -685,13 +685,13 @@ export function HourlyWheelAdmin({canManage}: Props) {
         </div>
 
         {/* Secondary reward (combo slot) */}
-        <div className="mt-3 rounded-lg border border-white/10 bg-black/15 p-3">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-white/65">
+        <div className={styles.rewardBox}>
+          <div className={styles.secondaryHeader}>
+            <div className={styles.boxTitle}>
               Secondary reward {hasSecondary ? "" : "(optional)"}
             </div>
             {hasSecondary ? (<button
-              className="rounded border border-white/15 px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal text-white/60 transition hover:border-rose-300/40 hover:text-rose-200 disabled:opacity-50"
+              className={styles.removeButton}
               disabled={!canManage}
               type="button"
               onClick={() => {
@@ -699,7 +699,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
               }}>
               Remove
             </button>) : (<button
-              className="rounded border border-amber-200/40 px-2 py-0.5 text-[10px] font-bold normal-case tracking-normal text-amber-100/85 transition hover:bg-amber-200/15 disabled:opacity-50"
+              className={styles.addButton}
               disabled={!canManage}
               type="button"
               onClick={() => {
@@ -709,7 +709,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
             </button>)}
           </div>
           {hasSecondary ? (<>
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className={styles.boxGrid}>
               <Select
                 disabled={!canManage}
                 label="Type"
@@ -729,7 +729,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
                   }))
                 }}/>
             </div>
-            <div className="mt-3">
+            <div className={styles.mt3}>
               <ImageField
                 disabled={!canManage}
                 folder="wheel"
@@ -747,7 +747,7 @@ export function HourlyWheelAdmin({canManage}: Props) {
         </div>
 
         {/* Save / reset */}
-        <div className="mt-4 flex gap-2">
+        <div className={styles.saveRow}>
           <PrimaryButton
             disabled={!canManage || savingSlot}
             onClick={() => void saveSlot()}>

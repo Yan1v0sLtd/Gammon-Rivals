@@ -23,6 +23,7 @@ import {parseJson} from "../../lib/parseJson"
 import {requiredNumber} from "../../lib/requiredNumber"
 import {withGameplayBackgroundMetadata} from "../../lib/withGameplayBackgroundMetadata"
 
+import styles from "./BoardThemesAdmin.module.css"
 import {
   useAddLoadingScreenMutation,
   useActivateLoadingScreenMutation,
@@ -377,16 +378,15 @@ export function BoardThemesAdmin({
     }
   }
 
-  return (<div className="space-y-4">
-    <div
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+  return (<div className={styles.layout}>
+    <div className={styles.headerPanel}>
       <div>
-        <h2 className="text-lg font-black">Board Themes</h2>
-        <p className="mt-1 text-sm text-white/50">
+        <h2 className={styles.headerTitle}>Board Themes</h2>
+        <p className={styles.headerDesc}>
           Visual list of live and draft boards used by the lobby and gameplay.
         </p>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className={styles.headerActions}>
         <SecondaryButton
           disabled={!canManage || seedingBoards}
           onClick={() => void seedBuiltInBoards()}>
@@ -400,43 +400,41 @@ export function BoardThemesAdmin({
       </div>
     </div>
 
-    {boardMessage && (<div
-      className="rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-100">
+    {boardMessage && (<div className={styles.boardMessage}>
       {boardMessage}
     </div>)}
 
     {/* Podium — the stand the board sits on in the lobby
             carousel. A small library; exactly one is active. */}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+    <div className={styles.panel}>
       <div>
-        <h3 className="text-base font-black">Podium</h3>
-        <p className="mt-1 text-sm text-white/50">
+        <h3 className={styles.sectionTitle}>Podium</h3>
+        <p className={styles.sectionDesc}>
           The stand the board sits on in the lobby carousel. Upload options and pick
           the one that&apos;s live. Wide transparent PNG/WebP works best.
         </p>
       </div>
 
-      {podiums.length > 0 && (<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {podiums.length > 0 && (<div className={styles.libraryGrid}>
         {podiums.map((p) => (<div
           key={p.id}
-          className={`overflow-hidden rounded-lg border p-3 transition ${p.is_active ? "border-amber-300/60 bg-amber-300/[0.06]" : "border-white/10 bg-black/20"}`}>
-          <div className="grid aspect-[16/9] place-items-center overflow-hidden rounded bg-black/40">
+          className={`${styles.libraryCard} ${p.is_active ? styles.libraryCardActive : ""}`}>
+          <div className={styles.libraryImgWrap}>
             <img
               alt={p.name}
-              className="h-full w-full object-contain"
+              className={styles.libraryImgContain}
               loading="lazy"
               src={p.image_url}/>
           </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-bold">{p.name}</span>
-            {p.is_active && (<span
-              className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
+          <div className={styles.libraryNameRow}>
+            <span className={styles.libraryName}>{p.name}</span>
+            {p.is_active && (<span className={styles.activeBadge}>
               Active
             </span>)}
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className={styles.libraryActions}>
             <button
-              className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+              className={styles.activateButton}
               disabled={!canManage || p.is_active || pendingKey === `podium-active-${p.id}`}
               type="button"
               onClick={() => {
@@ -445,7 +443,7 @@ export function BoardThemesAdmin({
               {p.is_active ? "Active" : pendingKey === `podium-active-${p.id}` ? "Activating..." : "Set active"}
             </button>
             <button
-              className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+              className={styles.deleteButton}
               disabled={!canManage || p.is_active || pendingKey === `podium-delete-${p.id}`}
               type="button"
               onClick={() => {
@@ -457,16 +455,16 @@ export function BoardThemesAdmin({
         </div>))}
       </div>)}
 
-      <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
-        <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+      <div className={styles.addBox}>
+        <div className={styles.addBoxTitle}>
           Add a podium
         </div>
-        <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+        <div className={styles.addBoxGrid}>
+          <div className={styles.addBoxFields}>
+            <label className={styles.addLabel}>
               Name
               <input
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+                className={styles.addInput}
                 disabled={!canManage}
                 placeholder="e.g. Royal Holder"
                 type="text"
@@ -502,37 +500,36 @@ export function BoardThemesAdmin({
     {/* Loading screen — the full-art cover shown while routes /
             assets load. Same library model as the podium: many rows,
             exactly one active (the client caches the active URL). */}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+    <div className={styles.panel}>
       <div>
-        <h3 className="text-base font-black">Loading screen</h3>
-        <p className="mt-1 text-sm text-white/50">
+        <h3 className={styles.sectionTitle}>Loading screen</h3>
+        <p className={styles.sectionDesc}>
           The full-screen art players see while the game loads. Upload themed
           variants (holidays, promos) and pick the live one. Landscape ~2:1 WebP
           works best — the gold progress bar is drawn on top near the bottom.
         </p>
       </div>
 
-      {loadingScreens.length > 0 && (<div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {loadingScreens.length > 0 && (<div className={styles.libraryGrid}>
         {loadingScreens.map((s) => (<div
           key={s.id}
-          className={`overflow-hidden rounded-lg border p-3 transition ${s.is_active ? "border-amber-300/60 bg-amber-300/[0.06]" : "border-white/10 bg-black/20"}`}>
-          <div className="grid aspect-video place-items-center overflow-hidden rounded bg-black/40">
+          className={`${styles.libraryCard} ${s.is_active ? styles.libraryCardActive : ""}`}>
+          <div className={styles.libraryImgWrap}>
             <img
               alt={s.name}
-              className="h-full w-full object-cover"
+              className={styles.libraryImgCover}
               loading="lazy"
               src={s.image_url}/>
           </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-bold">{s.name}</span>
-            {s.is_active && (<span
-              className="shrink-0 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-100">
+          <div className={styles.libraryNameRow}>
+            <span className={styles.libraryName}>{s.name}</span>
+            {s.is_active && (<span className={styles.activeBadge}>
               Active
             </span>)}
           </div>
-          <div className="mt-2 flex gap-2">
+          <div className={styles.libraryActions}>
             <button
-              className="flex-1 rounded-lg border border-emerald-300/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-100 transition hover:bg-emerald-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+              className={styles.activateButton}
               disabled={!canManage || s.is_active || pendingKey === `loading-screen-active-${s.id}`}
               type="button"
               onClick={() => {
@@ -541,7 +538,7 @@ export function BoardThemesAdmin({
               {s.is_active ? "Active" : pendingKey === `loading-screen-active-${s.id}` ? "Activating..." : "Set active"}
             </button>
             <button
-              className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+              className={styles.deleteButton}
               disabled={!canManage || s.is_active || pendingKey === `loading-screen-delete-${s.id}`}
               type="button"
               onClick={() => {
@@ -553,16 +550,16 @@ export function BoardThemesAdmin({
         </div>))}
       </div>)}
 
-      <div className="mt-4 rounded-lg border border-dashed border-white/15 bg-black/20 p-3">
-        <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+      <div className={styles.addBox}>
+        <div className={styles.addBoxTitle}>
           Add a loading screen
         </div>
-        <div className="mt-2 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="space-y-3">
-            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+        <div className={styles.addBoxGrid}>
+          <div className={styles.addBoxFields}>
+            <label className={styles.addLabel}>
               Name
               <input
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition placeholder:text-white/20 focus:border-amber-200/60 disabled:opacity-50"
+                className={styles.addInput}
                 disabled={!canManage}
                 placeholder="e.g. Winter 2026"
                 type="text"
@@ -597,41 +594,41 @@ export function BoardThemesAdmin({
 
     {boards.length === 0 ? (
       <EmptyState text="No board themes yet. Use Populate Current Boards or Add Board to create one."/>) : (
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+      <div className={styles.boardsGrid}>
         {boards.map((row) => (<div
           key={row.id}
-          className="group cursor-pointer overflow-hidden rounded-xl border border-white/10 bg-white/[0.045] shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-amber-200/45"
+          className={styles.boardCard}
           onClick={() => {
             openEditBoard(row)
           }}>
-          <div className="relative aspect-[16/10] overflow-hidden bg-black/25">
+          <div className={styles.boardImgWrap}>
             {row.lobby_background_image ? (<img
               alt=""
-              className="absolute inset-0 h-full w-full object-cover opacity-40 blur-sm transition group-hover:scale-105"
+              className={styles.boardBg}
               loading="lazy"
               src={row.lobby_background_image}/>) : null}
             <img
               alt={`${row.display_name} lobby preview`}
-              className="relative z-10 h-full w-full object-contain p-4 drop-shadow-[0_18px_16px_rgba(0,0,0,0.45)]"
+              className={styles.boardPreview}
               loading="lazy"
               src={row.preview_image}/>
-            <div className="absolute left-3 top-3 z-20">
+            <div className={styles.boardStatus}>
               <StatusPill enabled={row.is_enabled}/>
             </div>
           </div>
-          <div className="p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="truncate text-lg font-black">{row.display_name}</h3>
-                <p className="mt-1 truncate font-mono text-xs text-white/40">{row.id}</p>
+          <div className={styles.boardBody}>
+            <div className={styles.boardTitleRow}>
+              <div className={styles.boardTitleBlock}>
+                <h3 className={styles.boardName}>{row.display_name}</h3>
+                <p className={styles.boardId}>{row.id}</p>
               </div>
               <div
-                className="flex shrink-0 gap-2"
+                className={styles.boardActions}
                 onClick={(event) => {
                   event.stopPropagation()
                 }}>
                 <button
-                  className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/75 transition hover:bg-white/15"
+                  className={styles.editButton}
                   type="button"
                   onClick={() => {
                     openEditBoard(row)
@@ -639,7 +636,7 @@ export function BoardThemesAdmin({
                   Edit
                 </button>
                 <button
-                  className="rounded-lg border border-rose-300/25 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-100 transition hover:bg-rose-500/18 disabled:cursor-not-allowed disabled:opacity-45"
+                  className={styles.deleteButton}
                   disabled={!canManage || pendingKey === `board-delete-${row.id}`}
                   type="button"
                   onClick={() => {
@@ -649,22 +646,22 @@ export function BoardThemesAdmin({
                 </button>
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-4 gap-2 text-xs text-white/55">
-              <div className="rounded-lg bg-black/18 p-2">
-                <div className="text-white/35">Level</div>
-                <div className="font-bold text-white">{row.unlock_level}</div>
+            <div className={styles.boardStats}>
+              <div className={styles.statCell}>
+                <div className={styles.statLabel}>Level</div>
+                <div className={styles.statValue}>{row.unlock_level}</div>
               </div>
-              <div className="rounded-lg bg-black/18 p-2">
-                <div className="text-white/35">Coins</div>
-                <div className="font-bold text-white">{formatNumber(row.price_coins)}</div>
+              <div className={styles.statCell}>
+                <div className={styles.statLabel}>Coins</div>
+                <div className={styles.statValue}>{formatNumber(row.price_coins)}</div>
               </div>
-              <div className="rounded-lg bg-black/18 p-2">
-                <div className="text-white/35">Gems</div>
-                <div className="font-bold text-white">{formatNumber(row.price_gems ?? 0)}</div>
+              <div className={styles.statCell}>
+                <div className={styles.statLabel}>Gems</div>
+                <div className={styles.statValue}>{formatNumber(row.price_gems ?? 0)}</div>
               </div>
-              <div className="rounded-lg bg-black/18 p-2">
-                <div className="text-white/35">Sort</div>
-                <div className="font-bold text-white">{row.sort_order}</div>
+              <div className={styles.statCell}>
+                <div className={styles.statLabel}>Sort</div>
+                <div className={styles.statValue}>{row.sort_order}</div>
               </div>
             </div>
           </div>
@@ -672,20 +669,19 @@ export function BoardThemesAdmin({
       </div>)}
 
     {boardEditorOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-        <div
-          className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/12 bg-[#0b1930] p-5 shadow-2xl shadow-black/50">
-          <div className="flex items-start justify-between gap-3">
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalDialog}>
+          <div className={styles.modalHeader}>
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/65">
+              <div className={styles.modalEyebrow}>
                 {boardEditorMode === "add" ? "Add Board" : "Edit Board"}
               </div>
-              <h2 className="mt-1 text-2xl font-black">
+              <h2 className={styles.modalTitle}>
                 {boardEditorMode === "add" ? "New board theme" : boardDraft.display_name || "Board theme"}
               </h2>
             </div>
             <button
-              className="rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-bold text-white/70 transition hover:bg-white/15"
+              className={styles.closeButton}
               type="button"
               onClick={() => {
                 setBoardEditorOpen(false)
@@ -694,7 +690,7 @@ export function BoardThemesAdmin({
             </button>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className={styles.modalFields}>
             <div>
               <Field
                 disabled={boardEditorMode === "edit"}
@@ -707,7 +703,7 @@ export function BoardThemesAdmin({
                   }))
                 }}/>
               {boardEditorMode === "add" && boardDraft.id !== "" && !isValidBoardId(boardDraft.id) && (
-                <div className="mt-1 text-[10px] font-bold normal-case tracking-normal text-rose-300">
+                <div className={styles.idError}>
                   Must be lowercase letters/digits, separated by - or _.
                   Start with a letter or digit. Examples: caribbean-full, zen-garden, classic_purple.
                 </div>)}
@@ -758,7 +754,7 @@ export function BoardThemesAdmin({
                 }))
               }}/>
           </div>
-          <div className="mt-3 space-y-3">
+          <div className={styles.modalImages}>
             <ImageField
               folder={boardDraft.id}
               kind="preview"
@@ -898,7 +894,7 @@ export function BoardThemesAdmin({
                   metadata,
                 }))
               }}/>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={styles.toggleGrid}>
               <Toggle
                 checked={boardDraft.is_enabled}
                 label="Enabled"
@@ -918,7 +914,7 @@ export function BoardThemesAdmin({
                   }))
                 }}/>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
+            <div className={styles.modalFooter}>
               <SecondaryButton onClick={() => {
                 setBoardEditorOpen(false)
               }}>Cancel</SecondaryButton>

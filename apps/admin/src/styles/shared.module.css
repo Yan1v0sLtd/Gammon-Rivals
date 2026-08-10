@@ -42,6 +42,21 @@
   padding: 1rem;
 }
 
+/* Card without padding (flush content, e.g. a table). */
+.cardFlush {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.045);
+}
+
+/* Card with larger padding (loading / empty states). */
+.cardLarge {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.045);
+  padding: 1.5rem;
+}
+
 /* Card title. */
 .cardTitle {
   font-size: 1.125rem;

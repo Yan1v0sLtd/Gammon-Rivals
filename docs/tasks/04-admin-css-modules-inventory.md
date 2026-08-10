@@ -186,11 +186,11 @@ Grouped by migration phase. Count = `className` occurrences.
 
 | File | Count |
 |---|---|
-| `features/Users/UsersAdmin.tsx` | 104 |
-| `features/DailyMissions/TemplatesEditor.tsx` | 86 |
-| `features/BoardThemes/BoardThemesAdmin.tsx` | 80 |
-| `features/LevelSystem/LevelCurveProposal.tsx` | 67 |
-| `features/HourlyWheel/HourlyWheelAdmin.tsx` | 64 |
+| `features/Users/UsersAdmin.tsx` | 104 | ✅ done |
+| `features/DailyMissions/TemplatesEditor.tsx` | 86 | ✅ done |
+| `features/BoardThemes/BoardThemesAdmin.tsx` | 80 | ✅ done |
+| `features/LevelSystem/LevelCurveProposal.tsx` | 67 | ✅ done |
+| `features/HourlyWheel/HourlyWheelAdmin.tsx` | 64 | ✅ done |
 | `features/RTPAnalytics/RTPAnalyticsAdmin.tsx` | 56 |
 | `features/Shop/ShopAdmin.tsx` | 47 |
 | `features/DailyMissions/SimulatorTab.tsx` | 47 |

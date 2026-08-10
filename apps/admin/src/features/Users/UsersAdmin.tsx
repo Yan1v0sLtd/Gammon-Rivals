@@ -18,6 +18,7 @@ import {moneyFromCents} from "../../lib/moneyFromCents.ts"
 import {requiredNumber} from "../../lib/requiredNumber"
 import {useOnlineUsersWatcher} from "../../lib/useOnlineUsersWatcher.ts"
 
+import styles from "./UsersAdmin.module.css"
 import {
   useAdjustWalletMutation,
   useGetUserDetailQuery,
@@ -310,60 +311,58 @@ export function UsersAdmin({
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_26rem]">
+  return (<div className={styles.layout}>
     {confirmUI}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+    <div className={styles.panel}>
       {/* Live online users widget. The dot pulses to make
             * "live" obvious; counts come straight from the
             * Realtime presence channel so the moment a player
             * closes their tab the WebSocket drops and the
             * count ticks down within a few seconds. */}
-      <div
-        className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <span className="relative grid h-2.5 w-2.5 place-items-center">
-            <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/70"/>
-            <span className="relative h-2 w-2 rounded-full bg-emerald-400"/>
+      <div className={styles.onlineWidget}>
+        <div className={styles.onlineLabel}>
+          <span className={styles.pulseWrap}>
+            <span className={styles.ping}/>
+            <span className={styles.dot}/>
           </span>
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/90">
+          <span className={styles.onlineLabelText}>
             Live online
           </span>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-display text-2xl font-black tabular-nums text-emerald-100">
+        <div className={styles.countGroup}>
+          <span className={styles.countNumber}>
             {onlineUsers.total}
           </span>
-          <span className="text-xs font-bold text-emerald-200/60">total</span>
+          <span className={styles.countUnit}>total</span>
         </div>
-        <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
-          <span className="font-display text-lg font-black tabular-nums text-emerald-100">
+        <div className={styles.countGroupBordered}>
+          <span className={styles.countNumberSecondary}>
             {onlineUsers.registered}
           </span>
-          <span className="text-xs font-bold text-emerald-200/60">registered</span>
+          <span className={styles.countUnit}>registered</span>
         </div>
-        <div className="flex items-baseline gap-1.5 border-l border-emerald-500/30 pl-3">
-          <span className="font-display text-lg font-black tabular-nums text-emerald-100">
+        <div className={styles.countGroupBordered}>
+          <span className={styles.countNumberSecondary}>
             {onlineUsers.guests}
           </span>
-          <span className="text-xs font-bold text-emerald-200/60">guests</span>
+          <span className={styles.countUnit}>guests</span>
         </div>
       </div>
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-black">Users</h2>
+      <div className={styles.searchHeader}>
+        <h2 className={styles.sectionTitle}>Users</h2>
         <input
-          className="w-full max-w-sm rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-amber-200/60"
+          className={styles.searchInput}
           placeholder="Search name, id, level, rating"
           value={userSearch}
           onChange={(event) => {
             setUserSearch(event.target.value)
           }}/>
       </div>
-      <div
-        className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-black/16 px-3 py-2 text-xs text-white/55">
+      <div className={styles.selectionBar}>
         <span>
           {checkedUserCount > 0 ? `${checkedUserCount} selected` : `${filteredUsers.length} live users shown`}
         </span>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={styles.selectionActions}>
           <DangerButton
             disabled={!canManage || checkedUserCount === 0 || pendingKey === "user-delete"}
             onClick={() => {
@@ -383,42 +382,42 @@ export function UsersAdmin({
           </DangerButton>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-white/10 text-sm">
-          <thead className="bg-black/20 text-left text-xs uppercase tracking-wider text-white/35">
+      <div className={styles.tableScroll}>
+        <table className={styles.table}>
+          <thead className={styles.thead}>
             <tr>
-              <th className="px-4 py-3">
+              <th className={styles.th}>
                 <input
                   aria-label="Select all visible users"
                   checked={allFilteredUsersChecked}
-                  className="h-4 w-4 accent-amber-300"
+                  className={styles.checkbox}
                   disabled={selectableFilteredUserIds.length === 0}
                   type="checkbox"
                   onChange={(event) => {
                     toggleAllFilteredUsers(event.target.checked)
                   }}/>
               </th>
-              <th className="px-4 py-3">Player</th>
-              <th className="px-4 py-3">Account</th>
-              <th className="px-4 py-3">Level</th>
-              <th className="px-4 py-3">Wallet</th>
-              <th className="px-4 py-3">Rating</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className={styles.th}>Player</th>
+              <th className={styles.th}>Account</th>
+              <th className={styles.th}>Level</th>
+              <th className={styles.th}>Wallet</th>
+              <th className={styles.th}>Rating</th>
+              <th className={styles.th}>Status</th>
+              <th className={styles.th}>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody>
             {filteredUsers.map((row) => (<tr
               key={row.id}
-              className={`cursor-pointer text-white/75 transition hover:bg-white/[0.055] ${row.id === selectedUser?.id ? "bg-amber-300/10" : ""}`}
+              className={`${styles.row} ${row.id === selectedUser?.id ? styles.rowSelected : ""}`}
               onClick={() => {
                 selectUser(row)
               }}>
-              <td className="px-4 py-3">
+              <td className={styles.td}>
                 <input
                   aria-label={`Select ${row.display_name}`}
                   checked={checkedUserIds.has(row.id)}
-                  className="h-4 w-4 accent-amber-300"
+                  className={styles.checkbox}
                   disabled={row.id === currentUserId}
                   type="checkbox"
                   onChange={(event) => {
@@ -428,23 +427,23 @@ export function UsersAdmin({
                     event.stopPropagation()
                   }}/>
               </td>
-              <td className="px-4 py-3">
-                <div className="font-bold text-white">{row.display_name}</div>
-                <div className="max-w-[16rem] truncate font-mono text-xs text-white/35">{row.id}</div>
+              <td className={styles.td}>
+                <div className={styles.playerName}>{row.display_name}</div>
+                <div className={styles.playerId}>{row.id}</div>
               </td>
-              <td className="px-4 py-3">{accountType(row)}</td>
-              <td className="px-4 py-3">L{row.level} · {formatNumber(row.xp)} XP</td>
-              <td className="px-4 py-3">
+              <td className={styles.td}>{accountType(row)}</td>
+              <td className={styles.td}>L{row.level} · {formatNumber(row.xp)} XP</td>
+              <td className={styles.td}>
                 {formatNumber(row.wallet?.coins)} coins · {formatNumber(row.wallet?.gems)} gems
               </td>
-              <td className="px-4 py-3">{formatNumber(row.rating)}</td>
-              <td className="px-4 py-3">
+              <td className={styles.td}>{formatNumber(row.rating)}</td>
+              <td className={styles.td}>
                 {row.is_suspended ? <StatusPill enabled={false}/> : <StatusPill enabled/>}
               </td>
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-1.5">
+              <td className={styles.td}>
+                <div className={styles.rowActions}>
                   <button
-                    className="rounded-md border border-rose-300/25 px-2 py-1 text-xs font-bold text-rose-100 transition hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"
+                    className={styles.rowDelete}
                     disabled={!canManage || row.id === currentUserId || pendingKey === "user-delete"}
                     type="button"
                     onClick={(event) => {
@@ -454,7 +453,7 @@ export function UsersAdmin({
                     Delete
                   </button>
                   <button
-                    className="rounded-md border border-rose-500/50 bg-rose-700/15 px-2 py-1 text-xs font-bold text-rose-200 transition hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-45"
+                    className={styles.rowHard}
                     disabled={!canManage || row.id === currentUserId || pendingKey === "user-delete"}
                     title="Hard delete (irreversible)"
                     type="button"
@@ -472,19 +471,19 @@ export function UsersAdmin({
       </div>
     </div>
 
-    <div className="space-y-4">
+    <div className={styles.rightColumn}>
       {!selectedUser ? (<EmptyState
         text="Select a user to inspect their profile, wallet, inventory, and match history."/>) : (<>
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <div className="flex items-start justify-between gap-3">
+        <div className={styles.panel}>
+          <div className={styles.inspectorHeader}>
             <div>
-              <h2 className="text-xl font-black">{selectedUser.display_name}</h2>
-              <div className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-amber-200/70">
+              <h2 className={styles.inspectorName}>{selectedUser.display_name}</h2>
+              <div className={styles.inspectorAccount}>
                 {accountType(selectedUser)}
               </div>
-              <div className="mt-1 break-all font-mono text-xs text-white/35">{selectedUser.id}</div>
+              <div className={styles.inspectorId}>{selectedUser.id}</div>
             </div>
-            <div className="flex flex-col items-end gap-2">
+            <div className={styles.inspectorActions}>
               <StatusPill enabled={!selectedUser.is_suspended}/>
               <DangerButton
                 disabled={!canManage || selectedUser.id === currentUserId || pendingKey === "user-delete"}
@@ -502,25 +501,25 @@ export function UsersAdmin({
               </DangerButton>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/55">
-            <div className="rounded-lg bg-black/18 p-2">
-              <div className="text-white/35">Coins</div>
-              <div className="font-bold text-white">{formatNumber(selectedUserDetail?.wallet?.coins)}</div>
+          <div className={styles.statGrid}>
+            <div className={styles.statCell}>
+              <div className={styles.statLabel}>Coins</div>
+              <div className={styles.statValue}>{formatNumber(selectedUserDetail?.wallet?.coins)}</div>
             </div>
-            <div className="rounded-lg bg-black/18 p-2">
-              <div className="text-white/35">Gems</div>
-              <div className="font-bold text-white">{formatNumber(selectedUserDetail?.wallet?.gems)}</div>
+            <div className={styles.statCell}>
+              <div className={styles.statLabel}>Gems</div>
+              <div className={styles.statValue}>{formatNumber(selectedUserDetail?.wallet?.gems)}</div>
             </div>
-            <div className="rounded-lg bg-black/18 p-2">
-              <div className="text-white/35">Created</div>
-              <div className="font-bold text-white">{formatDate(selectedUser.created_at)}</div>
+            <div className={styles.statCell}>
+              <div className={styles.statLabel}>Created</div>
+              <div className={styles.statValue}>{formatDate(selectedUser.created_at)}</div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Profile controls</h3>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Profile controls</h3>
+          <div className={styles.fieldGrid3}>
             <Field
               label="Level"
               value={profileDraft.level}
@@ -540,7 +539,7 @@ export function UsersAdmin({
                 setProfileDraft((d) => ({...d, rating}))
               }}/>
           </div>
-          <div className="mt-3">
+          <div className={styles.mt3}>
             <TextArea
               label="Admin note"
               rows={3}
@@ -549,7 +548,7 @@ export function UsersAdmin({
                 setProfileDraft((d) => ({...d, admin_note}))
               }}/>
           </div>
-          <div className="mt-3">
+          <div className={styles.mt3}>
             <TextArea
               label="Suspension reason"
               rows={2}
@@ -558,7 +557,7 @@ export function UsersAdmin({
                 setProfileDraft((d) => ({...d, suspension_reason}))
               }}/>
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className={styles.actions}>
             <PrimaryButton
               disabled={!canManage || pendingKey === "profile"}
               onClick={() => {
@@ -576,11 +575,11 @@ export function UsersAdmin({
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Grant / remove currency</h3>
-          <div className="mt-3 grid grid-cols-[7rem_1fr] gap-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Grant / remove currency</h3>
+          <div className={styles.walletGrid}>
             <select
-              className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none"
+              className={styles.select}
               value={walletDraft.currency}
               onChange={(event) => {
                 setWalletDraft((d) => ({...d, currency: event.target.value}))
@@ -595,7 +594,7 @@ export function UsersAdmin({
                 setWalletDraft((d) => ({...d, amount}))
               }}/>
           </div>
-          <div className="mt-3">
+          <div className={styles.mt3}>
             <Field
               label="Reason"
               value={walletDraft.reason}
@@ -603,7 +602,7 @@ export function UsersAdmin({
                 setWalletDraft((d) => ({...d, reason}))
               }}/>
           </div>
-          <div className="mt-3">
+          <div className={styles.mt3}>
             <PrimaryButton
               disabled={!canManage || pendingKey === "wallet"}
               onClick={() => {
@@ -614,61 +613,61 @@ export function UsersAdmin({
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Inventory</h3>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Inventory</h3>
+          <div className={styles.chipWrap}>
             {selectedUserDetail?.boards.length ? (selectedUserDetail.boards.map((item) => (
               <span
                 key={item.board_theme_id}
-                className="rounded-full bg-black/25 px-3 py-1 text-xs text-white/65">
+                className={styles.chip}>
                 {item.board_theme_id} · {item.source}
-              </span>))) : (<div className="text-sm text-white/45">No owned boards.</div>)}
+              </span>))) : (<div className={styles.emptyText}>No owned boards.</div>)}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Wallet ledger</h3>
-          <div className="mt-2 space-y-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Wallet ledger</h3>
+          <div className={styles.list}>
             {selectedUserDetail?.transactions.length ? (selectedUserDetail.transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                <div className="font-bold text-white">
+                className={styles.listItem}>
+                <div className={styles.itemTitle}>
                   {tx.amount > 0 ? "+" : ""}{formatNumber(tx.amount)} {tx.currency}
                 </div>
                 <div>{tx.reason}</div>
                 <div
-                  className="text-white/35">After: {formatNumber(tx.balance_after)} · {formatDate(tx.created_at)}</div>
-              </div>))) : (<div className="text-sm text-white/45">No wallet transactions yet.</div>)}
+                  className={styles.itemSub}>After: {formatNumber(tx.balance_after)} · {formatDate(tx.created_at)}</div>
+              </div>))) : (<div className={styles.emptyText}>No wallet transactions yet.</div>)}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Purchases</h3>
-          <div className="mt-2 space-y-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Purchases</h3>
+          <div className={styles.list}>
             {selectedUserDetail?.purchases.length ? (selectedUserDetail.purchases.map((purchase) => (
               <div
                 key={purchase.id}
-                className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                <div className="font-bold text-white">{purchase.product_id}</div>
+                className={styles.listItem}>
+                <div className={styles.itemTitle}>{purchase.product_id}</div>
                 <div>{purchase.product_type} · {purchase.provider} · {purchase.status}</div>
                 <div
-                  className="text-white/35">{moneyFromCents(purchase.price_cents)} · {formatDate(purchase.created_at)}</div>
-              </div>))) : (<div className="text-sm text-white/45">No purchases yet.</div>)}
+                  className={styles.itemSub}>{moneyFromCents(purchase.price_cents)} · {formatDate(purchase.created_at)}</div>
+              </div>))) : (<div className={styles.emptyText}>No purchases yet.</div>)}
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h3 className="font-black">Match history</h3>
-          <div className="mt-2 space-y-2">
+        <div className={styles.panel}>
+          <h3 className={styles.subTitle}>Match history</h3>
+          <div className={styles.list}>
             {selectedUserDetail?.matches.length ? (selectedUserDetail.matches.map((match) => (
               <div
                 key={match.id}
-                className="rounded-lg bg-black/18 px-3 py-2 text-xs text-white/60">
-                <div className="font-bold text-white">{match.mode} · to {match.target}</div>
+                className={styles.listItem}>
+                <div className={styles.itemTitle}>{match.mode} · to {match.target}</div>
                 <div>Score {match.white_score}-{match.black_score} · winner {match.winner ?? "open"}</div>
-                <div className="text-white/35">{formatDate(match.started_at)}</div>
-              </div>))) : (<div className="text-sm text-white/45">No matches yet.</div>)}
+                <div className={styles.itemSub}>{formatDate(match.started_at)}</div>
+              </div>))) : (<div className={styles.emptyText}>No matches yet.</div>)}
           </div>
         </div>
       </>)}

@@ -3,6 +3,7 @@ import {useMemo, useState} from "react"
 import {formatUsdMicros} from "../../../../../packages/shared/src/currency"
 import {useConfirm} from "../../components/useConfirm"
 
+import styles from "./LevelCurveProposal.module.css"
 import type {LevelConfigInsert} from "./LevelSystemData"
 
 // Default params for the proposed curve. These are the numbers we
@@ -168,10 +169,10 @@ function NumField({
   readonly step?: number | "any",
   readonly onChange: (n: number) => void,
 }) {
-  return (<label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+  return (<label className={styles.numLabel}>
     {label}
     <input
-      className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+      className={styles.numInput}
       step={step}
       type="number"
       value={value}
@@ -353,15 +354,15 @@ export function LevelCurveProposal({
     }
   }
 
-  return (<div className="mt-6 rounded-xl border border-white/10 bg-white/[0.045] p-4">
+  return (<div className={styles.panel}>
     {confirmUI}
-    <div className="flex items-baseline justify-between">
-      <h2 className="text-lg font-black">Curve Proposal — Cap & Plateau</h2>
-      <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+    <div className={styles.header}>
+      <h2 className={styles.title}>Curve Proposal — Cap & Plateau</h2>
+      <span className={styles.previewNote}>
         preview only — nothing written until Apply
       </span>
     </div>
-    <p className="mt-1 text-xs text-white/55">
+    <p className={styles.desc}>
       4-segment curve with a flat plateau past level{" "}
       {params.end_late} and a hard cap at level {params.max_level}. Gem
       rewards follow the range rules below. Coin rewards scale with
@@ -371,7 +372,7 @@ export function LevelCurveProposal({
     </p>
 
     {/* Params grid */}
-    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className={styles.paramsGrid}>
       <NumField
         label="Base XP (L1→L2)"
         value={params.base_xp}
@@ -510,23 +511,22 @@ export function LevelCurveProposal({
 
     {/* Gem reward rules — range-based cadence builder. Replaces the
           old free-text JSON milestone map. */}
-    <div className="mt-4 rounded-lg border border-white/10 bg-black/15 p-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-xs font-bold uppercase tracking-[0.14em] text-white/45">
+    <div className={styles.gemBox}>
+      <div className={styles.gemHeader}>
+        <span className={styles.gemTitle}>
           Gem reward rules
         </span>
-        <span className="text-[10px] text-white/35">
+        <span className={styles.gemHint}>
           within each range, grant the gems at every Nth level (levels divisible by N)
         </span>
       </div>
-      <p className="mt-1 text-[10px] text-white/40">
+      <p className={styles.gemDesc}>
         e.g. From 1 To 50, 5 gems, every 10 → L10/20/30/40/50 each grant 5 gems.
         Ranges are read top-down; keep them contiguous and non-overlapping.
         A level not covered by any rule grants 0 gems.
       </p>
-      <div className="mt-3 space-y-2">
-        <div
-          className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+      <div className={styles.gemRules}>
+        <div className={`${styles.gemGrid} ${styles.gemHeaderRow}`}>
           <span></span>
           <span>From level</span>
           <span>To level</span>
@@ -534,15 +534,14 @@ export function LevelCurveProposal({
           <span>Every N lvls</span>
           <span></span>
         </div>
-        {params.gem_rules.length === 0 ? (<div
-          className="rounded-lg border border-white/10 bg-black/20 px-3 py-4 text-center text-[11px] text-white/40">
+        {params.gem_rules.length === 0 ? (<div className={styles.gemEmpty}>
           No gem rules — every level grants 0 gems. Add a rule to start.
         </div>) : (params.gem_rules.map((rule, i) => (<div
           key={`gem-rule-${rule.level_from}-${rule.level_to}-${rule.gems}-${rule.every}`}
-          className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem] items-center gap-2">
-          <span className="text-center text-[10px] font-bold text-white/30">{i + 1}</span>
+          className={styles.gemGrid}>
+          <span className={styles.gemIndex}>{i + 1}</span>
           <input
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+            className={styles.gemInput}
             min="1"
             type="number"
             value={rule.level_from}
@@ -550,7 +549,7 @@ export function LevelCurveProposal({
               updateGemRule(i, {level_from: Number(e.target.value)})
             }}/>
           <input
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+            className={styles.gemInput}
             min="1"
             type="number"
             value={rule.level_to}
@@ -558,7 +557,7 @@ export function LevelCurveProposal({
               updateGemRule(i, {level_to: Number(e.target.value)})
             }}/>
           <input
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+            className={styles.gemInput}
             min="0"
             type="number"
             value={rule.gems}
@@ -566,7 +565,7 @@ export function LevelCurveProposal({
               updateGemRule(i, {gems: Number(e.target.value)})
             }}/>
           <input
-            className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+            className={styles.gemInput}
             min="1"
             type="number"
             value={rule.every}
@@ -574,7 +573,7 @@ export function LevelCurveProposal({
               updateGemRule(i, {every: Number(e.target.value)})
             }}/>
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 text-base font-black text-rose-200/80 transition hover:bg-rose-300/20"
+            className={styles.gemRemove}
             title="Remove rule"
             type="button"
             onClick={() => {
@@ -584,7 +583,7 @@ export function LevelCurveProposal({
           </button>
         </div>)))}
         <button
-          className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-white/70 transition hover:border-white/30"
+          className={styles.gemAdd}
           type="button"
           onClick={addGemRule}>
           + Add gem rule
@@ -593,38 +592,38 @@ export function LevelCurveProposal({
     </div>
 
     {/* Summary strip */}
-    <div className="mt-4 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.14em]">
-      <span className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-emerald-200">
+    <div className={styles.summaryStrip}>
+      <span className={styles.summaryChipEmerald}>
         L{params.max_level} in {(proposed[proposed.length - 1]?.active_days_to_reach ?? 0).toFixed(0)} active days
       </span>
-      <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+      <span className={styles.summaryChip}>
         Total coins: {totals.coins.toLocaleString()} ({formatUsdMicros(totals.coins * params.coin_value_micros)})
       </span>
-      <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+      <span className={styles.summaryChip}>
         Total gems: {totals.gems} ({formatUsdMicros(totals.gems * params.gem_value_micros)})
       </span>
-      <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+      <span className={styles.summaryChip}>
         Total reward $: {formatUsdMicros(totals.rewardMicros)}
       </span>
-      <span className="rounded-lg border border-white/15 bg-white/[0.04] px-3 py-1 text-white/70">
+      <span className={styles.summaryChip}>
         $ sunk to L{params.max_level}: {formatUsdMicros(totals.sunkMicros)}
       </span>
-      <span className="rounded-lg border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-amber-100">
+      <span className={styles.summaryChipAmber}>
         Overall rebate: {totals.rebatePct.toFixed(2)}%
       </span>
     </div>
 
     {/* Action row */}
-    <div className="mt-4 flex items-center gap-3">
+    <div className={styles.actionRow}>
       <button
-        className="rounded-lg border border-amber-200/40 bg-amber-200/15 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100 transition hover:bg-amber-200/25 disabled:cursor-not-allowed disabled:opacity-50"
+        className={styles.applyButton}
         disabled={!canManage || applying}
         type="button"
         onClick={() => void apply()}>
         {applying ? "Applying…" : `Apply curve to level_configs (${proposed.length} rows)`}
       </button>
       <button
-        className="rounded-lg border border-white/15 bg-white/[0.04] px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-white/70 transition hover:border-white/30"
+        className={styles.resetButton}
         type="button"
         onClick={() => {
           setParams({
@@ -636,38 +635,36 @@ export function LevelCurveProposal({
         Reset to defaults
       </button>
       <button
-        className="rounded-lg border border-sky-300/40 bg-sky-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-sky-100 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+        className={styles.recomputeButton}
         disabled={!canManage || recomputing}
         title="Snap every existing player's level to the CURRENT curve (promote-only, no rewards). Apply already does this automatically — use this after hand-editing level rows."
         type="button"
         onClick={() => void recompute()}>
         {recomputing ? "Re-leveling…" : "Re-level players now"}
       </button>
-      {error ? (<span
-        className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">
+      {error ? (<span className={styles.errorChip}>
         {error}
       </span>) : null}
-      {message ? (<span
-        className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-100">
+      {message ? (<span className={styles.messageChip}>
         {message}
       </span>) : null}
     </div>
 
     {/* Preview table */}
-    <div className="mt-4 max-h-[32rem] overflow-auto rounded-lg border border-white/10">
-      <table className="min-w-full text-left text-xs">
-        <thead className="sticky top-0 bg-[#0c1626] text-[10px] uppercase tracking-[0.14em] text-white/45">
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
+        <thead className={styles.thead}>
           <tr>
-            <th className="px-3 py-2">L</th>
-            <th className="px-3 py-2 text-right">XP req (cum)</th>
-            <th className="px-3 py-2 text-right">Δ per lvl</th>
-            <th className="px-3 py-2 text-right">vs current</th>
-            <th className="px-3 py-2 text-right">Active days</th>
-            <th className="px-3 py-2 text-right">Coins</th>
-            <th className="px-3 py-2 text-right">Gems</th>
-            <th className="px-3 py-2 text-right">$ reward</th>
-            <th className="px-3 py-2 text-right">$ sunk</th>
-            <th className="px-3 py-2 text-right">Rebate %</th>
+            <th className={styles.th}>L</th>
+            <th className={styles.thRight}>XP req (cum)</th>
+            <th className={styles.thRight}>Δ per lvl</th>
+            <th className={styles.thRight}>vs current</th>
+            <th className={styles.thRight}>Active days</th>
+            <th className={styles.thRight}>Coins</th>
+            <th className={styles.thRight}>Gems</th>
+            <th className={styles.thRight}>$ reward</th>
+            <th className={styles.thRight}>$ sunk</th>
+            <th className={styles.thRight}>Rebate %</th>
           </tr>
         </thead>
         <tbody>
@@ -676,30 +673,29 @@ export function LevelCurveProposal({
             const delta = cur != null ? r.xp_required_cum - cur : null
             return (<tr
               key={r.level}
-              className="border-t border-white/5 text-white/70">
-              <td className="px-3 py-1.5 font-mono">{r.level}</td>
-              <td className="px-3 py-1.5 text-right font-mono">{r.xp_required_cum.toLocaleString()}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-white/45">{r.per_lvl_xp.toLocaleString()}</td>
-              <td className="px-3 py-1.5 text-right font-mono">
-                {delta == null ? (<span className="text-white/25">—</span>) : delta === 0 ? (
-                  <span className="text-white/35">0</span>) : delta < 0 ? (
-                  <span className="text-emerald-300/85">{delta.toLocaleString()}</span>) : (
-                  <span className="text-rose-300/85">+{delta.toLocaleString()}</span>)}
+              className={styles.row}>
+              <td className={styles.td}>{r.level}</td>
+              <td className={styles.tdRight}>{r.xp_required_cum.toLocaleString()}</td>
+              <td className={styles.tdRightDim}>{r.per_lvl_xp.toLocaleString()}</td>
+              <td className={styles.tdRight}>
+                {delta == null ? (<span className={styles.deltaNone}>—</span>) : delta === 0 ? (
+                  <span className={styles.deltaZero}>0</span>) : delta < 0 ? (
+                  <span className={styles.deltaDown}>{delta.toLocaleString()}</span>) : (
+                  <span className={styles.deltaUp}>+{delta.toLocaleString()}</span>)}
               </td>
-              <td className="px-3 py-1.5 text-right font-mono">{r.active_days_to_reach.toFixed(1)}</td>
-              <td className="px-3 py-1.5 text-right font-mono">{r.coins.toLocaleString()}</td>
-              <td className="px-3 py-1.5 text-right font-mono">{r.gems > 0 ? r.gems
-                : <span className="text-white/25">—</span>}</td>
-              <td
-                className="px-3 py-1.5 text-right font-mono text-emerald-200/80">{formatUsdMicros(r.reward_usd_micros)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-white/55">{formatUsdMicros(r.sunk_usd_micros)}</td>
-              <td className="px-3 py-1.5 text-right font-mono text-amber-100/75">{r.rebate_pct.toFixed(2)}%</td>
+              <td className={styles.tdRight}>{r.active_days_to_reach.toFixed(1)}</td>
+              <td className={styles.tdRight}>{r.coins.toLocaleString()}</td>
+              <td className={styles.tdRight}>{r.gems > 0 ? r.gems
+                : <span className={styles.deltaNone}>—</span>}</td>
+              <td className={styles.tdReward}>{formatUsdMicros(r.reward_usd_micros)}</td>
+              <td className={styles.tdSunk}>{formatUsdMicros(r.sunk_usd_micros)}</td>
+              <td className={styles.tdRebate}>{r.rebate_pct.toFixed(2)}%</td>
             </tr>)
           })}
         </tbody>
       </table>
     </div>
-    <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+    <p className={styles.footnote}>
       <strong>vs current</strong> = proposed cumulative XP − current
       cumulative XP for the same level (green = proposed is easier, red
       = proposed is harder). Levels with no current row show "—".

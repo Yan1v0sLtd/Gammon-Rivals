@@ -19,6 +19,7 @@ import type {
 } from "./DailyMissionsData"
 import {Field, JsonField, RewardBundleEditor} from "./MissionsAdminShared"
 import type {MissionTypeConfig, RewardRow} from "./MissionsAdminShared"
+import styles from "./TemplatesEditor.module.css"
 
 type MissionTemplate = {
   id: string,
@@ -322,27 +323,27 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
   // Errors surface through the inline error below, so loading and error
   // are mutually exclusive here.
   if (templatesLoading || typesLoading || rewardsLoading) {
-    return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+    return (<div className={styles.layout}>
+      <div className={styles.loadingCard}>
         Loading mission templates…
       </div>
     </div>)
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-    {loadErrors.length > 0 && (<div className="space-y-1 xl:col-span-2">
+  return (<div className={styles.layout}>
+    {loadErrors.length > 0 && (<div className={styles.loadErrors}>
       {loadErrors.map((m) => (<div
         key={m}
-        className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+        className={styles.loadError}>
         {m}
       </div>))}
     </div>)}
 
     {/* List */}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045]">
-      <div className="flex flex-wrap items-center gap-2 border-b border-white/10 p-3">
+    <div className={styles.listPanel}>
+      <div className={styles.listHeader}>
         <select
-          className="rounded-md bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          className={styles.filterSelect}
           value={filterRarity}
           onChange={(e) => {
             setFilterRarity(e.target.value)
@@ -353,7 +354,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           <option value="epic">Epic</option>
         </select>
         <select
-          className="rounded-md bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          className={styles.filterSelect}
           value={filterPeriod}
           onChange={(e) => {
             setFilterPeriod(e.target.value)
@@ -362,11 +363,11 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
         </select>
-        <div className="ml-auto text-xs text-white/50">
+        <div className={styles.listCount}>
           {filtered.length} of {templates.length}
         </div>
         {canManage && (<button
-          className="rounded-md bg-emerald-600 px-3 py-1 text-sm font-bold text-white hover:bg-emerald-500"
+          className={styles.newButton}
           type="button"
           onClick={() => {
             startEdit(null)
@@ -374,39 +375,39 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           + New
         </button>)}
       </div>
-      <div className="max-h-[70vh] overflow-y-auto">
-        <table className="w-full text-sm">
-          <thead className="sticky top-0 bg-[#0d0a18] text-xs uppercase text-white/50">
+      <div className={styles.listScroll}>
+        <table className={styles.listTable}>
+          <thead className={styles.listThead}>
             <tr>
-              <th className="px-3 py-2 text-left">Title</th>
-              <th className="px-3 py-2 text-left">Rarity</th>
-              <th className="px-3 py-2 text-left">Period</th>
-              <th className="px-3 py-2 text-left">Type</th>
-              <th className="px-3 py-2 text-right">Goal</th>
-              <th className="px-3 py-2 text-right">MP</th>
-              <th className="px-3 py-2 text-center">On</th>
+              <th className={styles.listTh}>Title</th>
+              <th className={styles.listTh}>Rarity</th>
+              <th className={styles.listTh}>Period</th>
+              <th className={styles.listTh}>Type</th>
+              <th className={styles.listThRight}>Goal</th>
+              <th className={styles.listThRight}>MP</th>
+              <th className={styles.listThCenter}>On</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((t) => (<tr
               key={t.id}
-              className={`cursor-pointer border-t border-white/5 transition hover:bg-white/[0.04] ${draft?.id === t.id ? "bg-amber-500/10" : ""}`}
+              className={`${styles.listRow} ${draft?.id === t.id ? styles.listRowSelected : ""}`}
               onClick={() => {
                 startEdit(t)
               }}>
-              <td className="px-3 py-2 text-white">{t.title}</td>
-              <td className="px-3 py-2 capitalize text-white/80">{t.rarity}</td>
-              <td className="px-3 py-2 capitalize text-white/80">{t.period}</td>
-              <td className="px-3 py-2 font-mono text-xs text-white/60">
+              <td className={styles.listTdTitle}>{t.title}</td>
+              <td className={styles.listTdCap}>{t.rarity}</td>
+              <td className={styles.listTdCap}>{t.period}</td>
+              <td className={styles.listTdMono}>
                 {typeByCode.get(t.mission_type)?.label ?? t.mission_type}
                 {typeByCode.get(t.mission_type)?.is_wired === false && (<span
-                  className="ml-1 rounded bg-rose-600/30 px-1 py-0.5 text-[9px] font-bold uppercase text-rose-200">dead</span>)}
+                  className={styles.deadBadge}>dead</span>)}
               </td>
-              <td className="px-3 py-2 text-right font-mono text-white/80">
+              <td className={styles.listTdGoal}>
                 {t.resolution_mode === "fixed" ? t.goal_value : t.resolution_mode === "stretch" ? `×${String(t.stretch_factor)} [${t.goal_min}..${t.goal_max}]` : "auto"}
               </td>
-              <td className="px-3 py-2 text-right font-mono text-amber-200">{t.mission_points}</td>
-              <td className="px-3 py-2 text-center">{t.enabled ? "✓" : "–"}</td>
+              <td className={styles.listTdMp}>{t.mission_points}</td>
+              <td className={styles.listTdCenter}>{t.enabled ? "✓" : "–"}</td>
             </tr>))}
           </tbody>
         </table>
@@ -414,13 +415,13 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
     </div>
 
     {/* Draft editor */}
-    {draft && (<div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.04] p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-bold text-amber-100">
+    {draft && (<div className={styles.draftPanel}>
+      <div className={styles.draftHeader}>
+        <h3 className={styles.draftTitle}>
           {draft.id ? `Edit: ${draft.title}` : "New template"}
         </h3>
         <button
-          className="text-sm text-white/60 hover:text-white"
+          className={styles.draftCancel}
           type="button"
           onClick={() => {
             setDraft(null)
@@ -430,10 +431,10 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className={styles.draftGrid}>
         <Field label="Title">
           <input
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             type="text"
             value={draft.title}
@@ -446,7 +447,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </Field>
         <Field label="Subtitle">
           <input
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             type="text"
             value={draft.subtitle ?? ""}
@@ -456,19 +457,19 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
                 subtitle: e.target.value,
               })
             }}/>
-          <span className="mt-0.5 block text-[10px] leading-relaxed text-white/35">
+          <span className={styles.hint}>
             Title &amp; subtitle support tokens:{" "}
-            <span className="font-mono text-white/55">{"{goal}"}</span> = per-player goal,{" "}
-            <span className="font-mono text-white/55">{"{tier}"}</span> = difficulty tier,{" "}
-            <span className="font-mono text-white/55">{"{goal|singular|plural}"}</span> = picks the word
+            <span className={styles.monoInline}>{"{goal}"}</span> = per-player goal,{" "}
+            <span className={styles.monoInline}>{"{tier}"}</span> = difficulty tier,{" "}
+            <span className={styles.monoInline}>{"{goal|singular|plural}"}</span> = picks the word
             by the goal (singular when the goal is 1, else plural). You write both forms once.{" "}
-            e.g. <span className="font-mono text-white/55">{"Spin the wheel {goal} {goal|time|times}"}</span>{" "}
+            e.g. <span className={styles.monoInline}>{"Spin the wheel {goal} {goal|time|times}"}</span>{" "}
             renders &ldquo;Spin the wheel 1 time&rdquo; or &ldquo;Spin the wheel 5 times&rdquo;.
           </span>
         </Field>
         <Field label="Mission type">
           <select
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             value={draft.mission_type}
             onChange={(e) => {
@@ -483,23 +484,23 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
               {t.label}{t.is_wired ? "" : " — NOT WIRED"}
             </option>))}
           </select>
-          {draftType && (<div className="mt-1 flex flex-wrap items-center gap-1 text-[10px]">
+          {draftType && (<div className={styles.badgeWrap}>
             {draftType.is_wired ? <span
-              className="rounded bg-emerald-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-emerald-200">● wired</span>
+              className={styles.badgeWired}>● wired</span>
               : <span
-                className="rounded bg-rose-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-rose-200">✗ not wired</span>}
+                className={styles.badgeNotWired}>✗ not wired</span>}
             {draftType.supports_personalized && (<span
-              className="rounded bg-sky-600/30 px-1.5 py-0.5 font-bold uppercase tracking-wider text-sky-200">personalized-capable</span>)}
+              className={styles.badgePersonalized}>personalized-capable</span>)}
           </div>)}
         </Field>
         <Field label="Metric code (from type)">
-          <div className="w-full rounded bg-black/20 px-2 py-1 text-sm font-mono text-white/50 ring-1 ring-white/5">
+          <div className={styles.metricDisplay}>
             {draft.metric_code || "—"}
           </div>
         </Field>
         <Field label="Rarity">
           <select
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             value={draft.rarity}
             onChange={(e) => {
@@ -515,7 +516,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </Field>
         <Field label="Period">
           <select
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             value={draft.period}
             onChange={(e) => {
@@ -530,7 +531,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </Field>
         <Field label="Resolution mode">
           <select
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             value={draft.resolution_mode}
             onChange={(e) => {
@@ -550,7 +551,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </Field>
         <Field label="Mission points">
           <input
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             type="number"
             value={draft.mission_points}
@@ -563,7 +564,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         </Field>
         <Field label="Difficulty tier">
           <select
-            className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+            className={styles.draftInput}
             disabled={!canManage}
             value={(draft.params?.difficulty_id as string | undefined) ?? ""}
             onChange={(e) => {
@@ -582,26 +583,25 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
             <option value="expert">Expert</option>
             <option value="grand-master">Grand Master</option>
           </select>
-          <span className="mt-0.5 block text-[10px] text-white/35">
-            Pins the mission to a tier: fills <span className="font-mono text-white/55">{"{tier}"}</span>,
+          <span className={styles.hint}>
+            Pins the mission to a tier: fills <span className={styles.monoInline}>{"{tier}"}</span>,
             scopes progress, and sets the wager the cashback reward is based on.
           </span>
         </Field>
         {draft.resolution_mode === "personalized" ? (<Field
           wide
           label="Goal & reward">
-          <div
-            className="rounded bg-sky-950/40 px-3 py-2 text-xs leading-relaxed text-sky-100/80 ring-1 ring-sky-400/20">
-            Generated <span className="font-bold text-sky-200">per player</span> at assignment: the
+          <div className={styles.personalizedInfo}>
+            Generated <span className={styles.skyBold}>per player</span> at assignment: the
             goal adapts to each player's habit (and eases if they keep missing), and the reward is a
             % of their expected loss. Tune the coefficients for this type in the{" "}
-            <span className="font-bold text-sky-200">Mission Types</span> tab. The fixed/stretch goal
+            <span className={styles.skyBold}>Mission Types</span> tab. The fixed/stretch goal
             and the reward bundle below are ignored for personalized missions.
           </div>
         </Field>) : (<>
           {draft.resolution_mode === "fixed" ? (<Field label="Goal value (fixed)">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.draftInput}
               disabled={!canManage}
               type="number"
               value={draft.goal_value ?? 0}
@@ -613,7 +613,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
               }}/>
           </Field>) : (<Field label="Stretch factor">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.draftInput}
               disabled={!canManage}
               step="0.05"
               type="number"
@@ -627,7 +627,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           </Field>)}
           <Field label="Goal min (clamp)">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.draftInput}
               disabled={!canManage}
               type="number"
               value={draft.goal_min}
@@ -640,7 +640,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           </Field>
           <Field label="Goal max (clamp)">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.draftInput}
               disabled={!canManage}
               type="number"
               value={draft.goal_max}
@@ -652,7 +652,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
               }}/>
           </Field>
         </>)}
-        <div className="col-span-2">
+        <div className={styles.colSpan2}>
           <ImageField
             disabled={!canManage}
             folder="missions"
@@ -695,7 +695,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
         <Field
           wide
           label="Enabled">
-          <label className="flex items-center gap-2 text-sm text-white">
+          <label className={styles.enabledLabel}>
             <input
               checked={draft.enabled}
               disabled={!canManage}
@@ -712,11 +712,11 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
       </div>
 
       {/* Reward */}
-      <div className="mt-4">
-        <div className="mb-2 flex flex-wrap items-center gap-3">
-          <span className="text-xs uppercase tracking-wider text-amber-100/70">Reward</span>
+      <div className={styles.mt4}>
+        <div className={styles.rewardHeader}>
+          <span className={styles.rewardLabel}>Reward</span>
           <select
-            className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+            className={styles.rewardSelect}
             disabled={!canManage}
             value={draft.reward_mode}
             onChange={(e) => {
@@ -730,11 +730,11 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           </select>
         </div>
         {draft.reward_mode === "cashback" ? (
-          <div className="rounded bg-amber-950/30 px-3 py-3 ring-1 ring-amber-400/20">
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-amber-100/80">Cashback</label>
+          <div className={styles.cashbackBox}>
+            <div className={styles.cashbackRow}>
+              <label className={styles.cashbackLabel}>Cashback</label>
               <input
-                className="w-24 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                className={styles.cashbackInput}
                 disabled={!canManage}
                 min="0"
                 step="0.5"
@@ -746,21 +746,21 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
                     cashback_pct: e.target.value === "" ? null : Number(e.target.value) / 100,
                   })
                 }}/>
-              <span className="text-sm text-white/70">% of house edge</span>
+              <span className={styles.cashbackUnit}>% of house edge</span>
             </div>
             {(() => {
               const p = previewCashback(draft)
-              if (!p) return (<div className="mt-2 text-xs text-white/45">Enter a cashback % to preview the
+              if (!p) return (<div className={styles.cashbackHint}>Enter a cashback % to preview the
                 reward.</div>)
-              if (p.needsTier) return (<div className="mt-2 text-xs text-rose-200/90">Pin a difficulty tier above to
+              if (p.needsTier) return (<div className={styles.cashbackWarn}>Pin a difficulty tier above to
                 size the cashback — the entry fee sets the wager.</div>)
-              return (<div className="mt-2 text-xs leading-relaxed text-amber-100/85">
-                ≈ <span className="font-bold text-amber-200">{p.reward.toLocaleString()} coins</span> at
+              return (<div className={styles.cashbackPreview}>
+                ≈ <span className={styles.previewBold}>{p.reward.toLocaleString()} coins</span> at
                 goal {p.goal}
                 {" "}· {(draft.cashback_pct! * 100).toFixed(1)}% of edge on {p.investment.toLocaleString()} coins
                 wagered
                 {p.tier ? ` in ${p.tier}` : ""}
-                <div className="mt-1 text-white/40">Sized per player at assignment from the live tier fee/RTP;
+                <div className={styles.previewSub}>Sized per player at assignment from the live tier fee/RTP;
                   this is an estimate.
                 </div>
               </div>)
@@ -771,18 +771,18 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           onChange={setDraftRewards}/>)}
       </div>
 
-      {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+      {error && <div className={styles.errorBox}>{error}</div>}
 
-      {canManage && (<div className="mt-4 flex gap-2">
+      {canManage && (<div className={styles.actions}>
         <button
-          className="flex-1 rounded bg-emerald-600 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className={styles.saveButton}
           disabled={saving}
           type="button"
           onClick={save}>
           {saving ? "Saving…" : "Save"}
         </button>
         {draft.id && (<button
-          className="rounded bg-sky-700 px-4 py-2 font-bold text-white hover:bg-sky-600 disabled:opacity-50"
+          className={styles.duplicateButton}
           disabled={saving}
           type="button"
           onClick={() => {
@@ -795,7 +795,7 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           Duplicate
         </button>)}
         {draft.id && !confirmingDelete && (<button
-          className="rounded bg-rose-700 px-4 py-2 font-bold text-white hover:bg-rose-600 disabled:opacity-50"
+          className={styles.deleteButton}
           disabled={saving}
           type="button"
           onClick={() => {
@@ -804,17 +804,17 @@ export function TemplatesEditor({canManage}: {readonly canManage: boolean}) {
           Delete
         </button>)}
         {draft.id && confirmingDelete && (
-          <div className="flex items-center gap-2 rounded bg-rose-950/50 px-2 py-1 ring-1 ring-rose-500/40">
-            <span className="px-1 text-xs font-semibold text-rose-100">Delete permanently?</span>
+          <div className={styles.confirmBox}>
+            <span className={styles.confirmText}>Delete permanently?</span>
             <button
-              className="rounded bg-rose-700 px-3 py-1.5 text-sm font-bold text-white hover:bg-rose-600 disabled:opacity-50"
+              className={styles.confirmYes}
               disabled={saving}
               type="button"
               onClick={remove}>
               {saving ? "Deleting…" : "Yes, delete"}
             </button>
             <button
-              className="rounded bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20 disabled:opacity-50"
+              className={styles.confirmCancel}
               disabled={saving}
               type="button"
               onClick={() => {
