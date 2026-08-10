@@ -1,0 +1,82 @@
+.card {
+  composes: card from "../../styles/shared.module.css";
+  max-width: 36rem;
+}
+
+.loadingCard {
+  composes: loadingCard from "../../styles/shared.module.css";
+  max-width: 36rem;
+}
+
+.title {
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: #fef3c7;
+}
+
+.description {
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ladderList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ladderRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rungIndex {
+  width: 2.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.rungInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  flex: 1 1 0%;
+}
+
+.rungUnit {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.removeButton {
+  composes: removeButton from "../../styles/shared.module.css";
+}
+
+.addButton {
+  composes: addButton from "../../styles/shared.module.css";
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.capSection {
+  margin-top: 1rem;
+}
+
+.capInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  width: 8rem;
+}
+
+.errorBox {
+  composes: roseBox from "../../styles/shared.module.css";
+  margin-top: 0.75rem;
+}
+
+.saveButton {
+  composes: saveButton from "../../styles/shared.module.css";
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+}

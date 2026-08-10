@@ -10,6 +10,7 @@ import {emptyToNull} from "../../lib/emptyToNull"
 import {formatDate} from "../../lib/formatDate"
 import {normalizeEmail} from "../../lib/normalizeEmail"
 
+import styles from "./AdminAccessAdmin.module.css"
 import {
   useDeleteAdminEmailRoleMutation,
   useGetAdminEmailRolesQuery,
@@ -204,10 +205,10 @@ export function AdminAccessAdmin({
   return (<>
     {confirmUI}
     {initialLoading ? (<div
-      className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      className={styles.loadingCard}>
       Loading…
-    </div>) : (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-      <div className="space-y-4">
+    </div>) : (<div className={styles.layout}>
+      <div className={styles.column}>
         <ConfigTable
           rows={adminEmailRoles.map((row) => [row.email, row.role, row.note ?? "", formatDate(row.created_at)])}
           title="Admin emails"
@@ -232,10 +233,10 @@ export function AdminAccessAdmin({
           rows={audit.map((entry) => [formatDate(entry.created_at), entry.action, `${entry.entity_table} · ${entry.entity_id}`, entry.actor_profile_id ?? "system"])}
           title="Audit log"/>
       </div>
-      <div className="space-y-4">
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h2 className="text-lg font-black">Grant admin email</h2>
-          <div className="mt-3 space-y-3">
+      <div className={styles.column}>
+        <div className={styles.panel}>
+          <h2 className={styles.panelTitle}>Grant admin email</h2>
+          <div className={styles.panelBody}>
             <Field
               label="Email"
               value={emailRoleDraft.email}
@@ -245,10 +246,10 @@ export function AdminAccessAdmin({
                   email,
                 }))
               }}/>
-            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+            <label className={styles.roleLabel}>
               Role
               <select
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                className={styles.roleSelect}
                 value={emailRoleDraft.role}
                 onChange={(event) => {
                   setEmailRoleDraft((d) => ({
@@ -270,7 +271,7 @@ export function AdminAccessAdmin({
                   note,
                 }))
               }}/>
-            <div className="flex flex-wrap gap-2">
+            <div className={styles.buttonRow}>
               <PrimaryButton
                 disabled={!canManage || savingKey === "email-role"}
                 onClick={() => {
@@ -297,9 +298,9 @@ export function AdminAccessAdmin({
             </div>
           </div>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h2 className="text-lg font-black">Grant profile role</h2>
-          <div className="mt-3 space-y-3">
+        <div className={styles.panel}>
+          <h2 className={styles.panelTitle}>Grant profile role</h2>
+          <div className={styles.panelBody}>
             <Field
               label="Profile id"
               value={roleDraft.profile_id}
@@ -309,10 +310,10 @@ export function AdminAccessAdmin({
                   profile_id,
                 }))
               }}/>
-            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+            <label className={styles.roleLabel}>
               Role
               <select
-                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                className={styles.roleSelect}
                 value={roleDraft.role}
                 onChange={(event) => {
                   setRoleDraft((d) => ({

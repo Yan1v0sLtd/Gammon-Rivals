@@ -1,0 +1,33 @@
+.card {
+  composes: card from "../../styles/shared.module.css";
+  max-width: 36rem;
+}
+
+.loadingCard {
+  composes: loadingCard from "../../styles/shared.module.css";
+  max-width: 36rem;
+}
+
+.title {
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: #fef3c7;
+}
+
+.description {
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.errorBox {
+  composes: roseBox from "../../styles/shared.module.css";
+  margin-top: 0.75rem;
+}
+
+.saveButton {
+  composes: saveButton from "../../styles/shared.module.css";
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+}

@@ -1,0 +1,56 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  background-color: rgba(69, 26, 3, 0.2);
+  padding: 0.5rem 0.75rem;
+}
+
+.toolbarLabel {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(253, 230, 138, 0.8);
+}
+
+.emailInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  min-width: 200px;
+  flex: 1 1 0%;
+}
+
+.refreshButton {
+  composes: transition from "../../styles/shared.module.css";
+  border-radius: 0.25rem;
+  background-color: #d97706;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.refreshButton:hover {
+  background-color: #f59e0b;
+}
+
+.refreshButton:disabled {
+  opacity: 0.5;
+}
+
+.msg {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #6ee7b7;
+}
+
+.err {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #fda4af;
+}

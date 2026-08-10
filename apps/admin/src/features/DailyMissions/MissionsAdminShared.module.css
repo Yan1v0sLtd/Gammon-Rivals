@@ -1,0 +1,68 @@
+.bundleList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bundleRow {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 5rem auto;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.bundleSelect {
+  composes: ringInputSm from "../../styles/shared.module.css";
+}
+
+.bundleDash {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bundleInput {
+  composes: ringInputSm from "../../styles/shared.module.css";
+}
+
+.bundleRemove {
+  composes: removeButton from "../../styles/shared.module.css";
+}
+
+.addReward {
+  composes: addButton from "../../styles/shared.module.css";
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.field {
+  display: block;
+}
+
+.fieldWide {
+  grid-column: span 2 / span 2;
+}
+
+.fieldLabel {
+  composes: microLabel from "../../styles/shared.module.css";
+  margin-bottom: 0.25rem;
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.jsonInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  composes: mono from "../../styles/shared.module.css";
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.jsonError {
+  margin-top: 0.125rem;
+  font-size: 10px;
+  color: #fda4af;
+}

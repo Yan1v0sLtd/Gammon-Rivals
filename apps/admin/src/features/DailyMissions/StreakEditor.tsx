@@ -6,6 +6,7 @@ import {useGetStreakChestRewardsQuery, useSaveStreakChestRewardsMutation} from "
 import type {StreakChestRewardInsert, StreakChestRewardRow} from "./DailyMissionsData"
 import type {RewardRow} from "./MissionsAdminShared"
 import {RewardBundleEditor} from "./MissionsAdminShared"
+import styles from "./StreakEditor.module.css"
 
 export function StreakEditor({canManage}: {
   readonly canManage: boolean,
@@ -61,14 +62,14 @@ export function StreakEditor({canManage}: {
   }
 
   if (streakLoading) {
-    return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+    return (<div className={styles.loadingCard}>
       Loading streak chest rewards…
     </div>)
   }
 
-  return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
-    <h3 className="mb-3 font-bold text-amber-100">7-Day Streak Chest contents</h3>
-    <p className="mb-3 text-xs text-white/60">
+  return (<div className={styles.card}>
+    <h3 className={styles.title}>7-Day Streak Chest contents</h3>
+    <p className={styles.description}>
       The single bundle awarded when a player claims the streak chest (after 7 consecutive days of completing
       all daily missions). Currency amounts add to wallet; item rewards drop into the player's inventory.
     </p>
@@ -76,9 +77,9 @@ export function StreakEditor({canManage}: {
       disabled={!canManage}
       rows={rewards}
       onChange={setRewards}/>
-    {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+    {error && <div className={styles.errorBox}>{error}</div>}
     {canManage && (<button
-      className="mt-4 rounded bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+      className={styles.saveButton}
       disabled={saving}
       type="button"
       onClick={save}>

@@ -1,0 +1,51 @@
+.loadingCard {
+  composes: loadingCard from "../../styles/shared.module.css";
+}
+
+.layout {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 28rem;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel {
+  composes: card from "../../styles/shared.module.css";
+}
+
+.panelTitle {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.panelBody {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.roleLabel {
+  composes: fieldLabel from "../../styles/shared.module.css";
+}
+
+.roleSelect {
+  composes: selectChrome from "../../styles/shared.module.css";
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+}
+
+.buttonRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}

@@ -3,6 +3,7 @@ import {useState} from "react"
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
 import {useRefreshPlayerMissionsMutation} from "./DailyMissionsApi"
+import styles from "./RefreshMissionsTool.module.css"
 
 /** Testing helper: refresh a real player's daily missions on demand. */
 export function RefreshMissionsTool({canManage}: {
@@ -36,10 +37,10 @@ export function RefreshMissionsTool({canManage}: {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-950/20 px-3 py-2">
-      <span className="text-xs font-bold uppercase tracking-wider text-amber-200/80">Testing · Refresh missions</span>
+    <div className={styles.toolbar}>
+      <span className={styles.toolbarLabel}>Testing · Refresh missions</span>
       <input
-        className="min-w-[200px] flex-1 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+        className={styles.emailInput}
         placeholder="player email"
         type="email"
         value={email}
@@ -50,13 +51,13 @@ export function RefreshMissionsTool({canManage}: {
           if (ev.key === "Enter") run()
         }}/>
       <button
-        className="rounded bg-amber-600 px-3 py-1.5 text-sm font-bold text-white transition hover:bg-amber-500 disabled:opacity-50"
+        className={styles.refreshButton}
         disabled={busy || !email.trim()}
         type="button"
         onClick={run}>
         {busy ? "Refreshing…" : "Refresh"}
       </button>
-      {msg && <span className="text-xs text-emerald-300">{msg}</span>}
-      {err && <span className="text-xs text-rose-300">{err}</span>}
+      {msg && <span className={styles.msg}>{msg}</span>}
+      {err && <span className={styles.err}>{err}</span>}
     </div>)
 }

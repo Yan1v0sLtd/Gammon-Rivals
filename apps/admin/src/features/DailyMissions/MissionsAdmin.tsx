@@ -1,6 +1,7 @@
 import {useState} from "react"
 
 import {ChestsEditor} from "./ChestsEditor"
+import styles from "./MissionsAdmin.module.css"
 import {MissionTypesEditor} from "./MissionTypesEditor"
 import {RefreshMissionsTool} from "./RefreshMissionsTool"
 import {RerollEditor} from "./RerollEditor"
@@ -62,12 +63,12 @@ export function MissionsAdmin({canManage}: Props) {
     label: "Simulator",
   }]
 
-  return (<div className="space-y-4">
+  return (<div className={styles.wrap}>
     {/* Sub-tab bar */}
-    <div className="flex flex-wrap gap-1 rounded-lg bg-white/[0.04] p-1 ring-1 ring-white/10">
+    <div className={styles.tabBar}>
       {tabs.map((t) => (<button
         key={t.id}
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${tab === t.id ? "bg-amber-500/20 text-amber-100 ring-1 ring-amber-400/40" : "text-white/70 hover:text-white"}`}
+        className={styles.tab + (tab === t.id ? " " + styles.tabActive : " " + styles.tabInactive)}
         type="button"
         onClick={() => {
           setTab(t.id)

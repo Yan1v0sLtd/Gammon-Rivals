@@ -5,6 +5,7 @@ import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 import {useGetRerollPricingConfigQuery, useUpdateRerollPricingConfigMutation} from "./DailyMissionsApi"
 import type {RerollPricingConfigRow} from "./DailyMissionsData"
 import {Field} from "./MissionsAdminShared"
+import styles from "./RerollEditor.module.css"
 
 export function RerollEditor({canManage}: {
   readonly canManage: boolean,
@@ -56,25 +57,25 @@ export function RerollEditor({canManage}: {
   }
 
   if (pricingLoading) {
-    return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+    return (<div className={styles.loadingCard}>
       Loading reroll pricing…
     </div>)
   }
 
-  return (<div className="max-w-xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
-    <h3 className="mb-3 font-bold text-amber-100">Reroll pricing</h3>
-    <p className="mb-3 text-xs text-white/60">
+  return (<div className={styles.card}>
+    <h3 className={styles.title}>Reroll pricing</h3>
+    <p className={styles.description}>
       Escalating gem cost per reroll. <code>ladder[i]</code> is the cost of the i-th reroll on a given day
       (0-indexed; ladder[0] should be 0 so the first reroll is free).
     </p>
 
-    <div className="space-y-2">
+    <div className={styles.ladderList}>
       {ladder.map((cost, i) => (<div
         key={`reroll-cost-${cost}`}
-        className="flex items-center gap-2">
-        <span className="w-10 text-xs text-white/50">#{i + 1}</span>
+        className={styles.ladderRow}>
+        <span className={styles.rungIndex}>#{i + 1}</span>
         <input
-          className="flex-1 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          className={styles.rungInput}
           disabled={!canManage}
           type="number"
           value={cost}
@@ -83,9 +84,9 @@ export function RerollEditor({canManage}: {
             next[i] = Number(e.target.value)
             setLadder(next)
           }}/>
-        <span className="text-xs text-white/50">gems</span>
+        <span className={styles.rungUnit}>gems</span>
         {canManage && (<button
-          className="rounded bg-rose-700/40 px-2 py-1 text-xs text-rose-100 hover:bg-rose-700/60"
+          className={styles.removeButton}
           type="button"
           onClick={() => {
             setLadder(ladder.filter((_, j) => j !== i))
@@ -94,7 +95,7 @@ export function RerollEditor({canManage}: {
         </button>)}
       </div>))}
       {canManage && (<button
-        className="rounded bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20"
+        className={styles.addButton}
         type="button"
         onClick={() => {
           setLadder([...ladder, 100])
@@ -103,10 +104,10 @@ export function RerollEditor({canManage}: {
       </button>)}
     </div>
 
-    <div className="mt-4">
+    <div className={styles.capSection}>
       <Field label="Daily cap (max rerolls per player per day)">
         <input
-          className="w-32 rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          className={styles.capInput}
           disabled={!canManage}
           type="number"
           value={dailyCap}
@@ -116,9 +117,9 @@ export function RerollEditor({canManage}: {
       </Field>
     </div>
 
-    {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+    {error && <div className={styles.errorBox}>{error}</div>}
     {canManage && (<button
-      className="mt-4 rounded bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+      className={styles.saveButton}
       disabled={saving}
       type="button"
       onClick={save}>

@@ -215,6 +215,32 @@
   border-color: rgba(245, 158, 11, 0.6);
 }
 
+/* Rose remove / delete button. */
+.removeButton {
+  border-radius: 0.25rem;
+  background-color: rgba(190, 18, 60, 0.4);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #ffe4e6;
+}
+
+.removeButton:hover {
+  background-color: rgba(190, 18, 60, 0.6);
+}
+
+/* Neutral add button. Font-size is set by the consumer. */
+.addButton {
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.75rem;
+  color: #fff;
+}
+
+.addButton:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Small right-aligned mono numeric input (board tuning / felt corners /
  * bear-off trays). Width is set by the consumer (w-16 vs w-full). */
 .monoInput {

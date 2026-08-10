@@ -198,12 +198,12 @@ Grouped by migration phase. Count = `className` occurrences.
 | `features/LevelSystem/LevelSystemAdmin.tsx` | 34 | ✅ done |
 | `features/DailyMissions/ChestsEditor.tsx` | 21 | ✅ done |
 | `features/Dashboard/DashboardAdmin.tsx` | 20 | ✅ done |
-| `features/DailyMissions/RerollEditor.tsx` | 15 |
-| `features/AdminAccess/AdminAccessAdmin.tsx` | 15 |
-| `features/DailyMissions/MissionsAdminShared.tsx` | 13 |
-| `features/DailyMissions/StreakEditor.tsx` | 6 |
-| `features/DailyMissions/RefreshMissionsTool.tsx` | 6 |
-| `features/DailyMissions/MissionsAdmin.tsx` | 2 |
+| `features/DailyMissions/RerollEditor.tsx` | 15 | ✅ done |
+| `features/AdminAccess/AdminAccessAdmin.tsx` | 15 | ✅ done |
+| `features/DailyMissions/MissionsAdminShared.tsx` | 13 | ✅ done |
+| `features/DailyMissions/StreakEditor.tsx` | 6 | ✅ done |
+| `features/DailyMissions/RefreshMissionsTool.tsx` | 6 | ✅ done |
+| `features/DailyMissions/MissionsAdmin.tsx` | 2 | ✅ done |
 
 ### A3 — Shell and remaining features
 

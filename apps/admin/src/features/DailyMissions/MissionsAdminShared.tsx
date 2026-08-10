@@ -1,5 +1,7 @@
 import {useEffect, useState} from "react"
 
+import styles from "./MissionsAdminShared.module.css"
+
 /** A reward row shared by the template, chest and streak editors. */
 export type RewardRow = {
   id?: string,
@@ -64,12 +66,12 @@ export function RewardBundleEditor({
     }])
   }
 
-  return (<div className="space-y-2">
+  return (<div className={styles.bundleList}>
     {rows.map((r, i) => (<div
       key={`${r.reward_kind}-${r.currency_code ?? r.item_id ?? ""}-${r.amount}`}
-      className="grid grid-cols-[auto_1fr_1fr_5rem_auto] items-center gap-2 rounded bg-black/30 p-2 ring-1 ring-white/5">
+      className={styles.bundleRow}>
       <select
-        className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+        className={styles.bundleSelect}
         disabled={disabled}
         value={r.reward_kind}
         onChange={(e) => {
@@ -80,7 +82,7 @@ export function RewardBundleEditor({
       </select>
       {r.reward_kind === "currency" ? (<>
         <select
-          className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+          className={styles.bundleSelect}
           disabled={disabled}
           value={r.currency_code ?? "coins"}
           onChange={(e) => {
@@ -90,10 +92,10 @@ export function RewardBundleEditor({
           <option value="gems">gems</option>
           <option value="xp">xp</option>
         </select>
-        <span className="text-xs text-white/40">—</span>
+        <span className={styles.bundleDash}>—</span>
       </>) : (<>
         <input
-          className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+          className={styles.bundleInput}
           disabled={disabled}
           placeholder="item_table"
           type="text"
@@ -102,7 +104,7 @@ export function RewardBundleEditor({
             update(i, {item_table: e.target.value})
           }}/>
         <input
-          className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+          className={styles.bundleInput}
           disabled={disabled}
           placeholder="item_id"
           type="text"
@@ -112,7 +114,7 @@ export function RewardBundleEditor({
           }}/>
       </>)}
       <input
-        className="rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+        className={styles.bundleInput}
         disabled={disabled}
         type="number"
         value={r.amount}
@@ -120,7 +122,7 @@ export function RewardBundleEditor({
           update(i, {amount: Number(e.target.value)})
         }}/>
       {!disabled && (<button
-        className="rounded bg-rose-700/40 px-2 py-1 text-xs text-rose-100 hover:bg-rose-700/60"
+        className={styles.bundleRemove}
         type="button"
         onClick={() => {
           remove(i)
@@ -129,7 +131,7 @@ export function RewardBundleEditor({
       </button>)}
     </div>))}
     {!disabled && (<button
-      className="rounded bg-white/10 px-3 py-1 text-xs text-white hover:bg-white/20"
+      className={styles.addReward}
       type="button"
       onClick={add}>
       + Add reward
@@ -146,8 +148,8 @@ export function Field({
   readonly children: React.ReactNode,
   readonly wide?: boolean,
 }) {
-  return (<label className={`block ${wide ? "col-span-2" : ""}`}>
-    <span className="mb-1 block text-[10px] uppercase tracking-wider text-white/50">{label}</span>
+  return (<label className={styles.field + (wide ? " " + styles.fieldWide : "")}>
+    <span className={styles.fieldLabel}>{label}</span>
     {children}
   </label>)
 }
@@ -170,7 +172,7 @@ export function JsonField({
 
   return (<div>
     <textarea
-      className="w-full rounded bg-black/40 px-2 py-1 font-mono text-xs text-white ring-1 ring-white/10"
+      className={styles.jsonInput}
       disabled={disabled}
       rows={3}
       value={text}
@@ -185,6 +187,6 @@ export function JsonField({
           setErr((er as Error).message)
         }
       }}/>
-    {err && <div className="mt-0.5 text-[10px] text-rose-300">{err}</div>}
+    {err && <div className={styles.jsonError}>{err}</div>}
   </div>)
 }
