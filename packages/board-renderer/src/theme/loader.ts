@@ -14,19 +14,14 @@ export async function loadTheme(theme: Theme): Promise<LoadedTheme> {
   const entries = Object.entries(theme.assets) as [ThemeAssetKey, string][]
   await Promise.all(
     entries.map(async ([key, path]) => {
-      try {
-        const head = await fetch(path, {method: "HEAD"})
-        if (!head.ok) return
-        let tex = await Assets.load<Texture>(path)
-        if (tex.destroyed || tex.source.destroyed) {
-          await Assets.unload(path).catch(() => undefined)
-          tex = await Assets.load<Texture>(path)
-        }
-        textures[key] = tex
+      const head = await fetch(path, {method: "HEAD"})
+      if (!head.ok) throw new Error(`Theme asset "${key}" missing at ${path}`)
+      let tex = await Assets.load<Texture>(path)
+      if (tex.destroyed || tex.source.destroyed) {
+        await Assets.unload(path).catch(() => undefined)
+        tex = await Assets.load<Texture>(path)
       }
-      catch {
-        // Asset missing — silent fallback to procedural rendering
-      }
+      textures[key] = tex
     }),
   )
   return {theme, textures}

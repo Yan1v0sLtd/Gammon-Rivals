@@ -1,9 +1,9 @@
 import {defaultTheme} from "./default"
 import type {Theme} from "./types"
 
-// Image-based theme. Drop matching files into packages/brand-assets/public/themes/wood/ to activate.
-// Any missing file gracefully falls back to procedural rendering using the
-// inherited color palette below.
+// Color palette base for premiumTheme. Not rendered directly: the renderer
+// requires a full `board` texture plus `whiteChecker`/`blackChecker`, which
+// premiumTheme provides. This theme exists only to share the wood palette.
 export const woodTheme: Theme = {
   name: "wood",
   colors: {
@@ -17,11 +17,5 @@ export const woodTheme: Theme = {
     pointDarkBase: 0xbd6133,
     pointDarkTip: 0x773018,
     trayBg: 0x7b1718,
-  },
-  assets: {
-    frame: "/themes/wood/frame.jpg",
-    felt: "/themes/wood/felt.jpg",
-    rail: "/themes/wood/rail.jpg",
-    bar: "/themes/wood/rail.jpg",
   },
 }

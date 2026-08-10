@@ -108,6 +108,16 @@ export function originAnchor(layout: Layout, state: BoardState, pos: Position): 
   return checkerCenter(layout, ppos, top, point?.count ?? 1)
 }
 
+/**
+ * Anchor for a checker landing on an empty point (or on top of an
+ * opponent's blot) — the base of the stack. Shared by the renderer's
+ * destination ring and the hit-area test so both agree on the pixel.
+ */
+export function emptyPointAnchor(layout: Layout, pos: number): Anchor {
+  const ppos = pointCoords(layout, pos)
+  return checkerCenter(layout, ppos, 0, 1)
+}
+
 export function destinationAnchor(layout: Layout, state: BoardState, pos: Position): Anchor | null {
   if (pos === OFF) {
     return offCheckerAnchor(layout, state.turn, state.off[state.turn])
@@ -115,9 +125,11 @@ export function destinationAnchor(layout: Layout, state: BoardState, pos: Positi
   if (pos === BAR) return null
   const ppos = pointCoords(layout, pos)
   const point = state.points[pos]
-  const stackIdx =
-    point?.owner === state.turn ? point.count : 0 // landing on top of own stack, else fresh stack
-  return checkerCenter(layout, ppos, stackIdx, stackIdx + 1)
+  if (point?.owner === state.turn) {
+    // Landing on top of our own stack.
+    return checkerCenter(layout, ppos, point.count, point.count + 1)
+  }
+  return emptyPointAnchor(layout, pos)
 }
 
 export function pointIndexForColumn(side: "top" | "bottom", column: number): number {

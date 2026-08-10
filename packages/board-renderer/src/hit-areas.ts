@@ -1,7 +1,7 @@
 import {BAR, OFF} from "../../engine/src/types"
-import type {Player, Position} from "../../engine/src/types"
+import type {Position} from "../../engine/src/types"
 
-import {checkerCenter, pointCoords, type Layout} from "./coordinates"
+import {pointCoords, type Layout} from "./coordinates"
 
 export type HitRect = {
   readonly target: Position,
@@ -140,23 +140,4 @@ export function hitTest(rects: readonly HitRect[], x: number, y: number): Positi
     }
   }
   return null
-}
-
-/**
- * The visual anchor of the green destination ring for an empty
- * point. Mirrors BoardRenderer.destinationAnchor for the
- * "point with no checkers" case — the most common click target,
- * and the one the renderer uses to position the ring graphic.
- */
-export function destinationAnchorForEmptyPoint(
-  layout: Layout,
-  player: Player,
-  pos: number,
-): {x: number, y: number} {
-  const ppos = pointCoords(layout, pos)
-  // stackIdx=0, count=1 for the first checker landing on an empty
-  // point (or on top of an opponent's blot — in both cases the new
-  // checker is at the base of the stack).
-  void player
-  return checkerCenter(layout, ppos, 0, 1)
 }

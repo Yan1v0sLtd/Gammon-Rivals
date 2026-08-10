@@ -2,11 +2,8 @@ import {describe, expect, it} from "vitest"
 
 import {BAR, OFF} from "../../../engine/src/types"
 import {computeLayout, pointCoords, checkerCenter} from "../coordinates"
-import {
-  computeHitRects,
-  destinationAnchorForEmptyPoint,
-  hitTest,
-} from "../hit-areas"
+import {computeHitRects, hitTest} from "../hit-areas"
+import {emptyPointAnchor} from "../pixi/anchors"
 import {defaultTheme} from "../theme/default"
 import {premiumTheme} from "../theme/premium"
 import type {ThemeLayout} from "../theme/types"
@@ -63,10 +60,10 @@ describe("hit-areas: every point is clickable on every theme", () => {
           "destination ring on empty point %i resolves to point %i",
           (idx) => {
             // For an empty target point we render the green ring at
-            // the FIRST checker's centre. The renderer-side anchor
-            // function is identical so this is exactly the pixel the
-            // player taps when they click the green dot.
-            const anchor = destinationAnchorForEmptyPoint(layout, "white", idx)
+            // the FIRST checker's centre. This is the same function
+            // the renderer's destinationAnchor uses, so it is exactly
+            // the pixel the player taps when they click the green dot.
+            const anchor = emptyPointAnchor(layout, idx)
             const hit = hitTest(rects, anchor.x, anchor.y)
             expect(hit, `expected point ${idx} (anchor ${anchor.x.toFixed(1)},${anchor.y.toFixed(1)})`).toBe(idx)
           },

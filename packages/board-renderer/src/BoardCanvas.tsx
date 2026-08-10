@@ -6,13 +6,12 @@ import type {BoardState, Position} from "../../engine/src/types"
 
 import {BoardRenderer} from "./pixi/BoardRenderer"
 import type {RenderSelection} from "./pixi/types"
-import {defaultTheme} from "./theme/default"
-import {loadTheme} from "./theme/loader"
+import {loadTheme, type LoadedTheme} from "./theme/loader"
 import type {Theme, ThemeLayout} from "./theme/types"
 
 type Props = {
   state: BoardState,
-  theme?: Theme,
+  theme: Theme,
   layoutOverride?: ThemeLayout,
   selection?: RenderSelection,
   onPointClick?: (pos: Position) => void,
@@ -26,7 +25,7 @@ type Props = {
 
 export function BoardCanvas({
   state,
-  theme = defaultTheme,
+  theme,
   layoutOverride,
   selection,
   onPointClick,
@@ -78,16 +77,27 @@ export function BoardCanvas({
       // screens, where the pixel density already smooths edges. Desktop
       // (DPR 1) keeps antialias for crisp edges.
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      const [, loaded] = await Promise.all([
-        app.init({
-          resizeTo: container,
-          backgroundAlpha: 0,
-          antialias: dpr < 2,
-          autoDensity: true,
-          resolution: dpr,
-        }),
-        loadTheme(theme),
-      ])
+      let appReady = false
+      const initPromise = app.init({
+        resizeTo: container,
+        backgroundAlpha: 0,
+        antialias: dpr < 2,
+        autoDensity: true,
+        resolution: dpr,
+      }).then(() => {
+        appReady = true
+      })
+      let loaded: LoadedTheme
+      try {
+        [, loaded] = await Promise.all([initPromise, loadTheme(theme)])
+      }
+      catch (err) {
+        // If the app initialised but the theme failed to load, don't leak
+        // the WebGL context — the effect cleanup can't reach it because
+        // `initialized` is still false.
+        if (appReady) app.destroy(true)
+        throw err
+      }
       initialized = true
       if (cancelled) {
         app.destroy(true)

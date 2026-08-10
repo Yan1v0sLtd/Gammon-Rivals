@@ -295,7 +295,7 @@ a subscription's lifetime exactly matches one query's subscribers.
 - Components dispatch domain events and read selectors/query hooks. No fetching,
   no cache construction, no timers, no business rules.
 - Pixi stays stateless — pass `BoardState` and selection props;
-  `BoardRenderer.render(state)` is a view function.
+  `BoardRenderer.setPosition(state)` is a view function.
 
 ## Migrating a route off `lib/`
 
