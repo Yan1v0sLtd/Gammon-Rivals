@@ -49,6 +49,9 @@ Tasks:
 1. `tasks/01-matchmaking-queue-expiry.md` — expire stale matchmaking queue entries.
 2. `tasks/02-remove-client-side-rolling.md` — server-authoritative dice only.
 3. `tasks/03-supabase-migration-squash.md` — squash `supabase/migrations/` into one baseline.
+4. `tasks/04-admin-css-modules-migration.md` — migrate `apps/admin` from Tailwind to CSS Modules
+   (inventory: `tasks/04-admin-css-modules-inventory.md`).
+5. `tasks/05-doubling-cube-confirm-step.md` — confirm step before offering a double.
 
 ## Archive policy
 
