@@ -23,6 +23,7 @@ import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
 import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
+import {useGetTablesQuery} from "./features/Difficulties/DifficultiesApi"
 import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
 import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
 import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
@@ -48,7 +49,6 @@ import {numberOrNull} from "./lib/numberOrNull"
 import {parseJson} from "./lib/parseJson"
 import {requiredNumber} from "./lib/requiredNumber"
 import {shopToDraft, type ShopDraft} from "./lib/shopToDraft"
-import {tableToDraft, type TableDraft} from "./lib/tableToDraft"
 import {useAdminAuth} from "./lib/useAdminAuth"
 import {useOnlineUsersWatcher} from "./lib/useOnlineUsersWatcher"
 import {withGameplayBackgroundMetadata} from "./lib/withGameplayBackgroundMetadata"
@@ -64,7 +64,6 @@ type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
  * stored as strings so the inputs can be empty mid-edit without
  * blanking the form state.
  */
-type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
 type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
 type LoadingScreenImage = Database["public"]["Tables"]["loading_screen_images"]["Row"]
@@ -97,11 +96,6 @@ type UserDetail = {
   matches: Database["public"]["Tables"]["matches"]["Row"][],
 }
 
-/** Accent slugs the DifficultyModal recognises. The BO dropdown is
- *  scoped to these so an operator can't accidentally set an unknown
- *  slug and ship a card with no colour. */
-const difficultyAccentColors: readonly string[] = ["green", "blue", "purple", "red", "gold"]
-
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
 
 const initialStats: AdminStats = {
@@ -117,12 +111,11 @@ const initialStats: AdminStats = {
  * RTK Query tags for the admin features migrated off legacy loadAdminData().
  * The global Refresh button invalidates them through the shared adminApi
  * cache so the feature panels get fresh data — loadAdminData() is a direct
- * Supabase fetch and can't see (or refresh) RTK Query state. DailyMissions
- * and AdminAccess are migrated and their tags participate in this
- * invalidation alongside the rest. Tags whose query has no active
- * subscription aren't refetched at refresh time — RTK Query marks the cache
- * entry stale, so the next component that mounts and subscribes (navigating
- * back to that section) refetches instead of serving the pre-refresh data.
+ * Supabase fetch and can't see (or refresh) RTK Query state. Tags whose
+ * query has no active subscription aren't refetched at refresh time — RTK
+ * Query marks the cache entry stale, so the next component that mounts and
+ * subscribes (navigating back to that section) refetches instead of
+ * serving the pre-refresh data.
  */
 const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0] = [
   "Currencies",
@@ -132,6 +125,7 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "HourlyWheel",
   "LevelSystem",
   "DailyMissions",
+  "Difficulties",
   "AdminAccess",
 ]
 
@@ -170,7 +164,6 @@ export function Admin() {
     amount: "",
     reason: "",
   })
-  const [tables, setTables] = useState<TableConfig[]>([])
   const [boards, setBoards] = useState<BoardThemeConfig[]>([])
   const [podiums, setPodiums] = useState<PodiumImage[]>([])
   const [podiumDraft, setPodiumDraft] = useState<{name: string, image_url: string}>({
@@ -212,7 +205,6 @@ export function Admin() {
   // the operator is on the Users section so the WebSocket isn't kept
   // open BO-wide.
   const onlineUsers = useOnlineUsersWatcher(activeSection === "Users")
-  const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft())
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
   const [boardEditorOpen, setBoardEditorOpen] = useState(false)
   const [boardEditorMode, setBoardEditorMode] = useState<"add" | "edit">("add")
@@ -255,6 +247,14 @@ export function Admin() {
     data: audit = [],
     error: auditError,
   } = useGetAuditLogQuery(undefined, {skip: accessState !== "allowed"})
+  // Table configs are owned by the Difficulties feature's RTK Query
+  // cache. We read the same shared cache entry here (RTK Query dedupes
+  // by cache key, so this is not a second server call) purely to derive
+  // the tier count for the cross-feature "Game config" dashboard stat.
+  const {
+    data: tables = [],
+    error: tablesError,
+  } = useGetTablesQuery(undefined, {skip: accessState !== "allowed"})
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -274,7 +274,7 @@ export function Admin() {
     setDataError(String(err))
   }, [])
 
-  // These three parent-level subscriptions replaced reads that used to be
+  // These four parent-level subscriptions replaced reads that used to be
   // covered by loadAdminData's Promise.all → firstError. Surface their
   // failures through the page-level banner: otherwise a failed query falls
   // back to its `= []` default and renders as genuinely-empty data in the
@@ -282,9 +282,9 @@ export function Admin() {
   // panels report the same cache entry (same message → same single banner),
   // so nothing is doubled or flickered.
   useEffect(() => {
-    const firstError = currenciesError ?? levelConfigsError ?? auditError
+    const firstError = currenciesError ?? levelConfigsError ?? auditError ?? tablesError
     if (firstError) setError(firstError)
-  }, [currenciesError, levelConfigsError, auditError, setError])
+  }, [currenciesError, levelConfigsError, auditError, tablesError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -638,7 +638,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, tableResult, boardResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, boardResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -657,9 +657,9 @@ export function Admin() {
         .from("profiles")
         .select("*")
         .order("created_at", {ascending: false})
-        .limit(120), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
+        .limit(120), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? boardResult.error ?? shopResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -681,7 +681,6 @@ export function Admin() {
         const visibleIds = new Set(adminUsers.map((row) => row.id))
         return new Set([...current].filter((id) => visibleIds.has(id)))
       })
-      setTables(tableResult.data ?? [])
       setBoards(boardResult.data ?? [])
       setShopItems(shopResult.data ?? [])
       // Store Sale (single global row). Loaded here so a save refreshes it too.
@@ -718,7 +717,7 @@ export function Admin() {
         users: profileRows.length ?? userCount.count ?? 0,
         matches: matchCount.count ?? 0,
         activeMatches: activeMatchCount.count ?? 0,
-        configItems: (tableResult.data ?? []).length + (boardResult.data ?? []).length + levelConfigs.length,
+        configItems: tables.length + (boardResult.data ?? []).length + levelConfigs.length,
         shopItems: shopResult.data?.length ?? 0,
         suspendedUsers: suspendedCount.count ?? 0,
       })
@@ -765,7 +764,7 @@ export function Admin() {
     finally {
       setRefreshing(false)
     }
-  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError])
+  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError, tables.length])
 
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
@@ -1042,59 +1041,6 @@ export function Admin() {
         amount: "",
         reason: "",
       })
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function saveTable() {
-    if (!canManage) return
-    setSavingKey("table")
-    setDataError(null)
-    try {
-      const xpMult = requiredNumber(tableDraft.xp_multiplier_pct, "XP multiplier")
-      if (xpMult < 0 || xpMult > 10000) {
-        throw new Error("XP multiplier must be between 0 and 10000.")
-      }
-      const turnSec = requiredNumber(tableDraft.turn_seconds, "Turn seconds")
-      if (turnSec < 5 || turnSec > 600) {
-        throw new Error("Turn seconds must be between 5 and 600.")
-      }
-      const targetRtp = requiredNumber(tableDraft.target_rtp_pct, "Target RTP")
-      if (targetRtp < 0 || targetRtp > 200) {
-        throw new Error("Target RTP must be between 0 and 200.")
-      }
-      const payload: Database["public"]["Tables"]["table_configs"]["Insert"] = {
-        id: tableDraft.id.trim(),
-        kind: tableDraft.kind,
-        display_name: tableDraft.display_name.trim(),
-        description: tableDraft.description.trim(),
-        entry_fee_coins: requiredNumber(tableDraft.entry_fee_coins, "Entry fee"),
-        prize_coins: requiredNumber(tableDraft.prize_coins, "Prize"),
-        prize_coins_loss: requiredNumber(tableDraft.prize_coins_loss, "Lose prize"),
-        required_level: requiredNumber(tableDraft.required_level, "Required level"),
-        match_target: requiredNumber(tableDraft.match_target, "Match target"),
-        allow_ai: tableDraft.allow_ai,
-        allow_online: tableDraft.allow_online,
-        is_enabled: tableDraft.is_enabled,
-        sort_order: requiredNumber(tableDraft.sort_order, "Sort order"),
-        xp_multiplier_pct: xpMult,
-        base_xp_win: requiredNumber(tableDraft.base_xp_win, "Base XP"),
-        turn_seconds: turnSec,
-        accent_color: tableDraft.accent_color.trim() || "gold",
-        ai_level: tableDraft.ai_level,
-        target_rtp_pct: targetRtp,
-        metadata: parseJson(tableDraft.metadata, "Metadata", "object"),
-        updated_by: user?.id ?? null,
-      }
-      const {error} = await supabase.from("table_configs").upsert(payload)
-      if (error) throw error
-      setTableDraft(tableToDraft())
       await loadAdminData()
     }
     catch (err) {
@@ -1524,32 +1470,17 @@ export function Admin() {
 
           {/* "Tables / Rooms" (kind='standard') section removed — the lobby only
                 surfaces difficulty tiers now (DifficultyModal queries kind='difficulty'),
-                so the standard-rooms editor was dead UI. The shared tableDraft / saveTable
-                / tableToDraft state stays in place for the Difficulties section below; the
-                underlying table_configs data is untouched. */}
+                so the standard-rooms editor was dead UI. The difficulty editor lives in
+                the Difficulties feature; the underlying table_configs data is untouched. */}
 
           <Route
             element={<DifficultiesAdmin
               canManage={canManage}
-              difficultyAccentColors={difficultyAccentColors}
-              rateMap={rateMap}
-              savingKey={savingKey}
-              tableDraft={tableDraft}
-              tables={tables}
-              onNewDifficulty={() => {
-                setTableDraft(tableToDraft(undefined, "difficulty"))
+              updatedBy={user?.id ?? null}
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onSaveTable={() => void saveTable()}
-              onSelectDifficulty={(index) => {
-                const diffRows = tables.filter((row) => row.kind === "difficulty")
-                setTableDraft(tableToDraft(diffRows[index], "difficulty"))
-              }}
-              onTableDraftChange={(patch) => {
-                setTableDraft((d) => ({
-                  ...d,
-                  ...patch,
-                }))
-              }}/>}
+              onError={setError}/>}
             path="difficulties"/>
 
           <Route
