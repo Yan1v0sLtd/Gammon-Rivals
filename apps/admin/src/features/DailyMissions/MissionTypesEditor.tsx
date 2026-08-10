@@ -6,6 +6,7 @@ import {useGetMissionTypeConfigsQuery, useUpdateMissionTypeConfigMutation} from 
 import type {MissionTypeConfigRow, MissionTypeConfigUpdate} from "./DailyMissionsData"
 import type {MissionTypeConfig} from "./MissionsAdminShared"
 import {Field} from "./MissionsAdminShared"
+import styles from "./MissionTypesEditor.module.css"
 
 const COEFFICIENT_FIELDS: readonly {
   readonly key: keyof MissionTypeConfig,
@@ -152,45 +153,44 @@ export function MissionTypesEditor({canManage}: {
   // Initial load gate: don't render the "No mission types configured"
   // empty state while the first payload is still fetching.
   if (rowsLoading) {
-    return (<div className="space-y-3">
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+    return (<div className={styles.wrap}>
+      <div className={styles.loadingCard}>
         Loading mission types…
       </div>
     </div>)
   }
 
-  return (<div className="space-y-3">
-    <p className="max-w-3xl text-xs leading-relaxed text-white/60">
+  return (<div className={styles.wrap}>
+    <p className={styles.intro}>
       The mission-type registry. Each type binds to a progress{" "}
-      <span className="font-mono text-white/80">metric</span>;{" "}
-      <span className="font-bold text-emerald-300">wired</span> means that event actually fires in the
-      game today (a <span className="font-bold text-rose-300">not-wired</span> type will never make
+      <span className={styles.mono + " " + styles.wiredMeta}>metric</span>;{" "}
+      <span className={styles.wired}>wired</span> means that event actually fires in the
+      game today (a <span className={styles.notWired}>not-wired</span> type will never make
       progress — fix the hook or retire it). For{" "}
-      <span className="font-bold text-sky-300">personalized</span> types, the coefficients drive the
+      <span className={styles.personalized}>personalized</span> types, the coefficients drive the
       adaptive goal + self-funding reward (design doc §G).
     </p>
 
     {rows.map((r) => (<div
       key={r.mission_type}
-      className={`rounded-xl border bg-white/[0.045] p-3 ${editing === r.mission_type ? "border-amber-500/60" : "border-white/10"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-white">{r.label}</span>
+      className={styles.row + (editing === r.mission_type ? " " + styles.rowEditing : "")}>
+      <div className={styles.rowHeader}>
+        <div className={styles.rowMain}>
+          <div className={styles.titleRow}>
+            <span className={styles.rowTitle}>{r.label}</span>
             {r.is_wired ? <span
-              className="rounded bg-emerald-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">● wired</span>
-              : <span
-                className="rounded bg-rose-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-200">✗ not wired</span>}
+              className={styles.badge + " " + styles.badgeWired}>● wired</span> : <span
+              className={styles.badge + " " + styles.badgeNotWired}>✗ not wired</span>}
             {r.supports_personalized && (<span
-              className="rounded bg-sky-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-200">personalized</span>)}
+              className={styles.badge + " " + styles.badgePersonalized}>personalized</span>)}
             {r.supports_personalized && r.rollout_pct > 0 && (<span
-              className="rounded bg-emerald-600/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">{r.rollout_pct}% live</span>)}
+              className={styles.badge + " " + styles.badgeWired}>{r.rollout_pct}% live</span>)}
           </div>
-          <div className="mt-0.5 font-mono text-xs text-white/50">{r.mission_type} → {r.metric_code}</div>
-          {r.description && <div className="mt-1 text-xs text-white/60">{r.description}</div>}
+          <div className={styles.rowMeta}>{r.mission_type} → {r.metric_code}</div>
+          {r.description && <div className={styles.rowDesc}>{r.description}</div>}
         </div>
         {canManage && (<button
-          className="shrink-0 rounded bg-amber-500/20 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/30"
+          className={styles.editButton}
           type="button"
           onClick={() => {
             if (editing === r.mission_type) {
@@ -204,11 +204,11 @@ export function MissionTypesEditor({canManage}: {
         </button>)}
       </div>
 
-      {editing === r.mission_type && draft && (<div className="mt-3 space-y-3 border-t border-white/10 pt-3">
-        <div className="grid gap-2 sm:grid-cols-2">
+      {editing === r.mission_type && draft && (<div className={styles.editBody}>
+        <div className={styles.formGrid}>
           <Field label="Label">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               disabled={!canManage}
               type="text"
               value={draft.label}
@@ -220,7 +220,7 @@ export function MissionTypesEditor({canManage}: {
               }}/>
           </Field>
           <Field label="Personalized">
-            <label className="flex items-center gap-2 text-sm text-white">
+            <label className={styles.checkLabel}>
               <input
                 checked={draft.supports_personalized}
                 disabled={!canManage}
@@ -236,7 +236,7 @@ export function MissionTypesEditor({canManage}: {
           </Field>
           {draft.supports_personalized && (<Field label="Rollout %">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               disabled={!canManage}
               max={100}
               min={0}
@@ -248,7 +248,7 @@ export function MissionTypesEditor({canManage}: {
                   rollout_pct: Math.max(0, Math.min(100, Number(e.target.value))),
                 })
               }}/>
-            <span className="mt-0.5 block text-[10px] text-white/35">
+            <span className={styles.hint}>
               % of players the nightly cron assigns this personalized mission (occupies one common slot). 0 = off.
             </span>
           </Field>)}
@@ -256,7 +256,7 @@ export function MissionTypesEditor({canManage}: {
             wide
             label="Description">
             <textarea
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               disabled={!canManage}
               rows={2}
               value={draft.description ?? ""}
@@ -270,17 +270,17 @@ export function MissionTypesEditor({canManage}: {
         </div>
 
         {draft.supports_personalized && (<div>
-          <div className="mb-1 text-[10px] uppercase tracking-wider text-sky-200/70">
+          <div className={styles.coeffTitle}>
             Personalized coefficients
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={styles.coeffGrid}>
             {COEFFICIENT_FIELDS.map((f) => (<label
               key={f.key}
-              className="block">
+              className={styles.coeffLabel}>
               <span
-                className="mb-0.5 block text-[10px] uppercase tracking-wider text-white/50">{f.label}</span>
+                className={styles.coeffName}>{f.label}</span>
               <input
-                className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+                className={styles.ringInput}
                 disabled={!canManage}
                 step={f.step}
                 type="number"
@@ -291,17 +291,17 @@ export function MissionTypesEditor({canManage}: {
                     [f.key]: Number(e.target.value),
                   })
                 }}/>
-              <span className="mt-0.5 block text-[10px] text-white/35">{f.hint}</span>
+              <span className={styles.hint}>{f.hint}</span>
             </label>))}
           </div>
-          <p className="mt-2 text-[10px] text-amber-200/70">
+          <p className={styles.coeffNote}>
             Reward % of loss must stay below 1 — the economy only remains a net sink while it does.
           </p>
         </div>)}
 
-        {error && <div className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+        {error && <div className={styles.errorBox}>{error}</div>}
         {canManage && (<button
-          className="rounded bg-emerald-600 px-4 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className={styles.saveButton}
           disabled={saving}
           type="button"
           onClick={save}>
@@ -310,7 +310,7 @@ export function MissionTypesEditor({canManage}: {
       </div>)}
     </div>))}
 
-    {rows.length === 0 && <div className="text-sm text-white/40">No mission types configured.</div>}
-    {error && editing === null && <div className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+    {rows.length === 0 && <div className={styles.empty}>No mission types configured.</div>}
+    {error && editing === null && <div className={styles.errorBox}>{error}</div>}
   </div>)
 }

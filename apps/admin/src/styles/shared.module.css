@@ -150,6 +150,14 @@
   color: rgba(254, 243, 199, 0.7);
 }
 
+/* Tiny uppercase micro-label (10px). Padding, weight, display, margins
+ * and color are set by the consumer. */
+.microLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 /* Small right-aligned mono numeric input (board tuning / felt corners /
  * bear-off trays). Width is set by the consumer (w-16 vs w-full). */
 .monoInput {
