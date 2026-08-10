@@ -14,6 +14,8 @@ import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
 import {useConfirm} from "./components/useConfirm"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
+import {useGetAuditLogQuery} from "./features/AdminAccess/AdminAccessApi"
+import type {AdminRole} from "./features/AdminAccess/AdminAccessData"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
 import {useGetCurrenciesQuery} from "./features/Currencies/CurrenciesApi"
@@ -54,9 +56,6 @@ import {adminBaseApi} from "./store/baseApi"
 import {useAdminDispatch} from "./store/hooks"
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
-type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
-type AdminEmailRoleRow = Database["public"]["Tables"]["admin_email_allowlist"]["Row"]
-type AdminRole = AdminRoleRow["role"]
 /**
  * Editable per-row state for the Status Tiers panel. We keep `id`
  * nullable so a brand-new row (not yet inserted) can sit alongside
@@ -68,7 +67,6 @@ type TableConfig = Database["public"]["Tables"]["table_configs"]["Row"]
 type BoardThemeConfig = Database["public"]["Tables"]["board_theme_configs"]["Row"]
 type PodiumImage = Database["public"]["Tables"]["podium_images"]["Row"]
 type LoadingScreenImage = Database["public"]["Tables"]["loading_screen_images"]["Row"]
-type AuditEntry = Database["public"]["Tables"]["admin_audit_log"]["Row"]
 type UserWallet = Database["public"]["Tables"]["user_wallets"]["Row"]
 type WalletTransaction = Database["public"]["Tables"]["wallet_transactions"]["Row"]
 type UserBoardInventory = Database["public"]["Tables"]["user_board_inventory"]["Row"]
@@ -175,11 +173,11 @@ const initialStats: AdminStats = {
  * The global Refresh button invalidates them through the shared adminApi
  * cache so the feature panels get fresh data — loadAdminData() is a direct
  * Supabase fetch and can't see (or refresh) RTK Query state. DailyMissions
- * is migrated and its `DailyMissions` tag participates in this invalidation
- * alongside the rest. Tags whose query has no active subscription aren't
- * refetched at refresh time — RTK Query marks the cache entry stale, so the
- * next component that mounts and subscribes (navigating back to that section)
- * refetches instead of serving the pre-refresh data.
+ * and AdminAccess are migrated and their tags participate in this
+ * invalidation alongside the rest. Tags whose query has no active
+ * subscription aren't refetched at refresh time — RTK Query marks the cache
+ * entry stale, so the next component that mounts and subscribes (navigating
+ * back to that section) refetches instead of serving the pre-refresh data.
  */
 const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0] = [
   "Currencies",
@@ -189,6 +187,7 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "HourlyWheel",
   "LevelSystem",
   "DailyMissions",
+  "AdminAccess",
 ]
 
 export function Admin() {
@@ -257,7 +256,6 @@ export function Admin() {
     title: "Store",
     bg_image_url: "",
   })
-  const [audit, setAudit] = useState<AuditEntry[]>([])
   // RTP dashboard state — fetched lazily when the section is opened so
   // we don't pay the aggregation cost on every BO load.
   const [rtpRange, setRtpRange] = useState<string>("all")
@@ -279,18 +277,6 @@ export function Admin() {
   // the operator is on the Users section so the WebSocket isn't kept
   // open BO-wide.
   const onlineUsers = useOnlineUsersWatcher(activeSection === "Users")
-  const [adminRoles, setAdminRoles] = useState<AdminRoleRow[]>([])
-  const [adminEmailRoles, setAdminEmailRoles] = useState<AdminEmailRoleRow[]>([])
-  const [roleDraft, setRoleDraft] = useState({
-    profile_id: "",
-    role: "viewer" as AdminRole,
-    note: "",
-  })
-  const [emailRoleDraft, setEmailRoleDraft] = useState({
-    email: "contact@yanivos.com",
-    role: "owner" as AdminRole,
-    note: "Initial owner email",
-  })
   const [tableDraft, setTableDraft] = useState<TableDraft>(() => tableToDraft())
   const [boardDraft, setBoardDraft] = useState<BoardDraft>(() => boardToDraft())
   const [boardEditorOpen, setBoardEditorOpen] = useState(false)
@@ -316,6 +302,7 @@ export function Admin() {
   // The Currencies section itself runs its own query (see CurrenciesAdmin).
   const {
     data: currencies = [],
+    error: currenciesError,
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
   // Level configs are owned by the Level System feature's RTK Query
   // cache. We read the same shared cache entry here (RTK Query dedupes
@@ -323,14 +310,22 @@ export function Admin() {
   // the level count for the cross-feature "Game config" dashboard stat.
   const {
     data: levelConfigs = [],
+    error: levelConfigsError,
   } = useGetLevelConfigsQuery(undefined, {skip: accessState !== "allowed"})
+  // Audit log is owned by the Admin Access feature's RTK Query cache. We
+  // read the same shared cache entry here (RTK Query dedupes by cache key,
+  // so this is not a second server call) to feed the Dashboard's recent
+  // changes feed, mirroring the level-config dashboard-count precedent.
+  const {
+    data: audit = [],
+    error: auditError,
+  } = useGetAuditLogQuery(undefined, {skip: accessState !== "allowed"})
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
   // not seeded, so it just returns 0 from the helpers).
   const rateMap = useMemo(() => buildCurrencyRateMap(currencies), [currencies])
   const currentUserEmail = normalizeEmail(user?.email ?? "")
-  const selectedEmailRole = adminEmailRoles.find((row) => row.email === normalizeEmail(emailRoleDraft.email)) ?? null
 
   const setError = useCallback((err: unknown) => {
     if (err instanceof Error) {
@@ -343,6 +338,18 @@ export function Admin() {
     }
     setDataError(String(err))
   }, [])
+
+  // These three parent-level subscriptions replaced reads that used to be
+  // covered by loadAdminData's Promise.all → firstError. Surface their
+  // failures through the page-level banner: otherwise a failed query falls
+  // back to its `= []` default and renders as genuinely-empty data in the
+  // Dashboard section, which owns no error UI of its own. The feature
+  // panels report the same cache entry (same message → same single banner),
+  // so nothing is doubled or flickered.
+  useEffect(() => {
+    const firstError = currenciesError ?? levelConfigsError ?? auditError
+    if (firstError) setError(firstError)
+  }, [currenciesError, levelConfigsError, auditError, setError])
 
   async function loadBoardConfigs(successMessage?: string) {
     const {
@@ -696,7 +703,7 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, tableResult, boardResult, shopResult, auditResult, roleResult, emailRoleResult] = await Promise.all([supabase.from("profiles").select("id", {
+      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, tableResult, boardResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
         count: "exact",
         head: true,
       }), supabase
@@ -715,9 +722,9 @@ export function Admin() {
         .from("profiles")
         .select("*")
         .order("created_at", {ascending: false})
-        .limit(120), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true}), supabase.from("admin_audit_log").select("*").order("created_at", {ascending: false}).limit(20), supabase.from("admin_roles").select("*").order("created_at", {ascending: false}), supabase.from("admin_email_allowlist").select("*").order("created_at", {ascending: false})])
+        .limit(120), supabase.from("table_configs").select("*").order("sort_order", {ascending: true}), supabase.from("board_theme_configs").select("*").order("sort_order", {ascending: true}), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error ?? auditResult.error ?? roleResult.error ?? emailRoleResult.error
+      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? tableResult.error ?? boardResult.error ?? shopResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -772,9 +779,6 @@ export function Admin() {
           bg_image_url: storeConfigResult.data.bg_image_url ?? "",
         })
       }
-      setAudit(auditResult.data ?? [])
-      setAdminRoles(roleResult.data ?? [])
-      setAdminEmailRoles(emailRoleResult.data ?? [])
       setStats({
         users: profileRows.length ?? userCount.count ?? 0,
         matches: matchCount.count ?? 0,
@@ -1445,33 +1449,6 @@ export function Admin() {
     }
   }
 
-  async function saveAdminRole() {
-    if (!canManage) return
-    setSavingKey("role")
-    setDataError(null)
-    try {
-      const {error} = await supabase.from("admin_roles").upsert({
-        profile_id: roleDraft.profile_id.trim(),
-        role: roleDraft.role,
-        note: emptyToNull(roleDraft.note),
-        created_by: user?.id ?? null,
-      })
-      if (error) throw error
-      setRoleDraft({
-        profile_id: "",
-        role: "viewer",
-        note: "",
-      })
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
   async function signInToAdmin() {
     setSavingKey("admin-login")
     setDataError(null)
@@ -1484,75 +1461,6 @@ export function Admin() {
     }
     catch (err) {
       setError(err)
-      setSavingKey(null)
-    }
-  }
-
-  async function saveAdminEmailRole() {
-    if (!canManage) return
-    const email = normalizeEmail(emailRoleDraft.email)
-    if (!email.includes("@")) {
-      setDataError("Enter a valid email address.")
-      return
-    }
-
-    setSavingKey("email-role")
-    setDataError(null)
-    try {
-      const payload: Database["public"]["Tables"]["admin_email_allowlist"]["Insert"] = {
-        email,
-        role: emailRoleDraft.role,
-        note: emptyToNull(emailRoleDraft.note),
-        created_by: user?.id ?? null,
-      }
-      const {error} = await supabase
-        .from("admin_email_allowlist")
-        .upsert(payload, {onConflict: "email"})
-      if (error) throw error
-      setEmailRoleDraft({
-        email: "",
-        role: "viewer",
-        note: "",
-      })
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
-      setSavingKey(null)
-    }
-  }
-
-  async function deleteAdminEmailRole(row: AdminEmailRoleRow) {
-    if (!canManage) return
-    if (row.email === currentUserEmail) {
-      setDataError("You can't remove the admin email you are currently using.")
-      return
-    }
-    const confirmed = await confirm({
-      title: `Remove admin access for ${row.email}?`,
-      confirmLabel: "Remove access",
-      tone: "danger",
-    })
-    if (!confirmed) return
-
-    setSavingKey(`email-role-delete-${row.email}`)
-    setDataError(null)
-    try {
-      const {error} = await supabase.from("admin_email_allowlist").delete().eq("email", row.email)
-      if (error) throw error
-      setEmailRoleDraft({
-        email: "",
-        role: "viewer",
-        note: "",
-      })
-      await loadAdminData()
-    }
-    catch (err) {
-      setError(err)
-    }
-    finally {
       setSavingKey(null)
     }
   }
@@ -1856,27 +1764,14 @@ export function Admin() {
 
           <Route
             element={<AdminAccessAdmin
-              adminEmailRoles={adminEmailRoles}
-              adminRoles={adminRoles}
-              audit={audit}
               canManage={canManage}
               currentUserEmail={currentUserEmail}
-              emailRoleDraft={emailRoleDraft}
-              roleDraft={roleDraft}
+              currentUserId={user?.id ?? null}
               roleOptions={roleOptions}
-              savingKey={savingKey}
-              selectedEmailRole={selectedEmailRole}
-              onDeleteAdminEmailRole={(row) => {
-                void deleteAdminEmailRole(row)
+              onBeforeSave={() => {
+                setDataError(null)
               }}
-              onEmailRoleDraftChange={setEmailRoleDraft}
-              onRoleDraftChange={setRoleDraft}
-              onSaveAdminEmailRole={() => {
-                void saveAdminEmailRole()
-              }}
-              onSaveAdminRole={() => {
-                void saveAdminRole()
-              }}/>}
+              onError={setError}/>}
             path="admin-access"/>
 
           <Route

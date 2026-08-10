@@ -7,10 +7,12 @@ browser back/forward.
 Status: Phase 1 routing is implemented. Phase 2 (optional lazy loading and user
 deep links) is still pending. The Redux follow-up is implemented: the independent
 admin store and `adminBaseApi` live in `apps/admin/src/store/`, and Currencies,
-Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System, and all
-seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll, Streak
-Chest, Refresh Tool, Simulator) are migrated end to end via RTK Query through
-`DailyMissionsApi.ts`/`DailyMissionsData.ts`. Users and Shop are still pending.
+Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System, Admin
+Access, and all seven Daily Missions UI domains (Templates, Mission Types,
+Chests, Reroll, Streak Chest, Refresh Tool, Simulator) are migrated end to end
+via RTK Query through `DailyMissionsApi.ts`/`DailyMissionsData.ts`. Still
+pending: RTP Analytics, Difficulties, Board Themes, Dashboard, Users, and Shop —
+with Users and Shop intentionally last.
 
 ## Pre-migration baseline — `activeSection` state
 
@@ -175,10 +177,20 @@ Status: implemented. `apps/admin/src/store/` has its own `store.ts`
 Feature endpoints inject into `adminBaseApi` from `features/<X>/<x>Api.ts`.
 Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
 `<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
-Wheel, Level System, and all seven Daily Missions UI domains — Templates, Mission
-Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator — which run on
-RTK Query through `DailyMissionsApi.ts`/`DailyMissionsData.ts`. Users and Shop are
-not migrated — they stay last, per the order below.
+Wheel, Level System, Admin Access, and all seven Daily Missions UI domains —
+Templates, Mission Types, Chests, Reroll, Streak Chest, Refresh Tool, and
+Simulator — which run on RTK Query through
+`DailyMissionsApi.ts`/`DailyMissionsData.ts`. Still pending: RTP Analytics,
+Difficulties, Board Themes, Dashboard, Users, and Shop — with Users and Shop
+staying last, per the order below.
+
+Structural note: the `admin_audit_log` read is owned by the Admin Access feature
+endpoint (`getAuditLog` in `AdminAccessApi.ts`). It is shared with the
+still-unmigrated Dashboard through a gated parent-level subscription in
+`Admin.tsx` on the same cache key — RTK Query dedupes, so this is not a second
+server call. When Dashboard is migrated, revisit this ownership: the Dashboard
+should own its read (or share a neutral home) rather than reaching through the
+Admin Access cache.
 
 Measured cost:
 

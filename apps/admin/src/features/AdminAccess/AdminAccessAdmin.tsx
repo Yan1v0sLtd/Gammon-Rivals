@@ -1,15 +1,27 @@
-import type {Database} from "../../../../../packages/shared/src/database"
+import {useEffect, useState} from "react"
+
 import {ConfigTable} from "../../components/ConfigTable"
 import {DangerButton} from "../../components/DangerButton"
 import {Field} from "../../components/Field"
 import {PrimaryButton} from "../../components/PrimaryButton"
 import {SecondaryButton} from "../../components/SecondaryButton"
+import {useConfirm} from "../../components/useConfirm"
+import {emptyToNull} from "../../lib/emptyToNull"
 import {formatDate} from "../../lib/formatDate"
+import {normalizeEmail} from "../../lib/normalizeEmail"
 
-type AdminRoleRow = Database["public"]["Tables"]["admin_roles"]["Row"]
-type AdminEmailRoleRow = Database["public"]["Tables"]["admin_email_allowlist"]["Row"]
-type AdminRole = AdminRoleRow["role"]
-type AuditEntry = Database["public"]["Tables"]["admin_audit_log"]["Row"]
+import {
+  useGetAdminRolesQuery,
+  useGetAdminEmailRolesQuery,
+  useGetAuditLogQuery,
+  useUpsertAdminRoleMutation,
+  useUpsertAdminEmailRoleMutation,
+  useDeleteAdminEmailRoleMutation,
+} from "./AdminAccessApi"
+import type {
+  AdminEmailRoleRow,
+  AdminRole,
+} from "./AdminAccessData"
 
 type RoleDraft = {
   profile_id: string, role: AdminRole, note: string,
@@ -20,179 +32,314 @@ type EmailRoleDraft = {
 }
 
 type Props = {
-  readonly adminEmailRoles: readonly AdminEmailRoleRow[],
-  readonly adminRoles: readonly AdminRoleRow[],
-  readonly audit: readonly AuditEntry[],
-  readonly emailRoleDraft: EmailRoleDraft,
-  readonly roleDraft: RoleDraft,
-  readonly roleOptions: readonly AdminRole[],
   readonly canManage: boolean,
-  readonly savingKey: string | null,
-  readonly selectedEmailRole: AdminEmailRoleRow | null,
+  readonly currentUserId: string | null,
   readonly currentUserEmail: string,
-  readonly onEmailRoleDraftChange: (draft: EmailRoleDraft) => void,
-  readonly onRoleDraftChange: (draft: RoleDraft) => void,
-  readonly onSaveAdminEmailRole: () => void,
-  readonly onSaveAdminRole: () => void,
-  readonly onDeleteAdminEmailRole: (row: AdminEmailRoleRow) => void,
+  readonly roleOptions: readonly AdminRole[],
+  readonly onError: (error: unknown) => void,
+  readonly onBeforeSave: () => void,
 }
 
 /**
  * Admin Access BO — the operator allowlist + role management panels.
- * Purely presentational: it renders the admin email / role tables, the
- * audit log, and the grant forms from data the parent (Admin) already
- * owns. No data fetching here.
+ * Owns its own data: it fetches the admin email / role tables and the
+ * audit log via RTK Query, keeps the grant drafts in local state, and
+ * saves through the Admin Access mutations (whose `AdminAccess` tag
+ * invalidation refetches all three queries together — the database
+ * triggers also append audit rows on role/allowlist writes). Query and
+ * mutation failures are reported up through `onError` for page-level
+ * display. No direct Supabase calls here.
  */
 export function AdminAccessAdmin({
-  adminEmailRoles,
-  adminRoles,
-  audit,
-  emailRoleDraft,
-  roleDraft,
-  roleOptions,
   canManage,
-  savingKey,
-  selectedEmailRole,
+  currentUserId,
   currentUserEmail,
-  onEmailRoleDraftChange,
-  onRoleDraftChange,
-  onSaveAdminEmailRole,
-  onSaveAdminRole,
-  onDeleteAdminEmailRole,
+  roleOptions,
+  onError,
+  onBeforeSave,
 }: Props) {
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
-    <div className="space-y-4">
-      <ConfigTable
-        rows={adminEmailRoles.map((row) => [row.email, row.role, row.note ?? "", formatDate(row.created_at)])}
-        title="Admin emails"
-        onRowClick={(index) => {
-          onEmailRoleDraftChange({
-            email: adminEmailRoles[index].email,
-            role: adminEmailRoles[index].role,
-            note: adminEmailRoles[index].note ?? "",
-          })
-        }}/>
-      <ConfigTable
-        rows={adminRoles.map((row) => [row.profile_id, row.role, row.note ?? "", formatDate(row.created_at)])}
-        title="Admin roles"
-        onRowClick={(index) => {
-          onRoleDraftChange({
-            profile_id: adminRoles[index].profile_id,
-            role: adminRoles[index].role,
-            note: adminRoles[index].note ?? "",
-          })
-        }}/>
-      <ConfigTable
-        rows={audit.map((entry) => [formatDate(entry.created_at), entry.action, `${entry.entity_table} · ${entry.entity_id}`, entry.actor_profile_id ?? "system"])}
-        title="Audit log"/>
-    </div>
-    <div className="space-y-4">
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <h2 className="text-lg font-black">Grant admin email</h2>
-        <div className="mt-3 space-y-3">
-          <Field
-            label="Email"
-            value={emailRoleDraft.email}
-            onChange={(email) => {
-              onEmailRoleDraftChange({
-                ...emailRoleDraft,
-                email,
-              })
-            }}/>
-          <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-            Role
-            <select
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-              value={emailRoleDraft.role}
-              onChange={(event) => {
-                onEmailRoleDraftChange({
-                  ...emailRoleDraft,
-                  role: event.target.value as AdminRole,
+  const {
+    data: adminEmailRoles = [],
+    error: emailRolesError,
+    isLoading: emailRolesLoading,
+  } = useGetAdminEmailRolesQuery()
+  const {
+    data: adminRoles = [],
+    error: adminRolesError,
+    isLoading: adminRolesLoading,
+  } = useGetAdminRolesQuery()
+  const {
+    data: audit = [],
+    error: auditError,
+    isLoading: auditLoading,
+  } = useGetAuditLogQuery()
+
+  const [upsertAdminRole] = useUpsertAdminRoleMutation()
+  const [upsertAdminEmailRole] = useUpsertAdminEmailRoleMutation()
+  const [deleteAdminEmailRole] = useDeleteAdminEmailRoleMutation()
+
+  const [roleDraft, setRoleDraft] = useState<RoleDraft>({
+    profile_id: "",
+    role: "viewer",
+    note: "",
+  })
+  const [emailRoleDraft, setEmailRoleDraft] = useState<EmailRoleDraft>({
+    email: "contact@yanivos.com",
+    role: "owner",
+    note: "Initial owner email",
+  })
+  const [savingKey, setSavingKey] = useState<string | null>(null)
+
+  const {confirm, confirmUI} = useConfirm()
+
+  // Surface fetch failures through the page-level error reporter so a
+  // failed query is never silently rendered as an empty table.
+  useEffect(() => {
+    if (emailRolesError) onError(emailRolesError)
+  }, [emailRolesError, onError])
+  useEffect(() => {
+    if (adminRolesError) onError(adminRolesError)
+  }, [adminRolesError, onError])
+  useEffect(() => {
+    if (auditError) onError(auditError)
+  }, [auditError, onError])
+
+  const selectedEmailRole = adminEmailRoles.find((row) => row.email === normalizeEmail(emailRoleDraft.email)) ?? null
+
+  async function saveAdminRole() {
+    if (!canManage) return
+    setSavingKey("role")
+    // Clear any stale page-level error before the save, mirroring the old
+    // Admin handler's setDataError(null) so a fresh save doesn't leave a
+    // previous failure on screen.
+    onBeforeSave()
+    try {
+      await upsertAdminRole({
+        profile_id: roleDraft.profile_id.trim(),
+        role: roleDraft.role,
+        note: emptyToNull(roleDraft.note),
+        created_by: currentUserId,
+      }).unwrap()
+      setRoleDraft({
+        profile_id: "",
+        role: "viewer",
+        note: "",
+      })
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setSavingKey(null)
+    }
+  }
+
+  async function saveAdminEmailRole() {
+    if (!canManage) return
+    const email = normalizeEmail(emailRoleDraft.email)
+    if (!email.includes("@")) {
+      onError("Enter a valid email address.")
+      return
+    }
+    setSavingKey("email-role")
+    onBeforeSave()
+    try {
+      await upsertAdminEmailRole({
+        email,
+        role: emailRoleDraft.role,
+        note: emptyToNull(emailRoleDraft.note),
+        created_by: currentUserId,
+      }).unwrap()
+      setEmailRoleDraft({
+        email: "",
+        role: "viewer",
+        note: "",
+      })
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setSavingKey(null)
+    }
+  }
+
+  async function deleteEmailRole(row: AdminEmailRoleRow) {
+    if (!canManage) return
+    if (row.email === currentUserEmail) {
+      onError("You can't remove the admin email you are currently using.")
+      return
+    }
+    const confirmed = await confirm({
+      title: `Remove admin access for ${row.email}?`,
+      confirmLabel: "Remove access",
+      tone: "danger",
+    })
+    if (!confirmed) return
+
+    setSavingKey(`email-role-delete-${row.email}`)
+    onBeforeSave()
+    try {
+      await deleteAdminEmailRole(row.email).unwrap()
+      setEmailRoleDraft({
+        email: "",
+        role: "viewer",
+        note: "",
+      })
+    }
+    catch (err) {
+      onError(err)
+    }
+    finally {
+      setSavingKey(null)
+    }
+  }
+
+  const initialLoading = adminRolesLoading || emailRolesLoading || auditLoading
+
+  return (<>
+    {confirmUI}
+    {initialLoading ? (<div
+      className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      Loading…
+    </div>) : (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+      <div className="space-y-4">
+        <ConfigTable
+          rows={adminEmailRoles.map((row) => [row.email, row.role, row.note ?? "", formatDate(row.created_at)])}
+          title="Admin emails"
+          onRowClick={(index) => {
+            setEmailRoleDraft({
+              email: adminEmailRoles[index].email,
+              role: adminEmailRoles[index].role,
+              note: adminEmailRoles[index].note ?? "",
+            })
+          }}/>
+        <ConfigTable
+          rows={adminRoles.map((row) => [row.profile_id, row.role, row.note ?? "", formatDate(row.created_at)])}
+          title="Admin roles"
+          onRowClick={(index) => {
+            setRoleDraft({
+              profile_id: adminRoles[index].profile_id,
+              role: adminRoles[index].role,
+              note: adminRoles[index].note ?? "",
+            })
+          }}/>
+        <ConfigTable
+          rows={audit.map((entry) => [formatDate(entry.created_at), entry.action, `${entry.entity_table} · ${entry.entity_id}`, entry.actor_profile_id ?? "system"])}
+          title="Audit log"/>
+      </div>
+      <div className="space-y-4">
+        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+          <h2 className="text-lg font-black">Grant admin email</h2>
+          <div className="mt-3 space-y-3">
+            <Field
+              label="Email"
+              value={emailRoleDraft.email}
+              onChange={(email) => {
+                setEmailRoleDraft((d) => ({
+                  ...d,
+                  email,
+                }))
+              }}/>
+            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+              Role
+              <select
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                value={emailRoleDraft.role}
+                onChange={(event) => {
+                  setEmailRoleDraft((d) => ({
+                    ...d,
+                    role: event.target.value as AdminRole,
+                  }))
+                }}>
+                {roleOptions.map((option) => (<option
+                  key={option}
+                  value={option}>{option}</option>))}
+              </select>
+            </label>
+            <Field
+              label="Note"
+              value={emailRoleDraft.note}
+              onChange={(note) => {
+                setEmailRoleDraft((d) => ({
+                  ...d,
+                  note,
+                }))
+              }}/>
+            <div className="flex flex-wrap gap-2">
+              <PrimaryButton
+                disabled={!canManage || savingKey === "email-role"}
+                onClick={() => {
+                  void saveAdminEmailRole()
+                }}>
+                Save email
+              </PrimaryButton>
+              <SecondaryButton onClick={() => {
+                setEmailRoleDraft({
+                  email: "",
+                  role: "viewer",
+                  note: "",
                 })
               }}>
-              {roleOptions.map((option) => (<option
-                key={option}
-                value={option}>{option}</option>))}
-            </select>
-          </label>
-          <Field
-            label="Note"
-            value={emailRoleDraft.note}
-            onChange={(note) => {
-              onEmailRoleDraftChange({
-                ...emailRoleDraft,
-                note,
-              })
-            }}/>
-          <div className="flex flex-wrap gap-2">
+                New
+              </SecondaryButton>
+              <DangerButton
+                disabled={!canManage || !selectedEmailRole || selectedEmailRole.email === currentUserEmail || savingKey === `email-role-delete-${selectedEmailRole?.email ?? ""}`}
+                onClick={() => {
+                  if (selectedEmailRole) void deleteEmailRole(selectedEmailRole)
+                }}>
+                Remove
+              </DangerButton>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
+          <h2 className="text-lg font-black">Grant profile role</h2>
+          <div className="mt-3 space-y-3">
+            <Field
+              label="Profile id"
+              value={roleDraft.profile_id}
+              onChange={(profile_id) => {
+                setRoleDraft((d) => ({
+                  ...d,
+                  profile_id,
+                }))
+              }}/>
+            <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+              Role
+              <select
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                value={roleDraft.role}
+                onChange={(event) => {
+                  setRoleDraft((d) => ({
+                    ...d,
+                    role: event.target.value as AdminRole,
+                  }))
+                }}>
+                {roleOptions.map((option) => (<option
+                  key={option}
+                  value={option}>{option}</option>))}
+              </select>
+            </label>
+            <Field
+              label="Note"
+              value={roleDraft.note}
+              onChange={(note) => {
+                setRoleDraft((d) => ({
+                  ...d,
+                  note,
+                }))
+              }}/>
             <PrimaryButton
-              disabled={!canManage || savingKey === "email-role"}
-              onClick={onSaveAdminEmailRole}>
-              Save email
-            </PrimaryButton>
-            <SecondaryButton onClick={() => {
-              onEmailRoleDraftChange({
-                email: "",
-                role: "viewer",
-                note: "",
-              })
-            }}>
-              New
-            </SecondaryButton>
-            <DangerButton
-              disabled={!canManage || !selectedEmailRole || selectedEmailRole.email === currentUserEmail || savingKey === `email-role-delete-${selectedEmailRole?.email ?? ""}`}
+              disabled={!canManage || savingKey === "role"}
               onClick={() => {
-                if (selectedEmailRole) onDeleteAdminEmailRole(selectedEmailRole)
+                void saveAdminRole()
               }}>
-              Remove
-            </DangerButton>
+              Save role
+            </PrimaryButton>
           </div>
         </div>
       </div>
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <h2 className="text-lg font-black">Grant profile role</h2>
-        <div className="mt-3 space-y-3">
-          <Field
-            label="Profile id"
-            value={roleDraft.profile_id}
-            onChange={(profile_id) => {
-              onRoleDraftChange({
-                ...roleDraft,
-                profile_id,
-              })
-            }}/>
-          <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
-            Role
-            <select
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
-              value={roleDraft.role}
-              onChange={(event) => {
-                onRoleDraftChange({
-                  ...roleDraft,
-                  role: event.target.value as AdminRole,
-                })
-              }}>
-              {roleOptions.map((option) => (<option
-                key={option}
-                value={option}>{option}</option>))}
-            </select>
-          </label>
-          <Field
-            label="Note"
-            value={roleDraft.note}
-            onChange={(note) => {
-              onRoleDraftChange({
-                ...roleDraft,
-                note,
-              })
-            }}/>
-          <PrimaryButton
-            disabled={!canManage || savingKey === "role"}
-            onClick={onSaveAdminRole}>
-            Save role
-          </PrimaryButton>
-        </div>
-      </div>
-    </div>
-  </div>)
+    </div>)}
+  </>)
 }

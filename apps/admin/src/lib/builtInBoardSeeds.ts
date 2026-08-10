@@ -1,4 +1,4 @@
-import type {Database} from "../../../../packages/shared/src/database.ts";
+import type {Database} from "../../../../packages/shared/src/database.ts"
 
 export const builtInBoardSeeds: readonly Database["public"]["Tables"]["board_theme_configs"]["Insert"][] = [{
   id: "classic-green",
