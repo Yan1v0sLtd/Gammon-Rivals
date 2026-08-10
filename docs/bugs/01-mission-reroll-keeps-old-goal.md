@@ -13,7 +13,7 @@ met, the new mission is either trivially easy or impossible.
 
 ## Evidence
 
-`supabase/migrations/20260626000000_daily_missions_v5_chests_streak_reroll.sql`:
+`../archive/migrations/20260626000000_daily_missions_v5_chests_streak_reroll.sql`:
 
 - `:437-447` resolves the new goal correctly into the local `v_resolved_goal`
   (fixed templates take `goal_value`; personalized templates clamp

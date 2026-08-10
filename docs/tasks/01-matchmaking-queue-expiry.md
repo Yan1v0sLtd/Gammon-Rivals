@@ -31,8 +31,8 @@ Consider adding a partial index on `created_at` where `matched_match_id is null`
 - `apps/game/src/features/lobby/matchmakingListeners.ts` — matchmaking polling, cancellation and AI fallback.
 - `apps/game/src/features/auth/authListeners.ts` — identity-change handling.
 - `apps/game/src/features/lobby/matchmakingData.ts` — `cancelMatchmakingRpc()` and `findMatchInTier()`.
-- `supabase/migrations/0008_matchmaking.sql` — queue schema and auth-scoped cancellation RPC.
-- `supabase/migrations/20260722000000_randomize_online_opener.sql` — latest `find_match_in_tier` definition.
+- `../archive/migrations/0008_matchmaking.sql` — queue schema and auth-scoped cancellation RPC.
+- `../archive/migrations/20260722000000_randomize_online_opener.sql` — latest `find_match_in_tier` definition.
 
 ## Acceptance criteria
 

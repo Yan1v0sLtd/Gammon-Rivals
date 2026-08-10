@@ -33,7 +33,7 @@ The headless uses of the engine's `roll()` must stay: `packages/engine/src/dice.
 - `apps/game/src/game/matchEntryPath.ts` — routes anything that is not `pvp`/`online` to `/hotseat`.
 - `apps/game/src/features/lobby/matchmakingListeners.ts` — AI-fallback branch dispatches `mode: fallback.aiLevel` when the server returns a non-bot match.
 - `apps/game/src/features/lobby/matchmakingData.ts` — `enterRoomAiFallback()` client wrapper.
-- `supabase/migrations/20260718000000_server_bot_flag.sql` (and later recreations: `20260719000000`, `20260722000000`) — `enter_room_ai_fallback` defaults `server_bot` to false.
+- `../archive/migrations/20260718000000_server_bot_flag.sql` (and later recreations: `20260719000000`, `20260722000000`) — `enter_room_ai_fallback` defaults `server_bot` to false.
 - `packages/engine/src/dice.ts` — keep: pure logic for tests, sim, and the server mirror.
 - `packages/sim/src/playGame.ts`, `tools/economy-sim/sim.mjs` — keep: headless sims, not the browser game.
 - `supabase/functions/roll_dice/index.ts`, `supabase/functions/ai_move/index.ts` — the authoritative rolls.
