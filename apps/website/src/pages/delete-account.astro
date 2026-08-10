@@ -1,6 +1,7 @@
 ---
 import LegalLayout from '../layouts/LegalLayout.astro'
 import ContactUs from '../components/ContactUs.astro'
+import { site } from '../config/site'
 import '../styles/doc.css'
 ---
 
@@ -8,13 +9,14 @@ import '../styles/doc.css'
      Wording stays in step with privacy.astro (Sections 9-10); do not restore
      the retired in-app deletion flow. -->
 <LegalLayout
-  title="Delete Your Account — Gammon Rivals"
-  description="How to request deletion of your Gammon Rivals account — email support@gammonrivals.com from the address associated with your account."
-  canonical="https://gammonrivals.com/delete-account"
+  title={`Delete Your Account — ${site.name}`}
+  description={`How to request deletion of your ${site.name} account — email ${site.privacyEmail} from the address associated with your account.`}
+  canonical={`${site.url}/delete-account`}
 >
   <h1>Delete Your Account</h1>
   <p class="doc-meta">
-    Data controller: Yanivos Ltd &middot; Tel Aviv, Israel &middot; <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+    Data controller: {site.legalName} &middot; {site.mailingAddress} &middot;
+    <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a>
   </p>
   <p>
     As described in our <a href="/privacy">Privacy Policy</a> (Section 10), you can
@@ -24,7 +26,7 @@ import '../styles/doc.css'
 
   <h2>How to request deletion</h2>
   <p>
-    To request deletion, email <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> from
+    To request deletion, email <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a> from
     the address associated with your account, with a clear subject line such
     as &ldquo;Account deletion request&rdquo;.
   </p>

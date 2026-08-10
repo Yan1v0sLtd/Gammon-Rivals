@@ -1,27 +1,24 @@
 ---
 import LegalLayout from '../layouts/LegalLayout.astro'
 import ContactUs from '../components/ContactUs.astro'
+import { site } from '../config/site'
 import '../styles/doc.css'
 ---
 
 <LegalLayout
-  title="Privacy Policy — Gammon Rivals"
-  description="Privacy Policy for Gammon Rivals — what we collect, how we use it, and how to delete your account."
-  canonical="https://gammonrivals.com/privacy"
+  title={`Privacy Policy — ${site.name}`}
+  description={`Privacy Policy for ${site.name} — what we collect, how we use it, and how to delete your account.`}
+  canonical={`${site.url}/privacy`}
 >
   <h1>Privacy Policy</h1>
   <p class="doc-meta">
-    Last updated: 4 August 2026 &middot; Data controller: Yanivos Ltd &middot;
-    Tel Aviv, Israel &middot; <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+    Effective: {site.legalEffectiveDate} &middot; Data controller: {site.legalName} &middot;
+    {site.mailingAddress} &middot; <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a>
   </p>
-  <div class="doc-note">
-    Gammon Rivals is in final preparation ahead of launch, and this Policy may still
-    change before then. We'll update the date above whenever it does.
-  </div>
 
   <h2>1. About this Policy</h2>
   <p>
-    This Privacy Policy explains what personal data we collect when you use the <em>Gammon Rivals</em> application, website, and related services (the
+    This Privacy Policy explains what personal data we collect when you use the <em>{site.name}</em> application, website, and related services (the
     &ldquo;<strong>App</strong>&rdquo;), how we use and share it, and the rights you have. It should be
     read together with our <a href="/terms">Terms &amp; Conditions</a>.
   </p>
@@ -32,9 +29,9 @@ import '../styles/doc.css'
 
   <h2>2. Who we are</h2>
   <p>
-    We, <strong>Yanivos Ltd</strong>, are the controller responsible for your personal
+    We, <strong>{site.legalName}</strong>, are the controller responsible for your personal
     data in connection with the App. For privacy questions or to exercise your rights,
-    contact us at <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>.
+    contact us at <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a>.
   </p>
 
   <h2>3. The data we collect</h2>
@@ -173,15 +170,15 @@ import '../styles/doc.css'
     correct, and delete, and not to be discriminated against for exercising rights.
   </p>
   <p>
-    To exercise any right, contact <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>.
+    To exercise any right, contact <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a>.
     We will respond within the time required by applicable law and may need to verify
     your identity.
   </p>
   <!-- Deletion is email-only; do not restore the retired in-app flow. -->
   <p>
     <strong>Deleting your account.</strong> You can permanently delete your account and
-    associated data at any time by emailing <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> from
-    the email address associated with your account. See <a href="https://gammonrivals.com/delete-account">gammonrivals.com/delete-account</a> for
+    associated data at any time by emailing <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a> from
+    the email address associated with your account. See <a href="/delete-account">{site.url.replace('https://', '')}/delete-account</a> for
     what to include in your request.
   </p>
   <p>
@@ -222,7 +219,7 @@ import '../styles/doc.css'
   <p>
     We may update this Policy from time to time. If we make material changes, we will
     provide reasonable notice (e.g., in the App or on our website) and update the
-    &ldquo;Last updated&rdquo; date. Your continued use of the App after the changes take effect
+    effective date above. Your continued use of the App after the changes take effect
     constitutes acceptance, except where consent is required.
   </p>
 

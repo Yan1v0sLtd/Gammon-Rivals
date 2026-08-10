@@ -64,9 +64,10 @@ apps/
 │   ├── App.tsx
 │   └── main.tsx
 └── website/src/                   → Astro marketing/legal site — web-served at the domain root
+    ├── config/site.ts             → Company, contact, legal and marketing strings — never hardcode them in a page
     ├── layouts/                   → SiteLayout + LegalLayout shells
     ├── components/                → Header/footer, feature grid, board strip
-    ├── pages/                     → index, how-to-play, legal, delete-account, 404
+    ├── pages/                     → index, how-to-play, about, support, legal, delete-account, 404
     └── styles/
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests

@@ -1,10 +1,11 @@
 ---
-// Shared by Privacy (Section 15) and Terms (Section 30) so both render
-// byte-identical markup.
+// Shared by Privacy (Section 15), Terms (Section 30), Delete Account, About,
+// and Support so every contact block renders byte-identical markup.
+import { site } from '../config/site'
 ---
 <p>
-  <strong>Yanivos Ltd</strong><br />
-  Email: <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a><br />
-  Address: Tel Aviv, Israel<br />
-  Website: <a href="https://gammonrivals.com">gammonrivals.com</a>
+  <strong>{site.legalName}</strong><br />
+  Email: <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a><br />
+  Address: {site.mailingAddress}<br />
+  Website: <a href={site.url}>{site.url.replace('https://', '')}</a>
 </p>

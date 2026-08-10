@@ -1,13 +1,13 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
+import { site } from '../config/site'
 ---
 
 <!-- Static hosts serve 404.html for unknown routes; nginx maps the status
      code. -->
 <SiteLayout
-  title="Page Not Found — Gammon Rivals"
-  description="The page you're looking for doesn't exist. Head back to the Gammon Rivals home page."
-  ogDescription="The page you're looking for doesn't exist. Head back to the Gammon Rivals home page."
+  title={`Page Not Found — ${site.name}`}
+  description={`The page you're looking for doesn't exist. Head back to the ${site.name} home page.`}
 >
   <div class="not-found">
     <h1>Page not found</h1>

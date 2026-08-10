@@ -1,5 +1,7 @@
 ---
 // Mark the current page with aria-current so .site-nav highlights it.
+import { site } from '../config/site'
+
 const { pathname } = Astro.url
 
 // build.format="directory" emits trailing-slash URLs (/how-to-play/), so
@@ -8,13 +10,13 @@ const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
 
 const links = [
   { href: '/how-to-play', label: 'How to Play' },
-  { href: '/terms', label: 'Terms' },
-  { href: '/privacy', label: 'Privacy' },
+  { href: '/about', label: 'About' },
+  { href: '/support', label: 'Support' },
 ]
 ---
 
 <header class="site-header">
-  <a class="site-brand" href="/"><img src="/favicon.svg" alt="" aria-hidden="true" />Gammon Rivals</a>
+  <a class="site-brand" href="/"><img src="/favicon.svg" alt="" aria-hidden="true" />{site.tradeName}</a>
   <nav class="site-nav" aria-label="Site">
     {
       links.map(({ href, label }) => (

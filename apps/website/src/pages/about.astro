@@ -1,0 +1,62 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import ContactUs from '../components/ContactUs.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Player-facing story page. Anything said here about currency or fair play
+     must stay true to terms.astro (Sections 6-7). -->
+<LegalLayout
+  title={`About — ${site.name}`}
+  description={`${site.name} is backgammon for your phone, made by ${site.legalName}. Play real opponents or AI, for in-game Coins and Gems.`}
+  canonical={`${site.url}/about`}
+>
+  <h1>About {site.name}</h1>
+  <p class="doc-meta">
+    {site.legalName} &middot; {site.mailingAddress} &middot;
+    <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>
+  </p>
+
+  <h2>Backgammon that fits in a coffee break</h2>
+  <p>
+    {site.name} is the game you already know, cut down to the time you actually
+    have. Roll, race your fifteen checkers home, bear off first. A match takes
+    minutes, and you can pick it up one-handed on the bus.
+  </p>
+
+  <h2>Always someone to play</h2>
+  <p>
+    Matchmaking puts you against a real player when one is free, and against an
+    AI opponent when nobody is. Five difficulty tiers mean the game stays worth
+    playing whether you learned last week or thirty years ago.
+  </p>
+
+  <h2>Dice you can trust</h2>
+  <p>
+    In online matches the dice are rolled on our servers, not on either
+    player's phone, and every move is checked against the rules before it lands
+    on the board. No stacked dice, no illegal moves, no way for an opponent to
+    cheat you.
+  </p>
+
+  <h2>Coins and Gems, nothing more</h2>
+  <p>
+    {site.disclaimer} You play for bragging rights, board themes, and a rank
+    that goes up. Our <a href="/terms">Terms</a> (Section 6) set this out in
+    full.
+  </p>
+
+  <h2>Who makes it</h2>
+  <p>
+    {site.name} is made by <strong>{site.legalName}</strong> in {site.mailingAddress}.
+    We are a small team, so your email reaches the people who build the game.
+  </p>
+
+  <h2>Say hello</h2>
+  <p>
+    New to the game? Start with <a href="/how-to-play">How to Play</a>. Stuck on
+    something? <a href="/support">Support</a> is one email away.
+  </p>
+  <ContactUs />
+</LegalLayout>

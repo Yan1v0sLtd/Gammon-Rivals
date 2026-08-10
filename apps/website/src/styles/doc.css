@@ -30,18 +30,6 @@
   color: var(--site-cream-faint);
 }
 
-.doc-note {
-  margin: 0 0 2rem;
-  padding: 0.85rem 1.1rem;
-  border: 1px solid rgba(246, 215, 112, 0.22);
-  border-left: 3px solid var(--site-gold);
-  border-radius: 0.5rem;
-  background: rgba(246, 215, 112, 0.06);
-  font-size: 0.86rem;
-  font-style: italic;
-  color: var(--site-cream-dim);
-}
-
 .doc-panel h2 {
   margin: 2.2rem 0 0.9rem;
   padding-bottom: 0.5rem;

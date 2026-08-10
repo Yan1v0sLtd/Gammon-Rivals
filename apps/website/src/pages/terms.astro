@@ -1,28 +1,25 @@
 ---
 import LegalLayout from '../layouts/LegalLayout.astro'
 import ContactUs from '../components/ContactUs.astro'
+import { site } from '../config/site'
 import '../styles/doc.css'
 ---
 
 <LegalLayout
-  title="Terms & Conditions — Gammon Rivals"
-  description="Terms and Conditions for Gammon Rivals."
-  canonical="https://gammonrivals.com/terms"
+  title={`Terms & Conditions — ${site.name}`}
+  description={`Terms and Conditions for ${site.name}.`}
+  canonical={`${site.url}/terms`}
 >
   <h1>Terms &amp; Conditions</h1>
   <p class="doc-meta">
-    Last updated: 4 August 2026 &middot; Operator: Yanivos Ltd &middot;
-    Tel Aviv, Israel &middot; <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a>
+    Effective: {site.legalEffectiveDate} &middot; Operator: {site.legalName} &middot;
+    {site.mailingAddress} &middot; <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>
   </p>
-  <div class="doc-note">
-    Gammon Rivals is in final preparation ahead of launch, and these Terms may
-    still change before then. We'll update the date above whenever they do.
-  </div>
 
   <h2>1. Acceptance of these Terms</h2>
   <p>
     These Terms &amp; Conditions (&ldquo;<strong>Terms</strong>&rdquo;) form a binding agreement
-    between you (&ldquo;<strong>you</strong>&rdquo;) and us and govern your access to and use of the <em>Gammon Rivals</em> mobile application, together with our related websites, services,
+    between you (&ldquo;<strong>you</strong>&rdquo;) and us and govern your access to and use of the <em>{site.name}</em> mobile application, together with our related websites, services,
     features, content, Virtual Currency, Virtual Items, and any updates to them
     (collectively, the &ldquo;<strong>App</strong>&rdquo;).
   </p>
@@ -51,7 +48,7 @@ import '../styles/doc.css'
 
   <h2>3. The App</h2>
   <p>
-    <em>Gammon Rivals</em> is a mobile backgammon game in which you can play backgammon matches
+    <em>{site.name}</em> is a mobile backgammon game in which you can play backgammon matches
     against other players or AI Opponents, take part in game features, earn Rewards,
     unlock boards and other Virtual Items, and use Virtual Currency.
   </p>
@@ -91,7 +88,7 @@ import '../styles/doc.css'
 
   <h2>6. No Real-Money Gambling</h2>
   <p>
-    <em>Gammon Rivals</em> is a game of mixed skill and chance played with Virtual Currency and
+    <em>{site.name}</em> is a game of mixed skill and chance played with Virtual Currency and
     Virtual Items for entertainment. <strong>The App does not offer real-money gambling, and
     Virtual Currency, Virtual Items, and Rewards are not a form of betting or wagering
     for money or anything of monetary value.</strong>
@@ -274,7 +271,7 @@ import '../styles/doc.css'
     in our <strong>Privacy Policy</strong>, which forms part of these Terms. Please review it before
     using the App.
   </p>
-  <p><strong>Privacy Policy:</strong> <a href="/privacy">https://gammonrivals.com/privacy</a></p>
+  <p><strong>Privacy Policy:</strong> <a href="/privacy">{site.url}/privacy</a></p>
 
   <h2>18. Intellectual Property</h2>
   <p>
@@ -396,14 +393,14 @@ import '../styles/doc.css'
   <p>
     We may update these Terms from time to time. If we make material changes, we will
     provide reasonable notice through the App, the Store listing, our website, email, or
-    another reasonable method, and will update the &ldquo;Last updated&rdquo; date. Your continued
+    another reasonable method, and will update the effective date above. Your continued
     use of the App after the updated Terms take effect constitutes acceptance. If you do
     not agree to the updated Terms, you must stop using the App.
   </p>
 
   <h2>27. Governing Law</h2>
   <p>
-    These Terms are governed by the laws of <strong>Israel</strong>, without regard to its
+    These Terms are governed by the laws of <strong>{site.jurisdiction}</strong>, without regard to its
     conflict-of-law rules. If you are a consumer, you may have mandatory rights under the
     law of your country of residence that cannot be limited by these Terms, and nothing
     in these Terms affects those rights.
@@ -411,12 +408,12 @@ import '../styles/doc.css'
 
   <h2>28. Dispute Resolution</h2>
   <p>
-    Before bringing any formal claim, you agree to first contact us at <a href="mailto:support@gammonrivals.com">support@gammonrivals.com</a> and attempt in good faith
+    Before bringing any formal claim, you agree to first contact us at <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> and attempt in good faith
     to resolve the dispute informally.
   </p>
   <p>
     If the dispute is not resolved within 30 days, it will be subject to the exclusive
-    jurisdiction of the courts located in <strong>Israel</strong>, except where mandatory consumer
+    jurisdiction of the courts located in <strong>{site.jurisdiction}</strong>, except where mandatory consumer
     law gives you the right to bring proceedings in, or requires application of the law
     of, your country of residence.
   </p>

@@ -1,16 +1,17 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro'
 import { Image } from 'astro:assets'
+import { site } from '../config/site'
 import logo from '../../../../packages/brand-assets/imported/logo.webp'
 ---
 
 <!-- The old game route no longer exists on the web, so SiteHeader/SiteFooter
      own all chrome and the hero stays just the logo + Coming Soon CTA. -->
 <SiteLayout
-  title="Gammon Rivals — Play Backgammon Online"
-  description="Roll dice, race your checkers, win the match. Play backgammon online against real opponents or AI. Free to play."
+  title={`${site.name} — Play Backgammon Online`}
+  description={`${site.description} Free to play.`}
   ogDescription="Roll dice, race your checkers, win the match. Play backgammon online against real opponents or AI."
-  canonical="https://gammonrivals.com/"
+  canonical={`${site.url}/`}
   ogImage="/lobby/backgrounds/classic-green.webp"
 >
   <!-- Stronger hero background than the shared .site-bg; covers it fully.
@@ -22,7 +23,7 @@ import logo from '../../../../packages/brand-assets/imported/logo.webp'
       <Image
         class="logo"
         src={logo}
-        alt="Gammon Rivals — Roll. Strategize. Win."
+        alt={`${site.name} — Roll. Strategize. Win.`}
         width={logo.width}
         height={logo.height}
       />

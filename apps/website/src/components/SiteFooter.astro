@@ -1,5 +1,7 @@
 ---
 // Exclude the current page from the cross-links.
+import { site } from '../config/site'
+
 const { pathname } = Astro.url
 
 // build.format="directory" emits trailing-slash URLs (/how-to-play/), so
@@ -8,37 +10,53 @@ const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
 
 const links = [
   { href: '/', label: 'Home' },
-  { href: '/how-to-play', label: 'How to Play' },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
+  { href: '/delete-account', label: 'Delete Account' },
 ]
 
 const visibleLinks = links.filter(({ href }) => current !== href)
 ---
 
 <footer class="site-footer">
-  <span>© 2026 Gammon Rivals</span>
-  {
-    visibleLinks.map(({ href, label }) => (
-      <Fragment>
-        <span class="dot">·</span>
-        <a href={href}>{label}</a>
-      </Fragment>
-    ))
-  }
+  <div class="footer-links">
+    <span>© 2026 {site.tradeName}</span>
+    {
+      visibleLinks.map(({ href, label }) => (
+        <Fragment>
+          <span class="dot">·</span>
+          <a href={href}>{label}</a>
+        </Fragment>
+      ))
+    }
+  </div>
+  <p class="footer-note">{site.legalName} &middot; {site.mailingAddress}. {site.disclaimer}</p>
 </footer>
 
 <style>
   .site-footer {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 0.5rem 1.6rem;
+    gap: 0.7rem;
     padding: 1.6rem clamp(1rem, 3vw, 2.5rem) 2rem;
     font-size: 0.78rem;
     color: var(--site-cream-faint);
     text-align: center;
+  }
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem 1.6rem;
+  }
+  .footer-note {
+    margin: 0;
+    max-width: 46rem;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    opacity: 0.85;
   }
   .site-footer a { color: inherit; text-decoration: none; }
   .site-footer a:hover { color: var(--site-gold); }

@@ -2,12 +2,14 @@
 import '../styles/global.css'
 import SiteHeader from '../components/SiteHeader.astro'
 import SiteFooter from '../components/SiteFooter.astro'
+import { site } from '../config/site'
 
 interface Props {
   /** Document <title>, also feeds the Open Graph/Twitter title. */
   title: string
-  /** Meta description, also feeds the Open Graph/Twitter description. */
-  description: string
+  /** Meta description, also feeds the Open Graph/Twitter description.
+      Defaults to the site-wide pitch in config/site.ts. */
+  description?: string
   /** Open Graph/Twitter description; defaults to the meta description. Pages
       may want a distinct share blurb. */
   ogDescription?: string
@@ -25,7 +27,7 @@ interface Props {
 
 const {
   title,
-  description,
+  description = site.description,
   ogDescription = description,
   canonical,
   ogImage = '/lobby/backgrounds/classic-green.webp',
@@ -34,10 +36,11 @@ const {
   lang = 'en',
 } = Astro.props
 
-// Astro.site comes from the `site` option in astro.config.mjs.
-const site = Astro.site
-const canonicalUrl = canonical ? new URL(canonical, site).href : new URL(Astro.url.pathname, site).href
-const ogImageUrl = new URL(ogImage, site).href
+// Astro.site comes from the `site` option in astro.config.mjs; it must match
+// site.url in config/site.ts.
+const origin = Astro.site
+const canonicalUrl = canonical ? new URL(canonical, origin).href : new URL(Astro.url.pathname, origin).href
+const ogImageUrl = new URL(ogImage, origin).href
 ---
 
 <!doctype html>
