@@ -1,7 +1,7 @@
 import {memo, useCallback, useMemo} from "react"
 
 import {BoardCanvas} from "../../../../../packages/board-renderer/src/BoardCanvas"
-import type {AlignmentDebugSelection} from "../../../../../packages/board-renderer/src/pixi/BoardRenderer"
+import type {AlignmentDebugSelection} from "../../../../../packages/board-renderer/src/pixi/types"
 import type {Theme, ThemeLayout} from "../../../../../packages/board-renderer/src/theme/types"
 import type {Position} from "../../../../../packages/engine/src/types"
 import {DiceTray} from "../../components/DiceTray"

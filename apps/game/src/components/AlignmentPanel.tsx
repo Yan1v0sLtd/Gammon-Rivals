@@ -1,6 +1,6 @@
 import {useEffect, useMemo, useRef, useState} from "react"
 
-import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/BoardRenderer"
+import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/types"
 import type {ThemeLayout} from "../../../../packages/board-renderer/src/theme/types"
 
 import styles from "./AlignmentPanel.module.css"

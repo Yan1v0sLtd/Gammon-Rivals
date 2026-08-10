@@ -4,7 +4,8 @@ import {Application} from "pixi.js"
 
 import type {BoardState, Position} from "../../engine/src/types"
 
-import {BoardRenderer, type RenderSelection} from "./pixi/BoardRenderer"
+import {BoardRenderer} from "./pixi/BoardRenderer"
+import type {RenderSelection} from "./pixi/types"
 import {defaultTheme} from "./theme/default"
 import {loadTheme} from "./theme/loader"
 import type {Theme, ThemeLayout} from "./theme/types"

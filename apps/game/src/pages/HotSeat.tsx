@@ -3,7 +3,7 @@ import {useCallback, useEffect, useId, useLayoutEffect, useMemo, useState} from 
 import {useNavigate, useSearchParams} from "react-router-dom"
 
 import {AI_LEVELS, type AILevel} from "../../../../packages/ai/src/types"
-import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/BoardRenderer"
+import type {AlignmentDebugSelection} from "../../../../packages/board-renderer/src/pixi/types"
 import {premiumTheme} from "../../../../packages/board-renderer/src/theme/premium"
 import type {ThemeLayout} from "../../../../packages/board-renderer/src/theme/types"
 import {ActionButtons} from "../components/ActionButtons"
