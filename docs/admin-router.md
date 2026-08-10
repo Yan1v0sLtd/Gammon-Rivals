@@ -8,10 +8,10 @@ Status: Phase 1 routing is implemented. Phase 2 (optional lazy loading and user
 deep links) is still pending. The Redux follow-up is implemented: the independent
 admin store and `adminBaseApi` live in `apps/admin/src/store/`, and Currencies,
 Lobby Features, Economy Grants, Daily Bonus, Hourly Wheel, Level System,
-Difficulties, Board Themes, RTP Analytics, Admin Access, and all seven Daily
-Missions UI domains (Templates, Mission Types, Chests, Reroll, Streak Chest,
-Refresh Tool, Simulator) are migrated end to end via RTK Query. Still pending:
-Dashboard, Users, and Shop — with Users and Shop intentionally last.
+Difficulties, Board Themes, Dashboard, RTP Analytics, Admin Access, and all
+seven Daily Missions UI domains (Templates, Mission Types, Chests, Reroll,
+Streak Chest, Refresh Tool, Simulator) are migrated end to end via RTK Query.
+Still pending: Users and Shop — intentionally last.
 
 ## Pre-migration baseline — `activeSection` state
 
@@ -176,18 +176,17 @@ Status: implemented. `apps/admin/src/store/` has its own `store.ts`
 Feature endpoints inject into `adminBaseApi` from `features/<X>/<x>Api.ts`.
 Migrated end to end (each feature owns `<X>Admin.tsx`, `<x>Api.ts`,
 `<x>Data.ts`): Currencies, Lobby Features, Economy Grants, Daily Bonus, Hourly
-Wheel, Level System, Difficulties, Board Themes, RTP Analytics, Admin Access,
-and all seven Daily Missions UI domains — Templates, Mission Types, Chests,
-Reroll, Streak Chest, Refresh Tool, and Simulator. Still pending: Dashboard,
-Users, and Shop — with Users and Shop staying last, per the order below.
+Wheel, Level System, Difficulties, Board Themes, Dashboard, RTP Analytics,
+Admin Access, and all seven Daily Missions UI domains — Templates, Mission
+Types, Chests, Reroll, Streak Chest, Refresh Tool, and Simulator. Still
+pending: Users and Shop — staying last, per the order below.
 
 Structural note: the `admin_audit_log` read is owned by the Admin Access feature
-endpoint (`getAuditLog` in `AdminAccessApi.ts`). It is shared with the
-still-unmigrated Dashboard through a gated parent-level subscription in
-`Admin.tsx` on the same cache key — RTK Query dedupes, so this is not a second
-server call. When Dashboard is migrated, revisit this ownership: the Dashboard
-should own its read (or share a neutral home) rather than reaching through the
-Admin Access cache.
+endpoint (`getAuditLog` in `AdminAccessApi.ts`). It is shared with the Dashboard
+section, which subscribes to the same cache key from its own component — RTK
+Query dedupes, so this is not a second server call. Keeping the endpoint in
+Admin Access is intentional: both sections render the same feed and both own
+write paths that invalidate the tag.
 
 RTP Analytics keeps only its selected range and expanded tier in `Admin.tsx`.
 These are route UI state, not server data. Keeping them in the mounted shell
@@ -195,19 +194,32 @@ preserves the existing values when an operator leaves and returns to the route;
 the feature owns both RPC reads through RTK Query.
 
 Difficulties keeps no state in `Admin.tsx`. The tier table read is owned by
-`DifficultiesApi.ts`; a parent-level subscription on the same cache key (the
-`levelConfigs` precedent) feeds the Dashboard's "Game config" count, so the
-count stays live after saves without a second server call.
+`DifficultiesApi.ts` and shared with the Dashboard section, which subscribes to
+the same cache key from its own component (RTK Query dedupes, so this is not a
+second server call) to derive the "Game config" count — the count stays live
+after saves without a second server call.
 
 Board Themes keeps no state in `Admin.tsx` either. The route owns three data
 domains — `board_theme_configs`, `podium_images`, `loading_screen_images` —
 each with its own tag (`BoardThemes`, `BoardThemesPodiums`,
 `BoardThemesLoadingScreens`) so a write refetches only the domain it changed,
 mirroring the old per-domain `loadX(successMessage)` refreshes. The board
-grid read is also subscribed at the parent level (the `tables` precedent) to
-keep the Dashboard's "Game config" count live. All drafts (board/podium/
-loading-screen), the editor modal state, and the success banner are local
-feature state; per-action busy flags replace the old shared `savingKey`.
+grid read is shared with the Dashboard section the same way as the tier read
+(see Difficulties above). All drafts (board/podium/loading-screen), the editor
+modal state, and the success banner are local feature state; per-action busy
+flags replace the old shared `savingKey`.
+
+Dashboard keeps no state in `Admin.tsx` and no longer reads through `stats`
+state at all: `AdminStats`, `dashboardCards`, and the four head-count legs of
+`loadAdminData`'s Promise.all are gone. `DashboardData.ts` owns a single
+summary query (`getDashboardStats`) that preserves the legacy counts exactly,
+including the "Users" card's quirk of counting only the latest 120 profiles.
+The section subscribes to the shared caches it needs (audit via Admin Access,
+tables/boards/levelConfigs for the "Game config" count) with RTK Query dedupe,
+and `refetchOnMountOrArgChange` preserves the old "fresh counts when the
+section opens" behavior. The parent-level subscriptions `Admin.tsx` had added
+for Dashboard's sake (audit, levelConfigs, tables, boards) are removed; only
+`currencies` remains (shared rate map).
 
 Measured cost:
 
@@ -219,10 +231,11 @@ Measured cost:
   migrations do not require it and none introduced it — there is no
   `listenerMiddleware.ts` under `apps/admin/src/store/`. Admin has no timers or
   Realtime except `useOnlineUsersWatcher`, which stays a hook.
-- About 22 queries and 19 mutations. At the pre-migration baseline the Supabase
+- About 27 queries and 39 mutations. At the pre-migration baseline the Supabase
   calls existed inline (35 call sites in `Admin.tsx`); they moved to
   `features/<X>/<x>Data.ts` and got wrapped in `<x>Api.ts`.
-- `Admin.tsx` drops from 2363 lines to about 250.
+- `Admin.tsx` is down from 2363 lines to about 1109, with Users and Shop still
+  pending; the roughly-250-line target applies once they are migrated.
 - Feature components grow 20-60 lines each as they call their own hooks.
 - Total churn is about 2500 lines across about 30 files.
 

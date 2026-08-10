@@ -14,21 +14,17 @@ import {PrimaryButton} from "./components/PrimaryButton"
 import {SecondaryButton} from "./components/SecondaryButton"
 import {useConfirm} from "./components/useConfirm"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
-import {useGetAuditLogQuery} from "./features/AdminAccess/AdminAccessApi"
 import type {AdminRole} from "./features/AdminAccess/AdminAccessData"
 import {BoardThemesAdmin} from "./features/BoardThemes/BoardThemesAdmin.tsx"
-import {useGetBoardsQuery} from "./features/BoardThemes/BoardThemesApi"
 import {CurrenciesAdmin} from "./features/Currencies/CurrenciesAdmin.tsx"
 import {useGetCurrenciesQuery} from "./features/Currencies/CurrenciesApi"
 import {DailyBonusAdmin} from "./features/DailyBonus/DailyBonusAdmin.tsx"
 import {MissionsAdmin} from "./features/DailyMissions/MissionsAdmin.tsx"
 import {DashboardAdmin} from "./features/Dashboard/DashboardAdmin.tsx"
 import {DifficultiesAdmin} from "./features/Difficulties/DifficultiesAdmin.tsx"
-import {useGetTablesQuery} from "./features/Difficulties/DifficultiesApi"
 import {EconomyGrantsAdmin} from "./features/EconomyGrants/EconomyGrantsAdmin.tsx"
 import {HourlyWheelAdmin} from "./features/HourlyWheel/HourlyWheelAdmin.tsx"
 import {LevelSystemAdmin} from "./features/LevelSystem/LevelSystemAdmin.tsx"
-import {useGetLevelConfigsQuery} from "./features/LevelSystem/LevelSystemApi"
 import {LobbyFeaturesAdmin} from "./features/LobbyFeatures/LobbyFeaturesAdmin.tsx"
 import {RTPAnalyticsAdmin} from "./features/RTPAnalytics/RTPAnalyticsAdmin.tsx"
 import type {RtpRangeId} from "./features/RTPAnalytics/RTPAnalyticsData"
@@ -38,7 +34,6 @@ import {accountType} from "./lib/accountType"
 import {adminSections, type Section} from "./lib/adminSections"
 import {adminSupabase as supabase, isAdminSupabaseConfigured as isSupabaseConfigured} from "./lib/adminSupabase"
 import {emptyToNull} from "./lib/emptyToNull"
-import {formatNumber} from "./lib/formatNumber"
 import {isDeletedProfile} from "./lib/isDeletedProfile"
 import {isMissingAnyColumnError} from "./lib/isMissingAnyColumnError"
 import {isMissingMigrationError} from "./lib/isMissingMigrationError"
@@ -69,15 +64,6 @@ type ShopItem = Database["public"]["Tables"]["shop_items"]["Row"]
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
-type AdminStats = {
-  users: number,
-  matches: number,
-  activeMatches: number,
-  configItems: number,
-  shopItems: number,
-  suspendedUsers: number,
-}
-
 type AdminUser = {
   wallet?: UserWallet,
 } & ProfileRow
@@ -91,15 +77,6 @@ type UserDetail = {
 }
 
 const roleOptions: readonly AdminRole[] = ["owner", "admin", "support", "viewer"]
-
-const initialStats: AdminStats = {
-  users: 0,
-  matches: 0,
-  activeMatches: 0,
-  configItems: 0,
-  shopItems: 0,
-  suspendedUsers: 0,
-}
 
 /**
  * RTK Query tags for the admin features migrated off legacy loadAdminData().
@@ -123,6 +100,7 @@ const migratedFeatureTags: Parameters<typeof adminBaseApi.util.invalidateTags>[0
   "BoardThemes",
   "BoardThemesPodiums",
   "BoardThemesLoadingScreens",
+  "Dashboard",
   "AdminAccess",
 ]
 
@@ -143,7 +121,6 @@ export function Admin() {
   const activeSection: Section = useMemo(
     () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
     [location.pathname])
-  const [stats, setStats] = useState<AdminStats>(initialStats)
   const [users, setUsers] = useState<AdminUser[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [checkedUserIds, setCheckedUserIds] = useState<Set<string>>(() => new Set())
@@ -213,38 +190,6 @@ export function Admin() {
     data: currencies = [],
     error: currenciesError,
   } = useGetCurrenciesQuery(undefined, {skip: accessState !== "allowed"})
-  // Level configs are owned by the Level System feature's RTK Query
-  // cache. We read the same shared cache entry here (RTK Query dedupes
-  // by cache key, so this is not a second server call) purely to derive
-  // the level count for the cross-feature "Game config" dashboard stat.
-  const {
-    data: levelConfigs = [],
-    error: levelConfigsError,
-  } = useGetLevelConfigsQuery(undefined, {skip: accessState !== "allowed"})
-  // Audit log is owned by the Admin Access feature's RTK Query cache. We
-  // read the same shared cache entry here (RTK Query dedupes by cache key,
-  // so this is not a second server call) to feed the Dashboard's recent
-  // changes feed, mirroring the level-config dashboard-count precedent.
-  const {
-    data: audit = [],
-    error: auditError,
-  } = useGetAuditLogQuery(undefined, {skip: accessState !== "allowed"})
-  // Table configs are owned by the Difficulties feature's RTK Query
-  // cache. We read the same shared cache entry here (RTK Query dedupes
-  // by cache key, so this is not a second server call) purely to derive
-  // the tier count for the cross-feature "Game config" dashboard stat.
-  const {
-    data: tables = [],
-    error: tablesError,
-  } = useGetTablesQuery(undefined, {skip: accessState !== "allowed"})
-  // Board configs are owned by the Board Themes feature's RTK Query
-  // cache. We read the same shared cache entry here (RTK Query dedupes
-  // by cache key, so this is not a second server call) purely to derive
-  // the theme count for the cross-feature "Game config" dashboard stat.
-  const {
-    data: boards = [],
-    error: boardsError,
-  } = useGetBoardsQuery(undefined, {skip: accessState !== "allowed"})
   // Currency rate map for $ value columns across the reward configs.
   // Disabled currencies are excluded so the operator can hide a code
   // from $ math without dropping its row (XP isn't priced at all — it's
@@ -264,17 +209,15 @@ export function Admin() {
     setDataError(String(err))
   }, [])
 
-  // These five parent-level subscriptions replaced reads that used to be
-  // covered by loadAdminData's Promise.all → firstError. Surface their
-  // failures through the page-level banner: otherwise a failed query falls
-  // back to its `= []` default and renders as genuinely-empty data in the
-  // Dashboard section, which owns no error UI of its own. The feature
-  // panels report the same cache entry (same message → same single banner),
-  // so nothing is doubled or flickered.
+  // The currencies read is the last parent-level subscription left here
+  // (it feeds the shared rate map). Its failure surfaces through the
+  // page-level banner: otherwise a failed query falls back to its `= []`
+  // default and renders as genuinely-empty data in the reward-config
+  // panels. Every other migrated feature reports its own query errors
+  // through its onError prop.
   useEffect(() => {
-    const firstError = currenciesError ?? levelConfigsError ?? auditError ?? tablesError ?? boardsError
-    if (firstError) setError(firstError)
-  }, [currenciesError, levelConfigsError, auditError, tablesError, boardsError, setError])
+    if (currenciesError) setError(currenciesError)
+  }, [currenciesError, setError])
 
   // want to blank the page back to a "Checking access" placeholder on
   // every transient re-run of this effect — token refreshes, tab
@@ -410,28 +353,13 @@ export function Admin() {
     setDataError(null)
 
     try {
-      const [userCount, suspendedCount, matchCount, activeMatchCount, profilesResult, shopResult] = await Promise.all([supabase.from("profiles").select("id", {
-        count: "exact",
-        head: true,
-      }), supabase
-        .from("profiles")
-        .select("id", {
-          count: "exact",
-          head: true,
-        })
-        .eq("is_suspended", true), supabase.from("matches").select("id", {
-        count: "exact",
-        head: true,
-      }), supabase.from("matches").select("id", {
-        count: "exact",
-        head: true,
-      }).is("finished_at", null), supabase
+      const [profilesResult, shopResult] = await Promise.all([supabase
         .from("profiles")
         .select("*")
         .order("created_at", {ascending: false})
         .limit(120), supabase.from("shop_items").select("*").order("sort_order", {ascending: true})])
 
-      const firstError = userCount.error ?? suspendedCount.error ?? matchCount.error ?? activeMatchCount.error ?? profilesResult.error ?? shopResult.error
+      const firstError = profilesResult.error ?? shopResult.error
       if (firstError) throw firstError
 
       const profileRows = (profilesResult.data ?? []).filter((row) => !isDeletedProfile(row))
@@ -484,14 +412,6 @@ export function Admin() {
           bg_image_url: storeConfigResult.data.bg_image_url ?? "",
         })
       }
-      setStats({
-        users: profileRows.length ?? userCount.count ?? 0,
-        matches: matchCount.count ?? 0,
-        activeMatches: activeMatchCount.count ?? 0,
-        configItems: tables.length + boards.length + levelConfigs.length,
-        shopItems: shopResult.data?.length ?? 0,
-        suspendedUsers: suspendedCount.count ?? 0,
-      })
 
       const nextSelected = selectedUserId ?? adminUsers[0]?.id ?? null
       if (nextSelected && adminUsers.some((row) => row.id === nextSelected)) {
@@ -535,7 +455,7 @@ export function Admin() {
     finally {
       setRefreshing(false)
     }
-  }, [accessState, levelConfigs.length, loadSelectedUser, selectedUserId, setError, tables.length, boards.length])
+  }, [accessState, loadSelectedUser, selectedUserId, setError])
 
   useEffect(() => {
     queueMicrotask(() => void loadAdminData())
@@ -705,28 +625,6 @@ export function Admin() {
     .map((row) => row.id)
   const checkedUserCount = checkedUserIds.size
   const allFilteredUsersChecked = selectableFilteredUserIds.length > 0 && selectableFilteredUserIds.every((id) => checkedUserIds.has(id))
-
-  const dashboardCards = useMemo(() => [{
-    label: "Users",
-    value: formatNumber(stats.users),
-    caption: `${stats.suspendedUsers} suspended`,
-  }, {
-    label: "Matches",
-    value: formatNumber(stats.matches),
-    caption: "Visible to admins",
-  }, {
-    label: "Active matches",
-    value: formatNumber(stats.activeMatches),
-    caption: "Currently open",
-  }, {
-    label: "Game config",
-    value: formatNumber(stats.configItems),
-    caption: "Levels, rooms, themes",
-  }, {
-    label: "Shop items",
-    value: formatNumber(stats.shopItems),
-    caption: "Products and offers",
-  }], [stats])
 
   async function saveProfile() {
     if (!canManage || !selectedUser) return
@@ -1038,9 +936,7 @@ export function Admin() {
               replace
               to="/dashboard"/>}/>
           <Route
-            element={<DashboardAdmin
-              audit={audit}
-              cards={dashboardCards}/>}
+            element={<DashboardAdmin onError={setError}/>}
             path="dashboard"/>
 
           <Route

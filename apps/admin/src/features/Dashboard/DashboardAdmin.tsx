@@ -1,25 +1,81 @@
-import type {Database} from "../../../../../packages/shared/src/database"
+import {useEffect} from "react"
+
 import {formatDate} from "../../lib/formatDate.ts"
+import {formatNumber} from "../../lib/formatNumber"
+import {useGetAuditLogQuery} from "../AdminAccess/AdminAccessApi"
+import {useGetBoardsQuery} from "../BoardThemes/BoardThemesApi"
+import {useGetTablesQuery} from "../Difficulties/DifficultiesApi"
+import {useGetLevelConfigsQuery} from "../LevelSystem/LevelSystemApi"
 
-type AuditEntry = Database["public"]["Tables"]["admin_audit_log"]["Row"]
-
-type DashboardCard = {
-  label: string,
-  value: string,
-  caption: string,
-}
+import {useGetDashboardStatsQuery} from "./DashboardApi"
 
 type Props = {
-  readonly cards: readonly DashboardCard[],
-  readonly audit: readonly AuditEntry[],
+  readonly onError: (error: unknown) => void,
 }
 
 /**
- * Dashboard BO admin — the landing section. Purely presentational: it
- * renders the headline stat cards and the recent-changes feed from data
- * the parent (Admin) already owns. No data fetching here.
+ * Dashboard BO admin — the landing section. Owns its own data: the
+ * headline counts come from the Dashboard stats query, the "Game
+ * config" count sums the shared Level System / Difficulties / Board
+ * Themes caches (RTK Query dedupes by cache key, so subscribing here
+ * is not a second server call), and the recent-changes feed reads the
+ * Admin Access audit cache the same way. Query failures are reported
+ * up through `onError` for page-level display. No direct Supabase
+ * calls here.
  */
-export function DashboardAdmin({cards, audit}: Props) {
+export function DashboardAdmin({onError}: Props) {
+  // refetchOnMountOrArgChange mirrors the legacy behavior where the
+  // counts were refreshed by loadAdminData before the section opened.
+  const {
+    data: stats,
+    error: statsError,
+  } = useGetDashboardStatsQuery(undefined, {refetchOnMountOrArgChange: true})
+  const {
+    data: audit = [],
+    error: auditError,
+  } = useGetAuditLogQuery()
+  const {
+    data: tables = [],
+    error: tablesError,
+  } = useGetTablesQuery()
+  const {
+    data: boards = [],
+    error: boardsError,
+  } = useGetBoardsQuery()
+  const {
+    data: levelConfigs = [],
+    error: levelConfigsError,
+  } = useGetLevelConfigsQuery()
+
+  // Surface any fetch failure through the page-level error reporter.
+  useEffect(() => {
+    const firstError = statsError ?? auditError ?? tablesError ?? boardsError ?? levelConfigsError
+    if (firstError) onError(firstError)
+  }, [statsError, auditError, tablesError, boardsError, levelConfigsError, onError])
+
+  const configItems = tables.length + boards.length + levelConfigs.length
+  const cards = [{
+    label: "Users",
+    value: formatNumber(stats?.users ?? 0),
+    caption: `${stats?.suspendedUsers ?? 0} suspended`,
+  }, {
+    label: "Matches",
+    value: formatNumber(stats?.matches ?? 0),
+    caption: "Visible to admins",
+  }, {
+    label: "Active matches",
+    value: formatNumber(stats?.activeMatches ?? 0),
+    caption: "Currently open",
+  }, {
+    label: "Game config",
+    value: formatNumber(configItems),
+    caption: "Levels, rooms, themes",
+  }, {
+    label: "Shop items",
+    value: formatNumber(stats?.shopItems ?? 0),
+    caption: "Products and offers",
+  }]
+
   return (<div className="space-y-5">
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {cards.map((card) => (<div
