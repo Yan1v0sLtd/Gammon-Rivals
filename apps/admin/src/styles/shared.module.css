@@ -94,6 +94,21 @@
   opacity: 0.5;
 }
 
+/* Select control chrome (no transition/focus/disabled — those are
+ * input-specific). Width and padding are set by the consumer. */
+.selectChrome {
+  margin-top: 0.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.2);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #fff;
+  outline: none;
+}
+
 /* Small right-aligned mono numeric input (board tuning / felt corners /
  * bear-off trays). Width is set by the consumer (w-16 vs w-full). */
 .monoInput {

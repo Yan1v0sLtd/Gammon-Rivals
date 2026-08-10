@@ -31,6 +31,7 @@ import {writePresField} from "../../lib/writePresField"
 import {writeRewards} from "../../lib/writeRewards"
 import {writeXpBoost} from "../../lib/writeXpBoost"
 
+import styles from "./ShopAdmin.module.css"
 import {
   useDeleteShopItemMutation,
   useGetShopItemsQuery,
@@ -231,20 +232,20 @@ export function ShopAdmin({
     }
   }
 
-  return (<div className="space-y-4">
+  return (<div className={styles.container}>
     {confirmUI}
     {/* Storefront appearance — the shop popup's header title + an
-            optional blurred themed background. Independent of the sale, so
-            an operator can re-theme the shop (e.g. "Shop Sale!" + a themed
-            background for a promo) with or without a running sale. */}
-    <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
-      <h2 className="text-lg font-black text-[#ffd16f]">Storefront appearance</h2>
-      <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
+        optional blurred-themed background. Independent of the sale, so
+        an operator can re-theme the shop (e.g. "Shop Sale!" + a themed
+        background for a promo) with or without a running sale. */}
+    <div className={styles.promoCard}>
+      <h2 className={styles.promoTitle}>Storefront appearance</h2>
+      <p className={styles.promoDesc}>
         Sets the shop popup’s title and an optional blurred background image. Use them to theme a promo — e.g.
         title “Shop Sale!” with an “American” background for a 4th-of-July sale. Leave the background empty
         for the default look.
       </p>
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
+      <div className={styles.grid2}>
         <Field
           label="Shop title"
           value={storeConfigDraft.title}
@@ -267,7 +268,7 @@ export function ShopAdmin({
             }))
           }}/>
       </div>
-      <div className="mt-3 flex items-center gap-4">
+      <div className={styles.actionRow}>
         <PrimaryButton
           disabled={!canManage || pendingKey === "store-config"}
           onClick={saveStoreConfig}>Save appearance</PrimaryButton>
@@ -276,14 +277,14 @@ export function ShopAdmin({
     {/* Store Sale — one global bonus added to every pack's coin/gem
             grants. Players see a "+X% EXTRA" badge + the boosted amount;
             the boost is applied server-side at purchase. */}
-    <div className="rounded-xl border border-[#ffc93d]/30 bg-[#ffc93d]/[0.06] p-4">
-      <h2 className="text-lg font-black text-[#ffd16f]">Store Sale</h2>
-      <p className="mt-1 max-w-2xl text-xs leading-relaxed text-white/50">
+    <div className={styles.promoCard}>
+      <h2 className={styles.promoTitle}>Store Sale</h2>
+      <p className={styles.promoDesc}>
         Adds extra coins &amp; gems to every pack. Players see a “+{saleDraft.bonus_percent || "0"}% EXTRA”
         badge and the boosted amount; the boost is enforced server-side at purchase. Leave the dates blank for
         a manual on/off sale.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className={styles.grid2Fixed}>
         <Field
           label="Label"
           value={saleDraft.label}
@@ -323,7 +324,7 @@ export function ShopAdmin({
             }))
           }}/>
       </div>
-      <div className="mt-3 flex flex-wrap items-center gap-4">
+      <div className={styles.actionRowWrap}>
         <Toggle
           checked={saleDraft.is_active}
           label="Sale active"
@@ -338,16 +339,16 @@ export function ShopAdmin({
           onClick={saveStoreSale}>Save sale</PrimaryButton>
       </div>
     </div>
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_32rem]">
+    <div className={styles.mainGrid}>
       <ConfigTable
         rows={shopItems.map((row) => [row.display_name, row.kind, moneyFromCents(row.price_cents), row.is_enabled ? "Enabled" : "Disabled"])}
         title="Shop items"
         onRowClick={(index) => {
           setShopDraft(() => shopToDraft(shopItems[index]))
         }}/>
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <h2 className="text-lg font-black">Edit shop item</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className={styles.editCard}>
+        <h2 className={styles.editTitle}>Edit shop item</h2>
+        <div className={styles.grid2Fixed}>
           <Field
             label="Product id"
             value={shopDraft.id}
@@ -357,10 +358,10 @@ export function ShopAdmin({
                 id,
               }))
             }}/>
-          <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+          <label className={styles.fieldLabel}>
             Kind
             <select
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+              className={styles.select}
               value={shopDraft.kind}
               onChange={(event) => {
                 setShopDraft((d) => ({
@@ -428,7 +429,7 @@ export function ShopAdmin({
               }))
             }}/>
         </div>
-        <div className="mt-3 space-y-3">
+        <div className={styles.stack3}>
           <Field
             label="Description"
             value={shopDraft.description}
@@ -471,11 +472,11 @@ export function ShopAdmin({
           {/* Structured grants & presentation (Phase B). These edit
                 specific paths in the contents JSON below — which stays the
                 source of truth — so any other keys are preserved. */}
-          <div className="space-y-3 rounded-lg border border-[#ffc93d]/25 bg-[#ffc93d]/[0.05] p-3">
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Grants — what the
+          <div className={styles.grantsBox}>
+            <div className={styles.grantsHeading}>Grants — what the
               buyer receives
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className={styles.grid2Fixed}>
               <Field
                 label="Coins"
                 value={readGrant(shopDraft.contents, "coins")}
@@ -523,12 +524,12 @@ export function ShopAdmin({
                 }}/>
             </div>
 
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Presentation</div>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+            <div className={styles.grantsHeading}>Presentation</div>
+            <div className={styles.grid2Fixed}>
+              <label className={styles.fieldLabel}>
                 Placement
                 <select
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                  className={styles.select}
                   value={readPres(shopDraft.contents).placement === "featured" ? "featured" : "grid"}
                   onChange={(e) => {
                     setShopDraft((d) => ({
@@ -540,10 +541,10 @@ export function ShopAdmin({
                   <option value="featured">Featured</option>
                 </select>
               </label>
-              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+              <label className={styles.fieldLabel}>
                 Ribbon
                 <select
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                  className={styles.select}
                   value={(readPres(shopDraft.contents).ribbon as string) || "none"}
                   onChange={(e) => {
                     setShopDraft((d) => ({
@@ -561,10 +562,10 @@ export function ShopAdmin({
             {/* Card header (title bar) — applies to every card (bundle +
                   packs). Empty text hides the bar entirely; the colours
                   override the default gold plate + cream text. */}
-            <div className="text-xs font-black uppercase tracking-[0.14em] text-[#ffd16f]">Card header (title
+            <div className={styles.grantsHeading}>Card header (title
               bar)
             </div>
-            <div className="space-y-2 rounded-md border border-white/10 bg-black/10 p-2">
+            <div className={styles.headerBox}>
               <Field
                 label="Header text (leave empty for no header bar)"
                 value={readHeader(shopDraft.contents, "text")}
@@ -574,11 +575,11 @@ export function ShopAdmin({
                     contents: writeHeader(d.contents, "text", v),
                   }))
                 }}/>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+              <div className={styles.colorRow}>
+                <label className={styles.colorLabel}>
                   Background
                   <input
-                    className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20"
+                    className={styles.colorInput}
                     type="color"
                     value={readHeader(shopDraft.contents, "bg") || "#d9a531"}
                     onChange={(e) => {
@@ -596,10 +597,10 @@ export function ShopAdmin({
                     }))
                   }}>Default
                   gold</SecondaryButton>
-                <label className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/40">
+                <label className={styles.colorLabel}>
                   Text color
                   <input
-                    className="mt-1 block h-9 w-14 cursor-pointer rounded border border-white/10 bg-black/20"
+                    className={styles.colorInput}
                     type="color"
                     value={readHeader(shopDraft.contents, "fg") || "#fff7dc"}
                     onChange={(e) => {
@@ -618,11 +619,11 @@ export function ShopAdmin({
               </div>
             </div>
 
-            {shopDraft.kind === "bundle" ? (<div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+            {shopDraft.kind === "bundle" ? (<div className={styles.stack2}>
+              <label className={styles.fieldLabel}>
                 Headline currency (hero icon)
                 <select
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                  className={styles.select}
                   value={readPres(shopDraft.contents).headlineKind === "gems" ? "gems" : "coins"}
                   onChange={(e) => {
                     setShopDraft((d) => ({
@@ -634,16 +635,16 @@ export function ShopAdmin({
                   <option value="gems">Gems</option>
                 </select>
               </label>
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/40">Reward chips
+              <div className={styles.rewardChipsLabel}>Reward chips
               </div>
               {readRewards(shopDraft.contents).map((rw, i) => (<div
                 key={`reward-${rw.kind}-${rw.label}`}
-                className="flex items-end gap-2">
+                className={styles.rewardRow}>
                 <label
-                  className="block text-[0.6rem] font-bold uppercase tracking-[0.14em] text-white/30">
+                  className={styles.rewardLabel}>
                   Icon
                   <select
-                    className="mt-1 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm normal-case tracking-normal text-white outline-none"
+                    className={styles.selectSmall}
                     value={rw.kind}
                     onChange={(e) => {
                       setShopDraft((d) => {
@@ -664,7 +665,7 @@ export function ShopAdmin({
                     <option value="chest">chest</option>
                   </select>
                 </label>
-                <div className="flex-1"><Field
+                <div className={styles.flex1}><Field
                   label="Label"
                   value={rw.label}
                   onChange={(v) => {
@@ -696,11 +697,11 @@ export function ShopAdmin({
                   }]),
                 }))
               }}>+ Add reward</SecondaryButton>
-            </div>) : (<div className="grid grid-cols-2 gap-3">
-              <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+            </div>) : (<div className={styles.grid2Fixed}>
+              <label className={styles.fieldLabel}>
                 Headline icon
                 <select
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none"
+                  className={styles.select}
                   value={readHeadline(shopDraft.contents, "kind") || "coins"}
                   onChange={(e) => {
                     setShopDraft((d) => ({
@@ -752,7 +753,7 @@ export function ShopAdmin({
                 visibility_rules,
               }))
             }}/>
-          <div className="grid grid-cols-2 gap-3">
+          <div className={styles.grid2Fixed}>
             <Field
               label="Starts at"
               type="datetime-local"
@@ -792,7 +793,7 @@ export function ShopAdmin({
                 exclude_from_sale,
               }))
             }}/>
-          <div className="flex flex-wrap gap-2">
+          <div className={styles.buttonRow}>
             <PrimaryButton
               disabled={!canManage || pendingKey === "shop"}
               onClick={saveShop}>Save
