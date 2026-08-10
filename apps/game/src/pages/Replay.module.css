@@ -1,6 +1,6 @@
 /* Replay page — full-screen shell, board frame, and transport controls.
- * Colors are decomposed from the Tailwind board/chip palette (see
- * tailwind.config.js) and the amber accent used by the play button. */
+ * Colors are decomposed from the board/chip palette and the amber accent
+ * used by the play button. */
 
 /* --- Loading / error states --- */
 .errorScreen {

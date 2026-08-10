@@ -1,6 +1,6 @@
 /* PlayOnline page — loading / error / waiting shells and the match-over
- * overlays. Colors are decomposed from the Tailwind board/chip palette
- * (see tailwind.config.js) and the amber accent used by the result cards. */
+ * overlays. Colors are decomposed from the board/chip palette and the
+ * amber accent used by the result cards. */
 
 /* --- Loading / error states --- */
 .loadingScreen {

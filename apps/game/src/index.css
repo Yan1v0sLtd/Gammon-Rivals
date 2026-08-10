@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "../../../packages/shared/src/base.css";
 
 html, body, #root {
   --font-display: 'Segoe UI', Inter, system-ui, sans-serif;
