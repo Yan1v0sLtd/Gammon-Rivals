@@ -1,0 +1,130 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cardGrid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .cardGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.statCard {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035));
+  padding: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.statValue {
+  margin-top: 0.75rem;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 900;
+  color: #fef3c7;
+}
+
+.statCaption {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.mainGrid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1280px) {
+  .mainGrid {
+    grid-template-columns: 1fr 24rem;
+  }
+}
+
+.panel {
+  composes: card from "../../styles/shared.module.css";
+}
+
+.panelTitle {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.readinessGrid {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .readinessGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.readinessBox {
+  border-radius: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.auditList {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.auditEmpty {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auditRow {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.auditAction {
+  font-weight: 700;
+  text-transform: capitalize;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.auditEntity {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auditDate {
+  color: rgba(255, 255, 255, 0.35);
+}
