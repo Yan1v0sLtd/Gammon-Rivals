@@ -176,10 +176,7 @@
 }
 
 .sectionDesc {
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
-  color: rgba(255, 255, 255, 0.55);
+  composes: panelDescription from "../../styles/shared.module.css";
 }
 
 .tableWrap {
@@ -323,10 +320,7 @@
 }
 
 .topGrid {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  composes: fieldGrid from "../../styles/shared.module.css";
 }
 
 .toggleWrap {
@@ -352,10 +346,7 @@
 }
 
 .boxGrid {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  composes: fieldGrid from "../../styles/shared.module.css";
 }
 
 .xpNote {

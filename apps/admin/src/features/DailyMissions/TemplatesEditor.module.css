@@ -1,12 +1,5 @@
 .layout {
-  display: grid;
-  gap: 1rem;
-}
-
-@media (min-width: 1280px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr) 28rem;
-  }
+  composes: editorLayout from "../../styles/shared.module.css";
 }
 
 .loadingCard {

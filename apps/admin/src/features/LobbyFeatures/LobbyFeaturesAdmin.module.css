@@ -1,0 +1,61 @@
+.card {
+  composes: card from "../../styles/shared.module.css";
+  max-width: 42rem;
+}
+
+.title {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.description {
+  composes: panelDescription from "../../styles/shared.module.css";
+}
+
+.list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem;
+}
+
+.rowInfo {
+  min-width: 8rem;
+  flex: 1 1 0%;
+}
+
+.rowName {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 900;
+}
+
+.rowKey {
+  composes: mono from "../../styles/shared.module.css";
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.levelField {
+  width: 7rem;
+}
+
+.tooltipRow {
+  flex-basis: 100%;
+}
+
+.empty {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.4);
+}

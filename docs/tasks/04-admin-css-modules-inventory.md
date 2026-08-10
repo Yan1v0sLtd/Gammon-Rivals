@@ -211,11 +211,11 @@ Grouped by migration phase. Count = `className` occurrences.
 |---|---|
 | `Admin.tsx` | 15 | ✅ done |
 | `features/AdminAccess/AdminAuthGate.tsx` | 13 | ✅ done |
-| `features/Difficulties/DifficultiesAdmin.tsx` | 12 |
-| `features/LobbyFeatures/LobbyFeaturesAdmin.tsx` | 11 |
-| `features/EconomyGrants/EconomyGrantsAdmin.tsx` | 11 |
-| `features/Currencies/CurrenciesAdmin.tsx` | 11 |
-| `features/DailyBonus/DailyBonusAdmin.tsx` | 7 |
+| `features/Difficulties/DifficultiesAdmin.tsx` | 12 | ✅ done |
+| `features/LobbyFeatures/LobbyFeaturesAdmin.tsx` | 11 | ✅ done |
+| `features/EconomyGrants/EconomyGrantsAdmin.tsx` | 11 | ✅ done |
+| `features/Currencies/CurrenciesAdmin.tsx` | 11 | ✅ done |
+| `features/DailyBonus/DailyBonusAdmin.tsx` | 7 | ✅ done |
 | `AdminAuthCallback.tsx` | 5 | ✅ done |
 | `App.tsx` | 2 | ✅ done |
 

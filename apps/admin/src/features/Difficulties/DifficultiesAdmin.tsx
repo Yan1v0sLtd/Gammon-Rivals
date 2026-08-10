@@ -13,6 +13,7 @@ import {requiredNumber} from "../../lib/requiredNumber"
 import {type TableDraft, tableToDraft} from "../../lib/tableToDraft"
 import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
+import styles from "./DifficultiesAdmin.module.css"
 import {useGetTablesQuery, useUpsertTableMutation} from "./DifficultiesApi"
 import type {TableConfigInsert} from "./DifficultiesData"
 
@@ -124,7 +125,7 @@ export function DifficultiesAdmin({
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_30rem]">
+  return (<div className={styles.layout}>
     {/* Difficulty-tier table. These rows surface in the
           * lobby's "Select Room Difficulty" modal (filtered by
           * kind='difficulty' + is_enabled). XP boost % drives
@@ -139,9 +140,9 @@ export function DifficultiesAdmin({
       })}
       title="Difficulty tiers"
       onRowClick={selectDifficulty}/>
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      <h2 className="text-lg font-black">Edit difficulty</h2>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+    <div className={styles.panel}>
+      <h2 className={styles.panelTitle}>Edit difficulty</h2>
+      <div className={styles.fieldGrid}>
         <Field
           label="Tier id"
           value={tableDraft.id}
@@ -215,12 +216,12 @@ export function DifficultiesAdmin({
             updateDraft({sort_order})
           }}/>
       </div>
-      <div className="mt-3 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+      <div className={styles.formStack}>
+        <div className={styles.fieldGrid}>
+          <label className={styles.selectLabel}>
             AI strength
             <select
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+              className={styles.select}
               value={tableDraft.ai_level}
               onChange={(event) => {
                 updateDraft({ai_level: event.target.value as "easy" | "medium" | "hard"})
@@ -230,10 +231,10 @@ export function DifficultiesAdmin({
               <option value="hard">hard</option>
             </select>
           </label>
-          <label className="block text-xs font-bold uppercase tracking-[0.14em] text-white/40">
+          <label className={styles.selectLabel}>
             Accent color
             <select
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white outline-none transition focus:border-amber-200/60"
+              className={styles.select}
               value={tableDraft.accent_color}
               onChange={(event) => {
                 updateDraft({accent_color: event.target.value})
@@ -256,7 +257,7 @@ export function DifficultiesAdmin({
           onChange={(metadata) => {
             updateDraft({metadata})
           }}/>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={styles.toggleGrid}>
           <Toggle
             checked={tableDraft.allow_ai}
             label="AI"
@@ -276,7 +277,7 @@ export function DifficultiesAdmin({
               updateDraft({is_enabled})
             }}/>
         </div>
-        <div className="flex gap-2">
+        <div className={styles.buttonRow}>
           <PrimaryButton
             disabled={!canManage || saving}
             onClick={() => void saveTable()}>Save

@@ -253,10 +253,7 @@
 }
 
 .editorGrid {
-  margin-top: 0.75rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  composes: fieldGrid from "../../styles/shared.module.css";
 }
 
 .editorNote {
@@ -266,13 +263,9 @@
 }
 
 .editorBody {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  composes: formStack from "../../styles/shared.module.css";
 }
 
 .editorActions {
-  display: flex;
-  gap: 0.5rem;
+  composes: buttonRow from "../../styles/shared.module.css";
 }

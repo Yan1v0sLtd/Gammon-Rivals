@@ -5,6 +5,7 @@ import {PrimaryButton} from "../../components/PrimaryButton"
 import {Toggle} from "../../components/Toggle"
 import {requiredNumber} from "../../lib/requiredNumber"
 
+import styles from "./LobbyFeaturesAdmin.module.css"
 import {useGetLobbyFeaturesQuery, useUpdateLobbyFeatureMutation} from "./LobbyFeaturesApi"
 
 export type LobbyFeatureRow = {
@@ -92,9 +93,9 @@ export function LobbyFeaturesAdmin({
     }
   }
 
-  return (<div className="max-w-2xl rounded-xl border border-white/10 bg-white/[0.045] p-4">
-    <h2 className="text-lg font-black">Bottom-nav feature locks</h2>
-    <p className="mt-1 text-xs text-white/55">
+  return (<div className={styles.card}>
+    <h2 className={styles.title}>Bottom-nav feature locks</h2>
+    <p className={styles.description}>
       Gate each bottom-nav feature behind a player level, like boards.
       A player below the level sees a padlock; tapping it pops a
       tooltip. Level 1 = always open (set a high level to keep a
@@ -103,15 +104,15 @@ export function LobbyFeaturesAdmin({
       "Coming soon". The center Hourly Bonus wheel is never gated.
       Disabling a feature hides its action (reserved for future use).
     </p>
-    <div className="mt-4 space-y-3">
-      {rows.length === 0 ? (<p className="text-xs text-white/40">Loading…</p>) : (rows.map((f) => (<div
+    <div className={styles.list}>
+      {rows.length === 0 ? (<p className={styles.empty}>Loading…</p>) : (rows.map((f) => (<div
         key={f.feature_key}
-        className="flex flex-wrap items-end gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3">
-        <div className="min-w-[8rem] flex-1">
-          <div className="text-sm font-black">{f.label}</div>
-          <div className="font-mono text-[10px] text-white/40">{f.feature_key}</div>
+        className={styles.row}>
+        <div className={styles.rowInfo}>
+          <div className={styles.rowName}>{f.label}</div>
+          <div className={styles.rowKey}>{f.feature_key}</div>
         </div>
-        <div className="w-28">
+        <div className={styles.levelField}>
           <Field
             label="Unlock level"
             value={f.level}
@@ -125,7 +126,7 @@ export function LobbyFeaturesAdmin({
           onChange={(enabled) => {
             updateRow(f.feature_key, {enabled})
           }}/>
-        <div className="basis-full">
+        <div className={styles.tooltipRow}>
           <Field
             label="Tooltip text (optional)"
             placeholder={`Reach level ${f.level || "N"} to unlock`}

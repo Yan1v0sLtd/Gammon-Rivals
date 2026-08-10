@@ -1,0 +1,35 @@
+.layout {
+  composes: editorLayout from "../../styles/shared.module.css";
+}
+
+.panel {
+  composes: card from "../../styles/shared.module.css";
+}
+
+.panelTitle {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.description {
+  composes: panelDescription from "../../styles/shared.module.css";
+}
+
+.fieldGrid {
+  composes: fieldGrid from "../../styles/shared.module.css";
+}
+
+.formStack {
+  composes: formStack from "../../styles/shared.module.css";
+}
+
+.hint {
+  composes: hintText from "../../styles/shared.module.css";
+}
+
+.mono {
+  composes: mono from "../../styles/shared.module.css";
+}
+
+.buttonRow {
+  composes: buttonRow from "../../styles/shared.module.css";
+}

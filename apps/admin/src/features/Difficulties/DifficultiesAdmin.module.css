@@ -1,0 +1,50 @@
+.layout {
+  composes: editorLayout from "../../styles/shared.module.css";
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 30rem;
+  }
+}
+
+.panel {
+  composes: card from "../../styles/shared.module.css";
+}
+
+.panelTitle {
+  composes: cardTitle from "../../styles/shared.module.css";
+}
+
+.fieldGrid {
+  composes: fieldGrid from "../../styles/shared.module.css";
+}
+
+.formStack {
+  composes: formStack from "../../styles/shared.module.css";
+}
+
+.selectLabel {
+  composes: fieldLabel from "../../styles/shared.module.css";
+}
+
+.select {
+  composes: selectChrome from "../../styles/shared.module.css";
+  composes: transition from "../../styles/shared.module.css";
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+}
+
+.select:focus {
+  border-color: rgba(253, 230, 138, 0.6);
+}
+
+.toggleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.buttonRow {
+  composes: buttonRow from "../../styles/shared.module.css";
+}

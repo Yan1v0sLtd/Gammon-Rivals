@@ -9,6 +9,7 @@ import {Toggle} from "../../components/Toggle"
 import {type CurrencyDraft, currencyToDraft} from "../../lib/currencyToDraft"
 import {requiredNumber} from "../../lib/requiredNumber"
 
+import styles from "./CurrenciesAdmin.module.css"
 import {useGetCurrenciesQuery, useUpsertCurrencyMutation} from "./CurrenciesApi"
 
 type Props = {
@@ -98,23 +99,23 @@ export function CurrenciesAdmin({
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+  return (<div className={styles.layout}>
     <ConfigTable
       rows={currencies.map((row) => [row.code, row.display_name, `$${(row.usd_value_micros / 1_000_000).toFixed(6)} / unit`, `100 = ${formatUsdMicros(row.usd_value_micros * 100)}`, row.is_enabled ? "Enabled" : "Disabled"])}
       title="Currencies"
       onRowClick={selectCurrency}/>
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      <h2 className="text-lg font-black">Edit currency</h2>
-      <p className="mt-1 text-xs text-white/55">
+    <div className={styles.panel}>
+      <h2 className={styles.panelTitle}>Edit currency</h2>
+      <p className={styles.description}>
         USD value per single unit. The Hourly Wheel, Daily
         Bonus, and Level Rewards sections use
         these rates to show a $ value column. Add a new code
-        (e.g. <code className="font-mono">chips</code>) when
+        (e.g. <code className={styles.mono}>chips</code>) when
         introducing a new currency. Disable instead of
         deleting — existing reward configs reference codes by
         name and would render as $0 if the code disappears.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className={styles.fieldGrid}>
         <Field
           label="Code"
           value={currencyDraft.code}
@@ -140,18 +141,18 @@ export function CurrenciesAdmin({
             fieldChange("sort_order", sort_order)
           }}/>
       </div>
-      <p className="mt-2 text-[10px] normal-case tracking-normal text-white/40">
+      <p className={styles.hint}>
         Examples — 1 gem = $0.01 → type{" "}
-        <code className="font-mono">0.01</code>. 1 coin =
+        <code className={styles.mono}>0.01</code>. 1 coin =
         $0.0001 → type{" "}
-        <code className="font-mono">0.0001</code>.
+        <code className={styles.mono}>0.0001</code>.
       </p>
-      <div className="mt-3 space-y-3">
+      <div className={styles.formStack}>
         <Toggle
           checked={currencyDraft.is_enabled}
           label="Enabled"
           onChange={toggleEnabled}/>
-        <div className="flex gap-2">
+        <div className={styles.buttonRow}>
           <PrimaryButton
             disabled={!canManage || saving}
             onClick={() => {

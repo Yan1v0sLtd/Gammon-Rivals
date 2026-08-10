@@ -57,6 +57,57 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Two-column editor layout: table + sticky edit panel. Column width
+ * defaults to 28rem; consumers override it in their own media query. */
+.editorLayout {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 1280px) {
+  .editorLayout {
+    grid-template-columns: minmax(0, 1fr) 28rem;
+  }
+}
+
+/* Small muted description under a panel title. */
+.panelDescription {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Two-column field grid inside an edit panel. */
+.fieldGrid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+/* Vertical stack of form controls. */
+.formStack {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Row of action buttons. */
+.buttonRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Tiny muted hint / footnote text. */
+.hintText {
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* Standard card container. */
 .card {
   border-radius: 0.75rem;

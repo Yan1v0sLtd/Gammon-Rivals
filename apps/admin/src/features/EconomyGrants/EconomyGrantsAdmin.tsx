@@ -9,6 +9,7 @@ import {formatNumber} from "../../lib/formatNumber"
 import {type EconomyGrantDraft, grantToDraft} from "../../lib/grantToDraft"
 import {requiredNumber} from "../../lib/requiredNumber"
 
+import styles from "./EconomyGrantsAdmin.module.css"
 import {useGetEconomyGrantsQuery, useUpsertEconomyGrantMutation} from "./EconomyGrantsApi"
 
 type Props = {
@@ -101,25 +102,25 @@ export function EconomyGrantsAdmin({
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+  return (<div className={styles.layout}>
     <ConfigTable
       rows={economyGrants.map((row) => [row.trigger_key, row.display_name, `${formatNumber(row.coins)} coins · ${row.gems} gems`, row.one_time ? "One-time" : "Repeatable", row.is_enabled ? "Enabled" : "Disabled"])}
       title="Economy grants"
       onRowClick={selectGrant}/>
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      <h2 className="text-lg font-black">Edit grant</h2>
-      <p className="mt-1 text-xs text-white/55">
+    <div className={styles.panel}>
+      <h2 className={styles.panelTitle}>Edit grant</h2>
+      <p className={styles.description}>
         Coin / gem grants fired by a trigger.{" "}
-        <code className="font-mono">signup</code> is the
+        <code className={styles.mono}>signup</code> is the
         starting balance every new player receives. Add a new
-        key (e.g. <code className="font-mono">refer_friend</code>,{" "}
-        <code className="font-mono">link_google</code>) to define
+        key (e.g. <code className={styles.mono}>refer_friend</code>,{" "}
+        <code className={styles.mono}>link_google</code>) to define
         a future tap — the value is configurable here today;
         firing it is a one-line server call when that feature
         ships. Disable rather than delete. One-time grants are
         credited at most once per player.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className={styles.fieldGrid}>
         <Field
           disabled={!grantDraft.isNew}
           label="Trigger key"
@@ -152,7 +153,7 @@ export function EconomyGrantsAdmin({
             fieldChange("sort_order", sort_order)
           }}/>
       </div>
-      <div className="mt-3 space-y-3">
+      <div className={styles.formStack}>
         <Field
           label="Description"
           value={grantDraft.description}
@@ -167,12 +168,12 @@ export function EconomyGrantsAdmin({
           checked={grantDraft.is_enabled}
           label="Enabled"
           onChange={toggleEnabled}/>
-        {!grantDraft.isNew ? (<p className="text-[10px] normal-case tracking-normal text-white/40">
+        {!grantDraft.isNew ? (<p className={styles.hint}>
           Trigger key is the primary key and can't be changed on
           an existing grant. Click "New" to create one with a
           different key.
         </p>) : null}
-        <div className="flex gap-2">
+        <div className={styles.buttonRow}>
           <PrimaryButton
             disabled={!canManage || saving}
             onClick={() => {

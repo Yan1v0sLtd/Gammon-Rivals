@@ -11,6 +11,7 @@ import {formatNumber} from "../../lib/formatNumber"
 import {parseJson} from "../../lib/parseJson"
 import {requiredNumber} from "../../lib/requiredNumber"
 
+import styles from "./DailyBonusAdmin.module.css"
 import {useGetDailyBonusQuery, useUpsertDailyBonusMutation} from "./DailyBonusApi"
 
 type Props = {
@@ -86,7 +87,7 @@ export function DailyBonusAdmin({
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+  return (<div className={styles.layout}>
     <ConfigTable
       rows={dailyBonusConfigs.map((row) => {
         const rowMicros = usdMicrosFor(rateMap, "coins", row.reward_coins) + usdMicrosFor(rateMap, "gems", row.reward_gems)
@@ -94,14 +95,14 @@ export function DailyBonusAdmin({
       })}
       title="Daily bonus (7 days)"
       onRowClick={selectDay}/>
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      <h2 className="text-lg font-black">Edit daily bonus</h2>
-      <p className="mt-1 text-xs text-white/55">
+    <div className={styles.panel}>
+      <h2 className={styles.panelTitle}>Edit daily bonus</h2>
+      <p className={styles.description}>
         Day 1–7 of the rotating weekly cycle. Streak resets to day 1
         if a player misses a day (ET calendar). After day 7 the cycle
         loops back to day 1.
       </p>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className={styles.fieldGrid}>
         <Field
           label="Day (1–7)"
           value={dailyBonusDraft.day}
@@ -127,14 +128,14 @@ export function DailyBonusAdmin({
             fieldChange("reward_xp", reward_xp)
           }}/>
       </div>
-      <div className="mt-3 space-y-3">
+      <div className={styles.formStack}>
         <TextArea
           label="Reward items JSON array"
           value={dailyBonusDraft.reward_items}
           onChange={(reward_items) => {
             fieldChange("reward_items", reward_items)
           }}/>
-        <div className="flex gap-2">
+        <div className={styles.buttonRow}>
           <PrimaryButton
             disabled={!canManage || saving}
             onClick={() => {
