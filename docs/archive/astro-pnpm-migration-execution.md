@@ -29,7 +29,7 @@ Trade-off accepted: `dist/web` carries the stable asset set.
 
 No behaviour change. Do this first; everything later assumes a working install path.
 
-### A1 — Make the pnpm store resolvable
+## A1 — Make the pnpm store resolvable
 
 - `pnpm-workspace.yaml`: `storeDir: ${PNPM_STORE_DIR:-.pnpm-store}`.
 - `package.json`: add pinned `packageManager` matching the mise pin (pnpm 11.20.0).
@@ -37,14 +37,14 @@ No behaviour change. Do this first; everything later assumes a working install p
 
 Done when: a fresh clone can install without `PNPM_STORE_DIR` being set.
 
-### A2 — Convert root script internals to pnpm
+## A2 — Convert root script internals to pnpm
 
 - `package.json`: `build:all`, `android:sync`, `android:debug`, `android:build`, `android:assets`
   currently chain `npm run` / `npx`. Convert to `pnpm run` / `pnpm exec`.
 
 Done when: no `npm`/`npx` remains in root scripts.
 
-### A3 — Convert CI to pnpm
+## A3 — Convert CI to pnpm
 
 - `.github/workflows/ci.yml`: `pnpm/action-setup`, `cache: pnpm`, frozen-lockfile install,
   `pnpm run build` / `pnpm test` / `pnpm run lint`.
@@ -53,7 +53,7 @@ Done when: no `npm`/`npx` remains in root scripts.
 
 Done when: CI no longer references npm or a package-lock.
 
-### A4 — Convert docs and script headers to pnpm
+## A4 — Convert docs and script headers to pnpm
 
 - `docs/admin-app.md`, `docs/android-app-setup.md`, `docs/billing/native-wiring.md`.
 - Header comments in `scripts/run-economy-sim.mjs`, `scripts/build-shared-engine.mjs`,
@@ -68,7 +68,7 @@ Docs only. No code change.
 
 Moves build outputs into `dist/{admin,play}`. Astro does not exist yet.
 
-### B1 — Game output → `dist/play` (+ Capacitor)
+## B1 — Game output → `dist/play` (+ Capacitor)
 
 - `apps/game/vite.config.ts`: `outDir` → `<root>/dist/play`.
 - `capacitor.config.ts`: `webDir` → `dist/play`.
@@ -77,7 +77,7 @@ These must land together, or `cap sync` bundles the wrong directory.
 
 Done when: `build` emits `dist/play` and Capacitor points at it.
 
-### B2 — Admin output → `dist/admin` and base `/admin/`
+## B2 — Admin output → `dist/admin` and base `/admin/`
 
 - `apps/admin/vite.config.ts`: `outDir` → `<root>/dist/admin`, add `base: "/admin/"`.
 - `apps/admin/src/App.tsx`: `BrowserRouter basename="/admin"`.
@@ -87,7 +87,7 @@ Requires the Supabase allowlist entry from the prerequisites.
 
 Done when: admin builds to `dist/admin` and its routes/callback live under `/admin`.
 
-### B3 — Retire `dist-admin`
+## B3 — Retire `dist-admin`
 
 - `.gitignore`: drop `dist-admin` (the `dist` entry now covers all three outputs).
 - `eslint.config.js`: drop `dist-admin` from ignores.
@@ -96,7 +96,7 @@ Done when: admin builds to `dist/admin` and its routes/callback live under `/adm
 
 # Phase C — brand-assets
 
-### C1 — Create the package skeleton and move native masters
+## C1 — Create the package skeleton and move native masters
 
 - Create `packages/brand-assets/{imported,public,native}/`.
 - Move committed SVG masters from root `assets/` into `packages/brand-assets/native/`
@@ -106,7 +106,7 @@ Done when: admin builds to `dist/admin` and its routes/callback live under `/adm
 
 Asset-only; no TS is added, so `scripts/check-app-boundaries.mjs` needs no change.
 
-### C2 — Move stable assets and repoint `publicDir`
+## C2 — Move stable assets and repoint `publicDir`
 
 - Move `public/{brand,gameplay,lobby,loading,themes}` and `public/favicon.svg` into
   `packages/brand-assets/public/`, preserving the exact directory shape so every URL is unchanged.
@@ -119,7 +119,7 @@ No URL changes, so no database migration and no localStorage invalidation.
 
 Done when: both apps build with identical asset URLs from the new source.
 
-### C3 — (Optional, deferred) Per-consumer asset subsets
+## C3 — (Optional, deferred) Per-consumer asset subsets
 
 Filter which stable assets each output receives, so the marketing site stops shipping gameplay
 chrome and the APK stops shipping website art. Not required for correctness; do it only if APK size
@@ -129,7 +129,7 @@ or deploy size justifies the extra build machinery.
 
 # Phase D — Astro website
 
-### D1 — Scaffold `apps/website`
+## D1 — Scaffold `apps/website`
 
 - `pnpm-workspace.yaml`: add `apps/*` (existing apps have no manifest, so pnpm ignores them).
 - Create `apps/website/` with `package.json`, `tsconfig.json`, `astro.config.mjs`.
@@ -141,7 +141,7 @@ or deploy size justifies the extra build machinery.
 
 Done when: the website builds to `dist/web`.
 
-### D2 — Shared layout and styles
+## D2 — Shared layout and styles
 
 - `src/layouts/SiteLayout.astro`: `<html>`/`<head>`, title, description, canonical, Open Graph and
   Twitter tags, favicon, global stylesheet, background/shell, header, footer.
@@ -151,7 +151,7 @@ Done when: the website builds to `dist/web`.
   currently reference it without defining it and silently fall back to `sans-serif`).
 - Extract the header/nav/footer into components.
 
-### D3 — Landing page
+## D3 — Landing page
 
 - Port `public/landing.html` → `src/pages/index.astro`, using `SiteLayout`.
 - Keep the "Coming Soon" CTA and the covert `/play` wordmark behaviour decision explicit: `/play`
@@ -159,20 +159,20 @@ Done when: the website builds to `dist/web`.
 - Website-exclusive imagery (logo, hero background) goes in `brand-assets/imported/` and is imported
   so Astro can optimize it; shared/DB-driven imagery keeps its stable URL.
 
-### D4 — How-to-play page
+## D4 — How-to-play page
 
 - Port `public/how-to-play.html` → `src/pages/how-to-play.astro`.
 - Extract the feature-card grid and board strip into components.
 - Board previews and lobby icons are shared/DB-seeded: reference by stable URL, do not duplicate
   into `imported/`.
 
-### D5 — Legal pages
+## D5 — Legal pages
 
 - Port `public/privacy.html` → `src/pages/privacy.astro` and `public/terms.html` →
   `src/pages/terms.astro`, both on `LegalLayout`.
 - Content is migrated verbatim; no rewording in this chunk.
 
-### D6 — Static delete-account page
+## D6 — Static delete-account page
 
 - New `src/pages/delete-account.astro` on `LegalLayout`.
 - Content: how to request deletion from `support@gammonrivals.com`, what to include, that support
@@ -180,7 +180,7 @@ Done when: the website builds to `dist/web`.
 - No form, no script, no auth, no API call.
 - Keep wording consistent with the Privacy Policy's deletion section, including its stated timing.
 
-### D7 — SEO, sitemap, robots, service worker
+## D7 — SEO, sitemap, robots, service worker
 
 - Set the production `site` URL in `astro.config.mjs`.
 - Add the sitemap integration; Astro pages only, no `/play` entry.
@@ -192,7 +192,7 @@ Done when: the website builds to `dist/web`.
 
 # Phase E — Disable the in-app deletion route
 
-### E1 — Disable route and entry point, keep the logic
+## E1 — Disable route and entry point, keep the logic
 
 - `apps/game/src/App.tsx`: disable the `/delete-account` route.
 - `apps/game/src/features/profile/ProfileAccountActions.tsx`: disable the entry point, so Profile
@@ -204,7 +204,7 @@ Done when: the website builds to `dist/web`.
 
 # Phase F — Nginx
 
-### F1 — Add `nginx.conf`
+## F1 — Add `nginx.conf`
 
 Single server for `gammonrivals.com`, HTTP only (TLS terminates upstream), document root `dist/web`.
 
@@ -224,14 +224,14 @@ No game routes and no root-level `/assets/*`.
 
 # Phase G — Cleanup
 
-### G1 — Remove superseded static site files
+## G1 — Remove superseded static site files
 
 - Delete `public/landing.html`, `public/how-to-play.html`, `public/privacy.html`,
   `public/terms.html`, `public/site.css`, `public/sitemap.xml`, `public/robots.txt`.
 - Delete `public/icons.svg` (currently unreferenced).
 - Remove the now-empty root `public/` directory and any remaining references to it.
 
-### G2 — Update documentation
+## G2 — Update documentation
 
 - `docs/admin-app.md`: replace the separate `dist/` + `dist-admin/` deployment description with the
   `dist/{web,admin,play}` layout and the `/admin` base.
