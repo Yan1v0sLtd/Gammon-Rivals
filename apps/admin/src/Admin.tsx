@@ -5,6 +5,7 @@ import {Navigate, NavLink, Route, Routes, useLocation, useNavigate} from "react-
 
 import {buildCurrencyRateMap} from "../../../packages/shared/src/currency"
 
+import styles from "./Admin.module.css"
 import {SecondaryButton} from "./components/SecondaryButton"
 import {AdminAccessAdmin} from "./features/AdminAccess/AdminAccessAdmin.tsx"
 import {useGetMyAdminAccessQuery} from "./features/AdminAccess/AdminAccessApi"
@@ -119,39 +120,39 @@ export function Admin() {
     if (currenciesError) setError(currenciesError)
   }, [currenciesError, setError])
 
-  return (<div className="min-h-screen bg-[#061225] text-white">
-    <header className="border-b border-white/10 bg-[#08182f]/90 px-4 py-3 shadow-lg shadow-black/20">
-      <div className="flex items-center justify-between gap-4">
+  return (<div className={styles.shell}>
+    <header className={styles.header}>
+      <div className={styles.headerInner}>
         <div>
-          <div className="text-xs font-bold uppercase tracking-[0.22em] text-amber-200/75">
+          <div className={styles.brandLabel}>
             Gammon Rivals
           </div>
-          <h1 className="mt-1 text-2xl font-black tracking-tight">Back Office</h1>
+          <h1 className={styles.brandTitle}>Back Office</h1>
         </div>
-        <div className="text-right text-xs text-white/55">
-          <div className="text-sm font-bold text-white">{profile?.display_name ?? user?.email ?? "Admin"}</div>
-          <div className="capitalize text-amber-200">{role}</div>
+        <div className={styles.userBlock}>
+          <div className={styles.userName}>{profile?.display_name ?? user?.email ?? "Admin"}</div>
+          <div className={styles.userRole}>{role}</div>
         </div>
       </div>
     </header>
 
-    <div className="grid gap-5 px-4 py-5 lg:px-6 lg:grid-cols-[14rem_1fr]">
-      <aside className="rounded-xl border border-white/10 bg-white/[0.045] p-2 lg:sticky lg:top-5 lg:h-fit">
+    <div className={styles.layout}>
+      <aside className={styles.nav}>
         {adminSections.map((section) => (<NavLink
           key={section.path}
-          className={({isActive}) => `mb-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-bold transition ${isActive ? "bg-amber-300 text-[#1b1202] shadow-lg shadow-amber-900/20" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
+          className={({isActive}) => styles.navLink + (isActive ? " " + styles.navLinkActive : " " + styles.navLinkInactive)}
           to={`/${section.path}`}>
           {section.label}
         </NavLink>))}
       </aside>
 
-      <div className="min-w-0">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className={styles.content}>
+        <div className={styles.toolbar}>
           <div>
-            <div className="text-xs font-bold uppercase tracking-[0.2em] text-white/35">
+            <div className={styles.sectionLabel}>
               {activeSection}
             </div>
-            <div className="mt-1 text-sm text-white/55">
+            <div className={styles.sectionMode}>
               {canManage ? "Owner/admin mode" : "Read-only admin role"}
             </div>
           </div>
@@ -171,7 +172,7 @@ export function Admin() {
         </div>
 
         {dataError && (
-          <div className="mb-4 rounded-lg border border-rose-300/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <div className={styles.errorBanner}>
             {dataError}
           </div>)}
 

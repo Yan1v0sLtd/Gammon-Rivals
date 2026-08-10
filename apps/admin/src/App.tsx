@@ -2,6 +2,7 @@ import {lazy, Suspense} from "react"
 
 import {BrowserRouter, Route, Routes} from "react-router-dom"
 
+import styles from "./App.module.css"
 import {AdminAuthGate} from "./features/AdminAccess/AdminAuthGate"
 
 const Admin = lazy(() => import("./Admin").then((m) => ({default: m.Admin})))
@@ -11,11 +12,11 @@ function LoadingFallback() {
   return (<div
     aria-busy="true"
     aria-label="Loading"
-    className="fixed inset-0 grid place-items-center bg-[#0a0f1c]"
+    className={styles.loadingOverlay}
     role="status">
     <div
       aria-hidden="true"
-      className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-white/60"/>
+      className={styles.spinner}/>
   </div>)
 }
 

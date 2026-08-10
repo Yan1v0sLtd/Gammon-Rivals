@@ -28,6 +28,24 @@
   transition-duration: 150ms;
 }
 
+/* Full-viewport admin shell background. */
+.shell {
+  min-height: 100vh;
+  background-color: #061225;
+  color: #fff;
+}
+
+/* Rose error banner. */
+.errorBanner {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(253, 164, 175, 0.25);
+  background-color: rgba(244, 63, 94, 0.1);
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #ffe4e6;
+}
+
 /* Field label: uppercase micro-label above an input. */
 .fieldLabel {
   display: block;

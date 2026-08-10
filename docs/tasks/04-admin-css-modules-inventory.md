@@ -209,15 +209,15 @@ Grouped by migration phase. Count = `className` occurrences.
 
 | File | Count |
 |---|---|
-| `Admin.tsx` | 15 |
-| `features/AdminAccess/AdminAuthGate.tsx` | 13 |
+| `Admin.tsx` | 15 | ✅ done |
+| `features/AdminAccess/AdminAuthGate.tsx` | 13 | ✅ done |
 | `features/Difficulties/DifficultiesAdmin.tsx` | 12 |
 | `features/LobbyFeatures/LobbyFeaturesAdmin.tsx` | 11 |
 | `features/EconomyGrants/EconomyGrantsAdmin.tsx` | 11 |
 | `features/Currencies/CurrenciesAdmin.tsx` | 11 |
 | `features/DailyBonus/DailyBonusAdmin.tsx` | 7 |
-| `AdminAuthCallback.tsx` | 5 |
-| `App.tsx` | 2 |
+| `AdminAuthCallback.tsx` | 5 | ✅ done |
+| `App.tsx` | 2 | ✅ done |
 
 ### A4 — Package files (in admin Tailwind content glob)
 

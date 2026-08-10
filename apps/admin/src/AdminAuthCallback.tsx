@@ -2,6 +2,7 @@ import {useEffect, useState} from "react"
 
 import {useNavigate} from "react-router-dom"
 
+import styles from "./AdminAuthCallback.module.css"
 import {adminSupabase} from "./lib/adminSupabase"
 
 /**
@@ -47,16 +48,16 @@ export function AdminAuthCallback() {
     }
   }, [navigate])
 
-  return (<div className="grid min-h-dvh place-items-center bg-[#070a14] text-white">
-    <div className="text-center">
-      <div className="font-display text-2xl font-black uppercase tracking-wider text-amber-200">
+  return (<div className={styles.shell}>
+    <div className={styles.inner}>
+      <div className={styles.title}>
         Back Office sign-in
       </div>
-      <div className="mt-2 text-sm text-white/60">
+      <div className={styles.status}>
         {error ?? "Finishing sign-in…"}
       </div>
       {error ? (<button
-        className="mt-4 rounded-md border border-white/15 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 hover:bg-white/10"
+        className={styles.backButton}
         type="button"
         onClick={() => navigate("/", {replace: true})}>
         Back to Back Office

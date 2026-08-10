@@ -8,6 +8,7 @@ import {normalizeEmail} from "../../lib/normalizeEmail"
 import {useAdminAuth} from "../../lib/useAdminAuth"
 
 import {useGetMyAdminAccessQuery} from "./AdminAccessApi"
+import styles from "./AdminAuthGate.module.css"
 
 type AccessState = "checking" | "missing-config" | "migration-missing" | "denied" | "allowed"
 
@@ -59,21 +60,21 @@ export function AdminAuthGate({children}: {
     }
   }
 
-  return (<div className="min-h-screen bg-[#061225] text-white">
-    <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center gap-5 px-5 text-center">
-      <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-6 shadow-2xl shadow-black/30">
-        <div className="text-xs font-bold uppercase tracking-[0.28em] text-amber-200/70">
+  return (<div className={styles.shell}>
+    <div className={styles.center}>
+      <div className={styles.card}>
+        <div className={styles.brandLabel}>
           Gammon Rivals
         </div>
-        <h1 className="mt-3 text-3xl font-black tracking-tight">{title}</h1>
-        <p className="mt-3 text-sm leading-6 text-white/60">
+        <h1 className={styles.title}>{title}</h1>
+        <p className={styles.message}>
           {message}
         </p>
         {errorMessage && (
-          <div className="mt-4 rounded-lg border border-rose-300/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+          <div className={styles.errorBanner}>
             {errorMessage}
           </div>)}
-        {accessState === "denied" && isAdminSupabaseConfigured && (<div className="mt-5">
+        {accessState === "denied" && isAdminSupabaseConfigured && (<div className={styles.signInRow}>
           <PrimaryButton
             disabled={signingIn}
             onClick={() => void signInToAdmin()}>
@@ -81,14 +82,14 @@ export function AdminAuthGate({children}: {
           </PrimaryButton>
         </div>)}
         {user && accessState !== "checking" && (
-          <div className="mt-4 space-y-2 rounded-lg bg-black/25 px-3 py-2 text-left text-xs text-white/55">
+          <div className={styles.sessionBox}>
             <div>
-              <div className="text-white/35">Current email</div>
-              <div className="mt-1 break-all font-mono text-amber-100">{user.email ?? "No verified email"}</div>
+              <div className={styles.sessionLabel}>Current email</div>
+              <div className={styles.sessionValue}>{user.email ?? "No verified email"}</div>
             </div>
             <div>
-              <div className="text-white/35">Current profile id</div>
-              <div className="mt-1 break-all font-mono text-amber-100">{user.id}</div>
+              <div className={styles.sessionLabel}>Current profile id</div>
+              <div className={styles.sessionValue}>{user.id}</div>
             </div>
           </div>)}
       </div>
