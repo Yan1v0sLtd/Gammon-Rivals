@@ -18,11 +18,11 @@ silently expand into it.
 
 ## 1. Technology split
 
-| Application | Technology | Delivery |
-|---|---|---|
-| Marketing + legal website | Astro, statically generated | Web (`gammonrivals.com`) |
-| Back office (admin) | React + Vite SPA (unchanged) | Web (`gammonrivals.com/admin`) |
-| Game | React + Vite SPA (unchanged) | **Capacitor bundle only — not served on the web** |
+| Application               | Technology                   | Delivery                                          |
+| ------------------------- | ---------------------------- | ------------------------------------------------- |
+| Marketing + legal website | Astro, statically generated  | Web (`gammonrivals.com`)                          |
+| Back office (admin)       | React + Vite SPA (unchanged) | Web (`gammonrivals.com/admin`)                    |
+| Game                      | React + Vite SPA (unchanged) | **Capacitor bundle only — not served on the web** |
 
 Astro replaces only the static marketing/legal pages. It does not absorb any part of the game or
 admin SPAs.
@@ -63,19 +63,19 @@ contract, nothing beyond that.
 
 ### 2.3 Route ownership
 
-| URL | Served from |
-|---|---|
-| `/` | `dist/web` |
-| `/how-to-play` | `dist/web` |
-| `/privacy` | `dist/web` |
-| `/terms` | `dist/web` |
-| `/delete-account` | `dist/web` (new static page) |
-| `/admin`, `/admin/*` | `dist/admin` (SPA fallback within this prefix only) |
-| `/admin/assets/*` | `dist/admin/assets` |
-| `/_astro/*` | `dist/web` hashed assets |
-| `/sw.js` | exact static file from `dist/web`, `no-store` |
-| DB-driven asset roots (`/lobby/*`, `/themes/*`, `/loading/*`) | `dist/admin` (see §5.3) |
-| anything else | **Astro 404 page** |
+| URL                                                           | Served from                                         |
+| ------------------------------------------------------------- | --------------------------------------------------- |
+| `/`                                                           | `dist/web`                                          |
+| `/how-to-play`                                                | `dist/web`                                          |
+| `/privacy`                                                    | `dist/web`                                          |
+| `/terms`                                                      | `dist/web`                                          |
+| `/delete-account`                                             | `dist/web` (new static page)                        |
+| `/admin`, `/admin/*`                                          | `dist/admin` (SPA fallback within this prefix only) |
+| `/admin/assets/*`                                             | `dist/admin/assets`                                 |
+| `/_astro/*`                                                   | `dist/web` hashed assets                            |
+| `/sw.js`                                                      | exact static file from `dist/web`, `no-store`       |
+| DB-driven asset roots (`/lobby/*`, `/themes/*`, `/loading/*`) | `dist/admin` (see §5.3)                             |
+| anything else                                                 | **Astro 404 page**                                  |
 
 Because the game is not web-served, there are **no** `/play`, `/profile`, `/hotseat`, `/replay/*`
 or root-level `/auth/callback` routes on the web, and no root-level `/assets/*` game chunk
@@ -159,6 +159,7 @@ pnpm 11.20.0), but the migration was never finished: scripts, docs and CI still 
 
   pnpm supports `${NAME:-fallback}` in `pnpm-workspace.yaml`. Today the bare `${PNPM_STORE_DIR}`
   makes any install fail where the variable is unset.
+
 - Add workspace patterns for `apps/*` (and `packages/*` for the later phase).
 - Convert nested `npm run` / `npx` usage in root scripts, CI and docs to pnpm.
 - CI installs with the frozen lockfile and runs the pnpm equivalents of build/test/lint. The stale
@@ -170,8 +171,8 @@ Workspace commands use pnpm filters, not npm-style `--workspace` paths:
 {
   "scripts": {
     "dev:website": "pnpm --filter website dev",
-    "build:website": "pnpm --filter website build"
-  }
+    "build:website": "pnpm --filter website build",
+  },
 }
 ```
 
@@ -267,11 +268,11 @@ asset has exactly one canonical home, chosen by how it is consumed:
 Removing the game from web serving means the three outputs no longer need the same assets. Each
 build takes only its own subset:
 
-| Output | Needs |
-|---|---|
-| `dist/web` | website imagery only, imported and hashed into `_astro` |
+| Output       | Needs                                                                    |
+| ------------ | ------------------------------------------------------------------------ |
+| `dist/web`   | website imagery only, imported and hashed into `_astro`                  |
 | `dist/admin` | assets the back office renders, including DB-driven board/theme previews |
-| `dist/play` | the full game asset set, resolved inside the Capacitor bundle |
+| `dist/play`  | the full game asset set, resolved inside the Capacitor bundle            |
 
 This avoids shipping gameplay chrome to the marketing site and website art into the APK. The APK
 size consequence is real: `dist/play` is bundled offline.

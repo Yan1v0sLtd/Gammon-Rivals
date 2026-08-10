@@ -250,7 +250,7 @@ layer wrappers.
 - `lobby-pp-shell` in `LobbyTopBar.tsx` has no CSS rule (dead class) and is out of
   scope for this slice.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
-  tsconfig.node.json`, and `git diff --check`. Browser/manual visual checks and the
+tsconfig.node.json`, and `git diff --check`. Browser/manual visual checks and the
   full build (blocked by the known native Lightning CSS dependency) remain unverified.
 
 #### S11 reviewer remediation
@@ -281,7 +281,7 @@ layer wrappers.
   `offersRight` (dynamic `side` prop now maps to `styles.offersRight`), the
   `lobby-offer-card` `:has(> img)` / `:not(:has(> img))` variants → `offerCard`,
   and `lobby-offer-arrow` → `offerArrow`. The shared `.lobby-offers,
-  .lobby-action-stack` rule was folded into `.offers` (the action-stack half is
+.lobby-action-stack` rule was folded into `.offers` (the action-stack half is
   dead — no TSX consumer — and its standalone rule at index.css:1271 was left in
   place).
 - Removed the migrated rules from `index.css`. Remaining `lobby-*` refs there are
@@ -375,6 +375,7 @@ properties — user preference).
 full build was previously blocked by a missing native Lightning CSS module;
 once that cleared, two latent syntax errors surfaced in `index.css` (both in
 HEAD, unrelated to the migration):
+
 - Unclosed comment at line 221 that swallowed the `.lobby-profile-progress-label`
   rule → added the missing `*/`.
 - Stray `}` at line 1078 (double closing brace) → removed it.
@@ -407,7 +408,7 @@ HEAD, unrelated to the migration):
   `apps/game/src/components/UnlockPill.module.css`,
   `apps/game/src/lobby/LobbyBoardCarousel.module.css`.
 - **Verification:** `npm run lint`, `npm exec -- tsc -b
-  apps/game/tsconfig.json tsconfig.node.json`, and `git diff --check` passed.
+apps/game/tsconfig.json tsconfig.node.json`, and `git diff --check` passed.
   The production build was attempted but did not complete in this environment;
   the known native Lightning CSS dependency blocker remains unresolved, so
   build-level CSS-module verification is not claimed.
@@ -481,7 +482,7 @@ HEAD, unrelated to the migration):
   `features/shop/ShopHost.tsx`/`LobbyScreen.tsx` through `useBodyModalFlag` and read by
   `Sunbeam.tsx` to pause background animation while a full-screen modal is open.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b
-  apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
+apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
   `git diff --check`. The build emitted only existing large-chunk warnings.
   Browser/manual visual checks remain pending.
 - Full lobby/gameplay migration, remaining Tailwind conversion across
@@ -520,7 +521,7 @@ HEAD, unrelated to the migration):
   (`LobbyBottomNav.tsx`); `HourlyBonusWidget` uses its own module, so it moved
   into the module rather than staying global.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b
-  apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
+apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
   `git diff --check`. Built CSS confirms the module locals and keyframes are
   emitted. Browser/manual visual checks remain pending.
 
@@ -550,7 +551,7 @@ HEAD, unrelated to the migration):
   `style`, not `data-slot`), `.lobby-carousel-viewport[data-dragging]`, and
   `.lobby-podium-fade-out` + `lobbyPodiumFadeOut`.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b
-  apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
+apps/game/tsconfig.json tsconfig.node.json`, `npm run build`, and
   `git diff --check`. Built CSS confirms `.carouselBoard` carries the custom
   props and `.podiumFadeIn` is emitted. Browser/manual visual checks remain
   pending.
@@ -570,7 +571,7 @@ HEAD, unrelated to the migration):
 - **p3:** corrected the stale `index.css` comment that claimed the carousel
   slide-position custom properties stayed global; they now live on
   `.carouselBoard` in the module, and only the dead data-slot animation states
-  + keyframes remain global.
+  - keyframes remain global.
 - Re-verified: lint, `tsc -b`, `npm run build`, `git diff --check` all pass;
   built CSS confirms no broad `.bottomNavSlot img` rule remains, `navItemImage`
   is emitted, and the hourly `.image img` rules are intact.
@@ -611,7 +612,7 @@ HEAD, unrelated to the migration):
   if the visual check shows the bar misplaced, deleting the override rule in
   `ProfileMainCard.module.css` (making `.xpBar` stay relative) is the fix.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
-  tsconfig.node.json`, `npm run build`, `git diff --check`. Built CSS (Profile chunk)
+tsconfig.node.json`, `npm run build`, `git diff --check`. Built CSS (Profile chunk)
   confirms `_xpBar*` locals emit, the global keyframes resolve, and the
   data-fullscreen-modal pause targets the module-scoped bubbles class.
   Browser/manual visual checks remain pending.
@@ -633,7 +634,7 @@ HEAD, unrelated to the migration):
   and zero missed consumers.
 - Re-verified: lint, `tsc -b`, `npm run build`, `git diff --check` all pass.
   Browser/manual visual checks (including the flagged `position:absolute;
-  left:0` leak question) remain pending.
+left:0` leak question) remain pending.
 
 ### S15 — Dead-lobby purge (index.css slimming)
 
@@ -667,7 +668,7 @@ HEAD, unrelated to the migration):
   `.game-score-strip`, etc.) remain in place for the Slice C gameplay migration, which
   will delete them while moving live rules into modules.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json
-  tsconfig.node.json`, `npm run build`, `git diff --check` (after stripping one trailing
+tsconfig.node.json`, `npm run build`, `git diff --check` (after stripping one trailing
   blank at EOF). Browser/manual visual checks remain pending.
 
 ### C0 — Dead gameplay purge (index.css slimming)
@@ -684,8 +685,8 @@ HEAD, unrelated to the migration):
     `.game-player-neon-rail` + mirrors, `.game-score-rail` (`display:none` rule + comment), `.game-player-frame-art` again.
   - Media-query edits (in-place, not whole-block): removed `.game-header-actions`/`.game-new-match-button` from the
     ≤760px hide list, the `.game-score-strip` rule in that block, the `.game-home-icon` rule, and the `.game-score-strip`
-    + `::before` rules in the landscape-≤1023px block, and the dead `.game-match-header .game-header-actions,` line from
-    the pass-2 pointer-events list.
+    - `::before` rules in the landscape-≤1023px block, and the dead `.game-match-header .game-header-actions,` line from
+      the pass-2 pointer-events list.
 - Dropped dead classNames: `game-stat-row--pip/--score/--doubles` in `PlayerStatRow.tsx` (no CSS rules existed — the
   variants did nothing), and the `is-safe` tone in `TurnTimerBar.tsx` (no CSS rule).
 - `apps/game/src/index.css` went 4,458 → 3,896 lines (562 deleted). Brace/paren balance verified; zero dead selectors
@@ -722,7 +723,7 @@ HEAD, unrelated to the migration):
   background art, aspect-ratio 500/493, media 2866) — the slot element is rendered by MatchSecondaryControls, not
   by the toggle.
 - `apps/game/src/index.css` went 3,896 → 3,696 lines. Brace balance verified; zero `.game-auto-toggle/switch/knob/
-  label` rules remain in source or built CSS; `.game-auto-slot` rules intact.
+label` rules remain in source or built CSS; `.game-auto-slot` rules intact.
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json tsconfig.node.json`,
   `git diff --check`, `npm run build`. Built CSS (`useAutoRoll` chunk) confirms the module locals, the composed
   `actionButtonReset` (emitted once), the media query (minified to `width<=1023px`), and the `.on` state selectors
@@ -739,14 +740,14 @@ HEAD, unrelated to the migration):
     `.game-turn-timer--right ...` folds to `.right.timer` / `.right .icon`.
   - `PlayerStatRow` gained a `side?: "left" | "right"` prop (default "left") applied as `styles.sideRight` on the row;
     `.game-player-panel--right .game-stat-row/icon/copy` fold to `.sideRight.row` / `.sideRight .icon` / `.sideRight
-    .copy`; `.game-player-panel--right.game-compact-panel ...` compact mirrors fold to `.sideRight.compactRow` /
+.copy`; `.game-player-panel--right.game-compact-panel ...` compact mirrors fold to `.sideRight.compactRow` /
     `.sideRight .compactIcon` / `.sideRight .compactCopy`.
   - Wrappers thread side internally from their existing `seat` prop (PipCountStat, ScoreStat, SpectatorPipCountStat);
     DoublesStat gained a `seat` prop (now `SeatProps`) since it had none — two call sites updated
     (HotSeatPlayerPanel, OnlinePlayerPanel). OnlinePlayerPanel's direct spectator `PlayerStatRow` calls pass `side` too.
 - **Media-1081 `.game-mobile-players` folds**: the mobile timer/compact-stat overrides were folded into the modules
   scoped to `.compact.timer` / `.compact .*` / `.right.compact.timer` under the identical `(max-width: 760px),
-  (orientation: portrait)` query — exact because the `game-mobile-players` wrapper renders iff the compact variant is
+(orientation: portrait)` query — exact because the `game-mobile-players` wrapper renders iff the compact variant is
   active (same `useIsMobileLayout()` source).
 - **Specificity preserved**: `.right.timer`/`.sideRight.row` compounds keep 0,2,0; `.timer strong`/`.copy strong`
   descendants keep 0,1,1; `:last-child`/`:first-of-type` keep 0,2,0; media-620 label/value overrides and both
@@ -754,9 +755,9 @@ HEAD, unrelated to the migration):
   moved verbatim. Pass order 1 → media-1081 → 2 → 3 → 3-cont → 4 → media-620 preserved within each module.
 - Removed the migrated rules from `index.css` (15 exact-block deletions): pass-1 stat/icon/copy/label/strong +
   compact family + timer family, the media-1081 compact-stat and mobile-players timer blocks, pass-2 art-led stat rows
-  + timer (incl. `left-timer.webp`/`right-timer.webp` art, right-icon colors), pass-3/3-cont/4 calibration + precision
-  rules, and the media-620 label/value/timer blocks. `.game-stat-list` / `.game-compact-stat-list` stay global
-  (PlayerPanelShell owns them — C6 scope).
+  - timer (incl. `left-timer.webp`/`right-timer.webp` art, right-icon colors), pass-3/3-cont/4 calibration + precision
+    rules, and the media-620 label/value/timer blocks. `.game-stat-list` / `.game-compact-stat-list` stay global
+    (PlayerPanelShell owns them — C6 scope).
 - `apps/game/src/index.css` went 3,696 → 3,083 lines. Brace balance verified; zero `.game-turn-timer-*`/`.game-stat-*`
   rules remain in source or built CSS (the only remaining `game-compact-stat` is the C6 list selector).
 - Verification passed: `npm run lint`, `npm exec -- tsc -b apps/game/tsconfig.json tsconfig.node.json`,
@@ -776,14 +777,14 @@ HEAD, unrelated to the migration):
   rules, pinning the right player's timer columns to the pass-2 value. The property was redundant in the original
   cascade (later `.game-turn-timer` rules always re-set columns for both sides), so it was dropped from the module's
   pass-2 right rule — final columns now resolve to the same `20% minmax(0,1fr) 25%` / media-620 `16% minmax(0,1fr)
-  auto` as before.
+auto` as before.
 - **p2 — warning/danger fill specificity**: `.game-turn-timer.is-warning .game-turn-timer-fill` (0,3,0) was folded
   to `.warning .fill` (0,2,0); restored exact parity with `.timer.warning .fill` / `.timer.danger .fill` (0,3,0).
 - **p2 — orphaned comment**: the pass-4 "narrower invisible icon column" comment sat above the unrelated
   `.game-actions-layer` rule after the stat-row deletion; removed (the rationale already lives in
   `PlayerStatRow.module.css` pass-4 copy).
 - **Accepted drift (documented, not fixed)**: `.game-player-panel--right.game-compact-panel .game-compact-stat-row/
-  icon/copy` (0,3,0) fold to `.sideRight.compactRow` / `.sideRight .compactIcon` / `.sideRight .compactCopy`
+icon/copy` (0,3,0) fold to `.sideRight.compactRow` / `.sideRight .compactIcon` / `.sideRight .compactCopy`
   (0,2,0). Reproducing 0,3,0 would require an ancestor panel class that belongs to PlayerPanelShell's future module;
   since no rule at ≥0,2,0 sets those properties on compact rows (the only competitors are `.compactRow` (0,1,0)
   base/media rules), the resolved styles are identical.
@@ -813,8 +814,8 @@ HEAD, unrelated to the migration):
   ActionButtons halves move to its module, the auto-slot halves to MatchSecondaryControls'. Order-safe per-module
   since each file keeps its own rules in source order.
 - **Specificity preserved**: `.primary .rollButton`/`.pairButton` (0,2,0, incl. the `background: center / contain
-  no-repeat` shorthand whose reset is undone by the (0,3,0) state-image rules — verified in built CSS), `.primary
-  button:not(:disabled):hover` (0,2,2), `.secondary > .*` (0,2,0) compounds, `.secondary .* > strong/span` (0,2,1).
+no-repeat` shorthand whose reset is undone by the (0,3,0) state-image rules — verified in built CSS), `.primary
+button:not(:disabled):hover` (0,2,2), `.secondary > .*` (0,2,0) compounds, `.secondary .* > strong/span` (0,2,1).
   Cascade-dead rules (e.g. the whole 1023-media double/roll block, `.rollButton` pass-2 image) kept verbatim for
   parity, same as C2.
 - Removed migrated rules from `index.css` (text-anchored, assert-once purge script): pass-1 controls block, portrait
@@ -839,7 +840,7 @@ HEAD, unrelated to the migration):
   zero global `game-action-*`/`game-controls-*`/`game-auto-slot`/`game-end-turn-pair` selectors; locals
   `_rollButton_1db6e_17`/`_cubeButton_1syvm_7`/`_autoSlot_1syvm_56`/`_primary_1db6e_2` etc. + composed
   `_actionButtonReset_1xgle_11`/`_actionButtonChrome_1xgle_23`; the grouped `.primary .rollButton, .primary
-  .pairButton` (0,2,0) shorthand rule, both `.actionRow button` `!important` rules (pass-3 auto, pass-4 z-270),
+.pairButton` (0,2,0) shorthand rule, both `.actionRow button` `!important` rules (pass-3 auto, pass-4 z-270),
   `.actionRow{pointer-events:none!important}` and pass-2 `filter:none` — all present in the same cascade order.
 
 ### C4 — MatchHeader CSS Module slice
@@ -873,7 +874,7 @@ HEAD, unrelated to the migration):
   the migration's working tracker and every slice (S1-S15, C0-C3) appended its entry as part of the accepted
   process; kept, no code impact.
 - **p2 — verification output**: re-ran lint, `tsc -b`, `git diff --check`, fresh `npm run build` (`✓ built in
-  2.38s`) with stdout attached. Fresh built-CSS asserts on useAutoRoll-C_VXXpWI: zero global leftovers; `.hud`
+2.38s`) with stdout attached. Fresh built-CSS asserts on useAutoRoll-C_VXXpWI: zero global leftovers; `.hud`
   none!important@9968 < flex@14992; pointer-events compound with all 4 selectors; `turnPill>span:nth-child(2)`;
   `scoreCore:before/:after` `display:none!important` — all present.
 
@@ -898,7 +899,7 @@ HEAD, unrelated to the migration):
   `.game-player-panel--left/--right`/`.game-side-slot`/`.game-compact-panel`/`.game-compact-top`/`.game-compact-stat-list`
   untouched (C6 scope). Braces 148/148.
 - Verification: lint (fixed one import-order error), `tsc -b`, `git diff --check`, `npm run build` (`✓ built in
-  2.33s`). Built-CSS asserts: zero global identity leftovers; all 17 module locals in the useAutoRoll chunk
+2.33s`). Built-CSS asserts: zero global identity leftovers; all 17 module locals in the useAutoRoll chunk
   (`_avatarStage_135ki_10`, `_levelShield_135ki_37`, `_playerIdentity_135ki_55`, …); side compounds/descendants
   (`.right.avatarStage`, `.right .avatarRing`, `.right .levelShield`, `.right .playerLine`, `.right .metaIconLevel`,
   `.right.compactAvatarStage`, `.right .compactLevel`, `.right .compactLine`, `.left.playerIdentity`,
@@ -908,7 +909,7 @@ HEAD, unrelated to the migration):
 ### C5 review fixes (reviewer agent)
 
 - **p1 — compact media breakpoint inverted**: the compact rules live in `@media (orientation: landscape) and
-  (max-width: 1023px)` (HEAD:578), but the module used `min-width: 1024px` — this dropped the compact sizing from
+(max-width: 1023px)` (HEAD:578), but the module used `min-width: 1024px` — this dropped the compact sizing from
   phone-landscape and applied it to desktop/tablet. Restored `max-width: 1023px`.
 - **p1 — spectator self panel side**: the direct `PlayerIdentityBlock` branch in OnlinePlayerPanel hardcoded
   `side="left"`, but in spectator mode `seat="self"` uses that branch while its PlayerPanelShell is right-sided —

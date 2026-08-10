@@ -52,27 +52,25 @@ Mechanical change. Props and handlers stay identical. No state is lifted.
   (`Admin.tsx:127`), which is a plain string array with no route metadata.
 
 ```ts
-export type Section =
-  | "Dashboard"
-  | "Users"
-  /* … 14 entries, unchanged … */
+export type Section = "Dashboard" | "Users";
+/* … 14 entries, unchanged … */
 
-export const adminSections: readonly {label: Section, path: string}[] = [
-  {label: "Dashboard", path: "dashboard"},
-  {label: "Users", path: "users"},
-  {label: "Currencies", path: "currencies"},
-  {label: "Economy Grants", path: "economy-grants"},
-  {label: "Level System", path: "level-system"},
-  {label: "Daily Bonus", path: "daily-bonus"},
-  {label: "Hourly Wheel", path: "hourly-wheel"},
-  {label: "Daily Missions", path: "daily-missions"},
-  {label: "Difficulties", path: "difficulties"},
-  {label: "RTP Analytics", path: "rtp-analytics"},
-  {label: "Board Themes", path: "board-themes"},
-  {label: "Lobby Features", path: "lobby-features"},
-  {label: "Shop", path: "shop"},
-  {label: "Admin Access", path: "admin-access"},
-]
+export const adminSections: readonly { label: Section; path: string }[] = [
+  { label: "Dashboard", path: "dashboard" },
+  { label: "Users", path: "users" },
+  { label: "Currencies", path: "currencies" },
+  { label: "Economy Grants", path: "economy-grants" },
+  { label: "Level System", path: "level-system" },
+  { label: "Daily Bonus", path: "daily-bonus" },
+  { label: "Hourly Wheel", path: "hourly-wheel" },
+  { label: "Daily Missions", path: "daily-missions" },
+  { label: "Difficulties", path: "difficulties" },
+  { label: "RTP Analytics", path: "rtp-analytics" },
+  { label: "Board Themes", path: "board-themes" },
+  { label: "Lobby Features", path: "lobby-features" },
+  { label: "Shop", path: "shop" },
+  { label: "Admin Access", path: "admin-access" },
+];
 ```
 
 The label stays the display string. Do not derive the slug from the label at
@@ -94,17 +92,20 @@ runtime; an explicit map keeps URLs stable if a label changes.
 - Line 262: delete the `useState`. Derive the value from the URL:
 
 ```ts
-const location = useLocation()
-const navigate = useNavigate()
+const location = useLocation();
+const navigate = useNavigate();
 const activeSection = useMemo(
-  () => adminSections.find((section) => location.pathname === `/${section.path}`)?.label ?? "Dashboard",
-  [location.pathname])
+  () =>
+    adminSections.find((section) => location.pathname === `/${section.path}`)
+      ?.label ?? "Dashboard",
+  [location.pathname],
+);
 ```
 
-  `location.pathname` excludes the basename, so it reads `/dashboard`, not
-  `/admin/dashboard`. All 6 remaining read sites keep working with no edit. The
-  4 section-gated load effects (618, 625, 972, 1005) compare the same strings, so
-  they fire on navigation exactly as they fired on section change.
+`location.pathname` excludes the basename, so it reads `/dashboard`, not
+`/admin/dashboard`. All 6 remaining read sites keep working with no edit. The
+4 section-gated load effects (618, 625, 972, 1005) compare the same strings, so
+they fire on navigation exactly as they fired on section change.
 
 - Nav aside (2030-2037): replace `<button onClick={setActiveSection}>` with
   `<NavLink to={`/${section.path}`}>`. Reuse the existing class strings through
@@ -117,15 +118,18 @@ const activeSection = useMemo(
 
 ```tsx
 <Routes>
-  <Route element={<Navigate replace to="/dashboard"/>} index/>
-  <Route element={<DashboardAdmin audit={audit} cards={dashboardCards}/>} path="dashboard"/>
+  <Route element={<Navigate replace to="/dashboard" />} index />
+  <Route
+    element={<DashboardAdmin audit={audit} cards={dashboardCards} />}
+    path="dashboard"
+  />
   {/* … 13 more, props unchanged … */}
-  <Route element={<Navigate replace to="/dashboard"/>} path="*"/>
+  <Route element={<Navigate replace to="/dashboard" />} path="*" />
 </Routes>
 ```
 
-  Child `path` values are relative to the parent match at `/`. The `to` value in
-  `Navigate` is absolute and the basename prefixes `/admin` automatically.
+Child `path` values are relative to the parent match at `/`. The `to` value in
+`Navigate` is absolute and the basename prefixes `/admin` automatically.
 
 ### Untouched by Phase 1
 

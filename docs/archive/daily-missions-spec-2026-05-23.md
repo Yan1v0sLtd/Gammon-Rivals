@@ -9,7 +9,7 @@
 
 ## 1. Problem Statement
 
-Gammon-Rivals has no structured 24-hour engagement loop. The Hourly Wheel and Daily Bonus create return triggers but no *progression* — players have no goal beyond "play more matches." The result is:
+Gammon-Rivals has no structured 24-hour engagement loop. The Hourly Wheel and Daily Bonus create return triggers but no _progression_ — players have no goal beyond "play more matches." The result is:
 
 - Players exhaust the lobby's novelty within their first few sessions
 - No mechanism to push players up tiers (engagement, monetization, skill)
@@ -28,12 +28,14 @@ Daily Missions is a single-feature answer to all four levers: retention, monetiz
 ## 2. Goals
 
 ### Business goals
+
 1. **Improve D7 retention** measurably above pre-launch baseline (target to be set during dark-launch phase; hypothesis: +5–10 percentage points).
 2. **Lift ARPDAU** via gem-sink missions (Spend X gems), tier-stretch missions (push regulars toward whale entry fees), and Battle-Pass chest claim flow (gem-priced rerolls).
 3. **Increase avg matches/DAU** by ≥20% among players who complete at least one mission per day.
 4. **Operator economy control** — let the BO operator (Yaniv) tune the entire mission economy via config tables and live without redeploying code, mirroring the existing PP-calculator pattern.
 
 ### Player goals
+
 5. **Always-on progression** — every login presents a clear, time-bounded set of goals with visible reward.
 6. **Calibrated challenge** — missions feel achievable but stretching, regardless of the player's current engagement level.
 
@@ -41,17 +43,17 @@ Daily Missions is a single-feature answer to all four levers: retention, monetiz
 
 ## 3. Non-Goals (v1)
 
-Each non-goal exists to prevent scope creep — these are valuable but explicitly *not* part of v1.
+Each non-goal exists to prevent scope creep — these are valuable but explicitly _not_ part of v1.
 
-| Non-goal | Why deferred |
-|----------|--------------|
-| Generic configurable segmentation framework (segments table, rule builder, cohort UI) | Premature abstraction. The per-metric percentile primitive covers v1's needs with three small tables. |
+| Non-goal                                                                                      | Why deferred                                                                                               |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Generic configurable segmentation framework (segments table, rule builder, cohort UI)         | Premature abstraction. The per-metric percentile primitive covers v1's needs with three small tables.      |
 | Multi-currency wallet refactor (`user_wallets` → `(profile_id, currency_code, balance)` rows) | Only worth doing when 5+ currencies exist. Today's coins + gems + future-currency-as-column is sufficient. |
-| Player-to-player mission gifting / sharing / social comparison | Social layer is its own feature; v1 is single-player progression. |
-| ML-driven personalized mission selection | Premature without baseline completion data. v1 uses random sampling from eligible pool. |
-| A/B testing framework for mission variants | Add post-launch once a baseline catalog exists and we know what to test. |
-| Push notifications for expiring missions | Mobile push infrastructure doesn't exist yet. Can add later as a fast-follow. |
-| Mission-related leaderboards / tournaments | Separate feature space; would compete for Mission-Points-track attention. |
+| Player-to-player mission gifting / sharing / social comparison                                | Social layer is its own feature; v1 is single-player progression.                                          |
+| ML-driven personalized mission selection                                                      | Premature without baseline completion data. v1 uses random sampling from eligible pool.                    |
+| A/B testing framework for mission variants                                                    | Add post-launch once a baseline catalog exists and we know what to test.                                   |
+| Push notifications for expiring missions                                                      | Mobile push infrastructure doesn't exist yet. Can add later as a fast-follow.                              |
+| Mission-related leaderboards / tournaments                                                    | Separate feature space; would compete for Mission-Points-track attention.                                  |
 
 ---
 
@@ -66,7 +68,7 @@ Each non-goal exists to prevent scope creep — these are valuable but explicitl
 - **As a player**, I want my mission completions to feed a weekly Mission Points pass with 4 chest milestones, so that I have both short- (daily) and medium-horizon (weekly) goals.
 - **As a player**, I want to see a daily streak counter that rewards completing all 4 missions for 7 consecutive days, so that there's a reason to return every day, not just on big-mission days.
 - **As a player**, I want a separate Weekly Challenge with a big reward, so that I have a stretch goal that survives across days.
-- **As a player**, I want missions I never claimed before reset to be visibly *lost*, so that I feel urgency to claim and the system stays clean.
+- **As a player**, I want missions I never claimed before reset to be visibly _lost_, so that I feel urgency to claim and the system stays clean.
 
 ### Operator stories (Yaniv as BO operator)
 
@@ -85,6 +87,7 @@ Each non-goal exists to prevent scope creep — these are valuable but explicitl
 #### Schema (10 new tables + 2 existing extensions)
 
 **Reference data:**
+
 - `currencies` — `code pk, display_name, icon_url, is_enabled`. Seeded with `coins, gems`.
 - `mission_templates` — `id, mission_type, metric_code, rarity (common|rare|epic), resolution_mode (fixed|stretch), goal_value, stretch_factor, goal_min, goal_max, eligibility jsonb, mission_points, period (daily|weekly), enabled, created_at, updated_at`
 - `mission_rewards` — `id, mission_id, reward_kind (currency|item), currency_code, item_table, item_id, amount`. Polymorphic.
@@ -93,17 +96,20 @@ Each non-goal exists to prevent scope creep — these are valuable but explicitl
 - `reroll_pricing_config` — singleton row: `gem_cost_ladder int[]` (e.g. `[0, 25, 75, 200]`), `daily_cap int`.
 
 **Metric infrastructure:**
+
 - `player_metrics` — `(profile_id, metric_code, value_today, baseline_7d, updated_at)`. ~10 rows per player.
 - `metric_distributions` — `(metric_code, percentile, value, computed_at)`. Population-level percentile breakpoints, recomputed nightly.
 - `player_metric_tiers` — `(profile_id, metric_code, tier (casual|regular|whale))`. Derived nightly.
 
 **Per-player state:**
+
 - `player_daily_missions` — `(id, profile_id, mission_template_id, rarity_slot, resolved_goal, progress, completed_at, claimed_at, expires_at, assigned_at, reroll_count_today)`.
 - `player_weekly_pass` — `(profile_id, week_key, mp_earned, chests_claimed jsonb, created_at)`. One row per player per ISO week.
 - `player_streak` — `(profile_id pk, current_streak_days, last_complete_date, total_streak_chests_claimed)`.
-- `user_inventory` (new generic table) — `(profile_id, item_table, item_id, granted_at, source)`. The polymorphic *grant ledger*; existing item tables stay where they are.
+- `user_inventory` (new generic table) — `(profile_id, item_table, item_id, granted_at, source)`. The polymorphic _grant ledger_; existing item tables stay where they are.
 
 **Existing extensions:**
+
 - `user_wallets` — gains a column per new currency over time. v1 still just `coins, gems`.
 - `wallet_transactions` — credits with `source = 'mission_reward' | 'chest_reward' | 'streak_chest_reward'`.
 
@@ -159,19 +165,19 @@ All call `progress_mission` for the relevant metric:
 
 #### Initial mission catalog (~25 templates)
 
-| # | Template | Metric | Rarity variants | Notes |
-|---|----------|--------|-----------------|-------|
-| 1 | Play X matches | matches_per_day | C/R/E | stretch, all tiers |
-| 2 | Win X in a row | win_streak | C/R/E | stretch, cap whale at X=4 |
-| 3 | Level up X times | levels_per_week | C/R | fixed, hide for level > 25 |
-| 4 | Play difficulty Y, X times | matches_at_difficulty_Y | C/R/E | per-difficulty templates, unlock-gated |
-| 5 | Wager X coins | coins_wagered_per_day | C/R/E | stretch |
-| 6 | Win X coins net | coins_won_net_per_day | C/R/E | stretch |
-| 7 | Earn X XP today | xp_per_day | C/R/E | stretch, cross-cutting |
-| 8 | Spin the wheel X times | wheel_spins_per_day | C | fixed, habit/retention |
-| 9 | Spend X gems | gems_spent_per_day | C/R | fixed, monetization-tagged |
-| 10 | Beat a higher-rated opponent | rating_diff_won | E | single template, rated-only |
-| 11 | Complete N other daily missions | meta | C/R | meta-mission, anti-cherry-pick |
+| #   | Template                        | Metric                  | Rarity variants | Notes                                  |
+| --- | ------------------------------- | ----------------------- | --------------- | -------------------------------------- |
+| 1   | Play X matches                  | matches_per_day         | C/R/E           | stretch, all tiers                     |
+| 2   | Win X in a row                  | win_streak              | C/R/E           | stretch, cap whale at X=4              |
+| 3   | Level up X times                | levels_per_week         | C/R             | fixed, hide for level > 25             |
+| 4   | Play difficulty Y, X times      | matches_at_difficulty_Y | C/R/E           | per-difficulty templates, unlock-gated |
+| 5   | Wager X coins                   | coins_wagered_per_day   | C/R/E           | stretch                                |
+| 6   | Win X coins net                 | coins_won_net_per_day   | C/R/E           | stretch                                |
+| 7   | Earn X XP today                 | xp_per_day              | C/R/E           | stretch, cross-cutting                 |
+| 8   | Spin the wheel X times          | wheel_spins_per_day     | C               | fixed, habit/retention                 |
+| 9   | Spend X gems                    | gems_spent_per_day      | C/R             | fixed, monetization-tagged             |
+| 10  | Beat a higher-rated opponent    | rating_diff_won         | E               | single template, rated-only            |
+| 11  | Complete N other daily missions | meta                    | C/R             | meta-mission, anti-cherry-pick         |
 
 ### P1 — Nice to Have (fast follow after dark-launch)
 
@@ -196,25 +202,25 @@ All call `progress_mission` for the relevant metric:
 
 ### Leading indicators (measure within 1-2 weeks of dark-launch)
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Daily Missions screen open rate (% of DAU) | ≥70% | Frontend event log |
-| Mission completion rate per slot | ≥60% Common, ≥40% Rare, ≥25% Epic | `player_daily_missions.completed_at` IS NOT NULL |
-| Mission claim rate (of completions) | ≥90% | `claimed_at` IS NOT NULL / `completed_at` IS NOT NULL |
-| MP earned per active player per day | Median: 100, p75: 150 | `player_weekly_pass.mp_earned / days_in_week` |
-| Chest claim rate (of unlocked) | ≥85% | Chest claims / chest unlocks |
-| Reroll usage rate | 30–60% use free; <15% use paid | `reroll_count_today` distribution |
-| Streak length distribution | Median ≥3 days, p90 ≥7 days | `player_streak.current_streak_days` |
+| Metric                                     | Target                            | Measurement                                           |
+| ------------------------------------------ | --------------------------------- | ----------------------------------------------------- |
+| Daily Missions screen open rate (% of DAU) | ≥70%                              | Frontend event log                                    |
+| Mission completion rate per slot           | ≥60% Common, ≥40% Rare, ≥25% Epic | `player_daily_missions.completed_at` IS NOT NULL      |
+| Mission claim rate (of completions)        | ≥90%                              | `claimed_at` IS NOT NULL / `completed_at` IS NOT NULL |
+| MP earned per active player per day        | Median: 100, p75: 150             | `player_weekly_pass.mp_earned / days_in_week`         |
+| Chest claim rate (of unlocked)             | ≥85%                              | Chest claims / chest unlocks                          |
+| Reroll usage rate                          | 30–60% use free; <15% use paid    | `reroll_count_today` distribution                     |
+| Streak length distribution                 | Median ≥3 days, p90 ≥7 days       | `player_streak.current_streak_days`                   |
 
 ### Lagging indicators (measure 4-8 weeks post-launch)
 
-| Metric | Target | Notes |
-|--------|--------|-------|
-| D7 retention delta vs. baseline | +5–10pp | Compare cohorts pre/post launch |
-| ARPDAU delta vs. baseline | +10–20% | Tracked at sweepstakes-monetization layer |
-| Avg matches/DAU | +20% among mission-active players | match_finished events / DAU |
-| Coin economy balance | Sink/source ratio stays within ±10% of pre-launch | Existing economy reporting |
-| Gem economy balance | Sink uplift from rerolls + Spend-X-gems missions | Existing reporting |
+| Metric                          | Target                                            | Notes                                     |
+| ------------------------------- | ------------------------------------------------- | ----------------------------------------- |
+| D7 retention delta vs. baseline | +5–10pp                                           | Compare cohorts pre/post launch           |
+| ARPDAU delta vs. baseline       | +10–20%                                           | Tracked at sweepstakes-monetization layer |
+| Avg matches/DAU                 | +20% among mission-active players                 | match_finished events / DAU               |
+| Coin economy balance            | Sink/source ratio stays within ±10% of pre-launch | Existing economy reporting                |
+| Gem economy balance             | Sink uplift from rerolls + Spend-X-gems missions  | Existing reporting                        |
 
 ### Evaluation cadence
 
@@ -227,17 +233,17 @@ All call `progress_mission` for the relevant metric:
 
 ## 7. Open Questions
 
-| # | Question | Owner | Blocking? |
-|---|----------|-------|-----------|
-| Q1 | Initial gem-cost ladder values (e.g. `[0, 25, 75, 200]`) | Operator | Non-blocking — BO-editable; needs a v1 default for Phase 1 seed |
-| Q2 | Final reward magnitudes per rarity tier (coins/gems/XP/MP per Common, Rare, Epic) | Operator | Non-blocking — BO-editable; needs v1 defaults |
-| Q3 | Chest content bundles for the 4 milestones | Operator | Non-blocking — BO-editable |
-| Q4 | Streak chest content bundle | Operator | Non-blocking — BO-editable |
-| Q5 | Weekly Challenge initial template (the "Win 15 ranked matches" equivalent for v1) | Operator | Non-blocking — BO-editable |
-| Q6 | Avatar frames feature — how broad? Just for missions, or a separate cosmetics shop too? | Operator | Blocking for Phase 1 schema — `user_inventory` design assumes generic items |
-| Q7 | Daily reset timezone — UTC, or player-local-derived? | Engineering | Default: UTC for everything; revisit if support tickets pile up |
-| Q8 | Should "complete N other missions" meta-mission count its own claim? | Engineering | Default: no, to prevent recursion |
-| Q9 | Anti-cheat: how strict should `progress_mission` idempotency be? Replay attack protection? | Engineering | SECURITY DEFINER + idempotency key (event_id) covers the realistic surface |
+| #   | Question                                                                                   | Owner       | Blocking?                                                                   |
+| --- | ------------------------------------------------------------------------------------------ | ----------- | --------------------------------------------------------------------------- |
+| Q1  | Initial gem-cost ladder values (e.g. `[0, 25, 75, 200]`)                                   | Operator    | Non-blocking — BO-editable; needs a v1 default for Phase 1 seed             |
+| Q2  | Final reward magnitudes per rarity tier (coins/gems/XP/MP per Common, Rare, Epic)          | Operator    | Non-blocking — BO-editable; needs v1 defaults                               |
+| Q3  | Chest content bundles for the 4 milestones                                                 | Operator    | Non-blocking — BO-editable                                                  |
+| Q4  | Streak chest content bundle                                                                | Operator    | Non-blocking — BO-editable                                                  |
+| Q5  | Weekly Challenge initial template (the "Win 15 ranked matches" equivalent for v1)          | Operator    | Non-blocking — BO-editable                                                  |
+| Q6  | Avatar frames feature — how broad? Just for missions, or a separate cosmetics shop too?    | Operator    | Blocking for Phase 1 schema — `user_inventory` design assumes generic items |
+| Q7  | Daily reset timezone — UTC, or player-local-derived?                                       | Engineering | Default: UTC for everything; revisit if support tickets pile up             |
+| Q8  | Should "complete N other missions" meta-mission count its own claim?                       | Engineering | Default: no, to prevent recursion                                           |
+| Q9  | Anti-cheat: how strict should `progress_mission` idempotency be? Replay attack protection? | Engineering | SECURITY DEFINER + idempotency key (event_id) covers the realistic surface  |
 
 ---
 
@@ -245,23 +251,25 @@ All call `progress_mission` for the relevant metric:
 
 **Total estimate: 7–8 weeks of solo development.**
 
-| Phase | Scope | Estimate | Gating dependency |
-|-------|-------|----------|-------------------|
-| **1** | **Schema migrations** — all 10 tables + 2 extensions + RLS + seed v1 templates and currencies | 1 week | none |
-| **2** | **Nightly metric recompute cron** + tier derivation Postgres function | 4 days | Phase 1 |
-| **3** | **Daily assignment cron** — 4 slots, resolution math, anti-repeat | 4 days | Phases 1, 2 |
-| **4** | **Mission lifecycle RPCs** — `progress_mission`, `claim_mission`, idempotency, 5 event-hook sites | 1 week | Phases 1, 3 |
-| **5** | **Weekly pass + chests + streak + rerolls** — RPCs and state transitions | 1 week | Phases 1, 4 |
-| **6** | **Frontend** — Daily Missions screen, mission cards, chest track, weekly + streak panels, reroll + chest modals | 1.5 weeks | Phases 4, 5 |
-| **7** | **BO authoring surfaces** — 5 editors + dry-run preview | 1 week | Phase 1 (can run parallel to Phase 6) |
-| **8** | **Internal dark-launch** — operator self-play on dev DB, coefficient tuning, then public release | 3–5 days | All prior phases |
+| Phase | Scope                                                                                                           | Estimate  | Gating dependency                     |
+| ----- | --------------------------------------------------------------------------------------------------------------- | --------- | ------------------------------------- |
+| **1** | **Schema migrations** — all 10 tables + 2 extensions + RLS + seed v1 templates and currencies                   | 1 week    | none                                  |
+| **2** | **Nightly metric recompute cron** + tier derivation Postgres function                                           | 4 days    | Phase 1                               |
+| **3** | **Daily assignment cron** — 4 slots, resolution math, anti-repeat                                               | 4 days    | Phases 1, 2                           |
+| **4** | **Mission lifecycle RPCs** — `progress_mission`, `claim_mission`, idempotency, 5 event-hook sites               | 1 week    | Phases 1, 3                           |
+| **5** | **Weekly pass + chests + streak + rerolls** — RPCs and state transitions                                        | 1 week    | Phases 1, 4                           |
+| **6** | **Frontend** — Daily Missions screen, mission cards, chest track, weekly + streak panels, reroll + chest modals | 1.5 weeks | Phases 4, 5                           |
+| **7** | **BO authoring surfaces** — 5 editors + dry-run preview                                                         | 1 week    | Phase 1 (can run parallel to Phase 6) |
+| **8** | **Internal dark-launch** — operator self-play on dev DB, coefficient tuning, then public release                | 3–5 days  | All prior phases                      |
 
 ### Critical path
+
 Phases 1 → 2 → 3 → 4 → 5 → 6 → 8. Phase 7 can parallelize against Phase 6 once Phase 1 lands.
 
 ### Phase 8 dark-launch gates
 
 Before publishing to players:
+
 1. Operator (Yaniv) plays for 3 days with the full assigned mission slate
 2. All 11 mission template concepts trigger correctly from real gameplay
 3. At least one chest milestone claimed
@@ -271,6 +279,7 @@ Before publishing to players:
 ### Risk: scope drift
 
 Two mitigation rules baked into the plan:
+
 1. The 11-template catalog is locked. New mission concepts go to P1.
 2. The 5 BO surfaces are locked. No new authoring surfaces in v1.
 
@@ -290,10 +299,10 @@ These rules from the project's CLAUDE.md apply equally to Daily Missions:
 
 ## 10. Open Threads After Spec Sign-off
 
-- Spec doc: this file (`docs/specs/daily-missions.md`)
+- Spec doc: this file (`docs/archive/daily-missions-spec-2026-05-23.md`)
 - Migration: `supabase/migrations/<next_num>_daily_missions_v1_schema.sql` (Phase 1 first artifact)
 - Task list: tracked in TaskCreate, one entry per phase
 
 ---
 
-*End of PRD. Next action: kick off Phase 1 with the schema migration.*
+_End of PRD. Next action: kick off Phase 1 with the schema migration._

@@ -101,6 +101,23 @@ code, and neither is tested.
 
 ---
 
+## Documentation
+
+The `docs/` folder is the documentation home. It is organized into:
+
+- `docs/reference/` — durable product and system knowledge (product, missions,
+  architecture, online play, economy, admin).
+- `docs/runbooks/` — repeatable operator and developer procedures.
+- `docs/tasks/` — unimplemented work items with problem statements and
+  acceptance criteria.
+- `docs/bugs/` — confirmed defects tracked for fixing.
+- `docs/archive/` — historical documents, never cited as current facts.
+
+Start at `docs/README.md` for the index and topic ownership. This file stays the
+rule authority; the references describe structure and flows and link back here.
+
+---
+
 ## Coordinate convention
 
 - Points are indexed `0..23`.
