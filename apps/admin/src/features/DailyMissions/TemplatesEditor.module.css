@@ -436,20 +436,9 @@
 }
 
 .saveButton {
+  composes: saveButton from "../../styles/shared.module.css";
   flex: 1;
-  border-radius: 0.25rem;
-  background-color: #059669;
   padding: 0.5rem 0;
-  font-weight: 700;
-  color: #fff;
-}
-
-.saveButton:hover {
-  background-color: #10b981;
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
 }
 
 .duplicateButton {

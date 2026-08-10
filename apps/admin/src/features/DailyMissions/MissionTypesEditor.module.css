@@ -43,7 +43,7 @@
 }
 
 .rowEditing {
-  border-color: rgba(245, 158, 11, 0.6);
+  composes: rowEditing from "../../styles/shared.module.css";
 }
 
 .rowHeader {
@@ -107,17 +107,8 @@
 }
 
 .editButton {
+  composes: editButton from "../../styles/shared.module.css";
   flex-shrink: 0;
-  border-radius: 0.25rem;
-  background-color: rgba(245, 158, 11, 0.2);
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: #fef3c7;
-}
-
-.editButton:hover {
-  background-color: rgba(245, 158, 11, 0.3);
 }
 
 .editBody {
@@ -205,19 +196,8 @@
 }
 
 .saveButton {
-  composes: textWhite from "../../styles/shared.module.css";
-  border-radius: 0.25rem;
-  background-color: #059669;
+  composes: saveButton from "../../styles/shared.module.css";
   padding: 0.5rem 1rem;
-  font-weight: 700;
-}
-
-.saveButton:hover {
-  background-color: #10b981;
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
 }
 
 .empty {

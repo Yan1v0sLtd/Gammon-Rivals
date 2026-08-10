@@ -180,6 +180,41 @@
   color: #fecdd3;
 }
 
+/* Amber edit / close button. */
+.editButton {
+  border-radius: 0.25rem;
+  background-color: rgba(245, 158, 11, 0.2);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #fef3c7;
+}
+
+.editButton:hover {
+  background-color: rgba(245, 158, 11, 0.3);
+}
+
+/* Emerald save button base. Padding and flex are set by the consumer. */
+.saveButton {
+  border-radius: 0.25rem;
+  background-color: #059669;
+  font-weight: 700;
+  color: #fff;
+}
+
+.saveButton:hover {
+  background-color: #10b981;
+}
+
+.saveButton:disabled {
+  opacity: 0.5;
+}
+
+/* Amber border for an actively-edited row. */
+.rowEditing {
+  border-color: rgba(245, 158, 11, 0.6);
+}
+
 /* Small right-aligned mono numeric input (board tuning / felt corners /
  * bear-off trays). Width is set by the consumer (w-16 vs w-full). */
 .monoInput {

@@ -1,0 +1,119 @@
+.loadingCard {
+  composes: loadingCard from "../../styles/shared.module.css";
+}
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.errorBox {
+  composes: roseBox from "../../styles/shared.module.css";
+}
+
+.row {
+  composes: cardSm from "../../styles/shared.module.css";
+}
+
+.rowEditing {
+  composes: rowEditing from "../../styles/shared.module.css";
+}
+
+.rowHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chestImg {
+  height: 2.5rem;
+  width: 2.5rem;
+  object-fit: contain;
+}
+
+.chestName {
+  composes: textWhite from "../../styles/shared.module.css";
+  font-weight: 700;
+}
+
+.chestMeta {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.rewardList {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.rewardChip {
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.editButton {
+  composes: editButton from "../../styles/shared.module.css";
+}
+
+.editBody {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .editBody {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ringInput {
+  composes: ringInput from "../../styles/shared.module.css";
+}
+
+.checkLabel {
+  composes: textWhite from "../../styles/shared.module.css";
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.rewardTitle {
+  composes: sectionTitle from "../../styles/shared.module.css";
+  margin-bottom: 0.25rem;
+}
+
+@media (min-width: 640px) {
+  .span2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+.saveRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.saveButton {
+  composes: saveButton from "../../styles/shared.module.css";
+  flex: 1 1 0%;
+  padding: 0.5rem 0;
+}

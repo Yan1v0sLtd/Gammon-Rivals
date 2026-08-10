@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from "react"
 
 import {extractErrorMessage} from "../../../../../packages/shared/src/errors.ts"
 
+import styles from "./ChestsEditor.module.css"
 import {useGetChestMilestonesQuery, useGetChestRewardsQuery, useSaveChestMilestoneMutation} from "./DailyMissionsApi"
 import type {ChestMilestoneRow, ChestMilestoneUpdate, ChestRewardInsert, ChestRewardRow} from "./DailyMissionsData"
 import type {RewardRow} from "./MissionsAdminShared"
@@ -115,46 +116,46 @@ export function ChestsEditor({canManage}: {
   }
 
   if (chestsLoading || chestRewardsLoading) {
-    return (<div className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+    return (<div className={styles.loadingCard}>
       Loading chest milestones…
     </div>)
   }
 
-  return (<div className="space-y-3">
+  return (<div className={styles.wrap}>
     {loadErrors.map((m) => (<div
       key={m}
-      className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">
+      className={styles.errorBox}>
       {m}
     </div>))}
 
     {chests.map((c) => (<div
       key={c.id}
-      className={`rounded-xl border bg-white/[0.045] p-3 ${editingId === c.id ? "border-amber-500/60" : "border-white/10"}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      className={styles.row + (editingId === c.id ? " " + styles.rowEditing : "")}>
+      <div className={styles.rowHeader}>
+        <div className={styles.rowLeft}>
           <img
             alt=""
-            className="h-10 w-10 object-contain"
+            className={styles.chestImg}
             draggable={false}
             src={`/lobby/missions/chest-${c.milestone_index}.webp`}
             onError={(e) => ((e.currentTarget).style.display = "none")}/>
           <div>
-            <div className="font-bold text-white">{c.display_name}</div>
-            <div className="text-xs text-white/60">
+            <div className={styles.chestName}>{c.display_name}</div>
+            <div className={styles.chestMeta}>
               Milestone {c.milestone_index} · {c.threshold_mp} MP · {c.rarity}
               · {c.enabled ? "enabled" : "disabled"}
             </div>
-            <div className="mt-1 flex flex-wrap gap-1.5">
+            <div className={styles.rewardList}>
               {(rewardsByMilestone[c.id] ?? []).map((r) => (<span
                 key={`${r.amount}-${r.reward_kind}-${r.currency_code ?? r.item_id ?? ""}`}
-                className="rounded bg-white/10 px-2 py-0.5 text-xs text-white/80">
+                className={styles.rewardChip}>
                 +{r.amount} {r.reward_kind === "currency" ? r.currency_code : r.item_id}
               </span>))}
             </div>
           </div>
         </div>
         {canManage && (<button
-          className="rounded bg-amber-500/20 px-3 py-1 text-sm text-amber-100 hover:bg-amber-500/30"
+          className={styles.editButton}
           type="button"
           onClick={() => {
             if (editingId === c.id) {
@@ -169,10 +170,10 @@ export function ChestsEditor({canManage}: {
       </div>
 
       {editingId === c.id && draftChest && (
-        <div className="mt-3 grid gap-2 border-t border-white/10 pt-3 sm:grid-cols-2">
+        <div className={styles.editBody}>
           <Field label="Display name">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               type="text"
               value={draftChest.display_name}
               onChange={(e) => {
@@ -184,7 +185,7 @@ export function ChestsEditor({canManage}: {
           </Field>
           <Field label="Threshold MP">
             <input
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               type="number"
               value={draftChest.threshold_mp}
               onChange={(e) => {
@@ -196,7 +197,7 @@ export function ChestsEditor({canManage}: {
           </Field>
           <Field label="Rarity">
             <select
-              className="w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.ringInput}
               value={draftChest.rarity}
               onChange={(e) => {
                 setDraftChest({
@@ -211,7 +212,7 @@ export function ChestsEditor({canManage}: {
             </select>
           </Field>
           <Field label="Enabled">
-            <label className="flex items-center gap-2 text-sm text-white">
+            <label className={styles.checkLabel}>
               <input
                 checked={draftChest.enabled}
                 type="checkbox"
@@ -224,17 +225,17 @@ export function ChestsEditor({canManage}: {
               {draftChest.enabled ? "Active" : "Hidden"}
             </label>
           </Field>
-          <div className="sm:col-span-2">
-            <div className="mb-1 text-xs uppercase tracking-wider text-amber-100/70">Reward bundle</div>
+          <div className={styles.span2}>
+            <div className={styles.rewardTitle}>Reward bundle</div>
             <RewardBundleEditor
               disabled={!canManage}
               rows={draftRewards}
               onChange={setDraftRewards}/>
           </div>
-          {error && <div className="rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200 sm:col-span-2">{error}</div>}
-          <div className="sm:col-span-2 flex gap-2">
+          {error && <div className={styles.errorBox + " " + styles.span2}>{error}</div>}
+          <div className={styles.saveRow + " " + styles.span2}>
             <button
-              className="flex-1 rounded bg-emerald-600 py-2 font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+              className={styles.saveButton}
               disabled={saving}
               type="button"
               onClick={save}>
