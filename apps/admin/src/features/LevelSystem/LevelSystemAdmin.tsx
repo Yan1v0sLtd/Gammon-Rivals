@@ -16,6 +16,7 @@ import {useAdminAuth} from "../../lib/useAdminAuth"
 import {useGetCurrenciesQuery} from "../Currencies/CurrenciesApi"
 
 import {LevelCurveProposal} from "./LevelCurveProposal"
+import styles from "./LevelSystemAdmin.module.css"
 import {
   useApplyLevelCurveMutation,
   useDeleteLevelStatusTiersMutation,
@@ -358,38 +359,38 @@ export function LevelSystemAdmin({
 
   return (<>
     {error ? (<div
-      className="mb-4 rounded-lg border border-rose-300/25 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+      className={styles.errorBanner}>
       {error}
     </div>) : null}
     {initialLoading ? (<div
-      className="rounded-xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/55">
+      className={styles.loadingCard}>
       Loading level system…
     </div>) : (<>
       {/* Status Tiers — declarative level → rank label. The
             lobby derives status from these rows in real time,
             so changes here propagate without re-applying the
             curve or touching individual level rows. */}
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-black">Status tiers</h2>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-white/40">
+      <div className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <h2 className={styles.panelTitle}>Status tiers</h2>
+          <span className={styles.panelTag}>
             declarative level → rank label
           </span>
         </div>
-        <p className="mt-1 text-xs text-white/55">
+        <p className={styles.panelDesc}>
           Map level ranges to a rank label (Rookie, Veteran, etc.).
           The lobby derives a player's displayed status from these
           tiers — so changing a range updates every level without
           re-applying the curve. Ranges may overlap; the lowest
           sort_order wins.
         </p>
-        <div className="mt-4 space-y-2">
+        <div className={styles.tierList}>
           {tierDrafts.length === 0 ? (<div
-            className="rounded-lg border border-white/10 bg-black/20 px-4 py-6 text-center text-xs text-white/45">
+            className={styles.tierEmpty}>
             No tiers configured. Click "+ Add tier" to define your first range.
           </div>) : (<>
             <div
-              className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] gap-2 px-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+              className={styles.tierHeader}>
               <span>From</span>
               <span>To</span>
               <span>Label</span>
@@ -399,9 +400,9 @@ export function LevelSystemAdmin({
             </div>
             {tierDrafts.map((draft, i) => (<div
               key={`tier-${draft.id ?? `${draft.level_from}-${draft.level_to}-${draft.label}-${draft.sort_order}`}`}
-              className="grid grid-cols-[5rem_5rem_minmax(0,1fr)_5rem_5rem_2rem] items-center gap-2">
+              className={styles.tierRow}>
               <input
-                className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                className={styles.tierInput}
                 min="1"
                 type="number"
                 value={draft.level_from}
@@ -409,7 +410,7 @@ export function LevelSystemAdmin({
                   updateTierDraft(i, {level_from: e.target.value})
                 }}/>
               <input
-                className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                className={styles.tierInput}
                 min="1"
                 type="number"
                 value={draft.level_to}
@@ -417,7 +418,7 @@ export function LevelSystemAdmin({
                   updateTierDraft(i, {level_to: e.target.value})
                 }}/>
               <input
-                className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none placeholder:text-white/20 focus:border-amber-200/60"
+                className={styles.tierInputLabel}
                 placeholder="Rookie"
                 type="text"
                 value={draft.label}
@@ -425,24 +426,24 @@ export function LevelSystemAdmin({
                   updateTierDraft(i, {label: e.target.value})
                 }}/>
               <input
-                className="w-full rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-sm text-white outline-none focus:border-amber-200/60"
+                className={styles.tierInput}
                 type="number"
                 value={draft.sort_order}
                 onChange={(e) => {
                   updateTierDraft(i, {sort_order: e.target.value})
                 }}/>
               <label
-                className="flex h-9 items-center justify-center rounded-lg border border-white/10 bg-black/20">
+                className={styles.tierCheckboxCell}>
                 <input
                   checked={draft.is_enabled}
-                  className="h-4 w-4 accent-amber-300"
+                  className={styles.tierCheckbox}
                   type="checkbox"
                   onChange={(e) => {
                     updateTierDraft(i, {is_enabled: e.target.checked})
                   }}/>
               </label>
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-rose-300/30 bg-rose-300/10 text-base font-black text-rose-200/80 transition hover:bg-rose-300/20"
+                className={styles.tierRemove}
                 title="Remove tier"
                 type="button"
                 onClick={() => {
@@ -453,7 +454,7 @@ export function LevelSystemAdmin({
             </div>))}
           </>)}
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className={styles.tierActions}>
           <SecondaryButton onClick={addBlankTier}>+ Add tier</SecondaryButton>
           <PrimaryButton
             disabled={!canManage || savingTiers}
@@ -462,11 +463,11 @@ export function LevelSystemAdmin({
           </PrimaryButton>
           <SecondaryButton onClick={resetTierDrafts}>Discard changes</SecondaryButton>
           {tierError ? (<span
-            className="rounded-lg border border-rose-300/40 bg-rose-300/10 px-3 py-1 text-xs font-bold text-rose-100">
+            className={styles.tierStatus}>
             {tierError}
           </span>) : null}
           {tierMessage ? (<span
-            className="rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-100">
+            className={styles.tierMessage}>
             {tierMessage}
           </span>) : null}
         </div>
@@ -476,16 +477,16 @@ export function LevelSystemAdmin({
             editor on the right. `items-start` lets the sticky
             child stop at the top of the column instead of
             stretching to match the table's height. */}
-      <div className="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]">
+      <div className={styles.levelsGrid}>
         <div>
           {/* Pagination controls */}
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-            <span className="text-white/40 uppercase tracking-[0.14em] font-bold">
+          <div className={styles.pagination}>
+            <span className={styles.pageLabel}>
               Rows per page:
             </span>
             {pageSizeOptions.map((option) => (<button
               key={`page-size-${option}`}
-              className={`rounded-md px-2.5 py-1 font-bold transition ${levelsPageSize === option ? "bg-amber-300/20 text-amber-100 border border-amber-200/40" : "bg-white/[0.04] text-white/55 border border-white/10 hover:border-white/25"}`}
+              className={styles.pageSizeButton + " " + (levelsPageSize === option ? styles.pageSizeActive : styles.pageSizeInactive)}
               type="button"
               onClick={() => {
                 setLevelsPageSize(option)
@@ -493,9 +494,9 @@ export function LevelSystemAdmin({
               }}>
               {option === "all" ? "All" : option}
             </button>))}
-            <span className="ml-auto flex items-center gap-2 text-white/55">
+            <span className={styles.pageNav}>
               <button
-                className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
+                className={styles.pageButton}
                 disabled={clampedPageIndex === 0}
                 type="button"
                 onClick={() => {
@@ -503,11 +504,11 @@ export function LevelSystemAdmin({
                 }}>
                 ‹ Prev
               </button>
-              <span className="font-mono text-white/70">
+              <span className={styles.pageCount}>
                 {totalLevels === 0 ? "no rows" : `${pageStart + 1}–${pageEnd} of ${totalLevels}`}
               </span>
               <button
-                className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 disabled:opacity-40"
+                className={styles.pageButton}
                 disabled={clampedPageIndex >= totalPages - 1}
                 type="button"
                 onClick={() => {
@@ -527,9 +528,9 @@ export function LevelSystemAdmin({
               setLevelDraft(levelToDraft(pagedLevels[index]))
             }}/>
         </div>
-        <div className="sticky top-4 rounded-xl border border-white/10 bg-white/[0.045] p-4">
-          <h2 className="text-lg font-black">Edit level</h2>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className={styles.editorPanel}>
+          <h2 className={styles.panelTitle}>Edit level</h2>
+          <div className={styles.editorGrid}>
             <Field
               label="Level"
               value={levelDraft.level}
@@ -576,11 +577,11 @@ export function LevelSystemAdmin({
                 }))
               }}/>
           </div>
-          <p className="mt-2 text-[10px] text-white/35">
+          <p className={styles.editorNote}>
             "Status label" on a level row is legacy — the Status
             tiers panel above takes precedence in the lobby.
           </p>
-          <div className="mt-3 space-y-3">
+          <div className={styles.editorBody}>
             <TextArea
               label="Reward items JSON array"
               value={levelDraft.reward_items}
@@ -608,7 +609,7 @@ export function LevelSystemAdmin({
                   is_enabled,
                 }))
               }}/>
-            <div className="flex gap-2">
+            <div className={styles.editorActions}>
               <PrimaryButton
                 disabled={!canManage || levelSaving}
                 onClick={() => void saveLevel()}>Save

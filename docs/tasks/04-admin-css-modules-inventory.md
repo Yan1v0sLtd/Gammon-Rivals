@@ -195,7 +195,7 @@ Grouped by migration phase. Count = `className` occurrences.
 | `features/Shop/ShopAdmin.tsx` | 47 | ✅ done |
 | `features/DailyMissions/SimulatorTab.tsx` | 47 | ✅ done |
 | `features/DailyMissions/MissionTypesEditor.tsx` | 37 | ✅ done |
-| `features/LevelSystem/LevelSystemAdmin.tsx` | 34 |
+| `features/LevelSystem/LevelSystemAdmin.tsx` | 34 | ✅ done |
 | `features/DailyMissions/ChestsEditor.tsx` | 21 |
 | `features/Dashboard/DashboardAdmin.tsx` | 20 |
 | `features/DailyMissions/RerollEditor.tsx` | 15 |

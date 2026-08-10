@@ -5,10 +5,7 @@
 }
 
 .loadingCard {
-  composes: card from "../../styles/shared.module.css";
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: rgba(255, 255, 255, 0.55);
+  composes: loadingCard from "../../styles/shared.module.css";
 }
 
 .intro {
@@ -19,7 +16,7 @@
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  composes: mono from "../../styles/shared.module.css";
 }
 
 .wiredMeta {
@@ -204,12 +201,7 @@
 }
 
 .errorBox {
-  border-radius: 0.25rem;
-  background-color: rgba(76, 5, 25, 0.6);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  color: #fecdd3;
+  composes: roseBox from "../../styles/shared.module.css";
 }
 
 .saveButton {

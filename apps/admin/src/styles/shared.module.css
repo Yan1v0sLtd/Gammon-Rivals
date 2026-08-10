@@ -15,6 +15,11 @@
   color: #fff;
 }
 
+/* Monospace font stack for code / metric values. */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 /* Standard transition: full transitioned-property set, 150ms,
  * cubic-bezier(0.4, 0, 0.2, 1). Composed where a transition is needed. */
 .transition {
@@ -59,9 +64,7 @@
 
 /* Card with smaller padding (dense panels). */
 .cardSm {
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background-color: rgba(255, 255, 255, 0.045);
+  composes: card;
   padding: 0.75rem;
 }
 
@@ -70,6 +73,14 @@
   font-size: 1.125rem;
   line-height: 1.75rem;
   font-weight: 900;
+}
+
+/* Card used for initial-load placeholders. */
+.loadingCard {
+  composes: card;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Standard text input / textarea chrome. Font size, family, line-height and
@@ -158,15 +169,26 @@
   letter-spacing: 0.05em;
 }
 
+/* Rose message box (inline error / status). Margins are set by the
+ * consumer. */
+.roseBox {
+  border-radius: 0.25rem;
+  background-color: rgba(76, 5, 25, 0.6);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #fecdd3;
+}
+
 /* Small right-aligned mono numeric input (board tuning / felt corners /
  * bear-off trays). Width is set by the consumer (w-16 vs w-full). */
 .monoInput {
+  composes: mono;
   border-radius: 0.25rem;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background-color: rgba(0, 0, 0, 0.3);
   padding: 0.25rem 0.375rem;
   text-align: right;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
   text-transform: none;
   letter-spacing: normal;
