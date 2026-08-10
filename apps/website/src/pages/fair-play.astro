@@ -1,0 +1,79 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Trust page. Claims must match how the game actually runs: server-rolled
+     dice and server-validated moves in online play, engine-validated local
+     play, AI opponents disclosed. Do not overstate. -->
+<LegalLayout
+  title={`Fair Play — How Dice and Matchmaking Work in ${site.name}`}
+  description={`How ${site.name} keeps matches fair: dice rolled on our servers, every move checked against the rules, matches recorded, and AI opponents clearly labelled.`}
+  canonical={`${site.url}/fair-play`}
+>
+  <h1>Fair Play</h1>
+  <p class="doc-meta">
+    Every backgammon player has, at some point, been sure the dice were against
+    them. Here is exactly how ours work.
+  </p>
+
+  <h2>Your phone does not roll the dice</h2>
+  <p>
+    In an online match, neither player's phone decides anything. Your device
+    asks our server for a roll, the server generates it and stores it with the
+    match, and both players are told the same numbers at the same moment. A
+    modified app cannot pick its own numbers, because the numbers were never
+    its to pick.
+  </p>
+
+  <h2>The dice do not know who you are</h2>
+  <p>
+    Rolls are random and independent. They are not weighted by your balance,
+    your level, your win streak, your opponent, or whether you just bought
+    anything. There is no code that makes you lose to keep a match close, and
+    there is none that rewards a purchase with better numbers. The game has
+    nothing to gain from it: your chips are virtual and stay in the app.
+  </p>
+
+  <h2>Illegal moves are impossible, not discouraged</h2>
+  <p>
+    The rules of backgammon live in one piece of code that both your app and
+    our server use. Before a move counts, it is checked against every legal
+    move for that roll. If it is not in the list, it does not happen. That is
+    also why the board only ever highlights moves you are allowed to make.
+  </p>
+
+  <h2>Matches are recorded</h2>
+  <p>
+    Every roll and every move of a match is stored. If a game ends in a way you
+    did not expect, we can replay it exactly as it happened and tell you what
+    the server saw. Write to <a href="/support">Support</a> with roughly when
+    it happened and we will look.
+  </p>
+
+  <h2>When your opponent is an AI</h2>
+  <p>
+    Matchmaking prefers a human. When no one is available at your tier, you are
+    paired with an AI opponent so you are not left waiting. The AI plays the
+    same board with the same rules and the same server-rolled dice as a person
+    would — it does not see your dice in advance and it does not get extra
+    ones. Difficulty comes from how well it picks moves, nothing else.
+  </p>
+
+  <h2>Cheating and collusion</h2>
+  <p>
+    Because the server owns the dice, the moves, and the score, the usual
+    cheats simply have nothing to attack. What we do act on is human behaviour:
+    stalling, dumping matches to move chips between accounts, or running
+    multiple accounts. Our <a href="/community-rules">Community Rules</a>
+    explain what happens then.
+  </p>
+
+  <h2>Found something that looks wrong?</h2>
+  <p>
+    Tell us. A time, a screenshot, and your display name are enough for us to
+    find the match. We would rather check a hundred honest complaints than
+    leave one real bug running.
+  </p>
+</LegalLayout>

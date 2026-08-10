@@ -1,0 +1,124 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Answers questions about the product; /support is where you write to a
+     person. Keep the two from duplicating: no "email us" wall of text here. -->
+<LegalLayout
+  title={`FAQ — ${site.name}`}
+  description={`Common questions about ${site.name}: Coins and Gems, AI opponents, difficulty tiers, board themes, offline play, and account questions.`}
+  canonical={`${site.url}/faq`}
+>
+  <h1>Frequently Asked Questions</h1>
+  <p class="doc-meta">
+    Rules questions are answered on <a href="/rules">Backgammon Rules</a>.
+    Anything not here, write to <a href="/support">Support</a>.
+  </p>
+
+  <h2>Playing</h2>
+
+  <h3>Is it free?</h3>
+  <p>
+    Yes. You can play every tier, unlock boards, and climb the ranks without
+    paying. Purchases are optional and buy Coins or Gems, never an advantage in
+    the dice.
+  </p>
+
+  <h3>Am I playing a person or a computer?</h3>
+  <p>
+    Both happen. Matchmaking looks for a human first and pairs you with an AI
+    opponent when nobody is free at your tier, so a game always starts.
+    <a href="/fair-play">Fair Play</a> explains how the AI works.
+  </p>
+
+  <h3>How hard is the AI?</h3>
+  <p>
+    There are five difficulty tiers, from a gentle opponent for a first game up
+    to one that punishes loose checkers. Higher tiers also play for higher
+    stakes in Coins.
+  </p>
+
+  <h3>Can I play offline?</h3>
+  <p>
+    Matches against other players need a connection, because the dice come from
+    our servers. A local match against the AI keeps working when the signal
+    drops; your rewards and stats sync once you are back online.
+  </p>
+
+  <h3>What happens if I disconnect mid-match?</h3>
+  <p>
+    The match lives on the server, not on your phone, so a dropped signal does
+    not wipe the board. Stay away too long and the match is forfeited to your
+    opponent — see <a href="/community-rules">Community Rules</a>.
+  </p>
+
+  <h3>Why can I not make that move?</h3>
+  <p>
+    Because it is not legal for that roll. The board highlights every move you
+    are allowed to make, including the rule that forces you to use both dice
+    when possible. The <a href="/rules">rules page</a> covers the awkward cases:
+    the bar, blocked entry, and bearing off with a high die.
+  </p>
+
+  <h2>Coins, Gems, and the shop</h2>
+
+  <h3>What is the difference between Coins and Gems?</h3>
+  <p>
+    Coins are the everyday currency you win and stake in matches. Gems are the
+    rarer one, used for premium unlocks. Both are virtual: {site.disclaimer}
+  </p>
+
+  <h3>I ran out of Coins. Now what?</h3>
+  <p>
+    Wait for the hourly bonus, spin the wheel, or finish your daily missions.
+    Coins come back for free; you never have to buy them.
+  </p>
+
+  <h3>I paid and nothing arrived.</h3>
+  <p>
+    Send us the store receipt and we will fix the balance. Refunds go through
+    the App Store or Google Play, since that is who took the payment.
+    <a href="/support">Support</a> has the details to include.
+  </p>
+
+  <h3>Can I cash out my Coins?</h3>
+  <p>
+    No. Coins and Gems have no cash value and cannot be sold, cashed out, or
+    traded outside the app. See <a href="/responsible-play">Responsible Play</a>.
+  </p>
+
+  <h2>Your account</h2>
+
+  <h3>Do I need an account?</h3>
+  <p>
+    You can start playing straight away. Signing in links your progress to you,
+    so a new phone does not mean a fresh start.
+  </p>
+
+  <h3>Will I lose my progress if I change phone?</h3>
+  <p>
+    Not if you have signed in. A guest account lives on the device only — sign
+    in before you switch phones.
+  </p>
+
+  <h3>Can I change my display name?</h3>
+  <p>
+    Yes, from your profile. Names are public to opponents, so
+    <a href="/community-rules">Community Rules</a> apply to them.
+  </p>
+
+  <h3>How do I delete my account?</h3>
+  <p>
+    Follow <a href="/delete-account">Delete Your Account</a>. Deletion is
+    permanent and removes your profile, balances, and match history.
+  </p>
+
+  <h3>Which data do you hold?</h3>
+  <p>
+    The account, the profile, the balances, and the matches — the detail is in
+    the <a href="/privacy">Privacy Policy</a>. We never see your card: payments
+    stay with the app stores.
+  </p>
+</LegalLayout>

@@ -67,7 +67,8 @@ apps/
     ├── config/site.ts             → Company, contact, legal and marketing strings — never hardcode them in a page
     ├── layouts/                   → SiteLayout + LegalLayout shells
     ├── components/                → Header/footer, feature grid, board strip
-    ├── pages/                     → index, how-to-play, about, support, legal, delete-account, 404
+    ├── pages/                     → index, download, how-to-play, rules, faq, about, support, fair-play,
+    │                                  community-rules, responsible-play, press, licenses, legal, delete-account, 404
     └── styles/
 packages/
 ├── engine/src/                    → Pure TypeScript rules and tests

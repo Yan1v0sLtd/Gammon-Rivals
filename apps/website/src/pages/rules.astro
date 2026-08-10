@@ -1,0 +1,137 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Reference page for the rules of backgammon as the game enforces them.
+     Every statement here must match packages/engine/src/rules.ts and
+     match.ts — if the engine changes, this page changes. -->
+<LegalLayout
+  title="Backgammon Rules — How the Game Works"
+  description="The complete rules of backgammon: setup, movement, hitting, the bar, bearing off, the doubling cube, gammons, and match play with the Crawford rule."
+  canonical={`${site.url}/rules`}
+>
+  <h1>Backgammon Rules</h1>
+  <p class="doc-meta">
+    The full rules, as {site.name} plays them. New to the game? The short
+    version is on <a href="/how-to-play">How to Play</a>.
+  </p>
+
+  <h2>The board and the setup</h2>
+  <p>
+    The board has 24 narrow triangles called points, in four quarters of six.
+    Each player has 15 checkers and moves them in opposite directions, from
+    their opponent's home board towards their own. The starting position never
+    changes:
+  </p>
+  <ul>
+    <li>2 checkers on your 24-point (the far corner);</li>
+    <li>5 checkers on your 13-point;</li>
+    <li>3 checkers on your 8-point; and</li>
+    <li>5 checkers on your 6-point.</li>
+  </ul>
+  <p>
+    Both players start 167 pips from home. The pip count is the total distance
+    all your checkers still have to travel, and it is the honest measure of who
+    is ahead in a race.
+  </p>
+
+  <h2>The object</h2>
+  <p>
+    Bring all 15 of your checkers into your home board, then take them off the
+    board. The first player to bear off all 15 wins the game.
+  </p>
+
+  <h2>Moving</h2>
+  <ul>
+    <li>Each die is a separate move. A roll of 5 and 3 moves one checker five
+      points and another three, or one checker five then three.</li>
+    <li>Doubles are played four times: 4-4 gives you four moves of four.</li>
+    <li>You may land on an empty point, on your own checkers, or on a point
+      holding exactly one enemy checker.</li>
+    <li>A point with two or more enemy checkers is blocked. You cannot land
+      there, not even as the middle step of a two-die move.</li>
+    <li>You must play as many dice as the position allows. If only one number
+      can be played, play it; if either die alone is playable but not both,
+      you must play the higher one. If nothing is playable, your turn is
+      skipped.</li>
+  </ul>
+
+  <h2>Hitting and the bar</h2>
+  <p>
+    A single checker alone on a point is a blot. Land on it and it is hit: the
+    checker goes to the bar and starts its journey again from the beginning.
+  </p>
+  <p>
+    While you have a checker on the bar you may do nothing else. You must enter
+    it in your opponent's home board first, on the point matching a die — a 3
+    enters on their 3-point. If both entry points are blocked, your turn is
+    lost.
+  </p>
+
+  <h2>Bearing off</h2>
+  <p>
+    Once all 15 of your checkers are in your home board, you can start taking
+    them off:
+  </p>
+  <ul>
+    <li>Roll a 6, take a checker off your 6-point; roll a 3, take one off your
+      3-point.</li>
+    <li>If the matching point is empty, you must make a legal move inside your
+      home board with that number instead.</li>
+    <li>If the number is higher than any point you still occupy, you bear off
+      from your highest occupied point.</li>
+    <li>If a checker is hit while you are bearing off, it goes to the bar and
+      you must bring it all the way home again before you can take any more
+      checkers off.</li>
+  </ul>
+
+  <h2>Gammon and backgammon</h2>
+  <ul>
+    <li><strong>Single game</strong> — the loser has borne off at least one
+      checker. Worth 1 point.</li>
+    <li><strong>Gammon</strong> — the loser has borne off nothing. Worth double.</li>
+    <li><strong>Backgammon</strong> — the loser has borne off nothing and still
+      has a checker on the bar or in the winner's home board. Worth triple.</li>
+  </ul>
+
+  <h2>The doubling cube</h2>
+  <p>
+    The cube turns a good position into points. Before your roll, you may offer
+    to double the value of the game. Your opponent chooses:
+  </p>
+  <ul>
+    <li><strong>Take</strong> — the game is now worth twice as much, and only
+      they may offer the next double; or</li>
+    <li><strong>Drop</strong> — they concede immediately and you win the
+      current value.</li>
+  </ul>
+  <p>
+    The cube runs 2, 4, 8, 16 and on up, and it multiplies with gammons: a
+    gammon at 4 is worth 8 points.
+  </p>
+
+  <h2>Match play and the Crawford rule</h2>
+  <p>
+    Matches are played to a target score, not a single game. Games continue
+    until one player reaches the target.
+  </p>
+  <p>
+    The Crawford rule applies. When one player first reaches one point short of
+    the target, the next game is played without the cube. After that single
+    game the cube is live again.
+  </p>
+
+  <h2>What the app does for you</h2>
+  <p>
+    You never have to remember any of this at the table. {site.name} highlights
+    only legal moves, blocks illegal ones, counts pips, applies the Crawford
+    rule, and scores gammons and the cube automatically. The rules above are
+    here for the times you want to know <em>why</em> a move was refused.
+  </p>
+  <p>
+    Ready for a game? <a href="/download">Get the game</a>, or read
+    <a href="/fair-play">how our dice work</a>.
+  </p>
+</LegalLayout>

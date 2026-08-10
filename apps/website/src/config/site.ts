@@ -22,6 +22,12 @@ export const site = {
   privacyEmail: "support@gammonrivals.com",
   /** Governing law and venue named in the Terms. */
   jurisdiction: "Israel",
+  /** Minimum age stated in the Terms and Privacy Policy. */
+  minimumAge: 18,
+  /** Store listings. Empty until the app is published — /download then shows a
+      "tell me when it is out" prompt instead of a dead button. */
+  appStoreUrl: "",
+  googlePlayUrl: "",
   /** Date the current Terms and Privacy Policy took effect. Update it in the
       same commit that changes either document. */
   legalEffectiveDate: "4 August 2026",

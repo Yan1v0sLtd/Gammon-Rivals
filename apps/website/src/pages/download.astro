@@ -1,0 +1,141 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+
+// Single landing target for ads, QR codes, and social posts. Store buttons
+// appear as soon as the URLs are filled in in config/site.ts; until then the
+// page asks for an email instead of showing a dead button.
+const stores = [
+  { href: site.appStoreUrl, label: 'Download on the App Store', platform: 'iPhone and iPad' },
+  { href: site.googlePlayUrl, label: 'Get it on Google Play', platform: 'Android' },
+].filter(({ href }) => href.length > 0)
+---
+
+<SiteLayout
+  title={`Get ${site.name} — Play Backgammon on Your Phone`}
+  description={`Download ${site.name} for iPhone and Android. Free to play, no real-money stakes.`}
+  canonical={`${site.url}/download`}
+>
+  <div class="download-page">
+    <h1>Get {site.name}</h1>
+    <p class="lead">{site.description}</p>
+
+    {
+      stores.length > 0 ? (
+        <div class="store-links">
+          {stores.map(({ href, label, platform }) => (
+            <a class="store-link" href={href} rel="noopener noreferrer" target="_blank">
+              <strong>{label}</strong>
+              <span>{platform}</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="notify">
+          <p>
+            The app is in the final stretch before release on the App Store and
+            Google Play.
+          </p>
+          <a class="notify-cta" href={`mailto:${site.supportEmail}?subject=Tell%20me%20when%20${encodeURIComponent(site.name)}%20is%20out`}>
+            Email me at launch
+          </a>
+          <p class="small">
+            We use your address for that one message and nothing else. See our{' '}
+            <a href="/privacy">Privacy Policy</a>.
+          </p>
+        </div>
+      )
+    }
+
+    <ul class="points">
+      <li><strong>Free to play.</strong> Every board and tier is reachable without paying.</li>
+      <li><strong>Real opponents or AI.</strong> A match starts in seconds, at any hour.</li>
+      <li><strong>Server-rolled dice.</strong> Nobody's phone decides the numbers — <a href="/fair-play">here is how</a>.</li>
+      <li><strong>No gambling.</strong> Coins and Gems are virtual, with no cash value.</li>
+    </ul>
+
+    <p class="footnote">
+      New to backgammon? Read <a href="/how-to-play">How to Play</a> first, or
+      the full <a href="/rules">rules</a>.
+    </p>
+  </div>
+</SiteLayout>
+
+<style>
+  .download-page {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 3vw, 2.5rem) clamp(3rem, 6vw, 5rem);
+    text-align: center;
+  }
+  .download-page h1 {
+    margin: 0 0 0.8rem;
+    color: var(--site-gold);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+  }
+  .lead {
+    margin: 0 0 2rem;
+    color: var(--site-cream-dim);
+    line-height: 1.7;
+  }
+
+  .store-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2.4rem;
+  }
+  .store-link {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.85rem 1.8rem;
+    border-radius: 0.9rem;
+    background: var(--site-gold);
+    color: #071120;
+    text-decoration: none;
+  }
+  .store-link strong { font-size: 0.95rem; }
+  .store-link span { font-size: 0.75rem; opacity: 0.75; }
+  .store-link:hover { filter: brightness(1.08); }
+
+  .notify {
+    margin-bottom: 2.4rem;
+    padding: 1.6rem 1.4rem;
+    border: 1px solid var(--site-panel-border);
+    border-radius: 1rem;
+    background: var(--site-panel-bg);
+  }
+  .notify p { margin: 0 0 1rem; color: var(--site-cream-dim); line-height: 1.7; }
+  .notify-cta {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    border-radius: 9999px;
+    background: var(--site-gold);
+    color: #071120;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+  .notify-cta:hover { filter: brightness(1.08); }
+  .notify .small { margin: 1rem 0 0; font-size: 0.78rem; opacity: 0.8; }
+  .notify a:not(.notify-cta) { color: var(--site-gold); }
+
+  .points {
+    margin: 0 0 2rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.7rem;
+    text-align: left;
+    color: var(--site-cream-dim);
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .points strong { color: var(--site-cream); }
+  .points a { color: var(--site-gold); }
+
+  .footnote { margin: 0; font-size: 0.85rem; color: var(--site-cream-faint); }
+  .footnote a { color: var(--site-gold); }
+</style>

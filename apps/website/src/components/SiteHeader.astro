@@ -10,19 +10,22 @@ const current = pathname === '/' ? pathname : pathname.replace(/\/+$/, '')
 
 const links = [
   { href: '/how-to-play', label: 'How to Play' },
+  { href: '/rules', label: 'Rules' },
+  { href: '/faq', label: 'FAQ' },
   { href: '/about', label: 'About' },
   { href: '/support', label: 'Support' },
 ]
 ---
 
 <header class="site-header">
-  <a class="site-brand" href="/"><img src="/favicon.svg" alt="" aria-hidden="true" />{site.tradeName}</a>
+  <a class="site-brand" href="/" aria-current={current === '/' ? 'page' : undefined}><img src="/favicon.svg" alt="" aria-hidden="true" />{site.tradeName}</a>
   <nav class="site-nav" aria-label="Site">
     {
       links.map(({ href, label }) => (
         <a href={href} aria-current={current === href ? 'page' : undefined}>{label}</a>
       ))
     }
+    <a class="nav-cta" href="/download" aria-current={current === '/download' ? 'page' : undefined}>Get the game</a>
   </nav>
 </header>
 
@@ -85,8 +88,21 @@ const links = [
     border-radius: 2px;
   }
 
+  /* The CTA opts out of the underline treatment the plain links share. */
+  .site-nav .nav-cta {
+    padding: 0.42rem 1.1rem;
+    border-radius: 9999px;
+    background: var(--site-gold);
+    color: #071120;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+  .site-nav .nav-cta:hover { color: #071120; filter: brightness(1.08); }
+  .site-nav .nav-cta[aria-current='page']::after { content: none; }
+
   @media (max-width: 640px) {
     .site-header { flex-wrap: wrap; }
-    .site-nav { gap: 1rem; }
+    .site-nav { gap: 0.9rem; }
+    .site-nav a { font-size: 0.8rem; }
   }
 </style>

@@ -1,0 +1,80 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Player-facing summary of Terms Section 14 (Fair Play and Prohibited
+     Conduct) and Section 20 (Suspension and Termination). The Terms govern;
+     this page must never contradict them. -->
+<LegalLayout
+  title={`Community Rules — ${site.name}`}
+  description={`What gets an account suspended in ${site.name}, how to report a player, and what happens after a report.`}
+  canonical={`${site.url}/community-rules`}
+>
+  <h1>Community Rules</h1>
+  <p class="doc-meta">
+    Short version: play your best, leave the table as you found it, and do not
+    try to move chips between accounts. The binding version is in our
+    <a href="/terms">Terms</a>.
+  </p>
+
+  <h2>Play the game properly</h2>
+  <ul>
+    <li>Play your own moves. No bots, scripts, modified clients, or automation
+      of any kind.</li>
+    <li>Do not stall. Letting the clock run to annoy an opponent is a
+      forfeitable offence.</li>
+    <li>Do not quit a losing match to dodge the result. Finished or abandoned,
+      the match is scored.</li>
+  </ul>
+
+  <h2>One person, one account</h2>
+  <p>
+    Extra accounts used to feed chips to a main account, to reach easier
+    opponents, or to farm rewards are the most common form of cheating in a
+    game like this. Accounts found doing it lose their balances and are closed
+    — all of them.
+  </p>
+
+  <h2>Do not attack the game itself</h2>
+  <ul>
+    <li>No exploiting bugs. If you find one, report it; we would rather thank
+      you than ban you.</li>
+    <li>No tampering with the app, the network traffic, or our servers.</li>
+    <li>No buying, selling, or trading accounts, Coins, or Gems anywhere.</li>
+  </ul>
+
+  <h2>Respect the person on the other side</h2>
+  <p>
+    Display names are public. Names that are hateful, sexual, threatening,
+    impersonate someone, or advertise something else will be reset or the
+    account closed.
+  </p>
+
+  <h2>Reporting someone</h2>
+  <p>
+    Email <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> with
+    your display name, your opponent's display name, roughly when the match
+    happened, and a screenshot if you have one. Every match is recorded, so we
+    can review what actually took place.
+  </p>
+
+  <h2>What happens after a report</h2>
+  <ul>
+    <li>We review the recorded match and the account history behind it.</li>
+    <li>Depending on what we find: a warning, removal of chips gained unfairly,
+      a temporary suspension, or a permanent closure.</li>
+    <li>We do not report back on another player's punishment — that is their
+      private account information.</li>
+    <li>If your own account is actioned and you think we got it wrong, reply to
+      us. A person will look again.</li>
+  </ul>
+
+  <h2>Appeals and closures</h2>
+  <p>
+    Suspension and termination are covered by our <a href="/terms">Terms</a>,
+    Section 20. Coins and Gems held by a closed account are forfeited and have
+    no cash value, as set out in Sections 6 and 8.
+  </p>
+</LegalLayout>

@@ -1,0 +1,77 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import ContactUs from '../components/ContactUs.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Press kit. Facts here are quoted by other people, so keep them to what
+     the product actually does; assets are sent on request rather than
+     published, so brand-assets stays the single source. -->
+<LegalLayout
+  title={`Press — ${site.name}`}
+  description={`Press information for ${site.name} by ${site.legalName}: boilerplate, fact sheet, and media contact.`}
+  canonical={`${site.url}/press`}
+>
+  <h1>Press</h1>
+  <p class="doc-meta">
+    Writing about {site.name}? Everything you need is below. For screenshots,
+    logos, or a build, email
+    <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> and we will
+    send them the same day.
+  </p>
+
+  <h2>Boilerplate</h2>
+  <p>
+    <em>{site.name}</em> is a mobile backgammon game by {site.legalName}. It
+    pairs players with real opponents from around the world, or with AI
+    opponents across five difficulty tiers when nobody is free, so a match
+    always starts. In online matches the dice are rolled on the game's servers
+    rather than on either player's device, and every move is validated against
+    the rules of backgammon. Matches are played for in-game Coins and Gems, which have no
+    cash value: {site.name} involves no real-money stakes and no cash-out.
+  </p>
+
+  <h2>Fact sheet</h2>
+  <ul>
+    <li><strong>Name:</strong> {site.name}</li>
+    <li><strong>Developer:</strong> {site.legalName}, {site.mailingAddress}</li>
+    <li><strong>Platforms:</strong> Android, with iOS to follow</li>
+    <li><strong>Price:</strong> Free to play, with optional in-app purchases</li>
+    <li><strong>Genre:</strong> Board game, backgammon</li>
+    <li><strong>Age rating:</strong> {site.minimumAge}+</li>
+    <li><strong>Website:</strong> <a href={site.url}>{site.url.replace('https://', '')}</a></li>
+    <li><strong>Press contact:</strong> <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a></li>
+  </ul>
+
+  <h2>Features worth mentioning</h2>
+  <ul>
+    <li>Server-authoritative dice and move validation, so a modified client
+      cannot cheat.</li>
+    <li>Five AI difficulty tiers, from a first-game opponent to one that
+      punishes loose checkers.</li>
+    <li>Full tournament rules: doubling cube, gammons and backgammons, and
+      match play with the Crawford rule.</li>
+    <li>Board themes unlocked through play.</li>
+    <li>Daily missions, an hourly bonus, and streak rewards.</li>
+  </ul>
+
+  <h2>Assets</h2>
+  <p>
+    Logos, board screenshots, and app icons are available on request in PNG and
+    WebP. Please use the logo unmodified, keep clear space around it, and do
+    not place it on a light background. Screenshots may be cropped but not
+    recoloured or overlaid with other branding.
+  </p>
+
+  <h2>What we would rather you did not write</h2>
+  <p>
+    {site.name} is not a gambling app and is not a casino game. There are no
+    real-money stakes, no prizes, and no way to convert Coins or Gems into
+    money. If a headline needs the word &ldquo;stakes&rdquo;, it means virtual
+    Coins staked inside a match.
+  </p>
+
+  <h2>Contact</h2>
+  <ContactUs />
+</LegalLayout>

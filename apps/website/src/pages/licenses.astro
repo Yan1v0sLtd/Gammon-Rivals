@@ -1,0 +1,89 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+
+// Attribution list for third-party code shipped in the app and on this site.
+// Licenses were read from each package's own metadata — re-check this list
+// when a dependency is added or removed in package.json.
+const licenses = [
+  { name: 'React and React DOM', license: 'MIT', url: 'https://github.com/facebook/react' },
+  { name: 'Redux Toolkit and React Redux', license: 'MIT', url: 'https://github.com/reduxjs/redux-toolkit' },
+  { name: 'React Router', license: 'MIT', url: 'https://github.com/remix-run/react-router' },
+  { name: 'PixiJS', license: 'MIT', url: 'https://github.com/pixijs/pixijs' },
+  { name: 'cannon-es', license: 'MIT', url: 'https://github.com/pmndrs/cannon-es' },
+  { name: 'Capacitor', license: 'MIT', url: 'https://github.com/ionic-team/capacitor' },
+  { name: 'Cordova Purchase Plugin', license: 'MIT', url: 'https://github.com/j3k0/cordova-plugin-purchase' },
+  { name: 'Supabase JavaScript client', license: 'MIT', url: 'https://github.com/supabase/supabase-js' },
+  { name: 'Astro and the Astro sitemap integration', license: 'MIT', url: 'https://github.com/withastro/astro' },
+  {
+    name: 'Capgo Capacitor Social Login',
+    license: 'MPL-2.0',
+    url: 'https://github.com/Cap-go/capacitor-social-login',
+  },
+]
+---
+
+<LegalLayout
+  title={`Open Source Licenses — ${site.name}`}
+  description={`Third-party open source software used in ${site.name} and on this website, with its licenses.`}
+  canonical={`${site.url}/licenses`}
+>
+  <h1>Open Source Licenses</h1>
+  <p class="doc-meta">
+    {site.name} is built on work other people gave away. These are the projects
+    we ship, and the licenses they are used under.
+  </p>
+
+  <ul>
+    {
+      licenses.map(({ name, license, url }) => (
+        <li>
+          <strong>{name}</strong> — {license} &middot;{' '}
+          <a href={url} rel="noopener noreferrer" target="_blank">source</a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <h2>MIT License</h2>
+  <p>
+    The MIT-licensed packages above carry the following notice. Copyright
+    belongs to each project's own authors, as stated in its repository.
+  </p>
+  <p>
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the &ldquo;Software&rdquo;), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+  </p>
+  <p>
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+  </p>
+  <p>
+    THE SOFTWARE IS PROVIDED &ldquo;AS IS&rdquo;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+  </p>
+
+  <h2>Mozilla Public License 2.0</h2>
+  <p>
+    Capgo Capacitor Social Login is used under the MPL-2.0. The license text is
+    at <a href="https://mozilla.org/MPL/2.0/" rel="noopener noreferrer" target="_blank">mozilla.org/MPL/2.0</a>,
+    and its source is available at the link above.
+  </p>
+
+  <h2>Something missing?</h2>
+  <p>
+    If you maintain a project you believe we use and have not credited here,
+    write to <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a> and
+    we will correct the page.
+  </p>
+</LegalLayout>

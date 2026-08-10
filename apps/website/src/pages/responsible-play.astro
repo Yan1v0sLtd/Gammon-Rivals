@@ -1,0 +1,87 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro'
+import { site } from '../config/site'
+import '../styles/doc.css'
+---
+
+<!-- Store-review and ad-network facing page. Keep it plain-language and keep
+     it true to Terms Section 6 and Privacy Section 11 (Children). -->
+<LegalLayout
+  title={`Responsible Play — ${site.name}`}
+  description={`${site.name} is a social game played with virtual currency: no real-money stakes, no prizes, no cash-out. How we keep it that way, and how to control spending and playtime.`}
+  canonical={`${site.url}/responsible-play`}
+>
+  <h1>Responsible Play</h1>
+  <p class="doc-meta">
+    {site.name} is a game, not a betting product. This page says plainly what
+    that means for your money, your time, and your family.
+  </p>
+
+  <h2>No gambling, in either direction</h2>
+  <p>{site.disclaimer}</p>
+  <ul>
+    <li>You never stake real money on a match.</li>
+    <li>You never win real money, goods, or anything redeemable outside the
+      app.</li>
+    <li>Coins and Gems cannot be sold, traded outside the app, or converted to
+      cash.</li>
+    <li>A balance of zero is never a loss of money — free Coins come back
+      through the hourly bonus, daily missions, and rewards.</li>
+  </ul>
+  <p>
+    The full legal wording is in our <a href="/terms">Terms</a>, Section 6.
+  </p>
+
+  <h2>{site.minimumAge}+ only</h2>
+  <p>
+    The app is for adults aged {site.minimumAge} and over. We do not knowingly
+    hold data from children. If you believe a child is using an account, write
+    to <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a> and we
+    will remove it.
+  </p>
+
+  <h2>Controlling what you spend</h2>
+  <p>
+    Optional purchases exist and they are all handled by the App Store or
+    Google Play, which means the controls you already trust apply:
+  </p>
+  <ul>
+    <li><strong>iPhone and iPad</strong> — Settings &rsaquo; Screen Time &rsaquo;
+      Content &amp; Privacy Restrictions &rsaquo; iTunes &amp; App Store
+      Purchases, to require a password or block in-app purchases entirely.</li>
+    <li><strong>Android</strong> — Google Play &rsaquo; Settings &rsaquo;
+      Authentication &rsaquo; Require authentication for purchases, and Family
+      settings for a shared device.</li>
+  </ul>
+  <p>
+    You never have to buy anything. Every board, tier, and reward in the game
+    is reachable by playing.
+  </p>
+
+  <h2>Keeping it fun</h2>
+  <p>Some honest advice from people who play a lot of backgammon:</p>
+  <ul>
+    <li>Play for the match, not to win back a bad session. Variance in
+      backgammon is large and short runs prove nothing.</li>
+    <li>If you find yourself playing to chase a balance rather than because you
+      want a game, stop for the day. Nothing in the app expires.</li>
+    <li>Use your phone's own screen-time limits if sessions run longer than you
+      intended.</li>
+  </ul>
+
+  <h2>If gambling is a problem for you</h2>
+  <p>
+    {site.name} involves no real-money betting, but games with dice and chips
+    can still be uncomfortable for someone in recovery. If that is you, the
+    honest advice is to skip this app. For help, contact a national gambling
+    support service in your country — many run free, confidential helplines and
+    chat services.
+  </p>
+
+  <h2>Taking a break, or leaving</h2>
+  <p>
+    You can uninstall at any time and your account waits for you. If you want
+    it gone for good, <a href="/delete-account">Delete Your Account</a> explains
+    how, and deletion is permanent.
+  </p>
+</LegalLayout>
