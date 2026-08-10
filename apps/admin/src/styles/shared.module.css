@@ -57,6 +57,14 @@
   padding: 1.5rem;
 }
 
+/* Card with smaller padding (dense panels). */
+.cardSm {
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.045);
+  padding: 0.75rem;
+}
+
 /* Card title. */
 .cardTitle {
   font-size: 1.125rem;
@@ -107,6 +115,39 @@
   letter-spacing: normal;
   color: #fff;
   outline: none;
+}
+
+/* Ring-styled input (bg-black/40 + ring-1). Width is set by the
+ * consumer where it differs from full-width. */
+.ringInput {
+  width: 100%;
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Smaller ring-styled input (text-xs). */
+.ringInputSm {
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Amber uppercase section heading (DailyMissions panels). */
+.sectionTitle {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(254, 243, 199, 0.7);
 }
 
 /* Small right-aligned mono numeric input (board tuning / felt corners /

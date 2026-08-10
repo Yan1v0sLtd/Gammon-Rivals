@@ -193,7 +193,7 @@ Grouped by migration phase. Count = `className` occurrences.
 | `features/HourlyWheel/HourlyWheelAdmin.tsx` | 64 | ✅ done |
 | `features/RTPAnalytics/RTPAnalyticsAdmin.tsx` | 56 | ✅ done |
 | `features/Shop/ShopAdmin.tsx` | 47 | ✅ done |
-| `features/DailyMissions/SimulatorTab.tsx` | 47 |
+| `features/DailyMissions/SimulatorTab.tsx` | 47 | ✅ done |
 | `features/DailyMissions/MissionTypesEditor.tsx` | 37 |
 | `features/LevelSystem/LevelSystemAdmin.tsx` | 34 |
 | `features/DailyMissions/ChestsEditor.tsx` | 21 |

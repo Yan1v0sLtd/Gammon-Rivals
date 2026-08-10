@@ -1,0 +1,349 @@
+.container {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 1280px) {
+  .container {
+    grid-template-columns: 24rem minmax(0, 1fr);
+  }
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel {
+  composes: cardSm from "../../styles/shared.module.css";
+}
+
+.panelFlush {
+  composes: cardFlush from "../../styles/shared.module.css";
+}
+
+.panelTitle {
+  composes: sectionTitle from "../../styles/shared.module.css";
+  margin-bottom: 0.5rem;
+}
+
+.textInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  margin-bottom: 0.5rem;
+}
+
+.numInput {
+  composes: ringInput from "../../styles/shared.module.css";
+  margin-top: 0.125rem;
+}
+
+.inputLabel {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.numGrid {
+  margin-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.spawnGrid {
+  margin-bottom: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.createButton {
+  width: 100%;
+  border-radius: 0.25rem;
+  background-color: #059669;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.createButton:hover {
+  background-color: #10b981;
+}
+
+.createButton:disabled {
+  opacity: 0.5;
+}
+
+.spawnButton {
+  width: 100%;
+  border-radius: 0.25rem;
+  background-color: #d97706;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.spawnButton:hover {
+  background-color: #f59e0b;
+}
+
+.spawnButton:disabled {
+  opacity: 0.5;
+}
+
+.listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+}
+
+.listTitle {
+  composes: sectionTitle from "../../styles/shared.module.css";
+}
+
+.deleteAllButton {
+  border-radius: 0.25rem;
+  background-color: rgba(190, 18, 60, 0.6);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #fff;
+}
+
+.deleteAllButton:hover {
+  background-color: #be123c;
+}
+
+.profileList {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.profileEmpty {
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.missionEmpty {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.profileRow {
+  composes: transition from "../../styles/shared.module.css";
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.profileRow:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.profileRowActive {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.profileName {
+  color: #fff;
+}
+
+.profileMeta {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.detailPanel {
+  composes: card from "../../styles/shared.module.css";
+}
+
+.detailEmpty {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.detailHeader {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profileTitle {
+  font-weight: 700;
+  color: #fef3c7;
+}
+
+.profileSub {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.reassignButton {
+  border-radius: 0.25rem;
+  background-color: #f59e0b;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+  color: #451a03;
+}
+
+.reassignButton:hover {
+  filter: brightness(1.1);
+}
+
+.reassignButton:disabled {
+  opacity: 0.5;
+}
+
+.section {
+  margin-bottom: 1rem;
+}
+
+.metricList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.missionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.missionCard {
+  border-radius: 0.25rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.missionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.missionTitle {
+  font-weight: 700;
+  color: #fff;
+}
+
+.badge {
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+
+.rarityBadge {
+  composes: badge;
+  font-weight: 900;
+}
+
+.rarityEpic {
+  background-color: #a21caf;
+}
+
+.rarityRare {
+  background-color: #0369a1;
+}
+
+.rarityCommon {
+  background-color: #44403c;
+}
+
+.missionMeta {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.rewardChip {
+  margin-left: 0.25rem;
+  border-radius: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.125rem 0.375rem;
+}
+
+.errorBox {
+  margin-top: 0.75rem;
+  border-radius: 0.25rem;
+  background-color: rgba(76, 5, 25, 0.6);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #fecdd3;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metricName {
+  composes: mono;
+  width: 11rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.metricInput {
+  composes: ringInputSm from "../../styles/shared.module.css";
+  width: 6rem;
+}
+
+.tierBadge {
+  composes: badge;
+  font-weight: 700;
+}
+
+.tierWhale {
+  background-color: #a21caf;
+}
+
+.tierRegular {
+  background-color: #0369a1;
+}
+
+.tierCasual {
+  background-color: #44403c;
+}
+
+.tierNone {
+  background-color: rgba(0, 0, 0, 0.4);
+}

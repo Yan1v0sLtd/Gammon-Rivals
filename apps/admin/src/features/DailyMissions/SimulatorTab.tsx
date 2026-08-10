@@ -15,6 +15,7 @@ import {
   useSetSimMetricMutation,
   useSpawnSimArchetypesMutation,
 } from "./DailyMissionsApi"
+import styles from "./SimulatorTab.module.css"
 
 /** Metrics the operator can author baselines for. The Phase 4
  *  triggers feed these for real users; for synthetic users we
@@ -168,14 +169,14 @@ export function SimulatorTab({canManage}: {
     }
   }
 
-  return (<div className="grid gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]">
+  return (<div className={styles.container}>
     {confirmUI}
     {/* Left column: profile list + new-profile form + bulk spawn */}
-    <div className="space-y-3">
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
-        <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">Create test user</h4>
+    <div className={styles.leftCol}>
+      <div className={styles.panel}>
+        <h4 className={styles.panelTitle}>Create test user</h4>
         <input
-          className="mb-2 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+          className={styles.textInput}
           disabled={!canManage}
           placeholder="display name"
           type="text"
@@ -183,11 +184,11 @@ export function SimulatorTab({canManage}: {
           onChange={(e) => {
             setNewName(e.target.value)
           }}/>
-        <div className="mb-2 grid grid-cols-2 gap-2">
-          <label className="text-xs text-white/60">
+        <div className={styles.numGrid}>
+          <label className={styles.inputLabel}>
             Level
             <input
-              className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.numInput}
               disabled={!canManage}
               type="number"
               value={newLevel}
@@ -195,10 +196,10 @@ export function SimulatorTab({canManage}: {
                 setNewLevel(Number(e.target.value))
               }}/>
           </label>
-          <label className="text-xs text-white/60">
+          <label className={styles.inputLabel}>
             pvp_rating
             <input
-              className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.numInput}
               disabled={!canManage}
               type="number"
               value={newRating}
@@ -208,7 +209,7 @@ export function SimulatorTab({canManage}: {
           </label>
         </div>
         {canManage && (<button
-          className="w-full rounded bg-emerald-600 py-1.5 text-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50"
+          className={styles.createButton}
           disabled={busy || !newName.trim()}
           type="button"
           onClick={createProfile}>
@@ -216,9 +217,9 @@ export function SimulatorTab({canManage}: {
         </button>)}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.045] p-3">
-        <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">Spawn archetypes (bulk)</h4>
-        <div className="mb-2 grid grid-cols-3 gap-2">
+      <div className={styles.panel}>
+        <h4 className={styles.panelTitle}>Spawn archetypes (bulk)</h4>
+        <div className={styles.spawnGrid}>
           {[{
             label: "Casuals",
             value: casuals,
@@ -233,10 +234,10 @@ export function SimulatorTab({canManage}: {
             set: setWhales,
           }].map((row) => (<label
             key={row.label}
-            className="text-xs text-white/60">
+            className={styles.inputLabel}>
             {row.label}
             <input
-              className="mt-0.5 w-full rounded bg-black/40 px-2 py-1 text-sm text-white ring-1 ring-white/10"
+              className={styles.numInput}
               disabled={!canManage}
               type="number"
               value={row.value}
@@ -246,7 +247,7 @@ export function SimulatorTab({canManage}: {
           </label>))}
         </div>
         {canManage && (<button
-          className="w-full rounded bg-amber-600 py-1.5 text-sm font-bold text-white hover:bg-amber-500 disabled:opacity-50"
+          className={styles.spawnButton}
           disabled={busy}
           type="button"
           onClick={spawnArchetypes}>
@@ -254,45 +255,45 @@ export function SimulatorTab({canManage}: {
         </button>)}
       </div>
 
-      <div className="rounded-xl border border-white/10 bg-white/[0.045]">
-        <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-          <span className="text-xs uppercase tracking-wider text-amber-100/70">Test users ({profiles.length})</span>
+      <div className={styles.panelFlush}>
+        <div className={styles.listHeader}>
+          <span className={styles.listTitle}>Test users ({profiles.length})</span>
           {canManage && profiles.length > 0 && (<button
-            className="rounded bg-rose-700/60 px-2 py-0.5 text-xs text-white hover:bg-rose-700"
+            className={styles.deleteAllButton}
             disabled={busy}
             type="button"
             onClick={cleanupAll}>
             Delete all
           </button>)}
         </div>
-        <div className="max-h-[40vh] overflow-y-auto">
+        <div className={styles.profileList}>
           {profiles.length === 0 ? (
-            <div className="p-3 text-sm text-white/40">No synthetic profiles yet.</div>) : (profiles.map((p) => (<button
+            <div className={styles.profileEmpty}>No synthetic profiles yet.</div>) : (profiles.map((p) => (<button
             key={p.id}
-            className={`flex w-full items-center justify-between border-t border-white/5 px-3 py-2 text-left text-sm transition hover:bg-white/[0.04] ${selectedId === p.id ? "bg-amber-500/10" : ""}`}
+            className={styles.profileRow + (selectedId === p.id ? " " + styles.profileRowActive : "")}
             type="button"
             onClick={() => {
               setSelectedId(p.id)
             }}>
-            <span className="text-white">{p.display_name}</span>
-            <span className="text-xs text-white/50">L{p.level} · {p.pvp_rating}</span>
+            <span className={styles.profileName}>{p.display_name}</span>
+            <span className={styles.profileMeta}>L{p.level} · {p.pvp_rating}</span>
           </button>)))}
         </div>
       </div>
     </div>
 
     {/* Right column: selected user detail */}
-    <div className="rounded-xl border border-white/10 bg-white/[0.045] p-4">
-      {!state ? (<p className="text-sm text-white/50">Select a test user, or create one to begin.</p>) : (<>
-        <div className="mb-4 flex items-center justify-between">
+    <div className={styles.detailPanel}>
+      {!state ? (<p className={styles.detailEmpty}>Select a test user, or create one to begin.</p>) : (<>
+        <div className={styles.detailHeader}>
           <div>
-            <h3 className="font-bold text-amber-100">{state.profile.display_name}</h3>
-            <div className="text-xs text-white/50">
+            <h3 className={styles.profileTitle}>{state.profile.display_name}</h3>
+            <div className={styles.profileSub}>
               Level {state.profile.level} · pvp_rating {state.profile.pvp_rating} · {state.profile.xp} XP
             </div>
           </div>
           {canManage && (<button
-            className="rounded bg-amber-500 px-3 py-1.5 text-sm font-bold text-amber-950 hover:brightness-110 disabled:opacity-50"
+            className={styles.reassignButton}
             disabled={busy}
             type="button"
             onClick={reassign}>
@@ -301,11 +302,11 @@ export function SimulatorTab({canManage}: {
         </div>
 
         {/* Metrics editor */}
-        <div className="mb-4">
-          <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">
+        <div className={styles.section}>
+          <h4 className={styles.panelTitle}>
             Metric baselines (drives stretch resolution + tier)
           </h4>
-          <div className="space-y-1.5">
+          <div className={styles.metricList}>
             {KNOWN_METRICS.map((m) => {
               const row = state.metrics.find((x) => x.metric_code === m)
               return (<MetricRow
@@ -321,28 +322,28 @@ export function SimulatorTab({canManage}: {
 
         {/* Currently-assigned missions */}
         <div>
-          <h4 className="mb-2 text-xs uppercase tracking-wider text-amber-100/70">
+          <h4 className={styles.panelTitle}>
             Active missions ({state.missions.length})
           </h4>
           {state.missions.length === 0 ? (
-            <p className="text-sm text-white/40">No missions assigned — hit Reset &amp; re-assign.</p>) : (
-            <div className="space-y-2">
+            <p className={styles.missionEmpty}>No missions assigned — hit Reset &amp; re-assign.</p>) : (
+            <div className={styles.missionList}>
               {state.missions.map((m) => (<div
                 key={m.id}
-                className="rounded bg-black/30 p-2 ring-1 ring-white/5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-white">{m.title}</span>
+                className={styles.missionCard}>
+                <div className={styles.missionHeader}>
+                  <span className={styles.missionTitle}>{m.title}</span>
                   <span
-                    className={`rounded px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${m.rarity === "epic" ? "bg-fuchsia-700 text-white" : m.rarity === "rare" ? "bg-sky-700 text-white" : "bg-stone-700 text-white"}`}>{m.rarity}{m.period === "weekly" ? " · weekly" : ""}</span>
+                    className={styles.rarityBadge + " " + (m.rarity === "epic" ? styles.rarityEpic : m.rarity === "rare" ? styles.rarityRare : styles.rarityCommon)}>{m.rarity}{m.period === "weekly" ? " · weekly" : ""}</span>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-white/60">
-                  <span className="font-mono">{m.mission_type}</span>
+                <div className={styles.missionMeta}>
+                  <span className={styles.mono}>{m.mission_type}</span>
                   <span>→ goal {m.resolved_goal} ({m.resolution_mode})</span>
                   <span>+{m.mission_points} MP</span>
                   {m.rewards.length > 0 && (<span>
                     {m.rewards.map((r) => (<span
                       key={`${r.amount}-${String(r.currency_code)}`}
-                      className="ml-1 rounded bg-white/10 px-1.5 py-0.5">
+                      className={styles.rewardChip}>
                       +{r.amount} {r.currency_code}
                     </span>))}
                   </span>)}
@@ -351,7 +352,7 @@ export function SimulatorTab({canManage}: {
             </div>)}
         </div>
       </>)}
-      {error && <div className="mt-3 rounded bg-rose-950/60 px-3 py-2 text-sm text-rose-200">{error}</div>}
+      {error && <div className={styles.errorBox}>{error}</div>}
     </div>
   </div>)
 }
@@ -373,11 +374,11 @@ function MetricRow({
   useEffect(() => {
     setVal(String(baseline))
   }, [baseline])
-  const tierColor = tier === "whale" ? "bg-fuchsia-700" : tier === "regular" ? "bg-sky-700" : tier === "casual" ? "bg-stone-700" : "bg-black/40"
-  return (<div className="flex items-center gap-2">
-    <span className="w-44 font-mono text-xs text-white/60">{metric}</span>
+  const tierColor = tier === "whale" ? styles.tierWhale : tier === "regular" ? styles.tierRegular : tier === "casual" ? styles.tierCasual : styles.tierNone
+  return (<div className={styles.metricRow}>
+    <span className={styles.metricName}>{metric}</span>
     <input
-      className="w-24 rounded bg-black/40 px-2 py-1 text-xs text-white ring-1 ring-white/10"
+      className={styles.metricInput}
       disabled={disabled}
       step="0.1"
       type="number"
@@ -389,7 +390,7 @@ function MetricRow({
       onChange={(e) => {
         setVal(e.target.value)
       }}/>
-    <span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white ${tierColor}`}>
+    <span className={styles.tierBadge + " " + tierColor}>
       {tier ?? "—"}
     </span>
   </div>)
