@@ -39,7 +39,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Tests (blocking)
         run: pnpm test
-      - name: Lint (non-blocking — pre-existing debt)
+      - name: Lint (non-blocking)
         run: pnpm lint:ci
         continue-on-error: true
       - name: Build
