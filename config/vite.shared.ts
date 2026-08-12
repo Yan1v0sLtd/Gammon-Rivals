@@ -3,14 +3,25 @@ import {fileURLToPath} from "node:url"
 
 export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
+// Transitive runtime deps must be listed too: an unlisted one lands in the entry chunk and makes
+// a vendor chunk import back from it, which throws at module init on the circular binding.
 const VENDOR_PACKAGES = [
   "pixi.js",
   "react",
   "react-dom",
   "react-router",
   "react-router-dom",
+  "cookie",
+  "set-cookie-parser",
   "react-redux",
+  "use-sync-external-store",
   "@reduxjs/toolkit",
+  "redux",
+  "redux-thunk",
+  "reselect",
+  "immer",
+  "@standard-schema/spec",
+  "@standard-schema/utils",
   "scheduler",
   "@supabase/supabase-js",
   "@supabase/auth-js",

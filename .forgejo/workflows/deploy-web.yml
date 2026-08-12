@@ -3,10 +3,8 @@ name: deploy-web
 on:
   push:
     branches: [agent-1]
-    # Allowlist: the public site has no API coupling, so it rebuilds only on
-    # its own source changes.
-    paths:
-      - .forgejo/workflows/deploy-web.yml
+#    paths:
+#      - .forgejo/workflows/deploy-web.yml
   workflow_dispatch:
 
 env:
@@ -43,6 +41,9 @@ jobs:
         run: pnpm lint:ci
         continue-on-error: true
       - name: Build
+        env:
+          - VITE_SUPABASE_URL: https://vekgsukccluwaqdlqpzj.supabase.co
+          - VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_Cq2-C5ZWqvY61xX4gZkkRw_V1p7pJLD
         run: pnpm build:all
       - name: Publish static build
         run: |
