@@ -155,12 +155,13 @@ Run via `pnpm run check:boundaries`, wired into `build:all` before all builds.
   `outDir: dist/play`. Any change requires `pnpm run android:sync` + APK
   reinstall.
 - **dist/admin → /admin:** `apps/admin/vite.config.ts:27-35` — `base: "/admin/"`,
-  `outDir: dist/admin`. nginx serves the admin SPA under `/admin/`, deep links
-  fall back to `/admin/index.html`, hashed assets immutable.
-  (`nginx.conf:1-21, 40-62`)
-- **dist/web → root:** Astro site is document root; clean URLs via
-  `try_files`; `/_astro/*` immutable. (`nginx.conf:23-38, 63-83`)
-- Game (`dist/play`) is deliberately NOT served by nginx. (`nginx.conf:5-6`)
+  `outDir: dist/admin`. The nginx site config `gammonrivals.com.conf` serves the
+  admin SPA under `/admin/`, deep links fall back to `/admin/index.html`.
+  (`gammonrivals.com.conf:21-30`)
+- **dist/web → root:** Astro site is document root; clean URLs via `try_files`.
+  (`gammonrivals.com.conf:33-35`)
+- Game (`dist/play`) is deliberately NOT served by the web server; the config
+  has no `/play` route.
 - Shared brand assets: all three apps use `publicDir: packages/brand-assets/public`.
   (`apps/game/vite.config.ts:13`; `apps/admin/vite.config.ts:13`;
   `astro.config.mjs:27`)

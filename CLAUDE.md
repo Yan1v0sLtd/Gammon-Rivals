@@ -87,9 +87,10 @@ The game is **Capacitor-only on the web**: its `dist/play` bundle is synced into
 the native shell (`capacitor.config.ts` → `webDir: 'dist/play'`, no `server.url`)
 and is **not** served from `gammonrivals.com` — there is no `/play` route. Admin
 is web-served under `/admin`, and the Astro website (`dist/web`) is the document
-root. `packages/brand-assets` is the shared asset source for all three: `public/`
-(stable URLs), `native/` (app icon/splash masters), `imported/` (website-exclusive
-imagery).
+root. Web serving is configured by the nginx site config `gammonrivals.com.conf`
+at the repo root. `packages/brand-assets` is the shared asset source for all
+three: `public/` (stable URLs), `native/` (app icon/splash masters),
+`imported/` (website-exclusive imagery).
 
 **`packages/` is shared logic; `apps/` is UI and client state.** Nothing under `packages/` may import from `apps/` —
 `scripts/check-app-boundaries.mjs` enforces it. `engine`, `ai` and `sim` are additionally _dependency-free_: engine +
