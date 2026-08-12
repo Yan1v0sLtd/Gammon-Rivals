@@ -31,8 +31,7 @@ jobs:
           restore-keys: |
             pnpm-install-
       - name: Install dependencies
-        #        working-directory: web
-        run: pnpm install --frozen-lockfile --store-dir "$PNPM_STORE_DIR"
+        run: pnpm install --frozen-lockfile
       - name: Tests (blocking)
         run: pnpm test
       - name: Lint (non-blocking — pre-existing debt)

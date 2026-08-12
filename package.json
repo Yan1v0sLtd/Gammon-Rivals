@@ -14,6 +14,7 @@
     "dev:website": "pnpm --filter website dev",
     "build:website": "pnpm --filter website build",
     "lint": "eslint . --cache --fix",
+    "lint:ci": "eslint .",
     "build:shared-engine": "node scripts/build-shared-engine.mjs",
     "build:shared-ai": "node scripts/build-shared-ai.mjs",
     "android:sync": "pnpm run build && pnpm exec cap sync android",

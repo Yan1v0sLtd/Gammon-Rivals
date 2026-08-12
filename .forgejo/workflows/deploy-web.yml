@@ -1,0 +1,68 @@
+name: deploy-web
+
+on:
+  push:
+    branches: [agent-1]
+    # Allowlist: the public site has no API coupling, so it rebuilds only on
+    # its own source changes.
+    paths:
+      - .forgejo/workflows/deploy-web.yml
+  workflow_dispatch:
+
+env:
+  # Nginx serves this path (www host mount → /deploy/www in the runner).
+  DEPLOY_DIR: /deploy/www/gammonrivals.com
+
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: ghcr.io/catthehacker/ubuntu:act-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: install pnpm and node
+        uses: pnpm/setup@v2
+        with:
+          version: 11.20.0
+          runtime: node@24
+          install: false
+          token: ""
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: /pnpm/store
+          key: pnpm-install-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-install-
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Tests (blocking)
+        run: pnpm test
+      - name: Lint (non-blocking — pre-existing debt)
+        run: pnpm lint:ci
+        continue-on-error: true
+      - name: Build
+        run: pnpm build:all
+      - name: Publish static build
+        run: |
+          set -euo pipefail
+          staging="${DEPLOY_DIR}.new"
+          rm -rf "$staging"
+          install -d "$staging"
+          # Carry the currently-published files forward so old hashed chunks
+          # survive: an already-loaded app keeps lazy-loading them until reload.
+          if [ -d "$DEPLOY_DIR" ]; then
+            cp -a "$DEPLOY_DIR/." "$staging"/
+          fi
+          # Overlay the new build; new files win on conflict (index.html, assets).
+          cp -a dist/. "$staging"/
+          # Swap the whole tree in one rename so every page and its assets flip
+          # together and nginx never serves a half-copied tree.
+          install -d "$(dirname "$DEPLOY_DIR")"
+          rm -rf "${DEPLOY_DIR}.old"
+          if [ -d "$DEPLOY_DIR" ]; then
+            mv "$DEPLOY_DIR" "${DEPLOY_DIR}.old"
+          fi
+          mv "$staging" "$DEPLOY_DIR"
+          rm -rf "${DEPLOY_DIR}.old"
